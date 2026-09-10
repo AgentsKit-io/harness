@@ -165,6 +165,7 @@ const normalize = (profile: PhaseProfile): NormalizedPhaseProfile => {
   const id = requiredId(profile.id, 'profile.id')
   if (!PHASE_MODES.includes(profile.mode)) fail('profile.mode is invalid.', 'INVALID_INPUT')
   if (!Array.isArray(profile.phases) || !profile.phases.length) fail('profile.phases must be non-empty.', 'INVALID_INPUT')
+  profile.phases.forEach((phase, index) => { if (typeof phase !== 'object' || phase === null || Array.isArray(phase)) fail(`phases[${index}] must be an object.`, 'INVALID_INPUT') })
   const ids = profile.phases.map((phase, index) => requiredId(phase.id, `phases[${index}].id`))
   if (new Set(ids).size !== ids.length) fail('Phase ids must be unique.', 'INVALID_INPUT')
   const known = new Set(ids)
@@ -322,6 +323,11 @@ export const executePhaseProfile = async (profile: PhaseProfile, options: Execut
       executions.push(step.execution)
       if (step.execution.decision === 'pass' || step.execution.decision === 'resume') Object.assign(outputValues, step.outputs)
       else stop = true
+    }
+    if (plan.budgetMs !== undefined && (options.now ?? Date.now)() - started > plan.budgetMs && executions.length) {
+      const last = executions.length - 1
+      executions[last] = { ...executions[last]!, decision: 'block', reason: `Profile budget exceeded after ${plan.budgetMs}ms.` }
+      stop = true
     }
     if (stop) break
   }

@@ -93,4 +93,7 @@ it('never invokes a dry-run effect and fails closed on missing inputs or outputs
   expect(invoked).toBe(false)
   const missingOutput = await executePhaseProfile(createPhaseProfile({ id: 'output', mode: 'yolo', phases: [{ id: 'write', outputs: ['required'], effect: 'write' }] }), { preflight: async () => ({ decision: 'pass' }), handlers: { write: async () => ({ decision: 'pass', outputs: {} }) } })
   expect(missingOutput).toMatchObject({ status: 'blocked', phases: [{ reason: 'Phase did not produce every declared output.' }] })
+  let clock = 0
+  const budget = await executePhaseProfile(createPhaseProfile({ id: 'budget', mode: 'yolo', budgetMs: 1, phases: [{ id: 'phase', effect: 'read' }] }), { now: () => clock, handlers: { phase: async () => { clock = 2; return { decision: 'pass' } } } })
+  expect(budget).toMatchObject({ status: 'blocked', phases: [{ decision: 'block', reason: 'Profile budget exceeded after 1ms.' }] })
 })
