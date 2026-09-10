@@ -1,0 +1,28 @@
+{
+  "type": "agentskit-harness-eval-manifest",
+  "schemaVersion": 1,
+  "suiteId": "h047a-default",
+  "name": "AgentsKit Harness evaluation battery",
+  "cases": [
+    { "id": "case-core", "layer": "contract", "components": ["core"], "grader": "default-grader", "input": "component:core", "critical": true },
+    { "id": "case-workflow", "layer": "deterministic", "components": ["workflow"], "grader": "default-grader", "input": "component:workflow", "subjective": true, "baselineScore": 90 },
+    { "id": "case-memory", "layer": "integration", "components": ["memory"], "grader": "default-grader", "input": "component:memory" },
+    { "id": "case-cache", "layer": "quality", "components": ["cache"], "grader": "default-grader", "input": "component:cache" },
+    { "id": "case-doc-bridge", "layer": "regression", "components": ["doc-bridge"], "grader": "default-grader", "input": "component:doc-bridge" },
+    { "id": "case-agent-model", "layer": "resource", "components": ["agent-model"], "grader": "default-grader", "input": "component:agent-model" },
+    { "id": "case-orca-worktree", "layer": "contract", "components": ["orca-worktree"], "grader": "default-grader", "input": "component:orca-worktree" },
+    { "id": "case-runtime", "layer": "deterministic", "components": ["runtime"], "grader": "default-grader", "input": "component:runtime" },
+    { "id": "case-code-review", "layer": "integration", "components": ["code-review"], "grader": "default-grader", "input": "component:code-review" },
+    { "id": "case-github-linear", "layer": "quality", "components": ["github-linear"], "grader": "default-grader", "input": "component:github-linear" },
+    { "id": "case-eval-metrics", "layer": "regression", "components": ["eval-metrics"], "grader": "default-grader", "input": "component:eval-metrics" }
+  ],
+  "graders": ["default-grader"],
+  "thresholds": { "subjectiveQuality": 80, "maxRegression": 5 },
+  "repetitions": 3,
+  "provider": "fixture",
+  "model": "fixed",
+  "promptHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "toolHash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+  "evidenceOutputs": ["eval-report.json", "eval-report.md"],
+  "digest": "85ce8d891822868892c1744b524e746bcc40c408abc965d3abe7d4b45af300dc"
+}

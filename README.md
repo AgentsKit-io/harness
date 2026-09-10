@@ -299,6 +299,12 @@ in sorted, bounded fan-out/fan-in batches while serializing nodes that share a
 optional token, memory, cache, and parallelism measurements and refuses
 incomparable provider/model/configuration bindings.
 
+`evals/manifest.json` is the versioned evaluation battery. `validateEvalManifest`
+requires contract, deterministic, integration, quality, regression, and
+resource layers plus coverage for every supported component. `runEvalBattery`
+repeats each case and reports min/median/max scores; unknown, stale, critical,
+subjective, or unapproved regression results block the gate.
+
 These are seams, not replacements for AgentsKit packages. An integration may
 adapt `@agentskit/memory` and `@agentskit/eval` into them while keeping the
 Harness provider-neutral. Missing measurements remain missing; they are never

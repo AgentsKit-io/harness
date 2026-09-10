@@ -33,7 +33,7 @@ modules, not a provider dependency.
 | `src/delivery/index.ts` | Delivery | G2–G5 delivery gates and deterministic PR projection | `errors`, `hash` | None |
 | `src/delivery/review.ts` | Delivery | Bounded parallel adversarial review lenses and evidence verdicts | `errors`, `hash`, `workflow`, `delivery/index` (type-only) | Reviewer callback supplied by caller |
 | `src/kernel/cycle.ts` | Kernel | Bounded improvement-cycle assessment | stdlib, `errors` | None |
-| `src/kernel/eval.ts` | Kernel | Deterministic eval runner and threshold assessment | `errors` | Agent callback supplied by caller |
+| `src/kernel/eval.ts` | Kernel | Versioned eval manifest validation, deterministic battery runner, min/median/max aggregation, and fail-closed assessment | `errors`, `hash` | Grader callback supplied by caller |
 | `src/kernel/cache.ts` | Kernel | Safe cache keys and in-memory LLM cache contract | `hash`, `errors` | Cache backend supplied by caller |
 | `src/kernel/optimization.ts` | Kernel | Token, memory, cache, parallelism comparisons | `hash`, `errors` | None |
 | `src/kernel/memory.ts` | Kernel | Memory record validation and memory adapter contract | `errors` | KV store supplied by caller |
