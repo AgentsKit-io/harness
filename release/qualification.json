@@ -1,0 +1,14 @@
+{
+  "type": "agentskit-harness-release-qualification",
+  "schemaVersion": 1,
+  "package": "@agentskit/harness",
+  "version": "0.4.0",
+  "sourceRevision": "a18b57d43f037b7a34b134e01baf913ae2341fd7",
+  "status": "blocked",
+  "harnessVerification": { "runId": "1789063362018-21016-775q93", "decision": "COMPLETE", "checksPassed": 21, "checksTotal": 21 },
+  "upstreamCompatibility": { "report": "compatibility/report.json", "status": "blocked" },
+  "pilotBenchmark": { "status": "blocked", "reason": "No comparable owner-approved no-Harness cohort; real code-review run has no baseline and did not pass quality matrix." },
+  "registrySmoke": { "status": "pending-publication", "reason": "Run only after the main Trusted Publishing workflow succeeds." },
+  "publishable": false,
+  "blockers": ["ecosystem-compatibility", "pilot-benchmark", "published-registry-smoke"]
+}
