@@ -36,6 +36,8 @@ export { ARTIFACT_SCHEMA_VERSION, ARTIFACT_TYPES, FileArtifactStore, artifactDig
 export type { ArtifactBinding, ArtifactEnvelope, ArtifactEnvelopeInput, ArtifactType } from './kernel/artifacts.js'
 export { ASSURANCE_LEVELS, unknownTelemetry, validateAdapterMetadata } from './kernel/adapter-contract.js'
 export type { AdapterMetadata, AdapterTelemetry, AssuranceLevel } from './kernel/adapter-contract.js'
+export { QUALITY_DIMENSIONS, createQualityMatrix, evaluateWatchdog, validatePhaseTelemetry } from './kernel/quality.js'
+export type { MetricStatus, PhaseMachineMetrics, PhaseTelemetry, PhaseTokenMetrics, QualityDimension, QualityDimensionScore, QualityMatrix, WatchdogBlocker, WatchdogBudget, WatchdogResult } from './kernel/quality.js'
 export { createCodingAgentAdapter } from './adapters/agent.js'
 export type { AgentUsage, CodingAgentAdapter, CodingAgentHandlerResult, CodingAgentRequest, CodingAgentResult } from './adapters/agent.js'
 export { BENCHMARK_SCHEMA_VERSION, benchmarkRuns, loadBenchmarkManifest, recordBenchmarkObservation, validateBenchmarkManifest } from './execution/metrics.js'

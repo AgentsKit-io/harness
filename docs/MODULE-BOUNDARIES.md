@@ -50,6 +50,7 @@ modules, not a provider dependency.
 | `src/kernel/phase-executor.ts` | Kernel | Declarative phase routing, preflight, effect policy, and bounded decisions | `errors`, `workflow` | Phase handlers, gates, and Grill-me callback supplied by caller |
 | `src/kernel/artifacts.ts` | Kernel support | Versioned provenance-bound artifacts, Markdown rendering, and idempotent phase resume projection | stdlib, `errors`, `hash`, `events`, `phase-executor` (type-only) | Local state directory only |
 | `src/kernel/adapter-contract.ts` | Kernel | Shared assurance levels and bounded telemetry contract | `errors` | Provider measurements supplied by adapters |
+| `src/kernel/quality.ts` | Kernel | Phase telemetry validation, 0–100 quality matrix, baseline deltas, and watchdog blockers | `errors`, `hash` | Metrics supplied by phases/adapters |
 | `src/kernel/pilot.ts` | Kernel | Cohort freeze and pilot assessment | `errors`, `hash` | None |
 | `src/kernel/plugins.ts` | Kernel | Generic slots, dependency checks, and lifecycle listeners | `errors`, `events` (type-only) | Plugin implementation supplied by caller |
 | `src/context/index.ts` | Context | Context snapshot contract, hashing, and provider slot | stdlib, `plugins`, `hash`, `errors` | Provider implementation supplied by caller |
