@@ -4,7 +4,7 @@ import { existsSync, readFileSync } from 'node:fs'
 const required = ['README.md', 'CONTRIBUTING.md', 'AGENTS.md', 'MANIFESTO.md', 'SECURITY.md', 'CODE_OF_CONDUCT.md', 'LICENSE', 'docs/ORGANIZATION.md']
 const failures = required.filter((file) => !existsSync(file)).map((file) => `missing ${file}`)
 const packageJson = JSON.parse(readFileSync('package.json', 'utf8'))
-if (packageJson.version !== '0.3.0') failures.push(`expected version 0.3.0, got ${packageJson.version}`)
+if (packageJson.version !== '0.4.0') failures.push(`expected version 0.4.0, got ${packageJson.version}`)
 if (packageJson.repository?.url !== 'git+https://github.com/AgentsKit-io/harness.git') failures.push('repository URL is not AgentsKit-io/harness')
 for (const [file, headings] of Object.entries({
   'README.md': ['# @agentskit/harness', '## Install', '## Release'],

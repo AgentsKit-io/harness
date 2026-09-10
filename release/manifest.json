@@ -1,0 +1,14 @@
+{
+  "type": "agentskit-harness-release-manifest",
+  "schemaVersion": 1,
+  "package": "@agentskit/harness",
+  "version": "0.4.0",
+  "channel": "latest",
+  "sourceRevision": "PENDING_PR_MERGE_SHA",
+  "requiredChecks": ["typecheck", "test", "build", "pack", "cli", "consumer", "eval-battery", "pilot-benchmark", "ecosystem-compatibility", "registry-smoke"],
+  "publication": { "workflow": ".github/workflows/release-harness.yml", "branch": "main", "trustedPublishing": true, "usesNpmToken": false },
+  "evidenceOutputs": ["release/qualification.json", "release/notes.md"],
+  "blockedCriteria": ["ecosystem-compatibility", "pilot-benchmark", "published-registry-smoke"],
+  "nextBaseline": "benchmarks/harness-0.4.0-baseline.json",
+  "digest": "0661969c719964eae2a2ab5b7bddd8b108e8792bb51d4a27c223474430730158"
+}

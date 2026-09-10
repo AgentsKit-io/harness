@@ -596,6 +596,9 @@ Releases are published by `.github/workflows/release-harness.yml` after a merge 
 or require an `NPM_TOKEN`. Configure the npm trusted publisher once for
 `AgentsKit-io/harness`, workflow `release-harness.yml`, and package
 `@agentskit/harness`; version changes remain the release trigger.
+The 0.4.0 candidate checklist and explicit blockers live in
+[`release/manifest.json`](release/manifest.json) and
+[`release/notes.md`](release/notes.md).
 
 ## License
 
