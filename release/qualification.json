@@ -3,12 +3,12 @@
   "schemaVersion": 1,
   "package": "@agentskit/harness",
   "version": "0.4.0",
-  "sourceRevision": "a18b57d43f037b7a34b134e01baf913ae2341fd7",
+  "sourceRevision": "2df60bcbda850382d1a1112f338fa53858c5d4cf",
   "status": "blocked",
-  "harnessVerification": { "runId": "1789063362018-21016-775q93", "decision": "COMPLETE", "checksPassed": 21, "checksTotal": 21 },
+  "harnessVerification": { "runId": "1789065264843-3627-dgz8xb", "decision": "COMPLETE", "checksPassed": 21, "checksTotal": 21 },
   "upstreamCompatibility": { "report": "compatibility/report.json", "status": "blocked" },
   "pilotBenchmark": { "status": "blocked", "reason": "No comparable owner-approved no-Harness cohort; real code-review run has no baseline and did not pass quality matrix." },
-  "registrySmoke": { "status": "pending-publication", "reason": "Run only after the main Trusted Publishing workflow succeeds." },
+  "registrySmoke": { "status": "passed", "registry": "https://registry.npmjs.org", "package": "@agentskit/harness@0.4.0", "consumerImport": "passed (runEvalBattery, startRun)", "cliHelp": "passed (ak-verify)" },
   "publishable": false,
-  "blockers": ["ecosystem-compatibility", "pilot-benchmark", "published-registry-smoke"]
+  "blockers": ["ecosystem-compatibility", "pilot-benchmark"]
 }
