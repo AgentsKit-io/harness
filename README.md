@@ -6,7 +6,7 @@ docbridge:
 
 # @agentskit/harness
 
-Portable, evidence-backed development protocol for coding agents. The harness freezes a human-approved task contract, executes every configured check, binds evidence to the current source revision, detects stale results, and refuses completion without human approval.
+Portable, evidence-backed development protocol for coding agents. The harness freezes a task contract, executes every configured check, binds evidence to the current source revision, detects stale results, and applies the configured controlled or YOLO approval policy.
 
 ## Install
 
@@ -44,7 +44,7 @@ Endpoint, database, CLI, MCP, and UI checks must declare `execution: "real"`. UI
 
 ## API
 
-The public TypeScript API is exported from `src/index.ts` and includes configuration loading, lifecycle operations, state transitions, evidence verification, approvals, cancellation, retries, task-owned cleanup, versioned capability manifests, event-envelope validation, and stable error classification. Internal modules are not part of the supported API. The checked-in [capability manifest](./capabilities/public-surface.json) is generated from this entry point; run `pnpm test:capabilities` to detect drift.
+The public TypeScript API is exported from `src/index.ts` and includes configuration loading, lifecycle operations, state transitions, evidence verification, approvals, cancellation, retries, task-owned cleanup, versioned capability manifests, event-envelope validation, deterministic phase execution, and stable error classification. Internal modules are not part of the supported API. The checked-in [capability manifest](./capabilities/public-surface.json) is generated from this entry point; run `pnpm test:capabilities` to detect drift.
 
 ## Extensibility
 
@@ -128,6 +128,30 @@ contract is frozen:
 `runtime.kind` chooses the executor used by an integration: `process` is a bounded shell-free local child process; `docker` adds the Docker sandbox. The choice is frozen in the resolved contract and therefore changes its hash. Docker remains fail-closed when its daemon or image is unavailable.
 
 `autonomy: "yolo"` removes the generic final review only after every applicable check passes, tracking is disabled, and the frozen contract has no ambiguity. It never auto-approves a material decision, external tracking, or a tool rule that requires approval.
+
+The phase executor applies the same rule to a declarative SDLC profile. A profile
+declares dependencies, inputs/outputs, gates, bounded retries, budgets, and an
+effect class (`read`, `write`, or `external`). `safe`, `yolo`, and `dry-run`
+profiles share the engine; only the effect policy changes:
+
+```ts
+const profile = createPhaseProfile({
+  id: 'feature', mode: 'yolo',
+  phases: [
+    { id: 'discover', outputs: ['plan'], effect: 'read' },
+    { id: 'implement', inputs: ['plan'], dependsOn: ['discover'], effect: 'write' },
+  ],
+})
+const result = await executePhaseProfile(profile, {
+  preflight: grillMeAndPreflight,
+  handlers: { discover, implement },
+})
+```
+
+Preflight runs for all mutating phases before any effect. Material ambiguities
+are returned as one structured decision packet; dry-run previews mutating phases
+without invoking their handlers. `planPhaseProfile` exposes the deterministic
+route without executing it.
 
 Use named profiles to make the operational choice explicit:
 

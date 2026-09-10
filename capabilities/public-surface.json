@@ -4,7 +4,7 @@
   "package": "@agentskit/harness",
   "packageVersion": "0.3.0",
   "entryPoint": "src/index.ts",
-  "sourceDigest": "ecbf68b72c0c2a4c9ae3843b03a0bb03413607deabb683005f3ff1e2d2190e0c",
+  "sourceDigest": "8d77e3ba379cc93c9202cbd60dc316a5fdc5df1734f19bcfac1a53c61815d7ff",
   "capabilities": [
     {
       "id": "public-surface:adapters/doc-bridge",
@@ -388,6 +388,44 @@
       ]
     },
     {
+      "id": "public-surface:kernel/phase-executor",
+      "version": "0.3.0",
+      "kind": "kernel",
+      "entryPoint": "src/index.ts",
+      "exports": [
+        "ExecutePhaseProfileOptions",
+        "NormalizedPhaseProfile",
+        "PHASE_DECISIONS",
+        "PHASE_EFFECTS",
+        "PHASE_EFFECT_ACTIONS",
+        "PHASE_MODES",
+        "PhaseAmbiguity",
+        "PhaseContext",
+        "PhaseDecision",
+        "PhaseDecisionPacket",
+        "PhaseDefinition",
+        "PhaseEffect",
+        "PhaseEffectAction",
+        "PhaseEffectPolicy",
+        "PhaseExecution",
+        "PhaseExecutionReport",
+        "PhaseGateEvaluator",
+        "PhaseGateResult",
+        "PhaseHandler",
+        "PhaseHandlerResult",
+        "PhaseMode",
+        "PhasePreflight",
+        "PhasePreflightResult",
+        "PhaseProfile",
+        "PhaseResumeState",
+        "PhaseRetryPolicy",
+        "PhaseRoutePlan",
+        "createPhaseProfile",
+        "executePhaseProfile",
+        "planPhaseProfile"
+      ]
+    },
+    {
       "id": "public-surface:kernel/pilot",
       "version": "0.3.0",
       "kind": "kernel",
@@ -502,5 +540,5 @@
       ]
     }
   ],
-  "digest": "205fb1b2e67b3de22f2f949d9232a34a67888c2d048df5a252b6f5fbc37c81b7"
+  "digest": "a7177848ca128857b1d65b1a40ee1efba92fb1ae1c859b1da34a56695ed906fa"
 }
