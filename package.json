@@ -45,6 +45,7 @@
     "test:metrics": "pnpm typecheck && vitest run --config vitest.config.ts test/metrics.test.ts && node -e \"console.log(JSON.stringify({status:'passed',criteria:['metrics']}))\"",
     "test:capabilities": "node scripts/generate-capability-manifest.mjs --check capabilities/public-surface.json",
     "test:boundaries": "pnpm typecheck && vitest run --config vitest.config.ts test/boundaries.test.ts && node scripts/verify-dependency-directions.mjs",
+    "test:phase-executor": "pnpm typecheck && vitest run --config vitest.config.ts test/phase-executor.test.ts && node -e \"console.log(JSON.stringify({status:'passed',criteria:['phase-executor']}))\"",
     "test:benchmark-record": "pnpm typecheck && node scripts/verify-harness-benchmark-record.mjs",
     "test:agent-protocol": "pnpm typecheck && vitest run --config vitest.config.ts test/agent.test.ts && node -e \"console.log(JSON.stringify({status:'passed',criteria:['agent-protocol']}))\"",
     "test:policy-gate": "pnpm typecheck && vitest run --config vitest.config.ts test/policy.test.ts test/agent.test.ts && node -e \"console.log(JSON.stringify({status:'passed',criteria:['policy-gate','agent-protocol']}))\"",

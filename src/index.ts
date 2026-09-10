@@ -29,6 +29,8 @@ export { MEMORY_SCOPES, createInMemoryMemoryAdapter, createKvMemoryAdapter, vali
 export type { AgentMemoryAdapter, AgentMemoryHit, AgentMemoryKvStore, AgentMemoryRecord, MemoryScope } from './kernel/memory.js'
 export { runWorkflow } from './kernel/workflow.js'
 export type { WorkflowNode, WorkflowResult } from './kernel/workflow.js'
+export { PHASE_DECISIONS, PHASE_EFFECT_ACTIONS, PHASE_EFFECTS, PHASE_MODES, createPhaseProfile, executePhaseProfile, planPhaseProfile } from './kernel/phase-executor.js'
+export type { ExecutePhaseProfileOptions, NormalizedPhaseProfile, PhaseAmbiguity, PhaseContext, PhaseDecision, PhaseDecisionPacket, PhaseDefinition, PhaseEffect, PhaseEffectAction, PhaseEffectPolicy, PhaseExecution, PhaseExecutionReport, PhaseGateEvaluator, PhaseGateResult, PhaseHandler, PhaseHandlerResult, PhaseMode, PhasePreflight, PhasePreflightResult, PhaseProfile, PhaseResumeState, PhaseRetryPolicy, PhaseRoutePlan } from './kernel/phase-executor.js'
 export { BENCHMARK_SCHEMA_VERSION, benchmarkRuns, loadBenchmarkManifest, recordBenchmarkObservation, validateBenchmarkManifest } from './execution/metrics.js'
 export { createSessionRecorder } from './execution/agent.js'
 export { createPolicyGate } from './kernel/policy.js'
