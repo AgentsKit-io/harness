@@ -25,4 +25,4 @@ jobs:
       - run: pnpm test
       - run: pnpm build
       - run: pnpm pack --pack-destination /tmp/agentskit-harness-pack
-      - run: pnpm exec ak-verify run --config .codex/verification.json --json
+      - run: node dist/cli.js run --config .codex/verification.json --json
