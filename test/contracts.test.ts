@@ -24,10 +24,10 @@ const digest = (value: string): string => createHash('sha256').update(value).dig
 
 it('round-trips and validates a versioned capability manifest', () => {
   const capabilities: readonly CapabilityDescriptor[] = [{ id: 'kernel', version: '1.0.0', kind: 'kernel', entryPoint: 'src/index.ts', exports: ['assessDiscovery'] }]
-  const manifest = createCapabilityManifest({ package: '@agentskit/harness', packageVersion: '0.3.0', entryPoint: 'src/index.ts', sourceDigest: digest('public surface'), capabilities })
+  const manifest = createCapabilityManifest({ package: '@agentskit/harness', packageVersion: '0.4.0', entryPoint: 'src/index.ts', sourceDigest: digest('public surface'), capabilities })
   expect(validateCapabilityManifest(manifest)).toEqual(manifest)
   expect(() => validateCapabilityManifest({ ...manifest, digest: '0'.repeat(64) })).toThrow(/digest is invalid/)
-  expect(() => createCapabilityManifest({ package: '@agentskit/harness', packageVersion: '0.3.0', entryPoint: 'src/index.ts', sourceDigest: digest('public surface'), capabilities: [] })).toThrow(/capabilities must be non-empty/)
+  expect(() => createCapabilityManifest({ package: '@agentskit/harness', packageVersion: '0.4.0', entryPoint: 'src/index.ts', sourceDigest: digest('public surface'), capabilities: [] })).toThrow(/capabilities must be non-empty/)
 })
 
 it('validates the checked-in manifest generated from the public entry point', () => {
@@ -47,7 +47,7 @@ it('round-trips event envelope v2 and rejects invalid or incompatible inputs', (
     sourceRevision: 'revision-1',
     correlationId: 'corr-1',
     payload: { accepted: true },
-    provenance: { source: 'harness', component: 'test', version: '0.3.0' },
+    provenance: { source: 'harness', component: 'test', version: '0.4.0' },
   } as const
   const envelope = createHarnessEventEnvelope(input)
   expect(envelope.schemaVersion).toBe(HARNESS_EVENT_ENVELOPE_SCHEMA_VERSION)

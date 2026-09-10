@@ -1,0 +1,23 @@
+{
+  "type": "agentskit-harness-compatibility-report",
+  "schemaVersion": 1,
+  "harnessVersion": "0.4.0",
+  "harnessSourceRevision": "a18b57d43f037b7a34b134e01baf913ae2341fd7",
+  "capturedAt": "2026-09-10T18:30:00Z",
+  "status": "blocked",
+  "components": [
+    { "id": "core", "package": "@agentskit/core", "version": "1.12.9", "revision": "d89a2d74108c29f2c6227948265449e985af3a0a", "status": "passed", "command": "pnpm --filter @agentskit/core test", "evidence": "34 files, 498 tests passed" },
+    { "id": "memory", "package": "@agentskit/memory", "version": "0.11.9", "revision": "d89a2d74108c29f2c6227948265449e985af3a0a", "status": "passed", "command": "pnpm --filter @agentskit/memory test", "evidence": "31 files, 228 tests passed" },
+    { "id": "eval", "package": "@agentskit/eval", "version": "0.6.5", "revision": "d89a2d74108c29f2c6227948265449e985af3a0a", "status": "passed", "command": "pnpm --filter @agentskit/eval test", "evidence": "9 files, 105 tests passed; build and bundler preparation passed" },
+    { "id": "doc-bridge", "package": "@agentskit/doc-bridge", "version": "1.7.45", "revision": "9f9e9ddd4f736981c2bea243fef33b68be2b5002", "status": "passed", "command": "pnpm build && pnpm test && pnpm typecheck", "evidence": "50 files, 351 tests passed; Cursor/Claude/Copilot/portable plugin contracts passed; typecheck passed" },
+    { "id": "code-review", "package": "@agentskit/code-review", "version": "0.30.8", "revision": "c993f9a9359157a767d738d60c30add2b02fd09a", "status": "failed", "command": "npm test; npm run quality:matrix -- --input <real-runner-artifact>", "evidence": "241 tests passed. Real run ceaf007a-ea6e-4dc9-a601-f816702b301c reached BLOCKED: detection 1/4, precision 1/4, batch-efficiency 1/4, integration 1/4; no comparable baseline." },
+    { "id": "adapter-boundary", "package": "@agentskit/harness", "version": "0.4.0", "revision": "a18b57d43f037b7a34b134e01baf913ae2341fd7", "status": "passed", "command": "pnpm test:adapters", "evidence": "covered by ak-verify run 1789063362018-21016-775q93" },
+    { "id": "runtime", "package": "@agentskit/harness", "version": "0.4.0", "revision": "a18b57d43f037b7a34b134e01baf913ae2341fd7", "status": "passed", "command": "pnpm test:runtime && pnpm test:runtime-attestation", "evidence": "covered by ak-verify run 1789063362018-21016-775q93" }
+  ],
+  "blockers": [
+    "code-review real-run quality matrix has no passing detection/precision/baseline evidence",
+    "harness-vs-no-Harness cohort is not yet comparable (10-task owner-approved cohort required)",
+    "published-registry smoke is pending the main-branch release"
+  ],
+  "baseline": { "path": "benchmarks/harness-0.4.0-baseline.json", "status": "not-run", "doNotInfer": true }
+}
