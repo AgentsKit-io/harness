@@ -4,15 +4,8 @@ on:
   push:
     branches: [main]
     paths:
-      - "src/**"
-      - "test/**"
-      - "scripts/**"
-      - "docs/**"
       - "package.json"
-      - "pnpm-lock.yaml"
-      - "README.md"
       - "CHANGELOG.md"
-      - "MANIFESTO.md"
       - ".github/workflows/release-harness.yml"
 
 permissions:
@@ -46,6 +39,18 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Detect version change
+        id: release
+        shell: bash
+        run: |
+          set -euo pipefail
+          if git diff --quiet "${{ github.event.before }}" "${{ github.sha }}" -- package.json; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            echo "No package version change; release skipped"
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Verify package
         run: |
           pnpm typecheck
@@ -54,6 +59,7 @@ jobs:
           pnpm pack --pack-destination /tmp/harness-pack
 
       - name: Publish new version through npm Trusted Publishing
+        if: steps.release.outputs.changed == 'true'
         working-directory: .
         shell: bash
         run: |
