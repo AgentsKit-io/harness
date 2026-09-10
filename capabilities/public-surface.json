@@ -4,7 +4,7 @@
   "package": "@agentskit/harness",
   "packageVersion": "0.3.0",
   "entryPoint": "src/index.ts",
-  "sourceDigest": "7b7fe608c6ef579b2f14a56ee0a6a02eda93700ac4e5925b84bde3ced0ea9c66",
+  "sourceDigest": "4400eb47ec1ed05840e552ae3a99456bd1e2a80ff26d68da9741fa9886dd23cc",
   "capabilities": [
     {
       "id": "public-surface:adapters/agent",
@@ -539,6 +539,28 @@
       ]
     },
     {
+      "id": "public-surface:kernel/quality",
+      "version": "0.3.0",
+      "kind": "kernel",
+      "entryPoint": "src/index.ts",
+      "exports": [
+        "MetricStatus",
+        "PhaseMachineMetrics",
+        "PhaseTelemetry",
+        "PhaseTokenMetrics",
+        "QUALITY_DIMENSIONS",
+        "QualityDimension",
+        "QualityDimensionScore",
+        "QualityMatrix",
+        "WatchdogBlocker",
+        "WatchdogBudget",
+        "WatchdogResult",
+        "createQualityMatrix",
+        "evaluateWatchdog",
+        "validatePhaseTelemetry"
+      ]
+    },
+    {
       "id": "public-surface:kernel/resilience",
       "version": "0.3.0",
       "kind": "kernel",
@@ -609,5 +631,5 @@
       ]
     }
   ],
-  "digest": "da3d3d6a11f78aa8529cc303d4353524000c2606281ebd7b8c12181ae54b409a"
+  "digest": "e13340f7d71b2e7024599ed4b568de4711f24f5fc74086e1c165023ec264429a"
 }

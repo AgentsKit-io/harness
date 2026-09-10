@@ -175,6 +175,11 @@ concurrency/retries and blocks empty or non-reproducible verdicts. Delivery
 helpers hash-bind the approved PR body/metadata and only emit a QA transition
 after feature validation and G5 acceptance; failed QA returns to verification.
 
+`createQualityMatrix` aggregates phase evidence, outcomes, duration, token/cache,
+machine, and concurrency signals into bounded 0–100 dimensions with baseline
+deltas. Missing measurements remain `unknown`; `evaluateWatchdog` emits typed
+budget/resource/contention blockers instead of treating absent data as success.
+
 Use named profiles to make the operational choice explicit:
 
 ```json
