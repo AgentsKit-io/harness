@@ -28,8 +28,8 @@
   "checks": [
     { "id": "package-tests", "category": "logic", "command": "pnpm test && node -e 'console.log(JSON.stringify({status:\"passed\",criteria:[\"package\"]}))'", "evidence": "structured", "timeoutMs": 180000 },
     { "id": "package-build", "category": "build", "command": "pnpm build && node -e 'console.log(JSON.stringify({status:\"passed\",criteria:[\"package\"]}))'", "evidence": "structured", "timeoutMs": 120000 },
-    { "id": "package-pack", "category": "cli", "execution": "real", "command": "pnpm pack --pack-destination /tmp/agentskit-harness-pack && node -e 'console.log(JSON.stringify({status:\"passed\",criteria:[\"package\"]}))'", "evidence": "structured", "timeoutMs": 120000, "dependsOn": ["package-build"] },
-    { "id": "cli", "category": "cli", "execution": "real", "command": "node dist/cli.js --version && node dist/cli.js --help >/dev/null && node -e 'console.log(JSON.stringify({status:\"passed\",criteria:[\"cli\"]}))'", "evidence": "structured", "timeoutMs": 30000, "dependsOn": ["package-build"] },
+    { "id": "package-pack", "category": "cli", "execution": "real", "command": "pnpm pack --pack-destination /tmp/agentskit-harness-pack && node -e 'console.log(JSON.stringify({status:\"passed\",criteria:[\"package\"]}))'", "evidence": "structured", "timeoutMs": 120000 },
+    { "id": "cli", "category": "cli", "execution": "real", "command": "node dist/cli.js --version && node dist/cli.js --help >/dev/null && node -e 'console.log(JSON.stringify({status:\"passed\",criteria:[\"cli\"]}))'", "evidence": "structured", "timeoutMs": 30000 },
     { "id": "repository-docs", "category": "docs", "command": "node scripts/verify-repository-docs.mjs", "evidence": "structured", "timeoutMs": 30000 },
     { "id": "workflow", "category": "docs", "command": "node scripts/verify-release-workflow.mjs", "evidence": "structured", "timeoutMs": 30000 }
   ],
