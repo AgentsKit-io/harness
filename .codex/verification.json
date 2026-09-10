@@ -12,7 +12,7 @@
     },
     "ambiguities": [],
     "outcomes": [
-      { "id": "package", "statement": "The package typechecks, tests, builds, and packs as @agentskit/harness 0.3.0.", "checks": ["package-tests", "package-build", "package-pack"] },
+      { "id": "package", "statement": "The package typechecks, tests, builds, and packs as @agentskit/harness 0.4.0.", "checks": ["package-tests", "package-build", "package-pack"] },
       { "id": "cli", "statement": "The real CLI is runnable and exposes both ak-harness and ak-verify.", "checks": ["cli"] },
       { "id": "governance", "statement": "Repository governance and release documentation are complete and internally consistent.", "checks": ["repository-docs", "workflow"] }
       ,{ "id": "coordination", "statement": "Issue/worktree claims and dispatch records are atomic, idempotent, and human-recoverable.", "checks": ["coordination"] }

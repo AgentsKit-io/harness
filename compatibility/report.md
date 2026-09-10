@@ -1,7 +1,7 @@
 # Compatibility report
 
 **Release:** `@agentskit/harness@0.4.0`  
-**Harness revision:** `a18b57d43f037b7a34b134e01baf913ae2341fd7`  
+**Harness revision:** `2df60bcbda850382d1a1112f338fa53858c5d4cf`
 **Captured:** 2026-09-10  
 **Decision:** BLOCKED (fail closed)
 
