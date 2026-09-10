@@ -1,6 +1,6 @@
 {
   "name": "@agentskit/harness",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Portable, evidence-backed development harness for coding agents.",
   "type": "module",
   "bin": { "ak-harness": "dist/cli.js", "ak-verify": "dist/cli.js" },
@@ -70,5 +70,6 @@
   "bugs": { "url": "https://github.com/AgentsKit-io/harness/issues" },
   "homepage": "https://github.com/AgentsKit-io/harness",
   "author": "AgentsKit Contributors",
-  "sideEffects": false
+  "sideEffects": false,
+  "publishConfig": { "access": "public", "provenance": true }
 }

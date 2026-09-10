@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.2.0
+## [0.3.0] - 2026-09-10
 
 - Added portable issue/worktree claims and idempotent dispatch ledger.
 - Added failure classification, bounded retry/backoff, and abortable watchdog.
