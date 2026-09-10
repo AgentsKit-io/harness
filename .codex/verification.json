@@ -3,6 +3,7 @@
   "project": "agentskit-harness",
   "root": "..",
   "stateDir": ".codex/verification",
+  "autonomy": "yolo",
   "contract": {
     "intent": "Implement the 0.4.0 capability-boundary reorganization in @agentskit/harness while preserving its public API and enforcing directional dependencies.",
     "scope": {
