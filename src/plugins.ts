@@ -1,4 +1,5 @@
 import { fail } from './errors.js'
+import { HARNESS_EVENT_TYPES } from './events.js'
 import type { HarnessEvent, HarnessEventListener, HarnessEventType } from './events.js'
 
 export const HARNESS_PLUGIN_API_VERSION = 1 as const
@@ -6,8 +7,8 @@ export type Disposer = () => void
 
 export interface PluginSlot<T> { readonly id: string }
 export const createPluginSlot = <T>(id: string): PluginSlot<T> => {
-  if (!id.trim()) fail('Plugin slot id is required.', 'INVALID_INPUT')
-  return { id }
+  if (typeof id !== 'string' || !id.trim()) fail('Plugin slot id is required.', 'INVALID_INPUT')
+  return { id: id.trim() }
 }
 
 export interface HarnessPluginContext {
@@ -36,9 +37,21 @@ export interface PluginRegistry {
   dispose(): void
 }
 
-const validId = (value: string, label: string): string => {
-  if (!value.trim()) fail(`${label} is required.`, 'INVALID_INPUT')
-  return value
+const validId = (value: unknown, label: string): string => {
+  if (typeof value !== 'string') fail(`${label} is required.`, 'INVALID_INPUT')
+  const result = (value as string).trim()
+  if (!result) fail(`${label} is required.`, 'INVALID_INPUT')
+  return result
+}
+
+const isRecord = (value: unknown): value is Record<string, unknown> => typeof value === 'object' && value !== null && !Array.isArray(value)
+const validEventType = (value: unknown): HarnessEventType => {
+  if (typeof value !== 'string' || !(HARNESS_EVENT_TYPES as readonly string[]).includes(value)) fail('Plugin event type is invalid.', 'INVALID_INPUT')
+  return value as HarnessEventType
+}
+const validSlot = <T>(value: PluginSlot<T>): PluginSlot<T> => {
+  if (!isRecord(value)) fail('Plugin slot must be an object.', 'INVALID_INPUT')
+  return { id: validId(value['id'], 'Plugin slot id') }
 }
 
 export const createPluginRegistry = (): PluginRegistry => {
@@ -84,10 +97,20 @@ export const createPluginRegistry = (): PluginRegistry => {
     register(plugin) {
       ensureOpen()
       if (mounted) fail('Plugins cannot be registered after mount.', 'HARNESS_ERROR')
-      validId(plugin.id, 'Plugin id'); validId(plugin.version, 'Plugin version')
-      if (plugin.apiVersion !== HARNESS_PLUGIN_API_VERSION) fail(`Unsupported plugin API version: ${String(plugin.apiVersion)}.`, 'INVALID_INPUT')
-      if (plugins.has(plugin.id)) fail(`Plugin already registered: ${plugin.id}.`, 'INVALID_INPUT')
-      plugins.set(plugin.id, plugin)
+      if (!isRecord(plugin)) fail('Plugin must be an object.', 'INVALID_INPUT')
+      const candidate = plugin as unknown as HarnessPlugin
+      const id = validId(candidate.id, 'Plugin id')
+      validId(candidate.version, 'Plugin version')
+      if (candidate.apiVersion !== HARNESS_PLUGIN_API_VERSION) fail(`Unsupported plugin API version: ${String(candidate.apiVersion)}.`, 'INVALID_INPUT')
+      if (typeof candidate.apply !== 'function') fail('Plugin apply must be a function.', 'INVALID_INPUT')
+      let requires: readonly string[] | undefined
+      if (candidate.requires !== undefined) {
+        if (!Array.isArray(candidate.requires)) fail('Plugin requires must be an array.', 'INVALID_INPUT')
+        requires = candidate.requires.map((dependency, index) => validId(dependency, `Plugin dependency[${index}]`))
+        if (new Set(requires).size !== requires.length) fail('Plugin dependencies must be unique.', 'INVALID_INPUT')
+      }
+      if (plugins.has(id)) fail(`Plugin already registered: ${id}.`, 'INVALID_INPUT')
+      plugins.set(id, { ...candidate, id, ...(requires === undefined ? {} : { requires }) })
     },
     mount() {
       ensureOpen()
@@ -96,11 +119,13 @@ export const createPluginRegistry = (): PluginRegistry => {
         for (const plugin of order()) {
           const context: HarnessPluginContext = {
             apiVersion: HARNESS_PLUGIN_API_VERSION,
-            register: (slot, id, value) => registerContribution(plugin.id, slot, validId(id, 'Plugin contribution id'), value),
-            effect: (disposer) => { cleanups.push(disposer) },
+            register: (slot, id, value) => registerContribution(plugin.id, validSlot(slot), validId(id, 'Plugin contribution id'), value),
+            effect: (disposer) => { if (typeof disposer !== 'function') fail('Plugin disposer must be a function.', 'INVALID_INPUT'); cleanups.push(disposer) },
             on: (type, listener) => {
-              const handlers = listeners.get(type) ?? new Set<HarnessEventListener<HarnessEventType>>()
-              handlers.add(listener as HarnessEventListener<HarnessEventType>); listeners.set(type, handlers)
+              const eventType = validEventType(type)
+              if (typeof listener !== 'function') fail('Plugin event listener must be a function.', 'INVALID_INPUT')
+              const handlers = listeners.get(eventType) ?? new Set<HarnessEventListener<HarnessEventType>>()
+              handlers.add(listener as HarnessEventListener<HarnessEventType>); listeners.set(eventType, handlers)
               const disposer = (): void => { handlers.delete(listener as HarnessEventListener<HarnessEventType>) }
               cleanups.push(disposer); return disposer
             },
@@ -117,11 +142,13 @@ export const createPluginRegistry = (): PluginRegistry => {
     },
     on(type, listener) {
       ensureOpen()
-      const handlers = listeners.get(type) ?? new Set<HarnessEventListener<HarnessEventType>>()
-      handlers.add(listener as HarnessEventListener<HarnessEventType>); listeners.set(type, handlers)
+      const eventType = validEventType(type)
+      if (typeof listener !== 'function') fail('Plugin event listener must be a function.', 'INVALID_INPUT')
+      const handlers = listeners.get(eventType) ?? new Set<HarnessEventListener<HarnessEventType>>()
+      handlers.add(listener as HarnessEventListener<HarnessEventType>); listeners.set(eventType, handlers)
       return (): void => { handlers.delete(listener as HarnessEventListener<HarnessEventType>) }
     },
-    contributions: <T>(slot: PluginSlot<T>): readonly PluginContribution<T>[] => [...(contributions.get(slot.id)?.values() ?? [])] as readonly PluginContribution<T>[],
+    contributions: <T>(slot: PluginSlot<T>): readonly PluginContribution<T>[] => [...(contributions.get(validSlot(slot).id)?.values() ?? [])] as readonly PluginContribution<T>[],
     dispose() {
       if (disposed) return
       let firstError: unknown

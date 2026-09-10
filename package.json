@@ -12,7 +12,7 @@
       "import": "./dist/index.js"
     }
   },
-  "files": ["dist", "README.md", "CHANGELOG.md", "CONTRIBUTING.md", "CODE_OF_CONDUCT.md", "SECURITY.md", "MANIFESTO.md", "LICENSE", "docs"],
+  "files": ["dist", "README.md", "CHANGELOG.md", "CONTRIBUTING.md", "CODE_OF_CONDUCT.md", "SECURITY.md", "MANIFESTO.md", "LICENSE", "docs", "capabilities"],
   "engines": { "node": ">=22" },
   "scripts": {
     "build": "tsup && node -e \"console.log(JSON.stringify({status:'passed',criteria:['package']}))\"",
@@ -43,6 +43,7 @@
     "test:optimization": "pnpm typecheck && vitest run --config vitest.config.ts test/optimization.test.ts test/issues-010-014.eval.test.ts && node -e \"console.log(JSON.stringify({status:'passed',criteria:['optimization-contracts','eval','cache','parallelism']}))\"",
     "test:source": "pnpm typecheck && vitest run --config vitest.config.ts test/source.test.ts && node -e \"console.log(JSON.stringify({status:'passed',criteria:['source-current']}))\"",
     "test:metrics": "pnpm typecheck && vitest run --config vitest.config.ts test/metrics.test.ts && node -e \"console.log(JSON.stringify({status:'passed',criteria:['metrics']}))\"",
+    "test:capabilities": "node scripts/generate-capability-manifest.mjs --check capabilities/public-surface.json",
     "test:benchmark-record": "pnpm typecheck && node scripts/verify-harness-benchmark-record.mjs",
     "test:agent-protocol": "pnpm typecheck && vitest run --config vitest.config.ts test/agent.test.ts && node -e \"console.log(JSON.stringify({status:'passed',criteria:['agent-protocol']}))\"",
     "test:policy-gate": "pnpm typecheck && vitest run --config vitest.config.ts test/policy.test.ts test/agent.test.ts && node -e \"console.log(JSON.stringify({status:'passed',criteria:['policy-gate','agent-protocol']}))\"",

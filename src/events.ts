@@ -1,15 +1,99 @@
 import { appendFileSync, closeSync, existsSync, mkdirSync, openSync, readFileSync, unlinkSync, writeSync } from 'node:fs'
 import { join } from 'node:path'
 import { fail } from './errors.js'
-import { sha256 } from './hash.js'
+import { hashJson, sha256 } from './hash.js'
 import type { ContextQuery } from './context.js'
 import type { RunState } from './types.js'
 import type { DockerRuntimeEvidence } from './runtime.js'
 
 export const HARNESS_EVENT_SCHEMA_VERSION = 1 as const
+export const HARNESS_EVENT_ENVELOPE_SCHEMA_VERSION = 2 as const
 export const EVENT_LOG_GENESIS = 'GENESIS' as const
 export const HARNESS_EVENT_TYPES = ['run.created', 'state.transitioned', 'context.attached', 'verification.completed', 'approval.recorded', 'authorization.recorded', 'session.started', 'session.resumed', 'agent.turn.started', 'policy.evaluated', 'tool.approval.requested', 'tool.approval.recorded', 'tool.requested', 'tool.execution.started', 'tool.recovery.recorded', 'tool.blocked', 'tool.completed', 'tool.failed', 'session.ended'] as const
 export type HarnessEventType = typeof HARNESS_EVENT_TYPES[number]
+
+export interface HarnessEventProvenance {
+  readonly source: string
+  readonly component: string
+  readonly version: string
+  readonly actor?: string
+}
+
+export interface HarnessEventEnvelope {
+  readonly eventId: string
+  readonly eventType: string
+  readonly schemaVersion: typeof HARNESS_EVENT_ENVELOPE_SCHEMA_VERSION
+  readonly occurredAt: string
+  readonly runId: string
+  readonly issueRef?: string
+  readonly sourceRevision: string
+  readonly correlationId: string
+  readonly payload: Readonly<Record<string, unknown>>
+  readonly idempotencyKey: string
+  readonly provenance: HarnessEventProvenance
+}
+
+export type HarnessEventEnvelopeInput = Omit<HarnessEventEnvelope, 'schemaVersion' | 'idempotencyKey'> & { readonly idempotencyKey?: string }
+
+const envelopeId = (value: unknown, label: string): string => {
+  if (typeof value !== 'string' || !/^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/.test(value)) fail(`${label} is invalid.`, 'INVALID_INPUT')
+  return value as string
+}
+
+const envelopeText = (value: unknown, label: string): string => {
+  if (typeof value !== 'string') fail(`${label} is required.`, 'INVALID_INPUT')
+  const result = (value as string).trim()
+  if (!result) fail(`${label} is required.`, 'INVALID_INPUT')
+  return result
+}
+
+const envelopeDigest = (value: unknown, label: string): string => {
+  const result = envelopeText(value, label)
+  if (!/^[a-f0-9]{64}$/.test(result)) fail(`${label} must be a lowercase SHA-256 digest.`, 'INVALID_INPUT')
+  return result
+}
+
+const envelopeProvenance = (value: unknown): HarnessEventProvenance => {
+  if (typeof value !== 'object' || value === null || Array.isArray(value)) fail('Event provenance must be an object.', 'INVALID_INPUT')
+  const candidate = value as Record<string, unknown>
+  return {
+    source: envelopeText(candidate['source'], 'Event provenance source'),
+    component: envelopeText(candidate['component'], 'Event provenance component'),
+    version: envelopeText(candidate['version'], 'Event provenance version'),
+    ...(candidate['actor'] === undefined ? {} : { actor: envelopeText(candidate['actor'], 'Event provenance actor') }),
+  }
+}
+
+export const validateHarnessEventEnvelope = (value: unknown): HarnessEventEnvelope => {
+  if (typeof value !== 'object' || value === null || Array.isArray(value)) fail('Event envelope must be an object.', 'INVALID_INPUT')
+  const candidate = value as Record<string, unknown>
+  if (candidate['schemaVersion'] !== HARNESS_EVENT_ENVELOPE_SCHEMA_VERSION) fail('Event envelope schemaVersion is invalid.', 'INVALID_INPUT')
+  const payload = candidate['payload']
+  if (typeof payload !== 'object' || payload === null || Array.isArray(payload)) fail('Event envelope payload must be an object.', 'INVALID_INPUT')
+  const issueRef = candidate['issueRef'] === undefined ? undefined : envelopeText(candidate['issueRef'], 'Event issueRef')
+  const occurredAt = envelopeText(candidate['occurredAt'], 'Event occurredAt')
+  if (!Number.isFinite(Date.parse(occurredAt))) fail('Event occurredAt must be a valid timestamp.', 'INVALID_INPUT')
+  return {
+    eventId: envelopeId(candidate['eventId'], 'Event eventId'),
+    eventType: envelopeId(candidate['eventType'], 'Event eventType'),
+    schemaVersion: HARNESS_EVENT_ENVELOPE_SCHEMA_VERSION,
+    occurredAt,
+    runId: envelopeText(candidate['runId'], 'Event runId'),
+    ...(issueRef === undefined ? {} : { issueRef }),
+    sourceRevision: envelopeText(candidate['sourceRevision'], 'Event sourceRevision'),
+    correlationId: envelopeId(candidate['correlationId'], 'Event correlationId'),
+    payload: payload as Readonly<Record<string, unknown>>,
+    idempotencyKey: envelopeDigest(candidate['idempotencyKey'], 'Event idempotencyKey'),
+    provenance: envelopeProvenance(candidate['provenance']),
+  }
+}
+
+export const createHarnessEventEnvelope = (input: HarnessEventEnvelopeInput): HarnessEventEnvelope => {
+  if (typeof input !== 'object' || input === null || Array.isArray(input)) fail('Event envelope input must be an object.', 'INVALID_INPUT')
+  const identity = { eventType: input.eventType, runId: input.runId, ...(input.issueRef === undefined ? {} : { issueRef: input.issueRef }), sourceRevision: input.sourceRevision, correlationId: input.correlationId, payload: input.payload, provenance: input.provenance }
+  const candidate = { ...input, schemaVersion: HARNESS_EVENT_ENVELOPE_SCHEMA_VERSION, idempotencyKey: input.idempotencyKey ?? hashJson(identity) }
+  return validateHarnessEventEnvelope(candidate)
+}
 const SESSION_EVENT_TYPES = new Set<HarnessEventType>(['session.started', 'session.resumed', 'agent.turn.started', 'policy.evaluated', 'tool.approval.requested', 'tool.approval.recorded', 'tool.requested', 'tool.execution.started', 'tool.recovery.recorded', 'tool.blocked', 'tool.completed', 'tool.failed', 'session.ended'])
 
 export interface HarnessEventContext {
