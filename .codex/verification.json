@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "project": "agentskit-harness",
-  "root": ".",
+  "root": "..",
   "stateDir": ".codex/verification",
   "contract": {
     "intent": "Publish the standalone deterministic SDLC enforcement harness at version 0.2.0.",
