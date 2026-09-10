@@ -31,6 +31,7 @@ modules, not a provider dependency.
 | `src/kernel/wip.ts` | Kernel | WIP admission and capacity decisions | `errors` | None |
 | `src/kernel/experiment.ts` | Kernel | Comparable runtime/provider selection | `errors` | None |
 | `src/delivery/index.ts` | Delivery | G2–G5 delivery gates and deterministic PR projection | `errors`, `hash` | None |
+| `src/delivery/review.ts` | Delivery | Bounded parallel adversarial review lenses and evidence verdicts | `errors`, `hash`, `workflow`, `delivery/index` (type-only) | Reviewer callback supplied by caller |
 | `src/kernel/cycle.ts` | Kernel | Bounded improvement-cycle assessment | stdlib, `errors` | None |
 | `src/kernel/eval.ts` | Kernel | Deterministic eval runner and threshold assessment | `errors` | Agent callback supplied by caller |
 | `src/kernel/cache.ts` | Kernel | Safe cache keys and in-memory LLM cache contract | `hash`, `errors` | Cache backend supplied by caller |
