@@ -1,0 +1,26 @@
+[
+  {
+    "runtime": "orca",
+    "sourceRevision": "abc123",
+    "contractHash": "contract123",
+    "provider": "openai",
+    "model": "gpt-5.6",
+    "configurationHash": "config123",
+    "hardGatesPassed": true,
+    "humanMinutes": 8,
+    "durationMs": 120000,
+    "cost": 1.2
+  },
+  {
+    "runtime": "emdash",
+    "sourceRevision": "abc123",
+    "contractHash": "contract123",
+    "provider": "openai",
+    "model": "gpt-5.6",
+    "configurationHash": "config123",
+    "hardGatesPassed": true,
+    "humanMinutes": 10,
+    "durationMs": 100000,
+    "cost": 0.9
+  }
+]

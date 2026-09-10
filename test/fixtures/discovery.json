@@ -1,0 +1,26 @@
+{
+  "issueId": "AGE-123",
+  "sourceRevision": "source-a",
+  "contractHash": "contract-a",
+  "contextHash": "context-a",
+  "approvedAssumptions": [
+    {
+      "id": "internal-copy",
+      "policyId": "docs-v1",
+      "resolution": "Update factual internal documentation."
+    }
+  ],
+  "ambiguities": [
+    {
+      "id": "docs",
+      "question": "Should factual internal documentation reflect the approved behavior?",
+      "material": false,
+      "assumptionId": "internal-copy",
+      "recommendedOptionId": "update",
+      "options": [
+        { "id": "update", "summary": "Update the document.", "impact": "Keeps context current." },
+        { "id": "defer", "summary": "Defer the update.", "impact": "Leaves context stale." }
+      ]
+    }
+  ]
+}

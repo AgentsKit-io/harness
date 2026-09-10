@@ -1,0 +1,69 @@
+name: Release harness
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "src/**"
+      - "test/**"
+      - "scripts/**"
+      - "docs/**"
+      - "package.json"
+      - "pnpm-lock.yaml"
+      - "README.md"
+      - "CHANGELOG.md"
+      - "MANIFESTO.md"
+      - ".github/workflows/release-harness.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-harness
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    if: ${{ github.repository == 'AgentsKit-io/harness' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - uses: pnpm/action-setup@0ebf47130e4866e96fce0953f49152a61190b271 # v6.0.9
+
+      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.2.0
+        with:
+          node-version: 22
+          registry-url: https://registry.npmjs.org
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Verify package
+        run: |
+          pnpm typecheck
+          pnpm test
+          pnpm build
+          pnpm pack --pack-destination /tmp/harness-pack
+
+      - name: Publish new version through npm Trusted Publishing
+        working-directory: .
+        shell: bash
+        run: |
+          set -euo pipefail
+          package='@agentskit/harness'
+          version=$(node -p "require('./package.json').version")
+          if npm view "$package@$version" version >/dev/null 2>&1; then
+            echo "$package@$version already exists; nothing to publish"
+            exit 0
+          fi
+          npm ping --registry=https://registry.npmjs.org
+          npm install --global npm@11.5.1
+          npm publish --provenance --access public --ignore-scripts

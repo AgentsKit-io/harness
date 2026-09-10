@@ -1,0 +1,39 @@
+{
+  "schemaVersion": 1,
+  "project": "agentskit-harness",
+  "root": ".",
+  "stateDir": ".codex/verification",
+  "contract": {
+    "intent": "Publish the standalone deterministic SDLC enforcement harness at version 0.2.0.",
+    "scope": {
+      "inScope": ["package source", "public CLI", "tests", "release workflow", "repository governance docs"],
+      "outOfScope": ["GitHub repository creation", "npm publication", "Linear mutations", "provider-specific integrations"]
+    },
+    "ambiguities": [],
+    "outcomes": [
+      { "id": "package", "statement": "The package typechecks, tests, builds, and packs as @agentskit/harness 0.2.0.", "checks": ["package-tests", "package-build", "package-pack"] },
+      { "id": "cli", "statement": "The real CLI is runnable and exposes both ak-harness and ak-verify.", "checks": ["cli"] },
+      { "id": "governance", "statement": "Repository governance and release documentation are complete and internally consistent.", "checks": ["repository-docs", "workflow"] }
+    ]
+  },
+  "surfaces": {
+    "logic": true,
+    "cli": true,
+    "docs": true,
+    "endpoint": { "required": false, "reason": "Local CLI/library package." },
+    "database": { "required": false, "reason": "No database in scope." },
+    "mcp": { "required": false, "reason": "Optional integration, not kernel scope." },
+    "ui": { "required": false, "reason": "No UI shipped." }
+  },
+  "checks": [
+    { "id": "package-tests", "category": "logic", "command": "pnpm test && node -e 'console.log(JSON.stringify({status:\"passed\",criteria:[\"package\"]}))'", "evidence": "structured", "timeoutMs": 180000 },
+    { "id": "package-build", "category": "build", "command": "pnpm build && node -e 'console.log(JSON.stringify({status:\"passed\",criteria:[\"package\"]}))'", "evidence": "structured", "timeoutMs": 120000 },
+    { "id": "package-pack", "category": "cli", "execution": "real", "command": "pnpm pack --pack-destination /tmp/agentskit-harness-pack && node -e 'console.log(JSON.stringify({status:\"passed\",criteria:[\"package\"]}))'", "evidence": "structured", "timeoutMs": 120000, "dependsOn": ["package-build"] },
+    { "id": "cli", "category": "cli", "execution": "real", "command": "node dist/cli.js --version && node dist/cli.js --help >/dev/null && node -e 'console.log(JSON.stringify({status:\"passed\",criteria:[\"cli\"]}))'", "evidence": "structured", "timeoutMs": 30000, "dependsOn": ["package-build"] },
+    { "id": "repository-docs", "category": "docs", "command": "node scripts/verify-repository-docs.mjs", "evidence": "structured", "timeoutMs": 30000 },
+    { "id": "workflow", "category": "docs", "command": "node scripts/verify-release-workflow.mjs", "evidence": "structured", "timeoutMs": 30000 }
+  ],
+  "tracking": { "required": false, "reason": "Repository bootstrap is local; GitHub and npm publication are separate authorized actions." },
+  "budget": { "maxDurationMs": 600000 },
+  "cleanup": { "roots": [".codex/verification/tmp"] }
+}

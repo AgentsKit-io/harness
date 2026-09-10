@@ -1,0 +1,14 @@
+node_modules/
+dist/
+.cache/
+.turbo/
+.codex/verification/
+.codex/verification/tmp/
+*.log
+*.tsbuildinfo
+.DS_Store
+.env
+.env.local
+.env.*.local
+test-results/
+coverage/

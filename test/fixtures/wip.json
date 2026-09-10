@@ -1,0 +1,7 @@
+{
+  "entries": [
+    { "issueId": "AGE-1", "state": "implementing" },
+    { "issueId": "AGE-2", "state": "blocked" }
+  ],
+  "candidate": { "issueId": "AGE-3", "kind": "new" }
+}
