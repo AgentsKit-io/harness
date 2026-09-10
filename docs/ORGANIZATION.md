@@ -18,6 +18,8 @@ the repository stays navigable without speculative layers.
 ├── test/                 # deterministic tests and fixtures
 ├── scripts/              # real CLI, packaging, and repository checks
 ├── capabilities/         # generated public-surface capability manifest
+├── examples/              # runnable consumer examples
+├── compatibility/         # pinned ecosystem manifest and migration/rollback procedures
 ├── docs/                 # ADRs and this organization contract
 ├── .codex/               # verification contract and local run state
 └── .github/              # CI and release workflows
