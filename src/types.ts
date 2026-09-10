@@ -169,6 +169,9 @@ export interface MachineSample {
   readonly load1PerCpuPercent: number
   readonly memoryUsedPercent: number
   readonly rssBytes: number
+  readonly swapUsedPercent?: number
+  readonly memoryPressure?: 'normal' | 'warning' | 'critical'
+  readonly interferingProcesses?: readonly string[]
 }
 
 export interface MachineMetrics {

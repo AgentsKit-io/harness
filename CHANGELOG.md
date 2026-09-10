@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.2.0
+
+- Added portable issue/worktree claims and idempotent dispatch ledger.
+- Added failure classification, bounded retry/backoff, and abortable watchdog.
+- Added file-scoped preflight planning and shell-composition rejection.
+- Added block manifests, status snapshots, retro learning promotion, model
+  policies, and provider-neutral Orca/tracking adapters.
+- Added configurable machine pressure thresholds and adaptive workflow limits.
+
 ## [Unreleased]
 
 - Add bounded agent eval, safe context/read-only LLM cache, deterministic workflow fan-out/fan-in, and validated optimization observation contracts for token, memory, cache, and parallelism measurements.
