@@ -3,8 +3,15 @@ import { expect, it } from 'vitest'
 import { createConfiguredToolRuntime, createDockerToolRuntime, createProcessToolRuntime, createToolRuntime } from '../src/index.js'
 
 const request = { actionId: 'action', turnId: 'turn', toolId: 'shell', argumentsHash: 'hash', arguments: { command: 'echo ok' } } as const
-const dockerAvailable = (() => { try { execFileSync('docker', ['info'], { stdio: 'ignore' }); return true } catch { return false } })()
-const dockerTest = !dockerAvailable && process.env['HARNESS_REQUIRE_DOCKER'] !== '1' ? it.skip : it
+const dockerFixtureAvailable = (() => {
+  try {
+    execFileSync('docker', ['image', 'inspect', 'node:22.13.0-bookworm-slim'], { stdio: 'ignore' })
+    return true
+  } catch {
+    return false
+  }
+})()
+const dockerTest = !dockerFixtureAvailable && process.env['HARNESS_REQUIRE_DOCKER'] !== '1' ? it.skip : it
 
 it('executes a registered tool and returns only a result hash', async () => {
   const runtime = createToolRuntime({ tools: [{ toolId: 'shell', execute: async ({ arguments: input, signal }) => ({ input, aborted: signal.aborted }) }] })
