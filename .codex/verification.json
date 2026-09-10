@@ -5,9 +5,9 @@
   "stateDir": ".codex/verification",
   "autonomy": "yolo",
   "contract": {
-    "intent": "Implement the 0.4.0 modular SDLC engine with explicit capability boundaries and deterministic safe, yolo, and dry-run phase execution.",
+    "intent": "Implement the 0.4.0 modular SDLC engine with explicit capability boundaries, deterministic phase execution, and provenance-bound artifacts with idempotent resume.",
     "scope": {
-      "inScope": ["package source", "public CLI", "tests", "release workflow", "repository governance docs", "coordination ledger", "quota recovery", "machine guard policy", "file-scoped preflight", "block/status/retro records", "provider-neutral Orca and tracking adapters", "capability-boundary module organization", "public API compatibility"],
+      "inScope": ["package source", "public CLI", "tests", "release workflow", "repository governance docs", "coordination ledger", "quota recovery", "machine guard policy", "file-scoped preflight", "block/status/retro records", "provider-neutral Orca and tracking adapters", "capability-boundary module organization", "public API compatibility", "versioned artifact envelopes", "decision log artifact records", "idempotent phase resume"],
       "outOfScope": ["GitHub repository creation", "npm publication", "external Linear/GitHub/Orca mutations", "dashboard hosting", "product decisions", "provider credentials"]
     },
     "ambiguities": [],
@@ -22,6 +22,7 @@
       ,{ "id": "adapters", "statement": "Orca and tracking adapters produce provider-neutral, deterministic projections without external side effects.", "checks": ["adapters"] }
       ,{ "id": "module-boundaries", "statement": "Capability modules are organized under explicit boundaries and forbidden kernel/provider imports fail deterministically.", "checks": ["boundaries"] }
       ,{ "id": "phase-executor", "statement": "Phase profiles declare inputs, outputs, dependencies, gates, bounded retries, budgets, effects, and deterministic pass/block/escalate/retry/cancel/resume routing.", "checks": ["phase-executor"] }
+      ,{ "id": "artifacts", "statement": "Versioned artifacts bind run provenance, render as JSON and Markdown, record decisions in the event log, reject stale bindings, and resume completed phases without replaying handlers.", "checks": ["artifacts", "artifact-cli"] }
     ]
   },
   "surfaces": {
@@ -47,6 +48,8 @@
     ,{ "id": "adapters", "category": "logic", "command": "pnpm vitest run --config vitest.config.ts test/block-learning-status.test.ts && node -e 'console.log(JSON.stringify({status:\"passed\",criteria:[\"adapters\"]}))'", "evidence": "structured", "timeoutMs": 60000 }
     ,{ "id": "boundaries", "category": "logic", "command": "pnpm test:boundaries && node -e 'console.log(JSON.stringify({status:\"passed\",criteria:[\"module-boundaries\"]}))'", "evidence": "structured", "timeoutMs": 60000 }
     ,{ "id": "phase-executor", "category": "logic", "command": "pnpm test:phase-executor", "evidence": "structured", "timeoutMs": 60000 }
+    ,{ "id": "artifacts", "category": "logic", "command": "pnpm vitest run --config vitest.config.ts test/artifacts.test.ts && node -e 'console.log(JSON.stringify({status:\"passed\",criteria:[\"artifacts\"]}))'", "evidence": "structured", "timeoutMs": 60000 }
+    ,{ "id": "artifact-cli", "category": "cli", "execution": "real", "command": "pnpm build >/dev/null && node scripts/verify-artifact-cli.mjs", "evidence": "structured", "timeoutMs": 60000 }
   ],
   "tracking": { "required": false, "reason": "Repository bootstrap is local; GitHub and npm publication are separate authorized actions." },
   "budget": { "maxDurationMs": 600000 },

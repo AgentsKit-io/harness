@@ -47,6 +47,7 @@ modules, not a provider dependency.
 | `src/kernel/resilience.ts` | Kernel | Failure classification and bounded retry/recovery policy | `errors` | Operation callback supplied by caller |
 | `src/kernel/workflow.ts` | Kernel | Bounded workflow scheduling | `errors` | Node callbacks supplied by caller |
 | `src/kernel/phase-executor.ts` | Kernel | Declarative phase routing, preflight, effect policy, and bounded decisions | `errors`, `workflow` | Phase handlers, gates, and Grill-me callback supplied by caller |
+| `src/kernel/artifacts.ts` | Kernel support | Versioned provenance-bound artifacts, Markdown rendering, and idempotent phase resume projection | stdlib, `errors`, `hash`, `events`, `phase-executor` (type-only) | Local state directory only |
 | `src/kernel/pilot.ts` | Kernel | Cohort freeze and pilot assessment | `errors`, `hash` | None |
 | `src/kernel/plugins.ts` | Kernel | Generic slots, dependency checks, and lifecycle listeners | `errors`, `events` (type-only) | Plugin implementation supplied by caller |
 | `src/context/index.ts` | Context | Context snapshot contract, hashing, and provider slot | stdlib, `plugins`, `hash`, `errors` | Provider implementation supplied by caller |
@@ -107,13 +108,13 @@ are grouped below; the source file remains authoritative for exact signatures.
 | Events/plugins/context | `EVENT_LOG_GENESIS`, `FileEventStore`, `HARNESS_EVENT_SCHEMA_VERSION`, `HARNESS_EVENT_TYPES`, `inspectEventLogLock`, `recoverEventLogLock`, `createPluginRegistry`, `createPluginSlot`, `HARNESS_PLUGIN_API_VERSION`, `CONTEXT_PROVIDER_SLOT`, `hashContextSnapshot`, `hashContextSnapshots`, `readContextSnapshots`, `validateContextSnapshot`, `validateContextSnapshots` |
 | Discovery and delivery | `assessDiscovery`, `isDiscoveryCurrent`, `assessWip`, `WIP_STATES`, `selectRuntime`, `assessAcceptance`, `assessIntegration`, `assessPreflight`, `assessProduction`, `assessWorktreeCleanup`, `composePullRequest`, `assessPilot`, `IMPROVEMENT_CYCLE_STEPS`, `assessImprovementCycle` |
 | Eval and optimization | `assessAgentEval`, `runAgentEval`, `createLlmCache`, `createLlmCacheKey`, `validateCacheableOperation`, `compareOptimization`, `validateOptimizationObservation`, `MEMORY_SCOPES`, `createInMemoryMemoryAdapter`, `createKvMemoryAdapter`, `validateMemoryRecord`, `runWorkflow`, `BENCHMARK_SCHEMA_VERSION`, `benchmarkRuns`, `loadBenchmarkManifest`, `recordBenchmarkObservation`, `validateBenchmarkManifest` |
-| Agent/runtime controls | `createSessionRecorder`, `createPolicyGate`, `createConfiguredToolRuntime`, `createDockerToolRuntime`, `createProcessToolRuntime`, `createToolRuntime`, `adaptiveConcurrency`, `createMachineMonitor`, `sampleMachine`, `summarizeMachine`, `createDispatchLedger`, `classifyFailure`, `recoveryDelayMs`, `runWithRecovery`, `planFilePreflight`, `validateSafeCommand`, `BLOCK_STATUSES`, `assessBlock`, `validateBlockManifest`, `LEARNING_STATUSES`, `parseRetro`, `promoteLearnings`, `createStatusSnapshot`, `validateStatusSnapshot`, `MODEL_ROLES`, `createModelPolicy`, `modelFor`, `PHASE_MODES`, `createPhaseProfile`, `planPhaseProfile`, `executePhaseProfile` |
+| Agent/runtime controls | `createSessionRecorder`, `createPolicyGate`, `createConfiguredToolRuntime`, `createDockerToolRuntime`, `createProcessToolRuntime`, `createToolRuntime`, `adaptiveConcurrency`, `createMachineMonitor`, `sampleMachine`, `summarizeMachine`, `createDispatchLedger`, `classifyFailure`, `recoveryDelayMs`, `runWithRecovery`, `planFilePreflight`, `validateSafeCommand`, `BLOCK_STATUSES`, `assessBlock`, `validateBlockManifest`, `LEARNING_STATUSES`, `parseRetro`, `promoteLearnings`, `createStatusSnapshot`, `validateStatusSnapshot`, `MODEL_ROLES`, `createModelPolicy`, `modelFor`, `PHASE_MODES`, `createPhaseProfile`, `planPhaseProfile`, `executePhaseProfile`, `ARTIFACT_SCHEMA_VERSION`, `createArtifactEnvelope`, `FileArtifactStore`, `artifactIsFresh`, `resumeStateFromArtifacts` |
 | Integrations and evidence | `createDocBridgeContextProvider`, `createOrcaDispatchPlan`, `createTrackingAdapter`, `createTrackingTransition`, `EVIDENCE_BUNDLE_SCHEMA_VERSION`, `exportEvidenceBundle`, `readEvidenceTrustStore`, `verifyEvidenceBundle` |
 
 The entry point also re-exports the public type surfaces from `types`,
 `events`, `plugins`, `context`, `discovery`, `wip`, `experiment`, `delivery`,
 `pilot`, `cycle`, `metrics`, `agent`, `policy`, `runtime`, `bundle`, and
-`machine`, `phase-executor`, plus explicit type exports for cache, optimization, memory,
+`machine`, `phase-executor`, `artifacts`, plus explicit type exports for cache, optimization, memory,
 coordination, resilience, preflight, block, learning, status, model policy,
 Orca, and tracking. No adapter implementation is re-exported wholesale.
 
