@@ -2,9 +2,9 @@ import { execFile } from 'node:child_process'
 import { readFileSync } from 'node:fs'
 import { relative, resolve } from 'node:path'
 import { promisify } from 'node:util'
-import { hashJson, sha256 } from './hash.js'
-import { fail } from './errors.js'
-import type { SourceSnapshot } from './types.js'
+import { hashJson, sha256 } from '../kernel/hash.js'
+import { fail } from '../kernel/errors.js'
+import type { SourceSnapshot } from '../kernel/types.js'
 
 const execFileAsync = promisify(execFile)
 const git = async (root: string, args: readonly string[]): Promise<string> => {

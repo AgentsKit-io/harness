@@ -1,10 +1,10 @@
 import { existsSync, mkdtempSync, readFileSync, readdirSync, renameSync, rmSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
-import { fail } from './errors.js'
+import { fail } from '../kernel/errors.js'
 import { readJson, readRun } from './files.js'
-import { RUN_STATES } from './types.js'
-import type { BenchmarkBinding, MachineMetrics, RunState, VerificationRun } from './types.js'
+import { RUN_STATES } from '../kernel/types.js'
+import type { BenchmarkBinding, MachineMetrics, RunState, VerificationRun } from '../kernel/types.js'
 
 export const BENCHMARK_SCHEMA_VERSION = 1 as const
 

@@ -3,7 +3,7 @@ import { mkdirSync, mkdtempSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { expect, it } from 'vitest'
-import { sourceSnapshot } from '../src/source.js'
+import { sourceSnapshot } from '../src/execution/source.js'
 
 const git = (root: string, args: string[]): void => { execFileSync('git', ['-C', root, ...args], { stdio: 'ignore' }) }
 const repository = (): string => {

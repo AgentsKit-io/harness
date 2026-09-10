@@ -1,4 +1,4 @@
-import { fail } from './errors.js'
+import { fail } from '../kernel/errors.js'
 
 type RawRecord = Record<string, unknown>
 

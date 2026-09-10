@@ -1,8 +1,8 @@
 import { execFile, spawn, type ChildProcessWithoutNullStreams } from 'node:child_process'
 import { promisify } from 'node:util'
-import { hashJson } from './hash.js'
-import { fail } from './errors.js'
-import type { RuntimeConfig } from './types.js'
+import { hashJson } from '../kernel/hash.js'
+import { fail } from '../kernel/errors.js'
+import type { RuntimeConfig } from '../kernel/types.js'
 
 export interface ToolExecutionRequest {
   readonly actionId: string

@@ -4,7 +4,7 @@
   "package": "@agentskit/harness",
   "packageVersion": "0.3.0",
   "entryPoint": "src/index.ts",
-  "sourceDigest": "4d58c95a93cc690e90a499c7a86f461bd4a230aac1a4154a3ca9922ec6465bc6",
+  "sourceDigest": "ecbf68b72c0c2a4c9ae3843b03a0bb03413607deabb683005f3ff1e2d2190e0c",
   "capabilities": [
     {
       "id": "public-surface:adapters/doc-bridge",
@@ -39,7 +39,37 @@
       ]
     },
     {
-      "id": "public-surface:agent",
+      "id": "public-surface:context/index",
+      "version": "0.3.0",
+      "kind": "kernel",
+      "entryPoint": "src/index.ts",
+      "exports": [
+        "*",
+        "CONTEXT_PROVIDER_SLOT",
+        "hashContextSnapshot",
+        "hashContextSnapshots",
+        "readContextSnapshots",
+        "validateContextSnapshot",
+        "validateContextSnapshots"
+      ]
+    },
+    {
+      "id": "public-surface:delivery/index",
+      "version": "0.3.0",
+      "kind": "kernel",
+      "entryPoint": "src/index.ts",
+      "exports": [
+        "*",
+        "assessAcceptance",
+        "assessIntegration",
+        "assessPreflight",
+        "assessProduction",
+        "assessWorktreeCleanup",
+        "composePullRequest"
+      ]
+    },
+    {
+      "id": "public-surface:execution/agent",
       "version": "0.3.0",
       "kind": "execution",
       "entryPoint": "src/index.ts",
@@ -49,7 +79,111 @@
       ]
     },
     {
-      "id": "public-surface:block",
+      "id": "public-surface:execution/bundle",
+      "version": "0.3.0",
+      "kind": "execution",
+      "entryPoint": "src/index.ts",
+      "exports": [
+        "*",
+        "EVIDENCE_BUNDLE_SCHEMA_VERSION",
+        "exportEvidenceBundle",
+        "readEvidenceTrustStore",
+        "verifyEvidenceBundle"
+      ]
+    },
+    {
+      "id": "public-surface:execution/config",
+      "version": "0.3.0",
+      "kind": "execution",
+      "entryPoint": "src/index.ts",
+      "exports": [
+        "loadConfig",
+        "validateConfig"
+      ]
+    },
+    {
+      "id": "public-surface:execution/coordination",
+      "version": "0.3.0",
+      "kind": "execution",
+      "entryPoint": "src/index.ts",
+      "exports": [
+        "ClaimResult",
+        "CoordinationIdentity",
+        "DispatchLease",
+        "DispatchLedger",
+        "DispatchRecord",
+        "createDispatchLedger"
+      ]
+    },
+    {
+      "id": "public-surface:execution/files",
+      "version": "0.3.0",
+      "kind": "execution",
+      "entryPoint": "src/index.ts",
+      "exports": [
+        "loadLatestRun"
+      ]
+    },
+    {
+      "id": "public-surface:execution/machine",
+      "version": "0.3.0",
+      "kind": "execution",
+      "entryPoint": "src/index.ts",
+      "exports": [
+        "*",
+        "MachineThresholds",
+        "adaptiveConcurrency",
+        "createMachineMonitor",
+        "sampleMachine",
+        "summarizeMachine"
+      ]
+    },
+    {
+      "id": "public-surface:execution/metrics",
+      "version": "0.3.0",
+      "kind": "execution",
+      "entryPoint": "src/index.ts",
+      "exports": [
+        "*",
+        "BENCHMARK_SCHEMA_VERSION",
+        "benchmarkRuns",
+        "loadBenchmarkManifest",
+        "recordBenchmarkObservation",
+        "validateBenchmarkManifest"
+      ]
+    },
+    {
+      "id": "public-surface:execution/runtime",
+      "version": "0.3.0",
+      "kind": "execution",
+      "entryPoint": "src/index.ts",
+      "exports": [
+        "*",
+        "createConfiguredToolRuntime",
+        "createDockerToolRuntime",
+        "createProcessToolRuntime",
+        "createToolRuntime"
+      ]
+    },
+    {
+      "id": "public-surface:execution/verification",
+      "version": "0.3.0",
+      "kind": "execution",
+      "entryPoint": "src/index.ts",
+      "exports": [
+        "approveRun",
+        "authorizeRun",
+        "cancelRun",
+        "cleanTaskArtifacts",
+        "planRun",
+        "reconcileRun",
+        "retryRun",
+        "startRun",
+        "verifyRun"
+      ]
+    },
+    {
+      "id": "public-surface:kernel/block",
       "version": "0.3.0",
       "kind": "kernel",
       "entryPoint": "src/index.ts",
@@ -63,20 +197,7 @@
       ]
     },
     {
-      "id": "public-surface:bundle",
-      "version": "0.3.0",
-      "kind": "execution",
-      "entryPoint": "src/index.ts",
-      "exports": [
-        "*",
-        "EVIDENCE_BUNDLE_SCHEMA_VERSION",
-        "exportEvidenceBundle",
-        "readEvidenceTrustStore",
-        "verifyEvidenceBundle"
-      ]
-    },
-    {
-      "id": "public-surface:cache",
+      "id": "public-surface:kernel/cache",
       "version": "0.3.0",
       "kind": "kernel",
       "entryPoint": "src/index.ts",
@@ -90,7 +211,7 @@
       ]
     },
     {
-      "id": "public-surface:capabilities",
+      "id": "public-surface:kernel/capabilities",
       "version": "0.3.0",
       "kind": "kernel",
       "entryPoint": "src/index.ts",
@@ -107,17 +228,7 @@
       ]
     },
     {
-      "id": "public-surface:config",
-      "version": "0.3.0",
-      "kind": "execution",
-      "entryPoint": "src/index.ts",
-      "exports": [
-        "loadConfig",
-        "validateConfig"
-      ]
-    },
-    {
-      "id": "public-surface:constants",
+      "id": "public-surface:kernel/constants",
       "version": "0.3.0",
       "kind": "kernel",
       "entryPoint": "src/index.ts",
@@ -127,36 +238,7 @@
       ]
     },
     {
-      "id": "public-surface:context",
-      "version": "0.3.0",
-      "kind": "kernel",
-      "entryPoint": "src/index.ts",
-      "exports": [
-        "*",
-        "CONTEXT_PROVIDER_SLOT",
-        "hashContextSnapshot",
-        "hashContextSnapshots",
-        "readContextSnapshots",
-        "validateContextSnapshot",
-        "validateContextSnapshots"
-      ]
-    },
-    {
-      "id": "public-surface:coordination",
-      "version": "0.3.0",
-      "kind": "kernel",
-      "entryPoint": "src/index.ts",
-      "exports": [
-        "ClaimResult",
-        "CoordinationIdentity",
-        "DispatchLease",
-        "DispatchLedger",
-        "DispatchRecord",
-        "createDispatchLedger"
-      ]
-    },
-    {
-      "id": "public-surface:cycle",
+      "id": "public-surface:kernel/cycle",
       "version": "0.3.0",
       "kind": "kernel",
       "entryPoint": "src/index.ts",
@@ -167,22 +249,7 @@
       ]
     },
     {
-      "id": "public-surface:delivery",
-      "version": "0.3.0",
-      "kind": "kernel",
-      "entryPoint": "src/index.ts",
-      "exports": [
-        "*",
-        "assessAcceptance",
-        "assessIntegration",
-        "assessPreflight",
-        "assessProduction",
-        "assessWorktreeCleanup",
-        "composePullRequest"
-      ]
-    },
-    {
-      "id": "public-surface:discovery",
+      "id": "public-surface:kernel/discovery",
       "version": "0.3.0",
       "kind": "kernel",
       "entryPoint": "src/index.ts",
@@ -193,7 +260,7 @@
       ]
     },
     {
-      "id": "public-surface:error-policy",
+      "id": "public-surface:kernel/error-policy",
       "version": "0.3.0",
       "kind": "kernel",
       "entryPoint": "src/index.ts",
@@ -206,7 +273,7 @@
       ]
     },
     {
-      "id": "public-surface:errors",
+      "id": "public-surface:kernel/errors",
       "version": "0.3.0",
       "kind": "kernel",
       "entryPoint": "src/index.ts",
@@ -216,7 +283,7 @@
       ]
     },
     {
-      "id": "public-surface:eval",
+      "id": "public-surface:kernel/eval",
       "version": "0.3.0",
       "kind": "kernel",
       "entryPoint": "src/index.ts",
@@ -230,9 +297,9 @@
       ]
     },
     {
-      "id": "public-surface:events",
+      "id": "public-surface:kernel/events",
       "version": "0.3.0",
-      "kind": "execution",
+      "kind": "kernel",
       "entryPoint": "src/index.ts",
       "exports": [
         "*",
@@ -251,7 +318,7 @@
       ]
     },
     {
-      "id": "public-surface:experiment",
+      "id": "public-surface:kernel/experiment",
       "version": "0.3.0",
       "kind": "kernel",
       "entryPoint": "src/index.ts",
@@ -261,16 +328,7 @@
       ]
     },
     {
-      "id": "public-surface:files",
-      "version": "0.3.0",
-      "kind": "execution",
-      "entryPoint": "src/index.ts",
-      "exports": [
-        "loadLatestRun"
-      ]
-    },
-    {
-      "id": "public-surface:learning",
+      "id": "public-surface:kernel/learning",
       "version": "0.3.0",
       "kind": "kernel",
       "entryPoint": "src/index.ts",
@@ -283,21 +341,7 @@
       ]
     },
     {
-      "id": "public-surface:machine",
-      "version": "0.3.0",
-      "kind": "kernel",
-      "entryPoint": "src/index.ts",
-      "exports": [
-        "*",
-        "MachineThresholds",
-        "adaptiveConcurrency",
-        "createMachineMonitor",
-        "sampleMachine",
-        "summarizeMachine"
-      ]
-    },
-    {
-      "id": "public-surface:memory",
+      "id": "public-surface:kernel/memory",
       "version": "0.3.0",
       "kind": "kernel",
       "entryPoint": "src/index.ts",
@@ -314,21 +358,7 @@
       ]
     },
     {
-      "id": "public-surface:metrics",
-      "version": "0.3.0",
-      "kind": "kernel",
-      "entryPoint": "src/index.ts",
-      "exports": [
-        "*",
-        "BENCHMARK_SCHEMA_VERSION",
-        "benchmarkRuns",
-        "loadBenchmarkManifest",
-        "recordBenchmarkObservation",
-        "validateBenchmarkManifest"
-      ]
-    },
-    {
-      "id": "public-surface:model-policy",
+      "id": "public-surface:kernel/model-policy",
       "version": "0.3.0",
       "kind": "kernel",
       "entryPoint": "src/index.ts",
@@ -342,7 +372,7 @@
       ]
     },
     {
-      "id": "public-surface:optimization",
+      "id": "public-surface:kernel/optimization",
       "version": "0.3.0",
       "kind": "kernel",
       "entryPoint": "src/index.ts",
@@ -358,7 +388,7 @@
       ]
     },
     {
-      "id": "public-surface:pilot",
+      "id": "public-surface:kernel/pilot",
       "version": "0.3.0",
       "kind": "kernel",
       "entryPoint": "src/index.ts",
@@ -368,7 +398,7 @@
       ]
     },
     {
-      "id": "public-surface:plugins",
+      "id": "public-surface:kernel/plugins",
       "version": "0.3.0",
       "kind": "kernel",
       "entryPoint": "src/index.ts",
@@ -380,7 +410,7 @@
       ]
     },
     {
-      "id": "public-surface:policy",
+      "id": "public-surface:kernel/policy",
       "version": "0.3.0",
       "kind": "kernel",
       "entryPoint": "src/index.ts",
@@ -390,7 +420,7 @@
       ]
     },
     {
-      "id": "public-surface:preflight",
+      "id": "public-surface:kernel/preflight",
       "version": "0.3.0",
       "kind": "kernel",
       "entryPoint": "src/index.ts",
@@ -402,7 +432,7 @@
       ]
     },
     {
-      "id": "public-surface:resilience",
+      "id": "public-surface:kernel/resilience",
       "version": "0.3.0",
       "kind": "kernel",
       "entryPoint": "src/index.ts",
@@ -418,20 +448,7 @@
       ]
     },
     {
-      "id": "public-surface:runtime",
-      "version": "0.3.0",
-      "kind": "execution",
-      "entryPoint": "src/index.ts",
-      "exports": [
-        "*",
-        "createConfiguredToolRuntime",
-        "createDockerToolRuntime",
-        "createProcessToolRuntime",
-        "createToolRuntime"
-      ]
-    },
-    {
-      "id": "public-surface:state-machine",
+      "id": "public-surface:kernel/state-machine",
       "version": "0.3.0",
       "kind": "kernel",
       "entryPoint": "src/index.ts",
@@ -442,7 +459,7 @@
       ]
     },
     {
-      "id": "public-surface:status",
+      "id": "public-surface:kernel/status",
       "version": "0.3.0",
       "kind": "kernel",
       "entryPoint": "src/index.ts",
@@ -454,7 +471,7 @@
       ]
     },
     {
-      "id": "public-surface:types",
+      "id": "public-surface:kernel/types",
       "version": "0.3.0",
       "kind": "kernel",
       "entryPoint": "src/index.ts",
@@ -463,24 +480,7 @@
       ]
     },
     {
-      "id": "public-surface:verification",
-      "version": "0.3.0",
-      "kind": "execution",
-      "entryPoint": "src/index.ts",
-      "exports": [
-        "approveRun",
-        "authorizeRun",
-        "cancelRun",
-        "cleanTaskArtifacts",
-        "planRun",
-        "reconcileRun",
-        "retryRun",
-        "startRun",
-        "verifyRun"
-      ]
-    },
-    {
-      "id": "public-surface:wip",
+      "id": "public-surface:kernel/wip",
       "version": "0.3.0",
       "kind": "kernel",
       "entryPoint": "src/index.ts",
@@ -491,7 +491,7 @@
       ]
     },
     {
-      "id": "public-surface:workflow",
+      "id": "public-surface:kernel/workflow",
       "version": "0.3.0",
       "kind": "kernel",
       "entryPoint": "src/index.ts",
@@ -502,5 +502,5 @@
       ]
     }
   ],
-  "digest": "a25f4f61add0868d14a8cac0a4796b8713963a01494ec67940f9d64ea47274a9"
+  "digest": "205fb1b2e67b3de22f2f949d9232a34a67888c2d048df5a252b6f5fbc37c81b7"
 }

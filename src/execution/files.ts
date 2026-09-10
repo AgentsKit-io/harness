@@ -1,7 +1,7 @@
 import { existsSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs'
 import { dirname, join, relative, resolve, sep } from 'node:path'
-import { fail } from './errors.js'
-import type { LoadedConfig, VerificationRun } from './types.js'
+import { fail } from '../kernel/errors.js'
+import type { LoadedConfig, VerificationRun } from '../kernel/types.js'
 
 export const readJson = (path: string): unknown => JSON.parse(readFileSync(path, 'utf8')) as unknown
 export const writeJson = (path: string, value: unknown): void => {

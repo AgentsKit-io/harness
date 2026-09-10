@@ -1,14 +1,14 @@
 import { createPrivateKey, createPublicKey, sign, verify } from 'node:crypto'
 import { existsSync, readFileSync, writeFileSync } from 'node:fs'
 import { join, relative, resolve, sep } from 'node:path'
-import { fail } from './errors.js'
+import { fail } from '../kernel/errors.js'
 import { fileContents, loadLatestRun, pathInside, readJson } from './files.js'
-import { sha256 } from './hash.js'
+import { sha256 } from '../kernel/hash.js'
 import { reconcileRun } from './verification.js'
-import { FileEventStore } from './events.js'
-import type { EventLogVerification } from './events.js'
+import { FileEventStore } from '../kernel/events.js'
+import type { EventLogVerification } from '../kernel/events.js'
 import { loadConfig } from './config.js'
-import type { VerificationRun } from './types.js'
+import type { VerificationRun } from '../kernel/types.js'
 
 export const EVIDENCE_BUNDLE_SCHEMA_VERSION = 1 as const
 

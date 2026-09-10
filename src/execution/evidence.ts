@@ -1,8 +1,8 @@
 import { existsSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
-import { sha256 } from './hash.js'
+import { sha256 } from '../kernel/hash.js'
 import { pathInside } from './files.js'
-import type { EvidenceArtifact, StructuredEvidence, VerificationCheck } from './types.js'
+import type { EvidenceArtifact, StructuredEvidence, VerificationCheck } from '../kernel/types.js'
 
 export const parseStructuredEvidence = (stdout: string): StructuredEvidence | null => {
   for (const line of stdout.split(/\r?\n/).map((item) => item.trim()).filter(Boolean).reverse()) {

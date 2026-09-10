@@ -3,9 +3,9 @@ import { createHash } from 'node:crypto'
 import { readFileSync } from 'node:fs'
 import { Command } from 'commander'
 import { approveRun, assessAcceptance, assessBlock, assessDiscovery, assessImprovementCycle, assessIntegration, assessPilot, assessPreflight, assessProduction, assessWip, assessWorktreeCleanup, authorizeRun, benchmarkRuns, cancelRun, cleanTaskArtifacts, composePullRequest, createDispatchLedger, createDocBridgeContextProvider, createStatusSnapshot, exportEvidenceBundle, loadBenchmarkManifest, loadConfig, loadLatestRun, parseRetro, planFilePreflight, planRun, readContextSnapshots, readEvidenceTrustStore, reconcileRun, recordBenchmarkObservation, retryRun, selectRuntime, startRun, validateBlockManifest, validateStatusSnapshot, verifyEvidenceBundle, verifyRun } from './index.js'
-import type { BenchmarkObservationEvidence } from './metrics.js'
-import { fail } from './errors.js'
-import { FileEventStore, inspectEventLogLock, recoverEventLogLock } from './events.js'
+import type { BenchmarkObservationEvidence } from './execution/metrics.js'
+import { fail } from './kernel/errors.js'
+import { FileEventStore, inspectEventLogLock, recoverEventLogLock } from './kernel/events.js'
 
 interface CliOptions { readonly config: string; readonly json: boolean }
 const packageJson = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8')) as { readonly version: string }

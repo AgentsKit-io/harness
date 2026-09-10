@@ -1,5 +1,5 @@
-import { fail } from '../errors.js'
-import { hashJson } from '../hash.js'
+import { fail } from '../kernel/errors.js'
+import { hashJson } from '../kernel/hash.js'
 
 export interface TrackingTransition {
   readonly tracker: string

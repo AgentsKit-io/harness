@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs'
-import { createPluginSlot } from './plugins.js'
-import { hashJson } from './hash.js'
-import { fail } from './errors.js'
+import { createPluginSlot } from '../kernel/plugins.js'
+import { hashJson } from '../kernel/hash.js'
+import { fail } from '../kernel/errors.js'
 
 export interface ContextQuery {
   readonly query: string
