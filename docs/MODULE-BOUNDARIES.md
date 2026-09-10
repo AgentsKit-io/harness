@@ -131,6 +131,6 @@ Orca, and tracking. No adapter implementation is re-exported wholesale.
 
 ## Review status
 
-This inventory is evidence for H-040, not an architectural approval. ADR-0026
-records the proposed boundary and the human decisions still required before
-the 0.4.0 implementation can claim the boundary is accepted.
+This inventory is evidence for H-040. ADR-0026 records the accepted boundary;
+the remaining H-040 work is empirical baseline collection and verification
+evidence, not an unresolved architecture choice.

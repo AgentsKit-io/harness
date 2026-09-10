@@ -2,7 +2,7 @@
 
 ## Status
 
-Proposed — human review required for H-040.
+Accepted — approved by the owner on 2026-09-10.
 
 ## Context
 
@@ -61,8 +61,8 @@ The following decisions are intentionally not inferred by this ADR:
 - decide whether future MCP/event-bridge adapters belong in this package or a
   separate integration package once their contracts are specified.
 
-Until these decisions are recorded, H-040 remains an evidence-producing,
-human-reviewable baseline and not an accepted architecture gate.
+The architecture decision is accepted. H-040 still requires empirical baseline
+collection and verification evidence before it can be reported complete.
 
 ## Consequences
 
