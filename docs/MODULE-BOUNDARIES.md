@@ -48,6 +48,7 @@ modules, not a provider dependency.
 | `src/kernel/workflow.ts` | Kernel | Bounded workflow scheduling | `errors` | Node callbacks supplied by caller |
 | `src/kernel/phase-executor.ts` | Kernel | Declarative phase routing, preflight, effect policy, and bounded decisions | `errors`, `workflow` | Phase handlers, gates, and Grill-me callback supplied by caller |
 | `src/kernel/artifacts.ts` | Kernel support | Versioned provenance-bound artifacts, Markdown rendering, and idempotent phase resume projection | stdlib, `errors`, `hash`, `events`, `phase-executor` (type-only) | Local state directory only |
+| `src/kernel/adapter-contract.ts` | Kernel | Shared assurance levels and bounded telemetry contract | `errors` | Provider measurements supplied by adapters |
 | `src/kernel/pilot.ts` | Kernel | Cohort freeze and pilot assessment | `errors`, `hash` | None |
 | `src/kernel/plugins.ts` | Kernel | Generic slots, dependency checks, and lifecycle listeners | `errors`, `events` (type-only) | Plugin implementation supplied by caller |
 | `src/context/index.ts` | Context | Context snapshot contract, hashing, and provider slot | stdlib, `plugins`, `hash`, `errors` | Provider implementation supplied by caller |
@@ -66,6 +67,7 @@ modules, not a provider dependency.
 | `src/cli.ts` | Composition | `ak-harness` / `ak-verify` command surface | `index`, `metrics`, `errors`, `events`, stdlib, `commander` | Shell/CLI invocation |
 | `src/index.ts` | Composition | Supported package entry point | All supported public modules | Consumer import boundary |
 | `src/adapters/doc-bridge.ts` | Adapter | Deterministic Doc Bridge context provider | stdlib, `hash`, `context` | `.doc-bridge/index.json` |
+| `src/adapters/agent.ts` | Adapter | Structured coding-agent execution with bounded timeout and failure classification | `errors`, `resilience`, `adapter-contract` | Agent/provider callback supplied by caller |
 | `src/adapters/orca.ts` | Adapter | Safe, idempotent Orca dispatch plan | `errors`, `hash`, `preflight` | Orca CLI arguments; no execution |
 | `src/adapters/tracking.ts` | Adapter | Idempotent provider-neutral tracking transition | `errors`, `hash` | User-supplied Linear/GitHub/etc. handler |
 
@@ -108,7 +110,7 @@ are grouped below; the source file remains authoritative for exact signatures.
 | Events/plugins/context | `EVENT_LOG_GENESIS`, `FileEventStore`, `HARNESS_EVENT_SCHEMA_VERSION`, `HARNESS_EVENT_TYPES`, `inspectEventLogLock`, `recoverEventLogLock`, `createPluginRegistry`, `createPluginSlot`, `HARNESS_PLUGIN_API_VERSION`, `CONTEXT_PROVIDER_SLOT`, `hashContextSnapshot`, `hashContextSnapshots`, `readContextSnapshots`, `validateContextSnapshot`, `validateContextSnapshots` |
 | Discovery and delivery | `assessDiscovery`, `isDiscoveryCurrent`, `assessWip`, `WIP_STATES`, `selectRuntime`, `assessAcceptance`, `assessIntegration`, `assessPreflight`, `assessProduction`, `assessWorktreeCleanup`, `composePullRequest`, `assessPilot`, `IMPROVEMENT_CYCLE_STEPS`, `assessImprovementCycle` |
 | Eval and optimization | `assessAgentEval`, `runAgentEval`, `createLlmCache`, `createLlmCacheKey`, `validateCacheableOperation`, `compareOptimization`, `validateOptimizationObservation`, `MEMORY_SCOPES`, `createInMemoryMemoryAdapter`, `createKvMemoryAdapter`, `validateMemoryRecord`, `runWorkflow`, `BENCHMARK_SCHEMA_VERSION`, `benchmarkRuns`, `loadBenchmarkManifest`, `recordBenchmarkObservation`, `validateBenchmarkManifest` |
-| Agent/runtime controls | `createSessionRecorder`, `createPolicyGate`, `createConfiguredToolRuntime`, `createDockerToolRuntime`, `createProcessToolRuntime`, `createToolRuntime`, `adaptiveConcurrency`, `createMachineMonitor`, `sampleMachine`, `summarizeMachine`, `createDispatchLedger`, `classifyFailure`, `recoveryDelayMs`, `runWithRecovery`, `planFilePreflight`, `validateSafeCommand`, `BLOCK_STATUSES`, `assessBlock`, `validateBlockManifest`, `LEARNING_STATUSES`, `parseRetro`, `promoteLearnings`, `createStatusSnapshot`, `validateStatusSnapshot`, `MODEL_ROLES`, `createModelPolicy`, `modelFor`, `PHASE_MODES`, `createPhaseProfile`, `planPhaseProfile`, `executePhaseProfile`, `ARTIFACT_SCHEMA_VERSION`, `createArtifactEnvelope`, `FileArtifactStore`, `artifactIsFresh`, `resumeStateFromArtifacts` |
+| Agent/runtime controls | `createSessionRecorder`, `createCodingAgentAdapter`, `createPolicyGate`, `createConfiguredToolRuntime`, `createDockerToolRuntime`, `createProcessToolRuntime`, `createToolRuntime`, `adaptiveConcurrency`, `createMachineMonitor`, `sampleMachine`, `summarizeMachine`, `createDispatchLedger`, `classifyFailure`, `recoveryDelayMs`, `runWithRecovery`, `planFilePreflight`, `validateSafeCommand`, `BLOCK_STATUSES`, `assessBlock`, `validateBlockManifest`, `LEARNING_STATUSES`, `parseRetro`, `promoteLearnings`, `createStatusSnapshot`, `validateStatusSnapshot`, `MODEL_ROLES`, `createModelPolicy`, `modelFor`, `PHASE_MODES`, `createPhaseProfile`, `planPhaseProfile`, `executePhaseProfile`, `ARTIFACT_SCHEMA_VERSION`, `createArtifactEnvelope`, `FileArtifactStore`, `artifactIsFresh`, `resumeStateFromArtifacts`, `ASSURANCE_LEVELS`, `validateAdapterMetadata` |
 | Integrations and evidence | `createDocBridgeContextProvider`, `createOrcaDispatchPlan`, `createTrackingAdapter`, `createTrackingTransition`, `EVIDENCE_BUNDLE_SCHEMA_VERSION`, `exportEvidenceBundle`, `readEvidenceTrustStore`, `verifyEvidenceBundle` |
 
 The entry point also re-exports the public type surfaces from `types`,
@@ -123,7 +125,7 @@ Orca, and tracking. No adapter implementation is re-exported wholesale.
 | Integration | Current location | Side effects | 0.4.0 boundary |
 | --- | --- | --- | --- |
 | Doc Bridge | `src/adapters/doc-bridge.ts` | Reads a local index | Keep behind `ContextProvider`; measure context hit/quality separately. |
-| Orca | `src/adapters/orca.ts` | None; produces argv only | Keep dispatch planning provider-neutral; execution belongs to the orchestrator. |
+| Orca | `src/adapters/orca.ts` | None; produces argv and lifecycle projections only | Keep lease/worktree/issue-lock/SHA planning provider-neutral; execution belongs to the orchestrator. |
 | Linear/GitHub/other tracker | `src/adapters/tracking.ts` callback | Caller-owned network mutation | Require idempotency key and explicit tracking authorization. |
 | Process runtime | `src/execution/runtime.ts` | Starts child processes | Execution support; policy and evidence gates remain kernel decisions. |
 | Docker runtime | `src/execution/runtime.ts` | Starts Docker containers | Optional sandbox selected by config, never a mandatory kernel dependency. |

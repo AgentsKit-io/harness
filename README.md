@@ -100,6 +100,14 @@ provider-neutral integrations can exchange the schema-versioned v2
 revision, idempotency, and provenance metadata. `classifyHarnessError` maps
 stable Harness error codes to `retry`, `block`, or `escalate` dispositions.
 
+Replaceable integrations use the shared `AdapterMetadata` contract: every
+adapter declares an assurance level (`unverified`, `contract-tested`, or
+`runtime-attested`) and measured/unknown telemetry. Coding agents return
+structured output, diff, usage, timeout/cancellation status, and failure
+classification; Doc Bridge reports relevance and context cost; Orca exposes
+lease/lock/worktree/SHA projections; and tracking adapters deduplicate effects
+by idempotency key (with a dry-run mode).
+
 Each harness event may also carry an optional `correlation` envelope. Its
 `operationId` is the stable identity used when a lifecycle crosses into
 AgentsKit, Chat, Doc Bridge, or Code Review; the optional `runId`, `sessionId`,

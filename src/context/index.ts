@@ -2,6 +2,8 @@ import { readFileSync } from 'node:fs'
 import { createPluginSlot } from '../kernel/plugins.js'
 import { hashJson } from '../kernel/hash.js'
 import { fail } from '../kernel/errors.js'
+import type { AdapterTelemetry, AssuranceLevel } from '../kernel/adapter-contract.js'
+import { ASSURANCE_LEVELS } from '../kernel/adapter-contract.js'
 
 export interface ContextQuery {
   readonly query: string
@@ -15,6 +17,7 @@ export interface ContextReference {
   readonly title?: string
   readonly version?: string
   readonly contentHash?: string
+  readonly relevance?: number
 }
 
 export interface ContextSnapshot {
@@ -24,6 +27,8 @@ export interface ContextSnapshot {
   readonly sourceHash: string
   readonly snapshotHash: string
   readonly resolvedAt: string
+  readonly assurance?: AssuranceLevel
+  readonly telemetry?: AdapterTelemetry
 }
 
 export interface ContextProvider {
@@ -56,9 +61,13 @@ export const validateContextSnapshot = (value: unknown, index = 0): ContextSnaps
       ...(typeof rawReference['title'] === 'string' ? { title: rawReference['title'] } : {}),
       ...(typeof rawReference['version'] === 'string' ? { version: rawReference['version'] } : {}),
       ...(typeof rawReference['contentHash'] === 'string' ? { contentHash: rawReference['contentHash'] } : {}),
+      ...(rawReference['relevance'] === undefined ? {} : typeof rawReference['relevance'] === 'number' && rawReference['relevance'] >= 0 && rawReference['relevance'] <= 1 ? { relevance: rawReference['relevance'] } : fail(`context snapshot ${index}.references[${referenceIndex}].relevance must be between 0 and 1.`, 'INVALID_INPUT')),
     }
   })
   const scope = rawQuery['scope'] === undefined ? undefined : Array.isArray(rawQuery['scope']) && rawQuery['scope'].every((item) => typeof item === 'string') ? rawQuery['scope'] : fail(`context snapshot ${index}.query.scope must be an array of strings.`, 'INVALID_INPUT')
+  const assurance = raw['assurance'] === undefined ? undefined : ASSURANCE_LEVELS.includes(raw['assurance'] as AssuranceLevel) ? raw['assurance'] as AssuranceLevel : fail(`context snapshot ${index}.assurance is invalid.`, 'INVALID_INPUT')
+  const telemetry = raw['telemetry'] === undefined ? undefined : record(raw['telemetry'], `context snapshot ${index}.telemetry`)
+  if (telemetry && telemetry['status'] !== 'measured' && telemetry['status'] !== 'unknown') fail(`context snapshot ${index}.telemetry.status is invalid.`, 'INVALID_INPUT')
   const snapshot = {
     providerId: requiredString(raw['providerId'], `context snapshot ${index}.providerId`),
     query: { query: requiredString(rawQuery['query'], `context snapshot ${index}.query.query`), ...(scope ? { scope } : {}), ...(typeof rawQuery['sourceRevision'] === 'string' ? { sourceRevision: rawQuery['sourceRevision'] } : {}) },
@@ -66,6 +75,8 @@ export const validateContextSnapshot = (value: unknown, index = 0): ContextSnaps
     sourceHash: requiredString(raw['sourceHash'], `context snapshot ${index}.sourceHash`),
     snapshotHash: requiredString(raw['snapshotHash'], `context snapshot ${index}.snapshotHash`),
     resolvedAt: requiredString(raw['resolvedAt'], `context snapshot ${index}.resolvedAt`),
+    ...(assurance === undefined ? {} : { assurance }),
+    ...(telemetry === undefined ? {} : { telemetry: telemetry as unknown as AdapterTelemetry }),
   }
   if (snapshot.snapshotHash !== hashContextSnapshot(snapshot)) fail(`context snapshot ${index}.snapshotHash does not match its contents.`, 'INVALID_INPUT')
   return snapshot
