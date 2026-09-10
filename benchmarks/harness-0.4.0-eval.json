@@ -1,0 +1,139 @@
+{
+  "type": "agentskit-harness-benchmark-manifest",
+  "schemaVersion": 1,
+  "suiteId": "agentskit-harness-0.4.0-h040",
+  "name": "AgentsKit Harness 0.4.0 H-040 deterministic SDLC evaluation",
+  "tasks": [
+    {
+      "id": "discovery-ambiguity",
+      "title": "Surface ambiguity before implementation",
+      "acceptanceCriteria": [
+        "An ambiguous issue produces a decision packet with the unresolved question, options, and recommendation.",
+        "A human decision is required before implementation when product behavior is materially ambiguous."
+      ]
+    },
+    {
+      "id": "current-context",
+      "title": "Reject stale code or documentation context",
+      "acceptanceCriteria": [
+        "The run records the source and context revision used for the decision.",
+        "Stale or missing context blocks the run instead of being treated as current."
+      ]
+    },
+    {
+      "id": "pre-pr-evidence",
+      "title": "Prepare complete evidence before PR handoff",
+      "acceptanceCriteria": [
+        "A candidate is not handed off until configured checks, outcomes, and evidence slots pass.",
+        "The PR projection is deterministic for the same structured input and revision."
+      ]
+    },
+    {
+      "id": "resource-control",
+      "title": "Control cost and machine pressure",
+      "acceptanceCriteria": [
+        "Token, cache, memory, parallelism, CPU, and memory-pressure observations are recorded when available.",
+        "Concurrency is bounded or throttled when configured machine thresholds are exceeded."
+      ]
+    },
+    {
+      "id": "no-harness-comparison",
+      "title": "Compare against a controlled no-Harness cohort",
+      "acceptanceCriteria": [
+        "The baseline uses comparable tasks and records duration, attempts, review minutes, and escaped-incomplete count.",
+        "Improvement is reported as unavailable until both cohorts have criterion-level evidence."
+      ]
+    }
+  ],
+  "observations": [
+    {
+      "taskId": "discovery-ambiguity",
+      "mode": "baseline",
+      "status": "not-run",
+      "source": "H-040 controlled cohort pending",
+      "recordedAt": "2026-09-10T15:05:46Z"
+    },
+    {
+      "taskId": "current-context",
+      "mode": "baseline",
+      "status": "not-run",
+      "source": "H-040 controlled cohort pending",
+      "recordedAt": "2026-09-10T15:05:46Z"
+    },
+    {
+      "taskId": "pre-pr-evidence",
+      "mode": "baseline",
+      "status": "not-run",
+      "source": "H-040 controlled cohort pending",
+      "recordedAt": "2026-09-10T15:05:46Z"
+    },
+    {
+      "taskId": "resource-control",
+      "mode": "baseline",
+      "status": "not-run",
+      "source": "H-040 controlled cohort pending",
+      "recordedAt": "2026-09-10T15:05:46Z"
+    },
+    {
+      "taskId": "no-harness-comparison",
+      "mode": "baseline",
+      "status": "not-run",
+      "source": "No-Harness cohort not supplied",
+      "recordedAt": "2026-09-10T15:05:46Z"
+    }
+  ],
+  "evaluation": {
+    "version": "0.4.0-h040",
+    "status": "planned-not-run",
+    "provider": {
+      "id": "codex",
+      "model": "gpt-5.6-luna",
+      "reasoningEffort": "high",
+      "status": "planned-not-run",
+      "selectionBasis": "User-approved pilot default; execution evidence is not captured by H-040."
+    },
+    "repetitions": 3,
+    "goldenCorpus": [
+      {
+        "id": "ambiguous-acceptance",
+        "input": "The issue requests a behavior change but does not define the failure behavior or acceptance evidence.",
+        "expectedSignals": ["decision-packet", "options", "recommendation", "human-decision"]
+      },
+      {
+        "id": "stale-context",
+        "input": "The referenced documentation hash differs from the current repository snapshot.",
+        "expectedSignals": ["stale", "blocked", "refresh-required"]
+      },
+      {
+        "id": "ready-for-build",
+        "input": "The issue has owner, priority, acceptance criteria, current context, and a bounded implementation plan.",
+        "expectedSignals": ["ready", "preflight", "implementation"]
+      },
+      {
+        "id": "complete-evidence",
+        "input": "All configured checks and outcomes pass and every evidence slot is attached to the candidate revision.",
+        "expectedSignals": ["complete", "evidence", "candidate-revision"]
+      }
+    ],
+    "rubric": [
+      { "id": "determinism", "weight": 0.25, "description": "Same structured input yields the same decision and digest." },
+      { "id": "safety-gates", "weight": 0.3, "description": "Ambiguity, staleness, missing evidence, and policy failures block correctly." },
+      { "id": "evidence-integrity", "weight": 0.25, "description": "Results bind to source, context, configuration, and run identifiers." },
+      { "id": "operator-load", "weight": 0.2, "description": "Human input is reserved for material decisions and acceptance." }
+    ],
+    "thresholds": {
+      "status": "proposed-human-review",
+      "minimumAccuracy": 0.9,
+      "maxEscapedIncomplete": 0,
+      "maxRetryRate": 0.25,
+      "maxStaleRate": 0.05,
+      "maxHumanReviewMinutesPerTask": 10
+    },
+    "comparisonModes": ["harness", "no-harness"],
+    "noHarnessBaseline": {
+      "status": "not-run",
+      "source": "benchmarks/harness-0.4.0-baseline.json",
+      "reason": "Controlled cohort and owner-approved comparison window are still required."
+    }
+  }
+}
