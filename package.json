@@ -12,7 +12,7 @@
       "import": "./dist/index.js"
     }
   },
-  "files": ["dist", "README.md", "CHANGELOG.md", "CONTRIBUTING.md", "CODE_OF_CONDUCT.md", "SECURITY.md", "MANIFESTO.md", "LICENSE", "docs", "capabilities"],
+  "files": ["dist", "README.md", "CHANGELOG.md", "CONTRIBUTING.md", "CODE_OF_CONDUCT.md", "SECURITY.md", "MANIFESTO.md", "LICENSE", "docs", "capabilities", "examples", "compatibility"],
   "engines": { "node": ">=22" },
   "scripts": {
     "build": "tsup && node -e \"console.log(JSON.stringify({status:'passed',criteria:['package']}))\"",
@@ -52,6 +52,7 @@
     "test:quality": "pnpm typecheck && vitest run --config vitest.config.ts test/quality.test.ts && node -e \"console.log(JSON.stringify({status:'passed',criteria:['quality-matrix']}))\"",
     "test:eval-battery": "pnpm typecheck && vitest run --config vitest.config.ts test/eval-battery.test.ts test/issues-010-014.eval.test.ts test/optimization.test.ts && pnpm build >/dev/null && node scripts/verify-harness-eval-manifest.mjs && node -e \"console.log(JSON.stringify({status:'passed',criteria:['eval-battery','eval-manifest','eval-coverage']}))\"",
     "test:compatibility": "pnpm typecheck && vitest run --config vitest.config.ts test/compatibility.test.ts && pnpm build >/dev/null && node scripts/verify-harness-compatibility-manifest.mjs && node -e \"console.log(JSON.stringify({status:'passed',criteria:['compatibility-contract','compatibility-manifest','pinned-revisions','real-adapter-boundary']}))\"",
+    "test:examples": "pnpm typecheck && pnpm build >/dev/null && node scripts/verify-harness-examples.mjs && node scripts/verify-adoption-docs.mjs",
     "test:benchmark-record": "pnpm typecheck && node scripts/verify-harness-benchmark-record.mjs",
     "test:agent-protocol": "pnpm typecheck && vitest run --config vitest.config.ts test/agent.test.ts && node -e \"console.log(JSON.stringify({status:'passed',criteria:['agent-protocol']}))\"",
     "test:policy-gate": "pnpm typecheck && vitest run --config vitest.config.ts test/policy.test.ts test/agent.test.ts && node -e \"console.log(JSON.stringify({status:'passed',criteria:['policy-gate','agent-protocol']}))\"",

@@ -14,6 +14,10 @@ Portable, evidence-backed development protocol for coding agents. The harness fr
 pnpm add -D @agentskit/harness
 ```
 
+New consumers can run [`examples/minimum-profile.mjs`](examples/minimum-profile.mjs)
+after `pnpm build`; the walkthrough is in [`docs/GETTING-STARTED.md`](docs/GETTING-STARTED.md).
+Common gate and runtime failures are documented in [`docs/TROUBLESHOOTING.md`](docs/TROUBLESHOOTING.md).
+
 The package requires Node.js 22 or newer and exposes both `ak-harness` and the common-protocol alias `ak-verify`.
 
 ## Workflow
