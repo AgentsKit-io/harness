@@ -1,8 +1,8 @@
 import { closeSync, existsSync, mkdirSync, openSync, readFileSync, unlinkSync, writeFileSync, appendFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { randomUUID } from 'node:crypto'
-import { fail } from './errors.js'
-import { hashJson } from './hash.js'
+import { fail } from '../kernel/errors.js'
+import { hashJson } from '../kernel/hash.js'
 
 export interface CoordinationIdentity {
   readonly tracker: string

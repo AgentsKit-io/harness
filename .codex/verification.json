@@ -3,15 +3,16 @@
   "project": "agentskit-harness",
   "root": "..",
   "stateDir": ".codex/verification",
+  "autonomy": "yolo",
   "contract": {
-    "intent": "Implement generic deterministic SDLC coordination, resilience, preflight, observability, and integration boundaries in @agentskit/harness 0.2.0.",
+    "intent": "Implement the 0.4.0 capability-boundary reorganization in @agentskit/harness while preserving its public API and enforcing directional dependencies.",
     "scope": {
-      "inScope": ["package source", "public CLI", "tests", "release workflow", "repository governance docs", "coordination ledger", "quota recovery", "machine guard policy", "file-scoped preflight", "block/status/retro records", "provider-neutral Orca and tracking adapters"],
+      "inScope": ["package source", "public CLI", "tests", "release workflow", "repository governance docs", "coordination ledger", "quota recovery", "machine guard policy", "file-scoped preflight", "block/status/retro records", "provider-neutral Orca and tracking adapters", "capability-boundary module organization", "public API compatibility"],
       "outOfScope": ["GitHub repository creation", "npm publication", "external Linear/GitHub/Orca mutations", "dashboard hosting", "product decisions", "provider credentials"]
     },
     "ambiguities": [],
     "outcomes": [
-      { "id": "package", "statement": "The package typechecks, tests, builds, and packs as @agentskit/harness 0.2.0.", "checks": ["package-tests", "package-build", "package-pack"] },
+      { "id": "package", "statement": "The package typechecks, tests, builds, and packs as @agentskit/harness 0.3.0.", "checks": ["package-tests", "package-build", "package-pack"] },
       { "id": "cli", "statement": "The real CLI is runnable and exposes both ak-harness and ak-verify.", "checks": ["cli"] },
       { "id": "governance", "statement": "Repository governance and release documentation are complete and internally consistent.", "checks": ["repository-docs", "workflow"] }
       ,{ "id": "coordination", "statement": "Issue/worktree claims and dispatch records are atomic, idempotent, and human-recoverable.", "checks": ["coordination"] }
@@ -19,6 +20,7 @@
       ,{ "id": "preflight", "statement": "Changed-file preflight selects narrow checks and rejects shell-composed dispatch commands.", "checks": ["preflight"] }
       ,{ "id": "records", "statement": "Portable block, status, retro/learning, model-policy, and machine-policy records validate deterministically.", "checks": ["records"] }
       ,{ "id": "adapters", "statement": "Orca and tracking adapters produce provider-neutral, deterministic projections without external side effects.", "checks": ["adapters"] }
+      ,{ "id": "module-boundaries", "statement": "Capability modules are organized under explicit boundaries and forbidden kernel/provider imports fail deterministically.", "checks": ["boundaries"] }
     ]
   },
   "surfaces": {
@@ -33,7 +35,7 @@
   "checks": [
     { "id": "package-tests", "category": "logic", "command": "pnpm test && node -e 'console.log(JSON.stringify({status:\"passed\",criteria:[\"package\"]}))'", "evidence": "structured", "timeoutMs": 180000 },
     { "id": "package-build", "category": "build", "command": "pnpm build && node -e 'console.log(JSON.stringify({status:\"passed\",criteria:[\"package\"]}))'", "evidence": "structured", "timeoutMs": 120000 },
-    { "id": "package-pack", "category": "cli", "execution": "real", "command": "pnpm pack --pack-destination /tmp/agentskit-harness-pack && node -e 'console.log(JSON.stringify({status:\"passed\",criteria:[\"package\"]}))'", "evidence": "structured", "timeoutMs": 120000 },
+    { "id": "package-pack", "category": "cli", "execution": "real", "command": "node scripts/verify-harness-consumer.mjs", "evidence": "structured", "timeoutMs": 120000 },
     { "id": "cli", "category": "cli", "execution": "real", "command": "node dist/cli.js --version && node dist/cli.js --help >/dev/null && node -e 'console.log(JSON.stringify({status:\"passed\",criteria:[\"cli\"]}))'", "evidence": "structured", "timeoutMs": 30000 },
     { "id": "repository-docs", "category": "docs", "command": "node scripts/verify-repository-docs.mjs", "evidence": "structured", "timeoutMs": 30000 },
     { "id": "workflow", "category": "docs", "command": "node scripts/verify-release-workflow.mjs", "evidence": "structured", "timeoutMs": 30000 }
@@ -42,6 +44,7 @@
     ,{ "id": "preflight", "category": "logic", "command": "pnpm vitest run --config vitest.config.ts test/preflight.test.ts && node -e 'console.log(JSON.stringify({status:\"passed\",criteria:[\"preflight\"]}))'", "evidence": "structured", "timeoutMs": 60000 }
     ,{ "id": "records", "category": "logic", "command": "pnpm vitest run --config vitest.config.ts test/block-learning-status.test.ts test/machine.test.ts && node -e 'console.log(JSON.stringify({status:\"passed\",criteria:[\"records\"]}))'", "evidence": "structured", "timeoutMs": 60000 }
     ,{ "id": "adapters", "category": "logic", "command": "pnpm vitest run --config vitest.config.ts test/block-learning-status.test.ts && node -e 'console.log(JSON.stringify({status:\"passed\",criteria:[\"adapters\"]}))'", "evidence": "structured", "timeoutMs": 60000 }
+    ,{ "id": "boundaries", "category": "logic", "command": "pnpm test:boundaries && node -e 'console.log(JSON.stringify({status:\"passed\",criteria:[\"module-boundaries\"]}))'", "evidence": "structured", "timeoutMs": 60000 }
   ],
   "tracking": { "required": false, "reason": "Repository bootstrap is local; GitHub and npm publication are separate authorized actions." },
   "budget": { "maxDurationMs": 600000 },

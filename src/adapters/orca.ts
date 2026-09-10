@@ -1,6 +1,6 @@
-import { fail } from '../errors.js'
-import { hashJson } from '../hash.js'
-import { validateSafeCommand } from '../preflight.js'
+import { fail } from '../kernel/errors.js'
+import { hashJson } from '../kernel/hash.js'
+import { validateSafeCommand } from '../kernel/preflight.js'
 
 export interface OrcaDispatchInput {
   readonly repository: string

@@ -1,8 +1,8 @@
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
-import { hashJson } from '../hash.js'
-import { hashContextSnapshot } from '../context.js'
-import type { ContextProvider, ContextQuery, ContextReference } from '../context.js'
+import { hashJson } from '../kernel/hash.js'
+import { hashContextSnapshot } from '../context/index.js'
+import type { ContextProvider, ContextQuery, ContextReference } from '../context/index.js'
 
 interface IndexEntry { readonly id?: unknown; readonly type?: unknown; readonly title?: unknown; readonly path?: unknown; readonly description?: unknown; readonly body?: unknown; readonly tags?: unknown }
 interface IndexDocument { readonly contentHash?: unknown; readonly knowledge?: unknown }

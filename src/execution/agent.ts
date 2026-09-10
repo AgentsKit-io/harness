@@ -1,10 +1,10 @@
 import { randomUUID } from 'node:crypto'
-import { FileEventStore } from './events.js'
-import { fail } from './errors.js'
-import type { HarnessEvent, HarnessEventInput, HarnessEventPayloads } from './events.js'
-import type { PolicyGate } from './policy.js'
+import { FileEventStore } from '../kernel/events.js'
+import { fail } from '../kernel/errors.js'
+import type { HarnessEvent, HarnessEventInput, HarnessEventPayloads } from '../kernel/events.js'
+import type { PolicyGate } from '../kernel/policy.js'
 import type { ToolExecutionResult, ToolRuntime } from './runtime.js'
-import type { VerificationRun } from './types.js'
+import type { VerificationRun } from '../kernel/types.js'
 
 export interface AgentAdapter {
   readonly id: string

@@ -3,16 +3,16 @@ import { mkdirSync, writeFileSync } from 'node:fs'
 import { join, relative } from 'node:path'
 import { createRun, saveRun, setLatest } from './runs.js'
 import { loadConfig } from './config.js'
-import { fail } from './errors.js'
+import { fail } from '../kernel/errors.js'
 import { parseStructuredEvidence, validateEvidence } from './evidence.js'
-import { assertHuman, approvedDecision, transition } from './state-machine.js'
+import { assertHuman, approvedDecision, transition } from '../kernel/state-machine.js'
 import { sourceSnapshot } from './source.js'
 import { cleanConfiguredArtifacts, loadLatestRun, readRun } from './files.js'
-import { validateContextSnapshots } from './context.js'
-import { hashJson } from './hash.js'
-import type { ContextSnapshot } from './context.js'
-import type { CheckResult, LoadedConfig, VerificationCheck, VerificationRun } from './types.js'
-import { FileEventStore } from './events.js'
+import { validateContextSnapshots } from '../context/index.js'
+import { hashJson } from '../kernel/hash.js'
+import type { ContextSnapshot } from '../context/index.js'
+import type { CheckResult, LoadedConfig, VerificationCheck, VerificationRun } from '../kernel/types.js'
+import { FileEventStore } from '../kernel/events.js'
 import { adaptiveConcurrency, createMachineMonitor } from './machine.js'
 
 const now = (): string => new Date().toISOString()
@@ -177,7 +177,7 @@ const assertDecisionProjection = (run: VerificationRun, decision: { readonly dec
   if (decision.decision !== 'approved' || decision.resultingState !== expectedState || decision.verificationDigest !== run.verificationDigest || decision.sourceRevision !== run.sourceRevision || decision.contractHash !== run.contractHash) fail('Terminal decision attestation does not match the run projection.', 'HARNESS_ERROR')
 }
 
-export const reconcileRun = async ({ configPath, runId }: { readonly configPath: string; readonly runId?: string }): Promise<import('./types.js').RunReconciliation> => {
+export const reconcileRun = async ({ configPath, runId }: { readonly configPath: string; readonly runId?: string }): Promise<import('../kernel/types.js').RunReconciliation> => {
   const loaded = loadConfig(configPath)
   const run = requireRun(runId ? readRun(loaded.stateDir, runId) : loadLatestRun(loaded.stateDir))
   await assertFresh(loaded, run)

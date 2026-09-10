@@ -1,7 +1,7 @@
 import { cpus as cpuInfo, freemem, loadavg, totalmem } from 'node:os'
 import { existsSync, readFileSync } from 'node:fs'
-import type { MachineMetrics, MachineSample } from './types.js'
-import { fail } from './errors.js'
+import type { MachineMetrics, MachineSample } from '../kernel/types.js'
+import { fail } from '../kernel/errors.js'
 
 export interface MachineThresholds {
   readonly warningPercent: number

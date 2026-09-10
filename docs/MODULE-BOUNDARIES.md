@@ -22,45 +22,45 @@ modules, not a provider dependency.
 
 | Module | Class | Responsibility | Relative dependencies | External boundary |
 | --- | --- | --- | --- | --- |
-| `src/constants.ts` | Kernel | State, decision, and surface constants | `types` (type-only) | None |
-| `src/errors.ts` | Kernel | Typed fail-closed errors | None | None |
-| `src/hash.ts` | Kernel | SHA-256 and JSON digests | stdlib | None |
-| `src/types.ts` | Kernel | Shared contract, run, evidence, and metric types | `context` (type-only) | None |
-| `src/state-machine.ts` | Kernel | Legal lifecycle transitions and human decisions | `constants`, `types` | None |
-| `src/discovery.ts` | Kernel | Discovery freshness, ambiguity, and decision packets | `errors`, `hash` | None |
-| `src/wip.ts` | Kernel | WIP admission and capacity decisions | `errors` | None |
-| `src/experiment.ts` | Kernel | Comparable runtime/provider selection | `errors` | None |
-| `src/delivery.ts` | Kernel | G2–G5 delivery gates and deterministic PR projection | `errors`, `hash` | None |
-| `src/cycle.ts` | Kernel | Bounded improvement-cycle assessment | stdlib, `errors` | None |
-| `src/eval.ts` | Kernel | Deterministic eval runner and threshold assessment | `errors` | Agent callback supplied by caller |
-| `src/cache.ts` | Kernel | Safe cache keys and in-memory LLM cache contract | `hash`, `errors` | Cache backend supplied by caller |
-| `src/optimization.ts` | Kernel | Token, memory, cache, parallelism comparisons | `hash`, `errors` | None |
-| `src/memory.ts` | Kernel | Memory record validation and memory adapter contract | `errors` | KV store supplied by caller |
-| `src/policy.ts` | Kernel | Tool/action policy gate | `errors` | None |
-| `src/preflight.ts` | Kernel | File-scoped checks and safe-command validation | stdlib, `errors` | Shell command is data, never executed here |
-| `src/block.ts` | Kernel | Portable execution block manifest and dependency admission | `errors`, `hash` | None |
-| `src/learning.ts` | Kernel | Retrospective parsing and human learning promotion | stdlib, `errors` | None |
-| `src/status.ts` | Kernel | Deterministic status snapshot and digest | `errors`, `hash`, `block`, `types` (type-only) | None |
-| `src/model-policy.ts` | Kernel | Role-to-model binding and validation | `errors`, `hash` | Provider is data, not an SDK |
-| `src/machine.ts` | Kernel support | Machine sampling and adaptive concurrency | stdlib, `types`, `errors` | Host CPU/memory metrics |
-| `src/coordination.ts` | Kernel support | Atomic issue/worktree claims and dispatch ledger | stdlib, `errors`, `hash` | Local state directory only |
-| `src/resilience.ts` | Kernel | Failure classification and bounded retry/recovery policy | `errors` | Operation callback supplied by caller |
-| `src/workflow.ts` | Kernel | Bounded workflow scheduling | `errors` | Node callbacks supplied by caller |
-| `src/pilot.ts` | Kernel | Cohort freeze and pilot assessment | `errors`, `hash` | None |
-| `src/plugins.ts` | Kernel | Generic slots, dependency checks, and lifecycle listeners | `errors`, `events` (type-only) | Plugin implementation supplied by caller |
-| `src/context.ts` | Kernel support | Context snapshot contract, hashing, and provider slot | stdlib, `plugins`, `hash`, `errors` | Provider implementation supplied by caller |
-| `src/metrics.ts` | Kernel support | Benchmark manifest validation, run projection, and comparison | stdlib, `errors`, `files`, `types` | Reads local state only |
-| `src/config.ts` | Execution support | Contract loading, profile resolution, and config hashing | stdlib, `constants`, `profiles`, `errors`, `hash`, `files`, `types` | Local `.codex/verification.json` |
-| `src/profiles.ts` | Kernel support | Profile defaults and overrides | `errors` | None |
-| `src/files.ts` | Execution support | Run/config JSON and task-artifact filesystem helpers | stdlib, `errors`, `types` | Local filesystem |
-| `src/source.ts` | Execution support | Git/source snapshot and dirty-tree detection | stdlib, `hash`, `errors`, `types` | Git CLI |
-| `src/runs.ts` | Execution support | Run persistence and lifecycle event creation | `hash`, `files`, `events`, `context`, `types` | Local state directory |
-| `src/verification.ts` | Execution support | Plan/start/verify/reconcile/approval orchestration | stdlib, `runs`, `config`, `errors`, `evidence`, `state-machine`, `source`, `files`, `context`, `hash`, `types`, `events`, `machine` | Configured check commands and local processes |
-| `src/events.ts` | Execution support | Append-only event log, hash chain, and lock recovery | stdlib, `errors`, `hash`, `context` (type-only), `types` (type-only), `runtime` (type-only) | Local filesystem |
-| `src/evidence.ts` | Execution support | Structured evidence parsing and artifact validation | stdlib, `hash`, `files`, `types` | Check output and local artifacts |
-| `src/bundle.ts` | Execution support | Signed evidence bundle export and verification | stdlib, `errors`, `files`, `hash`, `verification`, `events`, `config`, `types` | Local keys and files |
-| `src/agent.ts` | Execution support | Agent session recorder, resume, and tool lifecycle | stdlib, `events`, `errors`, `policy`, `runtime`, `types` | Agent/runtime callbacks |
-| `src/runtime.ts` | Execution support | Process, Docker, and generic tool runtimes | stdlib, `hash`, `errors`, `types` | Child process and Docker CLI |
+| `src/kernel/constants.ts` | Kernel | State, decision, and surface constants | `types` (type-only) | None |
+| `src/kernel/errors.ts` | Kernel | Typed fail-closed errors | None | None |
+| `src/kernel/hash.ts` | Kernel | SHA-256 and JSON digests | stdlib | None |
+| `src/kernel/types.ts` | Kernel | Shared contract, run, evidence, and metric types | `context` (type-only) | None |
+| `src/kernel/state-machine.ts` | Kernel | Legal lifecycle transitions and human decisions | `constants`, `types` | None |
+| `src/kernel/discovery.ts` | Kernel | Discovery freshness, ambiguity, and decision packets | `errors`, `hash` | None |
+| `src/kernel/wip.ts` | Kernel | WIP admission and capacity decisions | `errors` | None |
+| `src/kernel/experiment.ts` | Kernel | Comparable runtime/provider selection | `errors` | None |
+| `src/delivery/index.ts` | Delivery | G2–G5 delivery gates and deterministic PR projection | `errors`, `hash` | None |
+| `src/kernel/cycle.ts` | Kernel | Bounded improvement-cycle assessment | stdlib, `errors` | None |
+| `src/kernel/eval.ts` | Kernel | Deterministic eval runner and threshold assessment | `errors` | Agent callback supplied by caller |
+| `src/kernel/cache.ts` | Kernel | Safe cache keys and in-memory LLM cache contract | `hash`, `errors` | Cache backend supplied by caller |
+| `src/kernel/optimization.ts` | Kernel | Token, memory, cache, parallelism comparisons | `hash`, `errors` | None |
+| `src/kernel/memory.ts` | Kernel | Memory record validation and memory adapter contract | `errors` | KV store supplied by caller |
+| `src/kernel/policy.ts` | Kernel | Tool/action policy gate | `errors` | None |
+| `src/kernel/preflight.ts` | Kernel | File-scoped checks and safe-command validation | stdlib, `errors` | Shell command is data, never executed here |
+| `src/kernel/block.ts` | Kernel | Portable execution block manifest and dependency admission | `errors`, `hash` | None |
+| `src/kernel/learning.ts` | Kernel | Retrospective parsing and human learning promotion | stdlib, `errors` | None |
+| `src/kernel/status.ts` | Kernel | Deterministic status snapshot and digest | `errors`, `hash`, `block`, `types` (type-only) | None |
+| `src/kernel/model-policy.ts` | Kernel | Role-to-model binding and validation | `errors`, `hash` | Provider is data, not an SDK |
+| `src/execution/machine.ts` | Execution support | Machine sampling and adaptive concurrency | stdlib, `types`, `errors` | Host CPU/memory metrics |
+| `src/execution/coordination.ts` | Execution support | Atomic issue/worktree claims and dispatch ledger | stdlib, `errors`, `hash` | Local state directory only |
+| `src/kernel/resilience.ts` | Kernel | Failure classification and bounded retry/recovery policy | `errors` | Operation callback supplied by caller |
+| `src/kernel/workflow.ts` | Kernel | Bounded workflow scheduling | `errors` | Node callbacks supplied by caller |
+| `src/kernel/pilot.ts` | Kernel | Cohort freeze and pilot assessment | `errors`, `hash` | None |
+| `src/kernel/plugins.ts` | Kernel | Generic slots, dependency checks, and lifecycle listeners | `errors`, `events` (type-only) | Plugin implementation supplied by caller |
+| `src/context/index.ts` | Context | Context snapshot contract, hashing, and provider slot | stdlib, `plugins`, `hash`, `errors` | Provider implementation supplied by caller |
+| `src/execution/metrics.ts` | Execution support | Benchmark manifest validation, run projection, and comparison | stdlib, `errors`, `files`, `types` | Reads local state only |
+| `src/execution/config.ts` | Execution support | Contract loading, profile resolution, and config hashing | stdlib, `constants`, `profiles`, `errors`, `hash`, `files`, `types` | Local `.codex/verification.json` |
+| `src/profiles/index.ts` | Profiles | Profile defaults and overrides | `errors` | None |
+| `src/execution/files.ts` | Execution support | Run/config JSON and task-artifact filesystem helpers | stdlib, `errors`, `types` | Local filesystem |
+| `src/execution/source.ts` | Execution support | Git/source snapshot and dirty-tree detection | stdlib, `hash`, `errors`, `types` | Git CLI |
+| `src/execution/runs.ts` | Execution support | Run persistence and lifecycle event creation | `hash`, `files`, `events`, `context`, `types` | Local state directory |
+| `src/execution/verification.ts` | Execution support | Plan/start/verify/reconcile/approval orchestration | stdlib, `runs`, `config`, `errors`, `evidence`, `state-machine`, `source`, `files`, `context`, `hash`, `types`, `events`, `machine` | Configured check commands and local processes |
+| `src/kernel/events.ts` | Kernel support | Event contracts, append-only log, hash chain, and lock recovery | stdlib, `errors`, `hash`, `context` (type-only), `types` (type-only), `runtime` (type-only) | Local filesystem |
+| `src/execution/evidence.ts` | Execution support | Structured evidence parsing and artifact validation | stdlib, `hash`, `files`, `types` | Check output and local artifacts |
+| `src/execution/bundle.ts` | Execution support | Signed evidence bundle export and verification | stdlib, `errors`, `files`, `hash`, `verification`, `events`, `config`, `types` | Local keys and files |
+| `src/execution/agent.ts` | Execution support | Agent session recorder, resume, and tool lifecycle | stdlib, `events`, `errors`, `policy`, `runtime`, `types` | Agent/runtime callbacks |
+| `src/execution/runtime.ts` | Execution support | Process, Docker, and generic tool runtimes | stdlib, `hash`, `errors`, `types` | Child process and Docker CLI |
 | `src/cli.ts` | Composition | `ak-harness` / `ak-verify` command surface | `index`, `metrics`, `errors`, `events`, stdlib, `commander` | Shell/CLI invocation |
 | `src/index.ts` | Composition | Supported package entry point | All supported public modules | Consumer import boundary |
 | `src/adapters/doc-bridge.ts` | Adapter | Deterministic Doc Bridge context provider | stdlib, `hash`, `context` | `.doc-bridge/index.json` |
@@ -123,8 +123,8 @@ Orca, and tracking. No adapter implementation is re-exported wholesale.
 | Doc Bridge | `src/adapters/doc-bridge.ts` | Reads a local index | Keep behind `ContextProvider`; measure context hit/quality separately. |
 | Orca | `src/adapters/orca.ts` | None; produces argv only | Keep dispatch planning provider-neutral; execution belongs to the orchestrator. |
 | Linear/GitHub/other tracker | `src/adapters/tracking.ts` callback | Caller-owned network mutation | Require idempotency key and explicit tracking authorization. |
-| Process runtime | `src/runtime.ts` | Starts child processes | Execution support; policy and evidence gates remain kernel decisions. |
-| Docker runtime | `src/runtime.ts` | Starts Docker containers | Optional sandbox selected by config, never a mandatory kernel dependency. |
+| Process runtime | `src/execution/runtime.ts` | Starts child processes | Execution support; policy and evidence gates remain kernel decisions. |
+| Docker runtime | `src/execution/runtime.ts` | Starts Docker containers | Optional sandbox selected by config, never a mandatory kernel dependency. |
 | LLM provider/model | Caller/plugin | Provider call and token spend | Bind provider/model in experiment metadata; do not embed SDKs in kernel. |
 | Memory backend | Caller/plugin; `memory.ts` contract | Backend reads/writes | Keep record validation in kernel; backend adapter owns persistence. |
 | MCP/event bridge | Not implemented | Future network/event effects | Add as adapters only after a separate ADR and eval coverage. |

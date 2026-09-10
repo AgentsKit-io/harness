@@ -2,9 +2,9 @@ import { appendFileSync, closeSync, existsSync, mkdirSync, openSync, readFileSyn
 import { join } from 'node:path'
 import { fail } from './errors.js'
 import { hashJson, sha256 } from './hash.js'
-import type { ContextQuery } from './context.js'
+import type { ContextQuery } from '../context/index.js'
 import type { RunState } from './types.js'
-import type { DockerRuntimeEvidence } from './runtime.js'
+import type { DockerRuntimeEvidence } from '../execution/runtime.js'
 
 export const HARNESS_EVENT_SCHEMA_VERSION = 1 as const
 export const HARNESS_EVENT_ENVELOPE_SCHEMA_VERSION = 2 as const

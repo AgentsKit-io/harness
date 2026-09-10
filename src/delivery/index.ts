@@ -1,5 +1,5 @@
-import { fail } from './errors.js'
-import { hashJson } from './hash.js'
+import { fail } from '../kernel/errors.js'
+import { hashJson } from '../kernel/hash.js'
 
 export type CriterionStatus = 'passed' | 'failed' | 'pending' | 'not-applicable'
 export interface GateCriterion { readonly id: string; readonly gate: 'G2' | 'G3' | 'G4' | 'G5'; readonly status: CriterionStatus; readonly reason?: string }

@@ -1,11 +1,11 @@
 import { dirname, resolve } from 'node:path'
-import { REAL_CATEGORIES } from './constants.js'
-import { resolveProfile } from './profiles.js'
-import { fail } from './errors.js'
-import { hashJson } from './hash.js'
+import { REAL_CATEGORIES } from '../kernel/constants.js'
+import { resolveProfile } from '../profiles/index.js'
+import { fail } from '../kernel/errors.js'
+import { hashJson } from '../kernel/hash.js'
 import { readJson } from './files.js'
-import type { CheckCategory, ContractOutcome, LoadedConfig, RuntimeConfig, SurfaceName, SurfaceRequirement, TaskContract, TrackingConfig, VerificationCheck, VerificationConfig } from './types.js'
-import { CHECK_CATEGORIES, SURFACE_NAMES } from './types.js'
+import type { CheckCategory, ContractOutcome, LoadedConfig, RuntimeConfig, SurfaceName, SurfaceRequirement, TaskContract, TrackingConfig, VerificationCheck, VerificationConfig } from '../kernel/types.js'
+import { CHECK_CATEGORIES, SURFACE_NAMES } from '../kernel/types.js'
 
 interface RawRecord { readonly [key: string]: unknown }
 interface RawScope extends RawRecord { readonly inScope?: unknown; readonly outOfScope?: unknown }
@@ -79,7 +79,7 @@ export const validateConfig = (rawValue: unknown): VerificationConfig => {
   if (runtimeRaw['kind'] !== 'process' && runtimeRaw['kind'] !== 'docker') fail('runtime.kind must be process or docker.', 'INVALID_CONFIG')
   const runtime: RuntimeConfig = { kind: runtimeRaw['kind'] as RuntimeConfig['kind'] }
   if (raw['autonomy'] !== undefined && raw['autonomy'] !== 'controlled' && raw['autonomy'] !== 'yolo') fail('autonomy must be controlled or yolo.', 'INVALID_CONFIG')
-  const autonomy = (raw['autonomy'] ?? 'controlled') as import('./types.js').AutonomyMode
+  const autonomy = (raw['autonomy'] ?? 'controlled') as import('../kernel/types.js').AutonomyMode
   const contractRaw = asRecord(raw['contract'], 'contract') as RawContract
   const rawChecks = raw['checks']
   const checks = Array.isArray(rawChecks) ? rawChecks.map(parseCheck) : fail('checks must be a non-empty array.', 'INVALID_CONFIG')

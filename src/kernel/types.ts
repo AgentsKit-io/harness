@@ -1,4 +1,4 @@
-import type { ContextSnapshot } from './context.js'
+import type { ContextSnapshot } from '../context/index.js'
 
 export const SURFACE_NAMES = ['logic', 'endpoint', 'database', 'cli', 'mcp', 'ui', 'docs'] as const
 export type SurfaceName = typeof SURFACE_NAMES[number]

@@ -8,7 +8,7 @@ const source = readFileSync(entryPoint, 'utf8')
 const sourceDigest = createHash('sha256').update(source).digest('hex')
 const groups = new Map()
 
-const kindFor = (modulePath) => modulePath.includes('/adapters/') ? 'adapter' : modulePath === './cli.js' ? 'execution' : modulePath === './index.js' ? 'composition' : ['events', 'files', 'runs', 'source', 'verification', 'evidence', 'bundle', 'agent', 'runtime', 'config'].some((name) => modulePath === `./${name}.js`) ? 'execution' : 'kernel'
+const kindFor = (modulePath) => modulePath.includes('/adapters/') ? 'adapter' : modulePath.startsWith('./execution/') || modulePath === './cli.js' ? 'execution' : modulePath === './index.js' ? 'composition' : 'kernel'
 const add = (modulePath, names) => {
   const current = groups.get(modulePath) ?? { modulePath, names: new Set() }
   names.forEach((name) => current.names.add(name))

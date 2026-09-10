@@ -9,8 +9,12 @@ the repository stays navigable without speculative layers.
 ├── src/
 │   ├── index.ts          # supported package API
 │   ├── cli.ts            # ak-harness / ak-verify commands
-│   ├── adapters/         # optional integrations
-│   └── <capability>.ts   # contract, evidence, delivery, runtime, metrics...
+│   ├── kernel/           # deterministic contracts and decisions
+│   ├── execution/        # filesystem, runtime, evidence, and run plumbing
+│   ├── context/          # context contracts and provider slot
+│   ├── delivery/         # delivery gates and PR projection
+│   ├── profiles/         # configuration profiles
+│   └── adapters/         # optional integrations
 ├── test/                 # deterministic tests and fixtures
 ├── scripts/              # real CLI, packaging, and repository checks
 ├── capabilities/         # generated public-surface capability manifest
@@ -23,8 +27,10 @@ the repository stays navigable without speculative layers.
 
 - Import internal modules with explicit relative paths; only `src/index.ts`
   is supported for consumers.
-- Add a directory when a capability has multiple cohesive modules. Do not add
-  a layer for one file.
+- Keep deterministic decisions in `kernel/`; execution mechanics and external
+  effects live behind the other capability boundaries.
+- A single-file capability may use an `index.ts` boundary when it has a
+  distinct public contract; do not add speculative layers.
 - Adapters may depend on the kernel; the kernel must not depend on adapters or
   external providers.
 - Tests may use internal modules when exercising a boundary, but consumer
