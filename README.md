@@ -85,6 +85,15 @@ the current state, so a post-approval edit cannot appear as `COMPLETE`.
 Concurrent event writers are serialized by an atomic per-run lock and fail
 closed if the log is busy.
 
+Structured plans, findings, decisions, repairs, blockers, approvals, and phase
+results can be persisted as provenance-bound `ArtifactEnvelope` records. Each
+artifact has a version, run/issue/source/contract/config/context hashes, a
+content digest, and both JSON and Markdown representations. `FileArtifactStore`
+is idempotent: retrying the same write does not duplicate the event-log record.
+Use `resumeStateFromArtifacts` to rebuild completed phase outputs after an
+interruption, and inspect records with `ak-harness artifacts inspect <path>` or
+`ak-harness artifacts list [run-id]`.
+
 The legacy event-log record remains schema version 1 for compatibility. New
 provider-neutral integrations can exchange the schema-versioned v2
 `HarnessEventEnvelope`, which requires event identity, correlation, source

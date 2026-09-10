@@ -2,7 +2,7 @@
 import { createHash } from 'node:crypto'
 import { readFileSync } from 'node:fs'
 import { Command } from 'commander'
-import { approveRun, assessAcceptance, assessBlock, assessDiscovery, assessImprovementCycle, assessIntegration, assessPilot, assessPreflight, assessProduction, assessWip, assessWorktreeCleanup, authorizeRun, benchmarkRuns, cancelRun, cleanTaskArtifacts, composePullRequest, createDispatchLedger, createDocBridgeContextProvider, createStatusSnapshot, exportEvidenceBundle, loadBenchmarkManifest, loadConfig, loadLatestRun, parseRetro, planFilePreflight, planRun, readContextSnapshots, readEvidenceTrustStore, reconcileRun, recordBenchmarkObservation, retryRun, selectRuntime, startRun, validateBlockManifest, validateStatusSnapshot, verifyEvidenceBundle, verifyRun } from './index.js'
+import { approveRun, ARTIFACT_SCHEMA_VERSION, assessAcceptance, assessBlock, assessDiscovery, assessImprovementCycle, assessIntegration, assessPilot, assessPreflight, assessProduction, assessWip, assessWorktreeCleanup, authorizeRun, benchmarkRuns, cancelRun, cleanTaskArtifacts, composePullRequest, createDispatchLedger, createDocBridgeContextProvider, createStatusSnapshot, exportEvidenceBundle, FileArtifactStore, loadBenchmarkManifest, loadConfig, loadLatestRun, parseRetro, planFilePreflight, planRun, readArtifactFile, readContextSnapshots, readEvidenceTrustStore, reconcileRun, recordBenchmarkObservation, renderArtifactMarkdown, retryRun, selectRuntime, startRun, validateBlockManifest, validateStatusSnapshot, verifyEvidenceBundle, verifyRun } from './index.js'
 import type { BenchmarkObservationEvidence } from './execution/metrics.js'
 import { fail } from './kernel/errors.js'
 import { FileEventStore, inspectEventLogLock, recoverEventLogLock } from './kernel/events.js'
@@ -67,6 +67,10 @@ const learning = program.command('learning').description('Parse retrospectives i
 learning.command('parse <input>').requiredOption('--source <source>').action((input: string, command: { readonly source: string }) => print(parseRetro(readFileSync(input, 'utf8'), command.source)))
 const coordination = program.command('coordination').description('Manage idempotent issue/worktree claims and dispatch records.')
 coordination.command('claim <input>').action((input: string) => { const loaded = loadConfig(options().config); print(createDispatchLedger(loaded.stateDir).claim(readJsonInput(input, 'coordination identity') as Parameters<ReturnType<typeof createDispatchLedger>['claim']>[0])) })
+const artifacts = program.command('artifacts').description('Inspect versioned, provenance-bound run artifacts.')
+artifacts.command('inspect <path>').description('Validate and print one artifact as JSON or Markdown.').action((path: string) => { const artifact = readArtifactFile(path); print(options().json ? artifact : renderArtifactMarkdown(artifact)) })
+artifacts.command('list [run-id]').description('List artifacts for the latest or selected run.').action((runId?: string) => { const loaded = loadConfig(options().config); const run = runId ? { runId } : loadLatestRun(loaded.stateDir); print(new FileArtifactStore(loaded.stateDir).list(run?.runId ?? fail('No verification run exists.', 'NO_RUN'))) })
+artifacts.command('schema').description('Print the artifact schema version.').action(() => print({ schemaVersion: ARTIFACT_SCHEMA_VERSION, types: ['plan', 'finding', 'decision', 'repair', 'blocker', 'approval', 'phase'] }))
 program.command('start').description('Move a planned run into implementation.').action(() => print(startRun(loadConfig(options().config))))
 program.command('verify').description('Execute every configured check and record evidence.').action(async () => print(await verifyRun({ configPath: options().config })))
 program.command('run').description('Alias for verify, compatible with the common protocol.').action(async () => print(await verifyRun({ configPath: options().config })))

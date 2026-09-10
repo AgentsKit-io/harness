@@ -4,7 +4,7 @@
   "package": "@agentskit/harness",
   "packageVersion": "0.3.0",
   "entryPoint": "src/index.ts",
-  "sourceDigest": "8d77e3ba379cc93c9202cbd60dc316a5fdc5df1734f19bcfac1a53c61815d7ff",
+  "sourceDigest": "867a806ebeaa58818a8861a767f165153305c37a967a4c5ffcc5c6a161857ccf",
   "capabilities": [
     {
       "id": "public-surface:adapters/doc-bridge",
@@ -180,6 +180,31 @@
         "retryRun",
         "startRun",
         "verifyRun"
+      ]
+    },
+    {
+      "id": "public-surface:kernel/artifacts",
+      "version": "0.3.0",
+      "kind": "kernel",
+      "entryPoint": "src/index.ts",
+      "exports": [
+        "ARTIFACT_SCHEMA_VERSION",
+        "ARTIFACT_TYPES",
+        "ArtifactBinding",
+        "ArtifactEnvelope",
+        "ArtifactEnvelopeInput",
+        "ArtifactType",
+        "FileArtifactStore",
+        "artifactDigest",
+        "artifactFilePath",
+        "artifactIsFresh",
+        "artifactMarkdownPath",
+        "createArtifactEnvelope",
+        "createPhaseArtifact",
+        "readArtifactFile",
+        "renderArtifactMarkdown",
+        "resumeStateFromArtifacts",
+        "validateArtifactEnvelope"
       ]
     },
     {
@@ -540,5 +565,5 @@
       ]
     }
   ],
-  "digest": "a7177848ca128857b1d65b1a40ee1efba92fb1ae1c859b1da34a56695ed906fa"
+  "digest": "cda7523e73bb769dee699d22c41ad0de2c7839021edb6254a74eb1c4b4688eb9"
 }

@@ -9,7 +9,7 @@ import type { DockerRuntimeEvidence } from '../execution/runtime.js'
 export const HARNESS_EVENT_SCHEMA_VERSION = 1 as const
 export const HARNESS_EVENT_ENVELOPE_SCHEMA_VERSION = 2 as const
 export const EVENT_LOG_GENESIS = 'GENESIS' as const
-export const HARNESS_EVENT_TYPES = ['run.created', 'state.transitioned', 'context.attached', 'verification.completed', 'approval.recorded', 'authorization.recorded', 'session.started', 'session.resumed', 'agent.turn.started', 'policy.evaluated', 'tool.approval.requested', 'tool.approval.recorded', 'tool.requested', 'tool.execution.started', 'tool.recovery.recorded', 'tool.blocked', 'tool.completed', 'tool.failed', 'session.ended'] as const
+export const HARNESS_EVENT_TYPES = ['run.created', 'state.transitioned', 'context.attached', 'verification.completed', 'artifact.recorded', 'approval.recorded', 'authorization.recorded', 'session.started', 'session.resumed', 'agent.turn.started', 'policy.evaluated', 'tool.approval.requested', 'tool.approval.recorded', 'tool.requested', 'tool.execution.started', 'tool.recovery.recorded', 'tool.blocked', 'tool.completed', 'tool.failed', 'session.ended'] as const
 export type HarnessEventType = typeof HARNESS_EVENT_TYPES[number]
 
 export interface HarnessEventProvenance {
@@ -110,6 +110,7 @@ export interface HarnessEventPayloads {
   readonly 'state.transitioned': { readonly from: RunState | null; readonly to: RunState; readonly actor: string; readonly reason?: string; readonly transitionIndex: number }
   readonly 'context.attached': { readonly providerId: string; readonly sourceHash: string; readonly snapshotHash: string; readonly query: ContextQuery }
   readonly 'verification.completed': { readonly verificationDigest: string; readonly checkCount: number; readonly outcomeCount: number; readonly totalDurationMs: number; readonly budgetExceeded: boolean }
+  readonly 'artifact.recorded': { readonly artifactId: string; readonly artifactType: string; readonly artifactVersion: number; readonly artifactHash: string; readonly phase: string; readonly representation: 'json+markdown' }
   readonly 'approval.recorded': { readonly decision: 'approved' | 'rejected'; readonly resultingState: RunState; readonly verificationDigest: string; readonly actor: 'human'; readonly sourceRevision: string; readonly contractHash: string }
   readonly 'authorization.recorded': { readonly decision: 'approved' | 'rejected'; readonly resultingState: RunState; readonly verificationDigest: string; readonly actor: 'human'; readonly target: string; readonly sourceRevision: string; readonly contractHash: string }
   readonly 'session.started': { readonly adapterId: string; readonly adapterVersion: string; readonly capabilities: readonly string[] }
