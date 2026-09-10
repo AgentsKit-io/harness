@@ -4,8 +4,22 @@
   "package": "@agentskit/harness",
   "packageVersion": "0.3.0",
   "entryPoint": "src/index.ts",
-  "sourceDigest": "867a806ebeaa58818a8861a767f165153305c37a967a4c5ffcc5c6a161857ccf",
+  "sourceDigest": "1e861d6f21142f920b4bd32b66084f2896bf1dfd6f6271c62bc313228f42ecc6",
   "capabilities": [
+    {
+      "id": "public-surface:adapters/agent",
+      "version": "0.3.0",
+      "kind": "adapter",
+      "entryPoint": "src/index.ts",
+      "exports": [
+        "AgentUsage",
+        "CodingAgentAdapter",
+        "CodingAgentHandlerResult",
+        "CodingAgentRequest",
+        "CodingAgentResult",
+        "createCodingAgentAdapter"
+      ]
+    },
     {
       "id": "public-surface:adapters/doc-bridge",
       "version": "0.3.0",
@@ -23,7 +37,11 @@
       "exports": [
         "OrcaDispatchInput",
         "OrcaDispatchPlan",
-        "createOrcaDispatchPlan"
+        "OrcaLeaseState",
+        "OrcaLifecycleInput",
+        "OrcaLifecycleProjection",
+        "createOrcaDispatchPlan",
+        "createOrcaLifecycleProjection"
       ]
     },
     {
@@ -180,6 +198,20 @@
         "retryRun",
         "startRun",
         "verifyRun"
+      ]
+    },
+    {
+      "id": "public-surface:kernel/adapter-contract",
+      "version": "0.3.0",
+      "kind": "kernel",
+      "entryPoint": "src/index.ts",
+      "exports": [
+        "ASSURANCE_LEVELS",
+        "AdapterMetadata",
+        "AdapterTelemetry",
+        "AssuranceLevel",
+        "unknownTelemetry",
+        "validateAdapterMetadata"
       ]
     },
     {
@@ -565,5 +597,5 @@
       ]
     }
   ],
-  "digest": "cda7523e73bb769dee699d22c41ad0de2c7839021edb6254a74eb1c4b4688eb9"
+  "digest": "317f994f5a800338f190433d5f3c8d79b532a0fd0915ad93723e0c7543e0bb95"
 }

@@ -1,5 +1,6 @@
 import { hashJson } from './hash.js'
 import { fail } from './errors.js'
+import type { AdapterTelemetry, AssuranceLevel } from './adapter-contract.js'
 
 export interface LlmCacheKeyInput {
   readonly sourceRevision: string
@@ -31,6 +32,8 @@ export const createLlmCacheKey = (input: LlmCacheKeyInput): string => {
 }
 
 export interface LlmCache<T> {
+  readonly assurance?: AssuranceLevel
+  readonly telemetry?: () => AdapterTelemetry
   getOrCompute(key: string, compute: () => Promise<T>): Promise<T>
   invalidate(key?: string): void
   stats(): LlmCacheStats
@@ -42,6 +45,8 @@ export const createLlmCache = <T>(): LlmCache<T> => {
   let misses = 0
   let invalidations = 0
   return {
+    assurance: 'contract-tested',
+    telemetry: () => ({ status: 'measured', cacheHits: hits, cacheMisses: misses }),
     async getOrCompute(key, compute) {
       const cached = values.get(key)
       if (cached !== undefined) { hits += 1; return cached }

@@ -3,6 +3,7 @@ import { promisify } from 'node:util'
 import { hashJson } from '../kernel/hash.js'
 import { fail } from '../kernel/errors.js'
 import type { RuntimeConfig } from '../kernel/types.js'
+import type { AdapterTelemetry, AssuranceLevel } from '../kernel/adapter-contract.js'
 
 export interface ToolExecutionRequest {
   readonly actionId: string
@@ -19,6 +20,9 @@ export interface ToolDefinition {
 }
 
 export interface ToolRuntime {
+  readonly assurance?: AssuranceLevel
+  readonly isolation?: 'none' | 'sandboxed'
+  readonly telemetry?: () => AdapterTelemetry
   execute(request: Omit<ToolExecutionRequest, 'signal'>): Promise<ToolExecutionResult>
 }
 
@@ -111,6 +115,9 @@ export const createToolRuntime = ({ tools, timeoutMs = 30_000 }: { readonly tool
   })
   if (new Set(normalized.map((tool) => tool.toolId)).size !== normalized.length) fail('Runtime tools must have unique ids.', 'INVALID_INPUT')
   return {
+    assurance: 'contract-tested',
+    isolation: 'none',
+    telemetry: () => ({ status: 'unknown' }),
     execute: async (request) => {
       const started = Date.now()
       const actionId = required(request.actionId, 'request.actionId')
@@ -151,6 +158,9 @@ export const createProcessToolRuntime = ({ tools, timeoutMs = 30_000, maxOutputB
   })
   if (new Set(normalized.map((tool) => tool.toolId)).size !== normalized.length) fail('Process runtime tools must have unique ids.', 'INVALID_INPUT')
   return {
+    assurance: 'contract-tested',
+    isolation: 'none',
+    telemetry: () => ({ status: 'unknown' }),
     execute: async (request) => {
       const started = Date.now()
       const actionId = required(request.actionId, 'request.actionId')
@@ -254,6 +264,9 @@ export const createDockerToolRuntime = ({
   if (new Set(normalized.map((tool) => tool.toolId)).size !== normalized.length) fail('Docker runtime tools must have unique ids.', 'INVALID_INPUT')
   const processRuntime = createProcessToolRuntime({ tools: normalized, timeoutMs, maxOutputBytes })
   return {
+    assurance: 'runtime-attested',
+    isolation: 'sandboxed',
+    telemetry: () => ({ status: 'unknown' }),
     execute: async (request) => {
       const tool = normalized.find((candidate) => candidate.toolId === request.toolId)
       if (!tool) return processRuntime.execute(request)
