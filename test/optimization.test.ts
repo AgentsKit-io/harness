@@ -42,6 +42,16 @@ it('serializes independent mutations for the same issue', async () => {
   expect(peak).toBe(2)
 })
 
+it('accepts a bounded concurrency decision at each scheduling batch', async () => {
+  let calls = 0
+  const result = await runWorkflow([
+    { id: 'a', run: async () => 'a' },
+    { id: 'b', run: async () => 'b' },
+  ], { maxConcurrency: 2, currentConcurrency: () => { calls += 1; return 1 } })
+  expect(result.peakConcurrency).toBe(1)
+  expect(calls).toBeGreaterThan(0)
+})
+
 it('rejects cycles and compares only identically bound optimization observations', async () => {
   const base = { sourceRevision: 's', contractHash: 'c', configHash: 'g', provider: 'p', model: 'm', durationMs: 100, accuracy: 0.9, tokens: { inputTokens: 2, outputTokens: 3, totalTokens: 5 }, memory: { reads: 2, writes: 1, relevantHits: 1, staleHits: 0 }, cache: { hits: 1, misses: 1, invalidations: 0 }, parallelism: { tasks: 2, peakConcurrency: 2, criticalPathMs: 80 } }
   expect(validateOptimizationObservation(base)).toEqual(base)

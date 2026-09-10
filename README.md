@@ -291,6 +291,35 @@ The Harness only assesses the supplied ledger. A future Linear adapter owns
 reading and writing the tracker; it must persist the ledger/recovery identity
 and use the existing event-log lock before acting.
 
+## Portable orchestration controls
+
+The package includes the small controls needed by an external orchestrator without
+embedding a tracker or provider:
+
+```ts
+import { createDispatchLedger, createOrcaDispatchPlan, planFilePreflight, runWithRecovery } from '@agentskit/harness'
+
+const ledger = createDispatchLedger('.codex/verification')
+const claim = ledger.claim({ tracker: 'linear', repository: 'org/repo', issue: 'ENG-1', worktree: 'eng-1', branch: 'codex/eng-1', owner: 'agent' })
+const dispatch = createOrcaDispatchPlan({ repository: 'org/repo', worktree: 'eng-1', branch: 'codex/eng-1', baseBranch: 'main', goalFile: 'GOAL.md' })
+ledger.recordDispatch({ lease: claim.lease, idempotencyKey: dispatch.idempotencyKey, commandDigest: dispatch.commandDigest })
+```
+
+Claims are keyed by tracker, repository, issue, worktree, and branch. They are
+atomic, idempotent, and recoverable only by a human. The ledger never executes
+the command; an Orca adapter may execute the returned argv after recording the
+decision.
+
+`planFilePreflight` skips documentation-only changes, selects colocated tests,
+and `validateSafeCommand` rejects shell composition. `runWithRecovery` retries
+only classified retryable failures with a bounded exponential delay and an
+abortable watchdog. `parseRetro` produces proposed learnings; only a human can
+promote them. `createStatusSnapshot` creates a digest-bound status projection.
+
+Linear/GitHub and Orca integrations should implement the provider-neutral
+tracking and dispatch adapters; no credentials or network clients belong in
+the kernel.
+
 Agent sessions can record adapter identity, turns, and guarded tool actions
 during `IMPLEMENTING` without persisting prompt, argument, or result contents:
 

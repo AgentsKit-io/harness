@@ -35,7 +35,7 @@ const levels = <T>(nodes: readonly WorkflowNode<T>[]): readonly WorkflowNode<T>[
   return result
 }
 
-export const runWorkflow = async <T>(nodes: readonly WorkflowNode<T>[], options: { readonly maxConcurrency: number }): Promise<WorkflowResult<T>> => {
+export const runWorkflow = async <T>(nodes: readonly WorkflowNode<T>[], options: { readonly maxConcurrency: number; readonly currentConcurrency?: () => number }): Promise<WorkflowResult<T>> => {
   if (!Number.isInteger(options.maxConcurrency) || options.maxConcurrency < 1) fail('maxConcurrency must be a positive integer.', 'INVALID_INPUT')
   const started = Date.now()
   const results: Record<string, T> = {}
@@ -46,9 +46,11 @@ export const runWorkflow = async <T>(nodes: readonly WorkflowNode<T>[], options:
     while (remaining.length) {
       const batch: WorkflowNode<T>[] = []
       const keys = new Set<string>()
+      const limit = options.currentConcurrency ? options.currentConcurrency() : options.maxConcurrency
+      if (!Number.isInteger(limit) || limit < 1) fail('currentConcurrency must return a positive integer.', 'INVALID_INPUT')
       for (const node of remaining) {
         const key = node.mutationKey?.trim()
-        if (batch.length >= options.maxConcurrency || (key && keys.has(key))) continue
+        if (batch.length >= limit || (key && keys.has(key))) continue
         batch.push(node)
         if (key) keys.add(key)
       }

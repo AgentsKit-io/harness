@@ -2,7 +2,7 @@
 import { createHash } from 'node:crypto'
 import { readFileSync } from 'node:fs'
 import { Command } from 'commander'
-import { approveRun, assessAcceptance, assessDiscovery, assessImprovementCycle, assessIntegration, assessPilot, assessPreflight, assessProduction, assessWip, assessWorktreeCleanup, authorizeRun, benchmarkRuns, cancelRun, cleanTaskArtifacts, composePullRequest, createDocBridgeContextProvider, exportEvidenceBundle, loadBenchmarkManifest, loadConfig, loadLatestRun, planRun, readContextSnapshots, readEvidenceTrustStore, reconcileRun, recordBenchmarkObservation, retryRun, selectRuntime, startRun, verifyEvidenceBundle, verifyRun } from './index.js'
+import { approveRun, assessAcceptance, assessBlock, assessDiscovery, assessImprovementCycle, assessIntegration, assessPilot, assessPreflight, assessProduction, assessWip, assessWorktreeCleanup, authorizeRun, benchmarkRuns, cancelRun, cleanTaskArtifacts, composePullRequest, createDispatchLedger, createDocBridgeContextProvider, createStatusSnapshot, exportEvidenceBundle, loadBenchmarkManifest, loadConfig, loadLatestRun, parseRetro, planFilePreflight, planRun, readContextSnapshots, readEvidenceTrustStore, reconcileRun, recordBenchmarkObservation, retryRun, selectRuntime, startRun, validateBlockManifest, validateStatusSnapshot, verifyEvidenceBundle, verifyRun } from './index.js'
 import type { BenchmarkObservationEvidence } from './metrics.js'
 import { fail } from './errors.js'
 import { FileEventStore, inspectEventLogLock, recoverEventLogLock } from './events.js'
@@ -55,6 +55,18 @@ delivery.command('cleanup <input>').action((input: string) => print(assessWorktr
 program.command('pilot <input>').description('Freeze and assess a ten-issue pilot cohort.').action((input: string) => print(assessPilot(readJsonInput(input, 'pilot input') as Parameters<typeof assessPilot>[0])))
 const cycle = program.command('cycle').description('Run the five-step improvement cycle with explicit adjustment and bounded repetition.')
 cycle.command('assess <input>').description('Assess run → verify → adjust → repeat from a cycle JSON file.').action((input: string) => print(assessImprovementCycle(readJsonInput(input, 'cycle input') as Parameters<typeof assessImprovementCycle>[0])))
+const block = program.command('block').description('Validate and assess a portable execution block manifest.')
+block.command('validate <input>').action((input: string) => print(validateBlockManifest(readJsonInput(input, 'block manifest') as unknown)))
+block.command('assess <input>').option('--completed <ids...>', 'completed dependency IDs').action((input: string, command: { readonly completed?: readonly string[] }) => print(assessBlock(readJsonInput(input, 'block manifest') as Parameters<typeof assessBlock>[0], command.completed ?? [])))
+const preflight = program.command('preflight').description('Plan safe, file-scoped validation before commit.')
+preflight.command('files <input>').action((input: string) => print(planFilePreflight(readJsonInput(input, 'changed files') as Parameters<typeof planFilePreflight>[0])))
+const status = program.command('snapshot <input>').description('Create or validate a deterministic status snapshot.')
+status.action((input: string) => print(createStatusSnapshot(readJsonInput(input, 'status input') as Parameters<typeof createStatusSnapshot>[0])))
+status.command('validate <input>').action((input: string) => print(validateStatusSnapshot(readJsonInput(input, 'status snapshot') as unknown)))
+const learning = program.command('learning').description('Parse retrospectives into proposed learnings.')
+learning.command('parse <input>').requiredOption('--source <source>').action((input: string, command: { readonly source: string }) => print(parseRetro(readFileSync(input, 'utf8'), command.source)))
+const coordination = program.command('coordination').description('Manage idempotent issue/worktree claims and dispatch records.')
+coordination.command('claim <input>').action((input: string) => { const loaded = loadConfig(options().config); print(createDispatchLedger(loaded.stateDir).claim(readJsonInput(input, 'coordination identity') as Parameters<ReturnType<typeof createDispatchLedger>['claim']>[0])) })
 program.command('start').description('Move a planned run into implementation.').action(() => print(startRun(loadConfig(options().config))))
 program.command('verify').description('Execute every configured check and record evidence.').action(async () => print(await verifyRun({ configPath: options().config })))
 program.command('run').description('Alias for verify, compatible with the common protocol.').action(async () => print(await verifyRun({ configPath: options().config })))
