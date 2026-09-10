@@ -25,4 +25,6 @@ jobs:
       - run: pnpm test
       - run: pnpm build
       - run: pnpm pack --pack-destination /tmp/agentskit-harness-pack
+      - run: node dist/cli.js plan approved --by human --config .codex/verification.json --json
+      - run: node dist/cli.js start --config .codex/verification.json --json
       - run: node dist/cli.js run --config .codex/verification.json --json
