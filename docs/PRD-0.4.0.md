@@ -105,6 +105,44 @@ flowchart TD
 `yolo` changes operational pause thresholds only. It never removes product
 decisions, security gates, evidence requirements, or mandatory HITL points.
 
+## Lifecycle and failure semantics
+
+The kernel owns the execution state; GitHub and Linear show projections of that
+state. A feature is not complete when a PR is opened.
+
+```text
+CLARIFYING → PLANNED → IMPLEMENTING → VERIFYING
+     ↑             │          │            │
+     └─ decision ──┘          │            ├─ failed → IMPLEMENTING
+                              │            └─ passed → READY_FOR_QA
+                              └─ failure ───────────────┘
+
+READY_FOR_QA → PRODUCTION_VALIDATING → COMPLETE
+      │                 │
+      └─ QA failure ────┴→ VERIFYING (new source revision invalidates evidence)
+```
+
+`AWAITING_HUMAN_APPROVAL`, `AWAITING_AUTHORIZATION`, and `BLOCKED` are explicit
+states that can interrupt any gated transition. Every transition records the
+actor, reason, source revision, contract hash, evidence IDs, and run ID.
+
+The tracker projection must update Linear to `QA` only after feature validation
+passes. Production validation is a separate gate. A failed QA or production
+check returns the run to verification and invalidates downstream evidence.
+
+## Traceability contract
+
+Every requirement and decision receives a stable ID. The release report must
+map each ID through the complete chain:
+
+```text
+requirement → issue → phase → artifact → check/eval → evidence → gate → release
+```
+
+An item without a current evidence reference is `unverified`. An item changed
+after evidence was produced is `stale`. Aggregate dashboards may summarize this
+chain, but cannot replace criterion-level evidence.
+
 ## Current Harness state
 
 | Capability | Evidence | Assessment |
@@ -117,6 +155,21 @@ decisions, security gates, evidence requirements, or mandatory HITL points.
 | Doc Bridge, Orca, tracking adapters | `src/adapters/` | Correct direction; keep providers outside the kernel |
 | Metrics, eval, memory, cache | `src/metrics.ts`, `src/eval.ts`, `src/memory.ts`, `src/cache.ts` | Initial instrumentation; bind it to phases |
 | Profiles and context | `src/profiles.ts`, `src/context.ts` | Base for modes and composition |
+
+The current registry in `src/plugins.ts` is the starting point for capability
+composition. The current adapters are projections/planners rather than a full
+integration suite; H-045 and H-047A must prove real adapter behavior wherever a
+component is changed.
+
+Runtime guarantees are mode-specific. Process mode provides shell-free
+execution, timeouts, output limits, and configured environment handling; it does
+not provide filesystem or network isolation. Docker mode adds the configured
+sandbox controls and attestation. An adapter must declare its assurance level
+instead of implying that every runtime has the same isolation.
+
+Cache measurements must distinguish result cache, context cache, and provider
+prefix cache. A hit is not a token saving unless provider usage or a measured
+equivalent is available.
 
 ## Agents Playbook practices to adopt
 
@@ -182,13 +235,16 @@ Harness must remain fully usable without MCP.
 Initial read-only surface:
 
 - discover profiles and capabilities;
-- start, inspect, pause, resume, and cancel runs;
+- inspect runs and their lifecycle state;
 - read artifacts, evidence, decisions, and blockers;
 - inspect gate status and quality metrics;
 - request bounded Doc Bridge or memory context.
 
-Do not expose without a policy gate: arbitrary shell execution, PR publication,
-remote issue transitions, worktree cleanup, secrets, or out-of-scope context.
+Start, pause, resume, and cancel are mutating operations even when they do not
+touch an external service. They require a separate gated MCP surface with
+authorization, idempotency, and audit evidence. Arbitrary shell execution, PR
+publication, remote issue transitions, worktree cleanup, secrets, and
+out-of-scope context are never exposed by the default profile.
 
 Implement the capability manifest first, then a local/stdio read-only MCP
 adapter. Add mutating operations only after authorization, idempotency, and
@@ -202,9 +258,14 @@ audit evidence are proven.
 - classify modules as kernel, execution, context, delivery, profile, or adapter;
 - record forbidden dependencies and justified exceptions;
 - capture typecheck, test, build, pack, and metric baselines;
+- create the versioned eval manifest, golden corpus, rubrics, and no-Harness
+  baseline before feature implementation;
+- record provider/model, prompt/tool versions, repetitions, seed/temperature
+  where applicable, and thresholds for every eval;
 - write the kernel/adapters ADR and plugin contract.
 
-Output: module map, dependency rules, and extension contract.
+Output: module map, dependency rules, extension contract, and reproducible eval
+baseline.
 
 ### Phase 1 — Kernel/adapters organization
 
@@ -296,6 +357,8 @@ without a real boundary.
   runtime, GitHub, and Linear;
 - `safe`, `yolo`, and `dry-run` profiles;
 - quality gates, eval battery, documentation, and extension examples;
+- real integration evals for every touched AgentsKit component, with pinned
+  versions and release evidence;
 - Event Bridge contract and capability manifest for future MCP integration.
 
 ### Out of scope
@@ -316,9 +379,12 @@ Each issue is a vertical unit with a contract, evidence, and rollback plan.
 - [ ] inventory modules, imports, and public exports;
 - [ ] classify every module and record dependency exceptions;
 - [ ] record reproducible baselines;
+- [ ] create the versioned eval manifest and no-Harness baseline;
+- [ ] define rubrics, thresholds, repetition counts, and comparison policy;
 - [ ] create the kernel/adapters ADR.
 
-DoD: reviewed map, reproducible baseline, no new runtime behavior.
+DoD: reviewed map, reproducible test/metric/eval baseline, and no new runtime
+behavior.
 
 ### H-041 — Capability, event, and error contracts
 
@@ -405,6 +471,10 @@ DoD: reproducible report covers quality, cost, speed, precision, and resources.
 Normal tests validate implementation. Evals validate behavior and quality;
 both are mandatory.
 
+The eval manifest is created in H-040 and extended by every issue. A feature
+cannot enter implementation without a manifest entry describing its expected
+behavior, affected components, grader, threshold, and evidence output.
+
 Required layers:
 
 1. contract eval: schemas, exports, errors, events, idempotency, compatibility;
@@ -441,6 +511,25 @@ Minimum thresholds:
 - a failure in a touched component blocks dependent work;
 - prompt, model, memory, cache, or adapter changes require comparative eval.
 
+### H-047B — AgentsKit ecosystem compatibility eval
+
+This issue closes the gap between adapter interfaces and real ecosystem
+behavior. It is required whenever a change touches an AgentsKit package,
+repository, prompt, or provider integration.
+
+- [ ] pin the exact versions/revisions of every touched AgentsKit component;
+- [ ] run the component's own tests and documented evals;
+- [ ] run the Harness integration eval using the real adapter boundary;
+- [ ] compare behavior with the previous version and no-Harness baseline;
+- [ ] record compatibility, migration, and rollback evidence;
+- [ ] publish or update the affected package only after its eval gate passes;
+- [ ] record the published artifact/version in the Harness release manifest.
+
+The initial component matrix includes core, memory, adapters, runtime,
+Doc Bridge, code review, and eval. Untouched components receive a compatibility
+smoke test; touched components require the full relevant battery. A passing
+Harness test with a failing upstream component eval is a release blocker.
+
 ### H-048 — Documentation and adoption
 
 - [ ] update README with kernel/adapters architecture;
@@ -458,6 +547,10 @@ reading internals.
 - [ ] run `ak-verify` against the current contract;
 - [ ] validate build, pack, exports, docs, and generated output;
 - [ ] run the complete eval battery and fixed-provider pilot benchmark;
+- [ ] run every required AgentsKit component eval for the actual touched
+      versions/revisions;
+- [ ] verify that CI release gates consume the same eval manifest and evidence
+      bundle as the release candidate;
 - [ ] perform adversarial review of the full diff;
 - [ ] close or classify every blocker.
 
@@ -483,17 +576,39 @@ a clean revision.
 An aggregate score cannot compensate for a failed P0 gate. The release cannot
 ship with any required criterion `blocked`, `unverified`, or `stale`.
 
+### Scoring and reproducibility
+
+Each dimension is a versioned set of weighted criteria. For criterion `i`,
+`statusScore(i)` is `1` for pass, `0.5` for explicitly partial, and `0` for
+fail, unknown, unverified, or stale. `not-applicable` is removed from the
+denominator only with a recorded reason.
+
+```text
+dimensionScore = round(100 × Σ(weight[i] × statusScore(i)) / Σ(weight[i]))
+overallScore   = round(Σ(dimensionWeight[d] × dimensionScore[d]) /
+                      Σ(dimensionWeight[d]))
+delta          = candidateScore − baselineScore
+```
+
+The manifest fixes the criteria, weights, corpus version, provider/model,
+prompt/tool hashes, profile, configuration hash, repetition count, and
+seed/temperature where supported. Deterministic checks run once; nondeterministic
+provider or judge checks use the manifest repetition count and report
+min/median/max. A critical criterion is a veto: it must be `1`, regardless of
+the aggregate score. A score without these inputs is not comparable.
+
 ## Dependency order
 
 ```text
 H-040 → H-041 → H-042 → H-043 → H-044
-                              ↘ H-045 → H-046 → H-047 → H-047A → H-048 → H-049
+                              ↘ H-045 → H-046 → H-047 → H-047A → H-047B → H-048 → H-049
 ```
 
 H-045 may start after H-041 when it uses stable contracts. H-046 requires
 H-043 and H-044. H-047/H-047A start early for baseline collection but close
-only after every touched adapter is evaluated. H-049 is hardening and release,
-not a place for new features.
+only after every touched adapter and AgentsKit component is evaluated. H-047B
+may run in parallel for independent components, but must close before H-048 and
+H-049. H-049 is hardening and release, not a place for new features.
 
 ## 0.4.0 publication checklist
 
