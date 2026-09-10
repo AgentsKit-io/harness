@@ -1,4 +1,5 @@
 import { cpus as cpuInfo, freemem, loadavg, totalmem } from 'node:os'
+import { existsSync, readFileSync } from 'node:fs'
 import type { MachineMetrics, MachineSample } from './types.js'
 import { fail } from './errors.js'
 
@@ -13,6 +14,16 @@ const thresholds = (value: Partial<MachineThresholds> = {}): MachineThresholds =
   return result
 }
 
+const linuxSwap = (): number | undefined => {
+  if (process.platform !== 'linux' || !existsSync('/proc/meminfo')) return undefined
+  const values = Object.fromEntries(readFileSync('/proc/meminfo', 'utf8').split(/\r?\n/).flatMap((line) => {
+    const match = line.match(/^(SwapTotal|SwapFree):\s+(\d+)\s+kB$/)
+    return match ? [[match[1], Number(match[2])]] : []
+  })) as Record<string, number>
+  if (!values['SwapTotal']) return undefined
+  return Number(((1 - (values['SwapFree'] ?? 0) / values['SwapTotal']) * 100).toFixed(2))
+}
+
 const percentile95 = (values: readonly number[]): number => {
   if (!values.length) return 0
   const sorted = [...values].sort((left, right) => left - right)
@@ -23,6 +34,7 @@ export const sampleMachine = (): MachineSample => {
   const cpus = Math.max(1, cpuInfo().length)
   const load1 = Math.max(0, loadavg()[0] ?? 0)
   const memory = Math.max(0, Math.min(100, (1 - freemem() / Math.max(1, totalmem())) * 100))
+  const swapUsedPercent = linuxSwap()
   return {
     at: new Date().toISOString(),
     cpus,
@@ -30,6 +42,7 @@ export const sampleMachine = (): MachineSample => {
     load1PerCpuPercent: Number(Math.min(100, (load1 / cpus) * 100).toFixed(2)),
     memoryUsedPercent: Number(memory.toFixed(2)),
     rssBytes: process.memoryUsage().rss,
+    ...(swapUsedPercent === undefined ? {} : { swapUsedPercent }),
   }
 }
 

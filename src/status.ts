@@ -39,6 +39,7 @@ export const createStatusSnapshot = (input: Omit<StatusSnapshot, 'schemaVersion'
     if (!['todo', 'picked', 'development', 'validation', 'pr-open', 'merged', 'post-merge', 'done', 'blocked', 'scope-cut'].includes(value.status)) fail(`blocks[${index}].status is invalid.`, 'INVALID_INPUT')
     return { ...value, id: value.id.trim() }
   }).sort((left, right) => left.id.localeCompare(right.id))
+  if (input.metrics !== undefined && Object.entries(input.metrics).some(([key, value]) => !key.trim() || typeof value !== 'number' || !Number.isFinite(value) || value < 0)) fail('metrics must contain finite non-negative numbers.', 'INVALID_INPUT')
   const body = { schemaVersion: 1 as const, generatedAt: input.generatedAt, sourceRevision, blocks, ...(input.machine ? { machine: input.machine } : {}), ...(input.metrics ? { metrics: input.metrics } : {}), ...(input.next ? { next: required(input.next, 'next') } : {}) }
   return { ...body, digest: hashJson(body) }
 }

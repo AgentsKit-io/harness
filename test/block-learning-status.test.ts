@@ -20,6 +20,7 @@ describe('portable orchestration records', () => {
   it('creates and verifies status and Orca dispatch projections', () => {
     const snapshot = createStatusSnapshot({ generatedAt: '2026-01-01T00:00:00.000Z', sourceRevision: 'abc', blocks: [{ id: 'B-1', status: 'todo' }] })
     expect(validateStatusSnapshot(snapshot).digest).toBe(snapshot.digest)
+    expect(() => createStatusSnapshot({ generatedAt: '2026-01-01T00:00:00.000Z', sourceRevision: 'abc', blocks: [], metrics: { durationMs: -1 } })).toThrow(/metrics/)
     const plan = createOrcaDispatchPlan({ repository: 'org/repo', worktree: 'b-1', branch: 'codex/b-1', baseBranch: 'main', goalFile: 'GOAL.md' })
     expect(plan.argv[0]).toBe('orca')
     expect(plan.idempotencyKey).toHaveLength(64)
