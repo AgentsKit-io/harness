@@ -44,7 +44,7 @@ Endpoint, database, CLI, MCP, and UI checks must declare `execution: "real"`. UI
 
 ## API
 
-The public TypeScript API is exported from `src/index.ts` and includes configuration loading, lifecycle operations, state transitions, evidence verification, approvals, cancellation, retries, and task-owned cleanup. Internal modules are not part of the supported API.
+The public TypeScript API is exported from `src/index.ts` and includes configuration loading, lifecycle operations, state transitions, evidence verification, approvals, cancellation, retries, task-owned cleanup, versioned capability manifests, event-envelope validation, and stable error classification. Internal modules are not part of the supported API. The checked-in [capability manifest](./capabilities/public-surface.json) is generated from this entry point; run `pnpm test:capabilities` to detect drift.
 
 ## Extensibility
 
@@ -84,6 +84,12 @@ events. `ak-harness status` performs the same reconciliation before reporting
 the current state, so a post-approval edit cannot appear as `COMPLETE`.
 Concurrent event writers are serialized by an atomic per-run lock and fail
 closed if the log is busy.
+
+The legacy event-log record remains schema version 1 for compatibility. New
+provider-neutral integrations can exchange the schema-versioned v2
+`HarnessEventEnvelope`, which requires event identity, correlation, source
+revision, idempotency, and provenance metadata. `classifyHarnessError` maps
+stable Harness error codes to `retry`, `block`, or `escalate` dispositions.
 
 Each harness event may also carry an optional `correlation` envelope. Its
 `operationId` is the stable identity used when a lifecycle crosses into

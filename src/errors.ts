@@ -1,4 +1,5 @@
-export type HarnessErrorCode = 'HARNESS_ERROR' | 'INVALID_CONFIG' | 'INVALID_INPUT' | 'INVALID_STATE' | 'POLICY_BLOCKED' | 'CLARIFYING' | 'STALE' | 'WORKTREE_DIRTY' | 'ACTIVE_RUN' | 'NO_RUN' | 'HUMAN_APPROVAL_REQUIRED' | 'GIT_REQUIRED'
+export const HARNESS_ERROR_CODES = ['HARNESS_ERROR', 'INVALID_CONFIG', 'INVALID_INPUT', 'INVALID_STATE', 'POLICY_BLOCKED', 'CLARIFYING', 'STALE', 'WORKTREE_DIRTY', 'ACTIVE_RUN', 'NO_RUN', 'HUMAN_APPROVAL_REQUIRED', 'GIT_REQUIRED'] as const
+export type HarnessErrorCode = typeof HARNESS_ERROR_CODES[number]
 
 export class HarnessError extends Error {
   public readonly code: HarnessErrorCode
