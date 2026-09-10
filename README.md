@@ -305,6 +305,11 @@ resource layers plus coverage for every supported component. `runEvalBattery`
 repeats each case and reports min/median/max scores; unknown, stale, critical,
 subjective, or unapproved regression results block the gate.
 
+`compatibility/manifest.json` pins the AgentsKit ecosystem revisions and the
+upstream test/eval commands. `assessCompatibility` accepts only complete,
+evidence-bound real-adapter observations and blocks unknown or failed upstream
+results; migration and rollback procedures are kept beside the manifest.
+
 These are seams, not replacements for AgentsKit packages. An integration may
 adapt `@agentskit/memory` and `@agentskit/eval` into them while keeping the
 Harness provider-neutral. Missing measurements remain missing; they are never

@@ -38,6 +38,8 @@ export { ASSURANCE_LEVELS, unknownTelemetry, validateAdapterMetadata } from './k
 export type { AdapterMetadata, AdapterTelemetry, AssuranceLevel } from './kernel/adapter-contract.js'
 export { QUALITY_DIMENSIONS, createQualityMatrix, evaluateWatchdog, validatePhaseTelemetry } from './kernel/quality.js'
 export type { MetricStatus, PhaseMachineMetrics, PhaseTelemetry, PhaseTokenMetrics, QualityDimension, QualityDimensionScore, QualityMatrix, WatchdogBlocker, WatchdogBudget, WatchdogResult } from './kernel/quality.js'
+export { COMPATIBILITY_COMPONENTS, COMPATIBILITY_SCHEMA_VERSION, assessCompatibility, createCompatibilityManifest, validateCompatibilityManifest } from './kernel/compatibility.js'
+export type { CompatibilityComponent, CompatibilityComponentId, CompatibilityManifest, CompatibilityObservation, CompatibilityReport, CompatibilityStatus } from './kernel/compatibility.js'
 export { createCodingAgentAdapter } from './adapters/agent.js'
 export type { AgentUsage, CodingAgentAdapter, CodingAgentHandlerResult, CodingAgentRequest, CodingAgentResult } from './adapters/agent.js'
 export { BENCHMARK_SCHEMA_VERSION, benchmarkRuns, loadBenchmarkManifest, recordBenchmarkObservation, validateBenchmarkManifest } from './execution/metrics.js'

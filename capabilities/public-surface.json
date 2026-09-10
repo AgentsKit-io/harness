@@ -4,7 +4,7 @@
   "package": "@agentskit/harness",
   "packageVersion": "0.3.0",
   "entryPoint": "src/index.ts",
-  "sourceDigest": "7179513d8f0b26e84bfafbc34dc419487bfba25e794d006fe99c3b5bd18a9eb2",
+  "sourceDigest": "3d17be04952278acc607379c2e8ea5895bc9b34b89e231a73a297d8878a09d3b",
   "capabilities": [
     {
       "id": "public-surface:adapters/agent",
@@ -294,6 +294,25 @@
         "CapabilityManifestInput",
         "createCapabilityManifest",
         "validateCapabilityManifest"
+      ]
+    },
+    {
+      "id": "public-surface:kernel/compatibility",
+      "version": "0.3.0",
+      "kind": "kernel",
+      "entryPoint": "src/index.ts",
+      "exports": [
+        "COMPATIBILITY_COMPONENTS",
+        "COMPATIBILITY_SCHEMA_VERSION",
+        "CompatibilityComponent",
+        "CompatibilityComponentId",
+        "CompatibilityManifest",
+        "CompatibilityObservation",
+        "CompatibilityReport",
+        "CompatibilityStatus",
+        "assessCompatibility",
+        "createCompatibilityManifest",
+        "validateCompatibilityManifest"
       ]
     },
     {
@@ -645,5 +664,5 @@
       ]
     }
   ],
-  "digest": "58a8bec29ed764a9167636a9f244bc6e3a94f4d773f7c3c87b0789fe1ef92aee"
+  "digest": "ca2213f8c488051a4a013094b89a31c6fa471f9207b821465833a1f0a504f789"
 }
