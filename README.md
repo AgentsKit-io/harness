@@ -170,6 +170,11 @@ are returned as one structured decision packet; dry-run previews mutating phases
 without invoking their handlers. `planPhaseProfile` exposes the deterministic
 route without executing it.
 
+`runAdversarialReview` executes independent review lenses with bounded
+concurrency/retries and blocks empty or non-reproducible verdicts. Delivery
+helpers hash-bind the approved PR body/metadata and only emit a QA transition
+after feature validation and G5 acceptance; failed QA returns to verification.
+
 Use named profiles to make the operational choice explicit:
 
 ```json

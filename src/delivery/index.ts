@@ -70,6 +70,45 @@ export const composePullRequest = ({ draft, g2, remote }: { readonly draft: Pull
   return { decision: 'create', body, reason: 'G2 is current and the remote PR is absent.', idempotencyKey }
 }
 
+export interface PullRequestApproval {
+  readonly approvedBy: 'human'
+  readonly candidateRevision: string
+  readonly contractHash: string
+  readonly configHash: string
+  readonly bodyHash: string
+  readonly metadataHash: string
+  readonly digest: string
+}
+
+export const createPullRequestApproval = ({ body, metadata, approvedBy, candidateRevision, contractHash, configHash }: { readonly body: string; readonly metadata: Readonly<Record<string, unknown>>; readonly approvedBy: 'human'; readonly candidateRevision: string; readonly contractHash: string; readonly configHash: string }): PullRequestApproval => {
+  if (approvedBy !== 'human') fail('Pull request approval requires a human actor.', 'HUMAN_APPROVAL_REQUIRED')
+  const normalizedBody = required(body, 'PR body')
+  const binding = { approvedBy, candidateRevision: required(candidateRevision, 'candidateRevision'), contractHash: required(contractHash, 'contractHash'), configHash: required(configHash, 'configHash'), bodyHash: hashJson(normalizedBody), metadataHash: hashJson(metadata) }
+  return { ...binding, digest: hashJson(binding) }
+}
+
+export const verifyPullRequestApproval = ({ approval, body, metadata, candidateRevision, contractHash, configHash }: { readonly approval: PullRequestApproval; readonly body: string; readonly metadata: Readonly<Record<string, unknown>>; readonly candidateRevision: string; readonly contractHash: string; readonly configHash: string }): PullRequestApproval => {
+  const expected = createPullRequestApproval({ body, metadata, approvedBy: 'human', candidateRevision, contractHash, configHash })
+  if (approval.digest !== expected.digest || approval.bodyHash !== expected.bodyHash || approval.metadataHash !== expected.metadataHash) fail('Approved pull request content or metadata changed.', 'STALE')
+  return approval
+}
+
+export interface QaTransitionAssessment {
+  readonly decision: 'move-to-qa' | 'return-to-verification' | 'blocked'
+  readonly target: 'qa' | 'verification'
+  readonly invalidatesDownstream: boolean
+  readonly reason: string
+  readonly idempotencyKey: string
+}
+
+export const assessQaTransition = ({ featureValidated, g5, qaPassed, issue }: { readonly featureValidated: boolean; readonly g5: GateAssessment; readonly qaPassed: boolean; readonly issue: string }): QaTransitionAssessment => {
+  required(issue, 'issue')
+  const base = { issue, featureValidated, g5: g5.digest, qaPassed }
+  if (!featureValidated || g5.gate !== 'G5' || g5.decision !== 'approved') return { decision: 'blocked', target: 'verification', invalidatesDownstream: false, reason: 'Feature validation and approved G5 acceptance are required before moving the issue to QA.', idempotencyKey: hashJson(base) }
+  if (!qaPassed) return { decision: 'return-to-verification', target: 'verification', invalidatesDownstream: true, reason: 'QA failed; downstream evidence is invalidated and verification must be repeated.', idempotencyKey: hashJson(base) }
+  return { decision: 'move-to-qa', target: 'qa', invalidatesDownstream: false, reason: 'Feature validation and G5 acceptance are current.', idempotencyKey: hashJson(base) }
+}
+
 export const assessIntegration = ({ g2, candidateRevision, evidenceRevision, contractHash, configHash, ci }: { readonly g2: GateAssessment; readonly candidateRevision: string; readonly evidenceRevision: string; readonly contractHash: string; readonly configHash: string; readonly ci: CriterionStatus }): GateAssessment => {
   required(candidateRevision, 'candidateRevision'); required(evidenceRevision, 'evidenceRevision')
   if (!['passed', 'failed', 'pending', 'not-applicable'].includes(ci)) fail('ci is invalid.', 'INVALID_INPUT')
@@ -123,3 +162,6 @@ export const assessAcceptance = ({ production, acceptanceRequired, accepted, not
   if (!acceptanceRequired && !notApplicableReason?.trim()) return assessed('G5', 'blocked', ['Acceptance marked not applicable requires a contractual reason.'], production.binding)
   return assessed('G5', 'approved', acceptanceRequired ? [] : [`Acceptance is not applicable: ${notApplicableReason}.`], production.binding)
 }
+
+export { runAdversarialReview } from './review.js'
+export type { AdversarialReviewResult, ReviewLens, ReviewVerdict } from './review.js'
