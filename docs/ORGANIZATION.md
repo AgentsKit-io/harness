@@ -13,6 +13,7 @@ the repository stays navigable without speculative layers.
 │   └── <capability>.ts   # contract, evidence, delivery, runtime, metrics...
 ├── test/                 # deterministic tests and fixtures
 ├── scripts/              # real CLI, packaging, and repository checks
+├── capabilities/         # generated public-surface capability manifest
 ├── docs/                 # ADRs and this organization contract
 ├── .codex/               # verification contract and local run state
 └── .github/              # CI and release workflows

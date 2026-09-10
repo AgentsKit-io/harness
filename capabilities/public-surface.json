@@ -1,0 +1,506 @@
+{
+  "type": "agentskit-harness-capability-manifest",
+  "schemaVersion": 1,
+  "package": "@agentskit/harness",
+  "packageVersion": "0.3.0",
+  "entryPoint": "src/index.ts",
+  "sourceDigest": "4d58c95a93cc690e90a499c7a86f461bd4a230aac1a4154a3ca9922ec6465bc6",
+  "capabilities": [
+    {
+      "id": "public-surface:adapters/doc-bridge",
+      "version": "0.3.0",
+      "kind": "adapter",
+      "entryPoint": "src/index.ts",
+      "exports": [
+        "createDocBridgeContextProvider"
+      ]
+    },
+    {
+      "id": "public-surface:adapters/orca",
+      "version": "0.3.0",
+      "kind": "adapter",
+      "entryPoint": "src/index.ts",
+      "exports": [
+        "OrcaDispatchInput",
+        "OrcaDispatchPlan",
+        "createOrcaDispatchPlan"
+      ]
+    },
+    {
+      "id": "public-surface:adapters/tracking",
+      "version": "0.3.0",
+      "kind": "adapter",
+      "entryPoint": "src/index.ts",
+      "exports": [
+        "TrackingAdapter",
+        "TrackingTransition",
+        "createTrackingAdapter",
+        "createTrackingTransition"
+      ]
+    },
+    {
+      "id": "public-surface:agent",
+      "version": "0.3.0",
+      "kind": "execution",
+      "entryPoint": "src/index.ts",
+      "exports": [
+        "*",
+        "createSessionRecorder"
+      ]
+    },
+    {
+      "id": "public-surface:block",
+      "version": "0.3.0",
+      "kind": "kernel",
+      "entryPoint": "src/index.ts",
+      "exports": [
+        "BLOCK_STATUSES",
+        "BlockAssessment",
+        "BlockManifest",
+        "BlockStatus",
+        "assessBlock",
+        "validateBlockManifest"
+      ]
+    },
+    {
+      "id": "public-surface:bundle",
+      "version": "0.3.0",
+      "kind": "execution",
+      "entryPoint": "src/index.ts",
+      "exports": [
+        "*",
+        "EVIDENCE_BUNDLE_SCHEMA_VERSION",
+        "exportEvidenceBundle",
+        "readEvidenceTrustStore",
+        "verifyEvidenceBundle"
+      ]
+    },
+    {
+      "id": "public-surface:cache",
+      "version": "0.3.0",
+      "kind": "kernel",
+      "entryPoint": "src/index.ts",
+      "exports": [
+        "LlmCache",
+        "LlmCacheKeyInput",
+        "LlmCacheStats",
+        "createLlmCache",
+        "createLlmCacheKey",
+        "validateCacheableOperation"
+      ]
+    },
+    {
+      "id": "public-surface:capabilities",
+      "version": "0.3.0",
+      "kind": "kernel",
+      "entryPoint": "src/index.ts",
+      "exports": [
+        "*",
+        "CAPABILITY_KINDS",
+        "CAPABILITY_MANIFEST_SCHEMA_VERSION",
+        "CapabilityDescriptor",
+        "CapabilityKind",
+        "CapabilityManifest",
+        "CapabilityManifestInput",
+        "createCapabilityManifest",
+        "validateCapabilityManifest"
+      ]
+    },
+    {
+      "id": "public-surface:config",
+      "version": "0.3.0",
+      "kind": "execution",
+      "entryPoint": "src/index.ts",
+      "exports": [
+        "loadConfig",
+        "validateConfig"
+      ]
+    },
+    {
+      "id": "public-surface:constants",
+      "version": "0.3.0",
+      "kind": "kernel",
+      "entryPoint": "src/index.ts",
+      "exports": [
+        "LEGAL_TRANSITIONS",
+        "STATES"
+      ]
+    },
+    {
+      "id": "public-surface:context",
+      "version": "0.3.0",
+      "kind": "kernel",
+      "entryPoint": "src/index.ts",
+      "exports": [
+        "*",
+        "CONTEXT_PROVIDER_SLOT",
+        "hashContextSnapshot",
+        "hashContextSnapshots",
+        "readContextSnapshots",
+        "validateContextSnapshot",
+        "validateContextSnapshots"
+      ]
+    },
+    {
+      "id": "public-surface:coordination",
+      "version": "0.3.0",
+      "kind": "kernel",
+      "entryPoint": "src/index.ts",
+      "exports": [
+        "ClaimResult",
+        "CoordinationIdentity",
+        "DispatchLease",
+        "DispatchLedger",
+        "DispatchRecord",
+        "createDispatchLedger"
+      ]
+    },
+    {
+      "id": "public-surface:cycle",
+      "version": "0.3.0",
+      "kind": "kernel",
+      "entryPoint": "src/index.ts",
+      "exports": [
+        "*",
+        "IMPROVEMENT_CYCLE_STEPS",
+        "assessImprovementCycle"
+      ]
+    },
+    {
+      "id": "public-surface:delivery",
+      "version": "0.3.0",
+      "kind": "kernel",
+      "entryPoint": "src/index.ts",
+      "exports": [
+        "*",
+        "assessAcceptance",
+        "assessIntegration",
+        "assessPreflight",
+        "assessProduction",
+        "assessWorktreeCleanup",
+        "composePullRequest"
+      ]
+    },
+    {
+      "id": "public-surface:discovery",
+      "version": "0.3.0",
+      "kind": "kernel",
+      "entryPoint": "src/index.ts",
+      "exports": [
+        "*",
+        "assessDiscovery",
+        "isDiscoveryCurrent"
+      ]
+    },
+    {
+      "id": "public-surface:error-policy",
+      "version": "0.3.0",
+      "kind": "kernel",
+      "entryPoint": "src/index.ts",
+      "exports": [
+        "HARNESS_ERROR_CATALOG",
+        "HarnessErrorClassification",
+        "HarnessErrorDisposition",
+        "classifyHarnessError",
+        "validateHarnessErrorClassification"
+      ]
+    },
+    {
+      "id": "public-surface:errors",
+      "version": "0.3.0",
+      "kind": "kernel",
+      "entryPoint": "src/index.ts",
+      "exports": [
+        "HARNESS_ERROR_CODES",
+        "HarnessError"
+      ]
+    },
+    {
+      "id": "public-surface:eval",
+      "version": "0.3.0",
+      "kind": "kernel",
+      "entryPoint": "src/index.ts",
+      "exports": [
+        "AgentEvalCase",
+        "AgentEvalReport",
+        "AgentEvalSuite",
+        "EvalExpectation",
+        "assessAgentEval",
+        "runAgentEval"
+      ]
+    },
+    {
+      "id": "public-surface:events",
+      "version": "0.3.0",
+      "kind": "execution",
+      "entryPoint": "src/index.ts",
+      "exports": [
+        "*",
+        "EVENT_LOG_GENESIS",
+        "FileEventStore",
+        "HARNESS_EVENT_ENVELOPE_SCHEMA_VERSION",
+        "HARNESS_EVENT_SCHEMA_VERSION",
+        "HARNESS_EVENT_TYPES",
+        "HarnessEventEnvelope",
+        "HarnessEventEnvelopeInput",
+        "HarnessEventProvenance",
+        "createHarnessEventEnvelope",
+        "inspectEventLogLock",
+        "recoverEventLogLock",
+        "validateHarnessEventEnvelope"
+      ]
+    },
+    {
+      "id": "public-surface:experiment",
+      "version": "0.3.0",
+      "kind": "kernel",
+      "entryPoint": "src/index.ts",
+      "exports": [
+        "*",
+        "selectRuntime"
+      ]
+    },
+    {
+      "id": "public-surface:files",
+      "version": "0.3.0",
+      "kind": "execution",
+      "entryPoint": "src/index.ts",
+      "exports": [
+        "loadLatestRun"
+      ]
+    },
+    {
+      "id": "public-surface:learning",
+      "version": "0.3.0",
+      "kind": "kernel",
+      "entryPoint": "src/index.ts",
+      "exports": [
+        "LEARNING_STATUSES",
+        "LearningRecord",
+        "LearningStatus",
+        "parseRetro",
+        "promoteLearnings"
+      ]
+    },
+    {
+      "id": "public-surface:machine",
+      "version": "0.3.0",
+      "kind": "kernel",
+      "entryPoint": "src/index.ts",
+      "exports": [
+        "*",
+        "MachineThresholds",
+        "adaptiveConcurrency",
+        "createMachineMonitor",
+        "sampleMachine",
+        "summarizeMachine"
+      ]
+    },
+    {
+      "id": "public-surface:memory",
+      "version": "0.3.0",
+      "kind": "kernel",
+      "entryPoint": "src/index.ts",
+      "exports": [
+        "AgentMemoryAdapter",
+        "AgentMemoryHit",
+        "AgentMemoryKvStore",
+        "AgentMemoryRecord",
+        "MEMORY_SCOPES",
+        "MemoryScope",
+        "createInMemoryMemoryAdapter",
+        "createKvMemoryAdapter",
+        "validateMemoryRecord"
+      ]
+    },
+    {
+      "id": "public-surface:metrics",
+      "version": "0.3.0",
+      "kind": "kernel",
+      "entryPoint": "src/index.ts",
+      "exports": [
+        "*",
+        "BENCHMARK_SCHEMA_VERSION",
+        "benchmarkRuns",
+        "loadBenchmarkManifest",
+        "recordBenchmarkObservation",
+        "validateBenchmarkManifest"
+      ]
+    },
+    {
+      "id": "public-surface:model-policy",
+      "version": "0.3.0",
+      "kind": "kernel",
+      "entryPoint": "src/index.ts",
+      "exports": [
+        "MODEL_ROLES",
+        "ModelBinding",
+        "ModelPolicy",
+        "ModelRole",
+        "createModelPolicy",
+        "modelFor"
+      ]
+    },
+    {
+      "id": "public-surface:optimization",
+      "version": "0.3.0",
+      "kind": "kernel",
+      "entryPoint": "src/index.ts",
+      "exports": [
+        "CacheUsage",
+        "MemoryUsage",
+        "OptimizationComparison",
+        "OptimizationObservation",
+        "ParallelismUsage",
+        "TokenUsage",
+        "compareOptimization",
+        "validateOptimizationObservation"
+      ]
+    },
+    {
+      "id": "public-surface:pilot",
+      "version": "0.3.0",
+      "kind": "kernel",
+      "entryPoint": "src/index.ts",
+      "exports": [
+        "*",
+        "assessPilot"
+      ]
+    },
+    {
+      "id": "public-surface:plugins",
+      "version": "0.3.0",
+      "kind": "kernel",
+      "entryPoint": "src/index.ts",
+      "exports": [
+        "*",
+        "HARNESS_PLUGIN_API_VERSION",
+        "createPluginRegistry",
+        "createPluginSlot"
+      ]
+    },
+    {
+      "id": "public-surface:policy",
+      "version": "0.3.0",
+      "kind": "kernel",
+      "entryPoint": "src/index.ts",
+      "exports": [
+        "*",
+        "createPolicyGate"
+      ]
+    },
+    {
+      "id": "public-surface:preflight",
+      "version": "0.3.0",
+      "kind": "kernel",
+      "entryPoint": "src/index.ts",
+      "exports": [
+        "ChangedFile",
+        "FilePreflightPlan",
+        "planFilePreflight",
+        "validateSafeCommand"
+      ]
+    },
+    {
+      "id": "public-surface:resilience",
+      "version": "0.3.0",
+      "kind": "kernel",
+      "entryPoint": "src/index.ts",
+      "exports": [
+        "FailureClass",
+        "FailureClassification",
+        "RecoveryObservation",
+        "RecoveryPolicy",
+        "RecoveryResult",
+        "classifyFailure",
+        "recoveryDelayMs",
+        "runWithRecovery"
+      ]
+    },
+    {
+      "id": "public-surface:runtime",
+      "version": "0.3.0",
+      "kind": "execution",
+      "entryPoint": "src/index.ts",
+      "exports": [
+        "*",
+        "createConfiguredToolRuntime",
+        "createDockerToolRuntime",
+        "createProcessToolRuntime",
+        "createToolRuntime"
+      ]
+    },
+    {
+      "id": "public-surface:state-machine",
+      "version": "0.3.0",
+      "kind": "kernel",
+      "entryPoint": "src/index.ts",
+      "exports": [
+        "approvedDecision",
+        "assertHuman",
+        "transition"
+      ]
+    },
+    {
+      "id": "public-surface:status",
+      "version": "0.3.0",
+      "kind": "kernel",
+      "entryPoint": "src/index.ts",
+      "exports": [
+        "StatusBlock",
+        "StatusSnapshot",
+        "createStatusSnapshot",
+        "validateStatusSnapshot"
+      ]
+    },
+    {
+      "id": "public-surface:types",
+      "version": "0.3.0",
+      "kind": "kernel",
+      "entryPoint": "src/index.ts",
+      "exports": [
+        "*"
+      ]
+    },
+    {
+      "id": "public-surface:verification",
+      "version": "0.3.0",
+      "kind": "execution",
+      "entryPoint": "src/index.ts",
+      "exports": [
+        "approveRun",
+        "authorizeRun",
+        "cancelRun",
+        "cleanTaskArtifacts",
+        "planRun",
+        "reconcileRun",
+        "retryRun",
+        "startRun",
+        "verifyRun"
+      ]
+    },
+    {
+      "id": "public-surface:wip",
+      "version": "0.3.0",
+      "kind": "kernel",
+      "entryPoint": "src/index.ts",
+      "exports": [
+        "*",
+        "WIP_STATES",
+        "assessWip"
+      ]
+    },
+    {
+      "id": "public-surface:workflow",
+      "version": "0.3.0",
+      "kind": "kernel",
+      "entryPoint": "src/index.ts",
+      "exports": [
+        "WorkflowNode",
+        "WorkflowResult",
+        "runWorkflow"
+      ]
+    }
+  ],
+  "digest": "a25f4f61add0868d14a8cac0a4796b8713963a01494ec67940f9d64ea47274a9"
+}
