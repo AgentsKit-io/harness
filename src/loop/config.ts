@@ -105,6 +105,8 @@ export const LoopConfigSchema = z.object({
       cli: nonEmpty.default('agentskit-review'),
       /** agentskit-review execution mode. `trusted-local` reuses this user's environment (and CLI logins); the isolated default runs claude/codex with a temporary HOME and no credentials. */
       mode: z.enum(['trusted-local', 'isolated']).default('trusted-local'),
+      /** agentskit-review transport. `headless` is required for current grok-cli (ACP fails on submit_batched_findings); omit to use the CLI default. */
+      transport: z.enum(['acp', 'headless', 'auto']).optional(),
       /** `fast` = one bounded pass over the required lenses (fits a 600 s Orca stage); `full` = every lens, needs a long deadline or batching. */
       profile: z.enum(['fast', 'full']).default('fast'),
       votes: z.number().int().positive().default(1),
