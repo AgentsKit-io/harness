@@ -1,0 +1,668 @@
+{
+  "type": "agentskit-harness-capability-manifest",
+  "schemaVersion": 1,
+  "package": "@agentskit/harness",
+  "packageVersion": "0.4.0",
+  "entryPoint": "src/index.ts",
+  "sourceDigest": "3d17be04952278acc607379c2e8ea5895bc9b34b89e231a73a297d8878a09d3b",
+  "capabilities": [
+    {
+      "id": "public-surface:adapters/agent",
+      "version": "0.4.0",
+      "kind": "adapter",
+      "entryPoint": "src/index.ts",
+      "exports": [
+        "AgentUsage",
+        "CodingAgentAdapter",
+        "CodingAgentHandlerResult",
+        "CodingAgentRequest",
+        "CodingAgentResult",
+        "createCodingAgentAdapter"
+      ]
+    },
+    {
+      "id": "public-surface:adapters/doc-bridge",
+      "version": "0.4.0",
+      "kind": "adapter",
+      "entryPoint": "src/index.ts",
+      "exports": [
+        "createDocBridgeContextProvider"
+      ]
+    },
+    {
+      "id": "public-surface:adapters/orca",
+      "version": "0.4.0",
+      "kind": "adapter",
+      "entryPoint": "src/index.ts",
+      "exports": [
+        "OrcaDispatchInput",
+        "OrcaDispatchPlan",
+        "OrcaLeaseState",
+        "OrcaLifecycleInput",
+        "OrcaLifecycleProjection",
+        "createOrcaDispatchPlan",
+        "createOrcaLifecycleProjection"
+      ]
+    },
+    {
+      "id": "public-surface:adapters/tracking",
+      "version": "0.4.0",
+      "kind": "adapter",
+      "entryPoint": "src/index.ts",
+      "exports": [
+        "TrackingAdapter",
+        "TrackingTransition",
+        "createTrackingAdapter",
+        "createTrackingTransition"
+      ]
+    },
+    {
+      "id": "public-surface:context/index",
+      "version": "0.4.0",
+      "kind": "kernel",
+      "entryPoint": "src/index.ts",
+      "exports": [
+        "*",
+        "CONTEXT_PROVIDER_SLOT",
+        "hashContextSnapshot",
+        "hashContextSnapshots",
+        "readContextSnapshots",
+        "validateContextSnapshot",
+        "validateContextSnapshots"
+      ]
+    },
+    {
+      "id": "public-surface:delivery/index",
+      "version": "0.4.0",
+      "kind": "kernel",
+      "entryPoint": "src/index.ts",
+      "exports": [
+        "*",
+        "AdversarialReviewResult",
+        "GateAssessment",
+        "GateBinding",
+        "GateCriterion",
+        "PullRequestApproval",
+        "QaTransitionAssessment",
+        "ReviewLens",
+        "ReviewVerdict",
+        "assessAcceptance",
+        "assessIntegration",
+        "assessPreflight",
+        "assessProduction",
+        "assessQaTransition",
+        "assessWorktreeCleanup",
+        "composePullRequest",
+        "createPullRequestApproval",
+        "runAdversarialReview",
+        "verifyPullRequestApproval"
+      ]
+    },
+    {
+      "id": "public-surface:execution/agent",
+      "version": "0.4.0",
+      "kind": "execution",
+      "entryPoint": "src/index.ts",
+      "exports": [
+        "*",
+        "createSessionRecorder"
+      ]
+    },
+    {
+      "id": "public-surface:execution/bundle",
+      "version": "0.4.0",
+      "kind": "execution",
+      "entryPoint": "src/index.ts",
+      "exports": [
+        "*",
+        "EVIDENCE_BUNDLE_SCHEMA_VERSION",
+        "exportEvidenceBundle",
+        "readEvidenceTrustStore",
+        "verifyEvidenceBundle"
+      ]
+    },
+    {
+      "id": "public-surface:execution/config",
+      "version": "0.4.0",
+      "kind": "execution",
+      "entryPoint": "src/index.ts",
+      "exports": [
+        "loadConfig",
+        "validateConfig"
+      ]
+    },
+    {
+      "id": "public-surface:execution/coordination",
+      "version": "0.4.0",
+      "kind": "execution",
+      "entryPoint": "src/index.ts",
+      "exports": [
+        "ClaimResult",
+        "CoordinationIdentity",
+        "DispatchLease",
+        "DispatchLedger",
+        "DispatchRecord",
+        "createDispatchLedger"
+      ]
+    },
+    {
+      "id": "public-surface:execution/files",
+      "version": "0.4.0",
+      "kind": "execution",
+      "entryPoint": "src/index.ts",
+      "exports": [
+        "loadLatestRun"
+      ]
+    },
+    {
+      "id": "public-surface:execution/machine",
+      "version": "0.4.0",
+      "kind": "execution",
+      "entryPoint": "src/index.ts",
+      "exports": [
+        "*",
+        "MachineThresholds",
+        "adaptiveConcurrency",
+        "createMachineMonitor",
+        "sampleMachine",
+        "summarizeMachine"
+      ]
+    },
+    {
+      "id": "public-surface:execution/metrics",
+      "version": "0.4.0",
+      "kind": "execution",
+      "entryPoint": "src/index.ts",
+      "exports": [
+        "*",
+        "BENCHMARK_SCHEMA_VERSION",
+        "benchmarkRuns",
+        "loadBenchmarkManifest",
+        "recordBenchmarkObservation",
+        "validateBenchmarkManifest"
+      ]
+    },
+    {
+      "id": "public-surface:execution/runtime",
+      "version": "0.4.0",
+      "kind": "execution",
+      "entryPoint": "src/index.ts",
+      "exports": [
+        "*",
+        "createConfiguredToolRuntime",
+        "createDockerToolRuntime",
+        "createProcessToolRuntime",
+        "createToolRuntime"
+      ]
+    },
+    {
+      "id": "public-surface:execution/verification",
+      "version": "0.4.0",
+      "kind": "execution",
+      "entryPoint": "src/index.ts",
+      "exports": [
+        "approveRun",
+        "authorizeRun",
+        "cancelRun",
+        "cleanTaskArtifacts",
+        "planRun",
+        "reconcileRun",
+        "retryRun",
+        "startRun",
+        "verifyRun"
+      ]
+    },
+    {
+      "id": "public-surface:kernel/adapter-contract",
+      "version": "0.4.0",
+      "kind": "kernel",
+      "entryPoint": "src/index.ts",
+      "exports": [
+        "ASSURANCE_LEVELS",
+        "AdapterMetadata",
+        "AdapterTelemetry",
+        "AssuranceLevel",
+        "unknownTelemetry",
+        "validateAdapterMetadata"
+      ]
+    },
+    {
+      "id": "public-surface:kernel/artifacts",
+      "version": "0.4.0",
+      "kind": "kernel",
+      "entryPoint": "src/index.ts",
+      "exports": [
+        "ARTIFACT_SCHEMA_VERSION",
+        "ARTIFACT_TYPES",
+        "ArtifactBinding",
+        "ArtifactEnvelope",
+        "ArtifactEnvelopeInput",
+        "ArtifactType",
+        "FileArtifactStore",
+        "artifactDigest",
+        "artifactFilePath",
+        "artifactIsFresh",
+        "artifactMarkdownPath",
+        "createArtifactEnvelope",
+        "createPhaseArtifact",
+        "readArtifactFile",
+        "renderArtifactMarkdown",
+        "resumeStateFromArtifacts",
+        "validateArtifactEnvelope"
+      ]
+    },
+    {
+      "id": "public-surface:kernel/block",
+      "version": "0.4.0",
+      "kind": "kernel",
+      "entryPoint": "src/index.ts",
+      "exports": [
+        "BLOCK_STATUSES",
+        "BlockAssessment",
+        "BlockManifest",
+        "BlockStatus",
+        "assessBlock",
+        "validateBlockManifest"
+      ]
+    },
+    {
+      "id": "public-surface:kernel/cache",
+      "version": "0.4.0",
+      "kind": "kernel",
+      "entryPoint": "src/index.ts",
+      "exports": [
+        "LlmCache",
+        "LlmCacheKeyInput",
+        "LlmCacheStats",
+        "createLlmCache",
+        "createLlmCacheKey",
+        "validateCacheableOperation"
+      ]
+    },
+    {
+      "id": "public-surface:kernel/capabilities",
+      "version": "0.4.0",
+      "kind": "kernel",
+      "entryPoint": "src/index.ts",
+      "exports": [
+        "*",
+        "CAPABILITY_KINDS",
+        "CAPABILITY_MANIFEST_SCHEMA_VERSION",
+        "CapabilityDescriptor",
+        "CapabilityKind",
+        "CapabilityManifest",
+        "CapabilityManifestInput",
+        "createCapabilityManifest",
+        "validateCapabilityManifest"
+      ]
+    },
+    {
+      "id": "public-surface:kernel/compatibility",
+      "version": "0.4.0",
+      "kind": "kernel",
+      "entryPoint": "src/index.ts",
+      "exports": [
+        "COMPATIBILITY_COMPONENTS",
+        "COMPATIBILITY_SCHEMA_VERSION",
+        "CompatibilityComponent",
+        "CompatibilityComponentId",
+        "CompatibilityManifest",
+        "CompatibilityObservation",
+        "CompatibilityReport",
+        "CompatibilityStatus",
+        "assessCompatibility",
+        "createCompatibilityManifest",
+        "validateCompatibilityManifest"
+      ]
+    },
+    {
+      "id": "public-surface:kernel/constants",
+      "version": "0.4.0",
+      "kind": "kernel",
+      "entryPoint": "src/index.ts",
+      "exports": [
+        "LEGAL_TRANSITIONS",
+        "STATES"
+      ]
+    },
+    {
+      "id": "public-surface:kernel/cycle",
+      "version": "0.4.0",
+      "kind": "kernel",
+      "entryPoint": "src/index.ts",
+      "exports": [
+        "*",
+        "IMPROVEMENT_CYCLE_STEPS",
+        "assessImprovementCycle"
+      ]
+    },
+    {
+      "id": "public-surface:kernel/discovery",
+      "version": "0.4.0",
+      "kind": "kernel",
+      "entryPoint": "src/index.ts",
+      "exports": [
+        "*",
+        "assessDiscovery",
+        "isDiscoveryCurrent"
+      ]
+    },
+    {
+      "id": "public-surface:kernel/error-policy",
+      "version": "0.4.0",
+      "kind": "kernel",
+      "entryPoint": "src/index.ts",
+      "exports": [
+        "HARNESS_ERROR_CATALOG",
+        "HarnessErrorClassification",
+        "HarnessErrorDisposition",
+        "classifyHarnessError",
+        "validateHarnessErrorClassification"
+      ]
+    },
+    {
+      "id": "public-surface:kernel/errors",
+      "version": "0.4.0",
+      "kind": "kernel",
+      "entryPoint": "src/index.ts",
+      "exports": [
+        "HARNESS_ERROR_CODES",
+        "HarnessError"
+      ]
+    },
+    {
+      "id": "public-surface:kernel/eval",
+      "version": "0.4.0",
+      "kind": "kernel",
+      "entryPoint": "src/index.ts",
+      "exports": [
+        "AgentEvalCase",
+        "AgentEvalReport",
+        "AgentEvalSuite",
+        "EVAL_COMPONENTS",
+        "EVAL_LAYERS",
+        "EVAL_MANIFEST_SCHEMA_VERSION",
+        "EvalBatteryReport",
+        "EvalCaseDefinition",
+        "EvalCaseReport",
+        "EvalComponent",
+        "EvalExpectation",
+        "EvalLayer",
+        "EvalManifest",
+        "EvalObservation",
+        "EvalObservationStatus",
+        "assessAgentEval",
+        "createEvalManifest",
+        "runAgentEval",
+        "runEvalBattery",
+        "validateEvalManifest"
+      ]
+    },
+    {
+      "id": "public-surface:kernel/events",
+      "version": "0.4.0",
+      "kind": "kernel",
+      "entryPoint": "src/index.ts",
+      "exports": [
+        "*",
+        "EVENT_LOG_GENESIS",
+        "FileEventStore",
+        "HARNESS_EVENT_ENVELOPE_SCHEMA_VERSION",
+        "HARNESS_EVENT_SCHEMA_VERSION",
+        "HARNESS_EVENT_TYPES",
+        "HarnessEventEnvelope",
+        "HarnessEventEnvelopeInput",
+        "HarnessEventProvenance",
+        "createHarnessEventEnvelope",
+        "inspectEventLogLock",
+        "recoverEventLogLock",
+        "validateHarnessEventEnvelope"
+      ]
+    },
+    {
+      "id": "public-surface:kernel/experiment",
+      "version": "0.4.0",
+      "kind": "kernel",
+      "entryPoint": "src/index.ts",
+      "exports": [
+        "*",
+        "selectRuntime"
+      ]
+    },
+    {
+      "id": "public-surface:kernel/learning",
+      "version": "0.4.0",
+      "kind": "kernel",
+      "entryPoint": "src/index.ts",
+      "exports": [
+        "LEARNING_STATUSES",
+        "LearningRecord",
+        "LearningStatus",
+        "parseRetro",
+        "promoteLearnings"
+      ]
+    },
+    {
+      "id": "public-surface:kernel/memory",
+      "version": "0.4.0",
+      "kind": "kernel",
+      "entryPoint": "src/index.ts",
+      "exports": [
+        "AgentMemoryAdapter",
+        "AgentMemoryHit",
+        "AgentMemoryKvStore",
+        "AgentMemoryRecord",
+        "MEMORY_SCOPES",
+        "MemoryScope",
+        "createInMemoryMemoryAdapter",
+        "createKvMemoryAdapter",
+        "validateMemoryRecord"
+      ]
+    },
+    {
+      "id": "public-surface:kernel/model-policy",
+      "version": "0.4.0",
+      "kind": "kernel",
+      "entryPoint": "src/index.ts",
+      "exports": [
+        "MODEL_ROLES",
+        "ModelBinding",
+        "ModelPolicy",
+        "ModelRole",
+        "createModelPolicy",
+        "modelFor"
+      ]
+    },
+    {
+      "id": "public-surface:kernel/optimization",
+      "version": "0.4.0",
+      "kind": "kernel",
+      "entryPoint": "src/index.ts",
+      "exports": [
+        "CacheUsage",
+        "MemoryUsage",
+        "OptimizationComparison",
+        "OptimizationObservation",
+        "ParallelismUsage",
+        "TokenUsage",
+        "compareOptimization",
+        "validateOptimizationObservation"
+      ]
+    },
+    {
+      "id": "public-surface:kernel/phase-executor",
+      "version": "0.4.0",
+      "kind": "kernel",
+      "entryPoint": "src/index.ts",
+      "exports": [
+        "ExecutePhaseProfileOptions",
+        "NormalizedPhaseProfile",
+        "PHASE_DECISIONS",
+        "PHASE_EFFECTS",
+        "PHASE_EFFECT_ACTIONS",
+        "PHASE_MODES",
+        "PhaseAmbiguity",
+        "PhaseContext",
+        "PhaseDecision",
+        "PhaseDecisionPacket",
+        "PhaseDefinition",
+        "PhaseEffect",
+        "PhaseEffectAction",
+        "PhaseEffectPolicy",
+        "PhaseExecution",
+        "PhaseExecutionReport",
+        "PhaseGateEvaluator",
+        "PhaseGateResult",
+        "PhaseHandler",
+        "PhaseHandlerResult",
+        "PhaseMode",
+        "PhasePreflight",
+        "PhasePreflightResult",
+        "PhaseProfile",
+        "PhaseResumeState",
+        "PhaseRetryPolicy",
+        "PhaseRoutePlan",
+        "createPhaseProfile",
+        "executePhaseProfile",
+        "planPhaseProfile"
+      ]
+    },
+    {
+      "id": "public-surface:kernel/pilot",
+      "version": "0.4.0",
+      "kind": "kernel",
+      "entryPoint": "src/index.ts",
+      "exports": [
+        "*",
+        "assessPilot"
+      ]
+    },
+    {
+      "id": "public-surface:kernel/plugins",
+      "version": "0.4.0",
+      "kind": "kernel",
+      "entryPoint": "src/index.ts",
+      "exports": [
+        "*",
+        "HARNESS_PLUGIN_API_VERSION",
+        "createPluginRegistry",
+        "createPluginSlot"
+      ]
+    },
+    {
+      "id": "public-surface:kernel/policy",
+      "version": "0.4.0",
+      "kind": "kernel",
+      "entryPoint": "src/index.ts",
+      "exports": [
+        "*",
+        "createPolicyGate"
+      ]
+    },
+    {
+      "id": "public-surface:kernel/preflight",
+      "version": "0.4.0",
+      "kind": "kernel",
+      "entryPoint": "src/index.ts",
+      "exports": [
+        "ChangedFile",
+        "FilePreflightPlan",
+        "planFilePreflight",
+        "validateSafeCommand"
+      ]
+    },
+    {
+      "id": "public-surface:kernel/quality",
+      "version": "0.4.0",
+      "kind": "kernel",
+      "entryPoint": "src/index.ts",
+      "exports": [
+        "MetricStatus",
+        "PhaseMachineMetrics",
+        "PhaseTelemetry",
+        "PhaseTokenMetrics",
+        "QUALITY_DIMENSIONS",
+        "QualityDimension",
+        "QualityDimensionScore",
+        "QualityMatrix",
+        "WatchdogBlocker",
+        "WatchdogBudget",
+        "WatchdogResult",
+        "createQualityMatrix",
+        "evaluateWatchdog",
+        "validatePhaseTelemetry"
+      ]
+    },
+    {
+      "id": "public-surface:kernel/resilience",
+      "version": "0.4.0",
+      "kind": "kernel",
+      "entryPoint": "src/index.ts",
+      "exports": [
+        "FailureClass",
+        "FailureClassification",
+        "RecoveryObservation",
+        "RecoveryPolicy",
+        "RecoveryResult",
+        "classifyFailure",
+        "recoveryDelayMs",
+        "runWithRecovery"
+      ]
+    },
+    {
+      "id": "public-surface:kernel/state-machine",
+      "version": "0.4.0",
+      "kind": "kernel",
+      "entryPoint": "src/index.ts",
+      "exports": [
+        "approvedDecision",
+        "assertHuman",
+        "transition"
+      ]
+    },
+    {
+      "id": "public-surface:kernel/status",
+      "version": "0.4.0",
+      "kind": "kernel",
+      "entryPoint": "src/index.ts",
+      "exports": [
+        "StatusBlock",
+        "StatusSnapshot",
+        "createStatusSnapshot",
+        "validateStatusSnapshot"
+      ]
+    },
+    {
+      "id": "public-surface:kernel/types",
+      "version": "0.4.0",
+      "kind": "kernel",
+      "entryPoint": "src/index.ts",
+      "exports": [
+        "*"
+      ]
+    },
+    {
+      "id": "public-surface:kernel/wip",
+      "version": "0.4.0",
+      "kind": "kernel",
+      "entryPoint": "src/index.ts",
+      "exports": [
+        "*",
+        "WIP_STATES",
+        "assessWip"
+      ]
+    },
+    {
+      "id": "public-surface:kernel/workflow",
+      "version": "0.4.0",
+      "kind": "kernel",
+      "entryPoint": "src/index.ts",
+      "exports": [
+        "WorkflowNode",
+        "WorkflowResult",
+        "runWorkflow"
+      ]
+    }
+  ],
+  "digest": "072e4e83b1073f0bb62507b8fece6703eb57b33f5c4b621442d6368642b63e79"
+}

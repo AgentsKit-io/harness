@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.0] - 2026-09-10
+
+- Added phase quality matrices, watchdog classification, and resource telemetry.
+- Added versioned eval and ecosystem compatibility manifests with fail-closed
+  evidence handling.
+- Added runnable consumer onboarding, adapter examples, and troubleshooting.
+
 ## [0.3.0] - 2026-09-10
 
 - Added portable issue/worktree claims and idempotent dispatch ledger.

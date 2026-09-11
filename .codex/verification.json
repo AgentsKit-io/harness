@@ -3,22 +3,32 @@
   "project": "agentskit-harness",
   "root": "..",
   "stateDir": ".codex/verification",
+  "autonomy": "yolo",
   "contract": {
-    "intent": "Implement generic deterministic SDLC coordination, resilience, preflight, observability, and integration boundaries in @agentskit/harness 0.2.0.",
+    "intent": "Implement the 0.4.0 modular SDLC engine with explicit capability boundaries, deterministic phase execution, provenance-bound artifacts, and replaceable real-execution adapters with measured assurance.",
     "scope": {
-      "inScope": ["package source", "public CLI", "tests", "release workflow", "repository governance docs", "coordination ledger", "quota recovery", "machine guard policy", "file-scoped preflight", "block/status/retro records", "provider-neutral Orca and tracking adapters"],
+      "inScope": ["package source", "public CLI", "tests", "release workflow", "repository governance docs", "coordination ledger", "quota recovery", "machine guard policy", "file-scoped preflight", "block/status/retro records", "provider-neutral Orca and tracking adapters", "capability-boundary module organization", "public API compatibility", "versioned artifact envelopes", "decision log artifact records", "idempotent phase resume", "coding-agent adapter", "adapter assurance and telemetry", "dry-run external effects"],
       "outOfScope": ["GitHub repository creation", "npm publication", "external Linear/GitHub/Orca mutations", "dashboard hosting", "product decisions", "provider credentials"]
     },
     "ambiguities": [],
     "outcomes": [
-      { "id": "package", "statement": "The package typechecks, tests, builds, and packs as @agentskit/harness 0.2.0.", "checks": ["package-tests", "package-build", "package-pack"] },
+      { "id": "package", "statement": "The package typechecks, tests, builds, and packs as @agentskit/harness 0.4.0.", "checks": ["package-tests", "package-build", "package-pack"] },
       { "id": "cli", "statement": "The real CLI is runnable and exposes both ak-harness and ak-verify.", "checks": ["cli"] },
       { "id": "governance", "statement": "Repository governance and release documentation are complete and internally consistent.", "checks": ["repository-docs", "workflow"] }
       ,{ "id": "coordination", "statement": "Issue/worktree claims and dispatch records are atomic, idempotent, and human-recoverable.", "checks": ["coordination"] }
       ,{ "id": "resilience", "statement": "Retryable quota/timeout failures use bounded recovery while policy and validation failures fail closed.", "checks": ["resilience"] }
       ,{ "id": "preflight", "statement": "Changed-file preflight selects narrow checks and rejects shell-composed dispatch commands.", "checks": ["preflight"] }
+      ,{ "id": "review-delivery", "statement": "Adversarial review, PR content approval, publication gates, and QA transition decisions are deterministic and hash-bound.", "checks": ["review-delivery"] }
+      ,{ "id": "quality-matrix", "statement": "Phase telemetry and quality matrices report bounded 0-100 scores, honest unknowns, baseline deltas, and classified watchdog blockers.", "checks": ["quality-matrix"] }
+      ,{ "id": "eval-battery", "statement": "A versioned eval battery covers all execution layers and supported components, repeats deterministically, reports min/median/max, and blocks unknown, stale, critical, subjective, or unapproved regression evidence.", "checks": ["eval-battery"] }
+      ,{ "id": "compatibility-contract", "statement": "AgentsKit ecosystem compatibility is represented by pinned revisions, real-adapter commands, baseline bindings, and fail-closed evidence assessment.", "checks": ["compatibility-contract"] }
+      ,{ "id": "adoption", "statement": "A new consumer can run the documented minimum profile and adapter example without importing internal modules, with troubleshooting and organization guidance available.", "checks": ["adoption"] }
+      ,{ "id": "release-manifest", "statement": "The 0.4.0 release candidate has a versioned manifest, current package metadata, and a main-only Trusted Publishing path with explicit unresolved blockers.", "checks": ["release-manifest"] }
       ,{ "id": "records", "statement": "Portable block, status, retro/learning, model-policy, and machine-policy records validate deterministically.", "checks": ["records"] }
-      ,{ "id": "adapters", "statement": "Orca and tracking adapters produce provider-neutral, deterministic projections without external side effects.", "checks": ["adapters"] }
+      ,{ "id": "adapters", "statement": "Coding-agent, Orca, Doc Bridge, memory, cache, runtime, and tracking adapters expose provider-neutral contracts with explicit assurance, telemetry, bounded failures, and idempotent dry-run behavior.", "checks": ["adapters"] }
+      ,{ "id": "module-boundaries", "statement": "Capability modules are organized under explicit boundaries and forbidden kernel/provider imports fail deterministically.", "checks": ["boundaries"] }
+      ,{ "id": "phase-executor", "statement": "Phase profiles declare inputs, outputs, dependencies, gates, bounded retries, budgets, effects, and deterministic pass/block/escalate/retry/cancel/resume routing.", "checks": ["phase-executor"] }
+      ,{ "id": "artifacts", "statement": "Versioned artifacts bind run provenance, render as JSON and Markdown, record decisions in the event log, reject stale bindings, and resume completed phases without replaying handlers.", "checks": ["artifacts", "artifact-cli"] }
     ]
   },
   "surfaces": {
@@ -33,15 +43,25 @@
   "checks": [
     { "id": "package-tests", "category": "logic", "command": "pnpm test && node -e 'console.log(JSON.stringify({status:\"passed\",criteria:[\"package\"]}))'", "evidence": "structured", "timeoutMs": 180000 },
     { "id": "package-build", "category": "build", "command": "pnpm build && node -e 'console.log(JSON.stringify({status:\"passed\",criteria:[\"package\"]}))'", "evidence": "structured", "timeoutMs": 120000 },
-    { "id": "package-pack", "category": "cli", "execution": "real", "command": "pnpm pack --pack-destination /tmp/agentskit-harness-pack && node -e 'console.log(JSON.stringify({status:\"passed\",criteria:[\"package\"]}))'", "evidence": "structured", "timeoutMs": 120000 },
+    { "id": "package-pack", "category": "cli", "execution": "real", "command": "node scripts/verify-harness-consumer.mjs", "evidence": "structured", "timeoutMs": 120000 },
     { "id": "cli", "category": "cli", "execution": "real", "command": "node dist/cli.js --version && node dist/cli.js --help >/dev/null && node -e 'console.log(JSON.stringify({status:\"passed\",criteria:[\"cli\"]}))'", "evidence": "structured", "timeoutMs": 30000 },
     { "id": "repository-docs", "category": "docs", "command": "node scripts/verify-repository-docs.mjs", "evidence": "structured", "timeoutMs": 30000 },
     { "id": "workflow", "category": "docs", "command": "node scripts/verify-release-workflow.mjs", "evidence": "structured", "timeoutMs": 30000 }
     ,{ "id": "coordination", "category": "logic", "command": "pnpm vitest run --config vitest.config.ts test/coordination.test.ts && node -e 'console.log(JSON.stringify({status:\"passed\",criteria:[\"coordination\"]}))'", "evidence": "structured", "timeoutMs": 60000 }
     ,{ "id": "resilience", "category": "logic", "command": "pnpm vitest run --config vitest.config.ts test/resilience.test.ts && node -e 'console.log(JSON.stringify({status:\"passed\",criteria:[\"resilience\"]}))'", "evidence": "structured", "timeoutMs": 60000 }
     ,{ "id": "preflight", "category": "logic", "command": "pnpm vitest run --config vitest.config.ts test/preflight.test.ts && node -e 'console.log(JSON.stringify({status:\"passed\",criteria:[\"preflight\"]}))'", "evidence": "structured", "timeoutMs": 60000 }
+    ,{ "id": "review-delivery", "category": "logic", "command": "pnpm test:review && pnpm vitest run --config vitest.config.ts test/delivery.test.ts && node -e 'console.log(JSON.stringify({status:\"passed\",criteria:[\"review-delivery\"]}))'", "evidence": "structured", "timeoutMs": 60000 }
+    ,{ "id": "quality-matrix", "category": "logic", "command": "pnpm test:quality && pnpm vitest run --config vitest.config.ts test/metrics.test.ts test/optimization.test.ts && node -e 'console.log(JSON.stringify({status:\"passed\",criteria:[\"quality-matrix\"]}))'", "evidence": "structured", "timeoutMs": 60000 }
+    ,{ "id": "eval-battery", "category": "logic", "command": "pnpm test:eval-battery", "evidence": "structured", "timeoutMs": 120000 }
+    ,{ "id": "compatibility-contract", "category": "logic", "command": "pnpm test:compatibility", "evidence": "structured", "timeoutMs": 120000 }
+    ,{ "id": "adoption", "category": "cli", "execution": "real", "command": "pnpm test:examples && node -e 'console.log(JSON.stringify({status:\"passed\",criteria:[\"adoption\"]}))'", "evidence": "structured", "timeoutMs": 120000 }
+    ,{ "id": "release-manifest", "category": "docs", "command": "pnpm test:release-manifest && node -e 'console.log(JSON.stringify({status:\"passed\",criteria:[\"release-manifest\"]}))'", "evidence": "structured", "timeoutMs": 120000 }
     ,{ "id": "records", "category": "logic", "command": "pnpm vitest run --config vitest.config.ts test/block-learning-status.test.ts test/machine.test.ts && node -e 'console.log(JSON.stringify({status:\"passed\",criteria:[\"records\"]}))'", "evidence": "structured", "timeoutMs": 60000 }
-    ,{ "id": "adapters", "category": "logic", "command": "pnpm vitest run --config vitest.config.ts test/block-learning-status.test.ts && node -e 'console.log(JSON.stringify({status:\"passed\",criteria:[\"adapters\"]}))'", "evidence": "structured", "timeoutMs": 60000 }
+    ,{ "id": "adapters", "category": "logic", "command": "pnpm test:adapters && pnpm vitest run --config vitest.config.ts test/block-learning-status.test.ts && node -e 'console.log(JSON.stringify({status:\"passed\",criteria:[\"adapters\"]}))'", "evidence": "structured", "timeoutMs": 60000 }
+    ,{ "id": "boundaries", "category": "logic", "command": "pnpm test:boundaries && node -e 'console.log(JSON.stringify({status:\"passed\",criteria:[\"module-boundaries\"]}))'", "evidence": "structured", "timeoutMs": 60000 }
+    ,{ "id": "phase-executor", "category": "logic", "command": "pnpm test:phase-executor", "evidence": "structured", "timeoutMs": 60000 }
+    ,{ "id": "artifacts", "category": "logic", "command": "pnpm vitest run --config vitest.config.ts test/artifacts.test.ts && node -e 'console.log(JSON.stringify({status:\"passed\",criteria:[\"artifacts\"]}))'", "evidence": "structured", "timeoutMs": 60000 }
+    ,{ "id": "artifact-cli", "category": "cli", "execution": "real", "command": "pnpm build >/dev/null && node scripts/verify-artifact-cli.mjs", "evidence": "structured", "timeoutMs": 60000 }
   ],
   "tracking": { "required": false, "reason": "Repository bootstrap is local; GitHub and npm publication are separate authorized actions." },
   "budget": { "maxDurationMs": 600000 },

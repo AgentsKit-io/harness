@@ -1,0 +1,103 @@
+{
+  "type": "agentskit-harness-baseline",
+  "schemaVersion": 1,
+  "baselineId": "h040-main-f4b2b09",
+  "capturedAt": "2026-09-10T15:05:46Z",
+  "sourceRevision": "f4b2b092af97d528bd5fe5955ed38f101521b98d",
+  "sourceTreeDigest": "cb122aa2f14fc27e58501673bfef3f581553403f3ce43cad728dc984fcb8ef46",
+  "worktree": {
+    "status": "clean",
+    "porcelain": ""
+  },
+  "package": {
+    "name": "@agentskit/harness",
+    "version": "0.3.0",
+    "node": "v25.8.0",
+    "pnpm": "10.34.4"
+  },
+  "commands": [
+    {
+      "id": "typecheck",
+      "command": "pnpm typecheck",
+      "status": "passed",
+      "durationMs": 1954,
+      "evidence": "tsc -p tsconfig.json --noEmit exited 0"
+    },
+    {
+      "id": "test",
+      "command": "pnpm test",
+      "status": "passed",
+      "durationMs": 10083,
+      "evidence": {
+        "testFiles": 27,
+        "testsPassed": 110,
+        "testsSkipped": 1,
+        "testsTotal": 111,
+        "vitestDuration": "7.20s"
+      }
+    },
+    {
+      "id": "build",
+      "command": "pnpm build",
+      "status": "passed",
+      "durationMs": 2755,
+      "evidence": "tsup ESM and DTS builds exited 0"
+    },
+    {
+      "id": "pack",
+      "command": "pnpm pack --pack-destination <temporary-directory>",
+      "status": "passed",
+      "durationMs": 1758,
+      "artifact": {
+        "name": "agentskit-harness-0.3.0.tgz",
+        "sha256": "1900288c698bcb51b636b78c68c12c9856995fc093906d36261b25012af48bef"
+      }
+    },
+    {
+      "id": "repository-docs",
+      "command": "node scripts/verify-repository-docs.mjs",
+      "status": "passed",
+      "evidence": "{\"status\":\"passed\",\"criteria\":[\"governance\"],\"files\":8}"
+    },
+    {
+      "id": "release-workflow",
+      "command": "node scripts/verify-release-workflow.mjs",
+      "status": "passed",
+      "evidence": "{\"status\":\"passed\",\"criteria\":[\"governance\"]}"
+    },
+    {
+      "id": "doctor",
+      "command": "node dist/cli.js doctor --json",
+      "status": "passed-with-legacy-contract",
+      "evidence": "CLI parsed the contract, but the loaded contract still describes the 0.2.0 bootstrap and is not evidence for 0.4.0 readiness."
+    }
+  ],
+  "historicalHarnessRuns": {
+    "manifest": "benchmarks/harness-phase-22.json",
+    "command": "node dist/cli.js benchmark --manifest benchmarks/harness-phase-22.json --json",
+    "observedAt": "2026-09-10T15:05:26Z",
+    "summary": {
+      "totalRuns": 3,
+      "completeRuns": 0,
+      "supersededRuns": 2,
+      "staleRuns": 1,
+      "checkPassRate": 1,
+      "outcomePassRate": 1,
+      "evidenceCoverageRate": 1,
+      "averageDurationMs": 21471,
+      "medianDurationMs": 21511
+    },
+    "interpretation": "Historical state only; not a comparable H-040 no-Harness or 0.4.0 cohort."
+  },
+  "noHarnessBaseline": {
+    "status": "not-run",
+    "reason": "No controlled no-Harness cohort, task sample, or owner-approved protocol was supplied at capture time.",
+    "requiredInputs": [
+      "at least ten comparable tasks from the same repository and priority band",
+      "fixed acceptance criteria and review policy",
+      "manual/no-Harness execution logs with duration, attempts, review minutes, and escaped-incomplete count",
+      "owner approval of the cohort and comparison window"
+    ],
+    "doNotInfer": true
+  }
+}

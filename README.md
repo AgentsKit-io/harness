@@ -6,13 +6,17 @@ docbridge:
 
 # @agentskit/harness
 
-Portable, evidence-backed development protocol for coding agents. The harness freezes a human-approved task contract, executes every configured check, binds evidence to the current source revision, detects stale results, and refuses completion without human approval.
+Portable, evidence-backed development protocol for coding agents. The harness freezes a task contract, executes every configured check, binds evidence to the current source revision, detects stale results, and applies the configured controlled or YOLO approval policy.
 
 ## Install
 
 ```bash
 pnpm add -D @agentskit/harness
 ```
+
+New consumers can run [`examples/minimum-profile.mjs`](examples/minimum-profile.mjs)
+after `pnpm build`; the walkthrough is in [`docs/GETTING-STARTED.md`](docs/GETTING-STARTED.md).
+Common gate and runtime failures are documented in [`docs/TROUBLESHOOTING.md`](docs/TROUBLESHOOTING.md).
 
 The package requires Node.js 22 or newer and exposes both `ak-harness` and the common-protocol alias `ak-verify`.
 
@@ -44,7 +48,7 @@ Endpoint, database, CLI, MCP, and UI checks must declare `execution: "real"`. UI
 
 ## API
 
-The public TypeScript API is exported from `src/index.ts` and includes configuration loading, lifecycle operations, state transitions, evidence verification, approvals, cancellation, retries, and task-owned cleanup. Internal modules are not part of the supported API.
+The public TypeScript API is exported from `src/index.ts` and includes configuration loading, lifecycle operations, state transitions, evidence verification, approvals, cancellation, retries, task-owned cleanup, versioned capability manifests, event-envelope validation, deterministic phase execution, and stable error classification. Internal modules are not part of the supported API. The checked-in [capability manifest](./capabilities/public-surface.json) is generated from this entry point; run `pnpm test:capabilities` to detect drift.
 
 ## Extensibility
 
@@ -85,6 +89,29 @@ the current state, so a post-approval edit cannot appear as `COMPLETE`.
 Concurrent event writers are serialized by an atomic per-run lock and fail
 closed if the log is busy.
 
+Structured plans, findings, decisions, repairs, blockers, approvals, and phase
+results can be persisted as provenance-bound `ArtifactEnvelope` records. Each
+artifact has a version, run/issue/source/contract/config/context hashes, a
+content digest, and both JSON and Markdown representations. `FileArtifactStore`
+is idempotent: retrying the same write does not duplicate the event-log record.
+Use `resumeStateFromArtifacts` to rebuild completed phase outputs after an
+interruption, and inspect records with `ak-harness artifacts inspect <path>` or
+`ak-harness artifacts list [run-id]`.
+
+The legacy event-log record remains schema version 1 for compatibility. New
+provider-neutral integrations can exchange the schema-versioned v2
+`HarnessEventEnvelope`, which requires event identity, correlation, source
+revision, idempotency, and provenance metadata. `classifyHarnessError` maps
+stable Harness error codes to `retry`, `block`, or `escalate` dispositions.
+
+Replaceable integrations use the shared `AdapterMetadata` contract: every
+adapter declares an assurance level (`unverified`, `contract-tested`, or
+`runtime-attested`) and measured/unknown telemetry. Coding agents return
+structured output, diff, usage, timeout/cancellation status, and failure
+classification; Doc Bridge reports relevance and context cost; Orca exposes
+lease/lock/worktree/SHA projections; and tracking adapters deduplicate effects
+by idempotency key (with a dry-run mode).
+
 Each harness event may also carry an optional `correlation` envelope. Its
 `operationId` is the stable identity used when a lifecycle crosses into
 AgentsKit, Chat, Doc Bridge, or Code Review; the optional `runId`, `sessionId`,
@@ -122,6 +149,40 @@ contract is frozen:
 `runtime.kind` chooses the executor used by an integration: `process` is a bounded shell-free local child process; `docker` adds the Docker sandbox. The choice is frozen in the resolved contract and therefore changes its hash. Docker remains fail-closed when its daemon or image is unavailable.
 
 `autonomy: "yolo"` removes the generic final review only after every applicable check passes, tracking is disabled, and the frozen contract has no ambiguity. It never auto-approves a material decision, external tracking, or a tool rule that requires approval.
+
+The phase executor applies the same rule to a declarative SDLC profile. A profile
+declares dependencies, inputs/outputs, gates, bounded retries, budgets, and an
+effect class (`read`, `write`, or `external`). `safe`, `yolo`, and `dry-run`
+profiles share the engine; only the effect policy changes:
+
+```ts
+const profile = createPhaseProfile({
+  id: 'feature', mode: 'yolo',
+  phases: [
+    { id: 'discover', outputs: ['plan'], effect: 'read' },
+    { id: 'implement', inputs: ['plan'], dependsOn: ['discover'], effect: 'write' },
+  ],
+})
+const result = await executePhaseProfile(profile, {
+  preflight: grillMeAndPreflight,
+  handlers: { discover, implement },
+})
+```
+
+Preflight runs for all mutating phases before any effect. Material ambiguities
+are returned as one structured decision packet; dry-run previews mutating phases
+without invoking their handlers. `planPhaseProfile` exposes the deterministic
+route without executing it.
+
+`runAdversarialReview` executes independent review lenses with bounded
+concurrency/retries and blocks empty or non-reproducible verdicts. Delivery
+helpers hash-bind the approved PR body/metadata and only emit a QA transition
+after feature validation and G5 acceptance; failed QA returns to verification.
+
+`createQualityMatrix` aggregates phase evidence, outcomes, duration, token/cache,
+machine, and concurrency signals into bounded 0–100 dimensions with baseline
+deltas. Missing measurements remain `unknown`; `evaluateWatchdog` emits typed
+budget/resource/contention blockers instead of treating absent data as success.
 
 Use named profiles to make the operational choice explicit:
 
@@ -241,6 +302,17 @@ in sorted, bounded fan-out/fan-in batches while serializing nodes that share a
 `mutationKey`. `OptimizationObservation` carries
 optional token, memory, cache, and parallelism measurements and refuses
 incomparable provider/model/configuration bindings.
+
+`evals/manifest.json` is the versioned evaluation battery. `validateEvalManifest`
+requires contract, deterministic, integration, quality, regression, and
+resource layers plus coverage for every supported component. `runEvalBattery`
+repeats each case and reports min/median/max scores; unknown, stale, critical,
+subjective, or unapproved regression results block the gate.
+
+`compatibility/manifest.json` pins the AgentsKit ecosystem revisions and the
+upstream test/eval commands. `assessCompatibility` accepts only complete,
+evidence-bound real-adapter observations and blocks unknown or failed upstream
+results; migration and rollback procedures are kept beside the manifest.
 
 These are seams, not replacements for AgentsKit packages. An integration may
 adapt `@agentskit/memory` and `@agentskit/eval` into them while keeping the
@@ -524,6 +596,9 @@ Releases are published by `.github/workflows/release-harness.yml` after a merge 
 or require an `NPM_TOKEN`. Configure the npm trusted publisher once for
 `AgentsKit-io/harness`, workflow `release-harness.yml`, and package
 `@agentskit/harness`; version changes remain the release trigger.
+The 0.4.0 candidate checklist and explicit blockers live in
+[`release/manifest.json`](release/manifest.json) and
+[`release/notes.md`](release/notes.md).
 
 ## License
 
