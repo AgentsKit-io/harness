@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.6.0] - 2026-09-12
+
+- Loop **approved memory** for token reduction and continuous improvement: file store under `stateDir`, recall into contract/brief with `preferOverDocBridge` + issue-char shrink, human-only `ak-harness loop learning promote`, `memory.recalled` events.
+- Doctor: Doc Bridge index/freshness checks; review CLI PATH/`--help` probe (warning when missing).
+- Worker brief lists Doc Bridge `playbook` / `for-agents` guidance paths (`contract.briefScopes`).
+- Optional deliver smoke gate (`delivery.smoke.verify-argv`) before auto-merge.
+- Optional `agents.registry.yaml` role overlay; RAG `ContextProvider` via argv (no hard dep); MCP tool bridge behind policy ([ADR-0028](docs/ADR-0028-mcp-adapter-boundary.md), not loop-wired).
+- Optional weekly Linear retro automation (`schedule.retro` + `schedule.retroIssue` → `loop stage retro`).
+- Config knobs default off / fail-soft so existing `loop.config.yaml` behaviour is unchanged.
+
 ## [0.5.0] - 2026-09-11
 
 - Added the keep-pushing SDLC loop foundation (`ak-harness loop validate|doctor`): `loop.config.yaml` schema (zod), provider detection with Orca usage/rate-limit awareness and cooldowns, role-based tiered model routing, machine slot assessment, Orca CLI and Linear-via-Orca adapters, and the loop doctor report.

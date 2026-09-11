@@ -89,7 +89,7 @@ describe('loop install', () => {
     expect(status.summary).toMatch(/^loop: installed \(2\/2, last run 2026-/)
     expect(parseAutomationRuns({ runs: [{ createdAt: '2026-01-01T00:00:00.000Z', outcome: 'ok' }] })).toEqual([{ at: '2026-01-01T00:00:00.000Z', status: 'ok' }])
     const removed = await uninstallLoopAutomations({ loaded: env1.loaded, runner: env1.runner })
-    expect(removed.actions.map((action) => action.action)).toEqual(['remove', 'remove'])
+    expect(removed.actions.map((action) => action.action)).toEqual(['remove', 'remove', 'skip'])
     expect(env1.automations.map((item) => item['name'])).toEqual(['someone-else'])
     const again = await uninstallLoopAutomations({ loaded: env1.loaded, runner: env1.runner })
     expect(again.actions.every((action) => action.action === 'skip')).toBe(true)

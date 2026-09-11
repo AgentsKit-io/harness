@@ -1,3 +1,7 @@
+# 0.6.0 release candidate
+
+Keep-pushing loop gains approved memory (token reduction + continuous improvement), Doc Bridge freshness/review doctor probes, brief guidance scopes, optional deliver smoke, agent registry YAML, RAG context provider, MCP adapter seam (ADR-0028), Docker verify config, and weekly Linear retro automation. Config defaults preserve 0.5.0 behaviour.
+
 # 0.5.0 release candidate
 
 This release adds the keep-pushing SDLC loop (`ak-harness loop …`): project config with a per-machine overlay,

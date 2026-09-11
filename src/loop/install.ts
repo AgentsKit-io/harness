@@ -8,7 +8,7 @@ import { activeCooldowns, readCooldowns } from './cooldown.js'
 import { providerSpecs } from './doctor.js'
 import { rankModels } from './routing.js'
 
-export type LoopStage = 'tick' | 'deliver'
+export type LoopStage = 'tick' | 'deliver' | 'retro'
 export const LOOP_STAGES: readonly LoopStage[] = ['tick', 'deliver']
 
 export interface InstallInput {
@@ -32,19 +32,23 @@ export const automationName = (config: LoopConfig, stage: LoopStage): string => 
 export const shellQuote = (value: string): string => `"${value.replace(/"/g, '\\"')}"`
 
 /** The exact command Orca runs before each scheduled run. `agent` runner: exit 0 = work exists. `precheck` runner: runs the whole stage and exits 1 so no agent is launched. */
-export const precheckCommand = (config: LoopConfig, configPath: string, stage: LoopStage): string => config.schedule.runner === 'precheck' ? `${config.schedule.harnessCommand} loop stage ${stage} -f ${shellQuote(configPath)}` : `${config.schedule.harnessCommand} loop precheck ${stage} -f ${shellQuote(configPath)}`
+export const precheckCommand = (config: LoopConfig, configPath: string, stage: LoopStage): string =>
+  config.schedule.runner === 'precheck'
+    ? `${config.schedule.harnessCommand} loop stage ${stage} -f ${shellQuote(configPath)}`
+    : `${config.schedule.harnessCommand} loop precheck ${stage === 'retro' ? 'deliver' : stage} -f ${shellQuote(configPath)}`
 
 /** Prompt the automation agent receives: run the harness stage, report, do nothing else. */
 export const automationPrompt = (config: LoopConfig, configPath: string, stage: LoopStage): string => config.schedule.runner === 'precheck' ? `This automation does its work inside its precheck command (${precheckCommand(config, configPath, stage)}), which always exits non-zero so that no agent session is needed. If you are reading this, the precheck unexpectedly exited 0: reply exactly LOOP_PRECHECK_BYPASSED and stop. Do not run any command.` : `You are the scheduled runner of the AgentsKit keep-pushing loop for ${config.project.repo}. Run exactly this command in the current workspace and nothing else:
 
-${config.schedule.harnessCommand} loop ${stage} -f ${shellQuote(configPath)} --json
+${config.schedule.harnessCommand} loop ${stage === 'retro' ? 'stage retro' : stage} -f ${shellQuote(configPath)} --json
 
 Then reply with a two-line summary of the JSON report (status, and the per-issue outcomes). Do not edit files, do not open pull requests, do not run other commands, do not retry on failure — the next scheduled run will. If the command is not found, reply "HARNESS_MISSING" and stop.`
 
 export const automationSpecs = (loaded: LoadedLoopConfig, provider: string): readonly (OrcaAutomationSpec & { readonly stage: LoopStage })[] => {
   const { config } = loaded
   const workspace = config.orca.workspaceSelector ?? `path:${loaded.root}`
-  return LOOP_STAGES.map((stage) => ({
+  const stages: LoopStage[] = [...LOOP_STAGES]
+  const specs = stages.map((stage) => ({
     stage,
     name: automationName(config, stage),
     trigger: stage === 'tick' ? config.schedule.tick : config.schedule.deliver,
@@ -57,6 +61,22 @@ export const automationSpecs = (loaded: LoadedLoopConfig, provider: string): rea
     reuseSession: true,
     enabled: true,
   }))
+  if (config.schedule.retro && config.schedule.retroIssue) {
+    specs.push({
+      stage: 'retro',
+      name: automationName(config, 'retro'),
+      trigger: config.schedule.retro,
+      prompt: automationPrompt(config, loaded.path, 'retro'),
+      provider,
+      precheck: precheckCommand(config, loaded.path, 'retro'),
+      precheckTimeoutSec: config.schedule.runner === 'precheck' ? config.schedule.stageTimeoutSec : config.schedule.precheckTimeoutSec,
+      workspace,
+      ...(config.orca.host ? { host: config.orca.host } : {}),
+      reuseSession: true,
+      enabled: true,
+    })
+  }
+  return specs
 }
 
 const chooseProvider = async (input: InstallInput, loaded: LoadedLoopConfig): Promise<string> => {
@@ -76,6 +96,8 @@ export const installLoopAutomations = async (input: InstallInput): Promise<Insta
   const notes: string[] = []
   const bin = config.schedule.harnessCommand.split(/\s+/)[0] ?? config.schedule.harnessCommand
   if (!findExecutable(bin, input.env ?? process.env, input.platform ?? process.platform)) notes.push(`"${bin}" is not on PATH for this shell; Orca runs the precheck/prompt in its own environment — install it globally (npm i -g @agentskit/harness) or set schedule.harnessCommand to an absolute command.`)
+  if (config.schedule.retro && !config.schedule.retroIssue) notes.push('schedule.retro is set but schedule.retroIssue is missing — skipping <prefix>-retro automation')
+  if (!config.schedule.retro && config.schedule.retroIssue) notes.push('schedule.retroIssue is set but schedule.retro cron is missing — skipping <prefix>-retro automation')
   const provider = await chooseProvider(input, loaded)
   const orca = { bin: config.orca.bin, timeoutMs: config.orca.timeoutMs }
   const existing = await orcaAutomationsList(input.runner, orca)
@@ -103,7 +125,8 @@ export const uninstallLoopAutomations = async (input: InstallInput): Promise<Ins
   const existing = await orcaAutomationsList(input.runner, orca)
   const actions: InstallAction[] = []
   let failed = false
-  for (const stage of LOOP_STAGES) {
+  const stages: LoopStage[] = [...LOOP_STAGES, 'retro']
+  for (const stage of stages) {
     const name = automationName(config, stage)
     const current = existing.find((item) => item.name === name)
     if (!current) { actions.push({ name, stage, action: 'skip', id: null, argv: [], detail: 'not installed' }); continue }

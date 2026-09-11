@@ -117,11 +117,29 @@ export const LoopConfigSchema = z.object({
       maxCalls: z.number().int().positive().max(1000).default(400),
       /** Post the review to the PR (inline + summary). */
       post: z.boolean().default(true),
+      /** Doctor probe depth for the review CLI (`help` runs `--help`; `none` only checks PATH). */
+      doctorProbe: z.enum(['help', 'none']).default('help'),
     }).prefault({}),
     merge: z.object({
       auto: z.boolean().default(true),
       method: z.enum(['squash', 'merge', 'rebase']).default('squash'),
       requireChecks: z.boolean().default(true),
+    }).prefault({}),
+    /** Optional bounded smoke gate before auto-merge (argv via CommandRunner; default off). */
+    smoke: z.object({
+      enabled: z.boolean().default(false),
+      kind: z.enum(['none', 'verify-argv']).default('none'),
+      argv: z.array(nonEmpty).default([]),
+      timeoutMs: z.number().int().positive().default(120_000),
+    }).prefault({}),
+    /** Harness-side verify runtime for smoke/doctor only; workers still see `verifyCommand` as a string. */
+    verify: z.object({
+      runtime: z.enum(['process', 'docker']).default('process'),
+      argv: z.array(nonEmpty).default([]),
+      docker: z.object({
+        image: z.string().trim().default(''),
+        cwd: nonEmpty.default('/work'),
+      }).prefault({}),
     }).prefault({}),
     maxFixRounds: z.number().int().min(0).default(2),
     workerIdleTimeoutMin: z.number().int().positive().default(45),
@@ -143,10 +161,59 @@ export const LoopConfigSchema = z.object({
     maxContextReferences: z.number().int().min(0).default(6),
     /** Re-generate a cached contract older than this many hours (0 = always reuse). */
     reuseHours: z.number().min(0).default(72),
+    /** Warn (or fail when requireDocBridge) when the Doc Bridge index mtime is older than this many hours. */
+    docBridgeMaxAgeHours: z.number().min(0).default(168),
+    /** When true, doctor fails if `.doc-bridge/index.json` is missing or unreadable. */
+    requireDocBridge: z.boolean().default(false),
+    /** Doc Bridge scopes resolved into the worker brief (titles/paths only). */
+    briefScopes: z.array(nonEmpty).default(['playbook', 'for-agents']),
+    maxBriefReferences: z.number().int().min(0).default(4),
+    /** Context providers consulted when freezing a contract. */
+    contextProviders: z.array(z.enum(['doc-bridge', 'rag'])).default(['doc-bridge']),
+  }).prefault({}),
+  memory: z.object({
+    /** Master switch. When false the loop never recalls or writes memory. */
+    enabled: z.boolean().default(false),
+    backend: z.enum(['file', 'none']).default('file'),
+    /** Directory under stateDir for the file KV store. */
+    storePath: nonEmpty.default('memory'),
+    maxRecall: z.number().int().positive().default(5),
+    maxSummaryChars: z.number().int().positive().default(240),
+    maxBlockChars: z.number().int().positive().default(1_200),
+    /** Drop Doc Bridge refs covered by memory so the context budget shrinks. */
+    preferOverDocBridge: z.boolean().default(true),
+    minDocBridgeWhenMemory: z.number().int().min(0).default(2),
+    scopes: z.array(z.enum(['issue', 'project', 'global'])).default(['project', 'global']),
+    includeStale: z.boolean().default(false),
+    writeOnPromote: z.boolean().default(true),
+    categories: z.array(z.enum(['worked', 'problem', 'adjustment', 'other'])).default(['adjustment']),
+    shrinkIssueCharsWhenMemory: z.boolean().default(true),
+    issueCharsWithMemory: z.number().int().positive().default(4_000),
+  }).prefault({}),
+  agents: z.object({
+    registryPath: nonEmpty.default('agents.registry.yaml'),
+    /** When true, missing registry or role entry fails doctor/routing closed. */
+    requireRegistry: z.boolean().default(false),
+  }).prefault({}),
+  rag: z.object({
+    enabled: z.boolean().default(false),
+    /** Argv that prints a ContextSnapshot (or `{ references, sourceHash }`) JSON on stdout. */
+    queryArgv: z.array(nonEmpty).default([]),
+    timeoutMs: z.number().int().positive().default(30_000),
+    maxReferences: z.number().int().min(0).default(4),
+  }).prefault({}),
+  mcp: z.object({
+    /** Public API / future CLI only in 0.6.0 — not wired into tick/deliver. */
+    enabled: z.boolean().default(false),
+    allowTools: z.array(nonEmpty).default([]),
   }).prefault({}),
   schedule: z.object({
     tick: cron.default('*/5 * * * *'),
     deliver: cron.default('*/10 * * * *'),
+    /** When set with `retroIssue`, install also creates `<prefix>-retro`. */
+    retro: cron.optional(),
+    /** Linear issue that receives the weekly retro digest comment. */
+    retroIssue: nonEmpty.optional(),
     precheckTimeoutSec: z.number().int().positive().default(120),
     /** How the Orca automation invokes the harness inside the workspace; `-f <config>` is appended. */
     harnessCommand: nonEmpty.default('ak-harness'),

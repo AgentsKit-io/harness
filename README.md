@@ -13,7 +13,8 @@ Portable, evidence-backed development protocol for coding agents. The harness fr
 `ak-harness loop …` drains one person's Linear queue through Orca worktrees 24/7 — tiered model routing with
 usage-aware fallback, orchestrator-frozen contracts, adversarial review, squash-merge, and one deduplicated
 escalation when a ticket cannot be verified. Everything project-specific lives in `loop.config.yaml`
-(start from [`loop.config.example.yaml`](loop.config.example.yaml)). Guide: [`docs/LOOP.md`](docs/LOOP.md) ·
+(start from [`loop.config.example.yaml`](loop.config.example.yaml)). Guide: [`docs/LOOP.md`](docs/LOOP.md)
+(setup, Orca automations, Doc Bridge + `agentskit-review` wiring, AgentsKit ecosystem map, SDLC extension ideas) ·
 decision record: [`docs/ADR-0027-keep-pushing-loop.md`](docs/ADR-0027-keep-pushing-loop.md).
 
 ## Install

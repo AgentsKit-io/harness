@@ -1,4 +1,4 @@
-import { readFileSync } from 'node:fs'
+import { existsSync, readFileSync, statSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { hashJson } from '../kernel/hash.js'
 import { hashContextSnapshot } from '../context/index.js'
@@ -21,6 +21,30 @@ const matches = (entry: IndexEntry, query: ContextQuery): boolean => {
 export interface DocBridgeContextProviderOptions {
   readonly root: string
   readonly indexPath?: string
+}
+
+export interface DocBridgeIndexInspection {
+  readonly present: boolean
+  readonly path: string
+  readonly contentHash: string | null
+  readonly mtimeMs: number | null
+  readonly ageHours: number | null
+  readonly error: string | null
+}
+
+/** Read-only inspection for doctor freshness checks (no network, no rebuild). */
+export const inspectDocBridgeIndex = (root: string, indexPath = '.doc-bridge/index.json', now = Date.now()): DocBridgeIndexInspection => {
+  const path = resolve(root, indexPath)
+  if (!existsSync(path)) return { present: false, path, contentHash: null, mtimeMs: null, ageHours: null, error: null }
+  try {
+    const stat = statSync(path)
+    const document = JSON.parse(readFileSync(path, 'utf8')) as IndexDocument
+    const contentHash = sourceHash(document)
+    const ageHours = Math.max(0, (now - stat.mtimeMs) / 3_600_000)
+    return { present: true, path, contentHash, mtimeMs: stat.mtimeMs, ageHours, error: null }
+  } catch (error) {
+    return { present: true, path, contentHash: null, mtimeMs: null, ageHours: null, error: error instanceof Error ? error.message : String(error) }
+  }
 }
 
 export const createDocBridgeContextProvider = ({ root, indexPath = '.doc-bridge/index.json' }: DocBridgeContextProviderOptions): ContextProvider => ({

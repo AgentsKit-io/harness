@@ -149,7 +149,10 @@ Orca, and tracking. No adapter implementation is re-exported wholesale.
 
 ## External integration inventory
 
-| Integration | Current location | Side effects | 0.4.0 boundary |
+How these seams are wired into the keep-pushing loop (and what is still only a kernel contract) is summarized in
+[`LOOP.md`](LOOP.md#integrations-used-by-the-loop) and the [AgentsKit ecosystem map](LOOP.md#agentskit-ecosystem-map-what-the-harness-has-vs-what-the-loop-uses).
+
+| Integration | Current location | Side effects | Boundary |
 | --- | --- | --- | --- |
 | Doc Bridge | `src/adapters/doc-bridge.ts` | Reads a local index | Keep behind `ContextProvider`; measure context hit/quality separately. |
 | Orca | `src/adapters/orca.ts` | None; produces argv and lifecycle projections only | Keep lease/worktree/issue-lock/SHA planning provider-neutral; execution belongs to the orchestrator. |
@@ -161,8 +164,10 @@ Orca, and tracking. No adapter implementation is re-exported wholesale.
 | Process runtime | `src/execution/runtime.ts` | Starts child processes | Execution support; policy and evidence gates remain kernel decisions. |
 | Docker runtime | `src/execution/runtime.ts` | Starts Docker containers | Optional sandbox selected by config, never a mandatory kernel dependency. |
 | LLM provider/model | Caller/plugin | Provider call and token spend | Bind provider/model in experiment metadata; do not embed SDKs in kernel. |
-| Memory backend | Caller/plugin; `memory.ts` contract | Backend reads/writes | Keep record validation in kernel; backend adapter owns persistence. |
-| MCP/event bridge | Not implemented | Future network/event effects | Add as adapters only after a separate ADR and eval coverage. |
+| Memory backend | Caller/plugin; `memory.ts` + `loop/memory.ts` | Backend reads/writes; loop file store under `stateDir` | Only human-promoted approved records enter loop prompts; prefer-over-DocBridge shrinks tokens. |
+| RAG context | `src/adapters/rag-context.ts` | Optional argv / injected query | No hard `@agentskit/rag` dep; same ContextProvider freeze rules as Doc Bridge. |
+| Agent registry (file) | `src/loop/agent-registry.ts` | Reads YAML | Role→TUI/argv overlay; fail closed only when `agents.requireRegistry`. |
+| MCP/event bridge | `src/adapters/mcp.ts` + [ADR-0028](ADR-0028-mcp-adapter-boundary.md) | Policy-gated tool calls | Adapter-only in 0.6.0; **not** wired into tick/deliver. |
 
 ## Review status
 

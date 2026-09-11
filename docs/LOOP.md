@@ -160,6 +160,87 @@ When a provider runs out of usage the loop records a cooldown in `<stateDir>/pro
 inside a WSL distro (host Defender load is invisible there). The loop never lowers a running worker; it only
 decides whether to start another.
 
+## Integrations used by the loop
+
+The loop talks to the rest of AgentsKit through **adapters and CLI seams**, not by importing those packages into
+the published dependency tree. `@agentskit/harness` stays dependency-light (`commander`, `ink`, `react`, `yaml`,
+`zod`); Doc Bridge and Code Review are optional at runtime.
+
+### Doc Bridge (context for the orchestrator)
+
+| Item | Detail |
+|---|---|
+| Adapter | `src/adapters/doc-bridge.ts` → `createDocBridgeContextProvider` |
+| Loop wiring | `resolveDocContext` in `src/loop/contract.ts` |
+| Trigger | `.doc-bridge/index.json` exists under `project.root` |
+| Knob | `contract.maxContextReferences` (default `6`; `0` disables) |
+| Behaviour | Query is `"<issue id> <title>"`. Up to N deterministic references are appended to the orchestrator prompt. Missing or malformed index → **no refs** (loop continues). |
+| Boundary | No `@agentskit/doc-bridge` import; the adapter only reads the local index contract ([ADR-0003](ADR-0003-doc-bridge-context-binding.md)). Index build/refresh stays with Doc Bridge (`pnpm docs:bridge:index` in repos that use it). |
+
+### Code Review (`agentskit-review`)
+
+| Item | Detail |
+|---|---|
+| Adapter | `src/adapters/code-review.ts` → `runCodeReview` / `buildReviewArgv` |
+| Loop wiring | Deliver stage, after CI is green and the head has not been reviewed |
+| CLI | `delivery.review.cli` (default `agentskit-review` from `@agentskit/code-review`) |
+| Knobs | `mode` (`trusted-local` recommended so CLI logins work), `transport` (`headless` for current Grok CLI), `profile` (`fast` fits a 600 s Orca stage; `full` needs batching), `votes`, `concurrency`, `minSeverity`, `deadlineMs`, `maxCalls`, `post` |
+| Provider/model | First available candidate from `models.reviewer` tiers |
+| Verdicts | exit `0` → clean (merge path); `1` → findings ≥ floor (fix round); `2` / timeout / incomplete → wait and retry |
+| Boundary | Argv + `--result` file only; the harness never embeds the review SDK. |
+
+### Eval battery (package quality, not the live loop)
+
+`evals/manifest.json` plus `runEvalBattery` / `pnpm test:eval-battery` score harness components (`doc-bridge`,
+`code-review`, `orca-worktree`, `memory`, …) under a frozen fixture provider. That is the **library** eval gate.
+The live SDLC loop does **not** call the eval battery on every PR; it calls `agentskit-review` on each head.
+
+Loop-focused Vitest coverage lives under `test/loop-*.test.ts`, `test/review.test.ts`, and `test/doc-bridge.test.ts`.
+
+## AgentsKit ecosystem map (what the harness has vs what the loop uses)
+
+Legend: **Loop** = wired into `ak-harness loop …` today · **Kernel** = public API / contracts available to callers ·
+**Compat** = pinned in `compatibility/manifest.json` · **Absent** = no seam yet.
+
+| Capability | Status | Where | Notes for SDLC |
+|---|---|---|---|
+| **Doc Bridge** | Loop + Kernel + Compat | `adapters/doc-bridge.ts`, contract stage | Optional context on contract freeze. Playbook/docs surfaces appear as Doc Bridge scopes when the index includes them. |
+| **Code Review** | Loop + Compat | `adapters/code-review.ts`, deliver | Live adversarial review before auto-merge. |
+| **Orca / Linear / GitHub** | Loop | `adapters/orca-cli.ts`, `linear-orca.ts`, `github-cli.ts` | Scheduler, worktrees, queue, PR merge. |
+| **Coding-agent CLIs** | Loop | `adapters/providers.ts`, `models.*` tiers | Claude / Codex / Grok / OpenCode via TUI + headless templates — not an AgentsKit agent registry. |
+| **Memory** | Loop + Kernel + Compat | `kernel/memory.ts`, `loop/memory.ts` | Approved learnings (`loop learning promote`) shrink Doc Bridge/issue text in contract + brief. |
+| **Eval** | Kernel + Compat | `kernel/eval.ts`, `evals/manifest.json` | Battery + `assessAgentEval`. **Not run inside tick/deliver**. |
+| **Runtime (process / Docker)** | Kernel | `execution/runtime.ts` | Tool runtimes with attestation for kernel/agent sessions. Loop workers run as Orca terminals + provider TUIs instead. |
+| **Plugin / context registry** | Kernel | `kernel/plugins.ts`, `CONTEXT_PROVIDER_SLOT` | Typed slots so Doc Bridge / Playbook / custom providers plug in without kernel changes. Loop uses Doc Bridge directly today. |
+| **Playbook practices** | Loop (via Doc Bridge scopes) | `contract.briefScopes` → worker brief | Titles/paths for `playbook` / `for-agents` scopes listed in the brief when indexed. |
+| **RAG (`@agentskit/rag` / os-rag)** | Kernel adapter (opt-in) | `adapters/rag-context.ts` | Argv/`ContextProvider` seam; enable via `rag.enabled` + `contract.contextProviders`. No hard dep. |
+| **AgentsKit agent registry** | Composition (opt-in file) | `loop/agent-registry.ts` | Optional `agents.registry.yaml` role→TUI/argv overlay. Not OS marketplace. |
+| **MCP / event bridge** | Kernel adapter + ADR-0028 | `adapters/mcp.ts` | Policy-gated tool bridge; **not** wired into tick/deliver in 0.6.0. |
+| **`@agentskit/core` / `@agentskit/eval` / `@agentskit/memory`** | Compat pins only | `compatibility/manifest.json` | Upstream packages are compatibility-tested; harness does **not** depend on them at runtime. Callers adapt them through the seams above. |
+
+Compatibility report for 0.4.0 was **fail-closed** on code-review quality baselines and the no-Harness pilot cohort; see `compatibility/report.md`. Refresh after each release (qualification + pinned revisions).
+
+## What can be added to help the SDLC
+
+**0.6.0 ships the backlog below** (memory, doctor freshness/review probe, brief scopes, deliver smoke, agent registry, RAG provider, MCP seam+ADR, Docker verify config, weekly retro automation). Remaining work is dogfooding and deeper MCP/OS registry integrations.
+
+Ordered by leverage for a keep-pushing loop (config/adapters first; no kernel redesign required for the early items).
+
+| Priority | Addition | Why it helps | Suggested shape |
+|---|---|---|---|
+| P0 | **Memory in contract + brief** | Stop re-deriving the same repo facts; carry approved decisions across tickets | On contract freeze / worker brief, `recall` from an `AgentMemoryAdapter` (backed by `@agentskit/memory` or a file store under `<stateDir>`). Persist only human-`promoteLearnings` / retro-approved records. |
+| P0 | **Doc Bridge freshness gate** | Orchestrator context goes stale when the index is old | Doctor check: index exists, `contentHash` age, optional `docs:bridge:index` hint when missing. |
+| P1 | **Playbook / for-agents snippets in the brief** | Workers skip repo conventions that already exist as docs | Resolve Doc Bridge (or a Playbook `ContextProvider`) with scopes `playbook` + `for-agents` and render a bounded “must follow” block into `renderWorkerBrief`. |
+| P1 | **Eval smoke on deliver (optional)** | Catch harness/component regressions before merge on harness itself | Config flag to run a **bounded** subset of `evals/manifest.json` (or project `ak-verify`) as an extra deliver gate — not a full battery on every product PR. |
+| P1 | **Review transport/doctor** | Incomplete reviews burned the pilot (login / model id / stage budget) | Doctor probes `agentskit-review --help`, configured transport, and a one-lens trusted-local dry call; surface `review-tool-errors` in retro. |
+| P2 | **RAG context provider** | Large codebases exceed Doc Bridge’s deterministic top-N | New adapter implementing `ContextProvider` over `@agentskit/rag` / os-rag; same freeze-into-contract rules as Doc Bridge (hash + cap). |
+| P2 | **AgentsKit agent/skill registry** | Reuse named agents (reviewer, security, docs) instead of free-form CLI templates | Optional `agents.registry` file or OS dispatcher lookup → map role → argv/TUI. Keep fail-closed when the registry entry is missing. |
+| P2 | **MCP tools behind policy** | Controlled access to issue trackers, browsers, internal APIs | MCP adapter + `createPolicyGate` allowlist; record hashed tool events. Requires ADR (MODULE-BOUNDARIES already flags this). |
+| P3 | **Kernel runtime for untrusted tools** | Sandbox one-off scripts the worker must not run on the host | Offer Docker tool runtime as an opt-in for verify commands; loop default stays Orca worktree. |
+| P3 | **Weekly Linear retro automation** | Close the continuous-improvement loop without a human remembering `loop retro` | Orca schedule → `loop retro --learnings` → comment on a fixed Linear issue (project vs harness sections already split). |
+
+Non-goals for the loop: embedding LLM SDKs, reading API key values from config, or making `@agentskit/*` hard dependencies of the published package. New ecosystem pieces enter as adapters/plugins with argv/timeouts and eval coverage ([ADR-0026](ADR-0026-kernel-adapters-boundary.md), [ADR-0027](ADR-0027-keep-pushing-loop.md)).
+
 ## Boundaries
 
 Adapters (`src/adapters/command.ts`, `orca-cli.ts`, `providers.ts`, `linear-orca.ts`) depend on kernel contracts

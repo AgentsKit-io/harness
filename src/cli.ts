@@ -5,7 +5,7 @@ import { Command } from 'commander'
 import { approveRun, ARTIFACT_SCHEMA_VERSION, assessAcceptance, assessBlock, assessDiscovery, assessImprovementCycle, assessIntegration, assessPilot, assessPreflight, assessProduction, assessWip, assessWorktreeCleanup, authorizeRun, benchmarkRuns, cancelRun, cleanTaskArtifacts, composePullRequest, createDispatchLedger, createDocBridgeContextProvider, createStatusSnapshot, exportEvidenceBundle, FileArtifactStore, loadBenchmarkManifest, loadConfig, loadLatestRun, parseRetro, planFilePreflight, planRun, readArtifactFile, readContextSnapshots, readEvidenceTrustStore, reconcileRun, recordBenchmarkObservation, renderArtifactMarkdown, retryRun, selectRuntime, startRun, validateBlockManifest, validateStatusSnapshot, verifyEvidenceBundle, verifyRun } from './index.js'
 import type { BenchmarkObservationEvidence } from './execution/metrics.js'
 import { fail } from './kernel/errors.js'
-import { buildDebriefReport, buildRetroReport, createProcessRunner, createRichIO, fetchLinearIssue, formatWatchEvent, generateContract, installLoopAutomations, loadLoopConfig, runGuidedInstall, loopStatus, renderDebriefMarkdown, renderRetroMarkdown, retroLearnings, precheckDeliver, precheckTick, rankModels, readStoredContract, runDeliver, runLoopDoctor, runTick, uninstallLoopAutomations, watchDeliveries, writeStoredContract } from './index.js'
+import { buildDebriefReport, buildRetroReport, createProcessRunner, createRichIO, fetchLinearIssue, formatWatchEvent, generateContract, installLoopAutomations, loadLoopConfig, openLoopMemory, promoteLearningsToMemory, runGuidedInstall, loopStatus, renderDebriefMarkdown, renderRetroMarkdown, retroLearnings, runRetroStage, precheckDeliver, precheckTick, rankModels, readLearningsLedger, readStoredContract, runDeliver, runLoopDoctor, runTick, uninstallLoopAutomations, watchDeliveries, writeStoredContract } from './index.js'
 import { FileEventStore, inspectEventLogLock, recoverEventLogLock } from './kernel/events.js'
 
 interface CliOptions { readonly config: string; readonly json: boolean }
@@ -78,12 +78,12 @@ loop.command('validate').description('Validate loop.config.yaml and print the ef
 loop.command('doctor').description('Check Orca, providers, usage, machine slots, routing, and the Linear queue without dispatching.').option('--no-probe', 'skip provider probe commands').action(async function (this: Command, command: { readonly probe: boolean }) { const report = await runLoopDoctor({ configPath: loopFile(this), runner: createProcessRunner(), probe: command.probe }); print(report); if (report.status === 'failed') process.exitCode = 1 })
 loop.command('precheck <stage>').description('Read-only Orca precheck: exit 0 when the stage (tick | deliver) has work.').action(async function (this: Command, stage: string) { if (stage !== 'tick' && stage !== 'deliver') fail(`Unknown precheck stage: ${stage}`, 'INVALID_INPUT'); const result = stage === 'tick' ? await precheckTick({ configPath: loopFile(this), runner: createProcessRunner() }) : precheckDeliver(loadLoopConfig(loopFile(this)).stateDir); print(result); process.exitCode = result.work ? 0 : 1 })
 loop.command('deliver').description('Drive dispatched workers to merge: PR detection, CI, review, fix rounds, squash-merge, Linear Done, cleanup.').option('--dry-run', 'decide only; no terminal input, no review, no merge, no Linear write').option('--issue <identifier>', 'restrict to one issue').action(async function (this: Command, command: { readonly dryRun?: boolean; readonly issue?: string }) { print(await runDeliver({ configPath: loopFile(this), runner: createProcessRunner(), dryRun: command.dryRun ?? false, onlyIssue: command.issue })) })
-loop.command('stage <stage>').description('Run one stage (tick | deliver) as an Orca precheck: prints the JSON report and ALWAYS exits 1 so Orca records the run without launching an agent.').action(async function (this: Command, stage: string) {
-  if (stage !== 'tick' && stage !== 'deliver') fail(`Unknown stage: ${stage}`, 'INVALID_INPUT')
+loop.command('stage <stage>').description('Run one stage (tick | deliver | retro) as an Orca precheck: prints the JSON report and ALWAYS exits 1 so Orca records the run without launching an agent.').action(async function (this: Command, stage: string) {
+  if (stage !== 'tick' && stage !== 'deliver' && stage !== 'retro') fail(`Unknown stage: ${stage}`, 'INVALID_INPUT')
   const runner = createProcessRunner(); const file = loopFile(this)
   const loaded = loadLoopConfig(file)
   const budgetMs = Math.max(60_000, loaded.config.schedule.stageTimeoutSec * 1000 - 60_000)
-  const report = stage === 'tick' ? await runTick({ loaded, runner, budgetMs }) : await runDeliver({ loaded, runner, budgetMs })
+  const report = stage === 'tick' ? await runTick({ loaded, runner, budgetMs }) : stage === 'deliver' ? await runDeliver({ loaded, runner, budgetMs }) : await runRetroStage({ loaded, runner })
   console.log(JSON.stringify(report, null, 2))
   process.exitCode = 1
 })
@@ -140,6 +140,25 @@ loop.command('retro').description('Digest of the loop over a window: escalations
   if (command.learnings) return print(retroLearnings(report, markdown))
   if (options().json) return print(report)
   console.log(markdown)
+})
+const loopLearning = loop.command('learning').description('Continuous-improvement learnings ledger and approved memory writes.')
+loopLearning.command('list').description('Show the learnings ledger under stateDir (proposed/promoted/rejected).').action(function (this: Command) {
+  const loaded = loadLoopConfig(loopFile(this))
+  print(readLearningsLedger(loaded.stateDir))
+})
+loopLearning.command('promote').description('Human-only: promote learning IDs into approved loop memory (token-reducing context for later tickets).').requiredOption('--ids <ids>', 'comma-separated learning ids').option('--by <actor>', 'must be human', 'human').option('--revision <rev>', 'sourceRevision stamped on memory records (default: unknown)').action(async function (this: Command, command: { readonly ids: string; readonly by: string; readonly revision?: string }) {
+  const loaded = loadLoopConfig(loopFile(this))
+  const ids = command.ids.split(',').map((id) => id.trim()).filter(Boolean)
+  if (!ids.length) fail('--ids must list at least one learning id', 'INVALID_INPUT')
+  const result = await promoteLearningsToMemory({
+    stateDir: loaded.stateDir,
+    config: loaded.config,
+    adapter: openLoopMemory(loaded),
+    ids,
+    actor: command.by,
+    sourceRevision: command.revision ?? 'unknown',
+  })
+  print({ status: 'ok', remembered: result.remembered, ledger: result.ledger })
 })
 program.command('start').description('Move a planned run into implementation.').action(() => print(startRun(loadConfig(options().config))))
 program.command('verify').description('Execute every configured check and record evidence.').action(async () => print(await verifyRun({ configPath: options().config })))

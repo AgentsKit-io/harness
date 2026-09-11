@@ -90,8 +90,13 @@ delivery:
     profile: fast                    # one bounded pass over required lenses; `full` needs batching to fit a 600 s stage
     votes: 1
     concurrency: 4
-    minSeverity: med                 # nit < med < high < blocker; findings at/above this block auto-merge
+    minSeverity: med
+    # doctorProbe: help                 # nit < med < high < blocker; findings at/above this block auto-merge
     deadlineMs: 600000
+  # smoke:
+  #   enabled: false
+  #   kind: verify-argv
+  #   argv: [pnpm, test]
   merge:
     auto: true
     method: squash
@@ -104,18 +109,49 @@ delivery:
   cleanupWorktree: true              # remove the Orca worktree after merge
   returnState: Todo                  # where a stuck/blocked issue goes back to
 
+
+# --- 0.6.0 optional SDLC seams (defaults keep prior behaviour) ---
+memory:
+  enabled: false                     # set true to recall approved learnings into contract/brief (token reduction)
+  # backend: file
+  # preferOverDocBridge: true        # shrink Doc Bridge refs when memory covers them
+  # maxRecall: 5
+  # maxBlockChars: 1200
+  # categories: [adjustment]         # only these LearningRecord categories become memory on promote
+  # issueCharsWithMemory: 4000
+
+# agents:
+#   registryPath: agents.registry.yaml
+#   requireRegistry: false
+
+# rag:
+#   enabled: false
+#   queryArgv: []                    # argv printing ContextSnapshot JSON on stdout
+#   maxReferences: 4
+
+# mcp:                               # public API / ADR-0028 — not wired into tick/deliver
+#   enabled: false
+#   allowTools: []
+
 contract:
   maxIssueChars: 12000               # issue text rendered into the orchestrator prompt (as untrusted data)
   timeoutMs: 300000
   maxContextReferences: 6            # Doc Bridge hits appended when .doc-bridge/index.json exists
   reuseHours: 72                     # cached contract reused for this long
+  docBridgeMaxAgeHours: 168           # doctor warns when .doc-bridge/index.json is older
+  requireDocBridge: false
+  briefScopes: [playbook, for-agents] # Doc Bridge scopes listed in the worker brief
+  maxBriefReferences: 4
+  contextProviders: [doc-bridge]      # add rag when rag.enabled
 
 schedule:
   tick: "*/5 * * * *"
   deliver: "*/10 * * * *"
   precheckTimeoutSec: 120
   harnessCommand: ak-harness         # how the Orca automation runs the harness inside the workspace
-  namePrefix: loop                   # automations: loop-tick, loop-deliver
+  namePrefix: loop                   # automations: loop-tick, loop-deliver[, loop-retro]
+  # retro: weekly                     # with retroIssue, installs <prefix>-retro
+  # retroIssue: AGE-0                 # Linear issue that receives the digest comment
   runner: precheck                   # the stage runs inside Orca's precheck command; no agent session is ever opened
   stageTimeoutSec: 600               # Orca caps prechecks at 600 s; one tick/deliver run must fit
   # provider: claude                 # Orca agent that executes the automation prompt (default: watcher role)

@@ -10,9 +10,10 @@ import { HarnessError } from '../kernel/errors.js'
 import { hashJson } from '../kernel/hash.js'
 import { renderWorkerBrief } from './brief.js'
 import { loadLoopConfig, type LoadedLoopConfig, type LoopConfig } from './config.js'
-import { assessContract, contractIsFresh, generateContract, readStoredContract, writeStoredContract, type StoredContract } from './contract.js'
+import { assessContract, contractIsFresh, generateContract, readStoredContract, resolveDocContext, writeStoredContract, type StoredContract } from './contract.js'
 import { activeCooldowns, readCooldowns } from './cooldown.js'
 import { countRunningWorkers, providerSpecs } from './doctor.js'
+import { openLoopMemory, planMemoryContext } from './memory.js'
 import { rankModels, routeAllRoles, type RoutingDecision } from './routing.js'
 import { assessSlots, type SlotAssessment, type SlotInput } from './slots.js'
 import { markProviderExhausted } from './cooldown.js'
@@ -200,6 +201,7 @@ export const runTick = async (input: TickInput): Promise<TickReport> => {
   const remainingMs = (): number => timeBudgetMs - (Date.now() - startedAt)
   const write = { bin: config.orca.bin, workspaceId: config.linear.workspaceId, orca: { timeoutMs: config.orca.timeoutMs } }
   const tracking = createLinearTrackingAdapter(input.runner, { ...write, dryRun })
+  const memory = openLoopMemory(loaded)
   let dispatched = 0
   for (const candidate of state.candidates) {
     if (dispatched >= budget) break
@@ -208,12 +210,44 @@ export const runTick = async (input: TickInput): Promise<TickReport> => {
     try { detail = await fetchLinearIssue(input.runner, candidate.identifier, write) } catch (error) { results.push({ issue: candidate.identifier, outcome: 'failed', reason: `issue fetch failed: ${message(error)}` }); continue }
 
     let stored = readStoredContract(loaded.stateDir, detail.identifier)
-    if (stored && !contractIsFresh(stored, detail, config.contract.reuseHours, now())) stored = null
+    const memoryProbe = memory
+      ? await planMemoryContext({
+        adapter: memory,
+        config,
+        issueId: detail.identifier,
+        issueTitle: detail.title,
+        project: config.project.name,
+        references: [],
+      })
+      : null
+    if (stored && !contractIsFresh(stored, detail, config.contract.reuseHours, now(), memoryProbe?.memoryDigest)) stored = null
     if (!stored) {
       if (input.skipContractGeneration) { results.push({ issue: detail.identifier, outcome: 'skipped', reason: 'no cached contract; generation skipped' }); continue }
       if (!orchestratorCandidates.length) { results.push({ issue: detail.identifier, outcome: 'skipped', reason: 'no orchestrator provider available to freeze a contract' }); continue }
       try {
-        stored = await generateContract({ runner: input.runner, config, root: loaded.root, issue: detail, candidates: orchestratorCandidates, orchestrator, now, onProviderFailure })
+        stored = await generateContract({
+          runner: input.runner,
+          config,
+          root: loaded.root,
+          issue: detail,
+          candidates: orchestratorCandidates,
+          orchestrator,
+          now,
+          memory,
+          onProviderFailure,
+          onMemoryPlan: (plan) => {
+            if (!dryRun) appendLoopEvent(loaded.stateDir, {
+              at: now().toISOString(),
+              type: 'memory.recalled',
+              issue: detail.identifier,
+              hits: plan.hits.map((hit) => hit.record.id),
+              docBridgeBefore: plan.docBridgeBefore,
+              docBridgeAfter: plan.docBridgeAfter,
+              approxCharsSaved: plan.approxCharsSaved,
+              memoryDigest: plan.memoryDigest,
+            })
+          },
+        })
         if (!dryRun) writeStoredContract(loaded.stateDir, stored)
       } catch (error) { if (!dryRun) appendLoopEvent(loaded.stateDir, { at: now().toISOString(), type: 'contract.failed', issue: detail.identifier, error: message(error) }); results.push({ issue: detail.identifier, outcome: 'failed', reason: `contract generation failed: ${message(error)}` }); continue }
     }
@@ -242,7 +276,30 @@ export const runTick = async (input: TickInput): Promise<TickReport> => {
       created = await orcaWorktreeCreate(input.runner, plan.argv, { timeoutMs: Math.max(config.orca.timeoutMs, 120_000) })
       // Orca names the branch `<git user>/<worktree>`; the Linear branchName is only a hint. Record and brief the real one.
       const actualBranch = created.branch || branch
-      const brief = renderWorkerBrief({ issue: detail, contract: stored, config, branch: actualBranch, provider: builder.provider, model: builder.model })
+      const briefMemory = memory
+        ? await planMemoryContext({
+          adapter: memory,
+          config,
+          issueId: detail.identifier,
+          issueTitle: detail.title,
+          project: config.project.name,
+          references: [],
+        })
+        : { memoryBlock: '', issueCharBudget: config.contract.maxIssueChars, hits: [] as const }
+      const guidanceRefs = config.contract.maxBriefReferences > 0 && config.contract.briefScopes.length
+        ? await resolveDocContext(loaded.root, `${detail.identifier} ${detail.title}`, config.contract.maxBriefReferences, config.contract.briefScopes)
+        : []
+      const brief = renderWorkerBrief({
+        issue: detail,
+        contract: stored,
+        config,
+        branch: actualBranch,
+        provider: builder.provider,
+        model: builder.model,
+        maxIssueChars: briefMemory.issueCharBudget,
+        memoryBlock: briefMemory.memoryBlock,
+        guidanceRefs,
+      })
       const launched = await launchWorkerTerminal({ runner: input.runner, config, worktreeId: created.id, command: builder.tui, title, brief })
       if (!launched.accepted) notes.push(`${detail.identifier}: terminal ${launched.terminal} did not confirm the brief; deliver will nudge it if it stays idle`)
       ledger.recordDispatch({ lease: claim.lease, idempotencyKey: plan.idempotencyKey, commandDigest: plan.commandDigest })

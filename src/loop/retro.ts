@@ -1,6 +1,7 @@
 import { existsSync, readFileSync, readdirSync } from 'node:fs'
 import { join } from 'node:path'
 import type { CommandRunner } from '../adapters/command.js'
+import { linearCommentAdd } from '../adapters/linear-orca.js'
 import { orcaAutomationRuns, orcaAutomationsList } from '../adapters/orca-cli.js'
 import { hashJson } from '../kernel/hash.js'
 import { parseRetro, type LearningRecord } from '../kernel/learning.js'
@@ -9,6 +10,7 @@ import { readStoredContract } from './contract.js'
 import { readCooldowns } from './cooldown.js'
 import { readDeliveryState } from './deliver.js'
 import { LOOP_STAGES, automationName } from './install.js'
+import { openLoopMemory, upsertProposedLearnings } from './memory.js'
 import { readDispatchRecord } from './tick.js'
 
 export interface LoopEvent { readonly at: string; readonly type: string; readonly issue?: string; readonly [key: string]: unknown }
@@ -235,3 +237,45 @@ export const renderRetroMarkdown = (report: RetroReport): string => {
 
 /** Learnings the harness can track; a human promotes them with `promoteLearnings`. */
 export const retroLearnings = (report: RetroReport, markdown: string): readonly LearningRecord[] => parseRetro(markdown, `loop-retro:${report.project}:${report.window.since.slice(0, 10)}`, report.generatedAt)
+
+export interface RetroStageReport {
+  readonly status: 'ok' | 'skipped' | 'failed' | 'dry-run'
+  readonly issue: string | null
+  readonly digest: string | null
+  readonly posted: boolean
+  readonly learningsProposed: number
+  readonly detail: string
+}
+
+/** Build the weekly digest, upsert proposed learnings, and comment on `schedule.retroIssue` (idempotent write-id). */
+export const runRetroStage = async (input: {
+  readonly configPath?: string
+  readonly loaded?: LoadedLoopConfig
+  readonly runner: CommandRunner
+  readonly since?: string
+  readonly dryRun?: boolean
+}): Promise<RetroStageReport> => {
+  const loaded = input.loaded ?? loadLoopConfig(input.configPath)
+  const issue = loaded.config.schedule.retroIssue ?? null
+  if (!issue) return { status: 'skipped', issue: null, digest: null, posted: false, learningsProposed: 0, detail: 'schedule.retroIssue is not set' }
+  const report = await buildRetroReport({ loaded, runner: input.runner, since: input.since ?? '7d' })
+  const markdown = renderRetroMarkdown(report)
+  const learnings = retroLearnings(report, markdown)
+  if (!input.dryRun) upsertProposedLearnings(loaded.stateDir, learnings)
+  const memory = openLoopMemory(loaded)
+  const memoryNote = memory && loaded.config.memory.enabled
+    ? `\n\n## Memory\nenabled · preferOverDocBridge=${loaded.config.memory.preferOverDocBridge} · maxRecall=${loaded.config.memory.maxRecall} · promote with \`ak-harness loop learning promote --ids … --by human\``
+    : '\n\n## Memory\ndisabled (`memory.enabled: false`)'
+  const body = `${markdown}${memoryNote}\n\n<!-- loop:retro:${report.digest} -->`
+  if (input.dryRun) return { status: 'dry-run', issue, digest: report.digest, posted: false, learningsProposed: learnings.length, detail: 'would comment on Linear' }
+  try {
+    await linearCommentAdd(input.runner, {
+      issue,
+      body: body.slice(0, 60_000),
+      dedupeKey: `retro:${report.window.since.slice(0, 10)}:${report.digest}`,
+    }, { bin: loaded.config.orca.bin, workspaceId: loaded.config.linear.workspaceId, orca: { timeoutMs: loaded.config.orca.timeoutMs } })
+    return { status: 'ok', issue, digest: report.digest, posted: true, learningsProposed: learnings.length, detail: `commented on ${issue}` }
+  } catch (error) {
+    return { status: 'failed', issue, digest: report.digest, posted: false, learningsProposed: learnings.length, detail: error instanceof Error ? error.message : String(error) }
+  }
+}
