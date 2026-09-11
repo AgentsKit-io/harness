@@ -93,7 +93,8 @@ export const parseProviderUsage = (accountList: unknown, usageKey: string, exhau
 export const authStatusFor = (spec: ProviderSpec, usage: ProviderUsage, env: NodeJS.ProcessEnv): ProviderAuthStatus => {
   const hasEnvKey = spec.envKeys.some((key) => Boolean(env[key]?.trim()))
   if (spec.auth === 'api-key') return hasEnvKey ? 'ok' : 'missing'
-  if (spec.auth === 'subscription') return usage.hasAuth === true || usage.status === 'ok' ? 'ok' : usage.hasAuth === false ? 'missing' : hasEnvKey ? 'ok' : 'unknown'
+  // Subscription CLIs Orca does not track (e.g. grok) authenticate through their own login; the binary being present is the best signal we have.
+  if (spec.auth === 'subscription') return usage.hasAuth === true || usage.status === 'ok' ? 'ok' : usage.hasAuth === false ? 'missing' : hasEnvKey || usage.status === 'unknown' ? 'ok' : 'unknown'
   return hasEnvKey || usage.status === 'ok' ? 'ok' : 'unknown'
 }
 

@@ -20,7 +20,7 @@ ak-harness loop tick                                  # dispatch up to <free slo
 ak-harness loop contract ENG-123 [--refresh|--dry-run] # freeze or show the orchestrator contract for one issue
 ak-harness loop precheck deliver                      # exit 0 when a dispatched issue is in flight
 ak-harness loop deliver [--dry-run] [--issue ENG-123] # drive dispatched workers to merge
-ak-harness loop install [--yes|--force|--skip-rehearsal|--dry-run|--plain]  # guided: checks → rehearsal → confirm → create/update
+ak-harness loop install [--yes|--force|--skip-rehearsal|--skip-local-config|--dry-run|--plain]  # guided: overlay → checks → rehearsal → confirm
 ak-harness loop uninstall [--dry-run]                 # remove them
 ak-harness loop status                                # what Orca knows: enabled, trigger, provider, latest run
 ak-harness loop hook                                  # one status line for a SessionStart hook; never mutates
@@ -28,7 +28,10 @@ ak-harness loop hook                                  # one status line for a Se
 
 ## Running 24/7 with Orca
 
-`loop install` is guided. It runs the doctor and the automation-environment checks (harness and review CLIs on
+`loop install` is guided and rendered with Ink when stdin/stdout are terminals (plain lines otherwise). When no
+`loop.config.local.yaml` exists next to the config it first offers to create one: it lists the Linear team members from
+Orca, asks whose queue this machine drains and, optionally, how much RAM to keep free and the worker ceiling, then
+writes the gitignored overlay and reloads. It then runs the doctor and the automation-environment checks (harness and review CLIs on
 PATH, `gh auth status`, checkout registered in Orca, queue owner), stops on any failed check unless `--force`,
 offers a dry-run tick rehearsal (one orchestrator call, nothing written), lists the exact automations it will
 create, and asks for confirmation before touching Orca. `--yes` accepts every prompt for scripted setups; without
@@ -117,7 +120,8 @@ tier, providers in declaration order. The first provider that is **available** w
 its binary is on PATH, its auth is not known to be missing, no Orca usage window is at or above
 `cooldown.exhaustedPercent`, it is not cooling down, and its optional probe passed.
 
-Orca has no per-run model flag; the chosen model is rendered into `providers.<id>.tui` (for example
+Providers authenticate through their own CLI login (`claude login`, `codex login`, `grok login`); only providers
+declared `auth: api-key` need an environment variable, and the loop never reads its value. Orca has no per-run model flag; the chosen model is rendered into `providers.<id>.tui` (for example
 `codex -m {model} --full-auto`) and launched in the worker terminal.
 
 When a provider runs out of usage the loop records a cooldown in `<stateDir>/provider-cooldowns.json`:

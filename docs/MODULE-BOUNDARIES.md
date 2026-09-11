@@ -9,7 +9,7 @@ does not claim that the proposed 0.4.0 boundary has already been accepted.
 
 | Class | Meaning | Dependency rule |
 | --- | --- | --- |
-| Kernel | Deterministic contracts, state transitions, policy and metric projections | May use Node standard library and other kernel modules; must not import adapters, provider SDKs, CLI composition, or credentials. |
+| Kernel | Deterministic contracts, state transitions, policy and metric projections | May use Node standard library and other kernel modules; must not import adapters, provider SDKs, CLI composition, credentials, or UI libraries (`ink`/`react` are composition-only). |
 | Execution support | Local process, filesystem, event, evidence, and run lifecycle plumbing | May depend on the kernel; must expose provenance and fail closed at trust boundaries. |
 | Adapter | Provider-specific or external-system integration | May depend on kernel contracts; must not be imported by kernel modules. |
 | Composition | Package and CLI entry points | May compose kernel, execution support, and adapters; consumers use `src/index.ts`. |
@@ -91,6 +91,9 @@ modules, not a provider dependency.
 | `src/loop/deliver.ts` | Composition | Deliver stage per dispatched issue: PR detection, self-edit hold, conflict/CI/review fix rounds via terminal, review at head, optimistic squash-merge, Linear Done, cleanup, stuck/abandoned escalation | adapters, `coordination`, `errors`, `config`, `cooldown`, `doctor`, `routing`, `tick` | Orca, Linear, GitHub, agentskit-review via runner; `<stateDir>` files |
 | `src/loop/install.ts` | Composition | Orca automation specs (`<prefix>-tick`, `<prefix>-deliver`) with read-only prechecks, idempotent create/edit by name, uninstall, status and the SessionStart hook line | `command`, `orca-cli`, `providers`, `errors`, `config`, `cooldown`, `doctor`, `routing` | Orca automations via runner |
 | `src/loop/guided-install.ts` | Composition | Interactive install: doctor + environment preflight, dry-run rehearsal, confirmation, install, status; readline IO injected | `command`, `orca-cli`, `config`, `doctor`, `install`, `tick`, stdlib readline | Terminal prompts; Orca via runner |
+| `src/loop/local-config.ts` | Composition | Per-machine overlay wizard: Linear team members via Orca, queue owner and machine tuning answers, YAML rendering and reload | `orca-cli`, `config`, `yaml` | Orca via runner; writes `loop.config.local.yaml` |
+| `src/loop/ui/components.tsx` | Composition | Ink components: check rows, sections, banner, spinner, select/confirm/text prompts | `ink`, `react`, `doctor` (type-only) | Terminal |
+| `src/loop/ui/terminal.tsx` | Composition | `createRichIO`: Ink-backed IO for TTYs with a plain-text fallback | `ink`, `react`, `components`, `guided-install` (type-only) | Terminal |
 
 ## Allowed dependency directions and exceptions
 

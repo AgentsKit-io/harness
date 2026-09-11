@@ -69,8 +69,7 @@ models:
       headless: [opencode, run, -m, "{model}", --agent, plan, "{prompt}"]
     grok:
       bin: grok
-      auth: api-key
-      envKeys: [XAI_API_KEY]
+      auth: subscription             # `grok login` (OAuth) — no API key needed
       tui: "grok -m {model}"
       headless: [grok, -p, "{prompt}", -m, "{model}"]
 

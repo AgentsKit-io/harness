@@ -8,6 +8,7 @@
 - Added loop phase 4 (`ak-harness loop deliver`, `precheck deliver`): per-issue delivery state, PR detection by branch, protected-path hold, conflict/CI/review fix rounds sent to the worker terminal with a bounded budget, `agentskit-review` at the current head, optimistic squash-merge, Linear attach/Done, worktree cleanup, stuck/abandoned escalation with slot release.
 - Added loop phase 5 (`ak-harness loop install|uninstall|status|hook`): idempotent Orca automations with `--precheck`, existing-workspace mode and session reuse; status with latest runs; a status-only SessionStart hook line; a cross-platform CI job (ubuntu/macos/windows); ADR-0027.
 - `loop install` is guided: doctor and environment checks (harness/review CLIs, `gh auth`, Orca repo registration), optional dry-run tick rehearsal, explicit confirmation; `--yes`, `--force`, `--skip-rehearsal`, `--dry-run`, `--plain`.
+- `loop install` offers to create the per-machine `loop.config.local.yaml` (queue owner from the Linear team, RAM reserve, worker ceiling) when it is missing; the CLI renders checks and prompts with Ink on TTYs and falls back to plain lines elsewhere. Grok is treated as a CLI subscription (`grok login`), no API key.
 - Add bounded agent eval, safe context/read-only LLM cache, deterministic workflow fan-out/fan-in, and validated optimization observation contracts for token, memory, cache, and parallelism measurements.
 
 ## [0.4.0] - 2026-09-10

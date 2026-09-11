@@ -25,7 +25,7 @@ const baseConfig = (): LoopConfig => validateLoopConfig({
       claude: { bin: 'claude', auth: 'subscription', envKeys: ['ANTHROPIC_API_KEY'], tui: 'claude --model {model} --permission-mode auto' },
       codex: { bin: 'codex', auth: 'subscription', tui: 'codex -m {model} --full-auto' },
       opencode: { bin: 'opencode', orcaUsageKey: 'opencodeGo', tui: 'opencode -m {model}' },
-      grok: { bin: 'grok', auth: 'api-key', envKeys: ['XAI_API_KEY'], tui: 'grok -m {model}' },
+      grok: { bin: 'grok', auth: 'subscription', tui: 'grok -m {model}' },
     },
   },
   delivery: { verifyCommand: 'pnpm test' },
@@ -171,7 +171,8 @@ describe('providers, usage, routing, cooldown', () => {
     expect(authStatusFor({ id: 'grok', bin: 'grok', auth: 'api-key', envKeys: ['XAI_API_KEY'], orcaUsageKey: 'grok' }, unknown, { XAI_API_KEY: 'k' })).toBe('ok')
     expect(authStatusFor({ id: 'codex', bin: 'codex', auth: 'subscription', envKeys: [], orcaUsageKey: 'codex' }, { ...unknown, hasAuth: true }, {})).toBe('ok')
     expect(authStatusFor({ id: 'codex', bin: 'codex', auth: 'subscription', envKeys: [], orcaUsageKey: 'codex' }, { ...unknown, hasAuth: false }, {})).toBe('missing')
-    expect(authStatusFor({ id: 'claude', bin: 'claude', auth: 'subscription', envKeys: [], orcaUsageKey: 'claude' }, unknown, {})).toBe('unknown')
+    expect(authStatusFor({ id: 'claude', bin: 'claude', auth: 'subscription', envKeys: [], orcaUsageKey: 'claude' }, unknown, {})).toBe('ok')
+    expect(authStatusFor({ id: 'claude', bin: 'claude', auth: 'subscription', envKeys: [], orcaUsageKey: 'claude' }, { ...unknown, status: 'unavailable' }, {})).toBe('unknown')
   })
 
   it('detects binaries on PATH without a shell and reports every unavailability reason', async () => {
@@ -186,7 +187,8 @@ describe('providers, usage, routing, cooldown', () => {
     expect(byId['codex']).toMatchObject({ available: false })
     expect(byId['codex']?.reasons.join(' ')).toContain('usage exhausted')
     expect(byId['opencode']?.reasons.join(' ')).toContain('cooling down')
-    expect(byId['grok']?.reasons).toEqual(['binary "grok" not found on PATH', 'none of XAI_API_KEY is set'])
+    expect(byId['grok']?.reasons).toEqual(['binary "grok" not found on PATH'])
+    expect(byId['grok']?.auth).toBe('unknown')
   })
 
   it('runs the optional probe only for otherwise-available providers', async () => {

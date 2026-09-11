@@ -1,16 +1,23 @@
-import { createInterface } from 'node:readline/promises'
 import type { CommandRunner } from '../adapters/command.js'
 import { findExecutable } from '../adapters/command.js'
 import { orcaJson } from '../adapters/orca-cli.js'
 import { loadLoopConfig, type LoadedLoopConfig } from './config.js'
 import { runLoopDoctor, type DoctorCheck, type LoopDoctorReport } from './doctor.js'
 import { automationSpecs, installLoopAutomations, loopStatus, type InstallReport, type LoopStatusReport } from './install.js'
+import { hasLocalConfig, promptLocalConfig, writeLocalConfig } from './local-config.js'
 import { runTick, type TickReport } from './tick.js'
 
 export interface GuidedInstallIO {
   /** Ask a yes/no question; `fallback` is used when the answer is empty. */
   readonly confirm: (question: string, fallback: boolean) => Promise<boolean>
   readonly write: (line: string) => void
+  /** Optional richer surface; plain implementations may omit these and get text fallbacks. */
+  readonly select?: (question: string, options: readonly { readonly value: string; readonly label: string; readonly hint?: string }[], initial?: number) => Promise<string | null>
+  readonly text?: (question: string, fallback: string, validate?: (value: string) => string | null) => Promise<string | null>
+  readonly checks?: (checks: readonly DoctorCheck[]) => void
+  readonly section?: (title: string, step?: number, total?: number) => void
+  readonly banner?: (title: string, lines: readonly string[]) => void
+  readonly bullet?: (line: string, tone?: 'ok' | 'warn' | 'fail' | 'dim') => void
 }
 
 export interface GuidedInstallInput {
@@ -27,6 +34,8 @@ export interface GuidedInstallInput {
   readonly force?: boolean
   /** Skip the optional dry-run tick rehearsal. */
   readonly skipRehearsal?: boolean
+  /** Do not offer to create loop.config.local.yaml when it is missing. */
+  readonly skipLocalConfig?: boolean
   readonly provider?: string
   readonly dryRun?: boolean
 }
@@ -34,6 +43,7 @@ export interface GuidedInstallInput {
 export interface GuidedInstallReport {
   readonly status: 'installed' | 'dry-run' | 'aborted' | 'blocked'
   readonly reason: string
+  readonly localConfig: { readonly path: string; readonly created: boolean } | null
   readonly doctor: Pick<LoopDoctorReport, 'status' | 'checks'> | null
   readonly preflight: readonly DoctorCheck[]
   readonly rehearsal: TickReport | null
@@ -73,67 +83,71 @@ export const runGuidedInstall = async (input: GuidedInstallInput): Promise<Guide
   const platform = input.platform ?? process.platform
   const yes = input.yes === true
   const confirm = async (question: string, fallback: boolean): Promise<boolean> => yes ? true : io.confirm(question, fallback)
-  const loaded = input.loaded ?? loadLoopConfig(input.configPath)
-  const { config } = loaded
-  io.write(`Keep-pushing loop for ${config.project.repo} (base ${config.project.baseBranch}) — queue of ${config.linear.person}, team ${config.linear.teamKey}`)
-  io.write(`Config: ${loaded.path}${loaded.localPath ? `\nOverlay: ${loaded.localPath}` : ''}\n`)
+  const section = (title: string, step?: number, total?: number): void => io.section ? io.section(title, step, total) : io.write(`\n${step && total ? `${step}/${total} ` : ''}${title}`)
+  const showChecks = (checks: readonly DoctorCheck[]): void => io.checks ? io.checks(checks) : checks.forEach((check) => io.write(line(check)))
+  const bullet = (text: string, tone?: 'ok' | 'warn' | 'fail' | 'dim'): void => io.bullet ? io.bullet(text, tone) : io.write(`  ${text}`)
+  let loaded = input.loaded ?? loadLoopConfig(input.configPath)
+  if (!loaded.localPath && hasLocalConfig(loaded)) loaded = loadLoopConfig(loaded.path)
+  let localConfig: GuidedInstallReport['localConfig'] = loaded.localPath ? { path: loaded.localPath, created: false } : null
+  const TOTAL = 5
 
-  io.write('1/4 Doctor')
+  section('Per-machine settings', 1, TOTAL)
+  if (!hasLocalConfig(loaded) && !input.skipLocalConfig && !yes && io.select && io.text) {
+    bullet(`No ${'loop.config.local.yaml'} next to the config: the loop would drain the queue of "${loaded.config.linear.person}" from the versioned file.`, 'warn')
+    if (await io.confirm('Create loop.config.local.yaml for this machine now?', true)) {
+      const answers = await promptLocalConfig(input.runner, loaded, { select: io.select, text: io.text, confirm: io.confirm, write: io.write })
+      if (!answers) { io.write('Cancelled. Nothing was written.'); return { status: 'aborted', reason: 'local config wizard cancelled', localConfig: null, doctor: null, preflight: [], rehearsal: null, install: null, after: null } }
+      const written = writeLocalConfig(loaded, answers)
+      loaded = written.loaded
+      localConfig = { path: written.path, created: true }
+      bullet(`wrote ${written.path}`, 'ok')
+    }
+  } else if (loaded.localPath) bullet(`using overlay ${loaded.localPath}`, 'ok')
+  else bullet(`no overlay; queue owner comes from ${loaded.path}`, 'dim')
+  const { config } = loaded
+  if (io.banner) io.banner(`Keep-pushing loop · ${config.project.repo}`, [`base ${config.project.baseBranch} · team ${config.linear.teamKey} · queue of ${config.linear.person}`, `config ${loaded.path}`, ...(loaded.localPath ? [`overlay ${loaded.localPath}`] : [])])
+  else io.write(`Keep-pushing loop for ${config.project.repo} (base ${config.project.baseBranch}) — queue of ${config.linear.person}, team ${config.linear.teamKey}\nConfig: ${loaded.path}${loaded.localPath ? `\nOverlay: ${loaded.localPath}` : ''}`)
+
+  section('Doctor', 2, TOTAL)
   const doctor = await runLoopDoctor({ loaded, runner: input.runner, env, platform, now: input.now, probe: false })
-  for (const check of doctor.checks) io.write(line(check))
-  io.write('\n2/4 Automation environment')
+  showChecks(doctor.checks)
+  section('Automation environment', 3, TOTAL)
   const preflight = await installPreflight(loaded, input.runner, env, platform)
-  for (const check of preflight) io.write(line(check))
+  showChecks(preflight)
   const failed = [...doctor.checks, ...preflight].filter((check) => check.status === 'failed')
   if (failed.length && !input.force) {
-    io.write(`\n${failed.length} blocking check(s) failed. Fix them and run install again, or pass --force to install anyway.`)
-    return { status: 'blocked', reason: failed.map((check) => check.id).join(', '), doctor, preflight, rehearsal: null, install: null, after: null }
+    bullet(`${failed.length} blocking check(s) failed. Fix them and run install again, or pass --force to install anyway.`, 'fail')
+    return { status: 'blocked', reason: failed.map((check) => check.id).join(', '), localConfig, doctor, preflight, rehearsal: null, install: null, after: null }
   }
-  if (failed.length) io.write(`\n△ continuing past ${failed.length} failed check(s) because of --force`)
+  if (failed.length) bullet(`continuing past ${failed.length} failed check(s) because of --force`, 'warn')
 
   let rehearsal: TickReport | null = null
-  if (!input.skipRehearsal && await confirm('\n3/4 Run a dry-run tick now (calls the orchestrator once, writes nothing)?', true)) {
+  section('Rehearsal', 4, TOTAL)
+  if (!input.skipRehearsal && await confirm('Run a dry-run tick now (calls the orchestrator once, writes nothing)?', true)) {
     rehearsal = await runTick({ loaded, runner: input.runner, env, platform, now: input.now, dryRun: true, maxDispatch: 1 })
-    io.write(`  tick ${rehearsal.status} · slots ${rehearsal.slots.free}/${rehearsal.slots.maxAgents} · orchestrator ${rehearsal.routing.orchestrator ?? '—'} · builder ${rehearsal.routing.builder ?? '—'}`)
-    for (const result of rehearsal.results) io.write(`  ${result.outcome === 'dry-run' ? '✔' : result.outcome === 'escalated' ? '△' : '✖'} ${result.issue.padEnd(10)} ${result.outcome}: ${result.reason.slice(0, 140)}`)
-    for (const note of rehearsal.notes) io.write(`  · ${note}`)
-  } else io.write('\n3/4 Rehearsal skipped')
+    bullet(`tick ${rehearsal.status} · slots ${rehearsal.slots.free}/${rehearsal.slots.maxAgents} · orchestrator ${rehearsal.routing.orchestrator ?? '—'} · builder ${rehearsal.routing.builder ?? '—'}`, 'dim')
+    for (const result of rehearsal.results) bullet(`${result.issue}  ${result.outcome}: ${result.reason.slice(0, 140)}`, result.outcome === 'dry-run' ? 'ok' : result.outcome === 'escalated' ? 'warn' : 'fail')
+    for (const note of rehearsal.notes) bullet(note, 'dim')
+  } else bullet('skipped', 'dim')
 
-  io.write('\n4/4 Automations to install in Orca')
+  section('Automations to install in Orca', 5, TOTAL)
   const specs = automationSpecs(loaded, input.provider ?? config.schedule.provider ?? '(auto: first available watcher provider)')
-  for (const spec of specs) io.write(`  • ${spec.name}  trigger "${spec.trigger}"  provider ${spec.provider}  workspace ${spec.workspace}\n    precheck: ${spec.precheck}`)
+  for (const spec of specs) { bullet(`${spec.name}  trigger "${spec.trigger}"  provider ${spec.provider}`, 'ok'); bullet(`workspace ${spec.workspace}`, 'dim'); bullet(`precheck ${spec.precheck}`, 'dim') }
   if (input.dryRun) {
     const install = await installLoopAutomations({ loaded, runner: input.runner, env, platform, dryRun: true, provider: input.provider, now: input.now })
-    io.write('\nDry run: nothing was created.')
-    return { status: 'dry-run', reason: 'dry-run requested', doctor, preflight, rehearsal, install, after: null }
+    bullet('Dry run: nothing was created.', 'warn')
+    return { status: 'dry-run', reason: 'dry-run requested', localConfig, doctor, preflight, rehearsal, install, after: null }
   }
-  if (!await confirm('\nInstall these automations now? From then on the loop dispatches workers, comments on Linear, opens and merges PRs on its own.', false)) {
-    io.write('Aborted. Nothing was created.')
-    return { status: 'aborted', reason: 'user declined', doctor, preflight, rehearsal, install: null, after: null }
+  if (!await confirm('Install these automations now? From then on the loop dispatches workers, comments on Linear, opens and merges PRs on its own.', false)) {
+    bullet('Aborted. Nothing was created.', 'warn')
+    return { status: 'aborted', reason: 'user declined', localConfig, doctor, preflight, rehearsal, install: null, after: null }
   }
   const install = await installLoopAutomations({ loaded, runner: input.runner, env, platform, provider: input.provider, now: input.now })
-  for (const action of install.actions) io.write(`  ${action.action === 'create' || action.action === 'edit' ? '✔' : '✖'} ${action.name} ${action.action}: ${action.detail}`)
-  for (const note of install.notes) io.write(`  △ ${note}`)
-  if (install.status === 'failed') return { status: 'blocked', reason: 'orca refused an automation', doctor, preflight, rehearsal, install, after: null }
+  for (const action of install.actions) bullet(`${action.name} ${action.action}: ${action.detail}`, action.action === 'create' || action.action === 'edit' ? 'ok' : 'fail')
+  for (const note of install.notes) bullet(note, 'warn')
+  if (install.status === 'failed') return { status: 'blocked', reason: 'orca refused an automation', localConfig, doctor, preflight, rehearsal, install, after: null }
   const after = await loopStatus({ loaded, runner: input.runner }).catch(() => null)
-  if (after) io.write(`\n${after.summary}`)
-  io.write(`Watch it in Orca → Automations or with: ${config.schedule.harnessCommand} loop status -f ${JSON.stringify(loaded.path)}`)
-  return { status: 'installed', reason: `${install.actions.length} automation(s)`, doctor, preflight, rehearsal, install, after }
-}
-
-/** Terminal IO: readline prompts when stdin is a TTY; otherwise every prompt takes its fallback and says so. */
-export const createTerminalIO = (): GuidedInstallIO & { readonly interactive: boolean } => {
-  const interactive = Boolean(process.stdin.isTTY && process.stdout.isTTY)
-  return {
-    interactive,
-    write: (text) => { process.stdout.write(`${text}\n`) },
-    confirm: async (question, fallback) => {
-      if (!interactive) { process.stdout.write(`${question} [non-interactive → ${fallback ? 'yes' : 'no'}]\n`); return fallback }
-      const rl = createInterface({ input: process.stdin, output: process.stdout })
-      try {
-        const answer = (await rl.question(`${question} ${fallback ? '[Y/n] ' : '[y/N] '}`)).trim().toLowerCase()
-        return answer === '' ? fallback : answer === 'y' || answer === 'yes' || answer === 's' || answer === 'sim'
-      } finally { rl.close() }
-    },
-  }
+  if (after) bullet(after.summary, 'ok')
+  bullet(`Watch it in Orca → Automations or with: ${config.schedule.harnessCommand} loop status -f ${JSON.stringify(loaded.path)}`, 'dim')
+  return { status: 'installed', reason: `${install.actions.length} automation(s)`, localConfig, doctor, preflight, rehearsal, install, after }
 }

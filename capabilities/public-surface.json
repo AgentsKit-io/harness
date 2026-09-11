@@ -4,7 +4,7 @@
   "package": "@agentskit/harness",
   "packageVersion": "0.5.0",
   "entryPoint": "src/index.ts",
-  "sourceDigest": "a9329b290a735375cd36d88fbe165c71475ac694737a22cf3802e3f05790c093",
+  "sourceDigest": "ed12bbd7e5348e84a1b4682a7ccf999db0bba9f7a2dff2a094cb9ee4a363aeda",
   "capabilities": [
     {
       "id": "public-surface:adapters/agent",
@@ -938,7 +938,6 @@
         "GuidedInstallIO",
         "GuidedInstallInput",
         "GuidedInstallReport",
-        "createTerminalIO",
         "installPreflight",
         "runGuidedInstall"
       ]
@@ -964,6 +963,24 @@
         "parseAutomationRuns",
         "precheckCommand",
         "uninstallLoopAutomations"
+      ]
+    },
+    {
+      "id": "public-surface:loop/local-config",
+      "version": "0.5.0",
+      "kind": "composition",
+      "entryPoint": "src/index.ts",
+      "exports": [
+        "LocalConfigAnswers",
+        "LocalConfigPrompter",
+        "TeamMember",
+        "fetchTeamMembers",
+        "hasLocalConfig",
+        "localConfigPath",
+        "parseTeamMembers",
+        "promptLocalConfig",
+        "renderLocalConfig",
+        "writeLocalConfig"
       ]
     },
     {
@@ -1026,7 +1043,17 @@
         "runTick",
         "worktreeNameFor"
       ]
+    },
+    {
+      "id": "public-surface:loop/ui/terminal",
+      "version": "0.5.0",
+      "kind": "composition",
+      "entryPoint": "src/index.ts",
+      "exports": [
+        "RichIO",
+        "createRichIO"
+      ]
     }
   ],
-  "digest": "24377e6df2a114ebb7870fc91395ea574d77e6f6ec9fc00dbe6553a92898453b"
+  "digest": "670cf2424369e8c64da623a38b86c5c6d1c7d3af195d92911fc98dc0d304325b"
 }

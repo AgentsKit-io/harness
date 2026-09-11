@@ -2,7 +2,8 @@ import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
-import { CONTRACT_CLOSE, CONTRACT_OPEN, installPreflight, loadLoopConfig, runGuidedInstall } from '../src/index.js'
+import { existsSync } from 'node:fs'
+import { CONTRACT_CLOSE, CONTRACT_OPEN, installPreflight, loadLoopConfig, parseTeamMembers, promptLocalConfig, renderLocalConfig, runGuidedInstall, writeLocalConfig } from '../src/index.js'
 import type { CommandResult, CommandRunner, GuidedInstallIO } from '../src/index.js'
 
 const fixture = (name: string): unknown => JSON.parse(readFileSync(join(process.cwd(), 'test/fixtures/loop', `${name}.json`), 'utf8')) as unknown
@@ -40,6 +41,7 @@ const setup = (options: { readonly ghAuth?: boolean; readonly harnessOnPath?: bo
       if (key.startsWith('orca automations list')) return okResult({ automations, items: automations })
       if (key.startsWith('orca automations create')) { const created = { id: `auto-${automations.length + 1}`, name: argv[argv.indexOf('--name') + 1], enabled: true, trigger: argv[argv.indexOf('--trigger') + 1], provider: argv[argv.indexOf('--provider') + 1] }; automations.push(created); return okResult({ automation: created }) }
       if (key.startsWith('orca automations runs')) return okResult({ runs: [] })
+      if (key.startsWith('orca linear team members')) return okResult({ members: [{ id: 'u1', displayName: 'person' }, { id: 'u2', displayName: 'teammate' }] })
       return { code: 127, stdout: '', stderr: `no fixture for ${key}`, timedOut: false, durationMs: 1 }
     },
   }
@@ -61,13 +63,14 @@ describe('guided install', () => {
     expect(report.status).toBe('installed')
     expect(report.doctor?.status).toBe('passed')
     expect(report.preflight.map((check) => check.id)).toEqual(['env.harness', 'env.review-cli', 'env.gh', 'github.auth', 'orca.repo', 'config.person'])
+    expect(report.localConfig).toBeNull()
     expect(report.preflight.every((check) => check.status === 'passed')).toBe(true)
     expect(report.rehearsal?.results[0]).toMatchObject({ outcome: 'dry-run' })
     expect(terminal.questions).toHaveLength(2)
     expect(terminal.questions[1]).toContain('Install these automations now?')
     expect(env.automations.map((item) => item['name'])).toEqual(['loop-tick', 'loop-deliver'])
-    expect(terminal.lines.some((text) => text.includes('1/4 Doctor'))).toBe(true)
-    expect(terminal.lines.some((text) => text.includes('precheck:'))).toBe(true)
+    expect(terminal.lines.some((text) => text.includes('2/5 Doctor'))).toBe(true)
+    expect(terminal.lines.some((text) => text.includes('precheck ak-harness loop precheck tick'))).toBe(true)
     expect(env.runner.calls.some((argv) => argv[1] === 'worktree' && argv[2] === 'create')).toBe(false)
   })
 
@@ -106,5 +109,56 @@ describe('guided install', () => {
     expect(dryReport.preflight.find((check) => check.id === 'orca.repo')).toMatchObject({ status: 'warning' })
     const preflight = await installPreflight(dry.loaded, dry.runner, { PATH: '/nonexistent' }, 'darwin')
     expect(preflight.filter((check) => check.status === 'failed').map((check) => check.id)).toEqual(['env.harness', 'env.review-cli', 'env.gh'])
+  })
+})
+
+describe('local config wizard', () => {
+  it('renders only answered keys and parses team members', () => {
+    expect(renderLocalConfig({ person: 'teammate' }, '/x/loop.config.yaml')).toContain('person: teammate')
+    expect(renderLocalConfig({ person: 'teammate' }, '/x/loop.config.yaml')).not.toContain('machine:')
+    expect(renderLocalConfig({ person: 'teammate', minFreeRamGb: 2, ceiling: 3 }, '/x/loop.config.yaml')).toMatch(/machine:\n  minFreeRamGb: 2\n  ceiling: 3/)
+    expect(parseTeamMembers({ members: [{ id: 'a', displayName: 'x' }, { id: 'b', name: 'y' }, { nope: 1 }] })).toEqual([{ id: 'a', displayName: 'x' }, { id: 'b', displayName: 'y' }])
+  })
+
+  it('offers to create loop.config.local.yaml when missing, writes the answers, and reloads the queue owner', async () => {
+    const env = setup()
+    const answers: Record<string, unknown> = { 'Create loop.config.local.yaml for this machine now?': true, 'Tune how much of this machine the loop may use?': true, 'Run a dry-run tick now': false, 'Install these automations now?': false }
+    const prompter = {
+      lines: [] as string[],
+      write: (text: string) => { prompter.lines.push(text) },
+      confirm: async (question: string) => Object.entries(answers).find(([key]) => question.startsWith(key))?.[1] as boolean ?? false,
+      select: async (question: string, options: readonly { value: string }[]) => question.startsWith('Whose Linear queue') ? 'teammate' : options[0]?.value ?? null,
+      text: async (question: string, fallback: string) => question.startsWith('GB of RAM') ? '2' : question.startsWith('Maximum concurrent') ? '3' : fallback,
+      checks: () => {}, section: () => {}, banner: () => {}, bullet: (line: string) => { prompter.lines.push(line) },
+    }
+    const report = await runGuidedInstall({ ...base(env, prompter) })
+    expect(report.status).toBe('aborted')
+    expect(report.localConfig).toMatchObject({ created: true })
+    const localPath = join(env.dir, 'loop.config.local.yaml')
+    expect(existsSync(localPath)).toBe(true)
+    const reloaded = loadLoopConfig(env.loaded.path)
+    expect(reloaded.config.linear.person).toBe('teammate')
+    expect(reloaded.config.machine).toMatchObject({ minFreeRamGb: 2, ceiling: 3 })
+    expect(report.preflight.find((check) => check.id === 'config.person')?.detail).toContain('teammate')
+    const second = await runGuidedInstall({ ...base(env, prompter) })
+    expect(second.localConfig).toMatchObject({ created: false })
+    expect(env.runner.calls.filter((argv) => argv[1] === 'linear' && argv[2] === 'team')).toHaveLength(1)
+  })
+
+  it('cancels cleanly and skips the wizard with --yes or --skip-local-config', async () => {
+    const cancel = setup()
+    const io1 = { write: () => {}, confirm: async () => true, select: async () => null, text: async () => null }
+    const cancelled = await runGuidedInstall({ ...base(cancel, io1) })
+    expect(cancelled.status).toBe('aborted')
+    expect(existsSync(join(cancel.dir, 'loop.config.local.yaml'))).toBe(false)
+    const skipped = setup()
+    const io2 = { write: () => {}, confirm: async () => false, select: async () => { throw new Error('must not prompt') }, text: async () => { throw new Error('must not prompt') } }
+    const report = await runGuidedInstall({ ...base(skipped, io2), skipLocalConfig: true })
+    expect(report.status).toBe('aborted')
+    expect(report.localConfig).toBeNull()
+    const direct = await promptLocalConfig(skipped.runner, skipped.loaded, { select: async () => '__other__', text: async (_q, fallback) => fallback === 'person' ? 'typed-name' : fallback, confirm: async () => false, write: () => {} })
+    expect(direct).toEqual({ person: 'typed-name' })
+    const written = writeLocalConfig(skipped.loaded, { person: 'typed-name' })
+    expect(written.loaded.config.linear.person).toBe('typed-name')
   })
 })
