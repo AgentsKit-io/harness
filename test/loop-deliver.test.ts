@@ -23,6 +23,8 @@ interface Scenario {
   readonly mergeRefused?: boolean
   readonly dispatchedAt?: string
   readonly reviewerAvailable?: boolean
+  /** PR whose head is Orca's `<git user>/<worktree>` branch, only visible through the open-PR listing. */
+  readonly orcaBranchPr?: Record<string, unknown>
 }
 
 const basePr = (over: Record<string, unknown> = {}): Record<string, unknown> => ({ ...(fixture('gh-pr-view') as Record<string, unknown>), headRefName: 'person/eng-10-demo', files: [{ path: 'packages/demo/src/index.ts' }], statusCheckRollup: [{ __typename: 'CheckRun', name: 'ci', conclusion: 'SUCCESS', status: 'COMPLETED' }], mergeable: 'MERGEABLE', mergeStateStatus: 'CLEAN', state: 'OPEN', number: 42, url: 'https://github.com/o/r/pull/42', ...over })
@@ -52,6 +54,8 @@ const setup = (initial: Scenario = {}) => {
       if (key === 'gh auth token') return { code: 0, stdout: 'ghp_test\n', stderr: '', timedOut: false, durationMs: 1 }
       if (argv[0] === 'gh' && argv[1] === 'pr' && argv[2] === 'list') {
         const state = argv[argv.indexOf('--state') + 1]
+        const byHead = argv.includes('--head')
+        if (state === 'open' && scenario.orcaBranchPr) return ok(byHead ? [] : [scenario.orcaBranchPr])
         if (state === 'open') return ok(scenario.pr === null || scenario.pr === undefined && (scenario.mergedPr || scenario.closedPr) ? [] : [scenario.pr ?? basePr()])
         return ok([scenario.mergedPr, scenario.closedPr].filter(Boolean))
       }
@@ -158,6 +162,14 @@ describe('deliver', () => {
     const conflictResult = (await deliver(conflict)).results[0]
     expect(conflictResult).toMatchObject({ outcome: 'fix-round', reason: expect.stringContaining('conflicts') })
     expect(readDeliveryState(conflict.loaded.stateDir, 'ENG-10').fixRounds).toBe(0)
+  })
+
+  it('finds the PR on the branch Orca assigned and rewrites the dispatch record', async () => {
+    const env = setup({ review: { code: 0 }, orcaBranchPr: basePr({ headRefName: 'GitUser/eng-10-demo' }) })
+    const report = await deliver(env)
+    expect(report.results[0]).toMatchObject({ outcome: 'merged', pr: 42 })
+    expect(report.notes[0]).toContain('PR found on branch GitUser/eng-10-demo')
+    expect(JSON.parse(readFileSync(dispatchRecordPath(env.loaded.stateDir, 'ENG-10'), 'utf8')).branch).toBe('GitUser/eng-10-demo')
   })
 
   it('handles merge refusal, externally merged PRs, and closed PRs', async () => {

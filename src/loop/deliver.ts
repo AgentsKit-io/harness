@@ -2,7 +2,7 @@ import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 
 import { dirname, join } from 'node:path'
 import type { CommandRunner } from '../adapters/command.js'
 import { renderFindingsForWorker, runCodeReview, type CodeReviewOutcome } from '../adapters/code-review.js'
-import { assessChecks, githubComment, githubCommentExists, githubMerge, githubPullRequestsForBranch, touchesProtectedPaths, type PullRequestSnapshot } from '../adapters/github-cli.js'
+import { assessChecks, githubComment, githubCommentExists, githubMerge, githubOpenPullRequests, githubPullRequestsForBranch, touchesProtectedPaths, type PullRequestSnapshot } from '../adapters/github-cli.js'
 import { createLinearTrackingAdapter, linearAttach, linearCommentAdd, linearLabelAdd } from '../adapters/linear-orca.js'
 import { orcaAccountList, orcaAgentHooks, orcaTerminalList, orcaTerminalSend, orcaTerminalWait, orcaWorktreeRemove, orcaWorktreeSet } from '../adapters/orca-cli.js'
 import { detectProviders } from '../adapters/providers.js'
@@ -271,7 +271,12 @@ export const runDeliver = async (input: DeliverInput): Promise<DeliverReport> =>
     if (state.finishedAt) continue
     const lease = leases.get(record.issue)
     try {
-      const open = await githubPullRequestsForBranch(input.runner, { repo: config.project.repo, head: record.branch })
+      let open = await githubPullRequestsForBranch(input.runner, { repo: config.project.repo, head: record.branch })
+      if (!open.length) {
+        // The worker may have pushed the branch Orca assigned (`<git user>/<worktree>`) rather than the recorded one.
+        const candidates = (await githubOpenPullRequests(input.runner, { repo: config.project.repo, limit: 100 })).filter((item) => item.headRef === record.branch || item.headRef.endsWith(`/${record.worktree}`) || item.headRef === record.worktree)
+        if (candidates.length) { open = candidates; if (!dryRun) writeJson(dispatchRecordPath(loaded.stateDir, record.issue), { ...record, branch: candidates[0]!.headRef }); notes.push(`${record.issue}: PR found on branch ${candidates[0]!.headRef}; dispatch record updated`) }
+      }
       const pr = open[0]
       if (pr) { results.push(await handlePullRequest(ctx, record, lease, state, pr)); continue }
       const closed = await githubPullRequestsForBranch(input.runner, { repo: config.project.repo, head: record.branch, state: 'all' })

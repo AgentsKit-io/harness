@@ -229,29 +229,31 @@ export const runTick = async (input: TickInput): Promise<TickReport> => {
     const worktree = worktreeNameFor(detail)
     const claim = ledger.claim({ tracker: 'linear', repository: config.project.repo, issue: detail.identifier, worktree, branch, owner: input.owner ?? `loop:${config.linear.person}` })
     if (claim.decision === 'already-claimed') { results.push({ issue: detail.identifier, outcome: 'skipped', reason: `lease already held by ${claim.lease.owner} since ${claim.lease.claimedAt}` }); continue }
-    const brief = renderWorkerBrief({ issue: detail, contract: stored, config, branch, provider: builder.provider, model: builder.model })
     const plan = createOrcaDispatchPlan({ repository: config.orca.repoSelector ?? `path:${loaded.root}`, worktree, branch, baseBranch: config.project.baseBranch, launch: 'worktree-only', linearIssue: detail.url || detail.identifier, comment: `loop · ${detail.identifier} · ${builder.provider}/${builder.model}`, noParent: true, orcaBin: config.orca.bin })
     const title = `loop ${detail.identifier} · ${builder.provider}`
     if (dryRun) {
       ledger.release(claim.lease, 'dry-run')
-      results.push({ issue: detail.identifier, outcome: 'dry-run', reason: `would create worktree, open terminal "${builder.tui}", send the brief and move issue to In Progress`, branch, worktree, provider: builder.provider, model: builder.model, argv: plan.argv, contractDigest: stored.digest })
+      results.push({ issue: detail.identifier, outcome: 'dry-run', reason: `would create worktree, open terminal "${builder.tui}", send the brief and move issue to In Progress (branch is assigned by Orca: <git user>/${worktree})`, branch, worktree, provider: builder.provider, model: builder.model, argv: plan.argv, contractDigest: stored.digest })
       dispatched += 1
       continue
     }
     let created: Awaited<ReturnType<typeof orcaWorktreeCreate>> | null = null
     try {
       created = await orcaWorktreeCreate(input.runner, plan.argv, { timeoutMs: Math.max(config.orca.timeoutMs, 120_000) })
+      // Orca names the branch `<git user>/<worktree>`; the Linear branchName is only a hint. Record and brief the real one.
+      const actualBranch = created.branch || branch
+      const brief = renderWorkerBrief({ issue: detail, contract: stored, config, branch: actualBranch, provider: builder.provider, model: builder.model })
       const launched = await launchWorkerTerminal({ runner: input.runner, config, worktreeId: created.id, command: builder.tui, title, brief })
       if (!launched.accepted) notes.push(`${detail.identifier}: terminal ${launched.terminal} did not confirm the brief; deliver will nudge it if it stays idle`)
       ledger.recordDispatch({ lease: claim.lease, idempotencyKey: plan.idempotencyKey, commandDigest: plan.commandDigest })
-      const record: DispatchRecordFile = { issue: detail.identifier, worktreeId: created.id, worktree, branch, terminal: launched.terminal, provider: builder.provider, model: builder.model, contractDigest: stored.digest, leaseKey: claim.lease.key, leaseId: claim.lease.leaseId, dispatchedAt: now().toISOString(), url: detail.url }
+      const record: DispatchRecordFile = { issue: detail.identifier, worktreeId: created.id, worktree, branch: actualBranch, terminal: launched.terminal, provider: builder.provider, model: builder.model, contractDigest: stored.digest, leaseKey: claim.lease.key, leaseId: claim.lease.leaseId, dispatchedAt: now().toISOString(), url: detail.url }
       writeJson(dispatchRecordPath(loaded.stateDir, detail.identifier), record)
       appendLoopEvent(loaded.stateDir, { at: record.dispatchedAt, type: 'worker.dispatched', ...record, command: builder.tui, briefDigest: hashJson(brief), briefAccepted: launched.accepted, tuiIdle: launched.idle })
       try {
         await tracking.transition({ tracker: 'linear', issue: detail.identifier, from: detail.state, to: config.linear.inProgressState, reason: `loop dispatched ${builder.provider}/${builder.model} in ${created.id}` })
-        await linearCommentAdd(input.runner, { issue: detail.identifier, body: `**Loop: dispatched**\n\nWorker \`${builder.provider}/${builder.model}\` started in Orca worktree \`${worktree}\` on branch \`${branch}\` (contract \`${stored.digest.slice(0, 12)}\`). It will open a PR against \`${config.project.baseBranch}\` when the contract's outcomes pass.\n\n<!-- loop:dispatched:${claim.lease.leaseId} -->`, dedupeKey: `dispatched:${detail.identifier}:${claim.lease.leaseId}` }, write)
+        await linearCommentAdd(input.runner, { issue: detail.identifier, body: `**Loop: dispatched**\n\nWorker \`${builder.provider}/${builder.model}\` started in Orca worktree \`${worktree}\` on branch \`${actualBranch}\` (contract \`${stored.digest.slice(0, 12)}\`). It will open a PR against \`${config.project.baseBranch}\` when the contract's outcomes pass.\n\n<!-- loop:dispatched:${claim.lease.leaseId} -->`, dedupeKey: `dispatched:${detail.identifier}:${claim.lease.leaseId}` }, write)
       } catch (error) { notes.push(`Linear update for ${detail.identifier} failed after dispatch: ${message(error)}`) }
-      results.push({ issue: detail.identifier, outcome: 'dispatched', reason: 'worker started', branch, worktree, worktreeId: created.id, terminal: launched.terminal, provider: builder.provider, model: builder.model, argv: plan.argv, contractDigest: stored.digest })
+      results.push({ issue: detail.identifier, outcome: 'dispatched', reason: 'worker started', branch: actualBranch, worktree, worktreeId: created.id, terminal: launched.terminal, provider: builder.provider, model: builder.model, argv: plan.argv, contractDigest: stored.digest })
       dispatched += 1
     } catch (error) {
       ledger.release(claim.lease, `dispatch failed: ${message(error)}`)

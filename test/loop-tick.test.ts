@@ -45,7 +45,7 @@ const makeEnv = (options: { readonly contract?: TaskContract | 'garbage'; readon
       if (key.startsWith('orca terminal wait')) return okResult({ satisfied: true })
       if (key.startsWith('orca terminal send')) return okResult({ accepted: true, requestId: 'r' })
       if (key.startsWith('orca worktree rm')) return okResult({ removed: true })
-      if (key.startsWith('orca worktree create')) return options.failCreate ? { code: 1, stdout: JSON.stringify({ ok: false, error: { message: 'repo busy' } }), stderr: '', timedOut: false, durationMs: 1 } : okResult({ worktreeId: `repo-1::${dir}/w/${argv[argv.indexOf('--name') + 1]}`, path: `${dir}/w`, branch: `refs/heads/${argv[argv.indexOf('--name') + 1]}`, agentTerminalHandle: 'term_new' })
+      if (key.startsWith('orca worktree create')) return options.failCreate ? { code: 1, stdout: JSON.stringify({ ok: false, error: { message: 'repo busy' } }), stderr: '', timedOut: false, durationMs: 1 } : okResult({ worktreeId: `repo-1::${dir}/w/${argv[argv.indexOf('--name') + 1]}`, path: `${dir}/w`, branch: `refs/heads/gituser/${argv[argv.indexOf('--name') + 1]}`, agentTerminalHandle: 'term_new' })
       if (key.startsWith('orca linear status set') || key.startsWith('orca linear comment add') || key.startsWith('orca linear label add')) return okResult({ ok: true })
       return { code: 127, stdout: '', stderr: `no fixture for ${key}`, timedOut: false, durationMs: 1 }
     },
@@ -139,7 +139,8 @@ describe('tick', () => {
     const ledger = createDispatchLedger(loaded.stateDir)
     expect(ledger.active()).toHaveLength(1)
     expect(ledger.active()[0]?.issue).toBe(result?.issue)
-    expect(readDispatchRecord(loaded.stateDir, result?.issue ?? '')).toMatchObject({ worktreeId: expect.stringContaining('repo-1::'), provider: 'claude', model: 'sonnet' })
+    expect(readDispatchRecord(loaded.stateDir, result?.issue ?? '')).toMatchObject({ worktreeId: expect.stringContaining('repo-1::'), provider: 'claude', model: 'sonnet', branch: expect.stringMatching(/^gituser\//) })
+    expect(result?.branch).toMatch(/^gituser\//)
     expect(readStoredContract(loaded.stateDir, result?.issue ?? '')?.assessment.dispatchable).toBe(true)
     const statusCall = env.runner.calls.find((argv) => argv[1] === 'linear' && argv[2] === 'status')
     expect(statusCall).toEqual(['orca', 'linear', 'status', 'set', result?.issue, '--to', 'In Progress', '--workspace', loaded.config.linear.workspaceId, '--json'])
@@ -153,6 +154,7 @@ describe('tick', () => {
     expect(termCreate?.[termCreate.indexOf('--worktree') + 1]).toMatch(/^id:repo-1::/)
     const send = env.runner.calls.find((argv) => argv[1] === 'terminal' && argv[2] === 'send')
     expect(send?.[send.indexOf('--text') + 1]).toContain('Loop-Contract:')
+    expect(send?.[send.indexOf('--text') + 1]).toContain(`git push -u origin ${result?.branch}`)
     expect(send).toContain('--enter')
     expect(env.runner.calls.findIndex((argv) => argv[1] === 'terminal' && argv[2] === 'wait')).toBeLessThan(env.runner.calls.findIndex((argv) => argv[1] === 'terminal' && argv[2] === 'send'))
 
