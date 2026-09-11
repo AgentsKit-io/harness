@@ -146,6 +146,11 @@ describe('local config wizard', () => {
   })
 
   it('cancels cleanly and skips the wizard with --yes or --skip-local-config', async () => {
+    const nonTty = setup()
+    const io0 = { interactive: false, write: () => {}, confirm: async (_q: string, fallback: boolean) => fallback, select: async () => 'teammate', text: async (_q: string, fallback: string) => fallback }
+    const quiet = await runGuidedInstall({ ...base(nonTty, io0) })
+    expect(quiet.localConfig).toBeNull()
+    expect(existsSync(join(nonTty.dir, 'loop.config.local.yaml'))).toBe(false)
     const cancel = setup()
     const io1 = { write: () => {}, confirm: async () => true, select: async () => null, text: async () => null }
     const cancelled = await runGuidedInstall({ ...base(cancel, io1) })

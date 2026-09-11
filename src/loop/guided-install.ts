@@ -11,6 +11,8 @@ export interface GuidedInstallIO {
   /** Ask a yes/no question; `fallback` is used when the answer is empty. */
   readonly confirm: (question: string, fallback: boolean) => Promise<boolean>
   readonly write: (line: string) => void
+  /** False when prompts cannot really be answered (no TTY); the local-config wizard never writes files in that mode. */
+  readonly interactive?: boolean
   /** Optional richer surface; plain implementations may omit these and get text fallbacks. */
   readonly select?: (question: string, options: readonly { readonly value: string; readonly label: string; readonly hint?: string }[], initial?: number) => Promise<string | null>
   readonly text?: (question: string, fallback: string, validate?: (value: string) => string | null) => Promise<string | null>
@@ -92,7 +94,7 @@ export const runGuidedInstall = async (input: GuidedInstallInput): Promise<Guide
   const TOTAL = 5
 
   section('Per-machine settings', 1, TOTAL)
-  if (!hasLocalConfig(loaded) && !input.skipLocalConfig && !yes && io.select && io.text) {
+  if (!hasLocalConfig(loaded) && !input.skipLocalConfig && !yes && io.interactive !== false && io.select && io.text) {
     bullet(`No ${'loop.config.local.yaml'} next to the config: the loop would drain the queue of "${loaded.config.linear.person}" from the versioned file.`, 'warn')
     if (await io.confirm('Create loop.config.local.yaml for this machine now?', true)) {
       const answers = await promptLocalConfig(input.runner, loaded, { select: io.select, text: io.text, confirm: io.confirm, write: io.write })
@@ -103,6 +105,7 @@ export const runGuidedInstall = async (input: GuidedInstallInput): Promise<Guide
       bullet(`wrote ${written.path}`, 'ok')
     }
   } else if (loaded.localPath) bullet(`using overlay ${loaded.localPath}`, 'ok')
+  else if (io.interactive === false && !hasLocalConfig(loaded)) bullet(`no overlay and no terminal to ask; run interactively or write loop.config.local.yaml by hand`, 'warn')
   else bullet(`no overlay; queue owner comes from ${loaded.path}`, 'dim')
   const { config } = loaded
   if (io.banner) io.banner(`Keep-pushing loop · ${config.project.repo}`, [`base ${config.project.baseBranch} · team ${config.linear.teamKey} · queue of ${config.linear.person}`, `config ${loaded.path}`, ...(loaded.localPath ? [`overlay ${loaded.localPath}`] : [])])
