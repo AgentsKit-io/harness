@@ -215,7 +215,7 @@ export const runTick = async (input: TickInput): Promise<TickReport> => {
       try {
         stored = await generateContract({ runner: input.runner, config, root: loaded.root, issue: detail, candidates: orchestratorCandidates, orchestrator, now, onProviderFailure })
         if (!dryRun) writeStoredContract(loaded.stateDir, stored)
-      } catch (error) { results.push({ issue: detail.identifier, outcome: 'failed', reason: `contract generation failed: ${message(error)}` }); continue }
+      } catch (error) { if (!dryRun) appendLoopEvent(loaded.stateDir, { at: now().toISOString(), type: 'contract.failed', issue: detail.identifier, error: message(error) }); results.push({ issue: detail.identifier, outcome: 'failed', reason: `contract generation failed: ${message(error)}` }); continue }
     }
     const assessment = assessContract(stored.contract)
     if (!assessment.dispatchable) {

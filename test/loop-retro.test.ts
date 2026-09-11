@@ -46,6 +46,9 @@ describe('loop retro', () => {
     env.issue('ENG-11', { 'dispatch.json': { issue: 'ENG-11', worktreeId: 'w2', worktree: 'w2', branch: 'b2', terminal: 't2', provider: 'claude', model: 'sonnet', contractDigest: 'd', leaseKey: 'k', leaseId: 'l', dispatchedAt: t(20), url: 'u' } })
     env.event(t(19), 'provider.cooldown', { provider: 'codex', kind: 'quota', until: t(-2) })
     env.event(t(300), 'worker.dispatched', { issue: 'OLD-1', provider: 'grok', model: 'g' })
+    env.event(t(18), 'worker.relaunched', { issue: 'ENG-11', reason: 'orca --agent claude started in bypass-permissions mode' })
+    env.event(t(17), 'contract.failed', { issue: 'ENG-12', error: 'Contract block is not valid JSON' })
+    env.event(t(16), 'worker.dispatch-failed', { issue: 'ENG-13', error: 'orca worktree create failed: repo busy' })
     writeFileSync(join(env.state, 'provider-cooldowns.json'), JSON.stringify({ codex: { attempts: 0, until: t(-2), reason: 'quota: weekly 100%', markedAt: t(19) } }))
     const runner: CommandRunner = { run: async (argv) => argv[1] === 'automations' && argv[2] === 'list' ? ok({ ok: true, result: { automations: [{ id: 'a1', name: 'loop-tick', enabled: true, rrule: '*/5 * * * *', agentId: 'claude' }] } }) : ok({ ok: true, result: { runs: [{ startedAt: NOW.getTime() - 3_600_000, status: 'skipped_precheck', precheckResult: { durationMs: 2000, timedOut: false, stdout: JSON.stringify({ status: 'idle' }) } }, { startedAt: NOW.getTime() - 7_200_000, status: 'skipped_precheck', precheckResult: { durationMs: 480_000, timedOut: false, stdout: JSON.stringify({ status: 'ok', results: [{}] }) } }, { startedAt: NOW.getTime() - 10 * 86_400_000, status: 'skipped_precheck', precheckResult: { durationMs: 1, stdout: '{"status":"idle"}' } }] } }) }
     const report = await buildRetroReport({ loaded: env.loaded, runner, since: '7d', now: () => NOW })
@@ -60,6 +63,9 @@ describe('loop retro', () => {
     expect(report.issues.map((row) => row.issue)).toEqual(['ENG-11', 'ENG-10', 'ENG-1', 'ENG-2', 'ENG-3', 'ENG-4'])
     expect(report.issues.find((row) => row.issue === 'ENG-10')).toMatchObject({ outcome: 'merged', leadTimeMin: 300, pr: 7, reviews: 2 })
     expect(report.suggestions.map((item) => item.id)).toContain('escalation-rate')
+    expect(report.harness).toEqual({ relaunches: 1, dispatchFailures: ['ENG-13: orca worktree create failed: repo busy'], contractFailures: ['ENG-12: Contract block is not valid JSON'], mergeRefusals: 0, reviewToolErrors: 0 })
+    expect(report.suggestions.filter((item) => item.target === 'harness').map((item) => item.id)).toEqual(['worker-relaunch', 'dispatch-failures', 'contract-failures'])
+    expect(report.suggestions.filter((item) => item.target === 'project').map((item) => item.id)).toEqual(['escalation-rate'])
     expect(report.suggestions.find((item) => item.id === 'escalation-rate')?.severity).toBe('act')
     const markdown = renderRetroMarkdown(report)
     expect(markdown).toContain('# Loop retro — my-org/my-project · person')
@@ -67,7 +73,10 @@ describe('loop retro', () => {
     expect(markdown).toContain('## Problems')
     expect(markdown).toContain('## What worked')
     expect(markdown).toContain('ENG-10 merged (PR #7) by claude/sonnet in 300 min')
-    expect(markdown).toContain('## Adjustments')
+    expect(markdown).toContain('## Adjustments — project')
+    expect(markdown).toContain('## Adjustments — harness')
+    expect(markdown).toContain('https://github.com/AgentsKit-io/harness/issues')
+    expect(markdown).toContain('### Harness signals')
     const learnings = retroLearnings(report, markdown)
     expect(learnings.some((record) => record.category === 'adjustment' && record.text.includes('escalated'))).toBe(true)
     expect(learnings.every((record) => record.status === 'proposed')).toBe(true)
@@ -79,11 +88,15 @@ describe('loop retro', () => {
 
   it('emits the steady suggestion when nothing signals, and specific ones when thresholds trip', () => {
     const env = setup()
-    const base: Omit<RetroReport, 'suggestions' | 'digest'> = { generatedAt: NOW.toISOString(), window: { since: 's', until: 'u', days: 7 }, project: 'p', person: 'x', counts: {}, escalations: { total: 0, issues: [], reasons: [] }, dispatches: { total: 0, failed: 0, byProvider: {} }, delivery: { merged: 0, blocked: 0, stuck: 0, abandoned: 0, inFlight: 0, fixRounds: 0, reviewsClean: 0, reviewsFindings: 0, reviewsIncomplete: 0, medianLeadTimeMin: null }, providers: { cooldowns: [], cooldownEvents: 0 }, orca: null, issues: [] }
+    const base: Omit<RetroReport, 'suggestions' | 'digest'> = { generatedAt: NOW.toISOString(), window: { since: 's', until: 'u', days: 7 }, project: 'p', person: 'x', counts: {}, escalations: { total: 0, issues: [], reasons: [] }, dispatches: { total: 0, failed: 0, byProvider: {} }, delivery: { merged: 0, blocked: 0, stuck: 0, abandoned: 0, inFlight: 0, fixRounds: 0, reviewsClean: 0, reviewsFindings: 0, reviewsIncomplete: 0, medianLeadTimeMin: null }, providers: { cooldowns: [], cooldownEvents: 0 }, harness: { relaunches: 0, dispatchFailures: [], contractFailures: [], mergeRefusals: 0, reviewToolErrors: 0 }, orca: null, issues: [] }
     expect(buildSuggestions({ config: env.loaded.config, report: base }).map((item) => item.id)).toEqual(['steady'])
     const noisy = { ...base, delivery: { ...base.delivery, blocked: 3, merged: 1, stuck: 2, reviewsIncomplete: 2, reviewsClean: 6 }, providers: { cooldowns: [], cooldownEvents: 4 }, orca: { runs: 10, idle: 10, work: 0, timedOut: 1, avgDurationSec: 1, maxDurationSec: 610 } }
     const ids = buildSuggestions({ config: env.loaded.config, report: noisy }).map((item) => item.id)
     expect(ids).toEqual(expect.arrayContaining(['fix-rounds', 'stuck-workers', 'review-incomplete', 'provider-cooldowns', 'stage-timeout', 'review-floor']))
+    const harnessy = { ...base, harness: { relaunches: 0, dispatchFailures: [], contractFailures: [], mergeRefusals: 3, reviewToolErrors: 2 } }
+    const hs = buildSuggestions({ config: env.loaded.config, report: harnessy })
+    expect(hs.map((item) => item.id)).toEqual(['merge-refusals', 'review-tool-errors'])
+    expect(hs.every((item) => item.target === 'harness')).toBe(true)
     expect(ids).not.toContain('steady')
     expect(ids).toContain('idle-loop')
     const busy = { ...noisy, dispatches: { total: 3, failed: 0, byProvider: {} } }

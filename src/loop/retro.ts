@@ -29,7 +29,10 @@ export interface RetroIssueRow {
   readonly pr: number | null
 }
 
-export interface RetroSuggestion { readonly id: string; readonly severity: 'info' | 'tune' | 'act'; readonly text: string; readonly evidence: string; readonly knob?: string }
+/** `project`: change the target project (loop.config.yaml, issues, process). `harness`: a defect or limitation of @agentskit/harness itself, to be filed against the library. */
+export type RetroTarget = 'project' | 'harness'
+export interface RetroSuggestion { readonly id: string; readonly target: RetroTarget; readonly severity: 'info' | 'tune' | 'act'; readonly text: string; readonly evidence: string; readonly knob?: string }
+export const HARNESS_REPO_URL = 'https://github.com/AgentsKit-io/harness'
 
 export interface RetroReport {
   readonly generatedAt: string
@@ -41,6 +44,8 @@ export interface RetroReport {
   readonly dispatches: { readonly total: number; readonly failed: number; readonly byProvider: Readonly<Record<string, number>> }
   readonly delivery: { readonly merged: number; readonly blocked: number; readonly stuck: number; readonly abandoned: number; readonly inFlight: number; readonly fixRounds: number; readonly reviewsClean: number; readonly reviewsFindings: number; readonly reviewsIncomplete: number; readonly medianLeadTimeMin: number | null }
   readonly providers: { readonly cooldowns: readonly { readonly provider: string; readonly reason: string; readonly until: string }[]; readonly cooldownEvents: number }
+  /** Signals about the library itself, taken from events the loop only emits when its own machinery misbehaved. */
+  readonly harness: { readonly relaunches: number; readonly dispatchFailures: readonly string[]; readonly contractFailures: readonly string[]; readonly mergeRefusals: number; readonly reviewToolErrors: number }
   readonly orca: { readonly runs: number; readonly idle: number; readonly work: number; readonly timedOut: number; readonly avgDurationSec: number | null; readonly maxDurationSec: number | null } | null
   readonly issues: readonly RetroIssueRow[]
   readonly suggestions: readonly RetroSuggestion[]
@@ -75,16 +80,22 @@ export const buildSuggestions = (input: { readonly config: LoopConfig; readonly 
   const out: RetroSuggestion[] = []
   const dispatched = report.dispatches.total
   const escalated = report.escalations.total
-  if (escalated + dispatched >= 3 && escalated / Math.max(1, escalated + dispatched) >= 0.6) out.push({ id: 'escalation-rate', severity: 'act', text: `${escalated} of ${escalated + dispatched} contracts escalated. Most issues lack a verifiable acceptance criterion or reference assets the worker cannot reach — answer the needs-info comments or add acceptance criteria templates to the issue template.`, evidence: report.escalations.reasons.slice(0, 3).map((row) => `${row.count}× ${row.reason}`).join('; '), knob: 'issue template / linear.excludeLabels' })
-  if (report.delivery.reviewsClean >= 5 && report.delivery.reviewsFindings === 0) out.push({ id: 'review-floor', severity: 'tune', text: `${report.delivery.reviewsClean} reviews with zero blocking findings. The floor may be too permissive to catch anything, or the workers are good; consider lowering delivery.review.minSeverity to "nit" for one week and compare.`, evidence: `reviewsClean=${report.delivery.reviewsClean}`, knob: 'delivery.review.minSeverity' })
-  if (report.delivery.blocked >= 2 && report.delivery.blocked >= report.delivery.merged) out.push({ id: 'fix-rounds', severity: 'act', text: `${report.delivery.blocked} PR(s) blocked after ${config.delivery.maxFixRounds} fix round(s) versus ${report.delivery.merged} merged. Either the reviewer floor is too strict for the builder model, or the builder tier is too weak: raise maxFixRounds or move the builder to a stronger model.`, evidence: `blocked=${report.delivery.blocked} merged=${report.delivery.merged}`, knob: 'delivery.maxFixRounds / models.builder' })
-  if (report.delivery.stuck >= 2) out.push({ id: 'stuck-workers', severity: 'act', text: `${report.delivery.stuck} worker(s) went idle without a PR. Check the worker briefs and the provider's auto mode; consider a longer delivery.workerIdleTimeoutMin if they were still working.`, evidence: `stuck=${report.delivery.stuck}`, knob: 'delivery.workerIdleTimeoutMin' })
-  if (report.delivery.reviewsIncomplete >= 2) out.push({ id: 'review-incomplete', severity: 'tune', text: `${report.delivery.reviewsIncomplete} review(s) came back incomplete (provider, deadline or coverage). Raise delivery.review.deadlineMs or maxCalls, or move the reviewer to a provider with usage headroom.`, evidence: `reviewsIncomplete=${report.delivery.reviewsIncomplete}`, knob: 'delivery.review.deadlineMs / models.reviewer' })
-  if (report.providers.cooldownEvents >= 3) out.push({ id: 'provider-cooldowns', severity: 'tune', text: `${report.providers.cooldownEvents} provider cooldown(s) in the window. Add capacity (another subscription via orca account add, or a tier-2 provider) or lower the tick cadence during exhausted windows.`, evidence: report.providers.cooldowns.map((row) => `${row.provider}: ${row.reason}`).join('; ').slice(0, 200), knob: 'models.<role> tiers' })
-  if (report.orca && report.orca.runs >= 6 && report.orca.idle / report.orca.runs >= 0.9 && report.delivery.inFlight === 0 && report.escalations.total === 0 && report.dispatches.total === 0) out.push({ id: 'idle-loop', severity: 'info', text: `${report.orca.idle} of ${report.orca.runs} Orca runs were idle and nothing was dispatched. Either the queue is empty or every slot is taken; check machine.minFreeRamGb and the person's Todo/Ready backlog.`, evidence: `idle=${report.orca.idle} runs=${report.orca.runs}`, knob: 'machine.minFreeRamGb / linear.states' })
-  if (report.orca && report.orca.timedOut > 0) out.push({ id: 'stage-timeout', severity: 'act', text: `${report.orca.timedOut} Orca precheck run(s) hit the ${config.schedule.stageTimeoutSec}s cap. Lower contract.timeoutMs or contract.maxContextReferences so one tick fits the budget.`, evidence: `maxDurationSec=${report.orca.maxDurationSec}`, knob: 'contract.timeoutMs / schedule.stageTimeoutSec' })
-  if (report.delivery.medianLeadTimeMin !== null && report.delivery.medianLeadTimeMin > 6 * 60) out.push({ id: 'lead-time', severity: 'info', text: `Median dispatch→merge is ${Math.round(report.delivery.medianLeadTimeMin / 60)} h. Check whether CI or review deadlines dominate before changing worker models.`, evidence: `medianLeadTimeMin=${report.delivery.medianLeadTimeMin}`, knob: 'schedule.deliver / delivery.review.deadlineMs' })
-  if (!out.length) out.push({ id: 'steady', severity: 'info', text: 'No calibration signal in this window. Keep the current configuration.', evidence: `dispatched=${dispatched} escalated=${escalated} merged=${report.delivery.merged}` })
+  if (escalated + dispatched >= 3 && escalated / Math.max(1, escalated + dispatched) >= 0.6) out.push({ id: 'escalation-rate', target: 'project', severity: 'act', text: `${escalated} of ${escalated + dispatched} contracts escalated. Most issues lack a verifiable acceptance criterion or reference assets the worker cannot reach — answer the needs-info comments or add acceptance criteria templates to the issue template.`, evidence: report.escalations.reasons.slice(0, 3).map((row) => `${row.count}× ${row.reason}`).join('; '), knob: 'issue template / linear.excludeLabels' })
+  if (report.delivery.reviewsClean >= 5 && report.delivery.reviewsFindings === 0) out.push({ id: 'review-floor', target: 'project', severity: 'tune', text: `${report.delivery.reviewsClean} reviews with zero blocking findings. The floor may be too permissive to catch anything, or the workers are good; consider lowering delivery.review.minSeverity to "nit" for one week and compare.`, evidence: `reviewsClean=${report.delivery.reviewsClean}`, knob: 'delivery.review.minSeverity' })
+  if (report.delivery.blocked >= 2 && report.delivery.blocked >= report.delivery.merged) out.push({ id: 'fix-rounds', target: 'project', severity: 'act', text: `${report.delivery.blocked} PR(s) blocked after ${config.delivery.maxFixRounds} fix round(s) versus ${report.delivery.merged} merged. Either the reviewer floor is too strict for the builder model, or the builder tier is too weak: raise maxFixRounds or move the builder to a stronger model.`, evidence: `blocked=${report.delivery.blocked} merged=${report.delivery.merged}`, knob: 'delivery.maxFixRounds / models.builder' })
+  if (report.delivery.stuck >= 2) out.push({ id: 'stuck-workers', target: 'project', severity: 'act', text: `${report.delivery.stuck} worker(s) went idle without a PR. Check the worker briefs and the provider's auto mode; consider a longer delivery.workerIdleTimeoutMin if they were still working.`, evidence: `stuck=${report.delivery.stuck}`, knob: 'delivery.workerIdleTimeoutMin' })
+  if (report.delivery.reviewsIncomplete >= 2) out.push({ id: 'review-incomplete', target: 'project', severity: 'tune', text: `${report.delivery.reviewsIncomplete} review(s) came back incomplete (provider, deadline or coverage). Raise delivery.review.deadlineMs or maxCalls, or move the reviewer to a provider with usage headroom.`, evidence: `reviewsIncomplete=${report.delivery.reviewsIncomplete}`, knob: 'delivery.review.deadlineMs / models.reviewer' })
+  if (report.providers.cooldownEvents >= 3) out.push({ id: 'provider-cooldowns', target: 'project', severity: 'tune', text: `${report.providers.cooldownEvents} provider cooldown(s) in the window. Add capacity (another subscription via orca account add, or a tier-2 provider) or lower the tick cadence during exhausted windows.`, evidence: report.providers.cooldowns.map((row) => `${row.provider}: ${row.reason}`).join('; ').slice(0, 200), knob: 'models.<role> tiers' })
+  if (report.orca && report.orca.runs >= 6 && report.orca.idle / report.orca.runs >= 0.9 && report.delivery.inFlight === 0 && report.escalations.total === 0 && report.dispatches.total === 0) out.push({ id: 'idle-loop', target: 'project', severity: 'info', text: `${report.orca.idle} of ${report.orca.runs} Orca runs were idle and nothing was dispatched. Either the queue is empty or every slot is taken; check machine.minFreeRamGb and the person's Todo/Ready backlog.`, evidence: `idle=${report.orca.idle} runs=${report.orca.runs}`, knob: 'machine.minFreeRamGb / linear.states' })
+  if (report.orca && report.orca.timedOut > 0) out.push({ id: 'stage-timeout', target: 'harness', severity: 'act', text: `${report.orca.timedOut} Orca precheck run(s) hit the ${config.schedule.stageTimeoutSec}s cap. Lower contract.timeoutMs or contract.maxContextReferences so one tick fits the budget.`, evidence: `maxDurationSec=${report.orca.maxDurationSec}`, knob: 'contract.timeoutMs / schedule.stageTimeoutSec' })
+  if (report.delivery.medianLeadTimeMin !== null && report.delivery.medianLeadTimeMin > 6 * 60) out.push({ id: 'lead-time', target: 'project', severity: 'info', text: `Median dispatch→merge is ${Math.round(report.delivery.medianLeadTimeMin / 60)} h. Check whether CI or review deadlines dominate before changing worker models.`, evidence: `medianLeadTimeMin=${report.delivery.medianLeadTimeMin}`, knob: 'schedule.deliver / delivery.review.deadlineMs' })
+  const h = report.harness
+  if (h.relaunches > 0) out.push({ id: 'worker-relaunch', target: 'harness', severity: 'act', text: `${h.relaunches} worker(s) had to be relaunched by hand — the launcher left a session that could not proceed unattended. File it against ${HARNESS_REPO_URL} with the event reasons.`, evidence: `worker.relaunched=${h.relaunches}` })
+  if (h.dispatchFailures.length) out.push({ id: 'dispatch-failures', target: 'harness', severity: h.dispatchFailures.length >= 2 ? 'act' : 'tune', text: `${h.dispatchFailures.length} dispatch(es) failed inside the harness/Orca handshake. If the reasons repeat, the adapter needs a fix or a retry policy, not a config change.`, evidence: h.dispatchFailures.slice(0, 3).join(' | ').slice(0, 240) })
+  if (h.contractFailures.length) out.push({ id: 'contract-failures', target: 'harness', severity: h.contractFailures.length >= 2 ? 'act' : 'tune', text: `${h.contractFailures.length} contract generation(s) failed on every candidate (parse errors, timeouts or auth). Parse failures are a harness prompt/parser defect; auth/quota failures mean the cooldown path is doing its job.`, evidence: h.contractFailures.slice(0, 3).join(' | ').slice(0, 240) })
+  if (h.mergeRefusals >= 2) out.push({ id: 'merge-refusals', target: 'harness', severity: 'tune', text: `${h.mergeRefusals} merge(s) refused by GitHub after a clean review — the head moved between review and merge. Consider re-reading the PR right before merging or shortening schedule.deliver.`, evidence: `pr.merge-refused=${h.mergeRefusals}`, knob: 'schedule.deliver' })
+  if (h.reviewToolErrors >= 2) out.push({ id: 'review-tool-errors', target: 'harness', severity: 'act', text: `${h.reviewToolErrors} review(s) ended with a tool/provider error (exit 2). Check the agentskit-review adapter arguments and the provider id mapping before blaming the reviewer model.`, evidence: `review exit 2 count=${h.reviewToolErrors}` })
+  if (!out.length) out.push({ id: 'steady', target: 'project', severity: 'info', text: 'No calibration signal in this window. Keep the current configuration.', evidence: `dispatched=${dispatched} escalated=${escalated} merged=${report.delivery.merged}` })
   return out
 }
 
@@ -134,6 +145,14 @@ export const buildRetroReport = async (input: RetroInput): Promise<RetroReport> 
   rows.sort((left, right) => (right.dispatchedAt ?? '').localeCompare(left.dispatchedAt ?? '') || left.issue.localeCompare(right.issue))
   const tally = (outcome: string): number => rows.filter((row) => row.outcome === outcome).length
 
+  const reason = (event: LoopEvent): string => `${String(event.issue ?? '?')}: ${String(event['reason'] ?? event['error'] ?? event['message'] ?? '').slice(0, 120)}`
+  const harness: RetroReport['harness'] = {
+    relaunches: counts['worker.relaunched'] ?? 0,
+    dispatchFailures: events.filter((event) => event.type === 'worker.dispatch-failed').map(reason),
+    contractFailures: events.filter((event) => event.type === 'contract.failed').map(reason),
+    mergeRefusals: counts['pr.merge-refused'] ?? 0,
+    reviewToolErrors: events.filter((event) => event.type === 'pr.reviewed' && event['status'] === 'incomplete').length,
+  }
   const cooldownState = readCooldowns(loaded.stateDir)
   const cooldowns = Object.entries(cooldownState).filter(([, entry]) => inWindow(entry.markedAt) || Date.parse(entry.until) > now.getTime()).map(([provider, entry]) => ({ provider, reason: entry.reason, until: entry.until }))
 
@@ -175,6 +194,7 @@ export const buildRetroReport = async (input: RetroInput): Promise<RetroReport> 
     dispatches: { total: dispatchEvents.length, failed: counts['worker.dispatch-failed'] ?? 0, byProvider },
     delivery: { merged: tally('merged'), blocked: tally('blocked'), stuck: tally('stuck'), abandoned: tally('abandoned'), inFlight: tally('in-flight'), fixRounds, reviewsClean, reviewsFindings, reviewsIncomplete, medianLeadTimeMin: median(rows.map((row) => row.leadTimeMin).filter((value): value is number => value !== null)) },
     providers: { cooldowns, cooldownEvents: counts['provider.cooldown'] ?? 0 },
+    harness,
     orca,
     issues: rows,
   }
@@ -203,7 +223,12 @@ export const renderRetroMarkdown = (report: RetroReport): string => {
   if (report.escalations.reasons.length) { lines.push('## Problems', '', ...report.escalations.reasons.map((row) => `- ${row.count}× ${row.reason}`), ...report.issues.filter((row) => ['blocked', 'stuck', 'abandoned'].includes(row.outcome)).map((row) => `- ${row.issue} ${row.outcome}${row.pr ? ` (PR #${row.pr})` : ''} after ${row.fixRounds} fix round(s), ${row.nudges} nudge(s)`), '') }
   const worked = report.issues.filter((row) => row.outcome === 'merged')
   if (worked.length) { lines.push('## What worked', '', ...worked.map((row) => `- ${row.issue} merged${row.pr ? ` (PR #${row.pr})` : ''} by ${row.provider}/${row.model} in ${row.leadTimeMin ?? '?'} min, ${row.fixRounds} fix round(s)`), '') }
-  lines.push('## Adjustments', '', ...report.suggestions.map((item) => `- [${item.severity}] ${item.text}${item.knob ? ` _(knob: ${item.knob})_` : ''}\n  - evidence: ${item.evidence}`), '')
+  const render = (item: RetroSuggestion): string => `- [${item.severity}] ${item.text}${item.knob ? ` _(knob: ${item.knob})_` : ''}\n  - evidence: ${item.evidence}`
+  const project = report.suggestions.filter((item) => item.target === 'project')
+  const harness = report.suggestions.filter((item) => item.target === 'harness')
+  lines.push('## Adjustments — project', '', `Changes to ${report.project}: \`loop.config.yaml\`, issue hygiene, team process.`, '', ...(project.length ? project.map(render) : ['- none']), '')
+  lines.push('## Adjustments — harness', '', `Defects or limitations of @agentskit/harness observed in production; file them at ${HARNESS_REPO_URL}/issues.`, '', ...(harness.length ? harness.map(render) : ['- none']), '')
+  if (report.harness.relaunches || report.harness.dispatchFailures.length || report.harness.contractFailures.length) lines.push('### Harness signals', '', `- worker relaunches: ${report.harness.relaunches}`, ...report.harness.dispatchFailures.map((row) => `- dispatch failed: ${row}`), ...report.harness.contractFailures.map((row) => `- contract failed: ${row}`), '')
   if (report.issues.length) { lines.push('## Issues in window', '', '| Issue | Outcome | Worker | Dispatched | Fix rounds | Reviews | PR |', '|---|---|---|---|---|---|---|', ...report.issues.map((row) => `| ${row.issue} | ${row.outcome} | ${row.provider ? `${row.provider}/${row.model}` : '—'} | ${row.dispatchedAt ? row.dispatchedAt.slice(5, 16).replace('T', ' ') : '—'} | ${row.fixRounds} | ${row.reviews} | ${row.pr ? `#${row.pr}` : '—'} |`), '') }
   return lines.join('\n')
 }

@@ -162,9 +162,13 @@ digest:
   review outcomes, fix rounds, median dispatch→merge, cooldowns, Orca runs (idle/work/timed out, durations).
 - **Problems** — escalation reasons grouped by shape, blocked/stuck/abandoned issues.
 - **What worked** — merged issues with worker, lead time and fix rounds.
-- **Adjustments** — rule-based suggestions, each with its evidence and the `loop.config.yaml` knob to turn
-  (`escalation-rate`, `review-floor`, `fix-rounds`, `stuck-workers`, `review-incomplete`, `provider-cooldowns`,
-  `idle-loop`, `stage-timeout`, `lead-time`, or `steady`).
+- **Adjustments — project** — rule-based suggestions about the target project, each with its evidence and the
+  `loop.config.yaml` knob to turn (`escalation-rate`, `review-floor`, `fix-rounds`, `stuck-workers`, `review-incomplete`,
+  `provider-cooldowns`, `idle-loop`, `lead-time`, or `steady`).
+- **Adjustments — harness** — defects or limitations of the library itself, derived from events the loop only emits
+  when its own machinery misbehaved (`worker-relaunch`, `dispatch-failures`, `contract-failures`, `merge-refusals`,
+  `review-tool-errors`, `stage-timeout`), with a pointer to the harness issue tracker. `--target project|harness`
+  filters one side.
 
 The headings follow the harness retro grammar, so `--learnings` prints `LearningRecord`s in `proposed` state; a human
 promotes them with `promoteLearnings` (ADR-0019 keeps that decision human). The calibration loop is: read the digest →
