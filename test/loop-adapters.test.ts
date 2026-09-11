@@ -24,6 +24,9 @@ describe('orca dispatch plan', () => {
     expect(() => createOrcaDispatchPlan({ repository: 'r', worktree: 'w', branch: 'b', baseBranch: 'main' })).toThrow(/Exactly one of goalFile or prompt/)
     expect(() => createOrcaDispatchPlan({ repository: 'r', worktree: 'w', branch: 'b', baseBranch: 'main', goalFile: 'GOAL.md', prompt: 'x' })).toThrow(/Exactly one/)
     expect(() => createOrcaDispatchPlan({ repository: 'r; rm -rf /', worktree: 'w', branch: 'b', baseBranch: 'main', prompt: 'x' })).toThrow(/shell metacharacters/)
+    const bare = createOrcaDispatchPlan({ repository: 'path:/repo', worktree: 'w', branch: 'b', baseBranch: 'main', launch: 'worktree-only', linearIssue: 'ENG-1' })
+    expect(bare.argv).toEqual(['orca', 'worktree', 'create', '--repo', 'path:/repo', '--name', 'w', '--base-branch', 'main', '--linear-issue', 'ENG-1', '--json'])
+    expect(() => createOrcaDispatchPlan({ repository: 'path:/repo', worktree: 'w', branch: 'b', baseBranch: 'main', launch: 'worktree-only', prompt: 'x' })).toThrow(/worktree-only/)
   })
 
   it('parses worktree create results across runtime shapes and executes the plan argv', async () => {

@@ -31,7 +31,7 @@ const setup = (existing: readonly Record<string, unknown>[] = []) => {
       if (key.startsWith('orca automations create')) { const created = { id: `auto-${automations.length + 1}`, name: argv[argv.indexOf('--name') + 1], enabled: !argv.includes('--disabled'), trigger: argv[argv.indexOf('--trigger') + 1], provider: argv[argv.indexOf('--provider') + 1] }; automations.push(created); return okResult({ automation: created }) }
       if (key.startsWith('orca automations edit')) return okResult({ automation: { id: argv[3] } })
       if (key.startsWith('orca automations remove')) { const index = automations.findIndex((item) => item['id'] === argv[3]); if (index >= 0) automations.splice(index, 1); return okResult({ removed: true }) }
-      if (key.startsWith('orca automations runs')) return okResult({ runs: [{ startedAt: 1789140000000, status: 'succeeded' }, { startedAt: 1789150000000, status: 'skipped' }] })
+      if (key.startsWith('orca automations runs')) return okResult({ runs: [{ startedAt: 1789140000000, status: 'succeeded' }, { startedAt: 1789150000000, status: 'skipped_precheck', precheckResult: { exitCode: 1, stdout: JSON.stringify({ status: 'ok', results: [{ issue: 'ENG-1' }] }) } }] })
       return { code: 127, stdout: '', stderr: `no fixture for ${key}`, timedOut: false, durationMs: 1 }
     },
   }
@@ -44,12 +44,16 @@ describe('loop install', () => {
     const { loaded } = setup()
     const specs = automationSpecs(loaded, 'claude')
     expect(specs.map((spec) => spec.name)).toEqual(['loop-tick', 'loop-deliver'])
-    expect(specs[0]).toMatchObject({ trigger: '*/5 * * * *', provider: 'claude', precheckTimeoutSec: 120, reuseSession: true })
+    expect(specs[0]).toMatchObject({ trigger: '*/5 * * * *', provider: 'claude', reuseSession: true })
     expect(specs[0]?.precheck).toBe(precheckCommand(loaded.config, loaded.path, 'tick'))
-    expect(specs[0]?.precheck).toContain(`loop precheck tick -f "${loaded.path}"`)
+    expect(specs[0]?.precheck).toContain(`loop stage tick -f "${loaded.path}"`)
+    expect(specs[0]?.precheckTimeoutSec).toBe(600)
+    expect(automationPrompt(loaded.config, loaded.path, 'tick')).toContain('LOOP_PRECHECK_BYPASSED')
+    const agentMode = { ...loaded, config: { ...loaded.config, schedule: { ...loaded.config.schedule, runner: 'agent' as const } } }
+    expect(automationSpecs(agentMode, 'claude')[0]).toMatchObject({ precheckTimeoutSec: 120 })
+    expect(automationSpecs(agentMode, 'claude')[0]?.precheck).toContain('loop precheck tick')
+    expect(automationPrompt(agentMode.config, loaded.path, 'deliver')).toContain(`ak-harness loop deliver -f "${loaded.path}" --json`)
     expect(specs[0]?.workspace).toBe(`path:${loaded.root}`)
-    expect(automationPrompt(loaded.config, loaded.path, 'deliver')).toContain(`ak-harness loop deliver -f "${loaded.path}" --json`)
-    expect(automationPrompt(loaded.config, loaded.path, 'deliver')).toContain('Do not edit files')
     expect(automationName(loaded.config, 'tick')).toBe('loop-tick')
   })
 
@@ -79,7 +83,7 @@ describe('loop install', () => {
     await installLoopAutomations({ loaded: env1.loaded, runner: env1.runner, env: env(env1.bin), platform: 'darwin' })
     const status = await loopStatus({ loaded: env1.loaded, runner: env1.runner })
     expect(status.installed).toBe(2)
-    expect(status.automations[0]).toMatchObject({ installed: true, enabled: true, runs: 2, lastRun: { status: 'skipped' } })
+    expect(status.automations[0]).toMatchObject({ installed: true, enabled: true, runs: 2, lastRun: { status: 'skipped_precheck', summary: 'ok · 1 result(s)' } })
     expect(status.summary).toMatch(/^loop: installed \(2\/2, last run 2026-/)
     expect(parseAutomationRuns({ runs: [{ createdAt: '2026-01-01T00:00:00.000Z', outcome: 'ok' }] })).toEqual([{ at: '2026-01-01T00:00:00.000Z', status: 'ok' }])
     const removed = await uninstallLoopAutomations({ loaded: env1.loaded, runner: env1.runner })

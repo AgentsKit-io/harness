@@ -188,6 +188,15 @@ export const parseOrcaTerminals = (result: unknown): readonly OrcaTerminal[] => 
 
 export const orcaTerminalList = async (runner: CommandRunner, input: { readonly worktree?: string; readonly limit?: number } = {}, options: OrcaCliOptions = {}): Promise<readonly OrcaTerminal[]> => parseOrcaTerminals(await orcaJson(runner, ['terminal', 'list', ...(input.worktree ? ['--worktree', input.worktree] : []), ...(input.limit ? ['--limit', String(input.limit)] : [])], options))
 
+export const orcaTerminalCreate = async (runner: CommandRunner, input: { readonly worktree: string; readonly command: string; readonly title?: string }, options: OrcaCliOptions = {}): Promise<{ readonly handle: string; readonly raw: unknown }> => {
+  const result = await orcaJson(runner, ['terminal', 'create', '--worktree', input.worktree, '--command', input.command, ...(input.title ? ['--title', input.title] : [])], { ...options, timeoutMs: options.timeoutMs ?? 60_000 })
+  const record = isRecord(result) ? result : {}
+  const terminal = isRecord(record['terminal']) ? record['terminal'] : record
+  const handle = str(terminal['handle'], str(record['handle']))
+  if (!handle) fail('orca terminal create returned no terminal handle.', 'HARNESS_ERROR')
+  return { handle, raw: result }
+}
+
 export interface OrcaSendReceipt { readonly accepted: boolean; readonly requestId: string | null; readonly stages: readonly string[]; readonly warnings: readonly string[] }
 
 export const parseOrcaSendReceipt = (result: unknown): OrcaSendReceipt => {
@@ -219,7 +228,7 @@ export interface OrcaAutomation { readonly id: string; readonly name: string; re
 
 export const parseOrcaAutomations = (result: unknown): readonly OrcaAutomation[] => {
   const list = isRecord(result) ? (Array.isArray(result['automations']) ? result['automations'] : Array.isArray(result['items']) ? result['items'] : []) : Array.isArray(result) ? result : []
-  return list.filter(isRecord).map((item) => ({ id: str(item['id']), name: str(item['name']), enabled: item['enabled'] !== false && item['disabled'] !== true, trigger: str(item['trigger'], str(item['schedule'], typeof item['schedule'] === 'object' && item['schedule'] !== null ? JSON.stringify(item['schedule']) : '')), provider: str(item['provider'], str(item['agent'])) || null, raw: item })).filter((item) => item.id)
+  return list.filter(isRecord).map((item) => ({ id: str(item['id']), name: str(item['name']), enabled: item['enabled'] !== false && item['disabled'] !== true, trigger: str(item['rrule'], str(item['trigger'], str(item['schedule'], typeof item['schedule'] === 'object' && item['schedule'] !== null ? JSON.stringify(item['schedule']) : ''))), provider: str(item['agentId'], str(item['provider'], str(item['agent']))) || null, raw: item })).filter((item) => item.id)
 }
 
 export const orcaAutomationsList = async (runner: CommandRunner, options: OrcaCliOptions = {}): Promise<readonly OrcaAutomation[]> => parseOrcaAutomations(await orcaJson(runner, ['automations', 'list'], options))

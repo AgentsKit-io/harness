@@ -41,6 +41,10 @@ const makeEnv = (options: { readonly contract?: TaskContract | 'garbage'; readon
       if (key.startsWith('orca linear issue')) { const id = argv[3]; const issues = [...(fixture('list-issues-todo') as { result: { issues: { identifier: string }[] } }).result.issues, ...(fixture('list-issues-ready') as { result: { issues: { identifier: string }[] } }).result.issues]; const issue = issues.find((item) => item.identifier === id); return issue ? okResult({ issue: { ...issue, description: 'Add the binding.\n\n## Acceptance\n- tests pass' }, comments: [] }) : { code: 1, stdout: '', stderr: 'not found', timedOut: false, durationMs: 1 } }
       if (argv[0] === 'claude' && argv[1] === '-p' && options.claudeAuthFails) return { code: 1, stdout: 'Failed to authenticate: OAuth session expired and could not be refreshed\n', stderr: '', timedOut: false, durationMs: 1 }
       if ((argv[0] === 'claude' && argv[1] === '-p') || (argv[0] === 'codex' && argv[1] === 'exec')) return contract === 'garbage' ? { code: 0, stdout: 'no contract here', stderr: '', timedOut: false, durationMs: 1 } : { code: 0, stdout: `thinking…\n${CONTRACT_OPEN}\n${JSON.stringify(contract)}\n${CONTRACT_CLOSE}\n`, stderr: '', timedOut: false, durationMs: 1 }
+      if (key.startsWith('orca terminal create')) return okResult({ terminal: { handle: 'term_new' } })
+      if (key.startsWith('orca terminal wait')) return okResult({ satisfied: true })
+      if (key.startsWith('orca terminal send')) return okResult({ accepted: true, requestId: 'r' })
+      if (key.startsWith('orca worktree rm')) return okResult({ removed: true })
       if (key.startsWith('orca worktree create')) return options.failCreate ? { code: 1, stdout: JSON.stringify({ ok: false, error: { message: 'repo busy' } }), stderr: '', timedOut: false, durationMs: 1 } : okResult({ worktreeId: `repo-1::${dir}/w/${argv[argv.indexOf('--name') + 1]}`, path: `${dir}/w`, branch: `refs/heads/${argv[argv.indexOf('--name') + 1]}`, agentTerminalHandle: 'term_new' })
       if (key.startsWith('orca linear status set') || key.startsWith('orca linear comment add') || key.startsWith('orca linear label add')) return okResult({ ok: true })
       return { code: 127, stdout: '', stderr: `no fixture for ${key}`, timedOut: false, durationMs: 1 }
@@ -115,6 +119,9 @@ describe('tick', () => {
     expect(result?.argv?.slice(0, 3)).toEqual(['orca', 'worktree', 'create'])
     expect(result?.argv).toContain('--linear-issue')
     expect(result?.argv).toContain('--no-parent')
+    expect(result?.argv).not.toContain('--agent')
+    expect(result?.argv).not.toContain('--prompt')
+    expect(result?.reason).toContain('claude --model sonnet --permission-mode auto')
     expect(env.runner.calls.some((argv) => argv[1] === 'worktree' && argv[2] === 'create')).toBe(false)
     expect(env.runner.calls.some((argv) => argv[1] === 'linear' && argv[2] === 'status')).toBe(false)
     const loaded = loadLoopConfig(env.configPath)
@@ -140,8 +147,14 @@ describe('tick', () => {
     expect(existsSync(join(loaded.stateDir, 'events.ndjson'))).toBe(true)
     const createCalls = env.runner.calls.filter((argv) => argv[1] === 'worktree' && argv[2] === 'create')
     expect(createCalls).toHaveLength(1)
-    const promptIndex = createCalls[0]?.indexOf('--prompt') ?? -1
-    expect(createCalls[0]?.[promptIndex + 1]).toContain('Loop-Contract:')
+    expect(createCalls[0]).not.toContain('--agent')
+    const termCreate = env.runner.calls.find((argv) => argv[1] === 'terminal' && argv[2] === 'create')
+    expect(termCreate?.[termCreate.indexOf('--command') + 1]).toBe('claude --model sonnet --permission-mode auto')
+    expect(termCreate?.[termCreate.indexOf('--worktree') + 1]).toMatch(/^id:repo-1::/)
+    const send = env.runner.calls.find((argv) => argv[1] === 'terminal' && argv[2] === 'send')
+    expect(send?.[send.indexOf('--text') + 1]).toContain('Loop-Contract:')
+    expect(send).toContain('--enter')
+    expect(env.runner.calls.findIndex((argv) => argv[1] === 'terminal' && argv[2] === 'wait')).toBeLessThan(env.runner.calls.findIndex((argv) => argv[1] === 'terminal' && argv[2] === 'send'))
 
     const second = await runTick({ ...tickOptions(env), maxDispatch: 1 })
     expect(second.results.map((item) => item.issue)).not.toContain(result?.issue)
@@ -188,6 +201,14 @@ describe('tick', () => {
     expect(failed.results[0]).toMatchObject({ outcome: 'failed', reason: expect.stringContaining('[auth]') })
     expect(failed.notes.some((note) => note.includes('claude marked cooling down'))).toBe(true)
     expect(existsSync(join(loadLoopConfig(onlyClaude.configPath).stateDir, 'provider-cooldowns.json'))).toBe(true)
+  })
+
+  it('leaves candidates without a cached contract for the next tick when the time budget is short', async () => {
+    const env = makeEnv()
+    const report = await runTick({ ...tickOptions(env), maxDispatch: 1, budgetMs: 1_000 })
+    expect(report.results).toEqual([])
+    expect(report.notes.some((note) => note.includes('time budget'))).toBe(true)
+    expect(env.runner.calls.some((argv) => argv[0] === 'claude' && argv[1] === '-p')).toBe(false)
   })
 
   it('stays idle without free slots or candidates, and precheck mirrors that decision', async () => {

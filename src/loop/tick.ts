@@ -3,7 +3,7 @@ import { dirname, join } from 'node:path'
 import type { CommandRunner } from '../adapters/command.js'
 import { createLinearTrackingAdapter, fetchLinearIssue, fetchLinearQueue, linearCommentAdd, linearLabelAdd, type LinearIssueDetail, type LoopIssue } from '../adapters/linear-orca.js'
 import { createOrcaDispatchPlan } from '../adapters/orca.js'
-import { orcaAccountList, orcaAgentHooks, orcaWorktreeCreate, orcaWorktrees, type OrcaWorktree } from '../adapters/orca-cli.js'
+import { orcaAccountList, orcaAgentHooks, orcaTerminalCreate, orcaTerminalSend, orcaTerminalWait, orcaWorktreeCreate, orcaWorktreeRemove, orcaWorktrees, type OrcaWorktree } from '../adapters/orca-cli.js'
 import { detectProviders, type ProviderAvailability } from '../adapters/providers.js'
 import { createDispatchLedger, type DispatchLedger, type DispatchLease } from '../execution/coordination.js'
 import { HarnessError } from '../kernel/errors.js'
@@ -76,6 +76,18 @@ export interface TickInput {
   readonly owner?: string
   /** Test seam: override live machine sampling. */
   readonly machine?: Pick<SlotInput, 'sample' | 'freeBytes' | 'totalBytes' | 'osRelease'>
+  /** Wall-clock budget for this tick; candidates that would not fit are left for the next tick. */
+  readonly budgetMs?: number
+}
+
+/** Launch the worker in a fresh terminal with the configured TUI command and hand it the brief. Returns the terminal handle. */
+export const launchWorkerTerminal = async (input: { readonly runner: CommandRunner; readonly config: LoopConfig; readonly worktreeId: string; readonly command: string; readonly title: string; readonly brief: string; readonly idleTimeoutMs?: number }): Promise<{ readonly terminal: string; readonly accepted: boolean; readonly idle: boolean }> => {
+  const orca = { bin: input.config.orca.bin, timeoutMs: input.config.orca.timeoutMs }
+  const created = await orcaTerminalCreate(input.runner, { worktree: `id:${input.worktreeId}`, command: input.command, title: input.title }, orca)
+  let idle = false
+  try { idle = (await orcaTerminalWait(input.runner, { terminal: created.handle, for: 'tui-idle', timeoutMs: input.idleTimeoutMs ?? 90_000 }, orca)).satisfied } catch { idle = false }
+  const receipt = await orcaTerminalSend(input.runner, { terminal: created.handle, text: input.brief, enter: true, waitSubmitSeconds: 15 }, orca)
+  return { terminal: created.handle, accepted: receipt.accepted, idle }
 }
 
 const message = (error: unknown): string => error instanceof HarnessError ? `${error.code}: ${error.message}` : error instanceof Error ? error.message : String(error)
@@ -183,11 +195,15 @@ export const runTick = async (input: TickInput): Promise<TickReport> => {
   if (!state.candidates.length) { notes.push('queue has no dispatchable candidate'); return { ...base, status: 'idle', results, notes } }
 
   const budget = Math.min(state.slots.free, input.maxDispatch ?? state.slots.free)
+  const startedAt = Date.now()
+  const timeBudgetMs = input.budgetMs ?? Number.POSITIVE_INFINITY
+  const remainingMs = (): number => timeBudgetMs - (Date.now() - startedAt)
   const write = { bin: config.orca.bin, workspaceId: config.linear.workspaceId, orca: { timeoutMs: config.orca.timeoutMs } }
   const tracking = createLinearTrackingAdapter(input.runner, { ...write, dryRun })
   let dispatched = 0
   for (const candidate of state.candidates) {
     if (dispatched >= budget) break
+    if (remainingMs() < config.contract.timeoutMs + 120_000 && !readStoredContract(loaded.stateDir, candidate.identifier)) { notes.push(`time budget: ${candidate.identifier} left for the next tick (${Math.round(remainingMs() / 1000)}s remaining)`); continue }
     let detail: LinearIssueDetail
     try { detail = await fetchLinearIssue(input.runner, candidate.identifier, write) } catch (error) { results.push({ issue: candidate.identifier, outcome: 'failed', reason: `issue fetch failed: ${message(error)}` }); continue }
 
@@ -214,27 +230,32 @@ export const runTick = async (input: TickInput): Promise<TickReport> => {
     const claim = ledger.claim({ tracker: 'linear', repository: config.project.repo, issue: detail.identifier, worktree, branch, owner: input.owner ?? `loop:${config.linear.person}` })
     if (claim.decision === 'already-claimed') { results.push({ issue: detail.identifier, outcome: 'skipped', reason: `lease already held by ${claim.lease.owner} since ${claim.lease.claimedAt}` }); continue }
     const brief = renderWorkerBrief({ issue: detail, contract: stored, config, branch, provider: builder.provider, model: builder.model })
-    const plan = createOrcaDispatchPlan({ repository: config.orca.repoSelector ?? `path:${loaded.root}`, worktree, branch, baseBranch: config.project.baseBranch, agent: builder.orcaAgent, prompt: brief, linearIssue: detail.url || detail.identifier, comment: `loop · ${detail.identifier} · ${builder.provider}/${builder.model}`, noParent: true, orcaBin: config.orca.bin })
+    const plan = createOrcaDispatchPlan({ repository: config.orca.repoSelector ?? `path:${loaded.root}`, worktree, branch, baseBranch: config.project.baseBranch, launch: 'worktree-only', linearIssue: detail.url || detail.identifier, comment: `loop · ${detail.identifier} · ${builder.provider}/${builder.model}`, noParent: true, orcaBin: config.orca.bin })
+    const title = `loop ${detail.identifier} · ${builder.provider}`
     if (dryRun) {
       ledger.release(claim.lease, 'dry-run')
-      results.push({ issue: detail.identifier, outcome: 'dry-run', reason: 'would create worktree and move issue to In Progress', branch, worktree, provider: builder.provider, model: builder.model, argv: plan.argv, contractDigest: stored.digest })
+      results.push({ issue: detail.identifier, outcome: 'dry-run', reason: `would create worktree, open terminal "${builder.tui}", send the brief and move issue to In Progress`, branch, worktree, provider: builder.provider, model: builder.model, argv: plan.argv, contractDigest: stored.digest })
       dispatched += 1
       continue
     }
+    let created: Awaited<ReturnType<typeof orcaWorktreeCreate>> | null = null
     try {
-      const created = await orcaWorktreeCreate(input.runner, plan.argv, { timeoutMs: Math.max(config.orca.timeoutMs, 120_000) })
+      created = await orcaWorktreeCreate(input.runner, plan.argv, { timeoutMs: Math.max(config.orca.timeoutMs, 120_000) })
+      const launched = await launchWorkerTerminal({ runner: input.runner, config, worktreeId: created.id, command: builder.tui, title, brief })
+      if (!launched.accepted) notes.push(`${detail.identifier}: terminal ${launched.terminal} did not confirm the brief; deliver will nudge it if it stays idle`)
       ledger.recordDispatch({ lease: claim.lease, idempotencyKey: plan.idempotencyKey, commandDigest: plan.commandDigest })
-      const record: DispatchRecordFile = { issue: detail.identifier, worktreeId: created.id, worktree, branch, terminal: created.agentTerminalHandle, provider: builder.provider, model: builder.model, contractDigest: stored.digest, leaseKey: claim.lease.key, leaseId: claim.lease.leaseId, dispatchedAt: now().toISOString(), url: detail.url }
+      const record: DispatchRecordFile = { issue: detail.identifier, worktreeId: created.id, worktree, branch, terminal: launched.terminal, provider: builder.provider, model: builder.model, contractDigest: stored.digest, leaseKey: claim.lease.key, leaseId: claim.lease.leaseId, dispatchedAt: now().toISOString(), url: detail.url }
       writeJson(dispatchRecordPath(loaded.stateDir, detail.identifier), record)
-      appendLoopEvent(loaded.stateDir, { at: record.dispatchedAt, type: 'worker.dispatched', ...record, briefDigest: hashJson(brief) })
+      appendLoopEvent(loaded.stateDir, { at: record.dispatchedAt, type: 'worker.dispatched', ...record, command: builder.tui, briefDigest: hashJson(brief), briefAccepted: launched.accepted, tuiIdle: launched.idle })
       try {
         await tracking.transition({ tracker: 'linear', issue: detail.identifier, from: detail.state, to: config.linear.inProgressState, reason: `loop dispatched ${builder.provider}/${builder.model} in ${created.id}` })
         await linearCommentAdd(input.runner, { issue: detail.identifier, body: `**Loop: dispatched**\n\nWorker \`${builder.provider}/${builder.model}\` started in Orca worktree \`${worktree}\` on branch \`${branch}\` (contract \`${stored.digest.slice(0, 12)}\`). It will open a PR against \`${config.project.baseBranch}\` when the contract's outcomes pass.\n\n<!-- loop:dispatched:${claim.lease.leaseId} -->`, dedupeKey: `dispatched:${detail.identifier}:${claim.lease.leaseId}` }, write)
       } catch (error) { notes.push(`Linear update for ${detail.identifier} failed after dispatch: ${message(error)}`) }
-      results.push({ issue: detail.identifier, outcome: 'dispatched', reason: 'worker started', branch, worktree, worktreeId: created.id, terminal: created.agentTerminalHandle, provider: builder.provider, model: builder.model, argv: plan.argv, contractDigest: stored.digest })
+      results.push({ issue: detail.identifier, outcome: 'dispatched', reason: 'worker started', branch, worktree, worktreeId: created.id, terminal: launched.terminal, provider: builder.provider, model: builder.model, argv: plan.argv, contractDigest: stored.digest })
       dispatched += 1
     } catch (error) {
       ledger.release(claim.lease, `dispatch failed: ${message(error)}`)
+      if (created) { try { await orcaWorktreeRemove(input.runner, { worktree: `id:${created.id}`, force: true }, { bin: config.orca.bin, timeoutMs: 60_000 }); notes.push(`${detail.identifier}: removed half-created worktree ${created.id}`) } catch (cleanup) { notes.push(`${detail.identifier}: worktree ${created.id} left behind (${message(cleanup)})`) } }
       appendLoopEvent(loaded.stateDir, { at: now().toISOString(), type: 'worker.dispatch-failed', issue: detail.identifier, error: message(error) })
       results.push({ issue: detail.identifier, outcome: 'failed', reason: `dispatch failed: ${message(error)}`, branch, worktree, argv: plan.argv })
     }

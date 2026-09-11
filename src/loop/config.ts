@@ -148,6 +148,14 @@ export const LoopConfigSchema = z.object({
     provider: nonEmpty.optional(),
     /** Prefix for automation names (`<prefix>-tick`, `<prefix>-deliver`). */
     namePrefix: nonEmpty.default('loop'),
+    /**
+     * `precheck` (default): the stage runs inside Orca's `--precheck` command and always exits 1, so Orca records the run
+     * (`skipped_precheck`, stdout captured) without ever launching an agent. `agent`: legacy — the precheck only tests for
+     * work and an Orca-launched agent runs the harness (needs a provider that runs non-interactively).
+     */
+    runner: z.enum(['precheck', 'agent']).default('precheck'),
+    /** Time budget for one stage when `runner: precheck`. Orca caps prechecks at 600 s; the stage itself must fit. */
+    stageTimeoutSec: z.number().int().positive().max(600).default(600),
     timezone: nonEmpty.optional(),
   }).prefault({}),
 })

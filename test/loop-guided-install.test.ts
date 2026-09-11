@@ -70,7 +70,7 @@ describe('guided install', () => {
     expect(terminal.questions[1]).toContain('Install these automations now?')
     expect(env.automations.map((item) => item['name'])).toEqual(['loop-tick', 'loop-deliver'])
     expect(terminal.lines.some((text) => text.includes('2/5 Doctor'))).toBe(true)
-    expect(terminal.lines.some((text) => text.includes('precheck ak-harness loop precheck tick'))).toBe(true)
+    expect(terminal.lines.some((text) => text.includes('precheck ak-harness loop stage tick'))).toBe(true)
     expect(env.runner.calls.some((argv) => argv[1] === 'worktree' && argv[2] === 'create')).toBe(false)
   })
 

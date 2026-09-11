@@ -9,6 +9,8 @@
 - Added loop phase 5 (`ak-harness loop install|uninstall|status|hook`): idempotent Orca automations with `--precheck`, existing-workspace mode and session reuse; status with latest runs; a status-only SessionStart hook line; a cross-platform CI job (ubuntu/macos/windows); ADR-0027.
 - `loop install` is guided: doctor and environment checks (harness/review CLIs, `gh auth`, Orca repo registration), optional dry-run tick rehearsal, explicit confirmation; `--yes`, `--force`, `--skip-rehearsal`, `--dry-run`, `--plain`.
 - `loop install` offers to create the per-machine `loop.config.local.yaml` (queue owner from the Linear team, RAM reserve, worker ceiling) when it is missing; the CLI renders checks and prompts with Ink on TTYs and falls back to plain lines elsewhere. Grok is treated as a CLI subscription (`grok login`), no API key.
+- Orca automations now run the stage inside the `--precheck` command (`ak-harness loop stage tick|deliver`, always exit 1) so no agent session is opened per run; `schedule.runner: agent` keeps the previous behaviour. Fixes stuck bypass-permissions sessions leaking one terminal per run.
+- Workers are launched with the configured TUI command in their own terminal (`orca worktree create` without `--agent`, then `orca terminal create --command <tui>`, wait for idle, send the brief). Orca's `--agent claude` starts in bypass-permissions mode and blocks on a human prompt. The tick has a wall-clock budget under `runner: precheck`; a failed dispatch removes its half-created worktree.
 - Add bounded agent eval, safe context/read-only LLM cache, deterministic workflow fan-out/fan-in, and validated optimization observation contracts for token, memory, cache, and parallelism measurements.
 
 ## [0.4.0] - 2026-09-10

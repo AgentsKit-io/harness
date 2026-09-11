@@ -28,11 +28,11 @@ export interface InstallReport { readonly status: 'ok' | 'dry-run' | 'failed'; r
 
 export const automationName = (config: LoopConfig, stage: LoopStage): string => `${config.schedule.namePrefix}-${stage}`
 
-/** The exact command Orca runs before each scheduled run; exit 0 = work exists. */
-export const precheckCommand = (config: LoopConfig, configPath: string, stage: LoopStage): string => `${config.schedule.harnessCommand} loop precheck ${stage} -f ${JSON.stringify(configPath)}`
+/** The exact command Orca runs before each scheduled run. `agent` runner: exit 0 = work exists. `precheck` runner: runs the whole stage and exits 1 so no agent is launched. */
+export const precheckCommand = (config: LoopConfig, configPath: string, stage: LoopStage): string => config.schedule.runner === 'precheck' ? `${config.schedule.harnessCommand} loop stage ${stage} -f ${JSON.stringify(configPath)}` : `${config.schedule.harnessCommand} loop precheck ${stage} -f ${JSON.stringify(configPath)}`
 
 /** Prompt the automation agent receives: run the harness stage, report, do nothing else. */
-export const automationPrompt = (config: LoopConfig, configPath: string, stage: LoopStage): string => `You are the scheduled runner of the AgentsKit keep-pushing loop for ${config.project.repo}. Run exactly this command in the current workspace and nothing else:
+export const automationPrompt = (config: LoopConfig, configPath: string, stage: LoopStage): string => config.schedule.runner === 'precheck' ? `This automation does its work inside its precheck command (${precheckCommand(config, configPath, stage)}), which always exits non-zero so that no agent session is needed. If you are reading this, the precheck unexpectedly exited 0: reply exactly LOOP_PRECHECK_BYPASSED and stop. Do not run any command.` : `You are the scheduled runner of the AgentsKit keep-pushing loop for ${config.project.repo}. Run exactly this command in the current workspace and nothing else:
 
 ${config.schedule.harnessCommand} loop ${stage} -f ${JSON.stringify(configPath)} --json
 
@@ -48,7 +48,7 @@ export const automationSpecs = (loaded: LoadedLoopConfig, provider: string): rea
     prompt: automationPrompt(config, loaded.path, stage),
     provider,
     precheck: precheckCommand(config, loaded.path, stage),
-    precheckTimeoutSec: config.schedule.precheckTimeoutSec,
+    precheckTimeoutSec: config.schedule.runner === 'precheck' ? config.schedule.stageTimeoutSec : config.schedule.precheckTimeoutSec,
     workspace,
     ...(config.orca.host ? { host: config.orca.host } : {}),
     reuseSession: true,
@@ -111,17 +111,21 @@ export const uninstallLoopAutomations = async (input: InstallInput): Promise<Ins
   return { status: failed ? 'failed' : input.dryRun ? 'dry-run' : 'ok', provider: '', workspace: config.orca.workspaceSelector ?? `path:${loaded.root}`, actions, notes: [] }
 }
 
-export interface AutomationStatus { readonly stage: LoopStage; readonly name: string; readonly installed: boolean; readonly enabled: boolean; readonly id: string | null; readonly trigger: string | null; readonly provider: string | null; readonly lastRun: { readonly at: string | null; readonly status: string | null } | null; readonly runs: number }
+export interface AutomationStatus { readonly stage: LoopStage; readonly name: string; readonly installed: boolean; readonly enabled: boolean; readonly id: string | null; readonly trigger: string | null; readonly provider: string | null; readonly lastRun: { readonly at: string | null; readonly status: string | null; readonly summary?: string } | null; readonly runs: number }
 export interface LoopStatusReport { readonly installed: number; readonly total: number; readonly automations: readonly AutomationStatus[]; readonly summary: string }
 
 const isRecord = (value: unknown): value is Record<string, unknown> => typeof value === 'object' && value !== null && !Array.isArray(value)
 
-export const parseAutomationRuns = (result: unknown): readonly { readonly at: string | null; readonly status: string | null }[] => {
+export const parseAutomationRuns = (result: unknown): readonly { readonly at: string | null; readonly status: string | null; readonly summary?: string }[] => {
   const list = isRecord(result) && Array.isArray(result['runs']) ? result['runs'] : Array.isArray(result) ? result : []
   return list.filter(isRecord).map((run) => {
     const raw = run['startedAt'] ?? run['createdAt'] ?? run['at'] ?? run['finishedAt']
     const at = typeof raw === 'number' ? new Date(raw).toISOString() : typeof raw === 'string' && !Number.isNaN(Date.parse(raw)) ? new Date(raw).toISOString() : null
-    return { at, status: typeof run['status'] === 'string' ? run['status'] : typeof run['outcome'] === 'string' ? run['outcome'] : null }
+    const precheck = isRecord(run['precheckResult']) ? run['precheckResult'] : null
+    const stdout = precheck && typeof precheck['stdout'] === 'string' ? precheck['stdout'] : ''
+    let summary: string | null = null
+    try { const parsed = JSON.parse(stdout) as Record<string, unknown>; summary = typeof parsed['status'] === 'string' ? `${parsed['status']}${Array.isArray(parsed['results']) ? ` · ${parsed['results'].length} result(s)` : ''}${typeof parsed['reason'] === 'string' ? ` · ${parsed['reason']}` : ''}` : null } catch { summary = null }
+    return { at, status: typeof run['status'] === 'string' ? run['status'] : typeof run['outcome'] === 'string' ? run['outcome'] : null, ...(summary === null ? {} : { summary }) }
   }).sort((left, right) => (right.at ?? '').localeCompare(left.at ?? ''))
 }
 

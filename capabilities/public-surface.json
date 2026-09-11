@@ -4,7 +4,7 @@
   "package": "@agentskit/harness",
   "packageVersion": "0.5.0",
   "entryPoint": "src/index.ts",
-  "sourceDigest": "ed12bbd7e5348e84a1b4682a7ccf999db0bba9f7a2dff2a094cb9ee4a363aeda",
+  "sourceDigest": "6e05b79d394e65b6763813366eb824fabaa1eef5da473b15c34306b4bdb76dbd",
   "capabilities": [
     {
       "id": "public-surface:adapters/agent",
@@ -143,6 +143,7 @@
         "orcaAutomationsList",
         "orcaJson",
         "orcaStatus",
+        "orcaTerminalCreate",
         "orcaTerminalList",
         "orcaTerminalScreen",
         "orcaTerminalSend",
@@ -1038,6 +1039,7 @@
         "busyIssues",
         "dispatchRecordPath",
         "gatherLoopState",
+        "launchWorkerTerminal",
         "precheckTick",
         "readDispatchRecord",
         "runTick",
@@ -1055,5 +1057,5 @@
       ]
     }
   ],
-  "digest": "670cf2424369e8c64da623a38b86c5c6d1c7d3af195d92911fc98dc0d304325b"
+  "digest": "6bbbf3159f67ec4788f90982392c1a07c9804ed1fa53e6626c76bd0160952d94"
 }

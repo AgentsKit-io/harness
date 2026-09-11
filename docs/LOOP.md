@@ -42,12 +42,15 @@ with session reuse:
 
 | Automation | Trigger | Precheck (plain command, exit 0 = run) | Prompt |
 |---|---|---|---|
-| `<prefix>-tick` | `schedule.tick` | `<harnessCommand> loop precheck tick -f <config>` | run `loop tick --json`, report, nothing else |
-| `<prefix>-deliver` | `schedule.deliver` | `<harnessCommand> loop precheck deliver -f <config>` | run `loop deliver --json`, report, nothing else |
+| `<prefix>-tick` | `schedule.tick` | `<harnessCommand> loop stage tick -f <config>` (runs the tick, exits 1) | never reached under `runner: precheck` |
+| `<prefix>-deliver` | `schedule.deliver` | `<harnessCommand> loop stage deliver -f <config>` (runs deliver, exits 1) | never reached under `runner: precheck` |
 
-The automation agent (`schedule.provider`, default: the watcher role's first available provider) only executes the
-harness command; every decision stays in the harness. Runs, skips and output are visible in Orca's Automations view and
-via `loop status`. The precheck keeps skipped ticks free of model calls.
+With the default `schedule.runner: precheck` the **precheck command is the stage itself** (`ak-harness loop stage
+tick|deliver`): it runs the harness, prints the JSON report and always exits 1, so Orca records every run as
+`skipped_precheck` with the report in `precheckResult.stdout` and never opens an agent session. This is deliberate:
+Orca caps a precheck at 600 s, so `contract.timeoutMs` (default 300 s) plus dispatch must fit one run; an Orca-launched agent starts in bypass-permissions mode and waits for a human to accept the warning, which leaks one
+stuck session per run. `schedule.runner: agent` keeps the legacy behaviour for providers that run unattended.
+Runs and their output are visible in Orca's Automations view and via `loop status`.
 
 `schedule.harnessCommand` must resolve inside Orca's environment: install the harness globally
 (`npm i -g @agentskit/harness`) or set an absolute command. `loop install` warns when it cannot find it on this shell's PATH.
@@ -94,8 +97,10 @@ appended to `<stateDir>/events.ndjson`. `--dry-run` reports the decision for eac
    wrapped as untrusted data. An auth/quota failure on one candidate marks it cooling down and the next is tried.
    Contracts are cached under `<stateDir>/issues/<id>/contract.json` while the issue is unchanged.
 4. **Dispatch or escalate** — a contract with at least one executable outcome and no blocking ambiguity becomes a
-   worker: `orca worktree create --agent <builder> --linear-issue <url> --base-branch <base> --prompt <brief>
-   --no-parent`, the issue moves to `In Progress`, one dedicated comment is posted. Otherwise the loop posts one
+   worker: `orca worktree create --linear-issue <url> --base-branch <base> --no-parent` (no `--agent`: Orca's agent
+   launcher runs Claude in bypass-permissions mode and waits for a human), then `orca terminal create --command
+   "<providers.<id>.tui>"`, `terminal wait --for tui-idle`, and the brief goes in through `terminal send`. The issue
+   moves to `In Progress` and one dedicated comment is posted. Otherwise the loop posts one
    `needs-info` comment (deduped by contract digest), adds the label, and moves on without consuming a slot.
 
 Every side effect is recorded in `<stateDir>/events.ndjson`; `dispatch.json` per issue links the worktree,
