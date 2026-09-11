@@ -203,7 +203,9 @@ export const parseOrcaSendReceipt = (result: unknown): OrcaSendReceipt => {
   const record = isRecord(result) ? result : {}
   const receipt = isRecord(record['receipt']) ? record['receipt'] : record
   const stages = Array.isArray(receipt['stages']) ? receipt['stages'].map((stage: unknown) => isRecord(stage) ? str(stage['stage'], str(stage['name'])) : str(stage)).filter(Boolean) : []
-  return { accepted: receipt['accepted'] === true || stages.includes('input_accepted'), requestId: str(receipt['requestId'], str(record['requestId'])) || null, stages, warnings: Array.isArray(record['warnings']) ? record['warnings'].map((warning: unknown) => isRecord(warning) ? str(warning['message'], JSON.stringify(warning)) : str(warning)) : [] }
+  // Orca returns `ok:true` with a null/empty result for a plain send; only an explicit `accepted:false` means the input was refused.
+  const accepted = receipt['accepted'] === false ? false : receipt['accepted'] === true || stages.includes('input_accepted') || (result === null || result === undefined || Object.keys(record).length === 0)
+  return { accepted, requestId: str(receipt['requestId'], str(record['requestId'])) || null, stages, warnings: Array.isArray(record['warnings']) ? record['warnings'].map((warning: unknown) => isRecord(warning) ? str(warning['message'], JSON.stringify(warning)) : str(warning)) : [] }
 }
 
 export const orcaTerminalSend = async (runner: CommandRunner, input: { readonly terminal: string; readonly text: string; readonly enter?: boolean; readonly waitSubmitSeconds?: number }, options: OrcaCliOptions = {}): Promise<OrcaSendReceipt> => parseOrcaSendReceipt(await orcaJson(runner, ['terminal', 'send', '--terminal', input.terminal, '--text', input.text, ...(input.enter === false ? [] : ['--enter']), ...(input.waitSubmitSeconds ? ['--wait-submit', String(input.waitSubmitSeconds)] : [])], { ...options, timeoutMs: options.timeoutMs ?? ((input.waitSubmitSeconds ?? 0) * 1000 + 30_000) }))
