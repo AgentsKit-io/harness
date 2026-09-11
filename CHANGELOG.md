@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+- Docs: `docs/LOOP.md` now documents Doc Bridge and `agentskit-review` loop wiring, the AgentsKit ecosystem map
+  (memory, eval, runtime, playbook, RAG, agent registry, MCP), and prioritized SDLC extension ideas; README loop
+  blurb points at that section.
+
 ## [0.5.0] - 2026-09-11
 
 - Added the keep-pushing SDLC loop foundation (`ak-harness loop validate|doctor`): `loop.config.yaml` schema (zod), provider detection with Orca usage/rate-limit awareness and cooldowns, role-based tiered model routing, machine slot assessment, Orca CLI and Linear-via-Orca adapters, and the loop doctor report.

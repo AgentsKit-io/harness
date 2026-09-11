@@ -149,7 +149,10 @@ Orca, and tracking. No adapter implementation is re-exported wholesale.
 
 ## External integration inventory
 
-| Integration | Current location | Side effects | 0.4.0 boundary |
+How these seams are wired into the keep-pushing loop (and what is still only a kernel contract) is summarized in
+[`LOOP.md`](LOOP.md#integrations-used-by-the-loop) and the [AgentsKit ecosystem map](LOOP.md#agentskit-ecosystem-map-what-the-harness-has-vs-what-the-loop-uses).
+
+| Integration | Current location | Side effects | Boundary |
 | --- | --- | --- | --- |
 | Doc Bridge | `src/adapters/doc-bridge.ts` | Reads a local index | Keep behind `ContextProvider`; measure context hit/quality separately. |
 | Orca | `src/adapters/orca.ts` | None; produces argv and lifecycle projections only | Keep lease/worktree/issue-lock/SHA planning provider-neutral; execution belongs to the orchestrator. |
