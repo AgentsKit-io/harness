@@ -87,8 +87,9 @@ delivery:
   review:
     cli: agentskit-review
     mode: trusted-local              # reuse this user's CLI logins; the isolated default has no credentials
-    profile: full
-    votes: 3
+    profile: fast                    # one bounded pass over required lenses; `full` needs batching to fit a 600 s stage
+    votes: 1
+    concurrency: 4
     minSeverity: med                 # nit < med < high < blocker; findings at/above this block auto-merge
     deadlineMs: 600000
   merge:

@@ -57,6 +57,8 @@ export interface DeliverInput {
   readonly onlyIssue?: string
   /** Test seam: skip the `terminal wait --for tui-idle` probe and assume this idleness. */
   readonly assumeIdle?: boolean
+  /** Wall-clock budget for this deliver run; the review deadline is capped to fit inside it. */
+  readonly budgetMs?: number
 }
 
 const message = (error: unknown): string => error instanceof HarnessError ? `${error.code}: ${error.message}` : error instanceof Error ? error.message : String(error)
@@ -89,6 +91,7 @@ interface Context {
   readonly env: NodeJS.ProcessEnv
   readonly assumeIdle?: boolean
   readonly notes: string[]
+  readonly reviewDeadlineMs: number
 }
 
 const orcaOptions = (config: LoopConfig) => ({ bin: config.orca.bin, timeoutMs: config.orca.timeoutMs })
@@ -225,7 +228,7 @@ const handlePullRequest = async (ctx: Context, record: DispatchRecordFile, lease
     const { settings } = providerIdentity(config, ctx.reviewer.provider)
     const resultFile = join(ctx.loaded.stateDir, 'issues', record.issue, `review-${pr.headSha.slice(0, 12)}.json`)
     mkdirSync(dirname(resultFile), { recursive: true })
-    review = await runCodeReview(ctx.runner, { cli: config.delivery.review.cli, repo: config.project.repo, number: pr.number, provider: settings.reviewProvider ?? `${ctx.reviewer.provider}-cli`, model: ctx.reviewer.model, mode: config.delivery.review.mode, profile: config.delivery.review.profile, votes: config.delivery.review.votes, minSeverity: config.delivery.review.minSeverity, deadlineMs: config.delivery.review.deadlineMs, maxCalls: config.delivery.review.maxCalls, post: config.delivery.review.post, resultFile, cwd: ctx.loaded.root, env: ctx.env })
+    review = await runCodeReview(ctx.runner, { cli: config.delivery.review.cli, repo: config.project.repo, number: pr.number, provider: settings.reviewProvider ?? `${ctx.reviewer.provider}-cli`, model: ctx.reviewer.model, mode: config.delivery.review.mode, profile: config.delivery.review.profile, votes: config.delivery.review.votes, concurrency: config.delivery.review.concurrency, minSeverity: config.delivery.review.minSeverity, deadlineMs: ctx.reviewDeadlineMs, maxCalls: config.delivery.review.maxCalls, post: config.delivery.review.post, resultFile, cwd: ctx.loaded.root, env: ctx.env })
     actions.push(`review ${review.status}: ${review.summary}`)
     const attempts = (prior?.attempts ?? 0) + 1
     state = { ...state, prNumber: pr.number, reviews: { ...state.reviews, [pr.headSha]: { status: review.status, at: ctx.now().toISOString(), provider: review.provider, model: review.model, blocking: review.blocking.length, attempts } } }
@@ -261,7 +264,9 @@ export const runDeliver = async (input: DeliverInput): Promise<DeliverReport> =>
   const reviewer = rankModels(config, 'reviewer', providers)[0] ?? null
   let env = input.env ?? process.env
   if (!env['GITHUB_TOKEN'] && !env['GH_TOKEN']) { try { const token = await input.runner.run(['gh', 'auth', 'token'], { timeoutMs: 10_000 }); if (token.code === 0 && token.stdout.trim()) env = { ...env, GITHUB_TOKEN: token.stdout.trim(), GH_TOKEN: token.stdout.trim() } } catch { /* review runs without a token and reports incomplete */ } }
-  const ctx: Context = { loaded, config, runner: input.runner, now, dryRun, reviewer, env, ...(input.assumeIdle === undefined ? {} : { assumeIdle: input.assumeIdle }), notes }
+  const reviewDeadlineMs = input.budgetMs ? Math.max(60_000, Math.min(config.delivery.review.deadlineMs, input.budgetMs - 90_000)) : config.delivery.review.deadlineMs
+  if (reviewDeadlineMs < config.delivery.review.deadlineMs) notes.push(`review deadline capped to ${Math.round(reviewDeadlineMs / 1000)}s to fit the stage budget`)
+  const ctx: Context = { loaded, config, runner: input.runner, now, dryRun, reviewer, env, ...(input.assumeIdle === undefined ? {} : { assumeIdle: input.assumeIdle }), notes, reviewDeadlineMs }
   const ledger = createDispatchLedger(loaded.stateDir)
   const leases = new Map(ledger.active().map((lease) => [lease.issue, lease]))
   const results: DeliverResult[] = []

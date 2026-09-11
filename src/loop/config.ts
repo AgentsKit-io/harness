@@ -105,8 +105,10 @@ export const LoopConfigSchema = z.object({
       cli: nonEmpty.default('agentskit-review'),
       /** agentskit-review execution mode. `trusted-local` reuses this user's environment (and CLI logins); the isolated default runs claude/codex with a temporary HOME and no credentials. */
       mode: z.enum(['trusted-local', 'isolated']).default('trusted-local'),
-      profile: nonEmpty.default('full'),
-      votes: z.number().int().positive().default(3),
+      /** `fast` = one bounded pass over the required lenses (fits a 600 s Orca stage); `full` = every lens, needs a long deadline or batching. */
+      profile: z.enum(['fast', 'full']).default('fast'),
+      votes: z.number().int().positive().default(1),
+      concurrency: z.number().int().positive().max(16).default(4),
       /** agentskit-review severity floor that blocks auto-merge: nit < med < high < blocker. */
       minSeverity: z.enum(['nit', 'med', 'high', 'blocker']).default('med'),
       deadlineMs: z.number().int().positive().default(600_000),

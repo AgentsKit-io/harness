@@ -36,6 +36,7 @@ export interface CodeReviewInput {
   readonly mode?: 'trusted-local' | 'isolated'
   readonly profile: string
   readonly votes: number
+  readonly concurrency?: number
   readonly minSeverity: ReviewSeverity
   readonly deadlineMs: number
   readonly maxCalls: number
@@ -73,7 +74,7 @@ export const parseReviewResult = (value: unknown): { readonly findings: readonly
   return { findings, blocking: typeof record['blocking'] === 'boolean' ? record['blocking'] : null, incomplete: typeof record['incomplete'] === 'boolean' ? record['incomplete'] : null }
 }
 
-export const buildReviewArgv = (input: CodeReviewInput): readonly string[] => [input.cli, '--pr', `${input.repo}#${input.number}`, '--provider', input.provider, ...(input.model ? ['--model', input.model] : []), ...(input.mode && input.mode !== 'isolated' ? ['--mode', input.mode] : []), '--profile', input.profile, '--votes', String(input.votes), '--min-severity', 'nit', '--block', input.minSeverity, '--max-calls', String(input.maxCalls), '--deadline-ms', String(input.deadlineMs), '--result', input.resultFile, ...(input.sarifFile ? ['--sarif', input.sarifFile] : []), ...(input.post ? ['--post'] : [])]
+export const buildReviewArgv = (input: CodeReviewInput): readonly string[] => [input.cli, '--pr', `${input.repo}#${input.number}`, '--provider', input.provider, ...(input.model ? ['--model', input.model] : []), ...(input.mode && input.mode !== 'isolated' ? ['--mode', input.mode] : []), '--profile', input.profile, '--votes', String(input.votes), ...(input.concurrency ? ['--concurrency', String(input.concurrency)] : []), '--min-severity', 'nit', '--block', input.minSeverity, '--max-calls', String(input.maxCalls), '--deadline-ms', String(input.deadlineMs), '--result', input.resultFile, ...(input.sarifFile ? ['--sarif', input.sarifFile] : []), ...(input.post ? ['--post'] : [])]
 
 /** Run one review. Exit 0 = clean, 1 = findings at/above the floor, 2 = incomplete; the `--result` file refines the verdict. */
 export const runCodeReview = async (runner: CommandRunner, input: CodeReviewInput): Promise<CodeReviewOutcome> => {

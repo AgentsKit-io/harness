@@ -81,8 +81,8 @@ const deliver = (env: ReturnType<typeof setup>, extra: Partial<Parameters<typeof
 
 describe('code review adapter', () => {
   it('builds argv with the severity floor, parses findings from the result file, and classifies exit codes', async () => {
-    const argv = buildReviewArgv({ cli: 'agentskit-review', repo: 'o/r', number: 7, provider: 'codex-cli', model: 'gpt-5.6-sol', mode: 'trusted-local', profile: 'full', votes: 3, minSeverity: 'med', deadlineMs: 1000, maxCalls: 50, post: true, resultFile: '/tmp/r.json' })
-    expect(argv).toEqual(['agentskit-review', '--pr', 'o/r#7', '--provider', 'codex-cli', '--model', 'gpt-5.6-sol', '--mode', 'trusted-local', '--profile', 'full', '--votes', '3', '--min-severity', 'nit', '--block', 'med', '--max-calls', '50', '--deadline-ms', '1000', '--result', '/tmp/r.json', '--post'])
+    const argv = buildReviewArgv({ cli: 'agentskit-review', repo: 'o/r', number: 7, provider: 'codex-cli', model: 'gpt-5.6-sol', mode: 'trusted-local', profile: 'full', votes: 3, concurrency: 2, minSeverity: 'med', deadlineMs: 1000, maxCalls: 50, post: true, resultFile: '/tmp/r.json' })
+    expect(argv).toEqual(['agentskit-review', '--pr', 'o/r#7', '--provider', 'codex-cli', '--model', 'gpt-5.6-sol', '--mode', 'trusted-local', '--profile', 'full', '--votes', '3', '--concurrency', '2', '--min-severity', 'nit', '--block', 'med', '--max-calls', '50', '--deadline-ms', '1000', '--result', '/tmp/r.json', '--post'])
     const parsed = parseReviewResult({ blocking: true, incomplete: false, findings: [{ file: 'a.ts', line: 3, severity: 'high', category: 'correctness', title: 'Null deref', rationale: 'x may be null', suggestion: 'guard it' }, { file: 'b.ts', line: 9, severity: 'nit', title: 'typo' }] })
     expect(parsed.findings[0]).toMatchObject({ severity: 'high', file: 'a.ts', line: 3, title: 'Null deref', category: 'correctness' })
     expect(parsed.findings[0]?.detail).toContain('Suggestion: guard it')
@@ -110,6 +110,9 @@ describe('deliver', () => {
     expect(reviewCall).toContain('codex-cli')
     expect(reviewCall).toContain('--post')
     expect(reviewCall?.[reviewCall.indexOf('--mode') + 1]).toBe('trusted-local')
+    expect(reviewCall?.[reviewCall.indexOf('--profile') + 1]).toBe('fast')
+    const capped = await deliver(setup({ review: { code: 0 } }), { budgetMs: 300_000 })
+    expect(capped.notes.some((note) => note.includes('review deadline capped to 210s'))).toBe(true)
     const merge = env.runner.calls.find((argv) => argv[0] === 'gh' && argv[1] === 'api' && argv.includes('--method'))
     expect(merge).toContain('merge_method=squash')
     expect(merge?.some((arg) => arg.startsWith('sha=c74d687e'))).toBe(true)

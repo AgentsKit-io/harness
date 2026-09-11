@@ -82,7 +82,8 @@ loop.command('stage <stage>').description('Run one stage (tick | deliver) as an 
   if (stage !== 'tick' && stage !== 'deliver') fail(`Unknown stage: ${stage}`, 'INVALID_INPUT')
   const runner = createProcessRunner(); const file = loopFile(this)
   const loaded = loadLoopConfig(file)
-  const report = stage === 'tick' ? await runTick({ loaded, runner, budgetMs: Math.max(60_000, loaded.config.schedule.stageTimeoutSec * 1000 - 60_000) }) : await runDeliver({ loaded, runner })
+  const budgetMs = Math.max(60_000, loaded.config.schedule.stageTimeoutSec * 1000 - 60_000)
+  const report = stage === 'tick' ? await runTick({ loaded, runner, budgetMs }) : await runDeliver({ loaded, runner, budgetMs })
   console.log(JSON.stringify(report, null, 2))
   process.exitCode = 1
 })
