@@ -4,7 +4,7 @@
   "package": "@agentskit/harness",
   "packageVersion": "0.5.0",
   "entryPoint": "src/index.ts",
-  "sourceDigest": "6e05b79d394e65b6763813366eb824fabaa1eef5da473b15c34306b4bdb76dbd",
+  "sourceDigest": "b2db9e13d6f824af6bb7f8717293e0d77d7a9531abe45f7908cc449ad81b8f70",
   "capabilities": [
     {
       "id": "public-surface:adapters/agent",
@@ -963,6 +963,7 @@
         "loopStatus",
         "parseAutomationRuns",
         "precheckCommand",
+        "shellQuote",
         "uninstallLoopAutomations"
       ]
     },
@@ -1057,5 +1058,5 @@
       ]
     }
   ],
-  "digest": "6bbbf3159f67ec4788f90982392c1a07c9804ed1fa53e6626c76bd0160952d94"
+  "digest": "cdb07786dc4f0ec6a81ea40cd868d5663ec891eba657f34f82c3ca53ed246098"
 }

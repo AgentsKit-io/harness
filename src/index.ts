@@ -120,7 +120,7 @@ export { REVIEW_SEVERITIES, atLeast, buildReviewArgv, parseReviewResult, renderF
 export type { CodeReviewInput, CodeReviewOutcome, ReviewFinding, ReviewSeverity } from './adapters/code-review.js'
 export { deliveryStatePath, listDispatched, precheckDeliver, readDeliveryState, runDeliver } from './loop/deliver.js'
 export type { DeliverInput, DeliverOutcome, DeliverReport, DeliverResult, DeliveryState } from './loop/deliver.js'
-export { LOOP_STAGES, automationName, automationPrompt, automationSpecs, installLoopAutomations, loopStatus, parseAutomationRuns, precheckCommand, uninstallLoopAutomations } from './loop/install.js'
+export { LOOP_STAGES, automationName, automationPrompt, automationSpecs, installLoopAutomations, loopStatus, parseAutomationRuns, precheckCommand, shellQuote, uninstallLoopAutomations } from './loop/install.js'
 export type { AutomationStatus, InstallAction, InstallInput, InstallReport, LoopStage, LoopStatusReport } from './loop/install.js'
 export { installPreflight, runGuidedInstall } from './loop/guided-install.js'
 export { createRichIO } from './loop/ui/terminal.js'

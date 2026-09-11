@@ -2,7 +2,7 @@ import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
-import { automationName, automationPrompt, automationSpecs, installLoopAutomations, loadLoopConfig, loopStatus, parseAutomationRuns, precheckCommand, uninstallLoopAutomations } from '../src/index.js'
+import { automationName, automationPrompt, automationSpecs, installLoopAutomations, loadLoopConfig, loopStatus, parseAutomationRuns, precheckCommand, shellQuote, uninstallLoopAutomations } from '../src/index.js'
 import type { CommandResult, CommandRunner } from '../src/index.js'
 
 const fixture = (name: string): unknown => JSON.parse(readFileSync(join(process.cwd(), 'test/fixtures/loop', `${name}.json`), 'utf8')) as unknown
@@ -46,13 +46,15 @@ describe('loop install', () => {
     expect(specs.map((spec) => spec.name)).toEqual(['loop-tick', 'loop-deliver'])
     expect(specs[0]).toMatchObject({ trigger: '*/5 * * * *', provider: 'claude', reuseSession: true })
     expect(specs[0]?.precheck).toBe(precheckCommand(loaded.config, loaded.path, 'tick'))
-    expect(specs[0]?.precheck).toContain(`loop stage tick -f "${loaded.path}"`)
+    expect(specs[0]?.precheck).toBe(`ak-harness loop stage tick -f "${loaded.path}"`)
     expect(specs[0]?.precheckTimeoutSec).toBe(600)
     expect(automationPrompt(loaded.config, loaded.path, 'tick')).toContain('LOOP_PRECHECK_BYPASSED')
     const agentMode = { ...loaded, config: { ...loaded.config, schedule: { ...loaded.config.schedule, runner: 'agent' as const } } }
     expect(automationSpecs(agentMode, 'claude')[0]).toMatchObject({ precheckTimeoutSec: 120 })
     expect(automationSpecs(agentMode, 'claude')[0]?.precheck).toContain('loop precheck tick')
     expect(automationPrompt(agentMode.config, loaded.path, 'deliver')).toContain(`ak-harness loop deliver -f "${loaded.path}" --json`)
+    expect(shellQuote('C:\\Users\\x y\\loop.config.yaml')).toBe('"C:\\Users\\x y\\loop.config.yaml"')
+    expect(shellQuote('/a/"b"/c')).toBe('"/a/\\"b\\"/c"')
     expect(specs[0]?.workspace).toBe(`path:${loaded.root}`)
     expect(automationName(loaded.config, 'tick')).toBe('loop-tick')
   })
@@ -92,6 +94,6 @@ describe('loop install', () => {
     const again = await uninstallLoopAutomations({ loaded: env1.loaded, runner: env1.runner })
     expect(again.actions.every((action) => action.action === 'skip')).toBe(true)
     const empty = await loopStatus({ loaded: env1.loaded, runner: env1.runner })
-    expect(empty.summary).toContain('loop: not installed — to enable: ak-harness loop install')
+    expect(empty.summary).toContain(`loop: not installed — to enable: ak-harness loop install -f "${env1.loaded.path}"`)
   })
 })

@@ -28,13 +28,16 @@ export interface InstallReport { readonly status: 'ok' | 'dry-run' | 'failed'; r
 
 export const automationName = (config: LoopConfig, stage: LoopStage): string => `${config.schedule.namePrefix}-${stage}`
 
+/** Quote a path for Orca's precheck shell on every platform: double quotes, no backslash doubling (cmd.exe keeps `\\` literal). */
+export const shellQuote = (value: string): string => `"${value.replace(/"/g, '\\"')}"`
+
 /** The exact command Orca runs before each scheduled run. `agent` runner: exit 0 = work exists. `precheck` runner: runs the whole stage and exits 1 so no agent is launched. */
-export const precheckCommand = (config: LoopConfig, configPath: string, stage: LoopStage): string => config.schedule.runner === 'precheck' ? `${config.schedule.harnessCommand} loop stage ${stage} -f ${JSON.stringify(configPath)}` : `${config.schedule.harnessCommand} loop precheck ${stage} -f ${JSON.stringify(configPath)}`
+export const precheckCommand = (config: LoopConfig, configPath: string, stage: LoopStage): string => config.schedule.runner === 'precheck' ? `${config.schedule.harnessCommand} loop stage ${stage} -f ${shellQuote(configPath)}` : `${config.schedule.harnessCommand} loop precheck ${stage} -f ${shellQuote(configPath)}`
 
 /** Prompt the automation agent receives: run the harness stage, report, do nothing else. */
 export const automationPrompt = (config: LoopConfig, configPath: string, stage: LoopStage): string => config.schedule.runner === 'precheck' ? `This automation does its work inside its precheck command (${precheckCommand(config, configPath, stage)}), which always exits non-zero so that no agent session is needed. If you are reading this, the precheck unexpectedly exited 0: reply exactly LOOP_PRECHECK_BYPASSED and stop. Do not run any command.` : `You are the scheduled runner of the AgentsKit keep-pushing loop for ${config.project.repo}. Run exactly this command in the current workspace and nothing else:
 
-${config.schedule.harnessCommand} loop ${stage} -f ${JSON.stringify(configPath)} --json
+${config.schedule.harnessCommand} loop ${stage} -f ${shellQuote(configPath)} --json
 
 Then reply with a two-line summary of the JSON report (status, and the per-issue outcomes). Do not edit files, do not open pull requests, do not run other commands, do not retry on failure — the next scheduled run will. If the command is not found, reply "HARNESS_MISSING" and stop.`
 
@@ -144,6 +147,6 @@ export const loopStatus = async (input: Pick<InstallInput, 'configPath' | 'loade
     automations.push({ stage, name, installed: true, enabled: current.enabled, id: current.id, trigger: current.trigger || null, provider: current.provider, lastRun: runs[0] ?? null, runs: runs.length })
   }
   const installed = automations.filter((item) => item.installed && item.enabled).length
-  const summary = installed === 0 ? `loop: not installed — to enable: ${config.schedule.harnessCommand} loop install -f ${loaded.path}` : `loop: installed (${installed}/${automations.length}${automations.some((item) => item.lastRun?.at) ? `, last run ${automations.map((item) => item.lastRun?.at).filter(Boolean).sort().at(-1)}` : ''})`
+  const summary = installed === 0 ? `loop: not installed — to enable: ${config.schedule.harnessCommand} loop install -f ${shellQuote(loaded.path)}` : `loop: installed (${installed}/${automations.length}${automations.some((item) => item.lastRun?.at) ? `, last run ${automations.map((item) => item.lastRun?.at).filter(Boolean).sort().at(-1)}` : ''})`
   return { installed, total: automations.length, automations, summary }
 }

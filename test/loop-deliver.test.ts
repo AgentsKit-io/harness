@@ -197,7 +197,7 @@ describe('deliver', () => {
     expect(env.ledger.active()).toHaveLength(1)
     expect(existsSync(join(env.loaded.stateDir, 'issues', 'ENG-10', 'delivery.json'))).toBe(false)
     const noReviewer = setup({ reviewerAvailable: false })
-    writeFileSync(join(noReviewer.dir, 'loop.config.yaml'), exampleYaml.replace(/reviewer: .*\n/, 'reviewer:     [[codex/gpt-5.6-sol]]\n'))
+    writeFileSync(join(noReviewer.dir, 'loop.config.local.yaml'), 'models:\n  reviewer: [[codex/gpt-5.6-sol]]\n')
     const result = (await deliver(noReviewer)).results[0]
     expect(result).toMatchObject({ outcome: 'waiting', reason: 'no reviewer provider available' })
     expect(listDispatched(noReviewer.loaded.stateDir)).toHaveLength(1)

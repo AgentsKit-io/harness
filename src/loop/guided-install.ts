@@ -3,7 +3,7 @@ import { findExecutable } from '../adapters/command.js'
 import { orcaJson } from '../adapters/orca-cli.js'
 import { loadLoopConfig, type LoadedLoopConfig } from './config.js'
 import { runLoopDoctor, type DoctorCheck, type LoopDoctorReport } from './doctor.js'
-import { automationSpecs, installLoopAutomations, loopStatus, type InstallReport, type LoopStatusReport } from './install.js'
+import { automationSpecs, installLoopAutomations, loopStatus, shellQuote, type InstallReport, type LoopStatusReport } from './install.js'
 import { hasLocalConfig, promptLocalConfig, writeLocalConfig } from './local-config.js'
 import { runTick, type TickReport } from './tick.js'
 
@@ -151,6 +151,6 @@ export const runGuidedInstall = async (input: GuidedInstallInput): Promise<Guide
   if (install.status === 'failed') return { status: 'blocked', reason: 'orca refused an automation', localConfig, doctor, preflight, rehearsal, install, after: null }
   const after = await loopStatus({ loaded, runner: input.runner }).catch(() => null)
   if (after) bullet(after.summary, 'ok')
-  bullet(`Watch it in Orca → Automations or with: ${config.schedule.harnessCommand} loop status -f ${JSON.stringify(loaded.path)}`, 'dim')
+  bullet(`Watch it in Orca → Automations or with: ${config.schedule.harnessCommand} loop status -f ${shellQuote(loaded.path)}`, 'dim')
   return { status: 'installed', reason: `${install.actions.length} automation(s)`, localConfig, doctor, preflight, rehearsal, install, after }
 }
