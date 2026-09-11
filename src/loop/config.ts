@@ -103,6 +103,8 @@ export const LoopConfigSchema = z.object({
     verifyCommand: nonEmpty,
     review: z.object({
       cli: nonEmpty.default('agentskit-review'),
+      /** agentskit-review execution mode. `trusted-local` reuses this user's environment (and CLI logins); the isolated default runs claude/codex with a temporary HOME and no credentials. */
+      mode: z.enum(['trusted-local', 'isolated']).default('trusted-local'),
       profile: nonEmpty.default('full'),
       votes: z.number().int().positive().default(3),
       /** agentskit-review severity floor that blocks auto-merge: nit < med < high < blocker. */

@@ -86,6 +86,7 @@ delivery:
   verifyCommand: "pnpm lint && pnpm test"   # what the worker must pass before opening a PR
   review:
     cli: agentskit-review
+    mode: trusted-local              # reuse this user's CLI logins; the isolated default has no credentials
     profile: full
     votes: 3
     minSeverity: med                 # nit < med < high < blocker; findings at/above this block auto-merge
