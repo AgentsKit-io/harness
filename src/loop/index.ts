@@ -28,3 +28,8 @@ export type { LocalConfigAnswers, LocalConfigPrompter, TeamMember } from './loca
 export type { GuidedInstallIO, GuidedInstallInput, GuidedInstallReport } from './guided-install.js'
 export { HARNESS_REPO_URL, buildRetroReport, buildSuggestions, normalizeReason, parseSince, readLoopEvents, renderRetroMarkdown, retroLearnings } from './retro.js'
 export type { LoopEvent, RetroInput, RetroIssueRow, RetroReport, RetroSuggestion, RetroTarget, RetroWindow } from './retro.js'
+
+export { buildDebriefReport, renderDebriefMarkdown } from './debrief.js'
+export type { DebriefInput, DebriefIssueRow, DebriefReport } from './debrief.js'
+export { classifyWatchEvent, classifyWatchPhase, formatWatchEvent, snapshotWatchTargets, watchDeliveries } from './watch.js'
+export type { WatchEvent, WatchEventKind, WatchInput, WatchReport, WatchTargetSnapshot } from './watch.js'

@@ -24,8 +24,28 @@ ak-harness loop install [--yes|--force|--skip-rehearsal|--skip-local-config|--dr
 ak-harness loop uninstall [--dry-run]                 # remove them
 ak-harness loop status                                # what Orca knows: enabled, trigger, provider, latest run
 ak-harness loop hook                                  # one status line for a SessionStart hook; never mutates
+ak-harness loop debrief [--issue ENG-123] [--since 24h]  # human-facing: what is in flight, held, escalated
+ak-harness loop watch [--issue ENG-123] [--once] [--interval 30]  # poll delivery/PR; DONE|FAILED|ACTION_REQUIRED
 ak-harness loop retro [--since 7d] [--json|--learnings]  # weekly digest + calibration suggestions
 ```
+
+### Debrief and watch
+
+`loop debrief` is the human companion to the automations: a read-only Markdown (or `--json`) snapshot of
+in-flight dispatches, delivery phase (waiting for PR / review / fix round / ready to merge), holds that need a
+person, recent escalations and provider cooldowns. It does not call Orca or `gh` — only the loop state directory —
+so it is safe to run from a SessionStart hook or a chat agent that needs context before acting.
+
+`loop watch` polls `delivery.json` (and optionally the live PR via `gh`) and prints line-oriented events:
+
+| Event | Meaning |
+|---|---|
+| `DONE` | Delivery finished as merged (or the PR is MERGED) |
+| `FAILED` | stuck / abandoned / failed / PR closed without merge |
+| `ACTION_REQUIRED` | held for a human, incomplete review twice, or fix-round findings |
+| `PROGRESS` | still moving (waiting for PR, review pending, …) |
+
+Use `--once` for a single snapshot; omit it to block until a terminal outcome (or `--timeout <seconds>`).
 
 ## Running 24/7 with Orca
 

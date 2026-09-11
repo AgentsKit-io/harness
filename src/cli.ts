@@ -5,7 +5,7 @@ import { Command } from 'commander'
 import { approveRun, ARTIFACT_SCHEMA_VERSION, assessAcceptance, assessBlock, assessDiscovery, assessImprovementCycle, assessIntegration, assessPilot, assessPreflight, assessProduction, assessWip, assessWorktreeCleanup, authorizeRun, benchmarkRuns, cancelRun, cleanTaskArtifacts, composePullRequest, createDispatchLedger, createDocBridgeContextProvider, createStatusSnapshot, exportEvidenceBundle, FileArtifactStore, loadBenchmarkManifest, loadConfig, loadLatestRun, parseRetro, planFilePreflight, planRun, readArtifactFile, readContextSnapshots, readEvidenceTrustStore, reconcileRun, recordBenchmarkObservation, renderArtifactMarkdown, retryRun, selectRuntime, startRun, validateBlockManifest, validateStatusSnapshot, verifyEvidenceBundle, verifyRun } from './index.js'
 import type { BenchmarkObservationEvidence } from './execution/metrics.js'
 import { fail } from './kernel/errors.js'
-import { buildRetroReport, createProcessRunner, createRichIO, fetchLinearIssue, generateContract, installLoopAutomations, loadLoopConfig, runGuidedInstall, loopStatus, renderRetroMarkdown, retroLearnings, precheckDeliver, precheckTick, rankModels, readStoredContract, runDeliver, runLoopDoctor, runTick, uninstallLoopAutomations, writeStoredContract } from './index.js'
+import { buildDebriefReport, buildRetroReport, createProcessRunner, createRichIO, fetchLinearIssue, formatWatchEvent, generateContract, installLoopAutomations, loadLoopConfig, runGuidedInstall, loopStatus, renderDebriefMarkdown, renderRetroMarkdown, retroLearnings, precheckDeliver, precheckTick, rankModels, readStoredContract, runDeliver, runLoopDoctor, runTick, uninstallLoopAutomations, watchDeliveries, writeStoredContract } from './index.js'
 import { FileEventStore, inspectEventLogLock, recoverEventLogLock } from './kernel/events.js'
 
 interface CliOptions { readonly config: string; readonly json: boolean }
@@ -109,6 +109,29 @@ loop.command('install').description('Guided install: doctor + environment checks
 loop.command('uninstall').description('Remove the loop automations from Orca.').option('--dry-run', 'print what would be removed').action(async function (this: Command, command: { readonly dryRun?: boolean }) { const report = await uninstallLoopAutomations({ configPath: loopFile(this), runner: createProcessRunner(), dryRun: command.dryRun ?? false }); print(report); if (report.status === 'failed') process.exitCode = 1 })
 loop.command('status').description('Show the loop automations Orca knows about and their latest runs.').action(async function (this: Command) { print(await loopStatus({ configPath: loopFile(this), runner: createProcessRunner() })) })
 loop.command('hook').description('Status-only line for a SessionStart hook: never installs or changes anything; always exits 0 within a few seconds.').action(async function (this: Command) { try { const status = await loopStatus({ configPath: loopFile(this), runner: createProcessRunner({ timeoutMs: 4_000 }) }); console.log(status.summary) } catch (error) { console.log(`loop: status unavailable (${error instanceof Error ? error.message.split('\n')[0] : String(error)})`) } })
+loop.command('debrief').description('Human-facing explanation of what the loop is working on right now (in-flight issues, holds, escalations, cooldowns). Read-only; Markdown by default.').option('--issue <identifier>', 'restrict to one issue').option('--since <window>', 'how far back to look for escalations/events', '24h').action(function (this: Command, command: { readonly issue?: string; readonly since: string }) {
+  const report = buildDebriefReport({ configPath: loopFile(this), issue: command.issue, since: command.since })
+  if (options().json) return print(report)
+  console.log(renderDebriefMarkdown(report))
+})
+loop.command('watch').description('Watch delivery.json (+ optional live PR) for in-flight issues; prints DONE / FAILED / ACTION_REQUIRED / PROGRESS. Read-only.').option('--issue <identifier>', 'restrict to one issue').option('--interval <seconds>', 'poll interval', (value: string) => Number(value), 30).option('--once', 'single snapshot then exit').option('--timeout <seconds>', 'stop after N seconds (0 = until terminal)', (value: string) => Number(value), 0).option('--no-live-pr', 'do not call gh; filesystem state only').action(async function (this: Command, command: { readonly issue?: string; readonly interval: number; readonly once?: boolean; readonly timeout: number; readonly livePr: boolean }) {
+  const report = await watchDeliveries({
+    configPath: loopFile(this),
+    runner: createProcessRunner(),
+    issue: command.issue,
+    intervalMs: Math.max(1, command.interval) * 1000,
+    once: command.once ?? false,
+    timeoutMs: command.timeout > 0 ? command.timeout * 1000 : undefined,
+    livePr: command.livePr,
+    onEvent: (event) => { if (!options().json) console.log(formatWatchEvent(event)) },
+  })
+  if (options().json) print(report)
+  else if (command.once && report.events.length === 0) {
+    for (const target of report.targets) console.log(formatWatchEvent({ kind: target.phase === 'merged' ? 'DONE' : target.phase === 'held' || target.phase === 'held-incomplete-review' || target.phase === 'fix-round' ? 'ACTION_REQUIRED' : target.phase === 'failed' || target.phase === 'stuck' || target.phase === 'abandoned' || target.phase === 'closed' ? 'FAILED' : 'PROGRESS', issue: target.issue, message: `Phase ${target.phase}`, phase: target.phase, pr: target.delivery.prNumber, finalOutcome: target.delivery.finalOutcome, at: report.generatedAt }))
+  }
+  if (report.status === 'failed') process.exitCode = 1
+  else if (report.status === 'action-required') process.exitCode = 2
+})
 loop.command('retro').description('Digest of the loop over a window: escalations, dispatches, reviews, merges, cooldowns, Orca runs, and calibration suggestions. Markdown by default, --json for the report.').option('--since <window>', 'window such as 7d, 12h, 30m or an ISO date', '7d').option('--learnings', 'print harness learning records (proposed) instead of the digest').option('--no-orca', 'skip the Orca run summary').option('--target <target>', 'only suggestions for one side: project | harness').action(async function (this: Command, command: { readonly since: string; readonly learnings?: boolean; readonly orca: boolean; readonly target?: string }) {
   if (command.target && command.target !== 'project' && command.target !== 'harness') fail(`--target must be project or harness, got ${command.target}`, 'INVALID_INPUT')
   const full = await buildRetroReport({ configPath: loopFile(this), runner: createProcessRunner(), since: command.since, skipOrca: !command.orca })
