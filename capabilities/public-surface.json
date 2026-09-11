@@ -4,7 +4,7 @@
   "package": "@agentskit/harness",
   "packageVersion": "0.5.0",
   "entryPoint": "src/index.ts",
-  "sourceDigest": "b2db9e13d6f824af6bb7f8717293e0d77d7a9531abe45f7908cc449ad81b8f70",
+  "sourceDigest": "127c85923c65d99f2bb1296d2dc811275b24daa1239cdc492379a0ce90b2a306",
   "capabilities": [
     {
       "id": "public-surface:adapters/agent",
@@ -995,6 +995,27 @@
       ]
     },
     {
+      "id": "public-surface:loop/retro",
+      "version": "0.5.0",
+      "kind": "composition",
+      "entryPoint": "src/index.ts",
+      "exports": [
+        "LoopEvent",
+        "RetroInput",
+        "RetroIssueRow",
+        "RetroReport",
+        "RetroSuggestion",
+        "RetroWindow",
+        "buildRetroReport",
+        "buildSuggestions",
+        "normalizeReason",
+        "parseSince",
+        "readLoopEvents",
+        "renderRetroMarkdown",
+        "retroLearnings"
+      ]
+    },
+    {
       "id": "public-surface:loop/routing",
       "version": "0.5.0",
       "kind": "composition",
@@ -1058,5 +1079,5 @@
       ]
     }
   ],
-  "digest": "cdb07786dc4f0ec6a81ea40cd868d5663ec891eba657f34f82c3ca53ed246098"
+  "digest": "41f83b098945f41fa9a4c2a38879be0bc96dd974d4757fd81aa19d026210bf39"
 }

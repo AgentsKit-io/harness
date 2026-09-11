@@ -24,6 +24,7 @@ ak-harness loop install [--yes|--force|--skip-rehearsal|--skip-local-config|--dr
 ak-harness loop uninstall [--dry-run]                 # remove them
 ak-harness loop status                                # what Orca knows: enabled, trigger, provider, latest run
 ak-harness loop hook                                  # one status line for a SessionStart hook; never mutates
+ak-harness loop retro [--since 7d] [--json|--learnings]  # weekly digest + calibration suggestions
 ```
 
 ## Running 24/7 with Orca
@@ -150,3 +151,21 @@ runner and wires adapters together. See `docs/MODULE-BOUNDARIES.md`.
 - `loop.config.yaml` holds env variable **names**, never values.
 - Every external call is argv-based with a timeout; `ok: false` envelopes fail closed.
 - Linear text is data. Later phases render it into worker briefs inside delimiters and never execute it.
+
+## Continuous improvement: `loop retro`
+
+`ak-harness loop retro --since 7d` reads `<stateDir>/events.ndjson`, every `issues/<id>/{contract,dispatch,delivery}.json`,
+`provider-cooldowns.json` and (unless `--no-orca`) the Orca run records of the two automations, and prints a Markdown
+digest:
+
+- **Numbers** — contracts frozen, escalation rate, dispatches by provider, merged/blocked/stuck/abandoned/in flight,
+  review outcomes, fix rounds, median dispatch→merge, cooldowns, Orca runs (idle/work/timed out, durations).
+- **Problems** — escalation reasons grouped by shape, blocked/stuck/abandoned issues.
+- **What worked** — merged issues with worker, lead time and fix rounds.
+- **Adjustments** — rule-based suggestions, each with its evidence and the `loop.config.yaml` knob to turn
+  (`escalation-rate`, `review-floor`, `fix-rounds`, `stuck-workers`, `review-incomplete`, `provider-cooldowns`,
+  `idle-loop`, `stage-timeout`, `lead-time`, or `steady`).
+
+The headings follow the harness retro grammar, so `--learnings` prints `LearningRecord`s in `proposed` state; a human
+promotes them with `promoteLearnings` (ADR-0019 keeps that decision human). The calibration loop is: read the digest →
+change one knob in `loop.config.yaml` → next digest measures the effect.

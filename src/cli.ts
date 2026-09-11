@@ -5,7 +5,7 @@ import { Command } from 'commander'
 import { approveRun, ARTIFACT_SCHEMA_VERSION, assessAcceptance, assessBlock, assessDiscovery, assessImprovementCycle, assessIntegration, assessPilot, assessPreflight, assessProduction, assessWip, assessWorktreeCleanup, authorizeRun, benchmarkRuns, cancelRun, cleanTaskArtifacts, composePullRequest, createDispatchLedger, createDocBridgeContextProvider, createStatusSnapshot, exportEvidenceBundle, FileArtifactStore, loadBenchmarkManifest, loadConfig, loadLatestRun, parseRetro, planFilePreflight, planRun, readArtifactFile, readContextSnapshots, readEvidenceTrustStore, reconcileRun, recordBenchmarkObservation, renderArtifactMarkdown, retryRun, selectRuntime, startRun, validateBlockManifest, validateStatusSnapshot, verifyEvidenceBundle, verifyRun } from './index.js'
 import type { BenchmarkObservationEvidence } from './execution/metrics.js'
 import { fail } from './kernel/errors.js'
-import { createProcessRunner, createRichIO, fetchLinearIssue, generateContract, installLoopAutomations, loadLoopConfig, runGuidedInstall, loopStatus, precheckDeliver, precheckTick, rankModels, readStoredContract, runDeliver, runLoopDoctor, runTick, uninstallLoopAutomations, writeStoredContract } from './index.js'
+import { buildRetroReport, createProcessRunner, createRichIO, fetchLinearIssue, generateContract, installLoopAutomations, loadLoopConfig, runGuidedInstall, loopStatus, renderRetroMarkdown, retroLearnings, precheckDeliver, precheckTick, rankModels, readStoredContract, runDeliver, runLoopDoctor, runTick, uninstallLoopAutomations, writeStoredContract } from './index.js'
 import { FileEventStore, inspectEventLogLock, recoverEventLogLock } from './kernel/events.js'
 
 interface CliOptions { readonly config: string; readonly json: boolean }
@@ -108,6 +108,13 @@ loop.command('install').description('Guided install: doctor + environment checks
 loop.command('uninstall').description('Remove the loop automations from Orca.').option('--dry-run', 'print what would be removed').action(async function (this: Command, command: { readonly dryRun?: boolean }) { const report = await uninstallLoopAutomations({ configPath: loopFile(this), runner: createProcessRunner(), dryRun: command.dryRun ?? false }); print(report); if (report.status === 'failed') process.exitCode = 1 })
 loop.command('status').description('Show the loop automations Orca knows about and their latest runs.').action(async function (this: Command) { print(await loopStatus({ configPath: loopFile(this), runner: createProcessRunner() })) })
 loop.command('hook').description('Status-only line for a SessionStart hook: never installs or changes anything; always exits 0 within a few seconds.').action(async function (this: Command) { try { const status = await loopStatus({ configPath: loopFile(this), runner: createProcessRunner({ timeoutMs: 4_000 }) }); console.log(status.summary) } catch (error) { console.log(`loop: status unavailable (${error instanceof Error ? error.message.split('\n')[0] : String(error)})`) } })
+loop.command('retro').description('Digest of the loop over a window: escalations, dispatches, reviews, merges, cooldowns, Orca runs, and calibration suggestions. Markdown by default, --json for the report.').option('--since <window>', 'window such as 7d, 12h, 30m or an ISO date', '7d').option('--learnings', 'print harness learning records (proposed) instead of the digest').option('--no-orca', 'skip the Orca run summary').action(async function (this: Command, command: { readonly since: string; readonly learnings?: boolean; readonly orca: boolean }) {
+  const report = await buildRetroReport({ configPath: loopFile(this), runner: createProcessRunner(), since: command.since, skipOrca: !command.orca })
+  const markdown = renderRetroMarkdown(report)
+  if (command.learnings) return print(retroLearnings(report, markdown))
+  if (options().json) return print(report)
+  console.log(markdown)
+})
 program.command('start').description('Move a planned run into implementation.').action(() => print(startRun(loadConfig(options().config))))
 program.command('verify').description('Execute every configured check and record evidence.').action(async () => print(await verifyRun({ configPath: options().config })))
 program.command('run').description('Alias for verify, compatible with the common protocol.').action(async () => print(await verifyRun({ configPath: options().config })))
