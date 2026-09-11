@@ -1,0 +1,77 @@
+{
+  "id": "fixture",
+  "ok": true,
+  "result": {
+    "issues": [
+      {
+        "id": "ready-0",
+        "identifier": "ENG-20",
+        "title": "Ready issue 0",
+        "url": "https://linear.app/x/issue/ENG-20",
+        "description": "redacted",
+        "state": {
+          "id": "3f40a3cf-a776-4a3f-a8b6-0f5d38968663",
+          "name": "Ready",
+          "type": "unstarted",
+          "color": "#bec2c8"
+        },
+        "team": {
+          "id": "team-1",
+          "name": "Demo",
+          "key": "ENG",
+          "color": "#000"
+        },
+        "project": {
+          "id": "proj-1",
+          "name": "Alpha",
+          "color": "#000"
+        },
+        "cycle": null,
+        "assignee": {
+          "id": "user-1",
+          "displayName": "person",
+          "avatarUrl": ""
+        },
+        "labels": [
+          {
+            "id": "l0",
+            "name": "type:feat",
+            "color": "#000"
+          },
+          {
+            "id": "l1",
+            "name": "scope:mvp",
+            "color": "#000"
+          },
+          {
+            "id": "l2",
+            "name": "area:cloud",
+            "color": "#000"
+          }
+        ],
+        "priority": 2,
+        "priorityLabel": "high",
+        "estimate": null,
+        "dueDate": null,
+        "branchName": "person/eng-20-demo",
+        "createdAt": "2026-09-04T18:04:18.614Z",
+        "updatedAt": "2026-09-04T18:35:17.730Z",
+        "workspace": {
+          "id": "ws-1",
+          "name": "Demo"
+        }
+      }
+    ],
+    "truncated": false,
+    "meta": {
+      "limit": 3,
+      "returned": 1,
+      "hasMore": false,
+      "orderBy": "updatedAt",
+      "workspaceId": "ws-1",
+      "partial": false,
+      "workspaceErrors": [],
+      "nextCursor": null
+    }
+  }
+}

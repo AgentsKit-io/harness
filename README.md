@@ -8,6 +8,14 @@ docbridge:
 
 Portable, evidence-backed development protocol for coding agents. The harness freezes a task contract, executes every configured check, binds evidence to the current source revision, detects stale results, and applies the configured controlled or YOLO approval policy.
 
+## Keep-pushing loop (Orca)
+
+`ak-harness loop …` drains one person's Linear queue through Orca worktrees 24/7 — tiered model routing with
+usage-aware fallback, orchestrator-frozen contracts, adversarial review, squash-merge, and one deduplicated
+escalation when a ticket cannot be verified. Everything project-specific lives in `loop.config.yaml`
+(start from [`loop.config.example.yaml`](loop.config.example.yaml)). Guide: [`docs/LOOP.md`](docs/LOOP.md) ·
+decision record: [`docs/ADR-0027-keep-pushing-loop.md`](docs/ADR-0027-keep-pushing-loop.md).
+
 ## Install
 
 ```bash

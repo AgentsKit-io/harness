@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.5.0] - 2026-09-11
+
+- Added the keep-pushing SDLC loop foundation (`ak-harness loop validate|doctor`): `loop.config.yaml` schema (zod), provider detection with Orca usage/rate-limit awareness and cooldowns, role-based tiered model routing, machine slot assessment, Orca CLI and Linear-via-Orca adapters, and the loop doctor report.
+- Added loop phase 2 adapters: Orca worktree create/set/rm, terminal send/wait/read and automations argv; Linear issue detail, status/comment/label/attach writes and a Linear `TrackingAdapter`; GitHub PR snapshots, check assessment, self-edit path guard and optimistic squash-merge via `gh`.
+- Added loop phase 3 (`ak-harness loop tick|precheck|contract`): orchestrator-frozen task contracts with untrusted issue text, candidate fallback and provider cooldown on auth/quota failures, dispatch ledger claims, Orca worktree dispatch with `--linear-issue`, worker briefs, Linear In Progress transition and `needs-info` escalation.
+- Added loop phase 4 (`ak-harness loop deliver`, `precheck deliver`): per-issue delivery state, PR detection by branch, protected-path hold, conflict/CI/review fix rounds sent to the worker terminal with a bounded budget, `agentskit-review` at the current head, optimistic squash-merge, Linear attach/Done, worktree cleanup, stuck/abandoned escalation with slot release.
+- Added loop phase 5 (`ak-harness loop install|uninstall|status|hook`): idempotent Orca automations with `--precheck`, existing-workspace mode and session reuse; status with latest runs; a status-only SessionStart hook line; a cross-platform CI job (ubuntu/macos/windows); ADR-0027.
+- Add bounded agent eval, safe context/read-only LLM cache, deterministic workflow fan-out/fan-in, and validated optimization observation contracts for token, memory, cache, and parallelism measurements.
+
 ## [0.4.0] - 2026-09-10
 
 - Added phase quality matrices, watchdog classification, and resource telemetry.
@@ -16,9 +25,6 @@
   policies, and provider-neutral Orca/tracking adapters.
 - Added configurable machine pressure thresholds and adaptive workflow limits.
 
-## [Unreleased]
-
-- Add bounded agent eval, safe context/read-only LLM cache, deterministic workflow fan-out/fan-in, and validated optimization observation contracts for token, memory, cache, and parallelism measurements.
 
 All notable changes to `@agentskit/harness` are documented here.
 
