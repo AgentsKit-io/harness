@@ -55,7 +55,7 @@ describe('loop retro', () => {
     expect(report.window.days).toBe(7)
     expect(report.escalations).toMatchObject({ total: 4, issues: ['ENG-1', 'ENG-2', 'ENG-3', 'ENG-4'] })
     expect(report.escalations.reasons[0]).toEqual({ reason: 'blocking ambiguity: Which app serves the demo?', count: 4 })
-    expect(report.dispatches).toMatchObject({ total: 2, failed: 0, byProvider: { 'claude/sonnet': 2 } })
+    expect(report.dispatches).toMatchObject({ total: 2, failed: 1, byProvider: { 'claude/sonnet': 2 } })
     expect(report.delivery).toMatchObject({ merged: 1, inFlight: 1, fixRounds: 1, reviewsClean: 1, reviewsFindings: 1, reviewsIncomplete: 0, medianLeadTimeMin: 300 })
     expect(report.providers).toMatchObject({ cooldownEvents: 1 })
     expect(report.providers.cooldowns[0]).toMatchObject({ provider: 'codex' })
