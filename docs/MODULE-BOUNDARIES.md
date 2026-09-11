@@ -90,6 +90,7 @@ modules, not a provider dependency.
 | `src/loop/tick.ts` | Composition | One keep-pushing tick: intake, admit (slots + dispatch ledger claim), contract, dispatch into an Orca worktree, Linear transition, escalation, precheck | adapters, `coordination`, `errors`, `hash`, `brief`, `config`, `contract`, `cooldown`, `doctor`, `routing`, `slots` | Orca CLI + Linear via runner; `<stateDir>` files |
 | `src/loop/deliver.ts` | Composition | Deliver stage per dispatched issue: PR detection, self-edit hold, conflict/CI/review fix rounds via terminal, review at head, optimistic squash-merge, Linear Done, cleanup, stuck/abandoned escalation | adapters, `coordination`, `errors`, `config`, `cooldown`, `doctor`, `routing`, `tick` | Orca, Linear, GitHub, agentskit-review via runner; `<stateDir>` files |
 | `src/loop/install.ts` | Composition | Orca automation specs (`<prefix>-tick`, `<prefix>-deliver`) with read-only prechecks, idempotent create/edit by name, uninstall, status and the SessionStart hook line | `command`, `orca-cli`, `providers`, `errors`, `config`, `cooldown`, `doctor`, `routing` | Orca automations via runner |
+| `src/loop/guided-install.ts` | Composition | Interactive install: doctor + environment preflight, dry-run rehearsal, confirmation, install, status; readline IO injected | `command`, `orca-cli`, `config`, `doctor`, `install`, `tick`, stdlib readline | Terminal prompts; Orca via runner |
 
 ## Allowed dependency directions and exceptions
 

@@ -122,3 +122,5 @@ export { deliveryStatePath, listDispatched, precheckDeliver, readDeliveryState, 
 export type { DeliverInput, DeliverOutcome, DeliverReport, DeliverResult, DeliveryState } from './loop/deliver.js'
 export { LOOP_STAGES, automationName, automationPrompt, automationSpecs, installLoopAutomations, loopStatus, parseAutomationRuns, precheckCommand, uninstallLoopAutomations } from './loop/install.js'
 export type { AutomationStatus, InstallAction, InstallInput, InstallReport, LoopStage, LoopStatusReport } from './loop/install.js'
+export { createTerminalIO, installPreflight, runGuidedInstall } from './loop/guided-install.js'
+export type { GuidedInstallIO, GuidedInstallInput, GuidedInstallReport } from './loop/guided-install.js'

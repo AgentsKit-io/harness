@@ -4,7 +4,7 @@
   "package": "@agentskit/harness",
   "packageVersion": "0.5.0",
   "entryPoint": "src/index.ts",
-  "sourceDigest": "1c3951532e8cfa2c8a2137510d5f7b26d676de5f5d72fbd3ff487bcc3239a389",
+  "sourceDigest": "a9329b290a735375cd36d88fbe165c71475ac694737a22cf3802e3f05790c093",
   "capabilities": [
     {
       "id": "public-surface:adapters/agent",
@@ -930,6 +930,20 @@
       ]
     },
     {
+      "id": "public-surface:loop/guided-install",
+      "version": "0.5.0",
+      "kind": "composition",
+      "entryPoint": "src/index.ts",
+      "exports": [
+        "GuidedInstallIO",
+        "GuidedInstallInput",
+        "GuidedInstallReport",
+        "createTerminalIO",
+        "installPreflight",
+        "runGuidedInstall"
+      ]
+    },
+    {
       "id": "public-surface:loop/install",
       "version": "0.5.0",
       "kind": "composition",
@@ -1014,5 +1028,5 @@
       ]
     }
   ],
-  "digest": "7afa5132a4f7199cbf72588b4358c9b87358fe78182f54f783bff7db1db70cdf"
+  "digest": "24377e6df2a114ebb7870fc91395ea574d77e6f6ec9fc00dbe6553a92898453b"
 }

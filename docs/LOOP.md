@@ -20,7 +20,7 @@ ak-harness loop tick                                  # dispatch up to <free slo
 ak-harness loop contract ENG-123 [--refresh|--dry-run] # freeze or show the orchestrator contract for one issue
 ak-harness loop precheck deliver                      # exit 0 when a dispatched issue is in flight
 ak-harness loop deliver [--dry-run] [--issue ENG-123] # drive dispatched workers to merge
-ak-harness loop install [--dry-run] [--provider claude]  # create/update the two Orca automations (idempotent by name)
+ak-harness loop install [--yes|--force|--skip-rehearsal|--dry-run|--plain]  # guided: checks → rehearsal → confirm → create/update
 ak-harness loop uninstall [--dry-run]                 # remove them
 ak-harness loop status                                # what Orca knows: enabled, trigger, provider, latest run
 ak-harness loop hook                                  # one status line for a SessionStart hook; never mutates
@@ -28,7 +28,13 @@ ak-harness loop hook                                  # one status line for a Se
 
 ## Running 24/7 with Orca
 
-`loop install` creates two automations in the Orca runtime, each bound to the main checkout as an existing workspace
+`loop install` is guided. It runs the doctor and the automation-environment checks (harness and review CLIs on
+PATH, `gh auth status`, checkout registered in Orca, queue owner), stops on any failed check unless `--force`,
+offers a dry-run tick rehearsal (one orchestrator call, nothing written), lists the exact automations it will
+create, and asks for confirmation before touching Orca. `--yes` accepts every prompt for scripted setups; without
+a TTY the command refuses unless `--yes` or `--dry-run` is given; `--plain` keeps the old check-free behaviour.
+
+It creates two automations in the Orca runtime, each bound to the main checkout as an existing workspace
 with session reuse:
 
 | Automation | Trigger | Precheck (plain command, exit 0 = run) | Prompt |
