@@ -1,3 +1,15 @@
+# 0.5.0 release candidate
+
+This release adds the keep-pushing SDLC loop (`ak-harness loop …`): project config with a per-machine overlay,
+provider detection with Orca usage awareness and cooldowns, tiered model routing, machine slot assessment, Orca /
+Linear / GitHub / code-review adapters, the dispatch tick with orchestrator-frozen contracts, the deliver stage
+(CI → review → fix rounds → squash-merge → Linear Done) and the Orca automation installer. See `docs/LOOP.md` and
+ADR-0027. `yaml` and `zod` become runtime dependencies.
+
+Publication happens only when this candidate merges to `main` (release workflow, npm Trusted Publishing, no
+`NPM_TOKEN`). `release/qualification.json` still records the 0.4.0 publication and will be refreshed after 0.5.0 is
+on the registry. Compatibility and pilot-benchmark criteria remain fail-closed as in 0.4.0.
+
 # 0.4.0 release
 
 This release packages the deterministic SDLC kernel, phase quality matrix,

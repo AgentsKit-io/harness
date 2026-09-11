@@ -1,0 +1,193 @@
+{
+  "id": "fixture",
+  "ok": true,
+  "result": {
+    "issues": [
+      {
+        "id": "todo-0",
+        "identifier": "ENG-10",
+        "title": "Todo issue 0",
+        "url": "https://linear.app/x/issue/ENG-10",
+        "description": "redacted",
+        "state": {
+          "id": "daf9f6d7-601e-43ce-8cf8-bf721dbb2a08",
+          "name": "Todo",
+          "type": "unstarted",
+          "color": "#e2e2e2"
+        },
+        "team": {
+          "id": "team-1",
+          "name": "Demo",
+          "key": "ENG",
+          "color": "#000"
+        },
+        "project": {
+          "id": "proj-1",
+          "name": "Alpha",
+          "color": "#000"
+        },
+        "cycle": null,
+        "assignee": {
+          "id": "user-1",
+          "displayName": "person",
+          "avatarUrl": ""
+        },
+        "labels": [
+          {
+            "id": "l0",
+            "name": "area:cloud",
+            "color": "#000"
+          },
+          {
+            "id": "l1",
+            "name": "type:feat",
+            "color": "#000"
+          },
+          {
+            "id": "l2",
+            "name": "prio:p1",
+            "color": "#000"
+          }
+        ],
+        "priority": 2,
+        "priorityLabel": "high",
+        "estimate": null,
+        "dueDate": null,
+        "branchName": "person/eng-10-demo",
+        "createdAt": "2026-09-03T01:41:30.000Z",
+        "updatedAt": "2026-09-04T19:06:25.406Z",
+        "workspace": {
+          "id": "ws-1",
+          "name": "Demo"
+        }
+      },
+      {
+        "id": "todo-1",
+        "identifier": "ENG-11",
+        "title": "Todo issue 1",
+        "url": "https://linear.app/x/issue/ENG-11",
+        "description": "redacted",
+        "state": {
+          "id": "daf9f6d7-601e-43ce-8cf8-bf721dbb2a08",
+          "name": "Todo",
+          "type": "unstarted",
+          "color": "#e2e2e2"
+        },
+        "team": {
+          "id": "team-1",
+          "name": "Demo",
+          "key": "ENG",
+          "color": "#000"
+        },
+        "project": {
+          "id": "proj-1",
+          "name": "Alpha",
+          "color": "#000"
+        },
+        "cycle": null,
+        "assignee": {
+          "id": "user-1",
+          "displayName": "person",
+          "avatarUrl": ""
+        },
+        "labels": [
+          {
+            "id": "l0",
+            "name": "area:cloud",
+            "color": "#000"
+          },
+          {
+            "id": "l1",
+            "name": "type:feat",
+            "color": "#000"
+          },
+          {
+            "id": "l2",
+            "name": "prio:p1",
+            "color": "#000"
+          }
+        ],
+        "priority": 2,
+        "priorityLabel": "high",
+        "estimate": null,
+        "dueDate": null,
+        "branchName": "person/eng-11-demo",
+        "createdAt": "2026-09-03T01:41:34.000Z",
+        "updatedAt": "2026-09-04T19:06:23.237Z",
+        "workspace": {
+          "id": "ws-1",
+          "name": "Demo"
+        }
+      },
+      {
+        "id": "todo-2",
+        "identifier": "ENG-12",
+        "title": "Todo issue 2",
+        "url": "https://linear.app/x/issue/ENG-12",
+        "description": "redacted",
+        "state": {
+          "id": "daf9f6d7-601e-43ce-8cf8-bf721dbb2a08",
+          "name": "Todo",
+          "type": "unstarted",
+          "color": "#e2e2e2"
+        },
+        "team": {
+          "id": "team-1",
+          "name": "Demo",
+          "key": "ENG",
+          "color": "#000"
+        },
+        "project": {
+          "id": "proj-1",
+          "name": "Alpha",
+          "color": "#000"
+        },
+        "cycle": null,
+        "assignee": {
+          "id": "user-1",
+          "displayName": "person",
+          "avatarUrl": ""
+        },
+        "labels": [
+          {
+            "id": "l0",
+            "name": "area:ui",
+            "color": "#000"
+          },
+          {
+            "id": "l1",
+            "name": "type:chore",
+            "color": "#000"
+          },
+          {
+            "id": "l2",
+            "name": "prio:p2",
+            "color": "#000"
+          }
+        ],
+        "priority": 3,
+        "priorityLabel": "medium",
+        "estimate": null,
+        "dueDate": null,
+        "branchName": "person/eng-12-demo",
+        "createdAt": "2026-09-03T01:41:38.000Z",
+        "updatedAt": "2026-09-04T19:06:20.840Z",
+        "workspace": {
+          "id": "ws-1",
+          "name": "Demo"
+        }
+      }
+    ],
+    "truncated": true,
+    "meta": {
+      "limit": 3,
+      "returned": 3,
+      "hasMore": true,
+      "nextCursor": null,
+      "orderBy": "updatedAt",
+      "workspaceId": "ws-1",
+      "partial": false,
+      "workspaceErrors": []
+    }
+  }
+}

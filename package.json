@@ -1,9 +1,12 @@
 {
   "name": "@agentskit/harness",
-  "version": "0.4.0",
+  "version": "0.5.0",
   "description": "Portable, evidence-backed development harness for coding agents.",
   "type": "module",
-  "bin": { "ak-harness": "dist/cli.js", "ak-verify": "dist/cli.js" },
+  "bin": {
+    "ak-harness": "dist/cli.js",
+    "ak-verify": "dist/cli.js"
+  },
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "exports": {
@@ -12,8 +15,25 @@
       "import": "./dist/index.js"
     }
   },
-  "files": ["dist", "README.md", "CHANGELOG.md", "CONTRIBUTING.md", "CODE_OF_CONDUCT.md", "SECURITY.md", "MANIFESTO.md", "LICENSE", "docs", "capabilities", "examples", "compatibility", "release"],
-  "engines": { "node": ">=22" },
+  "files": [
+    "dist",
+    "README.md",
+    "CHANGELOG.md",
+    "CONTRIBUTING.md",
+    "CODE_OF_CONDUCT.md",
+    "SECURITY.md",
+    "MANIFESTO.md",
+    "LICENSE",
+    "docs",
+    "capabilities",
+    "examples",
+    "compatibility",
+    "release",
+    "loop.config.example.yaml"
+  ],
+  "engines": {
+    "node": ">=22"
+  },
   "scripts": {
     "build": "tsup && node -e \"console.log(JSON.stringify({status:'passed',criteria:['package']}))\"",
     "typecheck": "tsc -p tsconfig.json --noEmit",
@@ -48,6 +68,7 @@
     "test:phase-executor": "pnpm typecheck && vitest run --config vitest.config.ts test/phase-executor.test.ts && node -e \"console.log(JSON.stringify({status:'passed',criteria:['phase-executor']}))\"",
     "test:artifacts": "pnpm typecheck && vitest run --config vitest.config.ts test/artifacts.test.ts && node scripts/verify-artifact-cli.mjs",
     "test:adapters": "pnpm typecheck && vitest run --config vitest.config.ts test/adapters.test.ts && node -e \"console.log(JSON.stringify({status:'passed',criteria:['adapters']}))\"",
+    "test:loop": "pnpm typecheck && vitest run --config vitest.config.ts test/loop.test.ts test/loop-adapters.test.ts test/loop-tick.test.ts test/loop-deliver.test.ts test/loop-install.test.ts test/loop-guided-install.test.ts test/loop-retro.test.ts test/loop-debrief.test.ts test/loop-watch.test.ts && node -e \"console.log(JSON.stringify({status:'passed',criteria:['loop-config','loop-providers','loop-routing','loop-doctor','loop-adapters','loop-tick','loop-deliver','loop-install','loop-debrief','loop-watch']}))\"",
     "test:review": "pnpm typecheck && vitest run --config vitest.config.ts test/review.test.ts && node -e \"console.log(JSON.stringify({status:'passed',criteria:['review-delivery']}))\"",
     "test:quality": "pnpm typecheck && vitest run --config vitest.config.ts test/quality.test.ts && node -e \"console.log(JSON.stringify({status:'passed',criteria:['quality-matrix']}))\"",
     "test:eval-battery": "pnpm typecheck && vitest run --config vitest.config.ts test/eval-battery.test.ts test/issues-010-014.eval.test.ts test/optimization.test.ts && pnpm build >/dev/null && node scripts/verify-harness-eval-manifest.mjs && node -e \"console.log(JSON.stringify({status:'passed',criteria:['eval-battery','eval-manifest','eval-coverage']}))\"",
@@ -64,10 +85,15 @@
     "prepublishOnly": "pnpm typecheck && pnpm build && pnpm test"
   },
   "dependencies": {
-    "commander": "^14.0.0"
+    "commander": "^14.0.0",
+    "ink": "7.1.1",
+    "react": "19.3.0",
+    "yaml": "^2.9.0",
+    "zod": "^4.6.2"
   },
   "devDependencies": {
     "@types/node": "^22.10.0",
+    "@types/react": "^19.3.0",
     "tsup": "^8.5.0",
     "typescript": "^5.7.2",
     "vitest": "^4.1.10"
@@ -78,9 +104,14 @@
     "type": "git",
     "url": "git+https://github.com/AgentsKit-io/harness.git"
   },
-  "bugs": { "url": "https://github.com/AgentsKit-io/harness/issues" },
+  "bugs": {
+    "url": "https://github.com/AgentsKit-io/harness/issues"
+  },
   "homepage": "https://github.com/AgentsKit-io/harness",
   "author": "AgentsKit Contributors",
   "sideEffects": false,
-  "publishConfig": { "access": "public", "provenance": true }
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  }
 }

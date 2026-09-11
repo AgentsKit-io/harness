@@ -1,0 +1,121 @@
+# @agentskit/harness — keep-pushing loop configuration.
+# Copy to <your project>/loop.config.yaml. Everything project-specific lives here; the loop code has no names, paths or ids.
+# Never put secrets in this file: `envKeys` are the NAMES of environment variables the loop checks, not their values.
+schemaVersion: 1
+
+project:
+  name: my-project
+  repo: my-org/my-project            # GitHub owner/name used for PR review and merge
+  baseBranch: main
+  root: .                            # relative to this file
+  stateDir: .codex/loop              # ledger, cooldowns, contracts
+
+orca:
+  bin: orca                          # on Linux outside Orca terminals use orca-ide (bare `orca` is the GNOME screen reader)
+  # repoSelector: id:<orca-repo-id>  # default: path:<project.root>
+  # workspaceSelector: path:/abs/main/checkout   # existing worktree the automations run in
+  # host: runtime:<environment-id>   # paired remote Orca host
+  minVersion: 1.4.200
+  timeoutMs: 20000
+
+linear:
+  workspaceId: <linear-workspace-id> # orca linear team list --workspace all --json
+  teamKey: ENG
+  person: my-linear-display-name     # the ONLY queue this machine drains
+  people:                            # display name -> Linear user id (orca linear team members …)
+    my-linear-display-name: <linear-user-id>
+  states: [Todo, Ready]              # dispatchable states; anything already started is left alone
+  excludeLabels: [blocked, needs-info]
+  requireLabels: []
+  projects: []                       # empty = all projects
+  order: [priority, updatedAt]       # urgent first; priority 0 (none) sorts last
+  maxQueue: 50
+  inProgressState: In Progress
+  reviewState: In Review
+  doneState: Done
+  blockedLabel: blocked
+  needsInfoLabel: needs-info
+
+models:
+  # Tiers, in order. Inside a tier the first provider with usage available wins.
+  # Tier 1 = subscriptions, tier 2 = cheap hosted, tier 3 = last resort.
+  orchestrator: [[codex/gpt-5.6-sol, claude/opus], [opencode/opencode-go/glm-5.3], [grok/grok-4-fast]]
+  reviewer:     [[codex/gpt-5.6-sol, claude/opus], [opencode/opencode-go/glm-5.3], [grok/grok-4-fast]]
+  builder:      [[codex/gpt-5.6-luna, claude/sonnet, claude/haiku], [opencode/opencode-go/glm-5.3-flash], [grok/grok-4-fast]]
+  watcher:      [[claude/haiku, codex/gpt-5.6-luna], [opencode/opencode-go/glm-5.3-flash]]
+  cooldown:
+    initialMin: 30                   # provider marked exhausted without a known reset waits 30 min, doubling…
+    maxMin: 240                      # …up to 4 h
+    probeBeforeReenable: true
+    exhaustedPercent: 100
+  providers:
+    claude:
+      bin: claude
+      auth: subscription
+      envKeys: [ANTHROPIC_API_KEY]   # optional API-key fallback
+      tui: "claude --model {model} --permission-mode auto"
+      headless: [claude, -p, "{prompt}", --model, "{model}", --permission-mode, plan, --output-format, text]
+    codex:
+      bin: codex
+      auth: subscription
+      envKeys: [OPENAI_API_KEY]
+      tui: "codex -m {model} --full-auto"
+      headless: [codex, exec, -m, "{model}", -s, read-only, --skip-git-repo-check, "{prompt}"]
+    opencode:
+      bin: opencode
+      auth: none
+      orcaUsageKey: opencodeGo       # key inside `orca account list` rateLimits
+      tui: "opencode -m {model}"
+      headless: [opencode, run, -m, "{model}", --agent, plan, "{prompt}"]
+    grok:
+      bin: grok
+      auth: subscription             # `grok login` (OAuth) — no API key needed
+      tui: "grok -m {model}"
+      headless: [grok, -p, "{prompt}", -m, "{model}"]
+
+machine:
+  floor: 1                           # always allow one worker
+  # ceiling: 4                       # default: cpus / 2
+  minFreeRamGb: 4
+  warningPercent: 75
+  criticalPercent: 90
+  agentRssMb: 1400                   # RAM budget per agent when live RSS is unknown
+  wslCap: 1                          # host Defender load is invisible from a WSL distro
+
+delivery:
+  verifyCommand: "pnpm lint && pnpm test"   # what the worker must pass before opening a PR
+  review:
+    cli: agentskit-review
+    mode: trusted-local              # reuse this user's CLI logins; the isolated default has no credentials
+    profile: fast                    # one bounded pass over required lenses; `full` needs batching to fit a 600 s stage
+    votes: 1
+    concurrency: 4
+    minSeverity: med                 # nit < med < high < blocker; findings at/above this block auto-merge
+    deadlineMs: 600000
+  merge:
+    auto: true
+    method: squash
+    requireChecks: true
+  maxFixRounds: 2
+  workerIdleTimeoutMin: 45
+  selfEditPaths: [loop.config.yaml, ".github/**"]   # PRs touching these never auto-merge
+  ignoreChecks: []                   # advisory check names that never block
+  requiredChecks: []                 # empty = every reported check must be green
+  cleanupWorktree: true              # remove the Orca worktree after merge
+  returnState: Todo                  # where a stuck/blocked issue goes back to
+
+contract:
+  maxIssueChars: 12000               # issue text rendered into the orchestrator prompt (as untrusted data)
+  timeoutMs: 300000
+  maxContextReferences: 6            # Doc Bridge hits appended when .doc-bridge/index.json exists
+  reuseHours: 72                     # cached contract reused for this long
+
+schedule:
+  tick: "*/5 * * * *"
+  deliver: "*/10 * * * *"
+  precheckTimeoutSec: 120
+  harnessCommand: ak-harness         # how the Orca automation runs the harness inside the workspace
+  namePrefix: loop                   # automations: loop-tick, loop-deliver
+  runner: precheck                   # the stage runs inside Orca's precheck command; no agent session is ever opened
+  stageTimeoutSec: 600               # Orca caps prechecks at 600 s; one tick/deliver run must fit
+  # provider: claude                 # Orca agent that executes the automation prompt (default: watcher role)

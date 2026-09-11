@@ -1,0 +1,32 @@
+{
+  "id": "local-status",
+  "ok": true,
+  "result": {
+    "target": {
+      "kind": "local"
+    },
+    "app": {
+      "running": true,
+      "pid": 1,
+      "desktopWindowStatus": "available"
+    },
+    "runtime": {
+      "state": "ready",
+      "reachable": true,
+      "connectionState": "connected",
+      "runtimeId": "runtime-fixture",
+      "appVersion": "1.4.200",
+      "remoteUpdateSupport": {
+        "installMode": "interactive",
+        "automatic": true,
+        "reason": "available"
+      }
+    },
+    "graph": {
+      "state": "ready"
+    }
+  },
+  "_meta": {
+    "runtimeId": "6245a4dc-4ce9-4fe9-ae83-f772c5c016b8"
+  }
+}

@@ -1,0 +1,65 @@
+{
+  "id": "fixture",
+  "ok": true,
+  "result": {
+    "worktrees": [
+      {
+        "workspaceKind": "git",
+        "worktreeId": "repo-1::/repo/worktrees/w0",
+        "repoId": "repo-1",
+        "hostId": "local",
+        "terminalPlatform": "darwin",
+        "repo": "demo",
+        "path": "/repo/worktrees/w0",
+        "branch": "refs/heads/person/eng-1-demo",
+        "isArchived": false,
+        "isMainWorktree": false,
+        "displayName": "eng-1-demo",
+        "workspaceStatus": "in-progress",
+        "lastActivityAt": 1789140000000,
+        "createdAt": 1789140000000,
+        "linkedIssue": null,
+        "linkedPR": null,
+        "linkedLinearIssue": {
+          "identifier": "ENG-1",
+          "url": "https://linear.app/x/issue/ENG-1"
+        },
+        "comment": "",
+        "isActive": true,
+        "liveTerminalCount": 1,
+        "hasAttachedPty": true
+      },
+      {
+        "workspaceKind": "git",
+        "worktreeId": "repo-1::/repo/worktrees/w1",
+        "repoId": "repo-1",
+        "hostId": "local",
+        "terminalPlatform": "darwin",
+        "repo": "demo",
+        "path": "/repo/worktrees/w1",
+        "branch": "refs/heads/main",
+        "isArchived": false,
+        "isMainWorktree": true,
+        "displayName": "main",
+        "workspaceStatus": "in-progress",
+        "lastActivityAt": 1789140000000,
+        "createdAt": 1789140000000,
+        "linkedIssue": null,
+        "linkedPR": null,
+        "linkedLinearIssue": null,
+        "comment": "",
+        "isActive": false,
+        "liveTerminalCount": 7,
+        "hasAttachedPty": true
+      }
+    ],
+    "hostScope": {
+      "hostIds": [
+        "local"
+      ],
+      "omittedHostIds": []
+    },
+    "totalCount": 2,
+    "truncated": false
+  }
+}

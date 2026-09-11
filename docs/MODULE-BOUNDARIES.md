@@ -9,7 +9,7 @@ does not claim that the proposed 0.4.0 boundary has already been accepted.
 
 | Class | Meaning | Dependency rule |
 | --- | --- | --- |
-| Kernel | Deterministic contracts, state transitions, policy and metric projections | May use Node standard library and other kernel modules; must not import adapters, provider SDKs, CLI composition, or credentials. |
+| Kernel | Deterministic contracts, state transitions, policy and metric projections | May use Node standard library and other kernel modules; must not import adapters, provider SDKs, CLI composition, credentials, or UI libraries (`ink`/`react` are composition-only). |
 | Execution support | Local process, filesystem, event, evidence, and run lifecycle plumbing | May depend on the kernel; must expose provenance and fail closed at trust boundaries. |
 | Adapter | Provider-specific or external-system integration | May depend on kernel contracts; must not be imported by kernel modules. |
 | Composition | Package and CLI entry points | May compose kernel, execution support, and adapters; consumers use `src/index.ts`. |
@@ -73,6 +73,30 @@ modules, not a provider dependency.
 | `src/adapters/agent.ts` | Adapter | Structured coding-agent execution with bounded timeout and failure classification | `errors`, `resilience`, `adapter-contract` | Agent/provider callback supplied by caller |
 | `src/adapters/orca.ts` | Adapter | Safe, idempotent Orca dispatch plan | `errors`, `hash`, `preflight` | Orca CLI arguments; no execution |
 | `src/adapters/tracking.ts` | Adapter | Idempotent provider-neutral tracking transition | `errors`, `hash` | User-supplied Linear/GitHub/etc. handler |
+| `src/adapters/command.ts` | Adapter | Shell-free command runner seam, PATH executable lookup, Orca JSON envelope parsing | stdlib | Command runner supplied by composition or tests |
+| `src/adapters/orca-cli.ts` | Adapter | Typed `orca … --json` calls: version/status/account/agent hooks, worktree ps/create/set/rm, terminal list/send/wait/read, automations list/create/edit/remove/run | `errors`, `command` | Orca CLI via the injected runner |
+| `src/adapters/providers.ts` | Adapter | Coding-agent CLI availability: binary, auth, Orca usage windows, exhaustion, cooldown, optional probe | `command` | PATH, env var names, `orca account list` payload |
+| `src/adapters/linear-orca.ts` | Adapter | Linear queue via `orca linear list-issues`, issue detail, status/comment/label/attach writes with deterministic `--write-id`, `TrackingAdapter` over Orca | `errors`, `hash`, `orca-cli`, `tracking`, `command` | Linear through the Orca CLI |
+| `src/adapters/github-cli.ts` | Adapter | Pull request snapshots, check classification, self-edit path guard, optimistic squash-merge and comments via `gh` | `errors`, `command` | GitHub through the `gh` CLI |
+| `src/adapters/code-review.ts` | Adapter | `agentskit-review` argv, `--result` parsing, severity floor, worker-facing findings | `command` (type-only) | AgentsKit code review CLI via runner |
+| `src/loop/config.ts` | Composition | `loop.config.yaml` schema (zod), loading, model reference parsing | `errors`, `hash`, `model-policy`, `yaml`, `zod` | Project config file |
+| `src/loop/process.ts` | Composition | Real shell-free `CommandRunner` with timeout and output caps | stdlib, `command` (type-only) | Child processes |
+| `src/loop/slots.ts` | Composition | Machine slot assessment: adaptive concurrency, RAM reserve, WSL cap, floor | stdlib, `machine`, `config` | Host CPU/memory |
+| `src/loop/routing.ts` | Composition | Tiered role → provider/model selection over provider availability | `model-policy`, `providers` (type-only), `config` | None |
+| `src/loop/cooldown.ts` | Composition | Provider cooldown store with exponential backoff | stdlib, `providers` | `<stateDir>/provider-cooldowns.json` |
+| `src/loop/doctor.ts` | Composition | Loop readiness report: Orca, providers, routing, slots, workers, queue | adapters, `config`, `cooldown`, `routing`, `slots` | Orca CLI via runner |
+| `src/loop/contract.ts` | Composition | Task contract schema, orchestrator prompt (issue text as untrusted data), marked-JSON parsing, dispatchability assessment, candidate fallback with auth/quota classification, contract cache | `errors`, `hash`, `resilience`, `doc-bridge`, `config`, `routing` (type-only), `zod` | Headless coding-agent CLI via runner |
+| `src/loop/brief.ts` | Composition | Worker prompt: frozen contract + repository rules + protected paths + done signal | `contract`, `config`, `linear-orca` (type-only) | None |
+| `src/loop/tick.ts` | Composition | One keep-pushing tick: intake, admit (slots + dispatch ledger claim), contract, dispatch into an Orca worktree, Linear transition, escalation, precheck | adapters, `coordination`, `errors`, `hash`, `brief`, `config`, `contract`, `cooldown`, `doctor`, `routing`, `slots` | Orca CLI + Linear via runner; `<stateDir>` files |
+| `src/loop/deliver.ts` | Composition | Deliver stage per dispatched issue: PR detection, self-edit hold, conflict/CI/review fix rounds via terminal, review at head, optimistic squash-merge, Linear Done, cleanup, stuck/abandoned escalation | adapters, `coordination`, `errors`, `config`, `cooldown`, `doctor`, `routing`, `tick` | Orca, Linear, GitHub, agentskit-review via runner; `<stateDir>` files |
+| `src/loop/install.ts` | Composition | Orca automation specs (`<prefix>-tick`, `<prefix>-deliver`) with read-only prechecks, idempotent create/edit by name, uninstall, status and the SessionStart hook line | `command`, `orca-cli`, `providers`, `errors`, `config`, `cooldown`, `doctor`, `routing` | Orca automations via runner |
+| `src/loop/guided-install.ts` | Composition | Interactive install: doctor + environment preflight, dry-run rehearsal, confirmation, install, status; readline IO injected | `command`, `orca-cli`, `config`, `doctor`, `install`, `tick`, stdlib readline | Terminal prompts; Orca via runner |
+| `src/loop/local-config.ts` | Composition | Per-machine overlay wizard: Linear team members via Orca, queue owner and machine tuning answers, YAML rendering and reload | `orca-cli`, `config`, `yaml` | Orca via runner; writes `loop.config.local.yaml` |
+| `src/loop/retro.ts` | Composition | Retro digest over `events.ndjson`, per-issue state, cooldowns and Orca runs; rule-based calibration suggestions; Markdown that `parseRetro` can lift into learnings | `orca-cli`, `hash`, `learning`, `config`, `contract`, `cooldown`, `deliver`, `install`, `tick` | Orca via runner (optional); `<stateDir>` files |
+| `src/loop/debrief.ts` | Composition | Human-facing read-only snapshot of what the loop is working on (in-flight, holds, escalations, cooldowns) | `config`, `contract`, `cooldown`, `deliver`, `retro`, `tick` | `<stateDir>` files only |
+| `src/loop/watch.ts` | Composition | Poll delivery (+ optional live PR) and emit DONE/FAILED/ACTION_REQUIRED/PROGRESS for agents or humans | `command`, `github-cli`, `config`, `deliver`, `tick` | optional `gh` via runner; `<stateDir>` files |
+| `src/loop/ui/components.tsx` | Composition | Ink components: check rows, sections, banner, spinner, select/confirm/text prompts | `ink`, `react`, `doctor` (type-only) | Terminal |
+| `src/loop/ui/terminal.tsx` | Composition | `createRichIO`: Ink-backed IO for TTYs with a plain-text fallback | `ink`, `react`, `components`, `guided-install` (type-only) | Terminal |
 
 ## Allowed dependency directions and exceptions
 
@@ -130,6 +154,10 @@ Orca, and tracking. No adapter implementation is re-exported wholesale.
 | Doc Bridge | `src/adapters/doc-bridge.ts` | Reads a local index | Keep behind `ContextProvider`; measure context hit/quality separately. |
 | Orca | `src/adapters/orca.ts` | None; produces argv and lifecycle projections only | Keep lease/worktree/issue-lock/SHA planning provider-neutral; execution belongs to the orchestrator. |
 | Linear/GitHub/other tracker | `src/adapters/tracking.ts` callback | Caller-owned network mutation | Require idempotency key and explicit tracking authorization. |
+| Orca CLI (loop) | `src/adapters/orca-cli.ts`, `src/adapters/linear-orca.ts` via `CommandRunner` | Read-only `--json` calls in the doctor; dispatch/mutation arrive in later loop phases | Argv only, never a shell string; every call bounded by a timeout; envelope `ok:false` fails closed. |
+| Coding-agent CLIs | `src/adapters/providers.ts` | PATH lookup and optional probe command | Env keys are names only; usage comes from Orca, never from provider SDKs. |
+| GitHub | `src/adapters/github-cli.ts` via `CommandRunner` | `gh pr view/list`, `gh api PUT …/merge` with `sha=<reviewed head>`, `gh pr comment` | Merge is refused by GitHub when the head moved; every call argv-based and bounded. |
+| AgentsKit code review | `src/adapters/code-review.ts` via `CommandRunner` | `agentskit-review --pr … --result <file> [--post]` | Exit codes 0/1/2 plus the private result file decide clean/findings/incomplete; the floor is `--block`. |
 | Process runtime | `src/execution/runtime.ts` | Starts child processes | Execution support; policy and evidence gates remain kernel decisions. |
 | Docker runtime | `src/execution/runtime.ts` | Starts Docker containers | Optional sandbox selected by config, never a mandatory kernel dependency. |
 | LLM provider/model | Caller/plugin | Provider call and token spend | Bind provider/model in experiment metadata; do not embed SDKs in kernel. |

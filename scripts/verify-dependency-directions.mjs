@@ -5,12 +5,14 @@ import { fileURLToPath } from 'node:url'
 
 const listSourceFiles = (root) => readdirSync(root, { withFileTypes: true }).flatMap((entry) => {
   const path = join(root, entry.name)
-  return entry.isDirectory() ? listSourceFiles(path) : extname(entry.name) === '.ts' ? [path] : []
+  return entry.isDirectory() ? listSourceFiles(path) : ['.ts', '.tsx'].includes(extname(entry.name)) ? [path] : []
 })
 
 const resolveModule = (file, specifier) => {
   const candidate = resolve(dirname(file), specifier.replace(/\.js$/, '.ts'))
   if (existsSync(candidate)) return candidate
+  const tsx = candidate.replace(/\.ts$/, '.tsx')
+  if (existsSync(tsx)) return tsx
   const index = join(candidate, 'index.ts')
   return existsSync(index) ? index : null
 }

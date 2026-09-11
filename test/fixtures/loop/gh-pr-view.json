@@ -1,0 +1,28 @@
+{
+  "author": { "id": "user-1", "is_bot": false, "login": "person", "name": "Person" },
+  "baseRefName": "main",
+  "files": [
+    { "path": ".changeset/eng-1.md", "additions": 6, "deletions": 0, "changeType": "ADDED" },
+    { "path": "packages/demo/src/index.ts", "additions": 1, "deletions": 0, "changeType": "MODIFIED" },
+    { "path": ".github/workflows/ci.yml", "additions": 1, "deletions": 1, "changeType": "MODIFIED" }
+  ],
+  "headRefName": "person/eng-1-demo",
+  "headRefOid": "c74d687ee59927dbbe2972649d7b58dbad16bcd0",
+  "isDraft": false,
+  "labels": [{ "name": "type:feat" }],
+  "mergeStateStatus": "CLEAN",
+  "mergeable": "MERGEABLE",
+  "number": 6111,
+  "reviewDecision": "",
+  "state": "OPEN",
+  "title": "feat: demo change",
+  "updatedAt": "2026-09-11T00:02:16Z",
+  "statusCheckRollup": [
+    { "__typename": "CheckRun", "conclusion": "SKIPPED", "name": "[code]smith", "status": "COMPLETED", "workflowName": "" },
+    { "__typename": "CheckRun", "conclusion": "SUCCESS", "name": "Vercel Preview Comments", "status": "COMPLETED", "workflowName": "" },
+    { "__typename": "StatusContext", "context": "Vercel – admin", "state": "SUCCESS" },
+    { "__typename": "StatusContext", "context": "Vercel – app", "state": "PENDING" },
+    { "__typename": "CheckRun", "conclusion": "FAILURE", "name": "Lint", "status": "COMPLETED", "workflowName": "CI" }
+  ],
+  "url": "https://github.com/o/r/pull/6111"
+}

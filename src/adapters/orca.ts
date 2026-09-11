@@ -8,8 +8,20 @@ export interface OrcaDispatchInput {
   readonly worktree: string
   readonly branch: string
   readonly baseBranch: string
-  readonly goalFile: string
+  /** Prompt file path (`--prompt-file`) — mutually exclusive with `prompt`. */
+  readonly goalFile?: string
+  /** Inline prompt text (`--prompt`) — mutually exclusive with `goalFile`. */
+  readonly prompt?: string
   readonly agent?: string
+  /** `worktree-only`: create the checkout without launching an agent; the caller opens its own terminal (`orca terminal create --command …`). */
+  readonly launch?: 'agent' | 'worktree-only'
+  /** Linear identifier or URL recorded on the worktree (`--linear-issue`). */
+  readonly linearIssue?: string
+  /** Free-text Orca comment shown on the worktree card (`--comment`). */
+  readonly comment?: string
+  /** Detach the new worktree from the caller's lineage (`--no-parent`). */
+  readonly noParent?: boolean
+  readonly orcaBin?: string
 }
 
 export interface OrcaDispatchPlan {
@@ -53,11 +65,24 @@ export const createOrcaDispatchPlan = (input: OrcaDispatchInput): OrcaDispatchPl
   const worktree = required(input.worktree, 'worktree')
   const branch = required(input.branch, 'branch')
   const baseBranch = required(input.baseBranch, 'baseBranch')
-  const goalFile = required(input.goalFile, 'goalFile')
-  const agent = required(input.agent ?? 'default', 'agent')
-  const argv = ['orca', 'worktree', 'create', '--repo', repository, '--name', worktree, '--base-branch', baseBranch, '--agent', agent, '--prompt-file', goalFile]
-  validateSafeCommand(argv.join(' '))
-  const identity = { repository, worktree, branch, baseBranch, goalFile, agent }
+  const worktreeOnly = input.launch === 'worktree-only'
+  const agent = worktreeOnly ? undefined : required(input.agent ?? 'default', 'agent')
+  if (worktreeOnly && (input.goalFile !== undefined || input.prompt !== undefined)) fail('A worktree-only plan takes no goalFile or prompt; send the brief through the terminal.', 'INVALID_INPUT')
+  if (!worktreeOnly && (input.goalFile === undefined) === (input.prompt === undefined)) fail('Exactly one of goalFile or prompt is required.', 'INVALID_INPUT')
+  const goalFile = input.goalFile === undefined ? undefined : required(input.goalFile, 'goalFile')
+  const prompt = input.prompt === undefined ? undefined : required(input.prompt, 'prompt')
+  const linearIssue = input.linearIssue === undefined ? undefined : required(input.linearIssue, 'linearIssue')
+  const comment = input.comment === undefined ? undefined : required(input.comment, 'comment')
+  const argv = [input.orcaBin ?? 'orca', 'worktree', 'create', '--repo', repository, '--name', worktree, '--base-branch', baseBranch, ...(agent === undefined ? [] : ['--agent', agent]),
+    ...(goalFile === undefined ? [] : ['--prompt-file', goalFile]),
+    ...(prompt === undefined ? [] : ['--prompt', prompt]),
+    ...(linearIssue === undefined ? [] : ['--linear-issue', linearIssue]),
+    ...(comment === undefined ? [] : ['--comment', comment]),
+    ...(input.noParent ? ['--no-parent'] : []),
+    '--json']
+  // Structural arguments stay shell-safe; free text (prompt, comment) travels as a discrete argv element and is never joined into a shell string.
+  validateSafeCommand([argv[0], 'worktree', 'create', '--repo', repository, '--name', worktree, '--base-branch', baseBranch, ...(agent === undefined ? [] : ['--agent', agent]), ...(goalFile === undefined ? [] : ['--prompt-file', goalFile]), ...(linearIssue === undefined ? [] : ['--linear-issue', linearIssue])].join(' '))
+  const identity = { repository, worktree, branch, baseBranch, ...(agent === undefined ? { launch: 'worktree-only' } : { agent }), ...(goalFile === undefined ? {} : { goalFile }), ...(prompt === undefined ? {} : { promptDigest: hashJson(prompt) }), ...(linearIssue === undefined ? {} : { linearIssue }) }
   return { argv, commandDigest: hashJson(argv), idempotencyKey: hashJson(identity) }
 }
 

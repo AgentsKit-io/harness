@@ -1,0 +1,145 @@
+{
+  "id": "fixture",
+  "ok": true,
+  "result": {
+    "claude": {
+      "accounts": [],
+      "activeAccountId": null,
+      "activeAccountIdsByRuntime": {
+        "host": null,
+        "wsl": {}
+      }
+    },
+    "codex": {
+      "accounts": [],
+      "activeAccountId": null,
+      "activeAccountIdsByRuntime": {
+        "host": null,
+        "wsl": {}
+      },
+      "systemDefault": {
+        "hasAuth": true,
+        "authKind": "oauth",
+        "email": "person@example.com",
+        "providerAccountId": "acct-redacted",
+        "workspaceLabel": null
+      }
+    },
+    "rateLimits": {
+      "claude": {
+        "provider": "claude",
+        "session": null,
+        "weekly": null,
+        "updatedAt": 1789141308915,
+        "error": "No subscription plan \u2014 API key billing",
+        "status": "unavailable",
+        "usageMetadata": {
+          "attemptedSources": [],
+          "failureKind": "missing-credentials",
+          "credentialSource": "none",
+          "authProvenance": "system"
+        }
+      },
+      "codex": {
+        "provider": "codex",
+        "session": null,
+        "weekly": {
+          "usedPercent": 100,
+          "windowMinutes": 10080,
+          "resetsAt": 1789602274000,
+          "resetDescription": "Wed 8:44 PM"
+        },
+        "rateLimitResetCredits": {
+          "availableCount": 0,
+          "nextExpiresAt": null
+        },
+        "updatedAt": 1789141310231,
+        "error": null,
+        "status": "ok",
+        "usageMetadata": {}
+      },
+      "gemini": {
+        "provider": "gemini",
+        "session": null,
+        "weekly": null,
+        "updatedAt": 1789141308761,
+        "error": "Gemini CLI OAuth is disabled in settings",
+        "status": "unavailable"
+      },
+      "opencodeGo": {
+        "provider": "opencode-go",
+        "session": {
+          "usedPercent": 0,
+          "windowMinutes": 300,
+          "resetsAt": 1789159309590,
+          "resetDescription": null
+        },
+        "weekly": {
+          "usedPercent": 1.9,
+          "windowMinutes": 10080,
+          "resetsAt": 1789344000590,
+          "resetDescription": null
+        },
+        "monthly": {
+          "usedPercent": 100,
+          "windowMinutes": 43200,
+          "resetsAt": 1790083004590,
+          "resetDescription": null
+        },
+        "updatedAt": 1789141309590,
+        "error": null,
+        "status": "ok",
+        "usageMetadata": {}
+      },
+      "kimi": {
+        "provider": "kimi",
+        "session": null,
+        "weekly": null,
+        "updatedAt": 1789141308777,
+        "error": "Not signed in to Kimi Code",
+        "status": "unavailable"
+      },
+      "antigravity": {
+        "provider": "antigravity",
+        "session": null,
+        "weekly": null,
+        "updatedAt": 1789141308761,
+        "error": "Antigravity usage is not available. Orca can only show shared Google Code Assist quota while a Gemini CLI sign-in is connected.",
+        "status": "unavailable"
+      },
+      "minimax": {
+        "provider": "minimax",
+        "session": null,
+        "weekly": null,
+        "updatedAt": 1789141308761,
+        "error": "MiniMax session cookie not configured",
+        "status": "unavailable",
+        "usageMetadata": {
+          "failureKind": "missing-credentials",
+          "source": "web"
+        }
+      },
+      "grok": {
+        "provider": "grok",
+        "session": null,
+        "weekly": null,
+        "updatedAt": 1789141309815,
+        "error": "Grok did not report a usage percentage for this account",
+        "status": "unavailable"
+      },
+      "minimaxCookieConfigured": false,
+      "minimaxApiKeyConfigured": false,
+      "grokAuthConfigured": true,
+      "claudeTarget": {
+        "runtime": "host",
+        "wslDistro": null
+      },
+      "codexTarget": {
+        "runtime": "host",
+        "wslDistro": null
+      },
+      "inactiveClaudeAccounts": [],
+      "inactiveCodexAccounts": []
+    }
+  }
+}

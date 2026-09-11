@@ -5,6 +5,7 @@ import { Command } from 'commander'
 import { approveRun, ARTIFACT_SCHEMA_VERSION, assessAcceptance, assessBlock, assessDiscovery, assessImprovementCycle, assessIntegration, assessPilot, assessPreflight, assessProduction, assessWip, assessWorktreeCleanup, authorizeRun, benchmarkRuns, cancelRun, cleanTaskArtifacts, composePullRequest, createDispatchLedger, createDocBridgeContextProvider, createStatusSnapshot, exportEvidenceBundle, FileArtifactStore, loadBenchmarkManifest, loadConfig, loadLatestRun, parseRetro, planFilePreflight, planRun, readArtifactFile, readContextSnapshots, readEvidenceTrustStore, reconcileRun, recordBenchmarkObservation, renderArtifactMarkdown, retryRun, selectRuntime, startRun, validateBlockManifest, validateStatusSnapshot, verifyEvidenceBundle, verifyRun } from './index.js'
 import type { BenchmarkObservationEvidence } from './execution/metrics.js'
 import { fail } from './kernel/errors.js'
+import { buildDebriefReport, buildRetroReport, createProcessRunner, createRichIO, fetchLinearIssue, formatWatchEvent, generateContract, installLoopAutomations, loadLoopConfig, runGuidedInstall, loopStatus, renderDebriefMarkdown, renderRetroMarkdown, retroLearnings, precheckDeliver, precheckTick, rankModels, readStoredContract, runDeliver, runLoopDoctor, runTick, uninstallLoopAutomations, watchDeliveries, writeStoredContract } from './index.js'
 import { FileEventStore, inspectEventLogLock, recoverEventLogLock } from './kernel/events.js'
 
 interface CliOptions { readonly config: string; readonly json: boolean }
@@ -71,6 +72,75 @@ const artifacts = program.command('artifacts').description('Inspect versioned, p
 artifacts.command('inspect <path>').description('Validate and print one artifact as JSON or Markdown.').action((path: string) => { const artifact = readArtifactFile(path); print(options().json ? artifact : renderArtifactMarkdown(artifact)) })
 artifacts.command('list [run-id]').description('List artifacts for the latest or selected run.').action((runId?: string) => { const loaded = loadConfig(options().config); const run = runId ? { runId } : loadLatestRun(loaded.stateDir); print(new FileArtifactStore(loaded.stateDir).list(run?.runId ?? fail('No verification run exists.', 'NO_RUN'))) })
 artifacts.command('schema').description('Print the artifact schema version.').action(() => print({ schemaVersion: ARTIFACT_SCHEMA_VERSION, types: ['plan', 'finding', 'decision', 'repair', 'blocker', 'approval', 'phase'] }))
+const loop = program.command('loop').description('Keep-pushing SDLC loop: drain one person\'s Linear queue through Orca worktrees with role-based model routing.').option('-f, --file <path>', 'loop config path', 'loop.config.yaml')
+const loopFile = (command: Command): string => (command.parent?.opts<{ readonly file?: string }>().file ?? command.opts<{ readonly file?: string }>().file ?? 'loop.config.yaml')
+loop.command('validate').description('Validate loop.config.yaml and print the effective configuration.').action(function (this: Command) { const loaded = loadLoopConfig(loopFile(this)); print({ status: 'passed', criteria: ['loop-config'], path: loaded.path, configHash: loaded.configHash, config: loaded.config }) })
+loop.command('doctor').description('Check Orca, providers, usage, machine slots, routing, and the Linear queue without dispatching.').option('--no-probe', 'skip provider probe commands').action(async function (this: Command, command: { readonly probe: boolean }) { const report = await runLoopDoctor({ configPath: loopFile(this), runner: createProcessRunner(), probe: command.probe }); print(report); if (report.status === 'failed') process.exitCode = 1 })
+loop.command('precheck <stage>').description('Read-only Orca precheck: exit 0 when the stage (tick | deliver) has work.').action(async function (this: Command, stage: string) { if (stage !== 'tick' && stage !== 'deliver') fail(`Unknown precheck stage: ${stage}`, 'INVALID_INPUT'); const result = stage === 'tick' ? await precheckTick({ configPath: loopFile(this), runner: createProcessRunner() }) : precheckDeliver(loadLoopConfig(loopFile(this)).stateDir); print(result); process.exitCode = result.work ? 0 : 1 })
+loop.command('deliver').description('Drive dispatched workers to merge: PR detection, CI, review, fix rounds, squash-merge, Linear Done, cleanup.').option('--dry-run', 'decide only; no terminal input, no review, no merge, no Linear write').option('--issue <identifier>', 'restrict to one issue').action(async function (this: Command, command: { readonly dryRun?: boolean; readonly issue?: string }) { print(await runDeliver({ configPath: loopFile(this), runner: createProcessRunner(), dryRun: command.dryRun ?? false, onlyIssue: command.issue })) })
+loop.command('stage <stage>').description('Run one stage (tick | deliver) as an Orca precheck: prints the JSON report and ALWAYS exits 1 so Orca records the run without launching an agent.').action(async function (this: Command, stage: string) {
+  if (stage !== 'tick' && stage !== 'deliver') fail(`Unknown stage: ${stage}`, 'INVALID_INPUT')
+  const runner = createProcessRunner(); const file = loopFile(this)
+  const loaded = loadLoopConfig(file)
+  const budgetMs = Math.max(60_000, loaded.config.schedule.stageTimeoutSec * 1000 - 60_000)
+  const report = stage === 'tick' ? await runTick({ loaded, runner, budgetMs }) : await runDeliver({ loaded, runner, budgetMs })
+  console.log(JSON.stringify(report, null, 2))
+  process.exitCode = 1
+})
+loop.command('tick').description('One keep-pushing tick: intake → admit → contract → dispatch workers into Orca worktrees.').option('--dry-run', 'plan only; no worktree, no Linear write, no contract cached').option('--max <n>', 'max dispatches this tick', (value: string) => Number(value)).option('--issue <identifier>', 'restrict to one issue').option('--skip-contract', 'do not call the orchestrator when no contract is cached').action(async function (this: Command, command: { readonly dryRun?: boolean; readonly max?: number; readonly issue?: string; readonly skipContract?: boolean }) { const report = await runTick({ configPath: loopFile(this), runner: createProcessRunner(), dryRun: command.dryRun ?? false, maxDispatch: command.max, onlyIssue: command.issue, skipContractGeneration: command.skipContract ?? false }); print(report); if (report.status === 'blocked') process.exitCode = 1 })
+loop.command('contract <identifier>').description('Freeze (or show) the orchestrator contract for one Linear issue.').option('--refresh', 'regenerate even when a cached contract exists').option('--dry-run', 'generate but do not cache').action(async function (this: Command, identifier: string, command: { readonly refresh?: boolean; readonly dryRun?: boolean }) {
+  const loaded = loadLoopConfig(loopFile(this)); const runner = createProcessRunner(); const cached = command.refresh ? null : readStoredContract(loaded.stateDir, identifier)
+  if (cached) return print(cached)
+  const doctor = await runLoopDoctor({ loaded, runner, probe: false }); const candidates = rankModels(loaded.config, 'orchestrator', doctor.providers)
+  const issue = await fetchLinearIssue(runner, identifier, { bin: loaded.config.orca.bin, workspaceId: loaded.config.linear.workspaceId })
+  const stored = await generateContract({ runner, config: loaded.config, root: loaded.root, issue, candidates })
+  if (!command.dryRun) writeStoredContract(loaded.stateDir, stored)
+  print(stored)
+})
+loop.command('install').description('Guided install: doctor + environment checks, optional dry-run tick, then create/update the Orca automations after confirmation (idempotent by name).').option('--yes', 'accept every prompt (non-interactive)').option('--force', 'continue past failed checks').option('--skip-rehearsal', 'do not run the dry-run tick').option('--skip-local-config', 'do not offer to create loop.config.local.yaml').option('--dry-run', 'show checks and the exact orca argv; create nothing').option('--provider <agent>', 'Orca agent id that runs the automation prompt').option('--plain', 'legacy behaviour: no checks, no prompts, install immediately').action(async function (this: Command, command: { readonly yes?: boolean; readonly force?: boolean; readonly skipRehearsal?: boolean; readonly skipLocalConfig?: boolean; readonly dryRun?: boolean; readonly provider?: string; readonly plain?: boolean }) {
+  if (command.plain) { const report = await installLoopAutomations({ configPath: loopFile(this), runner: createProcessRunner(), dryRun: command.dryRun ?? false, provider: command.provider }); print(report); if (report.status === 'failed') process.exitCode = 1; return }
+  const io = createRichIO()
+  if (!io.interactive && !command.yes && !command.dryRun) { console.log('stdin is not a terminal: pass --yes to install non-interactively, or --dry-run to only validate.'); process.exitCode = 2; return }
+  const report = await runGuidedInstall({ configPath: loopFile(this), runner: createProcessRunner(), io, yes: command.yes ?? false, force: command.force ?? false, skipRehearsal: command.skipRehearsal ?? false, skipLocalConfig: command.skipLocalConfig ?? false, dryRun: command.dryRun ?? false, provider: command.provider })
+  if (options().json) print(report)
+  if (report.status === 'blocked') process.exitCode = 1
+  if (report.status === 'aborted') process.exitCode = 3
+})
+loop.command('uninstall').description('Remove the loop automations from Orca.').option('--dry-run', 'print what would be removed').action(async function (this: Command, command: { readonly dryRun?: boolean }) { const report = await uninstallLoopAutomations({ configPath: loopFile(this), runner: createProcessRunner(), dryRun: command.dryRun ?? false }); print(report); if (report.status === 'failed') process.exitCode = 1 })
+loop.command('status').description('Show the loop automations Orca knows about and their latest runs.').action(async function (this: Command) { print(await loopStatus({ configPath: loopFile(this), runner: createProcessRunner() })) })
+loop.command('hook').description('Status-only line for a SessionStart hook: never installs or changes anything; always exits 0 within a few seconds.').action(async function (this: Command) { try { const status = await loopStatus({ configPath: loopFile(this), runner: createProcessRunner({ timeoutMs: 4_000 }) }); console.log(status.summary) } catch (error) { console.log(`loop: status unavailable (${error instanceof Error ? error.message.split('\n')[0] : String(error)})`) } })
+loop.command('debrief').description('Human-facing explanation of what the loop is working on right now (in-flight issues, holds, escalations, cooldowns). Read-only; Markdown by default.').option('--issue <identifier>', 'restrict to one issue').option('--since <window>', 'how far back to look for escalations/events', '24h').action(function (this: Command, command: { readonly issue?: string; readonly since: string }) {
+  const report = buildDebriefReport({ configPath: loopFile(this), issue: command.issue, since: command.since })
+  if (options().json) return print(report)
+  console.log(renderDebriefMarkdown(report))
+})
+loop.command('watch').description('Watch delivery.json (+ optional live PR) for in-flight issues; prints DONE / FAILED / ACTION_REQUIRED / PROGRESS. Read-only.').option('--issue <identifier>', 'restrict to one issue').option('--interval <seconds>', 'poll interval', (value: string) => Number(value), 30).option('--once', 'single snapshot then exit').option('--timeout <seconds>', 'stop after N seconds (0 = until terminal)', (value: string) => Number(value), 0).option('--no-live-pr', 'do not call gh; filesystem state only').action(async function (this: Command, command: { readonly issue?: string; readonly interval: number; readonly once?: boolean; readonly timeout: number; readonly livePr: boolean }) {
+  const report = await watchDeliveries({
+    configPath: loopFile(this),
+    runner: createProcessRunner(),
+    issue: command.issue,
+    intervalMs: Math.max(1, command.interval) * 1000,
+    once: command.once ?? false,
+    timeoutMs: command.timeout > 0 ? command.timeout * 1000 : undefined,
+    livePr: command.livePr,
+    onEvent: (event) => { if (!options().json) console.log(formatWatchEvent(event)) },
+  })
+  if (options().json) print(report)
+  else if (command.once && report.events.length === 0) {
+    for (const target of report.targets) console.log(formatWatchEvent({ kind: target.phase === 'merged' ? 'DONE' : target.phase === 'held' || target.phase === 'held-incomplete-review' || target.phase === 'fix-round' ? 'ACTION_REQUIRED' : target.phase === 'failed' || target.phase === 'stuck' || target.phase === 'abandoned' || target.phase === 'closed' ? 'FAILED' : 'PROGRESS', issue: target.issue, message: `Phase ${target.phase}`, phase: target.phase, pr: target.delivery.prNumber, finalOutcome: target.delivery.finalOutcome, at: report.generatedAt }))
+  }
+  if (report.status === 'failed') process.exitCode = 1
+  else if (report.status === 'action-required') process.exitCode = 2
+})
+loop.command('retro').description('Digest of the loop over a window: escalations, dispatches, reviews, merges, cooldowns, Orca runs, and calibration suggestions. Markdown by default, --json for the report.').option('--since <window>', 'window such as 7d, 12h, 30m or an ISO date', '7d').option('--learnings', 'print harness learning records (proposed) instead of the digest').option('--no-orca', 'skip the Orca run summary').option('--target <target>', 'only suggestions for one side: project | harness').action(async function (this: Command, command: { readonly since: string; readonly learnings?: boolean; readonly orca: boolean; readonly target?: string }) {
+  if (command.target && command.target !== 'project' && command.target !== 'harness') fail(`--target must be project or harness, got ${command.target}`, 'INVALID_INPUT')
+  const full = await buildRetroReport({ configPath: loopFile(this), runner: createProcessRunner(), since: command.since, skipOrca: !command.orca })
+  const report = command.target ? { ...full, suggestions: full.suggestions.filter((item) => item.target === command.target) } : full
+  const markdown = renderRetroMarkdown(report)
+  if (command.learnings) return print(retroLearnings(report, markdown))
+  if (options().json) return print(report)
+  console.log(markdown)
+})
 program.command('start').description('Move a planned run into implementation.').action(() => print(startRun(loadConfig(options().config))))
 program.command('verify').description('Execute every configured check and record evidence.').action(async () => print(await verifyRun({ configPath: options().config })))
 program.command('run').description('Alias for verify, compatible with the common protocol.').action(async () => print(await verifyRun({ configPath: options().config })))

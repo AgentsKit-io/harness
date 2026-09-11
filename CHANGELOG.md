@@ -1,5 +1,24 @@
 # Changelog
 
+## [0.5.0] - 2026-09-11
+
+- Added the keep-pushing SDLC loop foundation (`ak-harness loop validate|doctor`): `loop.config.yaml` schema (zod), provider detection with Orca usage/rate-limit awareness and cooldowns, role-based tiered model routing, machine slot assessment, Orca CLI and Linear-via-Orca adapters, and the loop doctor report.
+- Added loop phase 2 adapters: Orca worktree create/set/rm, terminal send/wait/read and automations argv; Linear issue detail, status/comment/label/attach writes and a Linear `TrackingAdapter`; GitHub PR snapshots, check assessment, self-edit path guard and optimistic squash-merge via `gh`.
+- Added loop phase 3 (`ak-harness loop tick|precheck|contract`): orchestrator-frozen task contracts with untrusted issue text, candidate fallback and provider cooldown on auth/quota failures, dispatch ledger claims, Orca worktree dispatch with `--linear-issue`, worker briefs, Linear In Progress transition and `needs-info` escalation.
+- Added loop phase 4 (`ak-harness loop deliver`, `precheck deliver`): per-issue delivery state, PR detection by branch, protected-path hold, conflict/CI/review fix rounds sent to the worker terminal with a bounded budget, `agentskit-review` at the current head, optimistic squash-merge, Linear attach/Done, worktree cleanup, stuck/abandoned escalation with slot release.
+- Added loop phase 5 (`ak-harness loop install|uninstall|status|hook`): idempotent Orca automations with `--precheck`, existing-workspace mode and session reuse; status with latest runs; a status-only SessionStart hook line; a cross-platform CI job (ubuntu/macos/windows); ADR-0027.
+- `loop install` is guided: doctor and environment checks (harness/review CLIs, `gh auth`, Orca repo registration), optional dry-run tick rehearsal, explicit confirmation; `--yes`, `--force`, `--skip-rehearsal`, `--dry-run`, `--plain`.
+- `loop install` offers to create the per-machine `loop.config.local.yaml` (queue owner from the Linear team, RAM reserve, worker ceiling) when it is missing; the CLI renders checks and prompts with Ink on TTYs and falls back to plain lines elsewhere. Grok is treated as a CLI subscription (`grok login`), no API key.
+- Orca automations now run the stage inside the `--precheck` command (`ak-harness loop stage tick|deliver`, always exit 1) so no agent session is opened per run; `schedule.runner: agent` keeps the previous behaviour. Fixes stuck bypass-permissions sessions leaking one terminal per run.
+- Added `ak-harness loop retro [--since 7d] [--json|--learnings]`: escalations by reason, dispatches by provider, merged/blocked/stuck, review outcomes, fix rounds, median lead time, cooldowns, Orca run summary, and rule-based calibration suggestions with the config knob to turn; the Markdown follows the harness retro grammar so `parseRetro`/`promoteLearnings` apply. Suggestions are split by target — `project` (config, issues, process) versus `harness` (library defects seen in production) — with `--target` to filter; the tick records `contract.failed` events.
+- Reviews run `agentskit-review --mode trusted-local` by default (`delivery.review.mode`); the isolated default gives claude/codex a temporary HOME without credentials and every lens fails with "Not logged in".
+- Review defaults fit an Orca stage: `profile: fast`, `votes: 1`, `concurrency: 4`, and the deadline is capped to the stage budget under `runner: precheck`; `full` profile stays available for long deadlines.
+- `delivery.review.transport` (`acp` \| `headless` \| `auto`) is passed through to `agentskit-review` so Grok can use headless when ACP is broken.
+- Added `ak-harness loop debrief`: read-only human explanation of in-flight work, holds, escalations and cooldowns (Markdown or `--json`).
+- Added `ak-harness loop watch`: TypeScript poller over `delivery.json` (+ optional live PR) emitting `DONE` / `FAILED` / `ACTION_REQUIRED` / `PROGRESS`.
+- Workers are launched with the configured TUI command in their own terminal (`orca worktree create` without `--agent`, then `orca terminal create --command <tui>`, wait for idle, send the brief). Orca's `--agent claude` starts in bypass-permissions mode and blocks on a human prompt. The tick has a wall-clock budget under `runner: precheck`; a failed dispatch removes its half-created worktree.
+- Add bounded agent eval, safe context/read-only LLM cache, deterministic workflow fan-out/fan-in, and validated optimization observation contracts for token, memory, cache, and parallelism measurements.
+
 ## [0.4.0] - 2026-09-10
 
 - Added phase quality matrices, watchdog classification, and resource telemetry.
@@ -16,9 +35,6 @@
   policies, and provider-neutral Orca/tracking adapters.
 - Added configurable machine pressure thresholds and adaptive workflow limits.
 
-## [Unreleased]
-
-- Add bounded agent eval, safe context/read-only LLM cache, deterministic workflow fan-out/fan-in, and validated optimization observation contracts for token, memory, cache, and parallelism measurements.
 
 All notable changes to `@agentskit/harness` are documented here.
 

@@ -12,3 +12,5 @@ dist/
 .env.*.local
 test-results/
 coverage/
+loop.config.local.yaml
+.codex/loop/

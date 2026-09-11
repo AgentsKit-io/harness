@@ -1,0 +1,109 @@
+{
+  "id": "fixture",
+  "ok": true,
+  "result": {
+    "enabled": true,
+    "settingsPath": "/redacted/orca-data.json",
+    "appliedBy": "offline",
+    "statuses": [
+      {
+        "agent": "claude",
+        "state": "installed",
+        "configPath": "/redacted/claude",
+        "managedHooksPresent": true,
+        "detail": null
+      },
+      {
+        "agent": "openclaude",
+        "state": "not_installed",
+        "configPath": "/redacted/openclaude",
+        "managedHooksPresent": false,
+        "detail": null
+      },
+      {
+        "agent": "codex",
+        "state": "installed",
+        "configPath": "/redacted/codex",
+        "managedHooksPresent": true,
+        "detail": null
+      },
+      {
+        "agent": "gemini",
+        "state": "not_installed",
+        "configPath": "/redacted/gemini",
+        "managedHooksPresent": false,
+        "detail": null
+      },
+      {
+        "agent": "antigravity",
+        "state": "not_installed",
+        "configPath": "/redacted/antigravity",
+        "managedHooksPresent": false,
+        "detail": null
+      },
+      {
+        "agent": "amp",
+        "state": "not_installed",
+        "configPath": "/redacted/amp",
+        "managedHooksPresent": false,
+        "detail": null
+      },
+      {
+        "agent": "cursor",
+        "state": "not_installed",
+        "configPath": "/redacted/cursor",
+        "managedHooksPresent": false,
+        "detail": null
+      },
+      {
+        "agent": "droid",
+        "state": "not_installed",
+        "configPath": "/redacted/droid",
+        "managedHooksPresent": false,
+        "detail": null
+      },
+      {
+        "agent": "grok",
+        "state": "installed",
+        "configPath": "/redacted/grok",
+        "managedHooksPresent": true,
+        "detail": null
+      },
+      {
+        "agent": "command-code",
+        "state": "not_installed",
+        "configPath": "/redacted/command-code",
+        "managedHooksPresent": false,
+        "detail": null
+      },
+      {
+        "agent": "copilot",
+        "state": "not_installed",
+        "configPath": "/redacted/copilot",
+        "managedHooksPresent": false,
+        "detail": null
+      },
+      {
+        "agent": "hermes",
+        "state": "installed",
+        "configPath": "/redacted/hermes",
+        "managedHooksPresent": true,
+        "detail": null
+      },
+      {
+        "agent": "devin",
+        "state": "not_installed",
+        "configPath": "/redacted/devin",
+        "managedHooksPresent": false,
+        "detail": "Devin read_config_from.claude is enabled; imported Claude hooks may fire alongside Devin hooks."
+      },
+      {
+        "agent": "kimi",
+        "state": "not_installed",
+        "configPath": "/redacted/kimi",
+        "managedHooksPresent": false,
+        "detail": null
+      }
+    ]
+  }
+}

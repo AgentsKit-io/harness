@@ -2,13 +2,13 @@
   "type": "agentskit-harness-capability-manifest",
   "schemaVersion": 1,
   "package": "@agentskit/harness",
-  "packageVersion": "0.4.0",
+  "packageVersion": "0.5.0",
   "entryPoint": "src/index.ts",
-  "sourceDigest": "3d17be04952278acc607379c2e8ea5895bc9b34b89e231a73a297d8878a09d3b",
+  "sourceDigest": "cde5b73e321b9211bf30aeb3b7b1203d10368d1836f839384ab213ae64f84937",
   "capabilities": [
     {
       "id": "public-surface:adapters/agent",
-      "version": "0.4.0",
+      "version": "0.5.0",
       "kind": "adapter",
       "entryPoint": "src/index.ts",
       "exports": [
@@ -21,8 +21,40 @@
       ]
     },
     {
+      "id": "public-surface:adapters/code-review",
+      "version": "0.5.0",
+      "kind": "adapter",
+      "entryPoint": "src/index.ts",
+      "exports": [
+        "CodeReviewInput",
+        "CodeReviewOutcome",
+        "REVIEW_SEVERITIES",
+        "ReviewFinding",
+        "ReviewSeverity",
+        "atLeast",
+        "buildReviewArgv",
+        "parseReviewResult",
+        "renderFindingsForWorker",
+        "runCodeReview",
+        "severityRank"
+      ]
+    },
+    {
+      "id": "public-surface:adapters/command",
+      "version": "0.5.0",
+      "kind": "adapter",
+      "entryPoint": "src/index.ts",
+      "exports": [
+        "CommandResult",
+        "CommandRunOptions",
+        "CommandRunner",
+        "findExecutable",
+        "parseJsonEnvelope"
+      ]
+    },
+    {
       "id": "public-surface:adapters/doc-bridge",
-      "version": "0.4.0",
+      "version": "0.5.0",
       "kind": "adapter",
       "entryPoint": "src/index.ts",
       "exports": [
@@ -30,8 +62,111 @@
       ]
     },
     {
+      "id": "public-surface:adapters/github-cli",
+      "version": "0.5.0",
+      "kind": "adapter",
+      "entryPoint": "src/index.ts",
+      "exports": [
+        "CheckOutcome",
+        "ChecksAssessment",
+        "GitHubCliOptions",
+        "PR_FIELDS",
+        "PullRequestCheck",
+        "PullRequestSnapshot",
+        "assessChecks",
+        "githubComment",
+        "githubCommentArgv",
+        "githubCommentExists",
+        "githubMerge",
+        "githubMergeArgv",
+        "githubOpenPullRequests",
+        "githubPullRequest",
+        "githubPullRequestsForBranch",
+        "parsePullRequest",
+        "touchesProtectedPaths"
+      ]
+    },
+    {
+      "id": "public-surface:adapters/linear-orca",
+      "version": "0.5.0",
+      "kind": "adapter",
+      "entryPoint": "src/index.ts",
+      "exports": [
+        "FetchQueueInput",
+        "LinearIssueDetail",
+        "LinearListInput",
+        "LinearQueueFilter",
+        "LinearWriteOptions",
+        "LoopIssue",
+        "buildListIssuesArgv",
+        "createLinearTrackingAdapter",
+        "fetchLinearIssue",
+        "fetchLinearQueue",
+        "filterAndOrderQueue",
+        "linearAttach",
+        "linearAttachArgv",
+        "linearCommentAdd",
+        "linearCommentAddArgv",
+        "linearLabelAdd",
+        "linearLabelArgv",
+        "linearLabelRemove",
+        "linearStatusSet",
+        "linearStatusSetArgv",
+        "parseLinearIssueDetail",
+        "parseLinearIssues",
+        "writeIdFor"
+      ]
+    },
+    {
+      "id": "public-surface:adapters/orca-cli",
+      "version": "0.5.0",
+      "kind": "adapter",
+      "entryPoint": "src/index.ts",
+      "exports": [
+        "OrcaAgentHookState",
+        "OrcaAutomation",
+        "OrcaAutomationSpec",
+        "OrcaCliOptions",
+        "OrcaCreatedWorktree",
+        "OrcaSendReceipt",
+        "OrcaStatus",
+        "OrcaTerminal",
+        "OrcaWorktree",
+        "compareVersions",
+        "orcaAccountList",
+        "orcaAgentHooks",
+        "orcaAutomationCreateArgv",
+        "orcaAutomationEditArgv",
+        "orcaAutomationRemove",
+        "orcaAutomationRun",
+        "orcaAutomationRuns",
+        "orcaAutomationsList",
+        "orcaJson",
+        "orcaStatus",
+        "orcaTerminalCreate",
+        "orcaTerminalList",
+        "orcaTerminalScreen",
+        "orcaTerminalSend",
+        "orcaTerminalWait",
+        "orcaVersion",
+        "orcaWorktreeCreate",
+        "orcaWorktreeRemove",
+        "orcaWorktreeSet",
+        "orcaWorktreeSetArgv",
+        "orcaWorktrees",
+        "parseOrcaAgentHooks",
+        "parseOrcaAutomations",
+        "parseOrcaSendReceipt",
+        "parseOrcaStatus",
+        "parseOrcaTerminals",
+        "parseOrcaVersion",
+        "parseOrcaWorktreeCreate",
+        "parseOrcaWorktrees"
+      ]
+    },
+    {
       "id": "public-surface:adapters/orca",
-      "version": "0.4.0",
+      "version": "0.5.0",
       "kind": "adapter",
       "entryPoint": "src/index.ts",
       "exports": [
@@ -45,8 +180,27 @@
       ]
     },
     {
+      "id": "public-surface:adapters/providers",
+      "version": "0.5.0",
+      "kind": "adapter",
+      "entryPoint": "src/index.ts",
+      "exports": [
+        "DetectProvidersInput",
+        "ProviderAuthStatus",
+        "ProviderAvailability",
+        "ProviderSpec",
+        "ProviderUsage",
+        "UsageWindow",
+        "authStatusFor",
+        "cooldownUntil",
+        "detectProviders",
+        "parseProviderUsage",
+        "parseUsageWindows"
+      ]
+    },
+    {
       "id": "public-surface:adapters/tracking",
-      "version": "0.4.0",
+      "version": "0.5.0",
       "kind": "adapter",
       "entryPoint": "src/index.ts",
       "exports": [
@@ -58,7 +212,7 @@
     },
     {
       "id": "public-surface:context/index",
-      "version": "0.4.0",
+      "version": "0.5.0",
       "kind": "kernel",
       "entryPoint": "src/index.ts",
       "exports": [
@@ -73,7 +227,7 @@
     },
     {
       "id": "public-surface:delivery/index",
-      "version": "0.4.0",
+      "version": "0.5.0",
       "kind": "kernel",
       "entryPoint": "src/index.ts",
       "exports": [
@@ -100,7 +254,7 @@
     },
     {
       "id": "public-surface:execution/agent",
-      "version": "0.4.0",
+      "version": "0.5.0",
       "kind": "execution",
       "entryPoint": "src/index.ts",
       "exports": [
@@ -110,7 +264,7 @@
     },
     {
       "id": "public-surface:execution/bundle",
-      "version": "0.4.0",
+      "version": "0.5.0",
       "kind": "execution",
       "entryPoint": "src/index.ts",
       "exports": [
@@ -123,7 +277,7 @@
     },
     {
       "id": "public-surface:execution/config",
-      "version": "0.4.0",
+      "version": "0.5.0",
       "kind": "execution",
       "entryPoint": "src/index.ts",
       "exports": [
@@ -133,7 +287,7 @@
     },
     {
       "id": "public-surface:execution/coordination",
-      "version": "0.4.0",
+      "version": "0.5.0",
       "kind": "execution",
       "entryPoint": "src/index.ts",
       "exports": [
@@ -147,7 +301,7 @@
     },
     {
       "id": "public-surface:execution/files",
-      "version": "0.4.0",
+      "version": "0.5.0",
       "kind": "execution",
       "entryPoint": "src/index.ts",
       "exports": [
@@ -156,7 +310,7 @@
     },
     {
       "id": "public-surface:execution/machine",
-      "version": "0.4.0",
+      "version": "0.5.0",
       "kind": "execution",
       "entryPoint": "src/index.ts",
       "exports": [
@@ -170,7 +324,7 @@
     },
     {
       "id": "public-surface:execution/metrics",
-      "version": "0.4.0",
+      "version": "0.5.0",
       "kind": "execution",
       "entryPoint": "src/index.ts",
       "exports": [
@@ -184,7 +338,7 @@
     },
     {
       "id": "public-surface:execution/runtime",
-      "version": "0.4.0",
+      "version": "0.5.0",
       "kind": "execution",
       "entryPoint": "src/index.ts",
       "exports": [
@@ -197,7 +351,7 @@
     },
     {
       "id": "public-surface:execution/verification",
-      "version": "0.4.0",
+      "version": "0.5.0",
       "kind": "execution",
       "entryPoint": "src/index.ts",
       "exports": [
@@ -214,7 +368,7 @@
     },
     {
       "id": "public-surface:kernel/adapter-contract",
-      "version": "0.4.0",
+      "version": "0.5.0",
       "kind": "kernel",
       "entryPoint": "src/index.ts",
       "exports": [
@@ -228,7 +382,7 @@
     },
     {
       "id": "public-surface:kernel/artifacts",
-      "version": "0.4.0",
+      "version": "0.5.0",
       "kind": "kernel",
       "entryPoint": "src/index.ts",
       "exports": [
@@ -253,7 +407,7 @@
     },
     {
       "id": "public-surface:kernel/block",
-      "version": "0.4.0",
+      "version": "0.5.0",
       "kind": "kernel",
       "entryPoint": "src/index.ts",
       "exports": [
@@ -267,7 +421,7 @@
     },
     {
       "id": "public-surface:kernel/cache",
-      "version": "0.4.0",
+      "version": "0.5.0",
       "kind": "kernel",
       "entryPoint": "src/index.ts",
       "exports": [
@@ -281,7 +435,7 @@
     },
     {
       "id": "public-surface:kernel/capabilities",
-      "version": "0.4.0",
+      "version": "0.5.0",
       "kind": "kernel",
       "entryPoint": "src/index.ts",
       "exports": [
@@ -298,7 +452,7 @@
     },
     {
       "id": "public-surface:kernel/compatibility",
-      "version": "0.4.0",
+      "version": "0.5.0",
       "kind": "kernel",
       "entryPoint": "src/index.ts",
       "exports": [
@@ -317,7 +471,7 @@
     },
     {
       "id": "public-surface:kernel/constants",
-      "version": "0.4.0",
+      "version": "0.5.0",
       "kind": "kernel",
       "entryPoint": "src/index.ts",
       "exports": [
@@ -327,7 +481,7 @@
     },
     {
       "id": "public-surface:kernel/cycle",
-      "version": "0.4.0",
+      "version": "0.5.0",
       "kind": "kernel",
       "entryPoint": "src/index.ts",
       "exports": [
@@ -338,7 +492,7 @@
     },
     {
       "id": "public-surface:kernel/discovery",
-      "version": "0.4.0",
+      "version": "0.5.0",
       "kind": "kernel",
       "entryPoint": "src/index.ts",
       "exports": [
@@ -349,7 +503,7 @@
     },
     {
       "id": "public-surface:kernel/error-policy",
-      "version": "0.4.0",
+      "version": "0.5.0",
       "kind": "kernel",
       "entryPoint": "src/index.ts",
       "exports": [
@@ -362,7 +516,7 @@
     },
     {
       "id": "public-surface:kernel/errors",
-      "version": "0.4.0",
+      "version": "0.5.0",
       "kind": "kernel",
       "entryPoint": "src/index.ts",
       "exports": [
@@ -372,7 +526,7 @@
     },
     {
       "id": "public-surface:kernel/eval",
-      "version": "0.4.0",
+      "version": "0.5.0",
       "kind": "kernel",
       "entryPoint": "src/index.ts",
       "exports": [
@@ -400,7 +554,7 @@
     },
     {
       "id": "public-surface:kernel/events",
-      "version": "0.4.0",
+      "version": "0.5.0",
       "kind": "kernel",
       "entryPoint": "src/index.ts",
       "exports": [
@@ -421,7 +575,7 @@
     },
     {
       "id": "public-surface:kernel/experiment",
-      "version": "0.4.0",
+      "version": "0.5.0",
       "kind": "kernel",
       "entryPoint": "src/index.ts",
       "exports": [
@@ -431,7 +585,7 @@
     },
     {
       "id": "public-surface:kernel/learning",
-      "version": "0.4.0",
+      "version": "0.5.0",
       "kind": "kernel",
       "entryPoint": "src/index.ts",
       "exports": [
@@ -444,7 +598,7 @@
     },
     {
       "id": "public-surface:kernel/memory",
-      "version": "0.4.0",
+      "version": "0.5.0",
       "kind": "kernel",
       "entryPoint": "src/index.ts",
       "exports": [
@@ -461,7 +615,7 @@
     },
     {
       "id": "public-surface:kernel/model-policy",
-      "version": "0.4.0",
+      "version": "0.5.0",
       "kind": "kernel",
       "entryPoint": "src/index.ts",
       "exports": [
@@ -475,7 +629,7 @@
     },
     {
       "id": "public-surface:kernel/optimization",
-      "version": "0.4.0",
+      "version": "0.5.0",
       "kind": "kernel",
       "entryPoint": "src/index.ts",
       "exports": [
@@ -491,7 +645,7 @@
     },
     {
       "id": "public-surface:kernel/phase-executor",
-      "version": "0.4.0",
+      "version": "0.5.0",
       "kind": "kernel",
       "entryPoint": "src/index.ts",
       "exports": [
@@ -529,7 +683,7 @@
     },
     {
       "id": "public-surface:kernel/pilot",
-      "version": "0.4.0",
+      "version": "0.5.0",
       "kind": "kernel",
       "entryPoint": "src/index.ts",
       "exports": [
@@ -539,7 +693,7 @@
     },
     {
       "id": "public-surface:kernel/plugins",
-      "version": "0.4.0",
+      "version": "0.5.0",
       "kind": "kernel",
       "entryPoint": "src/index.ts",
       "exports": [
@@ -551,7 +705,7 @@
     },
     {
       "id": "public-surface:kernel/policy",
-      "version": "0.4.0",
+      "version": "0.5.0",
       "kind": "kernel",
       "entryPoint": "src/index.ts",
       "exports": [
@@ -561,7 +715,7 @@
     },
     {
       "id": "public-surface:kernel/preflight",
-      "version": "0.4.0",
+      "version": "0.5.0",
       "kind": "kernel",
       "entryPoint": "src/index.ts",
       "exports": [
@@ -573,7 +727,7 @@
     },
     {
       "id": "public-surface:kernel/quality",
-      "version": "0.4.0",
+      "version": "0.5.0",
       "kind": "kernel",
       "entryPoint": "src/index.ts",
       "exports": [
@@ -595,7 +749,7 @@
     },
     {
       "id": "public-surface:kernel/resilience",
-      "version": "0.4.0",
+      "version": "0.5.0",
       "kind": "kernel",
       "entryPoint": "src/index.ts",
       "exports": [
@@ -611,7 +765,7 @@
     },
     {
       "id": "public-surface:kernel/state-machine",
-      "version": "0.4.0",
+      "version": "0.5.0",
       "kind": "kernel",
       "entryPoint": "src/index.ts",
       "exports": [
@@ -622,7 +776,7 @@
     },
     {
       "id": "public-surface:kernel/status",
-      "version": "0.4.0",
+      "version": "0.5.0",
       "kind": "kernel",
       "entryPoint": "src/index.ts",
       "exports": [
@@ -634,7 +788,7 @@
     },
     {
       "id": "public-surface:kernel/types",
-      "version": "0.4.0",
+      "version": "0.5.0",
       "kind": "kernel",
       "entryPoint": "src/index.ts",
       "exports": [
@@ -643,7 +797,7 @@
     },
     {
       "id": "public-surface:kernel/wip",
-      "version": "0.4.0",
+      "version": "0.5.0",
       "kind": "kernel",
       "entryPoint": "src/index.ts",
       "exports": [
@@ -654,7 +808,7 @@
     },
     {
       "id": "public-surface:kernel/workflow",
-      "version": "0.4.0",
+      "version": "0.5.0",
       "kind": "kernel",
       "entryPoint": "src/index.ts",
       "exports": [
@@ -662,7 +816,270 @@
         "WorkflowResult",
         "runWorkflow"
       ]
+    },
+    {
+      "id": "public-surface:loop/brief",
+      "version": "0.5.0",
+      "kind": "composition",
+      "entryPoint": "src/index.ts",
+      "exports": [
+        "WorkerBriefInput",
+        "renderWorkerBrief"
+      ]
+    },
+    {
+      "id": "public-surface:loop/config",
+      "version": "0.5.0",
+      "kind": "composition",
+      "entryPoint": "src/index.ts",
+      "exports": [
+        "LOOP_CONFIG_FILE",
+        "LOOP_CONFIG_SCHEMA_VERSION",
+        "LOOP_LOCAL_CONFIG_FILE",
+        "LoadedLoopConfig",
+        "LoopConfig",
+        "LoopConfigInput",
+        "LoopConfigSchema",
+        "LoopProviderConfig",
+        "ModelReference",
+        "loadLoopConfig",
+        "mergeLoopConfig",
+        "parseLoopConfigText",
+        "parseModelRef",
+        "providerIdentity",
+        "renderHeadlessArgv",
+        "renderTuiCommand",
+        "tiersFor",
+        "validateLoopConfig"
+      ]
+    },
+    {
+      "id": "public-surface:loop/contract",
+      "version": "0.5.0",
+      "kind": "composition",
+      "entryPoint": "src/index.ts",
+      "exports": [
+        "CONTRACT_CLOSE",
+        "CONTRACT_OPEN",
+        "CONTRACT_SCHEMA_VERSION",
+        "ContractAssessment",
+        "ContractOutcomeSchema",
+        "GenerateContractInput",
+        "ProviderFailure",
+        "StoredContract",
+        "TaskContract",
+        "TaskContractSchema",
+        "assessContract",
+        "classifyProviderFailure",
+        "contractIsFresh",
+        "contractPath",
+        "generateContract",
+        "parseContractOutput",
+        "readStoredContract",
+        "renderContractPrompt",
+        "resolveDocContext",
+        "untrusted",
+        "writeStoredContract"
+      ]
+    },
+    {
+      "id": "public-surface:loop/cooldown",
+      "version": "0.5.0",
+      "kind": "composition",
+      "entryPoint": "src/index.ts",
+      "exports": [
+        "CooldownEntry",
+        "CooldownState",
+        "activeCooldowns",
+        "clearProviderCooldown",
+        "cooldownPath",
+        "markProviderExhausted",
+        "readCooldowns"
+      ]
+    },
+    {
+      "id": "public-surface:loop/deliver",
+      "version": "0.5.0",
+      "kind": "composition",
+      "entryPoint": "src/index.ts",
+      "exports": [
+        "DeliverInput",
+        "DeliverOutcome",
+        "DeliverReport",
+        "DeliverResult",
+        "DeliveryState",
+        "deliveryStatePath",
+        "listDispatched",
+        "precheckDeliver",
+        "readDeliveryState",
+        "runDeliver"
+      ]
+    },
+    {
+      "id": "public-surface:loop/doctor",
+      "version": "0.5.0",
+      "kind": "composition",
+      "entryPoint": "src/index.ts",
+      "exports": [
+        "DoctorCheck",
+        "DoctorCheckStatus",
+        "LoopDoctorInput",
+        "LoopDoctorReport",
+        "countRunningWorkers",
+        "providerSpecs",
+        "runLoopDoctor"
+      ]
+    },
+    {
+      "id": "public-surface:loop/guided-install",
+      "version": "0.5.0",
+      "kind": "composition",
+      "entryPoint": "src/index.ts",
+      "exports": [
+        "GuidedInstallIO",
+        "GuidedInstallInput",
+        "GuidedInstallReport",
+        "installPreflight",
+        "runGuidedInstall"
+      ]
+    },
+    {
+      "id": "public-surface:loop/install",
+      "version": "0.5.0",
+      "kind": "composition",
+      "entryPoint": "src/index.ts",
+      "exports": [
+        "AutomationStatus",
+        "InstallAction",
+        "InstallInput",
+        "InstallReport",
+        "LOOP_STAGES",
+        "LoopStage",
+        "LoopStatusReport",
+        "automationName",
+        "automationPrompt",
+        "automationSpecs",
+        "installLoopAutomations",
+        "loopStatus",
+        "parseAutomationRuns",
+        "precheckCommand",
+        "shellQuote",
+        "uninstallLoopAutomations"
+      ]
+    },
+    {
+      "id": "public-surface:loop/local-config",
+      "version": "0.5.0",
+      "kind": "composition",
+      "entryPoint": "src/index.ts",
+      "exports": [
+        "LocalConfigAnswers",
+        "LocalConfigPrompter",
+        "TeamMember",
+        "fetchTeamMembers",
+        "hasLocalConfig",
+        "localConfigPath",
+        "parseTeamMembers",
+        "promptLocalConfig",
+        "renderLocalConfig",
+        "writeLocalConfig"
+      ]
+    },
+    {
+      "id": "public-surface:loop/process",
+      "version": "0.5.0",
+      "kind": "composition",
+      "entryPoint": "src/index.ts",
+      "exports": [
+        "createProcessRunner"
+      ]
+    },
+    {
+      "id": "public-surface:loop/retro",
+      "version": "0.5.0",
+      "kind": "composition",
+      "entryPoint": "src/index.ts",
+      "exports": [
+        "HARNESS_REPO_URL",
+        "LoopEvent",
+        "RetroInput",
+        "RetroIssueRow",
+        "RetroReport",
+        "RetroSuggestion",
+        "RetroTarget",
+        "RetroWindow",
+        "buildRetroReport",
+        "buildSuggestions",
+        "normalizeReason",
+        "parseSince",
+        "readLoopEvents",
+        "renderRetroMarkdown",
+        "retroLearnings"
+      ]
+    },
+    {
+      "id": "public-surface:loop/routing",
+      "version": "0.5.0",
+      "kind": "composition",
+      "entryPoint": "src/index.ts",
+      "exports": [
+        "RankedModel",
+        "RoutingDecision",
+        "RoutingSkip",
+        "rankModels",
+        "routeAllRoles",
+        "selectModel"
+      ]
+    },
+    {
+      "id": "public-surface:loop/slots",
+      "version": "0.5.0",
+      "kind": "composition",
+      "entryPoint": "src/index.ts",
+      "exports": [
+        "SlotAssessment",
+        "SlotInput",
+        "assessSlots",
+        "availableMemoryBytes",
+        "isWsl",
+        "parseMemInfo",
+        "parseVmStat"
+      ]
+    },
+    {
+      "id": "public-surface:loop/tick",
+      "version": "0.5.0",
+      "kind": "composition",
+      "entryPoint": "src/index.ts",
+      "exports": [
+        "DispatchRecordFile",
+        "LoopState",
+        "TickCandidateResult",
+        "TickInput",
+        "TickOutcome",
+        "TickReport",
+        "appendLoopEvent",
+        "branchFor",
+        "busyIssues",
+        "dispatchRecordPath",
+        "gatherLoopState",
+        "launchWorkerTerminal",
+        "precheckTick",
+        "readDispatchRecord",
+        "runTick",
+        "worktreeNameFor"
+      ]
+    },
+    {
+      "id": "public-surface:loop/ui/terminal",
+      "version": "0.5.0",
+      "kind": "composition",
+      "entryPoint": "src/index.ts",
+      "exports": [
+        "RichIO",
+        "createRichIO"
+      ]
     }
   ],
-  "digest": "072e4e83b1073f0bb62507b8fece6703eb57b33f5c4b621442d6368642b63e79"
+  "digest": "9dbeb29dc407f49e051eb594f9552fa7b1620b9405610a01e6409d0e5f9204b0"
 }
