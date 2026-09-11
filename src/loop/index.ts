@@ -1,5 +1,7 @@
 export { LOOP_CONFIG_FILE, LOOP_CONFIG_SCHEMA_VERSION, LOOP_LOCAL_CONFIG_FILE, LoopConfigSchema, loadLoopConfig, mergeLoopConfig, parseLoopConfigText, parseModelRef, providerIdentity, renderTuiCommand, tiersFor, validateLoopConfig } from './config.js'
 export type { LoadedLoopConfig, LoopConfig, LoopConfigInput, LoopProviderConfig, ModelReference } from './config.js'
+export { AGENT_REGISTRY_SCHEMA_VERSION, AgentRegistryEntrySchema, AgentRegistrySchema, loadAgentRegistry, parseAgentRegistryText, resolveAgentForRole } from './agent-registry.js'
+export type { AgentRegistry, AgentRegistryEntry, ResolvedAgent } from './agent-registry.js'
 export { createProcessRunner } from './process.js'
 export { assessSlots, availableMemoryBytes, isWsl, parseMemInfo, parseVmStat } from './slots.js'
 export type { SlotAssessment, SlotInput } from './slots.js'
@@ -26,8 +28,14 @@ export type { RichIO } from './ui/terminal.js'
 export { fetchTeamMembers, hasLocalConfig, localConfigPath, parseTeamMembers, promptLocalConfig, renderLocalConfig, writeLocalConfig } from './local-config.js'
 export type { LocalConfigAnswers, LocalConfigPrompter, TeamMember } from './local-config.js'
 export type { GuidedInstallIO, GuidedInstallInput, GuidedInstallReport } from './guided-install.js'
-export { HARNESS_REPO_URL, buildRetroReport, buildSuggestions, normalizeReason, parseSince, readLoopEvents, renderRetroMarkdown, retroLearnings } from './retro.js'
-export type { LoopEvent, RetroInput, RetroIssueRow, RetroReport, RetroSuggestion, RetroTarget, RetroWindow } from './retro.js'
+export { HARNESS_REPO_URL, buildRetroReport, buildSuggestions, normalizeReason, parseSince, readLoopEvents, renderRetroMarkdown, retroLearnings, runRetroStage } from './retro.js'
+export type { LoopEvent, RetroInput, RetroIssueRow, RetroReport, RetroStageReport, RetroSuggestion, RetroTarget, RetroWindow } from './retro.js'
+export {
+  createFileMemoryAdapter, createFileMemoryKvStore, learningToMemoryRecord, memoryDigestOf, openLoopMemory,
+  planMemoryContext, preferMemoryOverDocBridge, promoteLearningsToMemory, readLearningsLedger, selectMemoryForPrompt,
+  upsertProposedLearnings, writeLearningsLedger, learningsPath,
+} from './memory.js'
+export type { LearningsLedger, MemoryContextPlan, MemoryPromptSelection } from './memory.js'
 
 export { buildDebriefReport, renderDebriefMarkdown } from './debrief.js'
 export type { DebriefInput, DebriefIssueRow, DebriefReport } from './debrief.js'

@@ -2,13 +2,13 @@
   "type": "agentskit-harness-capability-manifest",
   "schemaVersion": 1,
   "package": "@agentskit/harness",
-  "packageVersion": "0.5.0",
+  "packageVersion": "0.6.0",
   "entryPoint": "src/index.ts",
-  "sourceDigest": "cde5b73e321b9211bf30aeb3b7b1203d10368d1836f839384ab213ae64f84937",
+  "sourceDigest": "0c2f78dcedb17c5e4ea44206bee3a87cf370b94ab9f063cc780227897f3fad75",
   "capabilities": [
     {
       "id": "public-surface:adapters/agent",
-      "version": "0.5.0",
+      "version": "0.6.0",
       "kind": "adapter",
       "entryPoint": "src/index.ts",
       "exports": [
@@ -22,7 +22,7 @@
     },
     {
       "id": "public-surface:adapters/code-review",
-      "version": "0.5.0",
+      "version": "0.6.0",
       "kind": "adapter",
       "entryPoint": "src/index.ts",
       "exports": [
@@ -41,7 +41,7 @@
     },
     {
       "id": "public-surface:adapters/command",
-      "version": "0.5.0",
+      "version": "0.6.0",
       "kind": "adapter",
       "entryPoint": "src/index.ts",
       "exports": [
@@ -54,16 +54,18 @@
     },
     {
       "id": "public-surface:adapters/doc-bridge",
-      "version": "0.5.0",
+      "version": "0.6.0",
       "kind": "adapter",
       "entryPoint": "src/index.ts",
       "exports": [
-        "createDocBridgeContextProvider"
+        "DocBridgeIndexInspection",
+        "createDocBridgeContextProvider",
+        "inspectDocBridgeIndex"
       ]
     },
     {
       "id": "public-surface:adapters/github-cli",
-      "version": "0.5.0",
+      "version": "0.6.0",
       "kind": "adapter",
       "entryPoint": "src/index.ts",
       "exports": [
@@ -88,7 +90,7 @@
     },
     {
       "id": "public-surface:adapters/linear-orca",
-      "version": "0.5.0",
+      "version": "0.6.0",
       "kind": "adapter",
       "entryPoint": "src/index.ts",
       "exports": [
@@ -118,8 +120,23 @@
       ]
     },
     {
+      "id": "public-surface:adapters/mcp",
+      "version": "0.6.0",
+      "kind": "adapter",
+      "entryPoint": "src/index.ts",
+      "exports": [
+        "McpPolicy",
+        "McpToolBridge",
+        "McpToolBridgeOptions",
+        "McpToolCallInput",
+        "McpToolCallResult",
+        "createMcpToolBridge",
+        "hashMcpArgs"
+      ]
+    },
+    {
       "id": "public-surface:adapters/orca-cli",
-      "version": "0.5.0",
+      "version": "0.6.0",
       "kind": "adapter",
       "entryPoint": "src/index.ts",
       "exports": [
@@ -166,7 +183,7 @@
     },
     {
       "id": "public-surface:adapters/orca",
-      "version": "0.5.0",
+      "version": "0.6.0",
       "kind": "adapter",
       "entryPoint": "src/index.ts",
       "exports": [
@@ -181,7 +198,7 @@
     },
     {
       "id": "public-surface:adapters/providers",
-      "version": "0.5.0",
+      "version": "0.6.0",
       "kind": "adapter",
       "entryPoint": "src/index.ts",
       "exports": [
@@ -199,8 +216,22 @@
       ]
     },
     {
+      "id": "public-surface:adapters/rag-context",
+      "version": "0.6.0",
+      "kind": "adapter",
+      "entryPoint": "src/index.ts",
+      "exports": [
+        "ArgvRagContextProviderOptions",
+        "RagContextProviderOptions",
+        "RagQueryResult",
+        "createArgvRagContextProvider",
+        "createRagContextProvider",
+        "parseRagQueryOutput"
+      ]
+    },
+    {
       "id": "public-surface:adapters/tracking",
-      "version": "0.5.0",
+      "version": "0.6.0",
       "kind": "adapter",
       "entryPoint": "src/index.ts",
       "exports": [
@@ -212,7 +243,7 @@
     },
     {
       "id": "public-surface:context/index",
-      "version": "0.5.0",
+      "version": "0.6.0",
       "kind": "kernel",
       "entryPoint": "src/index.ts",
       "exports": [
@@ -227,7 +258,7 @@
     },
     {
       "id": "public-surface:delivery/index",
-      "version": "0.5.0",
+      "version": "0.6.0",
       "kind": "kernel",
       "entryPoint": "src/index.ts",
       "exports": [
@@ -254,7 +285,7 @@
     },
     {
       "id": "public-surface:execution/agent",
-      "version": "0.5.0",
+      "version": "0.6.0",
       "kind": "execution",
       "entryPoint": "src/index.ts",
       "exports": [
@@ -264,7 +295,7 @@
     },
     {
       "id": "public-surface:execution/bundle",
-      "version": "0.5.0",
+      "version": "0.6.0",
       "kind": "execution",
       "entryPoint": "src/index.ts",
       "exports": [
@@ -277,7 +308,7 @@
     },
     {
       "id": "public-surface:execution/config",
-      "version": "0.5.0",
+      "version": "0.6.0",
       "kind": "execution",
       "entryPoint": "src/index.ts",
       "exports": [
@@ -287,7 +318,7 @@
     },
     {
       "id": "public-surface:execution/coordination",
-      "version": "0.5.0",
+      "version": "0.6.0",
       "kind": "execution",
       "entryPoint": "src/index.ts",
       "exports": [
@@ -301,7 +332,7 @@
     },
     {
       "id": "public-surface:execution/files",
-      "version": "0.5.0",
+      "version": "0.6.0",
       "kind": "execution",
       "entryPoint": "src/index.ts",
       "exports": [
@@ -310,7 +341,7 @@
     },
     {
       "id": "public-surface:execution/machine",
-      "version": "0.5.0",
+      "version": "0.6.0",
       "kind": "execution",
       "entryPoint": "src/index.ts",
       "exports": [
@@ -324,7 +355,7 @@
     },
     {
       "id": "public-surface:execution/metrics",
-      "version": "0.5.0",
+      "version": "0.6.0",
       "kind": "execution",
       "entryPoint": "src/index.ts",
       "exports": [
@@ -338,7 +369,7 @@
     },
     {
       "id": "public-surface:execution/runtime",
-      "version": "0.5.0",
+      "version": "0.6.0",
       "kind": "execution",
       "entryPoint": "src/index.ts",
       "exports": [
@@ -351,7 +382,7 @@
     },
     {
       "id": "public-surface:execution/verification",
-      "version": "0.5.0",
+      "version": "0.6.0",
       "kind": "execution",
       "entryPoint": "src/index.ts",
       "exports": [
@@ -368,7 +399,7 @@
     },
     {
       "id": "public-surface:kernel/adapter-contract",
-      "version": "0.5.0",
+      "version": "0.6.0",
       "kind": "kernel",
       "entryPoint": "src/index.ts",
       "exports": [
@@ -382,7 +413,7 @@
     },
     {
       "id": "public-surface:kernel/artifacts",
-      "version": "0.5.0",
+      "version": "0.6.0",
       "kind": "kernel",
       "entryPoint": "src/index.ts",
       "exports": [
@@ -407,7 +438,7 @@
     },
     {
       "id": "public-surface:kernel/block",
-      "version": "0.5.0",
+      "version": "0.6.0",
       "kind": "kernel",
       "entryPoint": "src/index.ts",
       "exports": [
@@ -421,7 +452,7 @@
     },
     {
       "id": "public-surface:kernel/cache",
-      "version": "0.5.0",
+      "version": "0.6.0",
       "kind": "kernel",
       "entryPoint": "src/index.ts",
       "exports": [
@@ -435,7 +466,7 @@
     },
     {
       "id": "public-surface:kernel/capabilities",
-      "version": "0.5.0",
+      "version": "0.6.0",
       "kind": "kernel",
       "entryPoint": "src/index.ts",
       "exports": [
@@ -452,7 +483,7 @@
     },
     {
       "id": "public-surface:kernel/compatibility",
-      "version": "0.5.0",
+      "version": "0.6.0",
       "kind": "kernel",
       "entryPoint": "src/index.ts",
       "exports": [
@@ -471,7 +502,7 @@
     },
     {
       "id": "public-surface:kernel/constants",
-      "version": "0.5.0",
+      "version": "0.6.0",
       "kind": "kernel",
       "entryPoint": "src/index.ts",
       "exports": [
@@ -481,7 +512,7 @@
     },
     {
       "id": "public-surface:kernel/cycle",
-      "version": "0.5.0",
+      "version": "0.6.0",
       "kind": "kernel",
       "entryPoint": "src/index.ts",
       "exports": [
@@ -492,7 +523,7 @@
     },
     {
       "id": "public-surface:kernel/discovery",
-      "version": "0.5.0",
+      "version": "0.6.0",
       "kind": "kernel",
       "entryPoint": "src/index.ts",
       "exports": [
@@ -503,7 +534,7 @@
     },
     {
       "id": "public-surface:kernel/error-policy",
-      "version": "0.5.0",
+      "version": "0.6.0",
       "kind": "kernel",
       "entryPoint": "src/index.ts",
       "exports": [
@@ -516,7 +547,7 @@
     },
     {
       "id": "public-surface:kernel/errors",
-      "version": "0.5.0",
+      "version": "0.6.0",
       "kind": "kernel",
       "entryPoint": "src/index.ts",
       "exports": [
@@ -526,7 +557,7 @@
     },
     {
       "id": "public-surface:kernel/eval",
-      "version": "0.5.0",
+      "version": "0.6.0",
       "kind": "kernel",
       "entryPoint": "src/index.ts",
       "exports": [
@@ -554,7 +585,7 @@
     },
     {
       "id": "public-surface:kernel/events",
-      "version": "0.5.0",
+      "version": "0.6.0",
       "kind": "kernel",
       "entryPoint": "src/index.ts",
       "exports": [
@@ -575,7 +606,7 @@
     },
     {
       "id": "public-surface:kernel/experiment",
-      "version": "0.5.0",
+      "version": "0.6.0",
       "kind": "kernel",
       "entryPoint": "src/index.ts",
       "exports": [
@@ -585,7 +616,7 @@
     },
     {
       "id": "public-surface:kernel/learning",
-      "version": "0.5.0",
+      "version": "0.6.0",
       "kind": "kernel",
       "entryPoint": "src/index.ts",
       "exports": [
@@ -598,7 +629,7 @@
     },
     {
       "id": "public-surface:kernel/memory",
-      "version": "0.5.0",
+      "version": "0.6.0",
       "kind": "kernel",
       "entryPoint": "src/index.ts",
       "exports": [
@@ -615,7 +646,7 @@
     },
     {
       "id": "public-surface:kernel/model-policy",
-      "version": "0.5.0",
+      "version": "0.6.0",
       "kind": "kernel",
       "entryPoint": "src/index.ts",
       "exports": [
@@ -629,7 +660,7 @@
     },
     {
       "id": "public-surface:kernel/optimization",
-      "version": "0.5.0",
+      "version": "0.6.0",
       "kind": "kernel",
       "entryPoint": "src/index.ts",
       "exports": [
@@ -645,7 +676,7 @@
     },
     {
       "id": "public-surface:kernel/phase-executor",
-      "version": "0.5.0",
+      "version": "0.6.0",
       "kind": "kernel",
       "entryPoint": "src/index.ts",
       "exports": [
@@ -683,7 +714,7 @@
     },
     {
       "id": "public-surface:kernel/pilot",
-      "version": "0.5.0",
+      "version": "0.6.0",
       "kind": "kernel",
       "entryPoint": "src/index.ts",
       "exports": [
@@ -693,7 +724,7 @@
     },
     {
       "id": "public-surface:kernel/plugins",
-      "version": "0.5.0",
+      "version": "0.6.0",
       "kind": "kernel",
       "entryPoint": "src/index.ts",
       "exports": [
@@ -705,7 +736,7 @@
     },
     {
       "id": "public-surface:kernel/policy",
-      "version": "0.5.0",
+      "version": "0.6.0",
       "kind": "kernel",
       "entryPoint": "src/index.ts",
       "exports": [
@@ -715,7 +746,7 @@
     },
     {
       "id": "public-surface:kernel/preflight",
-      "version": "0.5.0",
+      "version": "0.6.0",
       "kind": "kernel",
       "entryPoint": "src/index.ts",
       "exports": [
@@ -727,7 +758,7 @@
     },
     {
       "id": "public-surface:kernel/quality",
-      "version": "0.5.0",
+      "version": "0.6.0",
       "kind": "kernel",
       "entryPoint": "src/index.ts",
       "exports": [
@@ -749,7 +780,7 @@
     },
     {
       "id": "public-surface:kernel/resilience",
-      "version": "0.5.0",
+      "version": "0.6.0",
       "kind": "kernel",
       "entryPoint": "src/index.ts",
       "exports": [
@@ -765,7 +796,7 @@
     },
     {
       "id": "public-surface:kernel/state-machine",
-      "version": "0.5.0",
+      "version": "0.6.0",
       "kind": "kernel",
       "entryPoint": "src/index.ts",
       "exports": [
@@ -776,7 +807,7 @@
     },
     {
       "id": "public-surface:kernel/status",
-      "version": "0.5.0",
+      "version": "0.6.0",
       "kind": "kernel",
       "entryPoint": "src/index.ts",
       "exports": [
@@ -788,7 +819,7 @@
     },
     {
       "id": "public-surface:kernel/types",
-      "version": "0.5.0",
+      "version": "0.6.0",
       "kind": "kernel",
       "entryPoint": "src/index.ts",
       "exports": [
@@ -797,7 +828,7 @@
     },
     {
       "id": "public-surface:kernel/wip",
-      "version": "0.5.0",
+      "version": "0.6.0",
       "kind": "kernel",
       "entryPoint": "src/index.ts",
       "exports": [
@@ -808,7 +839,7 @@
     },
     {
       "id": "public-surface:kernel/workflow",
-      "version": "0.5.0",
+      "version": "0.6.0",
       "kind": "kernel",
       "entryPoint": "src/index.ts",
       "exports": [
@@ -818,8 +849,25 @@
       ]
     },
     {
+      "id": "public-surface:loop/agent-registry",
+      "version": "0.6.0",
+      "kind": "composition",
+      "entryPoint": "src/index.ts",
+      "exports": [
+        "AGENT_REGISTRY_SCHEMA_VERSION",
+        "AgentRegistry",
+        "AgentRegistryEntry",
+        "AgentRegistryEntrySchema",
+        "AgentRegistrySchema",
+        "ResolvedAgent",
+        "loadAgentRegistry",
+        "parseAgentRegistryText",
+        "resolveAgentForRole"
+      ]
+    },
+    {
       "id": "public-surface:loop/brief",
-      "version": "0.5.0",
+      "version": "0.6.0",
       "kind": "composition",
       "entryPoint": "src/index.ts",
       "exports": [
@@ -829,7 +877,7 @@
     },
     {
       "id": "public-surface:loop/config",
-      "version": "0.5.0",
+      "version": "0.6.0",
       "kind": "composition",
       "entryPoint": "src/index.ts",
       "exports": [
@@ -855,7 +903,7 @@
     },
     {
       "id": "public-surface:loop/contract",
-      "version": "0.5.0",
+      "version": "0.6.0",
       "kind": "composition",
       "entryPoint": "src/index.ts",
       "exports": [
@@ -884,7 +932,7 @@
     },
     {
       "id": "public-surface:loop/cooldown",
-      "version": "0.5.0",
+      "version": "0.6.0",
       "kind": "composition",
       "entryPoint": "src/index.ts",
       "exports": [
@@ -898,8 +946,21 @@
       ]
     },
     {
+      "id": "public-surface:loop/debrief",
+      "version": "0.6.0",
+      "kind": "composition",
+      "entryPoint": "src/index.ts",
+      "exports": [
+        "DebriefInput",
+        "DebriefIssueRow",
+        "DebriefReport",
+        "buildDebriefReport",
+        "renderDebriefMarkdown"
+      ]
+    },
+    {
       "id": "public-surface:loop/deliver",
-      "version": "0.5.0",
+      "version": "0.6.0",
       "kind": "composition",
       "entryPoint": "src/index.ts",
       "exports": [
@@ -917,7 +978,7 @@
     },
     {
       "id": "public-surface:loop/doctor",
-      "version": "0.5.0",
+      "version": "0.6.0",
       "kind": "composition",
       "entryPoint": "src/index.ts",
       "exports": [
@@ -932,7 +993,7 @@
     },
     {
       "id": "public-surface:loop/guided-install",
-      "version": "0.5.0",
+      "version": "0.6.0",
       "kind": "composition",
       "entryPoint": "src/index.ts",
       "exports": [
@@ -945,7 +1006,7 @@
     },
     {
       "id": "public-surface:loop/install",
-      "version": "0.5.0",
+      "version": "0.6.0",
       "kind": "composition",
       "entryPoint": "src/index.ts",
       "exports": [
@@ -969,7 +1030,7 @@
     },
     {
       "id": "public-surface:loop/local-config",
-      "version": "0.5.0",
+      "version": "0.6.0",
       "kind": "composition",
       "entryPoint": "src/index.ts",
       "exports": [
@@ -986,8 +1047,32 @@
       ]
     },
     {
+      "id": "public-surface:loop/memory",
+      "version": "0.6.0",
+      "kind": "composition",
+      "entryPoint": "src/index.ts",
+      "exports": [
+        "LearningsLedger",
+        "MemoryContextPlan",
+        "MemoryPromptSelection",
+        "createFileMemoryAdapter",
+        "createFileMemoryKvStore",
+        "learningToMemoryRecord",
+        "learningsPath",
+        "memoryDigestOf",
+        "openLoopMemory",
+        "planMemoryContext",
+        "preferMemoryOverDocBridge",
+        "promoteLearningsToMemory",
+        "readLearningsLedger",
+        "selectMemoryForPrompt",
+        "upsertProposedLearnings",
+        "writeLearningsLedger"
+      ]
+    },
+    {
       "id": "public-surface:loop/process",
-      "version": "0.5.0",
+      "version": "0.6.0",
       "kind": "composition",
       "entryPoint": "src/index.ts",
       "exports": [
@@ -996,7 +1081,7 @@
     },
     {
       "id": "public-surface:loop/retro",
-      "version": "0.5.0",
+      "version": "0.6.0",
       "kind": "composition",
       "entryPoint": "src/index.ts",
       "exports": [
@@ -1005,6 +1090,7 @@
         "RetroInput",
         "RetroIssueRow",
         "RetroReport",
+        "RetroStageReport",
         "RetroSuggestion",
         "RetroTarget",
         "RetroWindow",
@@ -1014,12 +1100,13 @@
         "parseSince",
         "readLoopEvents",
         "renderRetroMarkdown",
-        "retroLearnings"
+        "retroLearnings",
+        "runRetroStage"
       ]
     },
     {
       "id": "public-surface:loop/routing",
-      "version": "0.5.0",
+      "version": "0.6.0",
       "kind": "composition",
       "entryPoint": "src/index.ts",
       "exports": [
@@ -1033,7 +1120,7 @@
     },
     {
       "id": "public-surface:loop/slots",
-      "version": "0.5.0",
+      "version": "0.6.0",
       "kind": "composition",
       "entryPoint": "src/index.ts",
       "exports": [
@@ -1048,7 +1135,7 @@
     },
     {
       "id": "public-surface:loop/tick",
-      "version": "0.5.0",
+      "version": "0.6.0",
       "kind": "composition",
       "entryPoint": "src/index.ts",
       "exports": [
@@ -1072,14 +1159,32 @@
     },
     {
       "id": "public-surface:loop/ui/terminal",
-      "version": "0.5.0",
+      "version": "0.6.0",
       "kind": "composition",
       "entryPoint": "src/index.ts",
       "exports": [
         "RichIO",
         "createRichIO"
       ]
+    },
+    {
+      "id": "public-surface:loop/watch",
+      "version": "0.6.0",
+      "kind": "composition",
+      "entryPoint": "src/index.ts",
+      "exports": [
+        "WatchEvent",
+        "WatchEventKind",
+        "WatchInput",
+        "WatchReport",
+        "WatchTargetSnapshot",
+        "classifyWatchEvent",
+        "classifyWatchPhase",
+        "formatWatchEvent",
+        "snapshotWatchTargets",
+        "watchDeliveries"
+      ]
     }
   ],
-  "digest": "9dbeb29dc407f49e051eb594f9552fa7b1620b9405610a01e6409d0e5f9204b0"
+  "digest": "9fe2e47222eccc6a31ffdd562631eef2bb9b125ced5b8ec99327610e366e32cf"
 }

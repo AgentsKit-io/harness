@@ -1,10 +1,14 @@
 # Changelog
 
-## Unreleased
+## [0.6.0] - 2026-09-12
 
-- Docs: `docs/LOOP.md` now documents Doc Bridge and `agentskit-review` loop wiring, the AgentsKit ecosystem map
-  (memory, eval, runtime, playbook, RAG, agent registry, MCP), and prioritized SDLC extension ideas; README loop
-  blurb points at that section.
+- Loop **approved memory** for token reduction and continuous improvement: file store under `stateDir`, recall into contract/brief with `preferOverDocBridge` + issue-char shrink, human-only `ak-harness loop learning promote`, `memory.recalled` events.
+- Doctor: Doc Bridge index/freshness checks; review CLI PATH/`--help` probe (warning when missing).
+- Worker brief lists Doc Bridge `playbook` / `for-agents` guidance paths (`contract.briefScopes`).
+- Optional deliver smoke gate (`delivery.smoke.verify-argv`) before auto-merge.
+- Optional `agents.registry.yaml` role overlay; RAG `ContextProvider` via argv (no hard dep); MCP tool bridge behind policy ([ADR-0028](docs/ADR-0028-mcp-adapter-boundary.md), not loop-wired).
+- Optional weekly Linear retro automation (`schedule.retro` + `schedule.retroIssue` → `loop stage retro`).
+- Config knobs default off / fail-soft so existing `loop.config.yaml` behaviour is unchanged.
 
 ## [0.5.0] - 2026-09-11
 

@@ -239,6 +239,21 @@ const handlePullRequest = async (ctx: Context, record: DispatchRecordFile, lease
   } else if (prior.status === 'findings') return { issue: record.issue, outcome: 'waiting', reason: `review findings pending a new push (head ${pr.headSha.slice(0, 7)})`, pr: pr.number, head: pr.headSha, actions }
 
   if (!config.delivery.merge.auto) return { issue: record.issue, outcome: 'held', reason: 'review clean; auto-merge disabled', pr: pr.number, head: pr.headSha, ...(review ? { review } : {}), actions }
+
+  const smoke = config.delivery.smoke
+  if (smoke.enabled && smoke.kind === 'verify-argv') {
+    if (!smoke.argv.length) return { issue: record.issue, outcome: 'held', reason: 'delivery.smoke.enabled but argv is empty', pr: pr.number, head: pr.headSha, actions }
+    if (ctx.dryRun) { actions.push(`would run smoke: ${smoke.argv.join(' ')}`); return { issue: record.issue, outcome: 'dry-run', reason: 'smoke pending', pr: pr.number, head: pr.headSha, actions } }
+    const smokeOutcome = await ctx.runner.run([...smoke.argv], { timeoutMs: smoke.timeoutMs, cwd: ctx.loaded.root, env: ctx.env })
+    if (smokeOutcome.timedOut || smokeOutcome.code !== 0) {
+      const detail = `${smokeOutcome.stderr}\n${smokeOutcome.stdout}`.trim().slice(0, 400)
+      actions.push(`smoke failed: exit ${smokeOutcome.timedOut ? 'timeout' : smokeOutcome.code ?? 'null'}`)
+      event(ctx, { type: 'pr.smoke-failed', issue: record.issue, pr: pr.number, head: pr.headSha, detail })
+      return fixRound(ctx, record, lease, state, pr, 'ci', `Loop: optional deliver smoke failed (\`${smoke.argv.join(' ')}\`). Fix the failure, re-run \`${config.delivery.verifyCommand}\`, push, and the loop will retry.\n\n${detail}`, `smoke failed: ${detail.split('\n')[0] ?? 'non-zero exit'}`, actions)
+    }
+    actions.push('smoke passed')
+  }
+
   if (ctx.dryRun) { actions.push('would squash-merge'); return { issue: record.issue, outcome: 'dry-run', reason: 'ready to merge', pr: pr.number, head: pr.headSha, actions } }
   const merged = await githubMerge(ctx.runner, { repo: config.project.repo, number: pr.number, headSha: pr.headSha, method: config.delivery.merge.method, title: `${pr.title} (#${pr.number})` })
   if (!merged.merged) { actions.push(`merge refused: ${merged.message}`); event(ctx, { type: 'pr.merge-refused', issue: record.issue, pr: pr.number, head: pr.headSha, message: merged.message }); return { issue: record.issue, outcome: 'waiting', reason: `merge refused: ${merged.message}`, pr: pr.number, head: pr.headSha, actions } }

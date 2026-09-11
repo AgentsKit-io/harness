@@ -1,7 +1,8 @@
 import { compareVersions, orcaAccountList, orcaAgentHooks, orcaStatus, orcaVersion, orcaWorktrees, type OrcaStatus, type OrcaWorktree } from '../adapters/orca-cli.js'
 import { detectProviders, type ProviderAvailability, type ProviderSpec } from '../adapters/providers.js'
 import { fetchLinearQueue, type LoopIssue } from '../adapters/linear-orca.js'
-import type { CommandRunner } from '../adapters/command.js'
+import { findExecutable, type CommandRunner } from '../adapters/command.js'
+import { inspectDocBridgeIndex } from '../adapters/doc-bridge.js'
 import { HarnessError } from '../kernel/errors.js'
 import { MODEL_ROLES } from '../kernel/model-policy.js'
 import { loadLoopConfig, providerIdentity, type LoadedLoopConfig, type LoopConfig } from './config.js'
@@ -90,6 +91,39 @@ export const runLoopDoctor = async (input: LoopDoctorInput): Promise<LoopDoctorR
     queue = await fetchLinearQueue(input.runner, { bin: config.orca.bin, workspaceId: config.linear.workspaceId, teamKey: config.linear.teamKey, assignee: config.linear.person, filter: config.linear, orca: orcaOptions })
     push('linear.queue', 'passed', `${queue.length} dispatchable issue(s) for ${config.linear.person} in ${config.linear.states.join('/')}`)
   } catch (error) { queueError = message(error); push('linear.queue', 'failed', queueError) }
+
+  const docBridge = inspectDocBridgeIndex(loaded.root)
+  if (!docBridge.present) {
+    push('doc-bridge.index', config.contract.requireDocBridge ? 'failed' : 'warning', `missing ${docBridge.path} — orchestrator runs without Doc Bridge refs (rebuild with docs:bridge:index when available)`)
+  } else if (docBridge.error) {
+    push('doc-bridge.index', config.contract.requireDocBridge ? 'failed' : 'warning', `unreadable: ${docBridge.error}`)
+  } else {
+    push('doc-bridge.index', 'passed', `present (hash ${docBridge.contentHash?.slice(0, 12) ?? 'unknown'})`)
+    const maxAge = config.contract.docBridgeMaxAgeHours
+    if (maxAge > 0 && docBridge.ageHours !== null && docBridge.ageHours > maxAge) {
+      push('doc-bridge.freshness', config.contract.requireDocBridge ? 'failed' : 'warning', `index age ${docBridge.ageHours.toFixed(1)}h exceeds ${maxAge}h — refresh Doc Bridge`)
+    } else {
+      push('doc-bridge.freshness', 'passed', `age ${docBridge.ageHours?.toFixed(1) ?? '?'}h ≤ ${maxAge}h`)
+    }
+  }
+
+  const reviewCli = config.delivery.review.cli
+  const reviewBin = findExecutable(reviewCli, input.env ?? process.env, input.platform ?? process.platform)
+  // Warning (not failed): tick can still dispatch; deliver waits until the review CLI is available.
+  if (!reviewBin) push('review.cli', 'warning', `"${reviewCli}" not on PATH — deliver cannot review until it is installed`)
+  else {
+    push('review.cli', 'passed', `found ${reviewBin}${config.delivery.review.transport ? ` · transport ${config.delivery.review.transport}` : ''} · mode ${config.delivery.review.mode}`)
+    if (config.delivery.review.doctorProbe === 'help' && input.probe !== false) {
+      try {
+        const help = await input.runner.run([reviewCli, '--help'], { timeoutMs: 15_000 })
+        push('review.help', help.code === 0 ? 'passed' : 'warning', help.code === 0 ? '`--help` ok' : `exit ${help.code ?? 'null'}: ${(help.stderr || help.stdout).trim().slice(0, 160)}`)
+      } catch (error) { push('review.help', 'warning', message(error)) }
+    }
+  }
+
+  if (config.memory.enabled) {
+    push('memory', 'passed', `enabled · backend ${config.memory.backend} · store ${config.project.stateDir}/${config.memory.storePath} · preferOverDocBridge=${config.memory.preferOverDocBridge}`)
+  }
 
   const failed = checks.some((check) => check.status === 'failed')
   return {

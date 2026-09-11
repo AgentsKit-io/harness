@@ -208,19 +208,21 @@ Legend: **Loop** = wired into `ak-harness loop …` today · **Kernel** = public
 | **Code Review** | Loop + Compat | `adapters/code-review.ts`, deliver | Live adversarial review before auto-merge. |
 | **Orca / Linear / GitHub** | Loop | `adapters/orca-cli.ts`, `linear-orca.ts`, `github-cli.ts` | Scheduler, worktrees, queue, PR merge. |
 | **Coding-agent CLIs** | Loop | `adapters/providers.ts`, `models.*` tiers | Claude / Codex / Grok / OpenCode via TUI + headless templates — not an AgentsKit agent registry. |
-| **Memory** | Kernel + Compat | `kernel/memory.ts` (`AgentMemoryAdapter`, in-memory + KV bridge) | Contract accepts only **approved** records with scope/sourceRevision/contentHash. Intended to wrap `@agentskit/memory`. **Not consulted by the loop** yet. |
+| **Memory** | Loop + Kernel + Compat | `kernel/memory.ts`, `loop/memory.ts` | Approved learnings (`loop learning promote`) shrink Doc Bridge/issue text in contract + brief. |
 | **Eval** | Kernel + Compat | `kernel/eval.ts`, `evals/manifest.json` | Battery + `assessAgentEval`. **Not run inside tick/deliver**. |
 | **Runtime (process / Docker)** | Kernel | `execution/runtime.ts` | Tool runtimes with attestation for kernel/agent sessions. Loop workers run as Orca terminals + provider TUIs instead. |
 | **Plugin / context registry** | Kernel | `kernel/plugins.ts`, `CONTEXT_PROVIDER_SLOT` | Typed slots so Doc Bridge / Playbook / custom providers plug in without kernel changes. Loop uses Doc Bridge directly today. |
-| **Playbook practices** | Kernel (guidance only) | Context `scope: ['playbook']` examples in README; ADR-0002 | Playbook is **guidance**; the harness enforces contracts/evidence. No Playbook package dependency. Loop does not inject Playbook checklists into worker briefs unless they are indexed by Doc Bridge. |
-| **RAG (`@agentskit/rag` / os-rag)** | Absent | — | No RAG adapter. Closest path today: index docs via Doc Bridge, or add a `ContextProvider` that queries a vector store. |
-| **AgentsKit agent registry** | Absent | — | Loop routes `provider/model` strings from YAML. It does not load AgentsKit OS agent definitions, skills, or marketplace packs. |
-| **MCP / event bridge** | Absent | MODULE-BOUNDARIES inventory | Explicitly deferred until ADR + eval coverage. |
+| **Playbook practices** | Loop (via Doc Bridge scopes) | `contract.briefScopes` → worker brief | Titles/paths for `playbook` / `for-agents` scopes listed in the brief when indexed. |
+| **RAG (`@agentskit/rag` / os-rag)** | Kernel adapter (opt-in) | `adapters/rag-context.ts` | Argv/`ContextProvider` seam; enable via `rag.enabled` + `contract.contextProviders`. No hard dep. |
+| **AgentsKit agent registry** | Composition (opt-in file) | `loop/agent-registry.ts` | Optional `agents.registry.yaml` role→TUI/argv overlay. Not OS marketplace. |
+| **MCP / event bridge** | Kernel adapter + ADR-0028 | `adapters/mcp.ts` | Policy-gated tool bridge; **not** wired into tick/deliver in 0.6.0. |
 | **`@agentskit/core` / `@agentskit/eval` / `@agentskit/memory`** | Compat pins only | `compatibility/manifest.json` | Upstream packages are compatibility-tested; harness does **not** depend on them at runtime. Callers adapt them through the seams above. |
 
 Compatibility report for 0.4.0 was **fail-closed** on code-review quality baselines and the no-Harness pilot cohort; see `compatibility/report.md`. Refresh after each release (qualification + pinned revisions).
 
 ## What can be added to help the SDLC
+
+**0.6.0 ships the backlog below** (memory, doctor freshness/review probe, brief scopes, deliver smoke, agent registry, RAG provider, MCP seam+ADR, Docker verify config, weekly retro automation). Remaining work is dogfooding and deeper MCP/OS registry integrations.
 
 Ordered by leverage for a keep-pushing loop (config/adapters first; no kernel redesign required for the early items).
 
