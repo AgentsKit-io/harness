@@ -5,17 +5,18 @@ import { renderFindingsForWorker, runCodeReview, type CodeReviewOutcome } from '
 import { assessChecks, githubComment, githubCommentExists, githubMerge, githubOpenPullRequests, githubPullRequestsForBranch, touchesProtectedPaths, type PullRequestSnapshot } from '../adapters/github-cli.js'
 import { createLinearTrackingAdapter, linearAttach, linearCommentAdd, linearLabelAdd } from '../adapters/linear-orca.js'
 import { orcaAccountList, orcaAgentHooks, orcaTerminalList, orcaTerminalSend, orcaTerminalWait, orcaWorktreeRemove, orcaWorktreeSet } from '../adapters/orca-cli.js'
-import { detectProviders } from '../adapters/providers.js'
+import { detectProviders, type ProviderAvailability } from '../adapters/providers.js'
 import { createDispatchLedger, type DispatchLease } from '../execution/coordination.js'
 import { HarnessError } from '../kernel/errors.js'
+import { renderHandoffBrief } from './brief.js'
 import { loadLoopConfig, providerIdentity, type LoadedLoopConfig, type LoopConfig } from './config.js'
 import { activeCooldowns, readCooldowns } from './cooldown.js'
 import { providerSpecs } from './doctor.js'
 import { resolveCatalogCandidates } from './model-catalog/index.js'
 import { rankModels, type RankedModel } from './routing.js'
-import { appendLoopEvent, dispatchRecordPath, readDispatchRecord, type DispatchRecordFile } from './tick.js'
+import { appendLoopEvent, dispatchRecordPath, launchWorkerTerminal, readDispatchRecord, writeDispatchRecord, type DispatchRecordFile } from './tick.js'
 
-export type DeliverOutcome = 'waiting' | 'reviewed' | 'fix-round' | 'nudged' | 'merged' | 'held' | 'blocked' | 'stuck' | 'abandoned' | 'failed' | 'dry-run'
+export type DeliverOutcome = 'waiting' | 'reviewed' | 'fix-round' | 'nudged' | 'handed-off' | 'merged' | 'held' | 'blocked' | 'stuck' | 'abandoned' | 'failed' | 'dry-run'
 
 export interface DeliverResult {
   readonly issue: string
@@ -36,12 +37,23 @@ export interface DeliverReport {
   readonly notes: readonly string[]
 }
 
+export interface DeliveryHandoff {
+  readonly at: string
+  readonly fromProvider: string
+  readonly fromModel: string
+  readonly toProvider: string
+  readonly toModel: string
+  readonly reason: string
+  readonly terminal: string | null
+}
+
 export interface DeliveryState {
   readonly issue: string
   readonly prNumber: number | null
   readonly reviews: Readonly<Record<string, { readonly status: CodeReviewOutcome['status']; readonly at: string; readonly provider: string; readonly model: string | null; readonly blocking: number; readonly attempts: number }>>
   readonly fixRounds: number
-  readonly nudges: readonly { readonly kind: 'idle' | 'conflict' | 'ci' | 'review'; readonly at: string; readonly head: string | null }[]
+  readonly nudges: readonly { readonly kind: 'idle' | 'conflict' | 'ci' | 'review' | 'handoff'; readonly at: string; readonly head: string | null }[]
+  readonly handoffs: readonly DeliveryHandoff[]
   readonly heldFor: string | null
   readonly finishedAt: string | null
   readonly finalOutcome: DeliverOutcome | null
@@ -68,9 +80,12 @@ const writeJson = (path: string, value: unknown): void => { mkdirSync(dirname(pa
 export const deliveryStatePath = (stateDir: string, identifier: string): string => join(stateDir, 'issues', identifier, 'delivery.json')
 export const readDeliveryState = (stateDir: string, identifier: string): DeliveryState => {
   const path = deliveryStatePath(stateDir, identifier)
-  const empty: DeliveryState = { issue: identifier, prNumber: null, reviews: {}, fixRounds: 0, nudges: [], heldFor: null, finishedAt: null, finalOutcome: null }
+  const empty: DeliveryState = { issue: identifier, prNumber: null, reviews: {}, fixRounds: 0, nudges: [], handoffs: [], heldFor: null, finishedAt: null, finalOutcome: null }
   if (!existsSync(path)) return empty
-  try { return { ...empty, ...(JSON.parse(readFileSync(path, 'utf8')) as Partial<DeliveryState>) } } catch { return empty }
+  try {
+    const parsed = JSON.parse(readFileSync(path, 'utf8')) as Partial<DeliveryState>
+    return { ...empty, ...parsed, handoffs: parsed.handoffs ?? [], nudges: parsed.nudges ?? [] }
+  } catch { return empty }
 }
 
 /** Every issue the loop dispatched and has not finished. */
@@ -89,6 +104,8 @@ interface Context {
   readonly now: () => Date
   readonly dryRun: boolean
   readonly reviewer: RankedModel | null
+  readonly builder: RankedModel | null
+  readonly providers: readonly ProviderAvailability[]
   readonly env: NodeJS.ProcessEnv
   readonly assumeIdle?: boolean
   readonly notes: string[]
@@ -130,6 +147,101 @@ const finish = (ctx: Context, record: DispatchRecordFile, lease: DispatchLease |
   event(ctx, { type: `worker.${outcome}`, issue: record.issue, reason, worktreeId: record.worktreeId })
 }
 
+const providerUnavailable = (ctx: Context, providerId: string): boolean => {
+  const match = ctx.providers.find((provider) => provider.id === providerId)
+  return !match || !match.available
+}
+
+const pickHandoffBuilder = (ctx: Context, record: DispatchRecordFile): RankedModel | null => {
+  const ranked = rankModels(ctx.config, 'builder', ctx.providers)
+  const different = ranked.find((candidate) => candidate.provider !== record.provider || candidate.model !== record.model)
+  return different ?? null
+}
+
+const canHandoff = (ctx: Context, record: DispatchRecordFile, state: DeliveryState, next: RankedModel | null): next is RankedModel => {
+  const cfg = ctx.config.delivery.handoff
+  if (!cfg.enabled || !next) return false
+  if (state.handoffs.length >= cfg.maxHandoffs) return false
+  if (cfg.onlyWhenProviderUnavailable && !providerUnavailable(ctx, record.provider)) return false
+  return true
+}
+
+const performHandoff = async (
+  ctx: Context,
+  record: DispatchRecordFile,
+  state: DeliveryState,
+  next: RankedModel,
+  reason: string,
+  actions: string[],
+): Promise<DeliverResult> => {
+  const brief = renderHandoffBrief({
+    issue: record.issue,
+    issueUrl: record.url,
+    config: ctx.config,
+    branch: record.branch,
+    worktree: record.worktree,
+    previousProvider: record.provider,
+    previousModel: record.model,
+    provider: next.provider,
+    model: next.model,
+    contractDigest: record.contractDigest,
+    reason,
+  })
+  if (ctx.dryRun) {
+    actions.push(`would hand off ${record.provider}/${record.model} → ${next.provider}/${next.model} on ${record.branch}`)
+    return { issue: record.issue, outcome: 'dry-run', reason: `handoff ready: ${reason}`, actions }
+  }
+  const title = `loop-handoff ${record.issue} ${next.provider}`
+  const launched = await launchWorkerTerminal({
+    runner: ctx.runner,
+    config: ctx.config,
+    worktreeId: record.worktreeId,
+    command: next.tui,
+    title,
+    brief,
+  })
+  actions.push(`handed off to ${next.provider}/${next.model} on terminal ${launched.terminal}${launched.accepted ? '' : ' (brief not confirmed)'}`)
+  const updated: DispatchRecordFile = {
+    ...record,
+    terminal: launched.terminal,
+    provider: next.provider,
+    model: next.model,
+  }
+  writeDispatchRecord(ctx.loaded.stateDir, updated)
+  const handoff: DeliveryHandoff = {
+    at: ctx.now().toISOString(),
+    fromProvider: record.provider,
+    fromModel: record.model,
+    toProvider: next.provider,
+    toModel: next.model,
+    reason,
+    terminal: launched.terminal,
+  }
+  const nextState: DeliveryState = {
+    ...state,
+    handoffs: [...state.handoffs, handoff],
+    nudges: [...state.nudges, { kind: 'handoff', at: handoff.at, head: null }],
+  }
+  saveState(ctx, nextState)
+  event(ctx, {
+    type: 'worker.handed-off',
+    issue: record.issue,
+    from: `${record.provider}/${record.model}`,
+    to: `${next.provider}/${next.model}`,
+    worktreeId: record.worktreeId,
+    branch: record.branch,
+    reason,
+    briefAccepted: launched.accepted,
+  })
+  try {
+    await orcaWorktreeSet(ctx.runner, {
+      worktree: `id:${record.worktreeId}`,
+      comment: `LOOP HANDOFF: ${record.provider}/${record.model} → ${next.provider}/${next.model} (${reason})`,
+    }, orcaOptions(ctx.config))
+  } catch (error) { actions.push(`Orca comment failed: ${message(error)}`) }
+  return { issue: record.issue, outcome: 'handed-off', reason: `handed off to ${next.provider}/${next.model}: ${reason}`, actions }
+}
+
 const handleNoPullRequest = async (ctx: Context, record: DispatchRecordFile, lease: DispatchLease | undefined, state: DeliveryState): Promise<DeliverResult> => {
   const actions: string[] = []
   const now = ctx.now()
@@ -144,15 +256,32 @@ const handleNoPullRequest = async (ctx: Context, record: DispatchRecordFile, lea
   const sinceDispatch = minutesBetween(now, record.dispatchedAt)
   const sinceOutput = Math.min(sinceDispatch, minutesBetween(now, lastOutputAt))
   const idleTimeout = ctx.config.delivery.workerIdleTimeoutMin
+  const nextBuilder = pickHandoffBuilder(ctx, record)
+  const unavailable = providerUnavailable(ctx, record.provider)
+
   if (!terminalAlive) {
     if (sinceDispatch < 5) return { issue: record.issue, outcome: 'waiting', reason: 'worker terminal not visible yet', actions }
+    if (canHandoff(ctx, record, state, nextBuilder)) {
+      return performHandoff(ctx, record, state, nextBuilder, unavailable ? 'previous terminal gone and provider unavailable' : 'previous terminal gone', actions)
+    }
     await escalateLinear(ctx, record, 'stuck', `**Loop: worker stuck** — the worker terminal for \`${record.worktree}\` is gone and no pull request was opened. The worktree was preserved for inspection; the slot was released.`, actions)
     finish(ctx, record, lease, state, 'stuck', 'terminal gone before PR')
     return { issue: record.issue, outcome: ctx.dryRun ? 'dry-run' : 'stuck', reason: 'worker terminal gone before a PR was opened', actions }
   }
+
   let idle = ctx.assumeIdle ?? false
-  if (ctx.assumeIdle === undefined && record.terminal) { try { idle = (await orcaTerminalWait(ctx.runner, { terminal: record.terminal, for: 'tui-idle', timeoutMs: 1_500 }, orcaOptions(ctx.config))).satisfied } catch { idle = false } }
-  if (!idle || sinceOutput < idleTimeout) return { issue: record.issue, outcome: 'waiting', reason: idle ? `worker idle for ${Math.round(sinceOutput)} min (< ${idleTimeout})` : 'worker active', actions }
+  if (ctx.assumeIdle === undefined && record.terminal) {
+    try { idle = (await orcaTerminalWait(ctx.runner, { terminal: record.terminal, for: 'tui-idle', timeoutMs: 1_500 }, orcaOptions(ctx.config))).satisfied } catch { idle = false }
+  }
+  if (!idle || sinceOutput < idleTimeout) {
+    return { issue: record.issue, outcome: 'waiting', reason: idle ? `worker idle for ${Math.round(sinceOutput)} min (< ${idleTimeout})` : 'worker active', actions }
+  }
+
+  // Idle past timeout: prefer handoff when the current provider cannot continue.
+  if (canHandoff(ctx, record, state, nextBuilder) && unavailable) {
+    return performHandoff(ctx, record, state, nextBuilder, `idle ${Math.round(sinceOutput)} min and ${record.provider} unavailable (usage/cooldown)`, actions)
+  }
+
   const idleNudges = state.nudges.filter((nudge) => nudge.kind === 'idle')
   const lastNudge = idleNudges.at(-1)
   if (!lastNudge || minutesBetween(now, lastNudge.at) < idleTimeout) {
@@ -162,6 +291,12 @@ const handleNoPullRequest = async (ctx: Context, record: DispatchRecordFile, lea
     event(ctx, { type: 'worker.nudged', issue: record.issue, kind: 'idle' })
     return { issue: record.issue, outcome: ctx.dryRun ? 'dry-run' : sent ? 'nudged' : 'waiting', reason: 'idle without PR; nudged once', actions }
   }
+
+  // After a failed nudge window: hand off only when the current provider cannot continue.
+  if (canHandoff(ctx, record, state, nextBuilder)) {
+    return performHandoff(ctx, record, state, nextBuilder, `idle after nudge and ${record.provider} unavailable`, actions)
+  }
+
   await escalateLinear(ctx, record, 'stuck', `**Loop: worker stuck** — idle for ${Math.round(sinceOutput)} minutes after a check-in, no pull request on \`${record.branch}\`. Worktree \`${record.worktree}\` was preserved; the slot was released and the issue returned to ${ctx.config.delivery.returnState}.`, actions)
   finish(ctx, record, lease, state, 'stuck', 'idle after nudge without PR')
   return { issue: record.issue, outcome: ctx.dryRun ? 'dry-run' : 'stuck', reason: 'idle after nudge without PR', actions }
@@ -277,23 +412,17 @@ export const runDeliver = async (input: DeliverInput): Promise<DeliverReport> =>
   const orca = orcaOptions(config)
   const [accountList, agentHooks] = await Promise.all([orcaAccountList(input.runner, orca).catch(() => ({})), orcaAgentHooks(input.runner, orca).catch(() => ({}) as Readonly<Record<string, 'installed' | 'not_installed' | 'unknown'>>)])
   const providers = await detectProviders({ providers: providerSpecs(config), accountList, agentHooks, env: input.env, platform: input.platform, exhaustedPercent: config.models.cooldown.exhaustedPercent, cooldowns: activeCooldowns(readCooldowns(loaded.stateDir), now()), now })
-  const reviewerExtras = config.models.routing.mode === 'catalog'
-    ? await resolveCatalogCandidates({
-      config,
-      role: 'reviewer',
-      availableProviderIds: providers.filter((provider) => provider.available).map((provider) => provider.id),
-      runner: input.runner,
-      stateDir: loaded.stateDir,
-      env: input.env,
-      now,
-    })
-    : []
-  const reviewer = rankModels(config, 'reviewer', providers, reviewerExtras)[0] ?? null
+  const availableIds = providers.filter((provider) => provider.available).map((provider) => provider.id)
+  const catalogExtras = async (role: 'reviewer' | 'builder') => config.models.routing.mode === 'catalog'
+    ? resolveCatalogCandidates({ config, role, availableProviderIds: availableIds, runner: input.runner, stateDir: loaded.stateDir, env: input.env, now })
+    : Promise.resolve([])
+  const reviewer = rankModels(config, 'reviewer', providers, await catalogExtras('reviewer'))[0] ?? null
+  const builder = rankModels(config, 'builder', providers, await catalogExtras('builder'))[0] ?? null
   let env = input.env ?? process.env
   if (!env['GITHUB_TOKEN'] && !env['GH_TOKEN']) { try { const token = await input.runner.run(['gh', 'auth', 'token'], { timeoutMs: 10_000 }); if (token.code === 0 && token.stdout.trim()) env = { ...env, GITHUB_TOKEN: token.stdout.trim(), GH_TOKEN: token.stdout.trim() } } catch { /* review runs without a token and reports incomplete */ } }
   const reviewDeadlineMs = input.budgetMs ? Math.max(60_000, Math.min(config.delivery.review.deadlineMs, input.budgetMs - 90_000)) : config.delivery.review.deadlineMs
   if (reviewDeadlineMs < config.delivery.review.deadlineMs) notes.push(`review deadline capped to ${Math.round(reviewDeadlineMs / 1000)}s to fit the stage budget`)
-  const ctx: Context = { loaded, config, runner: input.runner, now, dryRun, reviewer, env, ...(input.assumeIdle === undefined ? {} : { assumeIdle: input.assumeIdle }), notes, reviewDeadlineMs }
+  const ctx: Context = { loaded, config, runner: input.runner, now, dryRun, reviewer, builder, providers, env, ...(input.assumeIdle === undefined ? {} : { assumeIdle: input.assumeIdle }), notes, reviewDeadlineMs }
   const ledger = createDispatchLedger(loaded.stateDir)
   const leases = new Map(ledger.active().map((lease) => [lease.issue, lease]))
   const results: DeliverResult[] = []

@@ -1,3 +1,7 @@
+# 0.8.0 release candidate
+
+Worker handoff: continue in-flight tickets on the same Orca worktree/branch with another provider when usage runs out.
+
 # 0.7.0 release candidate
 
 Dynamic Orca-aware model routing (hybrid/dynamic/catalog) with remaining-usage ranking and a living model catalog (CLI + builtin + optional Artificial Analysis).

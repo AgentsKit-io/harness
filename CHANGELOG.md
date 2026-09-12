@@ -1,5 +1,9 @@
 # Changelog
 
+## [0.8.0] - 2026-09-12
+
+- Worker **handoff**: when a dispatched worker is idle (or its terminal is gone) and its provider is unavailable (usage/cooldown), deliver relaunches another builder on the **same** Orca worktree + branch with a continuation brief (`renderHandoffBrief`). Lease stays; `dispatch.json` updates terminal/provider/model; `delivery.handoffs[]` + `worker.handed-off` event. Caps via `delivery.handoff.maxHandoffs` (default 2).
+
 ## [0.7.0] - 2026-09-12
 
 - Dynamic model routing: `models.routing.mode` (`tiers` | `hybrid` | `dynamic` | `catalog`). Default `tiers` preserves 0.6 behaviour.

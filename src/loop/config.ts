@@ -178,6 +178,16 @@ export const LoopConfigSchema = z.object({
     }).prefault({}),
     maxFixRounds: z.number().int().min(0).default(2),
     workerIdleTimeoutMin: z.number().int().positive().default(45),
+    /**
+     * When a worker goes idle / dies and its provider is out of usage (or otherwise unavailable),
+     * relaunch another builder on the **same** Orca worktree + branch with a continuation brief.
+     */
+    handoff: z.object({
+      enabled: z.boolean().default(true),
+      maxHandoffs: z.number().int().min(0).max(5).default(2),
+      /** Only hand off when the current provider is unavailable (exhausted/cooldown/missing). */
+      onlyWhenProviderUnavailable: z.boolean().default(true),
+    }).prefault({}),
     selfEditPaths: z.array(nonEmpty).default([LOOP_CONFIG_FILE, '.github/**']),
     /** Check names ignored when deciding CI is green (e.g. advisory bots). */
     ignoreChecks: z.array(nonEmpty).default([]),

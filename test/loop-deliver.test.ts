@@ -23,6 +23,8 @@ interface Scenario {
   readonly mergeRefused?: boolean
   readonly dispatchedAt?: string
   readonly reviewerAvailable?: boolean
+  /** Exhaust Claude usage so deliver prefers a handoff to another builder. */
+  readonly exhaustClaude?: boolean
   /** PR whose head is Orca's `<git user>/<worktree>` branch, only visible through the open-PR listing. */
   readonly orcaBranchPr?: Record<string, unknown>
 }
@@ -41,10 +43,17 @@ const setup = (initial: Scenario = {}) => {
   const record: DispatchRecordFile = { issue: 'ENG-10', worktreeId: 'repo-1::/w/eng-10-demo', worktree: 'eng-10-demo', branch: 'person/eng-10-demo', terminal: 'term_w', provider: 'claude', model: 'sonnet', contractDigest: 'abc', leaseKey: claim.lease.key, leaseId: claim.lease.leaseId, dispatchedAt: scenario.dispatchedAt ?? '2026-09-11T10:00:00.000Z', url: 'https://linear.app/x/issue/ENG-10' }
   mkdirSync(join(loaded.stateDir, 'issues', 'ENG-10'), { recursive: true })
   writeFileSync(dispatchRecordPath(loaded.stateDir, 'ENG-10'), JSON.stringify(record))
-  const account = JSON.parse(JSON.stringify((fixture('account-list') as { result: unknown }).result)) as { rateLimits: Record<string, { weekly?: { usedPercent: number } }> }
+  const account = JSON.parse(JSON.stringify((fixture('account-list') as { result: unknown }).result)) as { rateLimits: Record<string, { weekly?: { usedPercent: number }; session?: { usedPercent: number }; status?: string }> }
   if (account.rateLimits['codex']?.weekly) account.rateLimits['codex'].weekly.usedPercent = scenario.reviewerAvailable === false ? 100 : 10
+  if (scenario.exhaustClaude && account.rateLimits['claude']) {
+    account.rateLimits['claude'].status = 'ok'
+    if (account.rateLimits['claude'].weekly) account.rateLimits['claude'].weekly.usedPercent = 100
+    else account.rateLimits['claude'].weekly = { usedPercent: 100 }
+    if (account.rateLimits['claude'].session) account.rateLimits['claude'].session.usedPercent = 100
+    else account.rateLimits['claude'].session = { usedPercent: 100 }
+  }
   const calls: string[][] = []
-  const runner: CommandRunner & { readonly calls: string[][] } = {
+  const runner: CommandRunner & { calls: string[][]; run: CommandRunner['run'] } = {
     calls,
     run: async (argv, options) => {
       calls.push([...argv])
@@ -60,6 +69,7 @@ const setup = (initial: Scenario = {}) => {
         return ok([scenario.mergedPr, scenario.closedPr].filter(Boolean))
       }
       if (key.startsWith('orca terminal list')) return okResult({ terminals: scenario.terminals ?? [{ handle: 'term_w', connected: true, orphaned: false, lastOutputAt: Date.parse('2026-09-11T10:30:00.000Z'), worktreeId: 'repo-1::/w/eng-10-demo' }] })
+      if (key.startsWith('orca terminal create')) return okResult({ handle: 'term_handoff', terminal: { handle: 'term_handoff' } })
       if (key.startsWith('orca terminal wait')) return okResult({ satisfied: true })
       if (key.startsWith('orca terminal send')) return okResult({ accepted: true, requestId: 'r' })
       if (key.startsWith('orca linear') || key.startsWith('orca worktree set') || key.startsWith('orca worktree rm')) return okResult({ ok: true })
@@ -203,6 +213,24 @@ describe('deliver', () => {
     expect((await deliver(busy, { assumeIdle: false })).results[0]).toMatchObject({ outcome: 'waiting', reason: 'worker active' })
     const gone = setup({ pr: null, terminals: [] })
     expect((await deliver(gone)).results[0]).toMatchObject({ outcome: 'stuck', reason: expect.stringContaining('terminal gone') })
+  })
+
+  it('hands off to another builder on the same worktree/branch when the current provider is exhausted', async () => {
+    const env = setup({ pr: null, dispatchedAt: '2026-09-11T09:00:00.000Z', exhaustClaude: true })
+    const report = await deliver(env, { assumeIdle: true })
+    expect(report.results[0]).toMatchObject({ outcome: 'handed-off' })
+    expect(report.results[0]?.reason).toMatch(/handed off/i)
+    expect(env.runner.calls.some((argv) => argv[1] === 'terminal' && argv[2] === 'create')).toBe(true)
+    const updated = JSON.parse(readFileSync(dispatchRecordPath(env.loaded.stateDir, 'ENG-10'), 'utf8')) as DispatchRecordFile
+    expect(updated.terminal).toBe('term_handoff')
+    expect(updated.provider).not.toBe('claude')
+    expect(updated.branch).toBe('person/eng-10-demo')
+    expect(updated.worktreeId).toBe(env.record.worktreeId)
+    const delivery = readDeliveryState(env.loaded.stateDir, 'ENG-10')
+    expect(delivery.handoffs).toHaveLength(1)
+    expect(delivery.handoffs[0]).toMatchObject({ fromProvider: 'claude', toProvider: updated.provider })
+    expect(env.ledger.active()).toHaveLength(1)
+    expect(env.runner.calls.some((argv) => argv[1] === 'worktree' && argv[2] === 'rm')).toBe(false)
   })
 
   it('dry-run decides without side effects and reports missing reviewer', async () => {

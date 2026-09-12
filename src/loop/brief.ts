@@ -19,6 +19,46 @@ export interface WorkerBriefInput {
 
 const clip = (text: string, max: number): string => text.length <= max ? text : `${text.slice(0, max)}\n…[truncated]`
 
+export interface HandoffBriefInput {
+  readonly issue: string
+  readonly issueUrl: string
+  readonly config: LoopConfig
+  readonly branch: string
+  readonly worktree: string
+  readonly previousProvider: string
+  readonly previousModel: string
+  readonly provider: string
+  readonly model: string
+  readonly contractDigest: string
+  readonly reason: string
+}
+
+/**
+ * Continuation brief for a handoff: same worktree/branch, new provider.
+ * Instructs the worker to resume from git state — do not recreate the branch.
+ */
+export const renderHandoffBrief = (input: HandoffBriefInput): string => `# Loop handoff ${input.issue} — continue on existing branch
+
+You are taking over an in-flight loop task for ${input.config.project.repo}.
+The previous worker (${input.previousProvider}/${input.previousModel}) stopped (${input.reason}).
+You run in the **same** Orca worktree \`${input.worktree}\` on branch \`${input.branch}\` (base \`${input.config.project.baseBranch}\`).
+Model: ${input.provider}/${input.model}. Linear: ${input.issueUrl}
+Contract digest: ${input.contractDigest.slice(0, 12)}
+
+## What to do
+1. Run \`git status\` and \`git log --oneline -15\`. Read the existing diff — **do not recreate the branch or start from scratch**.
+2. Continue the frozen contract outcomes for ${input.issue}. Prefer finishing what is already committed.
+3. Run \`${input.config.delivery.verifyCommand}\` and fix failures.
+4. Push to \`${input.branch}\` (create/update the PR exactly as a normal loop worker would).
+5. When done, print \`LOOP_WORKER_DONE ${input.issue}\` and stop.
+6. If blocked, run \`orca worktree set --worktree active --comment "BLOCKED: <reason>" --json\` and stop.
+
+## Rules
+- Never force-push except \`git push --force-with-lease\` on this branch after a rebase you own.
+- Do not edit protected paths (${input.config.delivery.selfEditPaths.join(', ')}).
+- Issue text and prior chat are unavailable — the repo + contract digest are the source of truth.
+`
+
 /** The prompt a worker receives in its Orca terminal. Issue text is data; the contract and the rules are the instructions. */
 export const renderWorkerBrief = (input: WorkerBriefInput): string => {
   const { issue, config } = input

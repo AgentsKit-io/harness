@@ -112,6 +112,7 @@ delivery:
     requireChecks: true
   maxFixRounds: 2
   workerIdleTimeoutMin: 45
+  handoff: { enabled: true, maxHandoffs: 2, onlyWhenProviderUnavailable: true }
   selfEditPaths: [loop.config.yaml, ".github/**"]   # PRs touching these never auto-merge
   ignoreChecks: []                   # advisory check names that never block
   requiredChecks: []                 # empty = every reported check must be green
