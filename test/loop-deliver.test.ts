@@ -35,6 +35,7 @@ interface Scenario {
   /** Override the single-PR `gh pr view <n>` lookup github-intake uses on every deliver tick, keyed by PR number. */
   readonly intakeView?: Record<number, Record<string, unknown>>
   readonly sendRejects?: number
+  readonly orcaWorktreeMissing?: boolean
 }
 
 const basePr = (over: Record<string, unknown> = {}): Record<string, unknown> => ({ ...(fixture('gh-pr-view') as Record<string, unknown>), headRefName: 'person/eng-10-demo', files: [{ path: 'packages/demo/src/index.ts' }], statusCheckRollup: [{ __typename: 'CheckRun', name: 'ci', conclusion: 'SUCCESS', status: 'COMPLETED' }], mergeable: 'MERGEABLE', mergeStateStatus: 'CLEAN', state: 'OPEN', number: 42, url: 'https://github.com/o/r/pull/42', ...over })
@@ -94,6 +95,7 @@ const setup = (initial: Scenario = {}) => {
         if ((scenario.sendRejects ?? 0) > 0) { scenario.sendRejects = (scenario.sendRejects ?? 1) - 1; return okResult({ accepted: false, requestId: 'r' }) }
         return okResult({ accepted: true, requestId: 'r' })
       }
+      if (scenario.orcaWorktreeMissing && (key.startsWith('orca worktree set') || key.startsWith('orca worktree rm'))) return { code: 1, stdout: '', stderr: 'selector_not_found', timedOut: false, durationMs: 1 }
       if (key.startsWith('orca linear') || key.startsWith('orca worktree set') || key.startsWith('orca worktree rm')) return okResult({ ok: true })
       if (argv[0] === 'agentskit-review') {
         const resultFile = argv[argv.indexOf('--result') + 1]
@@ -307,10 +309,11 @@ describe('deliver', () => {
   })
 
   it('reconciles a recorded merge after GitHub deletes the head branch', async () => {
-    const env = setup({ pr: null, mergedEvent: { pr: 6112, sha: 'merge-sha' }, mergedEventPr: basePr({ state: 'MERGED', number: 6112, url: 'https://github.com/o/r/pull/6112' }) })
+    const env = setup({ pr: null, orcaWorktreeMissing: true, mergedEvent: { pr: 6112, sha: 'merge-sha' }, mergedEventPr: basePr({ state: 'MERGED', number: 6112, url: 'https://github.com/o/r/pull/6112' }) })
     const report = await deliver(env)
     expect(report.results[0]).toMatchObject({ outcome: 'merged', pr: 6112, reason: 'PR #6112 merged' })
     expect(report.results[0]?.actions).toContain('reconciled merge recorded before branch deletion')
+    expect(report.results[0]?.actions).toContain('worktree already absent; cleanup reconciled')
     expect(env.ledger.active()).toEqual([])
     expect(readDeliveryState(env.loaded.stateDir, 'ENG-10')).toMatchObject({ finalOutcome: 'merged', prNumber: 6112 })
   })

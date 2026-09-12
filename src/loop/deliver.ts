@@ -77,6 +77,7 @@ export interface DeliverInput {
 }
 
 const message = (error: unknown): string => error instanceof HarnessError ? `${error.code}: ${error.message}` : error instanceof Error ? error.message : String(error)
+const isMissingOrcaWorktree = (error: unknown): boolean => message(error).includes('selector_not_found')
 const writeJson = (path: string, value: unknown): void => { mkdirSync(dirname(path), { recursive: true }); writeFileSync(path, `${JSON.stringify(value, null, 2)}\n`, 'utf8') }
 
 export const deliveryStatePath = (stateDir: string, identifier: string): string => join(stateDir, 'issues', identifier, 'delivery.json')
@@ -397,8 +398,16 @@ const complete = async (ctx: Context, record: DispatchRecordFile, lease: Dispatc
       await createLinearTrackingAdapter(ctx.runner, linear).transition({ tracker: 'linear', issue: record.issue, to: ctx.config.linear.doneState, reason: `PR #${pr.number} merged` })
       actions.push(`Linear: attached PR, commented, → ${ctx.config.linear.doneState}`)
     } catch (error) { actions.push(`Linear completion failed: ${message(error)}`) }
-    try { await orcaWorktreeSet(ctx.runner, { worktree: `id:${record.worktreeId}`, comment: `LOOP MERGED: PR #${pr.number}` }, orcaOptions(ctx.config)) } catch (error) { actions.push(`Orca comment failed: ${message(error)}`) }
-    if (ctx.config.delivery.cleanupWorktree) { try { await orcaWorktreeRemove(ctx.runner, { worktree: `id:${record.worktreeId}`, force: true }, orcaOptions(ctx.config)); actions.push('worktree removed') } catch (error) { actions.push(`worktree removal failed (kept): ${message(error)}`) } }
+    try { await orcaWorktreeSet(ctx.runner, { worktree: `id:${record.worktreeId}`, comment: `LOOP MERGED: PR #${pr.number}` }, orcaOptions(ctx.config)) } catch (error) {
+      if (isMissingOrcaWorktree(error)) actions.push('Orca worktree already absent; comment skipped')
+      else actions.push(`Orca comment failed: ${message(error)}`)
+    }
+    if (ctx.config.delivery.cleanupWorktree) {
+      try { await orcaWorktreeRemove(ctx.runner, { worktree: `id:${record.worktreeId}`, force: true }, orcaOptions(ctx.config)); actions.push('worktree removed') } catch (error) {
+        if (isMissingOrcaWorktree(error)) actions.push('worktree already absent; cleanup reconciled')
+        else actions.push(`worktree removal failed (kept): ${message(error)}`)
+      }
+    }
   } else actions.push('would attach PR, comment, move to Done, and clean the worktree')
   finish(ctx, record, lease, { ...state, prNumber: pr.number }, 'merged', `PR #${pr.number}`)
   return { issue: record.issue, outcome: ctx.dryRun ? 'dry-run' : 'merged', reason: `PR #${pr.number} merged`, pr: pr.number, head: pr.headSha, actions }
