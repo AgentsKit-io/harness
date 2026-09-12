@@ -19,10 +19,15 @@ interface Env { readonly dir: string; readonly bin: string; readonly runner: Com
 const cleanups: string[] = []
 afterEach(() => { for (const dir of cleanups.splice(0)) rmSync(dir, { recursive: true, force: true }) })
 
-const makeEnv = (options: { readonly contract?: TaskContract | 'garbage'; readonly worktrees?: unknown; readonly failCreate?: boolean; readonly claudeAuthFails?: boolean; readonly claudeSessionLimit?: boolean; readonly failAllContracts?: boolean; readonly accountList?: unknown; readonly briefSkills?: readonly string[]; readonly setup?: { readonly exitCode?: number; readonly timedOut?: boolean }; readonly setupRequired?: boolean; readonly pluginSource?: string } = {}): Env => {
+const makeEnv = (options: { readonly contract?: TaskContract | 'garbage'; readonly worktrees?: unknown; readonly failCreate?: boolean; readonly claudeAuthFails?: boolean; readonly claudeSessionLimit?: boolean; readonly failAllContracts?: boolean; readonly accountList?: unknown; readonly briefSkills?: readonly string[]; readonly setup?: { readonly exitCode?: number; readonly timedOut?: boolean }; readonly setupRequired?: boolean; readonly pluginSource?: string; readonly issueDescription?: string; readonly securityPii?: { readonly action?: 'redact' | 'warn' | 'block' } } = {}): Env => {
   const dir = mkdtempSync(join(tmpdir(), 'agentskit-loop-tick-')); cleanups.push(dir)
   const bin = join(dir, 'bin'); rmSync(bin, { recursive: true, force: true })
   let yaml = options.briefSkills?.length ? exampleYaml.replace('skills: []', `skills: [${options.briefSkills.join(', ')}]`) : exampleYaml
+  if (options.securityPii) {
+    const piiBlock = 'security:\n  pii:\n    enabled: false                    # scan issue text / worker brief for PII-shaped patterns before embedding them\n    action: redact                    # redact | warn | block\n'
+    if (!yaml.includes(piiBlock)) throw new Error('loop.config.example.yaml security.pii block text drifted from the test fixture')
+    yaml = yaml.replace(piiBlock, `security:\n  pii:\n    enabled: true\n    action: ${options.securityPii.action ?? 'redact'}\n`)
+  }
   if (options.setup) {
     const setupBlock = '  setup:\n    # command: [pnpm, install, --frozen-lockfile]  # argv (no shell), run once in a freshly created worktree\n                                                     # before the worker terminal opens; unset = skip\n    timeoutSec: 600\n    required: true                    # failing/timing-out setup removes the worktree and counts as a dispatch failure\n'
     const replacement = `  setup:\n    command: [setup-check]\n    timeoutSec: 600\n    required: ${options.setupRequired ?? true}\n`
@@ -65,7 +70,7 @@ const makeEnv = (options: { readonly contract?: TaskContract | 'garbage'; readon
         return okResult({ ok: true })
       }
       if (key.startsWith('orca linear list-issues')) return ok(applyExtraLabels(fixture(key.includes('--state Ready') ? 'list-issues-ready' : 'list-issues-todo') as never))
-      if (key.startsWith('orca linear issue')) { const id = argv[3]; const issues = [...(fixture('list-issues-todo') as { result: { issues: { identifier: string }[] } }).result.issues, ...(fixture('list-issues-ready') as { result: { issues: { identifier: string }[] } }).result.issues]; const issue = issues.find((item) => item.identifier === id); return issue ? okResult({ issue: { ...issue, description: 'Add the binding.\n\n## Acceptance\n- tests pass' }, comments: [] }) : { code: 1, stdout: '', stderr: 'not found', timedOut: false, durationMs: 1 } }
+      if (key.startsWith('orca linear issue')) { const id = argv[3]; const issues = [...(fixture('list-issues-todo') as { result: { issues: { identifier: string }[] } }).result.issues, ...(fixture('list-issues-ready') as { result: { issues: { identifier: string }[] } }).result.issues]; const issue = issues.find((item) => item.identifier === id); return issue ? okResult({ issue: { ...issue, description: options.issueDescription ?? 'Add the binding.\n\n## Acceptance\n- tests pass' }, comments: [] }) : { code: 1, stdout: '', stderr: 'not found', timedOut: false, durationMs: 1 } }
       if (argv[0] === 'claude' && argv[1] === '-p' && options.claudeAuthFails) return { code: 1, stdout: 'Failed to authenticate: OAuth session expired and could not be refreshed\n', stderr: '', timedOut: false, durationMs: 1 }
       if (argv[0] === 'claude' && argv[1] === '-p' && options.claudeSessionLimit) return { code: 1, stdout: "You've hit your session limit \u00b7 resets 10:40pm (America/Sao_Paulo)\n", stderr: '', timedOut: false, durationMs: 1 }
       if (((argv[0] === 'claude' && argv[1] === '-p') || (argv[0] === 'codex' && argv[1] === 'exec')) && options.failAllContracts) return { code: 1, stdout: 'exit 1: transient tool error', stderr: '', timedOut: false, durationMs: 1 }
@@ -126,6 +131,27 @@ describe('contract', () => {
     const brief = renderWorkerBrief({ issue, contract: stored, config: loaded.config, branch: 'person/eng-10-demo', provider: 'claude', model: 'sonnet' })
     for (const needle of ['ENG-10', 'person/eng-10-demo', loaded.config.delivery.verifyCommand, 'pnpm --filter demo test', 'Loop-Contract: abcdef123456ffff', 'loop.config.yaml', 'LOOP_WORKER_DONE ENG-10', 'workspace-status in-review', '<untrusted source="linear:ENG-10">']) expect(brief).toContain(needle)
     expect(brief).not.toContain('--dangerously')
+  })
+
+  it('redacts, warns on, or blocks PII-shaped issue text in the worker brief when security.pii is enabled', () => {
+    const env = makeEnv({ securityPii: { action: 'redact' } })
+    const loaded = loadLoopConfig(env.configPath)
+    const issue = parseLinearIssueDetail({ issue: { ...(fixture('list-issues-todo') as { result: { issues: Record<string, unknown>[] } }).result.issues[0], description: 'Contact ops@example.com about this.' } as never, comments: [] })
+    const stored: StoredContract = { schemaVersion: 1, issue: issue.identifier, issueUpdatedAt: issue.updatedAt, generatedAt: 'now', provider: 'codex', model: 'gpt-5.6-sol', contract: goodContract, digest: 'd', assessment: assessContract(goodContract), source: 'llm' }
+    let detected: readonly { readonly kind: string }[] = []
+    const brief = renderWorkerBrief({ issue, contract: stored, config: loaded.config, branch: 'person/eng-10-demo', provider: 'claude', model: 'sonnet', onPiiDetected: (matches) => { detected = matches } })
+    expect(brief).toContain('[REDACTED:email]')
+    expect(brief).not.toContain('ops@example.com')
+    expect(detected).toEqual([{ kind: 'email', index: 8, length: 15 }])
+
+    const warnEnv = makeEnv({ securityPii: { action: 'warn' } })
+    const warnLoaded = loadLoopConfig(warnEnv.configPath)
+    const warnBrief = renderWorkerBrief({ issue, contract: stored, config: warnLoaded.config, branch: 'b', provider: 'claude', model: 'sonnet' })
+    expect(warnBrief).toContain('ops@example.com') // warn leaves the text untouched, only reports
+
+    const blockEnv = makeEnv({ securityPii: { action: 'block' } })
+    const blockLoaded = loadLoopConfig(blockEnv.configPath)
+    expect(() => renderWorkerBrief({ issue, contract: stored, config: blockLoaded.config, branch: 'b', provider: 'claude', model: 'sonnet' })).toThrow(/PII/)
   })
 })
 
@@ -249,6 +275,27 @@ describe('tick', () => {
     expect(briefText).toContain('Use named exports only.')
     const send = env.runner.calls.find((argv) => argv[1] === 'terminal' && argv[2] === 'send')
     expect(send?.[send.indexOf('--text') + 1]).toContain('Use named exports only.')
+  })
+
+  it('redacts PII in the orchestrator prompt and records a security.pii-detected event during a real dispatch', async () => {
+    const env = makeEnv({ securityPii: { action: 'redact' }, issueDescription: 'Add the binding.\n\nPlease reach me at support@example.com if blocked.' })
+    const report = await runTick({ ...tickOptions(env), maxDispatch: 1 })
+    expect(report.results[0]).toMatchObject({ outcome: 'dispatched' })
+    const orchestratorCall = env.runner.calls.find((argv) => argv[0] === 'claude' && argv[1] === '-p')
+    const prompt = orchestratorCall?.[orchestratorCall.indexOf('-p') + 1] ?? ''
+    expect(prompt).toContain('[REDACTED:email]')
+    expect(prompt).not.toContain('support@example.com')
+    const loaded = loadLoopConfig(env.configPath)
+    const events = readFileSync(join(loaded.stateDir, 'events.ndjson'), 'utf8').split('\n').filter(Boolean).map((line) => JSON.parse(line) as Record<string, unknown>)
+    const piiEvents = events.filter((event) => event['type'] === 'security.pii-detected')
+    expect(piiEvents.map((event) => event['source'])).toEqual(['issue-text', 'worker-brief'])
+    expect(piiEvents[0]).toMatchObject({ kinds: ['email'], count: 1 })
+  })
+
+  it('fails the dispatch when security.pii.action is block and PII is found', async () => {
+    const env = makeEnv({ securityPii: { action: 'block' }, issueDescription: 'Contact ops@example.com about this.' })
+    const report = await runTick({ ...tickOptions(env), maxDispatch: 1 })
+    expect(report.results[0]).toMatchObject({ outcome: 'failed', reason: expect.stringContaining('PII') })
   })
 
   it('fails the dispatch when a configured skill file is missing (fail-closed)', async () => {

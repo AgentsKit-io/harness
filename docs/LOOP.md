@@ -225,6 +225,23 @@ tick forever. (The 2026-09-11/12 pilot logged 19 such retries across 4 issues in
 Neither mechanism touches the existing `blocked`/`stuck` escalations (fix-round exhaustion, an idle worker with no
 PR) — those already label the issue and route it out of the queue via `linear.excludeLabels`.
 
+## PII/secret scanning
+
+`security.pii.enabled` (default `false` — enabling it never changes behavior for a project that doesn't need it)
+scans issue text before it enters the orchestrator prompt (`contract.ts`) and the worker brief (`brief.ts`) for
+PII-shaped patterns: emails, common provider API-key prefixes (`sk-…`, `ghp_…`, `AKIA…`, Slack tokens), phone
+numbers, card-number-shaped digit runs (`src/kernel/pii.ts`, pure and dependency-free). `security.pii.action`
+controls what happens on a match:
+
+- `redact` (default when enabled): each match is replaced with `[REDACTED:<kind>]` before the text is embedded.
+- `warn`: the text is sent unchanged; a `security.pii-detected` event is still recorded (source `issue-text` or
+  `worker-brief`, with the matched kinds and count — never the matched value itself).
+- `block`: the dispatch fails closed instead of ever sending the text anywhere, with a message naming the kinds
+  found (not the values). Recorded like any other dispatch failure, so `resilience.maxConsecutiveFailures` still
+  applies if it keeps happening.
+
+This is a pattern scanner, not a claim of completeness — it catches common shapes, not every possible secret.
+
 ## Skills pinned into the worker brief
 
 `brief.skills` (default `[]`) lists Markdown files, relative to `project.root`, that every worker brief embeds

@@ -69,6 +69,8 @@ export { createStatusSnapshot, validateStatusSnapshot } from './kernel/status.js
 export type { StatusBlock, StatusSnapshot } from './kernel/status.js'
 export { MODEL_ROLES, createModelPolicy, modelFor } from './kernel/model-policy.js'
 export type { ModelBinding, ModelPolicy, ModelRole } from './kernel/model-policy.js'
+export { scanForPii } from './kernel/pii.js'
+export type { PiiKind, PiiMatch, PiiScanResult } from './kernel/pii.js'
 export { createOrcaDispatchPlan, createOrcaLifecycleProjection } from './adapters/orca.js'
 export type { OrcaDispatchInput, OrcaDispatchPlan, OrcaLeaseState, OrcaLifecycleInput, OrcaLifecycleProjection } from './adapters/orca.js'
 export { createTrackingAdapter, createTrackingTransition } from './adapters/tracking.js'

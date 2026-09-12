@@ -312,6 +312,14 @@ export const LoopConfigSchema = z.object({
     /** Per-file cap; a file over this length is truncated with a visible note rather than blowing the brief budget. */
     maxSkillChars: z.number().int().positive().default(6_000),
   }).prefault({}),
+  security: z.object({
+    pii: z.object({
+      /** Off by default: scanning issue text/PR findings for PII-shaped patterns before they enter a prompt or a public comment. */
+      enabled: z.boolean().default(false),
+      /** `redact` replaces a match with `[REDACTED:<kind>]`; `warn` leaves the text as-is but logs a `security.pii-detected` event; `block` fails the contract instead of sending the text anywhere. */
+      action: z.enum(['redact', 'warn', 'block']).default('redact'),
+    }).prefault({}),
+  }).prefault({}),
   schedule: z.object({
     tick: cron.default('*/5 * * * *'),
     deliver: cron.default('*/10 * * * *'),

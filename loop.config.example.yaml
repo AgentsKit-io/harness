@@ -184,6 +184,11 @@ plugins:
                                       # each exports { id, apply(bus) } and can subscribe to loop events or block a
                                       # beforeDispatch/beforeReview/beforeMerge hook — see docs/LOOP.md
 
+security:
+  pii:
+    enabled: false                    # scan issue text / worker brief for PII-shaped patterns before embedding them
+    action: redact                    # redact | warn | block
+
 resilience:
   maxConsecutiveFailures: 3          # pause an issue after this many consecutive contract/dispatch failures
   pausedLabel: loop:paused           # applied to the issue in Linear; remove it (or `loop resume <id>`) to retry

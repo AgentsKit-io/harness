@@ -44,6 +44,7 @@ modules, not a provider dependency.
 | `src/kernel/learning.ts` | Kernel | Retrospective parsing and human learning promotion | stdlib, `errors` | None |
 | `src/kernel/status.ts` | Kernel | Deterministic status snapshot and digest | `errors`, `hash`, `block`, `types` (type-only) | None |
 | `src/kernel/model-policy.ts` | Kernel | Role-to-model binding and validation | `errors`, `hash` | Provider is data, not an SDK |
+| `src/kernel/pii.ts` | Kernel | Deterministic PII/secret pattern scan + redaction over a plain string | None | None |
 | `src/execution/machine.ts` | Execution support | Machine sampling and adaptive concurrency | stdlib, `types`, `errors` | Host CPU/memory metrics |
 | `src/execution/coordination.ts` | Execution support | Atomic issue/worktree claims and dispatch ledger | stdlib, `errors`, `hash` | Local state directory only |
 | `src/kernel/resilience.ts` | Kernel | Failure classification and bounded retry/recovery policy | `errors` | Operation callback supplied by caller |

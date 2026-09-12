@@ -334,6 +334,9 @@ export const runTick = async (input: TickInput): Promise<TickReport> => {
               memoryDigest: plan.memoryDigest,
             }, bus)
           },
+          onPiiDetected: (matches) => {
+            if (!dryRun) appendLoopEvent(loaded.stateDir, { at: now().toISOString(), type: 'security.pii-detected', issue: detail.identifier, source: 'issue-text', kinds: [...new Set(matches.map((match) => match.kind))], count: matches.length }, bus)
+          },
         })
         if (!dryRun) writeStoredContract(loaded.stateDir, stored)
       } catch (error) {
@@ -415,6 +418,9 @@ export const runTick = async (input: TickInput): Promise<TickReport> => {
         memoryBlock: briefMemory.memoryBlock,
         guidanceRefs,
         skills: pinnedSkills,
+        onPiiDetected: (matches) => {
+          appendLoopEvent(loaded.stateDir, { at: now().toISOString(), type: 'security.pii-detected', issue: detail.identifier, source: 'worker-brief', kinds: [...new Set(matches.map((match) => match.kind))], count: matches.length }, bus)
+        },
       })
       const briefDigest = skillDigest(brief)
       writeFileSync(briefPath(loaded.stateDir, detail.identifier), brief, 'utf8')
