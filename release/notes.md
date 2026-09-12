@@ -1,3 +1,7 @@
+# 0.7.0 release candidate
+
+Dynamic Orca-aware model routing (hybrid/dynamic/catalog) with remaining-usage ranking and a living model catalog (CLI + builtin + optional Artificial Analysis).
+
 # 0.6.0 release candidate
 
 Keep-pushing loop gains approved memory (token reduction + continuous improvement), Doc Bridge freshness/review doctor probes, brief guidance scopes, optional deliver smoke, agent registry YAML, RAG context provider, MCP adapter seam (ADR-0028), Docker verify config, and weekly Linear retro automation. Config defaults preserve 0.5.0 behaviour.

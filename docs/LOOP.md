@@ -139,6 +139,20 @@ Start from [`loop.config.example.yaml`](../loop.config.example.yaml) at the pack
 | `machine.slots` | `sampleMachine` + `adaptiveConcurrency`, free RAM reserve, WSL cap, running worktrees | no — 0 free slots is a warning, not a failure |
 | `linear.queue` | `orca linear list-issues` per configured state, filtered and ordered locally | yes — an unreachable Linear blocks |
 
+
+## Dynamic model routing
+
+`models.routing.mode` controls how the loop picks `provider/model` for each role:
+
+| Mode | Behaviour |
+|---|---|
+| `tiers` (default) | YAML declaration order; usage only as available/unavailable (0.6 behaviour). |
+| `hybrid` | Keep tier bands (quality policy); **inside a tier** pick the provider with the most remaining Orca usage. |
+| `dynamic` | Flatten all YAML candidates; rank by remaining usage (YAML order is a soft tie-break). |
+| `catalog` | Discover models from CLI lists (`grok models`), builtin catalog, and optional [Artificial Analysis](https://artificialanalysis.ai/) (cached under `stateDir/catalog/`), then rank by usage + quality band (`models.roles.*.quality`). |
+
+Providers still need a `models.providers.<id>` block (`bin` / `tui` / `headless`) — Orca cannot invent argv. The doctor warns when Orca shows an integration that is not declared.
+
 ## Model routing
 
 `models.<role>` is a list of tiers; each tier is a list of `provider/model`. Tiers are tried in order and, inside a

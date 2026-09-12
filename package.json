@@ -1,6 +1,6 @@
 {
   "name": "@agentskit/harness",
-  "version": "0.6.0",
+  "version": "0.7.0",
   "description": "Portable, evidence-backed development harness for coding agents.",
   "type": "module",
   "bin": {

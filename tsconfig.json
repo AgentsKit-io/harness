@@ -25,6 +25,7 @@
     "outDir": "dist",
     "rootDir": "src",
     "skipLibCheck": true,
+    "resolveJsonModule": true,
     "types": ["node"]
   },
   "include": ["src"],

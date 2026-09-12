@@ -37,6 +37,15 @@ linear:
   needsInfoLabel: needs-info
 
 models:
+  # routing.mode: tiers (default) | hybrid | dynamic | catalog
+  # hybrid = keep quality tiers, pick highest remaining usage inside each tier
+  # catalog = discover models via CLI/builtin/(optional) Artificial Analysis + usage
+  routing:
+    mode: hybrid
+    usageMetric: max
+    preferKnownUsage: true
+  # roles: { orchestrator: { quality: frontier }, builder: { quality: balanced }, watcher: { quality: fast } }
+  # catalog: { sources: [cli, builtin], artificialAnalysis: { enabled: false } }
   # Tiers, in order. Inside a tier the first provider with usage available wins.
   # Tier 1 = subscriptions, tier 2 = cheap hosted, tier 3 = last resort.
   orchestrator: [[codex/gpt-5.6-sol, claude/opus], [opencode/opencode-go/glm-5.3], [grok/grok-4-fast]]

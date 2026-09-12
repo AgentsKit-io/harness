@@ -11,6 +11,7 @@ import { HarnessError } from '../kernel/errors.js'
 import { loadLoopConfig, providerIdentity, type LoadedLoopConfig, type LoopConfig } from './config.js'
 import { activeCooldowns, readCooldowns } from './cooldown.js'
 import { providerSpecs } from './doctor.js'
+import { resolveCatalogCandidates } from './model-catalog/index.js'
 import { rankModels, type RankedModel } from './routing.js'
 import { appendLoopEvent, dispatchRecordPath, readDispatchRecord, type DispatchRecordFile } from './tick.js'
 
@@ -276,7 +277,18 @@ export const runDeliver = async (input: DeliverInput): Promise<DeliverReport> =>
   const orca = orcaOptions(config)
   const [accountList, agentHooks] = await Promise.all([orcaAccountList(input.runner, orca).catch(() => ({})), orcaAgentHooks(input.runner, orca).catch(() => ({}) as Readonly<Record<string, 'installed' | 'not_installed' | 'unknown'>>)])
   const providers = await detectProviders({ providers: providerSpecs(config), accountList, agentHooks, env: input.env, platform: input.platform, exhaustedPercent: config.models.cooldown.exhaustedPercent, cooldowns: activeCooldowns(readCooldowns(loaded.stateDir), now()), now })
-  const reviewer = rankModels(config, 'reviewer', providers)[0] ?? null
+  const reviewerExtras = config.models.routing.mode === 'catalog'
+    ? await resolveCatalogCandidates({
+      config,
+      role: 'reviewer',
+      availableProviderIds: providers.filter((provider) => provider.available).map((provider) => provider.id),
+      runner: input.runner,
+      stateDir: loaded.stateDir,
+      env: input.env,
+      now,
+    })
+    : []
+  const reviewer = rankModels(config, 'reviewer', providers, reviewerExtras)[0] ?? null
   let env = input.env ?? process.env
   if (!env['GITHUB_TOKEN'] && !env['GH_TOKEN']) { try { const token = await input.runner.run(['gh', 'auth', 'token'], { timeoutMs: 10_000 }); if (token.code === 0 && token.stdout.trim()) env = { ...env, GITHUB_TOKEN: token.stdout.trim(), GH_TOKEN: token.stdout.trim() } } catch { /* review runs without a token and reports incomplete */ } }
   const reviewDeadlineMs = input.budgetMs ? Math.max(60_000, Math.min(config.delivery.review.deadlineMs, input.budgetMs - 90_000)) : config.delivery.review.deadlineMs

@@ -1,5 +1,5 @@
 import { compareVersions, orcaAccountList, orcaAgentHooks, orcaStatus, orcaVersion, orcaWorktrees, type OrcaStatus, type OrcaWorktree } from '../adapters/orca-cli.js'
-import { detectProviders, type ProviderAvailability, type ProviderSpec } from '../adapters/providers.js'
+import { detectProviders, remainingUsagePercent, undeclaredOrcaProviders, type ProviderAvailability, type ProviderSpec } from '../adapters/providers.js'
 import { fetchLinearQueue, type LoopIssue } from '../adapters/linear-orca.js'
 import { findExecutable, type CommandRunner } from '../adapters/command.js'
 import { inspectDocBridgeIndex } from '../adapters/doc-bridge.js'
@@ -7,6 +7,7 @@ import { HarnessError } from '../kernel/errors.js'
 import { MODEL_ROLES } from '../kernel/model-policy.js'
 import { loadLoopConfig, providerIdentity, type LoadedLoopConfig, type LoopConfig } from './config.js'
 import { activeCooldowns, readCooldowns } from './cooldown.js'
+import { resolveCatalogCandidates } from './model-catalog/index.js'
 import { routeAllRoles, type RoutingDecision } from './routing.js'
 import { assessSlots, type SlotAssessment } from './slots.js'
 
@@ -71,11 +72,38 @@ export const runLoopDoctor = async (input: LoopDoctorInput): Promise<LoopDoctorR
   ])
   const cooldowns = activeCooldowns(readCooldowns(loaded.stateDir), now())
   const providers = await detectProviders({ providers: providerSpecs(config), accountList: accountList ?? {}, agentHooks, env: input.env, platform: input.platform, exhaustedPercent: config.models.cooldown.exhaustedPercent, cooldowns, now, ...(input.probe === false ? {} : { runner: input.runner }) })
-  for (const provider of providers) push(`provider.${provider.id}`, provider.available ? 'passed' : 'warning', provider.available ? `available${provider.usage.windows.length ? ` (${provider.usage.windows.map((window) => `${window.kind} ${window.usedPercent}%`).join(', ')})` : ''}` : provider.reasons.join('; '))
-  const routing = routeAllRoles(config, providers)
+  for (const provider of providers) {
+    const remaining = remainingUsagePercent(provider.usage, config.models.routing.usageMetric)
+    const usageDetail = provider.usage.windows.length
+      ? ` (${provider.usage.windows.map((window) => `${window.kind} ${window.usedPercent}%`).join(', ')}; remaining~${remaining ?? '?'}%)`
+      : ''
+    push(`provider.${provider.id}`, provider.available ? 'passed' : 'warning', provider.available ? `available${usageDetail}` : provider.reasons.join('; '))
+  }
+  const undeclared = undeclaredOrcaProviders(accountList ?? {}, Object.fromEntries(Object.entries(config.models.providers).map(([id, settings]) => [id, { orcaUsageKey: settings.orcaUsageKey ?? id }])))
+  if (undeclared.length) push('orca.undeclared-providers', 'warning', `Orca shows integrations without models.providers entries: ${undeclared.join(', ')} — add a provider block (bin/tui) or ignore`)
+
+  const extrasByRole = config.models.routing.mode === 'catalog'
+    ? Object.fromEntries(await Promise.all(MODEL_ROLES.map(async (role) => [role, await resolveCatalogCandidates({
+      config,
+      role,
+      availableProviderIds: providers.filter((provider) => provider.available).map((provider) => provider.id),
+      runner: input.runner,
+      stateDir: loaded.stateDir,
+      env: input.env,
+      now,
+    })] as const)))
+    : {}
+  const routing = routeAllRoles(config, providers, extrasByRole)
   for (const role of MODEL_ROLES) {
     const decision = routing[role]
-    push(`routing.${role}`, decision.selected ? 'passed' : 'failed', decision.selected ? `${decision.selected.provider}/${decision.selected.model} (tier ${decision.selected.tier + 1})` : `no available provider in any tier (${decision.skipped.length} skipped)`)
+    const selected = decision.selected
+    push(
+      `routing.${role}`,
+      selected ? 'passed' : 'failed',
+      selected
+        ? `${selected.provider}/${selected.model} · mode ${config.models.routing.mode} · ${selected.reason}${selected.remainingPercent !== null ? ` · remaining ${selected.remainingPercent}%` : ''}`
+        : `no available provider (${decision.skipped.length} skipped; mode ${config.models.routing.mode})`,
+    )
   }
 
   let worktrees: readonly OrcaWorktree[] = []

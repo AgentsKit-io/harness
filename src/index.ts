@@ -14,6 +14,8 @@ export { createPluginRegistry, createPluginSlot, HARNESS_PLUGIN_API_VERSION } fr
 export { CONTEXT_PROVIDER_SLOT, hashContextSnapshot, hashContextSnapshots, readContextSnapshots, validateContextSnapshot, validateContextSnapshots } from './context/index.js'
 export { createDocBridgeContextProvider, inspectDocBridgeIndex } from './adapters/doc-bridge.js'
 export type { DocBridgeIndexInspection } from './adapters/doc-bridge.js'
+export { remainingUsagePercent, undeclaredOrcaProviders, usageRankTuple } from './adapters/providers.js'
+export type { UsageMetric } from './adapters/providers.js'
 export { createArgvRagContextProvider, createRagContextProvider, parseRagQueryOutput } from './adapters/rag-context.js'
 export type { ArgvRagContextProviderOptions, RagContextProviderOptions, RagQueryResult } from './adapters/rag-context.js'
 export { createMcpToolBridge, hashMcpArgs } from './adapters/mcp.js'
@@ -106,6 +108,11 @@ export { assessSlots, availableMemoryBytes, isWsl, parseMemInfo, parseVmStat } f
 export type { SlotAssessment, SlotInput } from './loop/slots.js'
 export { rankModels, routeAllRoles, selectModel } from './loop/routing.js'
 export type { RankedModel, RoutingDecision, RoutingSkip } from './loop/routing.js'
+export {
+  fetchArtificialAnalysisModels, listCliModels, loadAliases, loadBuiltinCatalog, parseArtificialAnalysisPayload,
+  parseGrokModelsOutput, readAaCache, resolveAlias, resolveCatalogCandidates, writeAaCache,
+} from './loop/model-catalog/index.js'
+export type { ArtificialAnalysisModel, CatalogModel, ModelQuality, ProviderCatalog } from './loop/model-catalog/index.js'
 export { activeCooldowns, clearProviderCooldown, cooldownPath, markProviderExhausted, readCooldowns } from './loop/cooldown.js'
 export type { CooldownEntry, CooldownState } from './loop/cooldown.js'
 export { countRunningWorkers, providerSpecs, runLoopDoctor } from './loop/doctor.js'

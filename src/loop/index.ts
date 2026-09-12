@@ -7,6 +7,11 @@ export { assessSlots, availableMemoryBytes, isWsl, parseMemInfo, parseVmStat } f
 export type { SlotAssessment, SlotInput } from './slots.js'
 export { rankModels, routeAllRoles, selectModel } from './routing.js'
 export type { RankedModel, RoutingDecision, RoutingSkip } from './routing.js'
+export {
+  fetchArtificialAnalysisModels, listCliModels, loadAliases, loadBuiltinCatalog, parseArtificialAnalysisPayload,
+  parseGrokModelsOutput, readAaCache, resolveAlias, resolveCatalogCandidates, writeAaCache,
+} from './model-catalog/index.js'
+export type { ArtificialAnalysisModel, CatalogModel, ModelQuality, ProviderCatalog } from './model-catalog/index.js'
 export { activeCooldowns, clearProviderCooldown, cooldownPath, markProviderExhausted, readCooldowns } from './cooldown.js'
 export type { CooldownEntry, CooldownState } from './cooldown.js'
 export { countRunningWorkers, providerSpecs, runLoopDoctor } from './doctor.js'

@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 1,
+  "aliases": {
+    "claude": {
+      "claude-opus-4": "opus",
+      "claude-sonnet-4": "sonnet",
+      "claude-haiku-4": "haiku",
+      "opus-4": "opus",
+      "sonnet-4": "sonnet",
+      "haiku-4": "haiku"
+    },
+    "codex": {
+      "gpt-5.6": "gpt-5.6-sol",
+      "o3": "gpt-5.6-sol"
+    },
+    "grok": {
+      "grok-4": "grok-4.5",
+      "grok-4-latest": "grok-4.6"
+    },
+    "opencode": {}
+  }
+}

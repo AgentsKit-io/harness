@@ -137,3 +137,64 @@ export const cooldownUntil = (attempt: number, initialMin: number, maxMin: numbe
   const reset = resetsAt ? Date.parse(resetsAt) : Number.NaN
   return new Date(Number.isFinite(reset) && reset > from.getTime() ? Math.max(reset, backoff) : backoff).toISOString()
 }
+
+export type UsageMetric = 'max' | 'session' | 'weekly' | 'monthly'
+
+/** Remaining capacity 0–100 from usage windows, or null when unknown. `max` = most constrained window. */
+export const remainingUsagePercent = (usage: ProviderUsage, metric: UsageMetric = 'max'): number | null => {
+  if (usage.status !== 'ok' || !usage.windows.length) return null
+  const windows = metric === 'max' ? usage.windows : usage.windows.filter((window) => window.kind === metric)
+  const pool = windows.length ? windows : usage.windows
+  if (!pool.length) return null
+  const worst = Math.max(...pool.map((window) => window.usedPercent))
+  return Math.max(0, Math.min(100, 100 - worst))
+}
+
+/** Sort key for usage-aware ranking: higher remaining first; known before unknown when preferKnownUsage. */
+export const usageRankTuple = (
+  usage: ProviderUsage,
+  metric: UsageMetric,
+  preferKnownUsage: boolean,
+): readonly [number, number, number] => {
+  const remaining = remainingUsagePercent(usage, metric)
+  const known = remaining === null ? 1 : 0
+  const remainingKey = remaining === null ? 0 : -remaining
+  const resetMs = usage.resetsAt ? Date.parse(usage.resetsAt) : Number.POSITIVE_INFINITY
+  return preferKnownUsage ? [known, remainingKey, resetMs] : [remainingKey, known, resetMs]
+}
+
+/** Orca rateLimit / account keys that are not provider ids. */
+const ORCA_META_KEYS = new Set([
+  'minimaxCookieConfigured', 'minimaxApiKeyConfigured', 'grokAuthConfigured',
+  'claudeTarget', 'codexTarget', 'inactiveClaudeAccounts', 'inactiveCodexAccounts',
+])
+
+/** Map Orca account/rateLimit key → loop provider id via configured orcaUsageKey (and identity). */
+export const listOrcaIntegratedProviderKeys = (accountList: unknown): readonly string[] => {
+  const result = isRecord(accountList) ? accountList : {}
+  const rateLimits = isRecord(result['rateLimits']) ? result['rateLimits'] : {}
+  const keys = new Set<string>()
+  for (const key of Object.keys(rateLimits)) {
+    if (!ORCA_META_KEYS.has(key) && isRecord(rateLimits[key])) keys.add(key)
+  }
+  for (const key of Object.keys(result)) {
+    if (key === 'rateLimits' || ORCA_META_KEYS.has(key)) continue
+    if (isRecord(result[key])) keys.add(key)
+  }
+  return [...keys].sort()
+}
+
+/** Warn when Orca shows an integration that has no `models.providers` entry. */
+export const undeclaredOrcaProviders = (
+  accountList: unknown,
+  declared: Readonly<Record<string, { readonly orcaUsageKey?: string }>>,
+): readonly string[] => {
+  const usageKeyToId = new Map<string, string>()
+  for (const [id, settings] of Object.entries(declared)) {
+    usageKeyToId.set(settings.orcaUsageKey ?? id, id)
+    usageKeyToId.set(id, id)
+  }
+  // common Orca aliases
+  usageKeyToId.set('opencodeGo', usageKeyToId.get('opencodeGo') ?? 'opencode')
+  return listOrcaIntegratedProviderKeys(accountList).filter((key) => !usageKeyToId.has(key))
+}
