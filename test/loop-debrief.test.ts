@@ -39,4 +39,20 @@ describe('loop debrief', () => {
     expect(md).toContain('Needs a human')
     expect(md).toContain('https://github.com/my-org/my-project/pull/9')
   })
+
+  it('shows outcome progress read from the worktree when the worker wrote progress.json', () => {
+    const env = setup()
+    const worktree = mkdtempSync(join(tmpdir(), 'agentskit-loop-debrief-worktree-')); cleanups.push(worktree)
+    writeFileSync(join(worktree, 'progress.json'), JSON.stringify({ o1: 'done', o2: 'in-progress' }), 'utf8')
+    env.issue('ENG-2', {
+      'dispatch.json': { issue: 'ENG-2', worktreeId: 'w', worktree: 'eng-2', worktreePath: worktree, branch: 'u/eng-2', terminal: 't', provider: 'claude', model: 'sonnet', contractDigest: 'd', leaseKey: 'k', leaseId: 'l', dispatchedAt: '2026-09-12T11:00:00.000Z', url: 'https://linear.app/x/ENG-2' },
+      'delivery.json': { issue: 'ENG-2', prNumber: null, reviews: {}, fixRounds: 0, nudges: [], heldFor: null, finishedAt: null, finalOutcome: null },
+    })
+    const report = buildDebriefReport({ loaded: env.loaded, now: () => NOW })
+    expect(report.inFlight[0]).toMatchObject({ issue: 'ENG-2', progress: { o1: 'done', o2: 'in-progress' } })
+    const md = renderDebriefMarkdown(report)
+    expect(md).toContain('1/2 outcome(s) done')
+    expect(md).toContain('o1: done')
+    expect(md).toContain('o2: in-progress')
+  })
 })

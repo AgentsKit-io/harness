@@ -113,6 +113,7 @@ For every issue the loop dispatched (`<stateDir>/issues/<id>/dispatch.json`) and
 | No PR, idle ≥ `workerIdleTimeoutMin` | one check-in via `terminal send`; idle again after that → **stuck**: lease released, issue → `returnState` + `blocked`, worktree kept |
 | No PR, terminal gone (> 5 min after dispatch) | **stuck** as above |
 | PR touches `selfEditPaths` | **held**: one PR comment, no review, no merge |
+| PR touches `secretFilePatterns` (`.env`, `*.pem`, `*.key`, `id_rsa`, `credentials.json`, … by default) | **held**: same as `selfEditPaths` — the loop cannot inspect diff content, only filenames, so this holds on the filename shape alone even if the content is innocuous |
 | PR conflicting | rebase instruction to the worker, once per head (does not count as a fix round) |
 | CI red | failing check names to the worker; counts as a fix round |
 | CI pending / required check missing | wait |
@@ -120,6 +121,7 @@ For every issue the loop dispatched (`<stateDir>/issues/<id>/dispatch.json`) and
 | Review findings ≥ floor | findings to the worker; counts as a fix round; same head is never re-reviewed |
 | Fix rounds exhausted (`maxFixRounds`) | **blocked**: Linear comment + label + `returnState`, PR comment, lease released, worktree and PR kept |
 | Review clean, `merge.auto` | `gh api PUT …/merge` with `sha=<reviewed head>` (GitHub refuses if the head moved) → Linear attach + comment + `doneState`, worktree removed when `cleanupWorktree` |
+| Review clean, `merge.requireHumanApproval` set, no GitHub approval yet | **held**: reuses `pr.reviewDecision` already fetched with the PR snapshot — no extra GitHub call; merges automatically as soon as `reviewDecision` becomes `APPROVED` on a later run |
 | PR merged outside the loop | same completion path |
 | PR closed without merge | **abandoned**: lease released, issue → `returnState`, worktree kept |
 
@@ -144,6 +146,40 @@ two differences forced by having no Linear issue and no worker terminal:
   in **held**, commented as "merge is human", the label removed, and `finishedAt` recorded — this loop merges only
   PRs it dispatched itself, never one it was only asked to review. If the label is removed on GitHub before the
   loop finishes, it stops tracking the PR the same way (held, no further comments).
+
+## Event bus and orchestration hooks
+
+`appendLoopEvent` writes every loop event to `<stateDir>/events.ndjson`, but nothing could react to one *while it
+happens*, and there was no deterministic way to say "don't do this" before a consequential action. `plugins.modules`
+(`loop.config.yaml`, empty by default — zero behavior change until configured) lists local `.mjs` files, relative to
+`project.root` (same trust level as `agents.registry.yaml`: files already in this repo, never fetched over a
+network), loaded once at the start of `tick`/`deliver`. Each exports `{ id, apply(bus) }`:
+
+```js
+export default {
+  id: 'slack-notify',
+  apply(bus) {
+    bus.on('worker.dispatched', (event) => { /* … */ })
+    bus.hook('beforeMerge', (payload) => {
+      if (isFrozeWindow()) return { block: true, reason: 'release freeze' }
+    })
+  },
+}
+```
+
+- `bus.on(type | '*', listener)` subscribes to the loop's existing event vocabulary (`contract.failed`,
+  `worker.dispatched`, `pr.reviewed`, `provider.cooldown`, `issue.paused`, …) live, in addition to the ndjson log.
+- `bus.hook(name, listener)` subscribes to an **orchestration lifecycle hook**: `beforeDispatch`, `afterDispatch`,
+  `beforeReview`, `afterReview`, `beforeMerge`, `afterMerge`, `onPause`, `onEscalate`. A `before*` listener may
+  return `{ block: true, reason }` to stop the action (surfaced as a `skipped`/`waiting`/`held` result with the
+  reason); every other hook is notification-only. This is deliberately **not** a hook into the worker's own
+  model/tool loop — the worker is an opaque external CLI (ADR-0027) and that loop is invisible to us. These hooks
+  fire around the orchestration decisions we actually make: dispatch, review, merge.
+- A listener or hook that throws is swallowed (never fatal — a broken plugin must not stop tick or deliver) and,
+  for a hook, its error is reported back through `runHook`'s `errors`.
+- `loop doctor` runs a `plugins.modules` check confirming every configured module exists and loads cleanly.
+
+See `src/loop/event-bus.ts` for the full API (`createLoopEventBus`, `loadLoopPlugins`).
 
 ## One tick
 
@@ -190,6 +226,52 @@ tick forever. (The 2026-09-11/12 pilot logged 19 such retries across 4 issues in
 
 Neither mechanism touches the existing `blocked`/`stuck` escalations (fix-round exhaustion, an idle worker with no
 PR) — those already label the issue and route it out of the queue via `linear.excludeLabels`.
+
+## PII/secret scanning
+
+`security.pii.enabled` (default `false` — enabling it never changes behavior for a project that doesn't need it)
+scans issue text before it enters the orchestrator prompt (`contract.ts`) and the worker brief (`brief.ts`) for
+PII-shaped patterns: emails, common provider API-key prefixes (`sk-…`, `ghp_…`, `AKIA…`, Slack tokens), phone
+numbers, card-number-shaped digit runs (`src/kernel/pii.ts`, pure and dependency-free). `security.pii.action`
+controls what happens on a match:
+
+- `redact` (default when enabled): each match is replaced with `[REDACTED:<kind>]` before the text is embedded.
+- `warn`: the text is sent unchanged; a `security.pii-detected` event is still recorded (source `issue-text` or
+  `worker-brief`, with the matched kinds and count — never the matched value itself).
+- `block`: the dispatch fails closed instead of ever sending the text anywhere, with a message naming the kinds
+  found (not the values). Recorded like any other dispatch failure, so `resilience.maxConsecutiveFailures` still
+  applies if it keeps happening.
+
+This is a pattern scanner, not a claim of completeness — it catches common shapes, not every possible secret.
+
+## Cost/time circuit breakers
+
+The loop cannot count a worker CLI's own model or tool calls — it is an opaque process, not a loop we run
+ourselves — so there is no way to cap "cost" the way an in-process agent harness would. Two proxies close most of
+the gap, both unset (disabled) by default so an existing config is unaffected:
+
+- **`delivery.maxDispatchMinutes`**: a hard wall-clock ceiling on one dispatch, independent of idle detection.
+  `delivery.workerIdleTimeoutMin` only catches a worker that stopped producing output; this catches one that is
+  still active but has run far longer than any real task on the project should. Past the ceiling, `deliver` stops
+  nudging/reviewing/merging the issue and escalates it exactly like a stuck worker (Linear comment + label +
+  `returnState`, worktree preserved for inspection, lease released) — recorded as a `max-duration.tripped` event.
+- **`resilience.maxUsageDeltaPercent`**: a cost proxy from Orca's own usage reporting. The builder's remaining
+  usage percent (`RankedModel.remainingPercent`) is snapshotted at dispatch time (`dispatch.json`'s
+  `initialRemainingPercent`); every later `deliver` run compares it against that provider's *current* remaining
+  usage. If it dropped by at least this many percentage points while the issue was in flight, the dispatch is
+  stopped the same way — recorded as `cost-guard.tripped`. This is deliberately usage-delta, not call-count: it is
+  the only per-issue cost signal Orca actually reports for an opaque worker CLI.
+
+## Dynamic outcome progress
+
+The contract's outcome list (`brief.ts`) is a static plan frozen before dispatch — it cannot become a live todo
+list without controlling the worker's own loop, which this harness deliberately does not do (ADR-0027). The brief
+documents a lightweight, optional convention instead: as the worker finishes or starts an outcome, it writes
+`progress.json` at the root of its own worktree, e.g. `{"o1": "done", "o2": "in-progress"}` (ids match the
+outcome list). `loop debrief` reads it back best-effort (`readOutcomeProgress`, `src/loop/progress.ts`) — a
+missing, unreadable, or malformed file is never an error, since nothing enforces the worker keeps it current and
+older dispatches never wrote one at all. When present, it shows as `N/M outcome(s) done` per in-flight issue
+instead of a flat "in flight".
 
 ## Skills pinned into the worker brief
 
@@ -239,6 +321,8 @@ same shell commands. `project.setup.command` (unset by default; an argv array, e
 | `machine.slots` | `sampleMachine` + `adaptiveConcurrency`, free RAM reserve, WSL cap, running worktrees | no — 0 free slots is a warning, not a failure |
 | `linear.queue` | `orca linear list-issues` per configured state, filtered and ordered locally | yes — an unreachable Linear blocks |
 | `brief.skills` | existence + readability of each `brief.skills` path under `project.root` | yes when any are unreadable — dispatch would fail closed anyway |
+| `plugins.modules` | each configured module exists and `import()`s without throwing | yes when any fails to load |
+| `mcp.allowlist` | only runs when `mcp.enabled`; builds the default-deny bridge from `mcp.allowTools` and self-tests it (no live MCP server involved — ADR-0028) | warning on an empty allowlist, failed if the allow/deny wiring itself misbehaves |
 
 
 ## Dynamic model routing
@@ -263,7 +347,8 @@ its binary is on PATH, its auth is not known to be missing, no Orca usage window
 
 Providers authenticate through their own CLI login (`claude login`, `codex login`, `grok login`); only providers
 declared `auth: api-key` need an environment variable, and the loop never reads its value. Orca has no per-run model flag; the chosen model is rendered into `providers.<id>.tui` (for example
-`codex -m {model} --full-auto`) and launched in the worker terminal.
+`codex -m {model} -s workspace-write -a never`) and launched in the worker terminal. The explicit
+approval policy keeps YOLO runs non-interactive while the workspace sandbox limits changes to the assigned worktree.
 
 When a provider runs out of usage the loop records a cooldown in `<stateDir>/provider-cooldowns.json`:
 `initialMin` doubling up to `maxMin`, never earlier than the reset instant Orca reported.
@@ -306,7 +391,7 @@ the published dependency tree. `@agentskit/harness` stays dependency-light (`com
 | Trigger | `.doc-bridge/index.json` exists under `project.root` |
 | Knob | `contract.maxContextReferences` (default `6`; `0` disables) |
 | Behaviour | Query is `"<issue id> <title>"`. Up to N deterministic references are appended to the orchestrator prompt. Missing or malformed index → **no refs** (loop continues). |
-| Boundary | No `@agentskit/doc-bridge` import; the adapter only reads the local index contract ([ADR-0003](ADR-0003-doc-bridge-context-binding.md)). Index build/refresh stays with Doc Bridge (`pnpm docs:bridge:index` in repos that use it). |
+| Boundary | No `@agentskit/doc-bridge` import; the adapter only reads the local index contract ([ADR-0003](ADR-0003-doc-bridge-context-binding.md)). Contract resolution rejects indexes older than `contract.docBridgeMaxAgeHours`; exact source freshness remains a Doc Bridge gate. Index build/refresh stays with Doc Bridge (`pnpm docs:bridge:index` in repos that use it). |
 
 ### Code Review (`agentskit-review`)
 

@@ -23,6 +23,9 @@ interface Scenario {
   readonly mergeRefused?: boolean
   readonly dispatchedAt?: string
   readonly reviewerAvailable?: boolean
+  /** Merge event already recorded locally after the GitHub head branch was deleted. */
+  readonly mergedEvent?: { readonly pr: number; readonly head?: string; readonly sha?: string }
+  readonly mergedEventPr?: Record<string, unknown>
   /** Exhaust Claude usage so deliver prefers a handoff to another builder. */
   readonly exhaustClaude?: boolean
   /** PR whose head is Orca's `<git user>/<worktree>` branch, only visible through the open-PR listing. */
@@ -31,6 +34,11 @@ interface Scenario {
   readonly intakePrs?: readonly Record<string, unknown>[]
   /** Override the single-PR `gh pr view <n>` lookup github-intake uses on every deliver tick, keyed by PR number. */
   readonly intakeView?: Record<number, Record<string, unknown>>
+  readonly sendRejects?: number
+  readonly orcaWorktreeMissing?: boolean
+  readonly pluginSource?: string
+  readonly initialRemainingPercent?: number | null
+  readonly claudeUsedPercent?: number
 }
 
 const basePr = (over: Record<string, unknown> = {}): Record<string, unknown> => ({ ...(fixture('gh-pr-view') as Record<string, unknown>), headRefName: 'person/eng-10-demo', files: [{ path: 'packages/demo/src/index.ts' }], statusCheckRollup: [{ __typename: 'CheckRun', name: 'ci', conclusion: 'SUCCESS', status: 'COMPLETED' }], mergeable: 'MERGEABLE', mergeStateStatus: 'CLEAN', state: 'OPEN', number: 42, url: 'https://github.com/o/r/pull/42', ...over })
@@ -40,15 +48,25 @@ const setup = (initial: Scenario = {}) => {
   const dir = mkdtempSync(join(tmpdir(), 'agentskit-loop-deliver-')); cleanups.push(dir)
   const bin = mkdtempSync(join(tmpdir(), 'agentskit-loop-deliver-bin-')); cleanups.push(bin)
   for (const name of ['claude', 'codex', 'opencode', 'grok']) writeFileSync(join(bin, name), '#!/bin/sh\nexit 0\n', { mode: 0o755 })
-  writeFileSync(join(dir, 'loop.config.yaml'), exampleYaml)
+  let yaml = exampleYaml
+  if (initial.pluginSource !== undefined) {
+    writeFileSync(join(dir, 'plugin.mjs'), initial.pluginSource, 'utf8')
+    yaml = yaml.replace('modules: []', 'modules: [plugin.mjs]')
+  }
+  writeFileSync(join(dir, 'loop.config.yaml'), yaml)
   const loaded = loadLoopConfig(join(dir, 'loop.config.yaml'))
   const ledger = createDispatchLedger(loaded.stateDir)
   const claim = ledger.claim({ tracker: 'linear', repository: 'org/demo', issue: 'ENG-10', worktree: 'eng-10-demo', branch: 'person/eng-10-demo', owner: 'test' })
-  const record: DispatchRecordFile = { issue: 'ENG-10', worktreeId: 'repo-1::/w/eng-10-demo', worktree: 'eng-10-demo', branch: 'person/eng-10-demo', terminal: 'term_w', provider: 'claude', model: 'sonnet', contractDigest: 'abc', leaseKey: claim.lease.key, leaseId: claim.lease.leaseId, dispatchedAt: scenario.dispatchedAt ?? '2026-09-11T10:00:00.000Z', url: 'https://linear.app/x/issue/ENG-10' }
+  const record: DispatchRecordFile = { issue: 'ENG-10', worktreeId: 'repo-1::/w/eng-10-demo', worktree: 'eng-10-demo', branch: 'person/eng-10-demo', terminal: 'term_w', provider: 'claude', model: 'sonnet', contractDigest: 'abc', leaseKey: claim.lease.key, leaseId: claim.lease.leaseId, dispatchedAt: scenario.dispatchedAt ?? '2026-09-11T10:00:00.000Z', url: 'https://linear.app/x/issue/ENG-10', initialRemainingPercent: scenario.initialRemainingPercent ?? null } as DispatchRecordFile
   mkdirSync(join(loaded.stateDir, 'issues', 'ENG-10'), { recursive: true })
   writeFileSync(dispatchRecordPath(loaded.stateDir, 'ENG-10'), JSON.stringify(record))
+  if (scenario.mergedEvent) writeFileSync(join(loaded.stateDir, 'events.ndjson'), `${JSON.stringify({ at: NOW.toISOString(), type: 'pr.merged', issue: 'ENG-10', ...scenario.mergedEvent })}\n`)
   const account = JSON.parse(JSON.stringify((fixture('account-list') as { result: unknown }).result)) as { rateLimits: Record<string, { weekly?: { usedPercent: number }; session?: { usedPercent: number }; status?: string }> }
   if (account.rateLimits['codex']?.weekly) account.rateLimits['codex'].weekly.usedPercent = scenario.reviewerAvailable === false ? 100 : 10
+  if (scenario.claudeUsedPercent !== undefined && account.rateLimits['claude']) {
+    account.rateLimits['claude'].status = 'ok'
+    account.rateLimits['claude'].weekly = { usedPercent: scenario.claudeUsedPercent }
+  }
   if (scenario.exhaustClaude && account.rateLimits['claude']) {
     account.rateLimits['claude'].status = 'ok'
     if (account.rateLimits['claude'].weekly) account.rateLimits['claude'].weekly.usedPercent = 100
@@ -78,13 +96,18 @@ const setup = (initial: Scenario = {}) => {
         const number = Number(argv[3])
         const override = scenario.intakeView?.[number]
         if (override) return ok(override)
+        if (scenario.mergedEvent?.pr === number && scenario.mergedEventPr) return ok(scenario.mergedEventPr)
         return { code: 1, stdout: '', stderr: `no fixture for pr view ${number}`, timedOut: false, durationMs: 1 }
       }
       if (argv[0] === 'gh' && argv[1] === 'pr' && argv[2] === 'edit') return { code: 0, stdout: '', stderr: '', timedOut: false, durationMs: 1 }
       if (key.startsWith('orca terminal list')) return okResult({ terminals: scenario.terminals ?? [{ handle: 'term_w', connected: true, orphaned: false, lastOutputAt: Date.parse('2026-09-11T10:30:00.000Z'), worktreeId: 'repo-1::/w/eng-10-demo' }] })
       if (key.startsWith('orca terminal create')) return okResult({ handle: 'term_handoff', terminal: { handle: 'term_handoff' } })
       if (key.startsWith('orca terminal wait')) return okResult({ satisfied: true })
-      if (key.startsWith('orca terminal send')) return okResult({ accepted: true, requestId: 'r' })
+      if (key.startsWith('orca terminal send')) {
+        if ((scenario.sendRejects ?? 0) > 0) { scenario.sendRejects = (scenario.sendRejects ?? 1) - 1; return okResult({ accepted: false, requestId: 'r' }) }
+        return okResult({ accepted: true, requestId: 'r' })
+      }
+      if (scenario.orcaWorktreeMissing && (key.startsWith('orca worktree set') || key.startsWith('orca worktree rm'))) return { code: 1, stdout: '', stderr: 'selector_not_found', timedOut: false, durationMs: 1 }
       if (key.startsWith('orca linear') || key.startsWith('orca worktree set') || key.startsWith('orca worktree rm')) return okResult({ ok: true })
       if (argv[0] === 'agentskit-review') {
         const resultFile = argv[argv.indexOf('--result') + 1]
@@ -174,6 +197,24 @@ describe('deliver', () => {
     expect(env.runner.calls.some((argv) => argv[1] === 'worktree' && argv[2] === 'rm')).toBe(false)
   })
 
+  it('reopens a blocked delivery when a new PR head is pushed', async () => {
+    const env = setup({ review: { code: 1, findings: [{ severity: 'high', title: 'Bug', file: 'a.ts', line: 2, rationale: 'wrong' }] } })
+    await deliver(env)
+    await deliver(env)
+    env.scenario.pr = basePr({ headRefOid: '1111111111111111111111111111111111111111' })
+    await deliver(env)
+    env.scenario.pr = basePr({ headRefOid: '2222222222222222222222222222222222222222' })
+    const blocked = await deliver(env)
+    expect(blocked.results[0]).toMatchObject({ outcome: 'blocked' })
+    expect(readDeliveryState(env.loaded.stateDir, 'ENG-10')).toMatchObject({ finalOutcome: 'blocked', fixRounds: 2 })
+
+    env.scenario.pr = basePr({ headRefOid: '3333333333333333333333333333333333333333' })
+    const reopened = await deliver(env)
+    expect(reopened.results[0]).toMatchObject({ outcome: 'fix-round', head: '3333333333333333333333333333333333333333' })
+    expect(readDeliveryState(env.loaded.stateDir, 'ENG-10')).toMatchObject({ finalOutcome: null, finishedAt: null, fixRounds: 1 })
+    expect(env.runner.calls.some((argv) => argv[1] === 'linear' && argv[2] === 'label' && argv.includes('remove'))).toBe(true)
+  })
+
   it('classifies a quota-shaped review failure and marks the reviewer provider cooling down (regression: 2026-09-11 pilot — 12 incomplete reviews, 8 on one PR, never cooled down)', async () => {
     const env = setup({ review: { code: 2, incomplete: true, failureMessage: "claude -p failed: You've hit your session limit \u00b7 resets 10:40pm (America/Sao_Paulo)" } })
     const first = await deliver(env)
@@ -187,6 +228,59 @@ describe('deliver', () => {
     const events = readFileSync(join(env.loaded.stateDir, 'events.ndjson'), 'utf8')
     expect(events).toContain('"type":"provider.cooldown"')
     expect(events).toContain('"source":"review"')
+  })
+
+  it('sends known blocking findings even when the review is incomplete, without approving the PR', async () => {
+    const env = setup({ review: { code: 2, incomplete: true, findings: [{ severity: 'high', title: 'Unsafe path', file: 'a.ts', line: 4, rationale: 'escape' }] } })
+    const report = await deliver(env)
+    expect(report.results[0]).toMatchObject({ outcome: 'fix-round', reason: 'review incomplete with 1 blocking finding(s)' })
+    expect(env.runner.calls.find((argv) => argv[1] === 'terminal' && argv[2] === 'send')?.join(' ')).toContain('Unsafe path')
+    const state = readDeliveryState(env.loaded.stateDir, 'ENG-10')
+    expect(state).toMatchObject({ fixRounds: 1, finishedAt: null })
+    expect(Object.values(state.reviews)[0]?.status).toBe('incomplete')
+  })
+
+  it('retries a twice-incomplete review when the configured reviewer changed', async () => {
+    const env = setup({ review: { code: 0 } })
+    const head = String((basePr() as Record<string, unknown>).headRefOid)
+    writeFileSync(join(env.loaded.stateDir, 'issues', 'ENG-10', 'delivery.json'), JSON.stringify({
+      ...readDeliveryState(env.loaded.stateDir, 'ENG-10'),
+      prNumber: 42,
+      reviews: { [head]: { status: 'incomplete', at: '2026-09-11T11:00:00.000Z', provider: 'grok-cli', model: 'grok-4.5', blocking: 0, attempts: 2 } },
+    }))
+    const report = await deliver(env)
+    expect(report.results[0]).toMatchObject({ outcome: 'merged', pr: 42 })
+    expect(report.results[0]?.actions).toContain('retrying incomplete review with codex-cli/gpt-5.6-sol')
+  })
+
+  it('replays known findings from a held incomplete review to avoid a silent worker stall', async () => {
+    const env = setup()
+    const head = String((basePr() as Record<string, unknown>).headRefOid)
+    writeFileSync(join(env.loaded.stateDir, 'issues', 'ENG-10', 'delivery.json'), JSON.stringify({
+      ...readDeliveryState(env.loaded.stateDir, 'ENG-10'),
+      prNumber: 42,
+      reviews: { [head]: { status: 'incomplete', at: '2026-09-11T11:00:00.000Z', provider: 'codex-cli', model: 'gpt-5.6-sol', blocking: 1, attempts: 2 } },
+    }))
+    writeFileSync(join(env.loaded.stateDir, 'issues', 'ENG-10', `review-${head.slice(0, 12)}.json`), JSON.stringify({ incomplete: true, findings: [{ severity: 'high', title: 'Known bug', file: 'a.ts', line: 2 }] }))
+    const report = await deliver(env)
+    expect(report.results[0]).toMatchObject({ outcome: 'fix-round', reason: 'replaying 1 blocking finding(s) from incomplete review' })
+    expect(env.runner.calls.filter((argv) => argv[0] === 'agentskit-review')).toHaveLength(0)
+  })
+
+  it('reactivates a stale worker terminal before replaying findings', async () => {
+    const env = setup({ sendRejects: 1 })
+    const head = String((basePr() as Record<string, unknown>).headRefOid)
+    writeFileSync(join(env.loaded.stateDir, 'issues', 'ENG-10', 'brief.md'), 'Continue the implementation and report LOOP_WORKER_DONE ENG-10.')
+    writeFileSync(join(env.loaded.stateDir, 'issues', 'ENG-10', 'delivery.json'), JSON.stringify({
+      ...readDeliveryState(env.loaded.stateDir, 'ENG-10'),
+      prNumber: 42,
+      reviews: { [head]: { status: 'incomplete', at: '2026-09-11T11:00:00.000Z', provider: 'codex-cli', model: 'gpt-5.6-sol', blocking: 1, attempts: 2 } },
+    }))
+    writeFileSync(join(env.loaded.stateDir, 'issues', 'ENG-10', `review-${head.slice(0, 12)}.json`), JSON.stringify({ incomplete: true, findings: [{ severity: 'high', title: 'Known bug', file: 'a.ts', line: 2 }] }))
+    const report = await deliver(env)
+    expect(report.results[0]).toMatchObject({ outcome: 'fix-round' })
+    expect(report.results[0]?.actions).toContain('sent to reactivated worker terminal term_handoff')
+    expect(JSON.parse(readFileSync(dispatchRecordPath(env.loaded.stateDir, 'ENG-10'), 'utf8')).terminal).toBe('term_handoff')
   })
 
   it('holds PRs touching protected paths, waits on pending checks, and asks the worker to fix red CI', async () => {
@@ -226,6 +320,25 @@ describe('deliver', () => {
     expect(closed.runner.calls.some((argv) => argv[1] === 'worktree' && argv[2] === 'rm')).toBe(false)
   })
 
+  it('reconciles a recorded merge after GitHub deletes the head branch', async () => {
+    const env = setup({ pr: null, orcaWorktreeMissing: true, mergedEvent: { pr: 6112, sha: 'merge-sha' }, mergedEventPr: basePr({ state: 'MERGED', number: 6112, url: 'https://github.com/o/r/pull/6112' }) })
+    const report = await deliver(env)
+    expect(report.results[0]).toMatchObject({ outcome: 'merged', pr: 6112, reason: 'PR #6112 merged' })
+    expect(report.results[0]?.actions).toContain('reconciled merge recorded before branch deletion')
+    expect(report.results[0]?.actions).toContain('worktree already absent; cleanup reconciled')
+    expect(env.ledger.active()).toEqual([])
+    expect(readDeliveryState(env.loaded.stateDir, 'ENG-10')).toMatchObject({ finalOutcome: 'merged', prNumber: 6112 })
+  })
+
+  it('does not replay a recorded merge after delivery is already finished', async () => {
+    const env = setup({ pr: null, orcaWorktreeMissing: true, mergedEvent: { pr: 6112, sha: 'merge-sha' }, mergedEventPr: basePr({ state: 'MERGED', number: 6112, url: 'https://github.com/o/r/pull/6112' }) })
+    await deliver(env)
+    const second = await deliver(env)
+    expect(second.results).toEqual([])
+    const mergedEvents = readFileSync(join(env.loaded.stateDir, 'events.ndjson'), 'utf8').split('\n').filter(Boolean).map((line) => JSON.parse(line) as Record<string, unknown>).filter((event) => event['type'] === 'worker.merged')
+    expect(mergedEvents).toHaveLength(1)
+  })
+
   it('nudges an idle worker without a PR once, then marks it stuck and frees the slot while keeping the worktree', async () => {
     const env = setup({ pr: null, dispatchedAt: '2026-09-11T09:00:00.000Z' })
     const first = await deliver(env, { assumeIdle: true })
@@ -241,6 +354,13 @@ describe('deliver', () => {
     expect((await deliver(busy, { assumeIdle: false })).results[0]).toMatchObject({ outcome: 'waiting', reason: 'worker active' })
     const gone = setup({ pr: null, terminals: [] })
     expect((await deliver(gone)).results[0]).toMatchObject({ outcome: 'stuck', reason: expect.stringContaining('terminal gone') })
+  })
+
+  it('reactivates a connected terminal with no agent output before nudging', async () => {
+    const env = setup({ pr: null, terminals: [{ handle: 'term_w', connected: true, orphaned: false, lastOutputAt: null, preview: '', worktreeId: 'repo-1::/w/eng-10-demo' }] })
+    const report = await deliver(env, { assumeIdle: true })
+    expect(report.results[0]).toMatchObject({ outcome: 'nudged' })
+    expect(env.runner.calls.some((argv) => argv[1] === 'terminal' && argv[2] === 'create')).toBe(true)
   })
 
   it('hands off to another builder on the same worktree/branch when the current provider is exhausted', async () => {
@@ -273,6 +393,128 @@ describe('deliver', () => {
     const result = (await deliver(noReviewer)).results[0]
     expect(result).toMatchObject({ outcome: 'waiting', reason: 'no reviewer provider available' })
     expect(listDispatched(noReviewer.loaded.stateDir)).toHaveLength(1)
+  })
+
+  it('runs beforeReview/afterReview hooks around the review call and lets a plugin block it', async () => {
+    const calls = setup({
+      review: { code: 0 },
+      pluginSource: `
+        export default {
+          id: 'review-logger',
+          apply(bus) {
+            globalThis.__reviewHooks = []
+            bus.hook('beforeReview', (payload) => { globalThis.__reviewHooks.push(['before', payload.pr]) })
+            bus.hook('afterReview', (payload) => { globalThis.__reviewHooks.push(['after', payload.status]) })
+          },
+        }
+      `,
+    })
+    const report = await deliver(calls)
+    expect(report.results[0]).toMatchObject({ outcome: 'merged' })
+    expect((globalThis as { __reviewHooks?: readonly unknown[] }).__reviewHooks).toEqual([['before', 42], ['after', 'clean']])
+
+    const blocked = setup({
+      review: { code: 0 },
+      pluginSource: `export default { id: 'blocker', apply(bus) { bus.hook('beforeReview', () => ({ block: true, reason: 'quiet hours' })) } }`,
+    })
+    const blockedReport = await deliver(blocked)
+    expect(blockedReport.results[0]).toMatchObject({ outcome: 'waiting', reason: expect.stringContaining('review blocked by plugin: quiet hours') })
+    expect(blocked.runner.calls.some((argv) => argv[0] === 'agentskit-review')).toBe(false)
+  })
+
+  it('runs beforeMerge/afterMerge hooks around the merge call and lets a plugin hold it instead', async () => {
+    const merged = setup({
+      review: { code: 0 },
+      pluginSource: `
+        export default {
+          id: 'merge-logger',
+          apply(bus) {
+            globalThis.__mergeHooks = []
+            bus.hook('beforeMerge', (payload) => { globalThis.__mergeHooks.push(['before', payload.pr]) })
+            bus.hook('afterMerge', (payload) => { globalThis.__mergeHooks.push(['after', payload.sha]) })
+          },
+        }
+      `,
+    })
+    const report = await deliver(merged)
+    expect(report.results[0]).toMatchObject({ outcome: 'merged' })
+    expect((globalThis as { __mergeHooks?: readonly unknown[] }).__mergeHooks).toEqual([['before', 42], ['after', 'deadbeef']])
+
+    const held = setup({
+      review: { code: 0 },
+      pluginSource: `export default { id: 'holder', apply(bus) { bus.hook('beforeMerge', () => ({ block: true, reason: 'freeze window' })) } }`,
+    })
+    const heldReport = await deliver(held)
+    expect(heldReport.results[0]).toMatchObject({ outcome: 'held', reason: expect.stringContaining('merge blocked by plugin: freeze window') })
+    expect(held.runner.calls.some((argv) => argv[0] === 'gh' && argv[1] === 'api' && argv.includes('--method'))).toBe(false)
+  })
+
+  it('stops a dispatch that has run past delivery.maxDispatchMinutes, even though the terminal is still active', async () => {
+    const env = setup({ pr: null, dispatchedAt: '2026-09-11T00:00:00.000Z' }) // 12h before NOW
+    writeFileSync(join(env.dir, 'loop.config.local.yaml'), 'delivery:\n  maxDispatchMinutes: 60\n')
+    const report = await deliver(env)
+    expect(report.results[0]).toMatchObject({ outcome: 'blocked', reason: expect.stringContaining('maxDispatchMinutes') })
+    expect(env.ledger.active()).toEqual([])
+    expect(env.runner.calls.some((argv) => argv[1] === 'worktree' && argv[2] === 'rm')).toBe(false) // preserved for inspection
+    expect(env.runner.calls.find((argv) => argv[1] === 'linear' && argv[2] === 'label')).toContain('blocked')
+    const state = readDeliveryState(env.loaded.stateDir, 'ENG-10')
+    expect(state).toMatchObject({ finalOutcome: 'blocked' })
+    const events = readFileSync(join(env.loaded.stateDir, 'events.ndjson'), 'utf8').split('\n').filter(Boolean).map((line) => JSON.parse(line) as Record<string, unknown>)
+    expect(events.some((event) => event['type'] === 'max-duration.tripped')).toBe(true)
+  })
+
+  it('does nothing when delivery.maxDispatchMinutes is unset, even for a very old dispatch', async () => {
+    const env = setup({ pr: null, dispatchedAt: '2026-09-01T00:00:00.000Z' })
+    const report = await deliver(env, { assumeIdle: false })
+    expect(report.results[0]).not.toMatchObject({ outcome: 'blocked' })
+  })
+
+  it('stops a dispatch whose provider usage dropped past resilience.maxUsageDeltaPercent since it was sent out', async () => {
+    const env = setup({ pr: null, initialRemainingPercent: 90, claudeUsedPercent: 85 }) // remaining now 15%, dropped 75 points
+    writeFileSync(join(env.dir, 'loop.config.local.yaml'), 'resilience:\n  maxUsageDeltaPercent: 50\n')
+    const report = await deliver(env)
+    expect(report.results[0]).toMatchObject({ outcome: 'blocked', reason: expect.stringContaining('resilience.maxUsageDeltaPercent') })
+    expect(env.ledger.active()).toEqual([])
+    const events = readFileSync(join(env.loaded.stateDir, 'events.ndjson'), 'utf8').split('\n').filter(Boolean).map((line) => JSON.parse(line) as Record<string, unknown>)
+    expect(events.some((event) => event['type'] === 'cost-guard.tripped')).toBe(true)
+  })
+
+  it('does not trip the cost guard when the usage drop stays under the configured threshold', async () => {
+    const env = setup({ pr: null, initialRemainingPercent: 90, claudeUsedPercent: 20 }) // remaining now 80%, dropped 10 points
+    writeFileSync(join(env.dir, 'loop.config.local.yaml'), 'resilience:\n  maxUsageDeltaPercent: 50\n')
+    const report = await deliver(env, { assumeIdle: false })
+    expect(report.results[0]).not.toMatchObject({ outcome: 'blocked' })
+  })
+
+  it('holds a clean, green-checks PR when delivery.merge.requireHumanApproval is set and no one approved it on GitHub', async () => {
+    const env = setup({ review: { code: 0 } })
+    writeFileSync(join(env.dir, 'loop.config.local.yaml'), 'delivery:\n  merge:\n    requireHumanApproval: true\n')
+    const report = await deliver(env)
+    expect(report.results[0]).toMatchObject({ outcome: 'held', reason: expect.stringContaining('requireHumanApproval') })
+    expect(env.runner.calls.some((argv) => argv[0] === 'gh' && argv[1] === 'api' && argv.includes('--method'))).toBe(false)
+  })
+
+  it('merges once a human has approved the PR on GitHub with delivery.merge.requireHumanApproval set', async () => {
+    const env = setup({ review: { code: 0 }, pr: basePr({ reviewDecision: 'APPROVED' }) })
+    writeFileSync(join(env.dir, 'loop.config.local.yaml'), 'delivery:\n  merge:\n    requireHumanApproval: true\n')
+    const report = await deliver(env)
+    expect(report.results[0]).toMatchObject({ outcome: 'merged' })
+  })
+
+  it('holds a PR that touches a secret-shaped filename, without reviewing or merging it', async () => {
+    const env = setup({ pr: basePr({ files: [{ path: '.env' }] }) })
+    const report = await deliver(env)
+    expect(report.results[0]).toMatchObject({ outcome: 'held', reason: expect.stringContaining('secret-shaped file') })
+    expect(env.runner.calls.some((argv) => argv[0] === 'agentskit-review')).toBe(false)
+    expect(env.runner.calls.some((argv) => argv[0] === 'gh' && argv[1] === 'api' && argv.includes('--method'))).toBe(false)
+    const commentCall = env.runner.calls.find((argv) => argv[0] === 'gh' && argv[1] === 'pr' && argv[2] === 'comment')
+    expect(commentCall?.[commentCall.indexOf('--body') + 1]).toContain('.env')
+  })
+
+  it('does not hold a normal PR whose files do not match any secretFilePatterns', async () => {
+    const env = setup({ review: { code: 0 } })
+    const report = await deliver(env)
+    expect(report.results[0]).toMatchObject({ outcome: 'merged' })
   })
 })
 
@@ -321,6 +563,14 @@ describe('github label intake', () => {
     expect(intake).toMatchObject({ outcome: 'held' })
     expect(intake?.reason).toContain('label removed')
     expect(env.runner.calls.some((argv) => argv[0] === 'gh' && argv[1] === 'pr' && argv[2] === 'comment')).toBe(false)
+  })
+
+  it('holds an intake PR that touches a secret-shaped filename, without reviewing it', async () => {
+    const env = setup({ pr: null, intakePrs: [intakePr({ files: [{ path: 'id_rsa' }] })], intakeView: { 77: intakePr({ files: [{ path: 'id_rsa' }] }) } })
+    const report = await deliver(env)
+    const intake = report.results.find((result) => result.issue === 'pr-77')
+    expect(intake).toMatchObject({ outcome: 'held', reason: expect.stringContaining('secret-shaped file') })
+    expect(env.runner.calls.some((argv) => argv[0] === 'agentskit-review')).toBe(false)
   })
 
   it('does no intake discovery at all when github.intakeLabel is null', async () => {

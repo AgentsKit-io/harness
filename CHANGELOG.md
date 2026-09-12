@@ -1,5 +1,35 @@
 # Changelog
 
+## [0.10.0] - 2026-09-12
+
+Closes the gaps found comparing this harness against LangChain's "custom agent harness" article. The structural
+difference stands: this harness orchestrates opaque external CLI agents, so a model/tool-loop middleware isn't
+possible here — every item below targets the orchestration layer this loop actually controls (see ADR-0030).
+
+- **Local event bus + orchestration lifecycle hooks**: `plugins.modules` (local `.mjs` files, empty by default)
+  loaded once per `tick`/`deliver`, each getting `src/loop/event-bus.ts`'s bus to subscribe to loop events live
+  and to `beforeDispatch`/`afterDispatch`/`beforeReview`/`afterReview`/`beforeMerge`/`afterMerge`/`onPause`/
+  `onEscalate` — a `before*` hook can return `{ block: true, reason }` to stop the action. `loop doctor` gained a
+  `plugins.modules` check.
+- **PII/secret scanning**: `security.pii.enabled` (default false) scans issue text before it enters the
+  orchestrator prompt and the worker brief for PII-shaped patterns (email, common API-key prefixes, phone,
+  card-number-shaped digits); `security.pii.action` is `redact` (default when enabled), `warn`, or `block`.
+- **Cost/time circuit breakers** for an in-flight dispatch, since the loop cannot count a worker CLI's own
+  model/tool calls: `delivery.maxDispatchMinutes` (hard wall-clock ceiling) and `resilience.maxUsageDeltaPercent`
+  (stops a dispatch whose provider's remaining Orca usage dropped past the threshold since it was sent out).
+  `dispatch.json` now records `initialRemainingPercent`. Either trip stops the issue like a stuck worker.
+- **Human-approval merge gate**: `delivery.merge.requireHumanApproval` (default false) holds a clean, green-checks
+  PR until a human approves it on GitHub (`reviewDecision: 'APPROVED'`, already fetched with every PR snapshot).
+- **MCP allowlist doctor check**: `loop doctor` validates the default-deny `mcp.allowTools` bridge wiring when
+  `mcp.enabled` — MCP stays adapter-only and read-only per ADR-0028, so this checks the allow/deny plumbing, not a
+  live connection to an MCP server.
+- **Dynamic outcome progress**: the brief documents an optional `progress.json` convention
+  (`{"o1": "done", "o2": "in-progress"}`) a worker can write at its worktree root; `loop debrief` shows
+  `N/M outcome(s) done` per in-flight issue when present (`src/loop/progress.ts`, best-effort, never required).
+- **Secret-shaped filename guardrail**: `delivery.secretFilePatterns` (default covers `.env`, `*.pem`, `*.key`,
+  `id_rsa`, `credentials.json`, …) extends the existing `selfEditPaths` hold — a PR touching a matching filename is
+  held, never reviewed or merged, in both the normal dispatch path and GitHub label intake.
+
 ## [0.9.0] - 2026-09-12
 
 - **Failure-classification fix**: `classifyProviderFailure` now recognises real Claude/Codex/Grok usage-limit phrasing ("You've hit your session limit", "usage limit reached", "credit balance is too low", "spend limit reached", "temporarily limiting requests", "Overloaded") as `quota` instead of falling through to `other`, and `extractResetsAt` parses a relative (`resets in 3h`) or clock-time (`resets 10:40pm`) reset out of the message. A code-review exit is classified the same way, marking the reviewer's provider (not the review-CLI transport id) cooling down instead of retrying every tick. Root cause of a 2026-09-11/12 pilot bug: 19 unclassified `contract.failed` retries across 4 issues and 12 incomplete reviews over 7h with no cooldown ever recorded.

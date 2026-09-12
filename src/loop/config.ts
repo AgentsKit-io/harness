@@ -74,6 +74,12 @@ export const LoopConfigSchema = z.object({
     person: nonEmpty,
     /** Display name → Linear user id, for `assignee set` and audit; the queue itself filters by display name. */
     people: z.record(nonEmpty, nonEmpty).default({}),
+    /** Optional ordered handoff between owners after the current dispatchable queue drains. */
+    rotation: z.object({
+      enabled: z.boolean().default(false),
+      owners: z.array(nonEmpty).default([]),
+      advanceWhenEmpty: z.boolean().default(true),
+    }).prefault({}),
     states: z.array(nonEmpty).min(1).default(['Todo', 'Ready']),
     excludeLabels: z.array(nonEmpty).default(['blocked', 'needs-info']),
     requireLabels: z.array(nonEmpty).default([]),
@@ -177,6 +183,12 @@ export const LoopConfigSchema = z.object({
       auto: z.boolean().default(true),
       method: z.enum(['squash', 'merge', 'rebase']).default('squash'),
       requireChecks: z.boolean().default(true),
+      /**
+       * Extra synchronous gate on top of a clean review + green checks: a real human must approve the PR on
+       * GitHub (`reviewDecision: 'APPROVED'`, already fetched with every PR snapshot) before the loop merges it.
+       * False by default so existing configs keep auto-merging on a clean review, matching ADR-0027 §6.
+       */
+      requireHumanApproval: z.boolean().default(false),
     }).prefault({}),
     /** Optional bounded smoke gate before auto-merge (argv via CommandRunner; default off). */
     smoke: z.object({
@@ -197,6 +209,12 @@ export const LoopConfigSchema = z.object({
     maxFixRounds: z.number().int().min(0).default(2),
     workerIdleTimeoutMin: z.number().int().positive().default(45),
     /**
+     * Hard wall-clock ceiling on one dispatch, independent of idle detection: `workerIdleTimeoutMin` only catches
+     * a worker that stopped producing output, not one that is still active but has been running far longer than
+     * any real task on this project should. Unset (default) = disabled.
+     */
+    maxDispatchMinutes: z.number().int().positive().optional(),
+    /**
      * When a worker goes idle / dies and its provider is out of usage (or otherwise unavailable),
      * relaunch another builder on the **same** Orca worktree + branch with a continuation brief.
      */
@@ -207,6 +225,13 @@ export const LoopConfigSchema = z.object({
       onlyWhenProviderUnavailable: z.boolean().default(true),
     }).prefault({}),
     selfEditPaths: z.array(nonEmpty).default([LOOP_CONFIG_FILE, '.github/**']),
+    /**
+     * Glob patterns (same matcher as `selfEditPaths`) for filenames that should never enter a PR the loop reviews
+     * or merges, regardless of the diff content — the loop cannot fetch a PR's actual diff content today, so this
+     * is a filename-shaped guardrail, not a secret-content scan. A PR touching one of these is held exactly like
+     * `selfEditPaths`, with a distinct reason. Defaults cover the most common accidentally-committed secret files.
+     */
+    secretFilePatterns: z.array(nonEmpty).default(['**/.env', '**/.env.*', '**/*.pem', '**/*.key', '**/id_rsa', '**/id_rsa.*', '**/credentials.json', '**/*.p12', '**/*.pfx']),
     /** Check names ignored when deciding CI is green (e.g. advisory bots). */
     ignoreChecks: z.array(nonEmpty).default([]),
     /** Check names that must be observed and green; empty = every reported check must pass. */
@@ -270,6 +295,16 @@ export const LoopConfigSchema = z.object({
     enabled: z.boolean().default(false),
     allowTools: z.array(nonEmpty).default([]),
   }).prefault({}),
+  plugins: z.object({
+    /**
+     * Local `.mjs` files (relative to `project.root`) loaded once at the start of `tick`/`deliver`; each exports
+     * `{ id, apply(bus) }` and gets the loop's in-process event bus to subscribe to (`src/loop/event-bus.ts`) —
+     * events (`contract.failed`, `worker.dispatched`, …) and lifecycle hooks (`beforeDispatch`, `beforeMerge`, …
+     * a `before*` hook can block the action). Same trust level as `agents.registry.yaml`: files already in this
+     * repo, never fetched over the network.
+     */
+    modules: z.array(nonEmpty).default([]),
+  }).prefault({}),
   github: z.object({
     /** A PR labeled with this on GitHub is picked up by deliver even though the loop never dispatched it. Set null to disable intake entirely. */
     intakeLabel: nonEmpty.nullable().default('loop:review'),
@@ -289,12 +324,28 @@ export const LoopConfigSchema = z.object({
     pausedLabel: nonEmpty.default('loop:paused'),
     /** Consecutive *thrown* `loop stage` runs (config/adapter crash, not a normal idle/ok/blocked report) before that stage pauses itself. */
     stagePauseAfterRuns: z.number().int().positive().default(3),
+    /**
+     * Cost circuit breaker: the loop cannot count a worker CLI's internal model/tool calls (it is an opaque
+     * process), so instead it watches the builder provider's remaining Orca usage from dispatch time. If that
+     * provider's remaining usage drops by at least this many percentage points *while this one issue is in
+     * flight*, deliver stops nudging/reviewing/merging it and escalates like a stuck worker. Unset (default) =
+     * disabled — a config typo elsewhere must not silently start blocking normal-cost dispatches.
+     */
+    maxUsageDeltaPercent: z.number().min(1).max(100).optional(),
   }).prefault({}),
   brief: z.object({
     /** Markdown files (paths relative to `project.root`) pinned verbatim into every worker brief, sha256-digested for traceability. Missing file = dispatch fails closed. */
     skills: z.array(nonEmpty).default([]),
     /** Per-file cap; a file over this length is truncated with a visible note rather than blowing the brief budget. */
     maxSkillChars: z.number().int().positive().default(6_000),
+  }).prefault({}),
+  security: z.object({
+    pii: z.object({
+      /** Off by default: scanning issue text/PR findings for PII-shaped patterns before they enter a prompt or a public comment. */
+      enabled: z.boolean().default(false),
+      /** `redact` replaces a match with `[REDACTED:<kind>]`; `warn` leaves the text as-is but logs a `security.pii-detected` event; `block` fails the contract instead of sending the text anywhere. */
+      action: z.enum(['redact', 'warn', 'block']).default('redact'),
+    }).prefault({}),
   }).prefault({}),
   schedule: z.object({
     tick: cron.default('*/5 * * * *'),

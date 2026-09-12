@@ -10,6 +10,7 @@ import { fail } from '../kernel/errors.js'
 import { hashJson } from '../kernel/hash.js'
 import { providerIdentity, renderHeadlessArgv, type LoopConfig } from './config.js'
 import { classifyFailure } from '../kernel/resilience.js'
+import { scanForPii, type PiiMatch } from '../kernel/pii.js'
 import type { AgentMemoryAdapter } from '../kernel/memory.js'
 import { planMemoryContext, type MemoryContextPlan } from './memory.js'
 import type { RankedModel, RoutingDecision } from './routing.js'
@@ -107,10 +108,21 @@ export const renderContractPrompt = (input: {
   readonly references: readonly ContextReference[]
   readonly memoryBlock?: string
   readonly maxIssueChars?: number
+  /** Called (once, if `security.pii.enabled`) with the matches found in the issue text, before redaction. */
+  readonly onPiiDetected?: (matches: readonly PiiMatch[]) => void
 }): string => {
   const { issue, config } = input
   const issueBudget = input.maxIssueChars ?? config.contract.maxIssueChars
-  const body = truncate([issue.description, ...issue.comments.map((comment) => `--- comment by ${comment.author ?? 'unknown'} at ${comment.createdAt}\n${comment.body}`)].filter(Boolean).join('\n\n'), issueBudget)
+  let raw = [issue.description, ...issue.comments.map((comment) => `--- comment by ${comment.author ?? 'unknown'} at ${comment.createdAt}\n${comment.body}`)].filter(Boolean).join('\n\n')
+  if (config.security.pii.enabled) {
+    const scan = scanForPii(raw)
+    if (scan.matches.length) {
+      input.onPiiDetected?.(scan.matches)
+      if (config.security.pii.action === 'block') fail(`Issue text looks like it contains PII (${[...new Set(scan.matches.map((match) => match.kind))].join(', ')}); contract generation refused. Redact it in Linear or set security.pii.action to 'redact'/'warn'.`, 'POLICY_BLOCKED')
+      if (config.security.pii.action === 'redact') raw = scan.redacted
+    }
+  }
+  const body = truncate(raw, issueBudget)
   const memory = input.memoryBlock?.trim() ? `\n${input.memoryBlock.trim()}\n` : ''
   const refs = input.references.length ? `\nRepository documentation the worker can rely on (paths relative to the repo root):\n${input.references.map((ref) => `- ${ref.uri}${ref.title ? ` — ${ref.title}` : ''}`).join('\n')}\n` : ''
   return `You are the orchestrator of an autonomous delivery loop for the repository ${config.project.repo} (base branch ${config.project.baseBranch}).
@@ -153,10 +165,11 @@ export const resolveDocContext = async (
   query: string,
   max: number,
   scopes?: readonly string[],
+  maxAgeHours?: number,
 ): Promise<readonly ContextReference[]> => {
   if (max <= 0 || !existsSync(join(root, '.doc-bridge', 'index.json'))) return []
   try {
-    return (await createDocBridgeContextProvider({ root }).resolve({
+    return (await createDocBridgeContextProvider({ root, ...(maxAgeHours === undefined ? {} : { maxAgeHours }) }).resolve({
       query,
       ...(scopes?.length ? { scope: scopes } : {}),
     })).references.slice(0, max)
@@ -181,6 +194,8 @@ export interface GenerateContractInput {
   readonly onProviderFailure?: (failure: ProviderFailure) => void
   /** Observability for memory/doc-bridge char budgets. */
   readonly onMemoryPlan?: (plan: MemoryContextPlan) => void
+  /** Called (once, if `security.pii.enabled`) with the matches found in the issue text, before redaction. */
+  readonly onPiiDetected?: (matches: readonly PiiMatch[]) => void
 }
 
 const AUTH_PATTERN = /failed to authenticate|not logged in|oauth|unauthori[sz]ed|invalid api key|login required|authentication/i
@@ -237,7 +252,7 @@ export const generateContract = async (input: GenerateContractInput): Promise<St
   let references = input.references
   if (!references) {
     const fromDocs = providers.includes('doc-bridge')
-      ? await resolveDocContext(input.root, `${input.issue.identifier} ${input.issue.title}`, input.config.contract.maxContextReferences)
+      ? await resolveDocContext(input.root, `${input.issue.identifier} ${input.issue.title}`, input.config.contract.maxContextReferences, undefined, input.config.contract.docBridgeMaxAgeHours)
       : []
     let fromRag: readonly ContextReference[] = []
     if (providers.includes('rag') && input.config.rag.enabled && input.config.rag.queryArgv.length) {
@@ -267,6 +282,7 @@ export const generateContract = async (input: GenerateContractInput): Promise<St
     issue: input.issue,
     config: input.config,
     references: plan.references,
+    onPiiDetected: input.onPiiDetected,
     memoryBlock: plan.memoryBlock,
     maxIssueChars: plan.issueCharBudget,
   })

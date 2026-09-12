@@ -6,6 +6,8 @@ import { activeCooldowns, readCooldowns } from './cooldown.js'
 import { listDispatched, readDeliveryState, type DeliveryState } from './deliver.js'
 import { readLoopEvents, parseSince, type LoopEvent } from './retro.js'
 import { readDispatchRecord, type DispatchRecordFile } from './tick.js'
+import { queueOwner } from './rotation.js'
+import { readOutcomeProgress, type OutcomeProgress } from './progress.js'
 
 export interface DebriefInput {
   readonly configPath?: string
@@ -33,6 +35,8 @@ export interface DebriefIssueRow {
   readonly heldFor: string | null
   readonly finalOutcome: string | null
   readonly contractIntent: string | null
+  /** Best-effort read of `progress.json` from the worktree, keyed by outcome id (see brief.ts rule 10); `null` when the worker hasn't written one. */
+  readonly progress: OutcomeProgress | null
 }
 
 export interface DebriefReport {
@@ -104,6 +108,7 @@ const rowFor = (input: {
   const review = latestReview(input.delivery)
   return {
     issue: input.issue,
+    progress: readOutcomeProgress(input.dispatch?.worktreePath),
     url: input.dispatch?.url ?? null,
     phase,
     summary: summarize(phase, input.delivery, input.dispatch),
@@ -136,6 +141,7 @@ export const buildDebriefReport = (input: DebriefInput): DebriefReport => {
   const since = parseSince(input.since ?? '24h', now)
   const windowHours = Math.max(1, Math.round((now.getTime() - since.getTime()) / 3_600_000))
   const config = loaded.config
+  const person = queueOwner(loaded)
   const stateDir = loaded.stateDir
   const ids = input.issue ? [input.issue] : [...new Set([...listDispatched(stateDir).map((item) => item.issue), ...listIssueIds(stateDir)])]
   const rows: DebriefIssueRow[] = []
@@ -155,6 +161,7 @@ export const buildDebriefReport = (input: DebriefInput): DebriefReport => {
         rows.push({
           issue,
           url: null,
+          progress: null,
           phase: 'escalated',
           summary: `Needs-info: ${contract.assessment.reasons[0] ?? 'contract not dispatchable'}`,
           provider: contract.provider,
@@ -201,12 +208,12 @@ export const buildDebriefReport = (input: DebriefInput): DebriefReport => {
     issue: typeof event.issue === 'string' ? event.issue : null,
   }))
   const headline = inFlight.length === 0 && held.length === 0
-    ? `Loop idle for ${config.linear.person} on ${config.project.name}`
+    ? `Loop idle for ${person} on ${config.project.name}`
     : `Loop working ${inFlight.length} issue(s)` + (held.length ? `, ${held.length} held for a human` : '') + ` on ${config.project.name}`
   return {
     generatedAt: now.toISOString(),
     project: config.project.name,
-    person: config.linear.person,
+    person,
     repo: config.project.repo,
     windowHours,
     inFlight,
@@ -231,6 +238,10 @@ export const renderDebriefMarkdown = (report: DebriefReport): string => {
       lines.push(`- ${row.summary}`)
       if (row.contractIntent) lines.push(`- Intent: ${row.contractIntent}`)
       if (row.provider) lines.push(`- Worker: \`${row.provider}/${row.model}\`${row.ageMin !== null ? ` · ${row.ageMin} min` : ''}`)
+      if (row.progress) {
+        const done = Object.values(row.progress).filter((status) => status === 'done').length
+        lines.push(`- Progress: ${done}/${Object.keys(row.progress).length} outcome(s) done (${Object.entries(row.progress).map(([id, status]) => `${id}: ${status}`).join(', ')})`)
+      }
       if (row.worktree) lines.push(`- Worktree: \`${row.worktree}\``)
       if (row.branch) lines.push(`- Branch: \`${row.branch}\``)
       if (row.prUrl) lines.push(`- PR: ${row.prUrl}${row.reviewStatus ? ` · review ${row.reviewStatus}` : ''}`)
