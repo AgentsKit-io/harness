@@ -14,6 +14,8 @@ import { routeAllRoles, type RoutingDecision } from './routing.js'
 import { assessSlots, type SlotAssessment } from './slots.js'
 import { queueOwner } from './rotation.js'
 import { createLoopEventBus, loadLoopPlugins } from './event-bus.js'
+import { createMcpToolBridge } from '../adapters/mcp.js'
+import { createPolicyGate } from '../kernel/policy.js'
 
 export type DoctorCheckStatus = 'passed' | 'warning' | 'failed'
 export interface DoctorCheck { readonly id: string; readonly status: DoctorCheckStatus; readonly detail: string }
@@ -166,6 +168,25 @@ export const runLoopDoctor = async (input: LoopDoctorInput): Promise<LoopDoctorR
       push('plugins.modules', 'failed', `${pluginErrors.length} of ${config.plugins.modules.length} plugin module(s) failed to load: ${pluginErrors.map((failure) => `${failure.path} (${failure.error})`).join(', ')}`)
     } else {
       push('plugins.modules', 'passed', `${loadedModules.length} plugin module(s) loaded (${loadedModules.join(', ')})`)
+    }
+  }
+
+  if (config.mcp.enabled) {
+    // MCP stays adapter-only and read-only in the loop (ADR-0028): no MCP client/transport lives here, so this
+    // cannot reach a live server. It only proves the allowlist + policy-gate plumbing is self-consistent —
+    // exactly what `createMcpToolBridge` will enforce once a real `call` function is wired in by a consumer.
+    if (!config.mcp.allowTools.length) {
+      push('mcp.allowlist', 'warning', 'mcp.enabled is true but mcp.allowTools is empty; the default-deny bridge would block every tool call')
+    } else {
+      const policy = createPolicyGate({ rules: [{ id: 'mcp-doctor-allow', effect: 'allow', toolIds: [...config.mcp.allowTools], reason: 'configured allowlist' }] })
+      const bridge = createMcpToolBridge({ policy, allowTools: config.mcp.allowTools, call: async () => null })
+      const allowed = await bridge.invoke({ toolId: config.mcp.allowTools[0]! })
+      const blocked = await bridge.invoke({ toolId: '__doctor-probe-not-in-allowlist__' })
+      if (allowed.status === 'ok' && blocked.status === 'blocked') {
+        push('mcp.allowlist', 'passed', `${config.mcp.allowTools.length} allowlisted tool(s); allowlist/policy wiring verified (not a live connectivity check)`)
+      } else {
+        push('mcp.allowlist', 'failed', 'MCP allowlist/policy wiring did not behave as expected')
+      }
     }
   }
 

@@ -363,4 +363,35 @@ describe('loop doctor', () => {
     const present = await runLoopDoctor({ configPath: join(dir, 'loop.config.yaml'), runner, env: { PATH: bin, XAI_API_KEY: 'k' }, platform: 'darwin', now: () => new Date('2026-09-11T12:00:00.000Z'), probe: false })
     expect(present.checks.find((check) => check.id === 'plugins.modules')).toMatchObject({ status: 'passed', detail: expect.stringContaining('ok') })
   })
+
+  it('warns when mcp.enabled is true with an empty allowlist, and passes once a tool is allowlisted', async () => {
+    const bin = fakeBinDir(['claude', 'codex', 'opencode', 'grok']); cleanups.push(bin)
+    const dir = mkdtempSync(join(tmpdir(), 'agentskit-loop-doctor-')); cleanups.push(dir)
+    const base = exampleYaml.replace('person: my-linear-display-name', 'person: person')
+    writeFileSync(join(dir, 'loop.config.yaml'), `${base}
+mcp:
+  enabled: true
+  allowTools: []
+`)
+    const runner = fakeRunner()
+    const empty = await runLoopDoctor({ configPath: join(dir, 'loop.config.yaml'), runner, env: { PATH: bin, XAI_API_KEY: 'k' }, platform: 'darwin', now: () => new Date('2026-09-11T12:00:00.000Z'), probe: false })
+    expect(empty.checks.find((check) => check.id === 'mcp.allowlist')).toMatchObject({ status: 'warning', detail: expect.stringContaining('empty') })
+
+    writeFileSync(join(dir, 'loop.config.yaml'), `${base}
+mcp:
+  enabled: true
+  allowTools: [read-file]
+`)
+    const present = await runLoopDoctor({ configPath: join(dir, 'loop.config.yaml'), runner, env: { PATH: bin, XAI_API_KEY: 'k' }, platform: 'darwin', now: () => new Date('2026-09-11T12:00:00.000Z'), probe: false })
+    expect(present.checks.find((check) => check.id === 'mcp.allowlist')).toMatchObject({ status: 'passed', detail: expect.stringContaining('1 allowlisted') })
+  })
+
+  it('does not run the mcp.allowlist check when mcp.enabled is false', async () => {
+    const bin = fakeBinDir(['claude', 'codex', 'opencode', 'grok']); cleanups.push(bin)
+    const dir = mkdtempSync(join(tmpdir(), 'agentskit-loop-doctor-')); cleanups.push(dir)
+    writeFileSync(join(dir, 'loop.config.yaml'), exampleYaml.replace('person: my-linear-display-name', 'person: person'))
+    const runner = fakeRunner()
+    const report = await runLoopDoctor({ configPath: join(dir, 'loop.config.yaml'), runner, env: { PATH: bin, XAI_API_KEY: 'k' }, platform: 'darwin', now: () => new Date('2026-09-11T12:00:00.000Z'), probe: false })
+    expect(report.checks.find((check) => check.id === 'mcp.allowlist')).toBeUndefined()
+  })
 })

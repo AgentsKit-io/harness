@@ -183,6 +183,12 @@ export const LoopConfigSchema = z.object({
       auto: z.boolean().default(true),
       method: z.enum(['squash', 'merge', 'rebase']).default('squash'),
       requireChecks: z.boolean().default(true),
+      /**
+       * Extra synchronous gate on top of a clean review + green checks: a real human must approve the PR on
+       * GitHub (`reviewDecision: 'APPROVED'`, already fetched with every PR snapshot) before the loop merges it.
+       * False by default so existing configs keep auto-merging on a clean review, matching ADR-0027 §6.
+       */
+      requireHumanApproval: z.boolean().default(false),
     }).prefault({}),
     /** Optional bounded smoke gate before auto-merge (argv via CommandRunner; default off). */
     smoke: z.object({

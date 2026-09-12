@@ -509,6 +509,7 @@ const handlePullRequest = async (ctx: Context, record: DispatchRecordFile, lease
   } else if (prior.status === 'findings') return { issue: record.issue, outcome: 'waiting', reason: `review findings pending a new push (head ${pr.headSha.slice(0, 7)})`, pr: pr.number, head: pr.headSha, actions }
 
   if (!config.delivery.merge.auto) return { issue: record.issue, outcome: 'held', reason: 'review clean; auto-merge disabled', pr: pr.number, head: pr.headSha, ...(review ? { review } : {}), actions }
+  if (config.delivery.merge.requireHumanApproval && pr.reviewDecision !== 'APPROVED') return { issue: record.issue, outcome: 'held', reason: `review clean and checks green, but delivery.merge.requireHumanApproval is set and no human has approved PR #${pr.number} on GitHub yet`, pr: pr.number, head: pr.headSha, ...(review ? { review } : {}), actions }
 
   const smoke = config.delivery.smoke
   if (smoke.enabled && smoke.kind === 'verify-argv') {

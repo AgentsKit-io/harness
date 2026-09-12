@@ -120,6 +120,7 @@ For every issue the loop dispatched (`<stateDir>/issues/<id>/dispatch.json`) and
 | Review findings ≥ floor | findings to the worker; counts as a fix round; same head is never re-reviewed |
 | Fix rounds exhausted (`maxFixRounds`) | **blocked**: Linear comment + label + `returnState`, PR comment, lease released, worktree and PR kept |
 | Review clean, `merge.auto` | `gh api PUT …/merge` with `sha=<reviewed head>` (GitHub refuses if the head moved) → Linear attach + comment + `doneState`, worktree removed when `cleanupWorktree` |
+| Review clean, `merge.requireHumanApproval` set, no GitHub approval yet | **held**: reuses `pr.reviewDecision` already fetched with the PR snapshot — no extra GitHub call; merges automatically as soon as `reviewDecision` becomes `APPROVED` on a later run |
 | PR merged outside the loop | same completion path |
 | PR closed without merge | **abandoned**: lease released, issue → `returnState`, worktree kept |
 
@@ -308,6 +309,8 @@ same shell commands. `project.setup.command` (unset by default; an argv array, e
 | `machine.slots` | `sampleMachine` + `adaptiveConcurrency`, free RAM reserve, WSL cap, running worktrees | no — 0 free slots is a warning, not a failure |
 | `linear.queue` | `orca linear list-issues` per configured state, filtered and ordered locally | yes — an unreachable Linear blocks |
 | `brief.skills` | existence + readability of each `brief.skills` path under `project.root` | yes when any are unreadable — dispatch would fail closed anyway |
+| `plugins.modules` | each configured module exists and `import()`s without throwing | yes when any fails to load |
+| `mcp.allowlist` | only runs when `mcp.enabled`; builds the default-deny bridge from `mcp.allowTools` and self-tests it (no live MCP server involved — ADR-0028) | warning on an empty allowlist, failed if the allow/deny wiring itself misbehaves |
 
 
 ## Dynamic model routing

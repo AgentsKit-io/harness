@@ -469,6 +469,21 @@ describe('deliver', () => {
     const report = await deliver(env, { assumeIdle: false })
     expect(report.results[0]).not.toMatchObject({ outcome: 'blocked' })
   })
+
+  it('holds a clean, green-checks PR when delivery.merge.requireHumanApproval is set and no one approved it on GitHub', async () => {
+    const env = setup({ review: { code: 0 } })
+    writeFileSync(join(env.dir, 'loop.config.local.yaml'), 'delivery:\n  merge:\n    requireHumanApproval: true\n')
+    const report = await deliver(env)
+    expect(report.results[0]).toMatchObject({ outcome: 'held', reason: expect.stringContaining('requireHumanApproval') })
+    expect(env.runner.calls.some((argv) => argv[0] === 'gh' && argv[1] === 'api' && argv.includes('--method'))).toBe(false)
+  })
+
+  it('merges once a human has approved the PR on GitHub with delivery.merge.requireHumanApproval set', async () => {
+    const env = setup({ review: { code: 0 }, pr: basePr({ reviewDecision: 'APPROVED' }) })
+    writeFileSync(join(env.dir, 'loop.config.local.yaml'), 'delivery:\n  merge:\n    requireHumanApproval: true\n')
+    const report = await deliver(env)
+    expect(report.results[0]).toMatchObject({ outcome: 'merged' })
+  })
 })
 
 describe('github label intake', () => {

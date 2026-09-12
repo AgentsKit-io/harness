@@ -129,6 +129,8 @@ delivery:
     auto: true
     method: squash
     requireChecks: true
+    requireHumanApproval: false        # true: also require a human GitHub review approval before merging, even
+                                        # after a clean loop review + green checks
   maxFixRounds: 2
   workerIdleTimeoutMin: 45
   # maxDispatchMinutes: 240                # hard ceiling on one dispatch regardless of activity; unset = disabled
