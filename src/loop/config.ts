@@ -203,6 +203,12 @@ export const LoopConfigSchema = z.object({
     maxFixRounds: z.number().int().min(0).default(2),
     workerIdleTimeoutMin: z.number().int().positive().default(45),
     /**
+     * Hard wall-clock ceiling on one dispatch, independent of idle detection: `workerIdleTimeoutMin` only catches
+     * a worker that stopped producing output, not one that is still active but has been running far longer than
+     * any real task on this project should. Unset (default) = disabled.
+     */
+    maxDispatchMinutes: z.number().int().positive().optional(),
+    /**
      * When a worker goes idle / dies and its provider is out of usage (or otherwise unavailable),
      * relaunch another builder on the **same** Orca worktree + branch with a continuation brief.
      */
@@ -305,6 +311,14 @@ export const LoopConfigSchema = z.object({
     pausedLabel: nonEmpty.default('loop:paused'),
     /** Consecutive *thrown* `loop stage` runs (config/adapter crash, not a normal idle/ok/blocked report) before that stage pauses itself. */
     stagePauseAfterRuns: z.number().int().positive().default(3),
+    /**
+     * Cost circuit breaker: the loop cannot count a worker CLI's internal model/tool calls (it is an opaque
+     * process), so instead it watches the builder provider's remaining Orca usage from dispatch time. If that
+     * provider's remaining usage drops by at least this many percentage points *while this one issue is in
+     * flight*, deliver stops nudging/reviewing/merging it and escalates like a stuck worker. Unset (default) =
+     * disabled — a config typo elsewhere must not silently start blocking normal-cost dispatches.
+     */
+    maxUsageDeltaPercent: z.number().min(1).max(100).optional(),
   }).prefault({}),
   brief: z.object({
     /** Markdown files (paths relative to `project.root`) pinned verbatim into every worker brief, sha256-digested for traceability. Missing file = dispatch fails closed. */

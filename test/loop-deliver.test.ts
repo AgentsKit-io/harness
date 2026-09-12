@@ -37,6 +37,8 @@ interface Scenario {
   readonly sendRejects?: number
   readonly orcaWorktreeMissing?: boolean
   readonly pluginSource?: string
+  readonly initialRemainingPercent?: number | null
+  readonly claudeUsedPercent?: number
 }
 
 const basePr = (over: Record<string, unknown> = {}): Record<string, unknown> => ({ ...(fixture('gh-pr-view') as Record<string, unknown>), headRefName: 'person/eng-10-demo', files: [{ path: 'packages/demo/src/index.ts' }], statusCheckRollup: [{ __typename: 'CheckRun', name: 'ci', conclusion: 'SUCCESS', status: 'COMPLETED' }], mergeable: 'MERGEABLE', mergeStateStatus: 'CLEAN', state: 'OPEN', number: 42, url: 'https://github.com/o/r/pull/42', ...over })
@@ -55,12 +57,16 @@ const setup = (initial: Scenario = {}) => {
   const loaded = loadLoopConfig(join(dir, 'loop.config.yaml'))
   const ledger = createDispatchLedger(loaded.stateDir)
   const claim = ledger.claim({ tracker: 'linear', repository: 'org/demo', issue: 'ENG-10', worktree: 'eng-10-demo', branch: 'person/eng-10-demo', owner: 'test' })
-  const record: DispatchRecordFile = { issue: 'ENG-10', worktreeId: 'repo-1::/w/eng-10-demo', worktree: 'eng-10-demo', branch: 'person/eng-10-demo', terminal: 'term_w', provider: 'claude', model: 'sonnet', contractDigest: 'abc', leaseKey: claim.lease.key, leaseId: claim.lease.leaseId, dispatchedAt: scenario.dispatchedAt ?? '2026-09-11T10:00:00.000Z', url: 'https://linear.app/x/issue/ENG-10' }
+  const record: DispatchRecordFile = { issue: 'ENG-10', worktreeId: 'repo-1::/w/eng-10-demo', worktree: 'eng-10-demo', branch: 'person/eng-10-demo', terminal: 'term_w', provider: 'claude', model: 'sonnet', contractDigest: 'abc', leaseKey: claim.lease.key, leaseId: claim.lease.leaseId, dispatchedAt: scenario.dispatchedAt ?? '2026-09-11T10:00:00.000Z', url: 'https://linear.app/x/issue/ENG-10', initialRemainingPercent: scenario.initialRemainingPercent ?? null } as DispatchRecordFile
   mkdirSync(join(loaded.stateDir, 'issues', 'ENG-10'), { recursive: true })
   writeFileSync(dispatchRecordPath(loaded.stateDir, 'ENG-10'), JSON.stringify(record))
   if (scenario.mergedEvent) writeFileSync(join(loaded.stateDir, 'events.ndjson'), `${JSON.stringify({ at: NOW.toISOString(), type: 'pr.merged', issue: 'ENG-10', ...scenario.mergedEvent })}\n`)
   const account = JSON.parse(JSON.stringify((fixture('account-list') as { result: unknown }).result)) as { rateLimits: Record<string, { weekly?: { usedPercent: number }; session?: { usedPercent: number }; status?: string }> }
   if (account.rateLimits['codex']?.weekly) account.rateLimits['codex'].weekly.usedPercent = scenario.reviewerAvailable === false ? 100 : 10
+  if (scenario.claudeUsedPercent !== undefined && account.rateLimits['claude']) {
+    account.rateLimits['claude'].status = 'ok'
+    account.rateLimits['claude'].weekly = { usedPercent: scenario.claudeUsedPercent }
+  }
   if (scenario.exhaustClaude && account.rateLimits['claude']) {
     account.rateLimits['claude'].status = 'ok'
     if (account.rateLimits['claude'].weekly) account.rateLimits['claude'].weekly.usedPercent = 100
@@ -425,6 +431,43 @@ describe('deliver', () => {
     const heldReport = await deliver(held)
     expect(heldReport.results[0]).toMatchObject({ outcome: 'held', reason: expect.stringContaining('merge blocked by plugin: freeze window') })
     expect(held.runner.calls.some((argv) => argv[0] === 'gh' && argv[1] === 'api' && argv.includes('--method'))).toBe(false)
+  })
+
+  it('stops a dispatch that has run past delivery.maxDispatchMinutes, even though the terminal is still active', async () => {
+    const env = setup({ pr: null, dispatchedAt: '2026-09-11T00:00:00.000Z' }) // 12h before NOW
+    writeFileSync(join(env.dir, 'loop.config.local.yaml'), 'delivery:\n  maxDispatchMinutes: 60\n')
+    const report = await deliver(env)
+    expect(report.results[0]).toMatchObject({ outcome: 'blocked', reason: expect.stringContaining('maxDispatchMinutes') })
+    expect(env.ledger.active()).toEqual([])
+    expect(env.runner.calls.some((argv) => argv[1] === 'worktree' && argv[2] === 'rm')).toBe(false) // preserved for inspection
+    expect(env.runner.calls.find((argv) => argv[1] === 'linear' && argv[2] === 'label')).toContain('blocked')
+    const state = readDeliveryState(env.loaded.stateDir, 'ENG-10')
+    expect(state).toMatchObject({ finalOutcome: 'blocked' })
+    const events = readFileSync(join(env.loaded.stateDir, 'events.ndjson'), 'utf8').split('\n').filter(Boolean).map((line) => JSON.parse(line) as Record<string, unknown>)
+    expect(events.some((event) => event['type'] === 'max-duration.tripped')).toBe(true)
+  })
+
+  it('does nothing when delivery.maxDispatchMinutes is unset, even for a very old dispatch', async () => {
+    const env = setup({ pr: null, dispatchedAt: '2026-09-01T00:00:00.000Z' })
+    const report = await deliver(env, { assumeIdle: false })
+    expect(report.results[0]).not.toMatchObject({ outcome: 'blocked' })
+  })
+
+  it('stops a dispatch whose provider usage dropped past resilience.maxUsageDeltaPercent since it was sent out', async () => {
+    const env = setup({ pr: null, initialRemainingPercent: 90, claudeUsedPercent: 85 }) // remaining now 15%, dropped 75 points
+    writeFileSync(join(env.dir, 'loop.config.local.yaml'), 'resilience:\n  maxUsageDeltaPercent: 50\n')
+    const report = await deliver(env)
+    expect(report.results[0]).toMatchObject({ outcome: 'blocked', reason: expect.stringContaining('resilience.maxUsageDeltaPercent') })
+    expect(env.ledger.active()).toEqual([])
+    const events = readFileSync(join(env.loaded.stateDir, 'events.ndjson'), 'utf8').split('\n').filter(Boolean).map((line) => JSON.parse(line) as Record<string, unknown>)
+    expect(events.some((event) => event['type'] === 'cost-guard.tripped')).toBe(true)
+  })
+
+  it('does not trip the cost guard when the usage drop stays under the configured threshold', async () => {
+    const env = setup({ pr: null, initialRemainingPercent: 90, claudeUsedPercent: 20 }) // remaining now 80%, dropped 10 points
+    writeFileSync(join(env.dir, 'loop.config.local.yaml'), 'resilience:\n  maxUsageDeltaPercent: 50\n')
+    const report = await deliver(env, { assumeIdle: false })
+    expect(report.results[0]).not.toMatchObject({ outcome: 'blocked' })
   })
 })
 

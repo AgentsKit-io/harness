@@ -242,6 +242,24 @@ controls what happens on a match:
 
 This is a pattern scanner, not a claim of completeness — it catches common shapes, not every possible secret.
 
+## Cost/time circuit breakers
+
+The loop cannot count a worker CLI's own model or tool calls — it is an opaque process, not a loop we run
+ourselves — so there is no way to cap "cost" the way an in-process agent harness would. Two proxies close most of
+the gap, both unset (disabled) by default so an existing config is unaffected:
+
+- **`delivery.maxDispatchMinutes`**: a hard wall-clock ceiling on one dispatch, independent of idle detection.
+  `delivery.workerIdleTimeoutMin` only catches a worker that stopped producing output; this catches one that is
+  still active but has run far longer than any real task on the project should. Past the ceiling, `deliver` stops
+  nudging/reviewing/merging the issue and escalates it exactly like a stuck worker (Linear comment + label +
+  `returnState`, worktree preserved for inspection, lease released) — recorded as a `max-duration.tripped` event.
+- **`resilience.maxUsageDeltaPercent`**: a cost proxy from Orca's own usage reporting. The builder's remaining
+  usage percent (`RankedModel.remainingPercent`) is snapshotted at dispatch time (`dispatch.json`'s
+  `initialRemainingPercent`); every later `deliver` run compares it against that provider's *current* remaining
+  usage. If it dropped by at least this many percentage points while the issue was in flight, the dispatch is
+  stopped the same way — recorded as `cost-guard.tripped`. This is deliberately usage-delta, not call-count: it is
+  the only per-issue cost signal Orca actually reports for an opaque worker CLI.
+
 ## Skills pinned into the worker brief
 
 `brief.skills` (default `[]`) lists Markdown files, relative to `project.root`, that every worker brief embeds

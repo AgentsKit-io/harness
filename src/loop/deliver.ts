@@ -5,7 +5,7 @@ import { atLeast, parseReviewResult, renderFindingsForWorker, runCodeReview, typ
 import { assessChecks, githubComment, githubCommentExists, githubLabelRemove, githubMerge, githubOpenPullRequests, githubPullRequest, githubPullRequestsForBranch, touchesProtectedPaths, type PullRequestSnapshot } from '../adapters/github-cli.js'
 import { createLinearTrackingAdapter, linearAttach, linearCommentAdd, linearLabelAdd, linearLabelRemove } from '../adapters/linear-orca.js'
 import { orcaAccountList, orcaAgentHooks, orcaTerminalList, orcaTerminalSend, orcaTerminalWait, orcaWorktreeRemove, orcaWorktreeSet } from '../adapters/orca-cli.js'
-import { detectProviders, type ProviderAvailability } from '../adapters/providers.js'
+import { detectProviders, remainingUsagePercent, type ProviderAvailability } from '../adapters/providers.js'
 import { createDispatchLedger, type DispatchLease } from '../execution/coordination.js'
 import { HarnessError } from '../kernel/errors.js'
 import { renderHandoffBrief } from './brief.js'
@@ -234,6 +234,21 @@ const finish = (ctx: Context, record: DispatchRecordFile, lease: DispatchLease |
   if (lease) { try { createDispatchLedger(ctx.loaded.stateDir).release(lease, `${outcome}: ${reason}`) } catch (error) { ctx.notes.push(`lease release for ${record.issue} failed: ${message(error)}`) } }
   saveState(ctx, { ...state, finishedAt: ctx.now().toISOString(), finalOutcome: outcome })
   event(ctx, { type: `worker.${outcome}`, issue: record.issue, reason, worktreeId: record.worktreeId })
+}
+
+/**
+ * Stop delivering an issue whose dispatch tripped a resource ceiling (`delivery.maxDispatchMinutes` or
+ * `resilience.maxUsageDeltaPercent`) instead of letting a runaway worker keep spending. There is no way to count
+ * a worker CLI's own model/tool calls (it is opaque), so this is the loop's cost/time circuit breaker: same
+ * escalation shape as a stuck worker (Linear comment + label + `returnState`, worktree preserved for inspection,
+ * lease released) so a human can look at what the worker was doing.
+ */
+const tripCircuitBreaker = async (ctx: Context, record: DispatchRecordFile, lease: DispatchLease | undefined, state: DeliveryState, kind: 'cost-guard' | 'max-duration', reason: string): Promise<DeliverResult> => {
+  const actions: string[] = []
+  await escalateLinear(ctx, record, 'blocked', `**Loop: stopped (${kind})** — ${reason}. The worktree was preserved for inspection; the slot was released and the issue returned to ${ctx.config.delivery.returnState}.`, actions)
+  event(ctx, { type: `${kind}.tripped`, issue: record.issue, reason })
+  finish(ctx, record, lease, state, 'blocked', reason)
+  return { issue: record.issue, outcome: ctx.dryRun ? 'dry-run' : 'blocked', reason, actions }
 }
 
 const providerUnavailable = (ctx: Context, providerId: string): boolean => {
@@ -655,6 +670,25 @@ export const runDeliver = async (input: DeliverInput): Promise<DeliverReport> =>
     if (input.onlyIssue && record.issue !== input.onlyIssue) continue
     let state = readDeliveryState(loaded.stateDir, record.issue)
     const lease = leases.get(record.issue)
+    if (!state.finishedAt) {
+      const ageMinutes = minutesBetween(now(), record.dispatchedAt)
+      if (config.delivery.maxDispatchMinutes && ageMinutes >= config.delivery.maxDispatchMinutes) {
+        results.push(await tripCircuitBreaker(ctx, record, lease, state, 'max-duration', `dispatch has been running ${Math.round(ageMinutes)} min, at or past the ${config.delivery.maxDispatchMinutes} min ceiling (delivery.maxDispatchMinutes)`))
+        continue
+      }
+      const initialRemaining = record.initialRemainingPercent
+      if (config.resilience.maxUsageDeltaPercent && initialRemaining !== null && initialRemaining !== undefined) {
+        const currentProvider = ctx.providers.find((provider) => provider.id === record.provider)
+        const currentRemaining = currentProvider ? remainingUsagePercent(currentProvider.usage, config.models.routing.usageMetric) : null
+        if (currentRemaining !== null) {
+          const delta = initialRemaining - currentRemaining
+          if (delta >= config.resilience.maxUsageDeltaPercent) {
+            results.push(await tripCircuitBreaker(ctx, record, lease, state, 'cost-guard', `provider ${record.provider} remaining usage dropped ${delta.toFixed(1)} points since dispatch (${initialRemaining}% → ${currentRemaining}%), at or past resilience.maxUsageDeltaPercent (${config.resilience.maxUsageDeltaPercent})`))
+            continue
+          }
+        }
+      }
+    }
     try {
       let open = await githubPullRequestsForBranch(input.runner, { repo: config.project.repo, head: record.branch })
       if (!open.length) {

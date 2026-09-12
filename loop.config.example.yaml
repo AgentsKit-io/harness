@@ -131,6 +131,7 @@ delivery:
     requireChecks: true
   maxFixRounds: 2
   workerIdleTimeoutMin: 45
+  # maxDispatchMinutes: 240                # hard ceiling on one dispatch regardless of activity; unset = disabled
   handoff: { enabled: true, maxHandoffs: 2, onlyWhenProviderUnavailable: true }
   selfEditPaths: [loop.config.yaml, ".github/**"]   # PRs touching these never auto-merge
   ignoreChecks: []                   # advisory check names that never block
@@ -193,6 +194,8 @@ resilience:
   maxConsecutiveFailures: 3          # pause an issue after this many consecutive contract/dispatch failures
   pausedLabel: loop:paused           # applied to the issue in Linear; remove it (or `loop resume <id>`) to retry
   stagePauseAfterRuns: 3             # pause `loop stage tick|deliver` itself after this many consecutive thrown runs
+  # maxUsageDeltaPercent: 40          # stop a dispatch if its provider's remaining usage drops by this many
+                                      # points while the issue is in flight; unset = disabled (cost circuit breaker)
 
 brief:
   skills: []                         # e.g. [AGENTS.md, CLAUDE.md, docs/for-agents/INDEX.md] — paths relative to project.root,
