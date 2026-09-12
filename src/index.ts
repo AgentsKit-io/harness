@@ -100,7 +100,7 @@ export type { DetectProvidersInput, ProviderAuthStatus, ProviderAvailability, Pr
 export { buildListIssuesArgv, fetchLinearQueue, filterAndOrderQueue, parseLinearIssues } from './adapters/linear-orca.js'
 export type { FetchQueueInput, LinearListInput, LinearQueueFilter, LoopIssue } from './adapters/linear-orca.js'
 export { LOOP_CONFIG_FILE, LOOP_CONFIG_SCHEMA_VERSION, LOOP_LOCAL_CONFIG_FILE, LoopConfigSchema, loadLoopConfig, mergeLoopConfig, parseLoopConfigText, parseModelRef, providerIdentity, renderHeadlessArgv, renderTuiCommand, tiersFor, validateLoopConfig } from './loop/config.js'
-export type { LoadedLoopConfig, LoopConfig, LoopConfigInput, LoopProviderConfig, ModelReference } from './loop/config.js'
+export type { LoadedLoopConfig, LoopConfig, LoopConfigInput, LoopProviderConfig, ModelReference, EffortLevel } from './loop/config.js'
 export { AGENT_REGISTRY_SCHEMA_VERSION, AgentRegistryEntrySchema, AgentRegistrySchema, loadAgentRegistry, parseAgentRegistryText, resolveAgentForRole } from './loop/agent-registry.js'
 export type { AgentRegistry, AgentRegistryEntry, ResolvedAgent } from './loop/agent-registry.js'
 export { createProcessRunner } from './loop/process.js'

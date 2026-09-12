@@ -1,7 +1,7 @@
 import { MODEL_ROLES, type ModelRole } from '../kernel/model-policy.js'
 import type { ProviderAvailability } from '../adapters/providers.js'
 import { remainingUsagePercent, usageRankTuple } from '../adapters/providers.js'
-import { parseModelRef, providerIdentity, renderTuiCommand, tiersFor, type LoopConfig, type ModelReference } from './config.js'
+import { parseModelRef, providerIdentity, renderTuiCommand, tiersFor, type EffortLevel, type LoopConfig, type ModelReference } from './config.js'
 
 export interface RoutingSkip { readonly tier: number; readonly ref: ModelReference; readonly reasons: readonly string[] }
 
@@ -12,6 +12,8 @@ export interface RankedModel extends ModelReference {
   readonly remainingPercent: number | null
   readonly reason: string
   readonly preferenceIndex: number
+  /** Reasoning effort requested for this role (`models.effort.<role>`); only takes effect on providers with `effortFlag` set. */
+  readonly effort: EffortLevel
 }
 
 export interface RoutingDecision {
@@ -29,6 +31,7 @@ const allowedProvider = (config: LoopConfig, providerId: string): boolean => {
 
 const materialize = (
   config: LoopConfig,
+  role: ModelRole,
   ref: ModelReference,
   tier: number,
   preferenceIndex: number,
@@ -36,14 +39,16 @@ const materialize = (
   reason: string,
 ): RankedModel => {
   const identity = providerIdentity(config, ref.provider)
+  const effort = config.models.effort[role]
   return {
     ...ref,
     tier,
     preferenceIndex,
     orcaAgent: identity.orcaAgent,
-    tui: renderTuiCommand(identity.settings, ref.model),
+    tui: renderTuiCommand(identity.settings, ref.model, effort),
     remainingPercent: availability ? remainingUsagePercent(availability.usage, config.models.routing.usageMetric) : null,
     reason,
+    effort,
   }
 }
 
@@ -83,7 +88,7 @@ const availableFromTiers = (
       }
       const provider = byId.get(ref.provider)
       if (provider?.available) {
-        ranked.push(materialize(config, ref, tier, index, provider, `yaml tier ${tier + 1}`))
+        ranked.push(materialize(config, role, ref, tier, index, provider, `yaml tier ${tier + 1}`))
       } else {
         skipped.push({ tier, ref, reasons: provider ? provider.reasons : ['provider was not detected'] })
       }
@@ -104,7 +109,7 @@ const applyPin = (
   const byId = new Map(availability.map((item) => [item.id, item]))
   const provider = byId.get(ref.provider)
   if (provider?.available && allowedProvider(config, ref.provider)) {
-    return materialize(config, ref, -1, -1, provider, `pinned ${pin}`)
+    return materialize(config, role, ref, -1, -1, provider, `pinned ${pin}`)
   }
   skipped.push({ tier: -1, ref, reasons: provider ? provider.reasons : ['pinned provider was not detected'] })
   if (config.models.routing.pinStrict) return null
@@ -140,7 +145,7 @@ export const selectModel = (
     if (!allowedProvider(config, ref.provider)) continue
     const provider = byId.get(ref.provider)
     if (!provider?.available) continue
-    extras.push(materialize(config, ref, 99, extraIndex, provider, 'catalog'))
+    extras.push(materialize(config, role, ref, 99, extraIndex, provider, 'catalog'))
     extraIndex += 1
   }
 
@@ -213,7 +218,7 @@ export const rankModels = (
     if (!allowedProvider(config, ref.provider)) continue
     const provider = byId.get(ref.provider)
     if (!provider?.available) continue
-    extras.push(materialize(config, ref, 99, extraIndex, provider, 'catalog'))
+    extras.push(materialize(config, role, ref, 99, extraIndex, provider, 'catalog'))
     extraIndex += 1
   }
   const mode = config.models.routing.mode

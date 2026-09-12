@@ -62,6 +62,12 @@ models:
     maxMin: 240                      # …up to 4 h
     probeBeforeReenable: true
     exhaustedPercent: 100
+  # Reasoning effort requested per role. Only applied for providers below that declare `effortFlag`; others ignore it.
+  effort:
+    orchestrator: high
+    reviewer: high                  # currently unused: agentskit-review has no reasoning-effort flag (see reviewProvider below)
+    builder: medium
+    watcher: low
   providers:
     claude:
       bin: claude
@@ -69,12 +75,14 @@ models:
       envKeys: [ANTHROPIC_API_KEY]   # optional API-key fallback
       tui: "claude --model {model} --permission-mode auto"
       headless: [claude, -p, "{prompt}", --model, "{model}", --permission-mode, plan, --output-format, text]
+      # effortFlag: "--effort {effort}"
     codex:
       bin: codex
       auth: subscription
       envKeys: [OPENAI_API_KEY]
       tui: "codex -m {model} --full-auto"
       headless: [codex, exec, -m, "{model}", -s, read-only, --skip-git-repo-check, "{prompt}"]
+      # effortFlag: "-c model_reasoning_effort={effort}"
     opencode:
       bin: opencode
       auth: none
@@ -86,6 +94,7 @@ models:
       auth: subscription             # `grok login` (OAuth) — no API key needed
       tui: "grok -m {model}"
       headless: [grok, -p, "{prompt}", -m, "{model}"]
+      # effortFlag: "--reasoning-effort {effort}"
 
 machine:
   floor: 1                           # always allow one worker

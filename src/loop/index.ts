@@ -1,5 +1,5 @@
 export { LOOP_CONFIG_FILE, LOOP_CONFIG_SCHEMA_VERSION, LOOP_LOCAL_CONFIG_FILE, LoopConfigSchema, loadLoopConfig, mergeLoopConfig, parseLoopConfigText, parseModelRef, providerIdentity, renderTuiCommand, tiersFor, validateLoopConfig } from './config.js'
-export type { LoadedLoopConfig, LoopConfig, LoopConfigInput, LoopProviderConfig, ModelReference } from './config.js'
+export type { LoadedLoopConfig, LoopConfig, LoopConfigInput, LoopProviderConfig, ModelReference, EffortLevel } from './config.js'
 export { AGENT_REGISTRY_SCHEMA_VERSION, AgentRegistryEntrySchema, AgentRegistrySchema, loadAgentRegistry, parseAgentRegistryText, resolveAgentForRole } from './agent-registry.js'
 export type { AgentRegistry, AgentRegistryEntry, ResolvedAgent } from './agent-registry.js'
 export { createProcessRunner } from './process.js'

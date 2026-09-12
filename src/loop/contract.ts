@@ -274,7 +274,7 @@ export const generateContract = async (input: GenerateContractInput): Promise<St
   const failures: ProviderFailure[] = []
   for (const candidate of candidates) {
     const { settings } = providerIdentity(input.config, candidate.provider)
-    const argv = renderHeadlessArgv(settings, candidate.model, prompt)
+    const argv = renderHeadlessArgv(settings, candidate.model, prompt, candidate.effort)
     if (!argv) { failures.push({ provider: candidate.provider, model: candidate.model, kind: 'other', detail: `no headless argv template (models.providers.${candidate.provider}.headless)` }); continue }
     const outcome = await input.runner.run(argv, { timeoutMs: input.config.contract.timeoutMs, cwd: input.root })
     const detail = `${outcome.stderr.trim()}\n${outcome.stdout.trim()}`.trim().slice(0, 600)

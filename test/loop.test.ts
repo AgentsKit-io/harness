@@ -5,7 +5,7 @@ import { afterEach, describe, expect, it } from 'vitest'
 import {
   activeCooldowns, assessSlots, authStatusFor, availableMemoryBytes, parseMemInfo, parseVmStat, buildListIssuesArgv, compareVersions, cooldownUntil, countRunningWorkers, detectProviders, fetchLinearQueue, filterAndOrderQueue, findExecutable,
   HarnessError, loadLoopConfig, markProviderExhausted, mergeLoopConfig, parseJsonEnvelope, parseLinearIssues, parseLoopConfigText, parseModelRef, parseOrcaAgentHooks, parseOrcaStatus, parseOrcaVersion, parseOrcaWorktrees,
-  parseProviderUsage, providerSpecs, readCooldowns, routeAllRoles, runLoopDoctor, selectModel, validateLoopConfig,
+  parseProviderUsage, providerSpecs, readCooldowns, renderHeadlessArgv, renderTuiCommand, routeAllRoles, runLoopDoctor, selectModel, validateLoopConfig,
 } from '../src/index.js'
 import type { CommandResult, CommandRunner, LoopConfig, ProviderAvailability } from '../src/index.js'
 
@@ -213,6 +213,38 @@ describe('providers, usage, routing, cooldown', () => {
     const none = routeAllRoles(config, availability([]))
     expect(none['watcher'].selected).toBeNull()
     expect(none['orchestrator'].skipped).toHaveLength(4)
+  })
+
+  it('renders the configured per-role reasoning effort into tui/headless only for providers with an effortFlag', () => {
+    const config = validateLoopConfig({
+      ...JSON.parse(JSON.stringify(baseConfig())),
+      models: {
+        ...baseConfig().models,
+        effort: { orchestrator: 'high', reviewer: 'high', builder: 'xhigh', watcher: 'low' },
+        providers: {
+          claude: { bin: 'claude', auth: 'subscription', envKeys: ['ANTHROPIC_API_KEY'], tui: 'claude --model {model} --permission-mode auto', effortFlag: '--effort {effort}' },
+          codex: { bin: 'codex', auth: 'subscription', tui: 'codex -m {model} --full-auto', headless: ['codex', 'exec', '-m', '{model}', '{prompt}'], effortFlag: '-c model_reasoning_effort={effort}' },
+          opencode: { bin: 'opencode', orcaUsageKey: 'opencodeGo', tui: 'opencode -m {model}' },
+          grok: { bin: 'grok', auth: 'subscription', tui: 'grok -m {model}' },
+        },
+      },
+    })
+    const claudeSettings = config.models.providers['claude']!
+    expect(renderTuiCommand(claudeSettings, 'opus', 'high')).toBe('claude --model opus --permission-mode auto --effort high')
+    expect(renderTuiCommand(claudeSettings, 'opus')).toBe('claude --model opus --permission-mode auto')
+    const opencodeSettings = config.models.providers['opencode']!
+    expect(renderTuiCommand(opencodeSettings, 'glm', 'high')).toBe('opencode -m glm') // no effortFlag configured: ignored
+
+    const codexSettings = config.models.providers['codex']!
+    expect(renderHeadlessArgv(codexSettings, 'gpt-5.6-sol', 'do the thing', 'high')).toEqual(['codex', 'exec', '-m', 'gpt-5.6-sol', 'do the thing', '-c', 'model_reasoning_effort=high'])
+    expect(renderHeadlessArgv(codexSettings, 'gpt-5.6-sol', 'do the thing')).toEqual(['codex', 'exec', '-m', 'gpt-5.6-sol', 'do the thing'])
+
+    const availability: readonly ProviderAvailability[] = ['claude', 'codex', 'opencode', 'grok'].map((id) => ({ id, binary: `/bin/${id}`, hookState: 'unknown', auth: 'ok', usage: { status: 'unknown', error: null, windows: [], exhausted: false, resetsAt: null, hasAuth: null }, probe: 'skipped', coolingDownUntil: null, available: true, reasons: [] }))
+    const orchestrator = selectModel(config, 'orchestrator', availability)
+    expect(orchestrator.selected).toMatchObject({ effort: 'high' })
+    const builder = selectModel(config, 'builder', availability)
+    expect(builder.selected).toMatchObject({ effort: 'xhigh' })
+    expect(builder.selected?.tui).toContain('model_reasoning_effort=xhigh')
   })
 
   it('applies exponential cooldown capped at maxMin and never earlier than a known reset', () => {

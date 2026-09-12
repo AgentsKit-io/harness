@@ -249,6 +249,22 @@ declared `auth: api-key` need an environment variable, and the loop never reads 
 When a provider runs out of usage the loop records a cooldown in `<stateDir>/provider-cooldowns.json`:
 `initialMin` doubling up to `maxMin`, never earlier than the reset instant Orca reported.
 
+### Reasoning effort per role
+
+`models.effort.<role>` (`low | medium | high | xhigh`; defaults: orchestrator/reviewer `high`, builder `medium`,
+watcher `low`) is only applied for a provider that declares `providers.<id>.effortFlag` — a template such as
+`-c model_reasoning_effort={effort}` (codex) or `--reasoning-effort {effort}` (grok); a provider without one
+ignores it entirely, so leaving `effort` at its default is always safe. The flag (with `{effort}` substituted) is
+appended to `tui` as literal text, and appended as its own argv elements (split on whitespace, since headless argv
+is never shell-joined) to `headless`. `agentskit-review` has no reasoning-effort flag, so `models.effort.reviewer`
+is not currently wired into the review CLI call — it is validated and recorded for symmetry and for a future
+reviewer transport that supports it.
+
+Whichever effort a dispatched builder actually used is recorded as `effort` on `dispatch.json` and the
+`worker.dispatched` event; `loop retro`'s `dispatches.byProvider` groups by `provider/model@effort` (falling back
+to plain `provider/model` for older events with no effort recorded) so a retro can tell a slow `gpt-5.6-luna@high`
+run from a fast `@medium` one.
+
 ## Machine slots
 
 `maxAgents = max(floor, min(adaptiveConcurrency(ceiling), ramBound, wslCap?))` where `ceiling` defaults to

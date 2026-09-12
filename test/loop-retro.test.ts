@@ -35,6 +35,16 @@ describe('loop retro', () => {
     expect(readLoopEvents('/nonexistent/dir')).toEqual([])
   })
 
+  it('groups dispatch counts by provider/model@effort when the dispatch event carries an effort level', async () => {
+    const env = setup()
+    const t = (h: number) => new Date(NOW.getTime() - h * 3_600_000).toISOString()
+    env.event(t(2), 'worker.dispatched', { issue: 'ENG-20', provider: 'codex', model: 'gpt-5.6-luna', effort: 'medium' })
+    env.event(t(1), 'worker.dispatched', { issue: 'ENG-21', provider: 'codex', model: 'gpt-5.6-luna', effort: 'medium' })
+    env.event(t(1), 'worker.dispatched', { issue: 'ENG-22', provider: 'claude', model: 'sonnet' }) // no effort recorded (older event / effort disabled)
+    const report = await buildRetroReport({ loaded: env.loaded, runner: { run: async () => ok({ ok: true, result: { runs: [] } }) }, since: '7d', now: () => NOW })
+    expect(report.dispatches.byProvider).toEqual({ 'codex/gpt-5.6-luna@medium': 2, 'claude/sonnet': 1 })
+  })
+
   it('aggregates events, per-issue state, cooldowns and Orca runs into one report with suggestions', async () => {
     const env = setup()
     const t = (h: number) => new Date(NOW.getTime() - h * 3_600_000).toISOString()

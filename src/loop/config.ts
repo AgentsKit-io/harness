@@ -33,7 +33,11 @@ const ProviderSchema = z.object({
   headless: z.array(nonEmpty).min(1).optional(),
   /** `agentskit-review --provider` id; defaults to `<key>-cli` (codex-cli, claude-cli, grok-cli, opencode-cli). */
   reviewProvider: nonEmpty.optional(),
+  /** Reasoning-effort flag template substituted with `{effort}` into `tui`/`headless` (e.g. codex `-c model_reasoning_effort={effort}`, grok `--reasoning-effort {effort}`). Providers without one ignore `models.effort`. */
+  effortFlag: nonEmpty.optional(),
 })
+
+const effortLevel = z.enum(['low', 'medium', 'high', 'xhigh'])
 
 const tiers = z.array(z.array(modelRef).min(1)).min(1)
 
@@ -130,6 +134,13 @@ export const LoopConfigSchema = z.object({
       exhaustedPercent: z.number().min(1).max(100).default(100),
     }).prefault({}),
     providers: z.record(z.string().trim().regex(/^[a-z0-9][a-z0-9_-]*$/i), ProviderSchema),
+    /** Reasoning effort requested per role; only applied for providers whose `effortFlag` is set. */
+    effort: z.object({
+      orchestrator: effortLevel.default('high'),
+      reviewer: effortLevel.default('high'),
+      builder: effortLevel.default('medium'),
+      watcher: effortLevel.default('low'),
+    }).prefault({}),
   }),
   machine: z.object({
     floor: z.number().int().min(1).default(1),
@@ -381,7 +392,21 @@ export const providerIdentity = (config: LoopConfig, provider: string): { readon
   return { orcaAgent: settings.orcaAgent ?? provider, orcaUsageKey: settings.orcaUsageKey ?? provider, settings }
 }
 
-export const renderTuiCommand = (settings: LoopProviderConfig, model: string): string => settings.tui.replaceAll('{model}', model)
+export type EffortLevel = z.infer<typeof effortLevel>
+
+const renderEffortFlag = (settings: LoopProviderConfig, effort: EffortLevel | undefined): string | null =>
+  effort && settings.effortFlag ? settings.effortFlag.replaceAll('{effort}', effort) : null
+
+export const renderTuiCommand = (settings: LoopProviderConfig, model: string, effort?: EffortLevel): string => {
+  const base = settings.tui.replaceAll('{model}', model)
+  const flag = renderEffortFlag(settings, effort)
+  return flag ? `${base} ${flag}` : base
+}
 
 /** Substitute `{model}` / `{prompt}` inside each headless argv element; the prompt stays one argv element, never shell-joined. */
-export const renderHeadlessArgv = (settings: LoopProviderConfig, model: string, prompt: string): readonly string[] | null => settings.headless ? settings.headless.map((part) => part.replaceAll('{model}', model).replaceAll('{prompt}', prompt)) : null
+export const renderHeadlessArgv = (settings: LoopProviderConfig, model: string, prompt: string, effort?: EffortLevel): readonly string[] | null => {
+  if (!settings.headless) return null
+  const argv = settings.headless.map((part) => part.replaceAll('{model}', model).replaceAll('{prompt}', prompt))
+  const flag = renderEffortFlag(settings, effort)
+  return flag ? [...argv, ...flag.split(/\s+/).filter(Boolean)] : argv
+}
