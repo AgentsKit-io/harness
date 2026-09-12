@@ -55,3 +55,6 @@ export type { IssueFailureRecord, IssueFailureState, LoopStageName, StagePauseEn
 
 export { loadPinnedSkills, renderPinnedSkills, skillDigest, skillRefs } from './skills.js'
 export type { PinnedSkill, PinnedSkillRef } from './skills.js'
+
+export { discoverIntake, intakeIssueId, intakePath, listIntake, readIntake } from './github-intake.js'
+export type { IntakeRecord } from './github-intake.js'

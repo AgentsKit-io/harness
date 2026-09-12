@@ -168,6 +168,11 @@ contract:
   maxBriefReferences: 4
   contextProviders: [doc-bridge]      # add rag when rag.enabled
 
+github:
+  intakeLabel: loop:review           # a PR with this label is reviewed even though the loop never dispatched it;
+                                      # null disables intake entirely
+  reviewOnly: true                   # fixed: intake PRs are always review + comment, never auto-merged
+
 resilience:
   maxConsecutiveFailures: 3          # pause an issue after this many consecutive contract/dispatch failures
   pausedLabel: loop:paused           # applied to the issue in Linear; remove it (or `loop resume <id>`) to retry

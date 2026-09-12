@@ -27,6 +27,10 @@ interface Scenario {
   readonly exhaustClaude?: boolean
   /** PR whose head is Orca's `<git user>/<worktree>` branch, only visible through the open-PR listing. */
   readonly orcaBranchPr?: Record<string, unknown>
+  /** PRs returned only for a label-scoped `gh pr list --label ...` (github-intake discovery) — kept separate from `pr` so ordinary dispatch tests never accidentally pick one up. */
+  readonly intakePrs?: readonly Record<string, unknown>[]
+  /** Override the single-PR `gh pr view <n>` lookup github-intake uses on every deliver tick, keyed by PR number. */
+  readonly intakeView?: Record<number, Record<string, unknown>>
 }
 
 const basePr = (over: Record<string, unknown> = {}): Record<string, unknown> => ({ ...(fixture('gh-pr-view') as Record<string, unknown>), headRefName: 'person/eng-10-demo', files: [{ path: 'packages/demo/src/index.ts' }], statusCheckRollup: [{ __typename: 'CheckRun', name: 'ci', conclusion: 'SUCCESS', status: 'COMPLETED' }], mergeable: 'MERGEABLE', mergeStateStatus: 'CLEAN', state: 'OPEN', number: 42, url: 'https://github.com/o/r/pull/42', ...over })
@@ -64,10 +68,19 @@ const setup = (initial: Scenario = {}) => {
       if (argv[0] === 'gh' && argv[1] === 'pr' && argv[2] === 'list') {
         const state = argv[argv.indexOf('--state') + 1]
         const byHead = argv.includes('--head')
+        const byLabel = argv.includes('--label')
+        if (byLabel) return ok(scenario.intakePrs ?? [])
         if (state === 'open' && scenario.orcaBranchPr) return ok(byHead ? [] : [scenario.orcaBranchPr])
         if (state === 'open') return ok(scenario.pr === null || scenario.pr === undefined && (scenario.mergedPr || scenario.closedPr) ? [] : [scenario.pr ?? basePr()])
         return ok([scenario.mergedPr, scenario.closedPr].filter(Boolean))
       }
+      if (argv[0] === 'gh' && argv[1] === 'pr' && argv[2] === 'view') {
+        const number = Number(argv[3])
+        const override = scenario.intakeView?.[number]
+        if (override) return ok(override)
+        return { code: 1, stdout: '', stderr: `no fixture for pr view ${number}`, timedOut: false, durationMs: 1 }
+      }
+      if (argv[0] === 'gh' && argv[1] === 'pr' && argv[2] === 'edit') return { code: 0, stdout: '', stderr: '', timedOut: false, durationMs: 1 }
       if (key.startsWith('orca terminal list')) return okResult({ terminals: scenario.terminals ?? [{ handle: 'term_w', connected: true, orphaned: false, lastOutputAt: Date.parse('2026-09-11T10:30:00.000Z'), worktreeId: 'repo-1::/w/eng-10-demo' }] })
       if (key.startsWith('orca terminal create')) return okResult({ handle: 'term_handoff', terminal: { handle: 'term_handoff' } })
       if (key.startsWith('orca terminal wait')) return okResult({ satisfied: true })
@@ -260,5 +273,62 @@ describe('deliver', () => {
     const result = (await deliver(noReviewer)).results[0]
     expect(result).toMatchObject({ outcome: 'waiting', reason: 'no reviewer provider available' })
     expect(listDispatched(noReviewer.loaded.stateDir)).toHaveLength(1)
+  })
+})
+
+describe('github label intake', () => {
+  const intakePr = (over: Record<string, unknown> = {}): Record<string, unknown> => ({ ...basePr(), number: 77, url: 'https://github.com/o/r/pull/77', headRefName: 'someone/feature', labels: [{ name: 'loop:review' }], ...over })
+
+  it('reviews a labeled PR, comments clean, removes the label, and never calls merge', async () => {
+    const env = setup({ pr: null, intakePrs: [intakePr()], intakeView: { 77: intakePr() }, review: { code: 0 } })
+    const report = await deliver(env)
+    const intake = report.results.find((result) => result.issue === 'pr-77')
+    expect(intake).toMatchObject({ outcome: 'held', pr: 77 })
+    expect(intake?.reason).toContain('merge is human')
+    expect(env.runner.calls.some((argv) => argv[0] === 'gh' && argv[1] === 'api' && argv.includes('--method'))).toBe(false)
+    const editCall = env.runner.calls.find((argv) => argv[0] === 'gh' && argv[1] === 'pr' && argv[2] === 'edit')
+    expect(editCall).toEqual(['gh', 'pr', 'edit', '77', '--repo', 'my-org/my-project', '--remove-label', 'loop:review'])
+    const commentCall = env.runner.calls.find((argv) => argv[0] === 'gh' && argv[1] === 'pr' && argv[2] === 'comment')
+    expect(commentCall?.[commentCall.indexOf('--body') + 1]).toContain('clean')
+    const state = readDeliveryState(env.loaded.stateDir, 'pr-77')
+    expect(state.finalOutcome).toBe('held')
+    expect(state.finishedAt).not.toBeNull()
+    const second = await deliver(env)
+    expect(second.results.find((result) => result.issue === 'pr-77')).toBeUndefined() // already finished; not re-processed
+  })
+
+  it('comments blocking findings on the PR instead of nudging a (nonexistent) worker terminal, and never merges', async () => {
+    const env = setup({ pr: null, intakePrs: [intakePr()], intakeView: { 77: intakePr() }, review: { code: 1, findings: [{ severity: 'high', title: 'SQL injection', file: 'x.ts', line: 1 }] } })
+    const report = await deliver(env)
+    const intake = report.results.find((result) => result.issue === 'pr-77')
+    expect(intake).toMatchObject({ outcome: 'fix-round', pr: 77 })
+    const commentCall = env.runner.calls.find((argv) => argv[0] === 'gh' && argv[1] === 'pr' && argv[2] === 'comment')
+    expect(commentCall?.[commentCall.indexOf('--body') + 1]).toContain('SQL injection')
+    expect(env.runner.calls.some((argv) => argv[0] === 'gh' && argv[1] === 'pr' && argv[2] === 'edit')).toBe(false)
+    expect(env.runner.calls.some((argv) => argv[0] === 'gh' && argv[1] === 'api' && argv.includes('--method'))).toBe(false)
+  })
+
+  it('discovers a newly labeled PR on its own (no dispatch.json ever existed) and tracks it as pr-<n>', async () => {
+    const env = setup({ pr: null, intakePrs: [intakePr({ number: 88, url: 'https://github.com/o/r/pull/88' })], intakeView: { 88: intakePr({ number: 88, url: 'https://github.com/o/r/pull/88' }) }, review: { code: 0 } })
+    await deliver(env)
+    expect(existsSync(join(env.loaded.stateDir, 'issues', 'pr-88', 'intake.json'))).toBe(true)
+  })
+
+  it('stops tracking a PR once the intake label is removed on GitHub, without commenting or merging', async () => {
+    const env = setup({ pr: null, intakePrs: [intakePr()], intakeView: { 77: intakePr({ labels: [] }) } })
+    const report = await deliver(env)
+    const intake = report.results.find((result) => result.issue === 'pr-77')
+    expect(intake).toMatchObject({ outcome: 'held' })
+    expect(intake?.reason).toContain('label removed')
+    expect(env.runner.calls.some((argv) => argv[0] === 'gh' && argv[1] === 'pr' && argv[2] === 'comment')).toBe(false)
+  })
+
+  it('does no intake discovery at all when github.intakeLabel is null', async () => {
+    const env = setup({ pr: null, intakePrs: [intakePr()] })
+    writeFileSync(join(env.dir, 'loop.config.local.yaml'), 'github:\n  intakeLabel: null\n')
+    const local = loadLoopConfig(env.loaded.path)
+    const report = await runDeliver({ loaded: local, runner: env.runner, env: { PATH: env.bin, XAI_API_KEY: 'k' }, platform: 'darwin', now: () => NOW })
+    expect(report.results.some((result) => result.issue === 'pr-77')).toBe(false)
+    expect(env.runner.calls.some((argv) => argv[0] === 'gh' && argv[1] === 'pr' && argv[2] === 'list' && argv.includes('--label'))).toBe(false)
   })
 })

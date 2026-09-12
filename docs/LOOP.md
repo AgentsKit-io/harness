@@ -126,6 +126,25 @@ For every issue the loop dispatched (`<stateDir>/issues/<id>/dispatch.json`) and
 State lives in `<stateDir>/issues/<id>/delivery.json` (reviews per head, fix rounds, nudges) and every decision is
 appended to `<stateDir>/events.ndjson`. `--dry-run` reports the decision for each issue without touching anything.
 
+## GitHub label intake: reviewing PRs the loop never dispatched
+
+The loop's normal queue is Linear issues; `github.intakeLabel` (default `loop:review`, set to `null` to disable)
+lets a human ask it to review a PR it had nothing to do with — a contributor's PR, a manual branch, anything —
+without filing a Linear issue for it. Every `deliver` run lists open PRs carrying the label
+(`gh pr list --label <intakeLabel>`) and starts tracking any not seen before as `pr-<n>` under
+`<stateDir>/issues/pr-<n>/intake.json` (`{ pr, headRef, source: 'github-label', addedAt }`); tracking is
+idempotent, so discovery never re-adds a PR it already knows about.
+
+An intake PR runs the same checks → review → fix-round decisions as a normal dispatch (see the table above), with
+two differences forced by having no Linear issue and no worker terminal:
+
+- Every nudge (conflict, red CI, review findings) is posted as a **PR comment** instead of sent to a worker
+  terminal — there is no worker to nudge.
+- `github.reviewOnly` is a fixed guarantee, not a knob (the schema pins it to `true`): a clean review always ends
+  in **held**, commented as "merge is human", the label removed, and `finishedAt` recorded — this loop merges only
+  PRs it dispatched itself, never one it was only asked to review. If the label is removed on GitHub before the
+  loop finishes, it stops tracking the PR the same way (held, no further comments).
+
 ## One tick
 
 1. **Intake** — `orca linear list-issues` once per configured state, filtered and ordered locally; issues already

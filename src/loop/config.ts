@@ -270,6 +270,12 @@ export const LoopConfigSchema = z.object({
     enabled: z.boolean().default(false),
     allowTools: z.array(nonEmpty).default([]),
   }).prefault({}),
+  github: z.object({
+    /** A PR labeled with this on GitHub is picked up by deliver even though the loop never dispatched it. Set null to disable intake entirely. */
+    intakeLabel: nonEmpty.nullable().default('loop:review'),
+    /** Intake PRs are always review + comment only; this loop never merges a PR it did not dispatch, regardless of a clean review. */
+    reviewOnly: z.literal(true).default(true),
+  }).prefault({}),
   resilience: z.object({
     /**
      * Consecutive failures on the same issue — contract generation failing on every candidate, or a worker/worktree

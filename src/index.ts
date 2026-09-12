@@ -121,7 +121,7 @@ export { orcaAutomationCreateArgv, orcaAutomationEditArgv, orcaAutomationRemove,
 export type { OrcaAutomation, OrcaAutomationSpec, OrcaCreatedWorktree, OrcaSendReceipt, OrcaTerminal } from './adapters/orca-cli.js'
 export { createLinearTrackingAdapter, fetchLinearIssue, linearAttach, linearAttachArgv, linearCommentAdd, linearCommentAddArgv, linearLabelAdd, linearLabelArgv, linearLabelRemove, linearStatusSet, linearStatusSetArgv, parseLinearIssueDetail, writeIdFor } from './adapters/linear-orca.js'
 export type { LinearIssueDetail, LinearWriteOptions } from './adapters/linear-orca.js'
-export { PR_FIELDS, assessChecks, githubComment, githubCommentArgv, githubCommentExists, githubMerge, githubMergeArgv, githubOpenPullRequests, githubPullRequest, githubPullRequestsForBranch, parsePullRequest, touchesProtectedPaths } from './adapters/github-cli.js'
+export { PR_FIELDS, assessChecks, githubComment, githubCommentArgv, githubCommentExists, githubLabelRemove, githubMerge, githubMergeArgv, githubOpenPullRequests, githubPullRequest, githubPullRequestsForBranch, parsePullRequest, touchesProtectedPaths } from './adapters/github-cli.js'
 export type { CheckOutcome, ChecksAssessment, GitHubCliOptions, PullRequestCheck, PullRequestSnapshot } from './adapters/github-cli.js'
 export { CONTRACT_CLOSE, CONTRACT_OPEN, CONTRACT_SCHEMA_VERSION, ContractOutcomeSchema, TaskContractSchema, assessContract, contractIsFresh, contractPath, generateContract, parseContractOutput, readStoredContract, renderContractPrompt, resolveDocContext, untrusted, writeStoredContract } from './loop/contract.js'
 export { classifyProviderFailure, extractResetsAt } from './loop/contract.js'
@@ -164,3 +164,6 @@ export type { IssueFailureRecord, IssueFailureState, LoopStageName, StagePauseEn
 
 export { loadPinnedSkills, renderPinnedSkills, skillDigest, skillRefs } from './loop/skills.js'
 export type { PinnedSkill, PinnedSkillRef } from './loop/skills.js'
+
+export { discoverIntake, intakeIssueId, intakePath, listIntake, readIntake } from './loop/github-intake.js'
+export type { IntakeRecord } from './loop/github-intake.js'
