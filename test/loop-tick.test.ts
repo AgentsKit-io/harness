@@ -3,7 +3,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
 import {
-  CONTRACT_CLOSE, CONTRACT_OPEN, assessContract, busyIssues, contractIsFresh, createDispatchLedger, loadLoopConfig, parseContractOutput, parseLinearIssueDetail, precheckTick, readDispatchRecord, readStoredContract, renderContractPrompt, renderWorkerBrief, runTick, untrusted, worktreeNameFor, writeStoredContract,
+  CONTRACT_CLOSE, CONTRACT_OPEN, assessContract, busyIssues, contractIsFresh, createDispatchLedger, isIssuePaused, linearLabelRemove, loadLoopConfig, parseContractOutput, parseLinearIssueDetail, precheckTick, readDispatchRecord, readIssueFailures, readStoredContract, recordIssueFailure, renderContractPrompt, renderWorkerBrief, resumeIssue, runTick, untrusted, worktreeNameFor, writeStoredContract,
 } from '../src/index.js'
 import type { CommandResult, CommandRunner, StoredContract, TaskContract } from '../src/index.js'
 
@@ -19,7 +19,7 @@ interface Env { readonly dir: string; readonly bin: string; readonly runner: Com
 const cleanups: string[] = []
 afterEach(() => { for (const dir of cleanups.splice(0)) rmSync(dir, { recursive: true, force: true }) })
 
-const makeEnv = (options: { readonly contract?: TaskContract | 'garbage'; readonly worktrees?: unknown; readonly failCreate?: boolean; readonly claudeAuthFails?: boolean; readonly claudeSessionLimit?: boolean; readonly accountList?: unknown } = {}): Env => {
+const makeEnv = (options: { readonly contract?: TaskContract | 'garbage'; readonly worktrees?: unknown; readonly failCreate?: boolean; readonly claudeAuthFails?: boolean; readonly claudeSessionLimit?: boolean; readonly failAllContracts?: boolean; readonly accountList?: unknown } = {}): Env => {
   const dir = mkdtempSync(join(tmpdir(), 'agentskit-loop-tick-')); cleanups.push(dir)
   const bin = join(dir, 'bin'); rmSync(bin, { recursive: true, force: true })
   writeFileSync(join(dir, 'loop.config.yaml'), exampleYaml)
@@ -27,6 +27,14 @@ const makeEnv = (options: { readonly contract?: TaskContract | 'garbage'; readon
   for (const name of ['claude', 'codex', 'opencode', 'grok']) writeFileSync(join(binDir, name), '#!/bin/sh\nexit 0\n', { mode: 0o755 })
   const calls: string[][] = []
   const contract = options.contract ?? goodContract
+  // Tracks labels added/removed via `orca linear label add|remove` so a later `list-issues` reflects them — the static
+  // JSON fixtures otherwise never show a label our own mocked write calls just applied, which would make it
+  // impossible to test that a pause label actually sticks across ticks.
+  const extraLabels = new Map<string, Set<string>>()
+  const applyExtraLabels = (payload: { readonly result: { readonly issues: readonly { readonly identifier: string; readonly labels: readonly string[] }[] } }): typeof payload => ({
+    ...payload,
+    result: { ...payload.result, issues: payload.result.issues.map((issue) => ({ ...issue, labels: [...new Set([...issue.labels, ...(extraLabels.get(issue.identifier) ?? [])])] })) },
+  })
   const runner: CommandRunner & { readonly calls: string[][] } = {
     calls,
     run: async (argv) => {
@@ -37,10 +45,19 @@ const makeEnv = (options: { readonly contract?: TaskContract | 'garbage'; readon
       if (key.startsWith('orca account list')) return options.accountList === undefined ? ok(fixture('account-list')) : ok({ ok: true, result: options.accountList })
       if (key.startsWith('orca agent hooks status')) return ok(fixture('agent-hooks'))
       if (key.startsWith('orca worktree ps')) return options.worktrees === undefined ? ok(fixture('worktree-ps')) : okResult(options.worktrees)
-      if (key.startsWith('orca linear list-issues')) return ok(fixture(key.includes('--state Ready') ? 'list-issues-ready' : 'list-issues-todo'))
+      if (argv[1] === 'linear' && argv[2] === 'label' && (argv[3] === 'add' || argv[3] === 'remove')) {
+        const issueId = argv[4] as string
+        const labels = argv.filter((_arg, index) => argv[index - 1] === '--label')
+        const set = extraLabels.get(issueId) ?? new Set<string>()
+        for (const label of labels) argv[3] === 'add' ? set.add(label) : set.delete(label)
+        extraLabels.set(issueId, set)
+        return okResult({ ok: true })
+      }
+      if (key.startsWith('orca linear list-issues')) return ok(applyExtraLabels(fixture(key.includes('--state Ready') ? 'list-issues-ready' : 'list-issues-todo') as never))
       if (key.startsWith('orca linear issue')) { const id = argv[3]; const issues = [...(fixture('list-issues-todo') as { result: { issues: { identifier: string }[] } }).result.issues, ...(fixture('list-issues-ready') as { result: { issues: { identifier: string }[] } }).result.issues]; const issue = issues.find((item) => item.identifier === id); return issue ? okResult({ issue: { ...issue, description: 'Add the binding.\n\n## Acceptance\n- tests pass' }, comments: [] }) : { code: 1, stdout: '', stderr: 'not found', timedOut: false, durationMs: 1 } }
       if (argv[0] === 'claude' && argv[1] === '-p' && options.claudeAuthFails) return { code: 1, stdout: 'Failed to authenticate: OAuth session expired and could not be refreshed\n', stderr: '', timedOut: false, durationMs: 1 }
       if (argv[0] === 'claude' && argv[1] === '-p' && options.claudeSessionLimit) return { code: 1, stdout: "You've hit your session limit \u00b7 resets 10:40pm (America/Sao_Paulo)\n", stderr: '', timedOut: false, durationMs: 1 }
+      if (((argv[0] === 'claude' && argv[1] === '-p') || (argv[0] === 'codex' && argv[1] === 'exec')) && options.failAllContracts) return { code: 1, stdout: 'exit 1: transient tool error', stderr: '', timedOut: false, durationMs: 1 }
       if ((argv[0] === 'claude' && argv[1] === '-p') || (argv[0] === 'codex' && argv[1] === 'exec')) return contract === 'garbage' ? { code: 0, stdout: 'no contract here', stderr: '', timedOut: false, durationMs: 1 } : { code: 0, stdout: `thinking…\n${CONTRACT_OPEN}\n${JSON.stringify(contract)}\n${CONTRACT_CLOSE}\n`, stderr: '', timedOut: false, durationMs: 1 }
       if (key.startsWith('orca terminal create')) return okResult({ terminal: { handle: 'term_new' } })
       if (key.startsWith('orca terminal wait')) return okResult({ satisfied: true })
@@ -218,6 +235,71 @@ describe('tick', () => {
     // "resets 10:40pm" parsed into a concrete ISO instant rather than falling back to the blind exponential backoff.
     expect(new Date(cooldowns['claude']?.until ?? '').getHours()).toBe(22)
     expect(new Date(cooldowns['claude']?.until ?? '').getMinutes()).toBe(40)
+  })
+
+  it('pauses an issue after resilience.maxConsecutiveFailures consecutive contract failures, notifies Linear once, and stops retrying it (regression: 2026-09-11 pilot — 5 contract failures on AGE-1555 alone, retried every tick with no ceiling)', async () => {
+    const env = makeEnv({ failAllContracts: true })
+    const loaded = loadLoopConfig(env.configPath)
+    const first = await runTick({ ...tickOptions(env), onlyIssue: 'ENG-10' })
+    expect(first.results[0]).toMatchObject({ issue: 'ENG-10', outcome: 'failed' })
+    expect(isIssuePaused(loaded.stateDir, 'ENG-10')).toBe(false)
+    expect(readIssueFailures(loaded.stateDir, 'ENG-10').consecutive).toBe(1)
+
+    const second = await runTick({ ...tickOptions(env), onlyIssue: 'ENG-10' })
+    expect(second.results[0]).toMatchObject({ outcome: 'failed' })
+    expect(isIssuePaused(loaded.stateDir, 'ENG-10')).toBe(false)
+
+    const third = await runTick({ ...tickOptions(env), onlyIssue: 'ENG-10' })
+    expect(third.results[0]).toMatchObject({ outcome: 'failed' })
+    expect(isIssuePaused(loaded.stateDir, 'ENG-10')).toBe(true)
+    expect(readIssueFailures(loaded.stateDir, 'ENG-10').consecutive).toBe(3)
+    const pauseComment = env.runner.calls.find((argv) => argv[1] === 'linear' && argv[2] === 'comment')
+    expect(pauseComment?.[pauseComment.indexOf('--body') + 1]).toContain('paused after 3 consecutive failures')
+    const pauseLabel = env.runner.calls.find((argv) => argv[1] === 'linear' && argv[2] === 'label')
+    expect(pauseLabel).toContain('loop:paused')
+
+    // A 4th tick does not even try the contract again — the issue is skipped locally, with no new agentskit-review call.
+    const callsBefore = env.runner.calls.length
+    const fourth = await runTick({ ...tickOptions(env), onlyIssue: 'ENG-10' })
+    expect(fourth.results[0]).toMatchObject({ outcome: 'skipped', reason: expect.stringContaining('paused after 3 consecutive failures') })
+    expect(env.runner.calls.filter((argv) => argv[0] === 'claude' && argv[1] === '-p').length).toBe(env.runner.calls.slice(0, callsBefore).filter((argv) => argv[0] === 'claude' && argv[1] === '-p').length)
+    // Only one pause comment/label pair was ever sent, not one per subsequent tick.
+    expect(env.runner.calls.filter((argv) => argv[1] === 'linear' && argv[2] === 'comment')).toHaveLength(1)
+
+    // ak-harness loop resume clears the pause and lets the issue try again.
+    resumeIssue(loaded.stateDir, 'ENG-10')
+    expect(isIssuePaused(loaded.stateDir, 'ENG-10')).toBe(false)
+    const fifth = await runTick({ ...tickOptions(env), onlyIssue: 'ENG-10' })
+    expect(fifth.results[0]).toMatchObject({ outcome: 'failed' })
+    expect(readIssueFailures(loaded.stateDir, 'ENG-10').consecutive).toBe(1)
+  })
+
+  it('auto-resumes a paused issue once the "loop:paused" label is removed on Linear, without requiring the resume CLI', async () => {
+    const env = makeEnv({ failAllContracts: true })
+    const loaded = loadLoopConfig(env.configPath)
+    for (let i = 0; i < 3; i += 1) await runTick({ ...tickOptions(env), onlyIssue: 'ENG-10' })
+    expect(isIssuePaused(loaded.stateDir, 'ENG-10')).toBe(true)
+    const stillPaused = await runTick({ ...tickOptions(env), onlyIssue: 'ENG-10' })
+    expect(stillPaused.results[0]).toMatchObject({ outcome: 'skipped' })
+    // A human (or another tool) removes the label directly on Linear — the next tick must notice via list-issues, not just local state.
+    await linearLabelRemove(env.runner, { issue: 'ENG-10', labels: ['loop:paused'] }, { workspaceId: loaded.config.linear.workspaceId })
+    const resumed = await runTick({ ...tickOptions(env), onlyIssue: 'ENG-10' })
+    expect(isIssuePaused(loaded.stateDir, 'ENG-10')).toBe(false)
+    expect(resumed.results[0]).toMatchObject({ outcome: 'failed' }) // resumed, then failed again on this tick — but not skipped
+    expect(resumed.notes.some((note) => note.includes('resumed'))).toBe(true)
+  })
+
+  it('clears a pre-existing failure counter on a successful dispatch, so recovery does not need a full "loop resume"', async () => {
+    const healthy = makeEnv()
+    const loaded = loadLoopConfig(healthy.configPath)
+    // Seed 2 prior failures directly (already covered at the unit level in loop-resilience-state.test.ts) to prove runTick's
+    // success path clears them rather than merely ignoring existing state.
+    recordIssueFailure(loaded.stateDir, 'ENG-10', 'contract.failed', 'earlier tick', new Date('2026-09-12T09:00:00.000Z'))
+    recordIssueFailure(loaded.stateDir, 'ENG-10', 'contract.failed', 'earlier tick 2', new Date('2026-09-12T09:05:00.000Z'))
+    expect(readIssueFailures(loaded.stateDir, 'ENG-10').consecutive).toBe(2)
+    const report = await runTick({ ...tickOptions(healthy), onlyIssue: 'ENG-10', maxDispatch: 1 })
+    expect(report.results[0]).toMatchObject({ outcome: 'dispatched' })
+    expect(readIssueFailures(loaded.stateDir, 'ENG-10').consecutive).toBe(0)
   })
 
   it('leaves candidates without a cached contract for the next tick when the time budget is short', async () => {

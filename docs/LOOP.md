@@ -148,6 +148,30 @@ terminal handle, provider/model and lease for the deliver stage.
 
 Start from [`loop.config.example.yaml`](../loop.config.example.yaml) at the package root.
 
+## Resilience: auto-pause after repeated failures
+
+Two failure paths have no natural ceiling elsewhere in the pipeline — contract generation failing on every
+candidate, and a worktree/worker dispatch failing outright — because the issue never gets a worktree, a lease that
+would otherwise expire, or a label that would exclude it from the queue. Left alone, a single misclassified or
+persistent error (a quota message the classifier didn't recognise, a broken `orca worktree create`) retries every
+tick forever. (The 2026-09-11/12 pilot logged 19 such retries across 4 issues in 7h before this existed.)
+
+- `resilience.maxConsecutiveFailures` (default 3): after this many **consecutive** `contract.failed` or
+  `worker.dispatch-failed` events on the *same* issue, the loop stops retrying it: one deduplicated Linear comment
+  explaining why, the `resilience.pausedLabel` (default `loop:paused`), and the issue is skipped locally on every
+  later tick regardless of whether that label is in `linear.excludeLabels`. A successful dispatch clears the
+  counter. State lives in `<stateDir>/issues/<id>/failures.json` (`loop paused` lists every paused issue).
+- **Resuming** an issue: remove the `loop:paused` label on Linear (the next tick notices via `list-issues` and
+  clears the local state itself) or run `ak-harness loop resume <issue>`, which also best-effort removes the label.
+- `resilience.stagePauseAfterRuns` (default 3): a scheduled `loop stage tick|deliver` run that *throws* (a config or
+  adapter crash, not a normal idle/ok/blocked report) this many times in a row pauses that stage — `loop stage`
+  then short-circuits to a `{"status":"paused", ...}` report instead of running, so a crash loop cannot spend budget
+  or provider usage under Orca. `ak-harness loop resume --stage tick|deliver` clears it; a single successful run
+  clears it automatically. State lives in `<stateDir>/paused.json`.
+
+Neither mechanism touches the existing `blocked`/`stuck` escalations (fix-round exhaustion, an idle worker with no
+PR) — those already label the issue and route it out of the queue via `linear.excludeLabels`.
+
 ## What the doctor checks
 
 | Check | Source | Blocking |

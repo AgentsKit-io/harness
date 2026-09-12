@@ -46,3 +46,9 @@ export { buildDebriefReport, renderDebriefMarkdown } from './debrief.js'
 export type { DebriefInput, DebriefIssueRow, DebriefReport } from './debrief.js'
 export { classifyWatchEvent, classifyWatchPhase, formatWatchEvent, snapshotWatchTargets, watchDeliveries } from './watch.js'
 export type { WatchEvent, WatchEventKind, WatchInput, WatchReport, WatchTargetSnapshot } from './watch.js'
+
+export {
+  clearIssueFailures, isIssuePaused, isStagePaused, issueFailurePath, listPausedIssues, pauseIssue, readIssueFailures,
+  readStagePause, recordIssueFailure, recordStageRunResult, resumeIssue, resumeStage, stageEntry, stagePausePath,
+} from './resilience-state.js'
+export type { IssueFailureRecord, IssueFailureState, LoopStageName, StagePauseEntry, StagePauseState } from './resilience-state.js'

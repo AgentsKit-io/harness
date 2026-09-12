@@ -252,6 +252,20 @@ export const LoopConfigSchema = z.object({
     enabled: z.boolean().default(false),
     allowTools: z.array(nonEmpty).default([]),
   }).prefault({}),
+  resilience: z.object({
+    /**
+     * Consecutive failures on the same issue — contract generation failing on every candidate, or a worker/worktree
+     * dispatch failing — before the loop stops retrying it and escalates instead of spinning every tick. (Pilot
+     * 2026-09-11: one unclassified quota error produced 19 silent retries across 4 issues over 7h with no cap.)
+     * `contract.escalated` (a genuine "needs more information" decision) does not count; a successful dispatch,
+     * a clean/findings review, or a merge clears the counter.
+     */
+    maxConsecutiveFailures: z.number().int().positive().default(3),
+    /** Label applied (and checked for removal, to auto-resume) when an issue is paused after `maxConsecutiveFailures`. */
+    pausedLabel: nonEmpty.default('loop:paused'),
+    /** Consecutive *thrown* `loop stage` runs (config/adapter crash, not a normal idle/ok/blocked report) before that stage pauses itself. */
+    stagePauseAfterRuns: z.number().int().positive().default(3),
+  }).prefault({}),
   schedule: z.object({
     tick: cron.default('*/5 * * * *'),
     deliver: cron.default('*/10 * * * *'),

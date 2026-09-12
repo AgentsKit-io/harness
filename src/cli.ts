@@ -5,7 +5,7 @@ import { Command } from 'commander'
 import { approveRun, ARTIFACT_SCHEMA_VERSION, assessAcceptance, assessBlock, assessDiscovery, assessImprovementCycle, assessIntegration, assessPilot, assessPreflight, assessProduction, assessWip, assessWorktreeCleanup, authorizeRun, benchmarkRuns, cancelRun, cleanTaskArtifacts, composePullRequest, createDispatchLedger, createDocBridgeContextProvider, createStatusSnapshot, exportEvidenceBundle, FileArtifactStore, loadBenchmarkManifest, loadConfig, loadLatestRun, parseRetro, planFilePreflight, planRun, readArtifactFile, readContextSnapshots, readEvidenceTrustStore, reconcileRun, recordBenchmarkObservation, renderArtifactMarkdown, retryRun, selectRuntime, startRun, validateBlockManifest, validateStatusSnapshot, verifyEvidenceBundle, verifyRun } from './index.js'
 import type { BenchmarkObservationEvidence } from './execution/metrics.js'
 import { fail } from './kernel/errors.js'
-import { buildDebriefReport, buildRetroReport, createProcessRunner, createRichIO, fetchLinearIssue, formatWatchEvent, generateContract, installLoopAutomations, loadLoopConfig, openLoopMemory, promoteLearningsToMemory, runGuidedInstall, loopStatus, renderDebriefMarkdown, renderRetroMarkdown, retroLearnings, runRetroStage, precheckDeliver, precheckTick, rankModels, readLearningsLedger, readStoredContract, runDeliver, runLoopDoctor, runTick, uninstallLoopAutomations, watchDeliveries, writeStoredContract } from './index.js'
+import { buildDebriefReport, buildRetroReport, createProcessRunner, createRichIO, fetchLinearIssue, formatWatchEvent, generateContract, installLoopAutomations, linearLabelRemove, loadLoopConfig, openLoopMemory, promoteLearningsToMemory, runGuidedInstall, loopStatus, renderDebriefMarkdown, renderRetroMarkdown, retroLearnings, runRetroStage, precheckDeliver, precheckTick, rankModels, readLearningsLedger, readStoredContract, runDeliver, runLoopDoctor, runTick, uninstallLoopAutomations, watchDeliveries, writeStoredContract, isStagePaused, recordStageRunResult, resumeIssue, resumeStage, readIssueFailures, stageEntry, listPausedIssues, type LoopStageName } from './index.js'
 import { FileEventStore, inspectEventLogLock, recoverEventLogLock } from './kernel/events.js'
 
 interface CliOptions { readonly config: string; readonly json: boolean }
@@ -82,9 +82,25 @@ loop.command('stage <stage>').description('Run one stage (tick | deliver | retro
   if (stage !== 'tick' && stage !== 'deliver' && stage !== 'retro') fail(`Unknown stage: ${stage}`, 'INVALID_INPUT')
   const runner = createProcessRunner(); const file = loopFile(this)
   const loaded = loadLoopConfig(file)
+  const trackedStage = stage as LoopStageName
+  // retro has no auto-pause: it is a lower-frequency, best-effort digest, not a stage that can spin every 5-10 min.
+  if (stage !== 'retro' && isStagePaused(loaded.stateDir, trackedStage)) {
+    const entry = stageEntry(loaded.stateDir, trackedStage)
+    console.log(JSON.stringify({ status: 'paused', stage, pausedAt: entry.pausedAt, pausedReason: entry.pausedReason, consecutiveFailures: entry.consecutiveFailures, resume: `ak-harness loop resume --stage ${stage} -f ${JSON.stringify(file)}` }, null, 2))
+    process.exitCode = 1
+    return
+  }
   const budgetMs = Math.max(60_000, loaded.config.schedule.stageTimeoutSec * 1000 - 60_000)
-  const report = stage === 'tick' ? await runTick({ loaded, runner, budgetMs }) : stage === 'deliver' ? await runDeliver({ loaded, runner, budgetMs }) : await runRetroStage({ loaded, runner })
-  console.log(JSON.stringify(report, null, 2))
+  const threshold = loaded.config.resilience.stagePauseAfterRuns
+  try {
+    const report = stage === 'tick' ? await runTick({ loaded, runner, budgetMs }) : stage === 'deliver' ? await runDeliver({ loaded, runner, budgetMs }) : await runRetroStage({ loaded, runner })
+    if (stage !== 'retro') recordStageRunResult(loaded.stateDir, trackedStage, { succeeded: true }, threshold)
+    console.log(JSON.stringify(report, null, 2))
+  } catch (error) {
+    const reason = error instanceof Error ? error.message : String(error)
+    const entry = stage !== 'retro' ? recordStageRunResult(loaded.stateDir, trackedStage, { succeeded: false, reason }, threshold) : null
+    console.log(JSON.stringify({ status: 'error', stage, error: reason, ...(entry ? { consecutiveFailures: entry.consecutiveFailures, paused: entry.pausedAt !== null } : {}) }, null, 2))
+  }
   process.exitCode = 1
 })
 loop.command('tick').description('One keep-pushing tick: intake → admit → contract → dispatch workers into Orca worktrees.').option('--dry-run', 'plan only; no worktree, no Linear write, no contract cached').option('--max <n>', 'max dispatches this tick', (value: string) => Number(value)).option('--issue <identifier>', 'restrict to one issue').option('--skip-contract', 'do not call the orchestrator when no contract is cached').action(async function (this: Command, command: { readonly dryRun?: boolean; readonly max?: number; readonly issue?: string; readonly skipContract?: boolean }) { const report = await runTick({ configPath: loopFile(this), runner: createProcessRunner(), dryRun: command.dryRun ?? false, maxDispatch: command.max, onlyIssue: command.issue, skipContractGeneration: command.skipContract ?? false }); print(report); if (report.status === 'blocked') process.exitCode = 1 })
@@ -108,6 +124,22 @@ loop.command('install').description('Guided install: doctor + environment checks
 })
 loop.command('uninstall').description('Remove the loop automations from Orca.').option('--dry-run', 'print what would be removed').action(async function (this: Command, command: { readonly dryRun?: boolean }) { const report = await uninstallLoopAutomations({ configPath: loopFile(this), runner: createProcessRunner(), dryRun: command.dryRun ?? false }); print(report); if (report.status === 'failed') process.exitCode = 1 })
 loop.command('status').description('Show the loop automations Orca knows about and their latest runs.').action(async function (this: Command) { print(await loopStatus({ configPath: loopFile(this), runner: createProcessRunner() })) })
+loop.command('resume [issue]').description('Resume a paused issue (clears its failure counter and removes the pause label) or, with --stage, a paused tick/deliver stage.').option('--stage <stage>', 'resume a paused stage (tick | deliver) instead of an issue').action(async function (this: Command, issue: string | undefined, command: { readonly stage?: string }) {
+  const loaded = loadLoopConfig(loopFile(this))
+  if (command.stage) {
+    if (command.stage !== 'tick' && command.stage !== 'deliver') fail(`--stage must be tick or deliver, got ${command.stage}`, 'INVALID_INPUT')
+    resumeStage(loaded.stateDir, command.stage as LoopStageName)
+    return print({ status: 'resumed', stage: command.stage })
+  }
+  if (!issue) fail('Provide an issue identifier, or --stage <tick|deliver> to resume a paused stage.', 'INVALID_INPUT')
+  const issueId = issue as string
+  const before = readIssueFailures(loaded.stateDir, issueId)
+  resumeIssue(loaded.stateDir, issueId)
+  try { await linearLabelRemove(createProcessRunner(), { issue: issueId, labels: [loaded.config.resilience.pausedLabel] }, { bin: loaded.config.orca.bin, workspaceId: loaded.config.linear.workspaceId }) } catch { /* best-effort: the CLI resume already cleared the local pause even if Linear is unreachable */ }
+  print({ status: 'resumed', issue: issueId, wasPaused: before.pausedAt !== null, previousConsecutiveFailures: before.consecutive })
+})
+loop.command('paused').description('List issues the loop has paused after repeated failures (local state, no network calls).').action(function (this: Command) { print(listPausedIssues(loadLoopConfig(loopFile(this)).stateDir)) })
+
 loop.command('hook').description('Status-only line for a SessionStart hook: never installs or changes anything; always exits 0 within a few seconds.').action(async function (this: Command) { try { const status = await loopStatus({ configPath: loopFile(this), runner: createProcessRunner({ timeoutMs: 4_000 }) }); console.log(status.summary) } catch (error) { console.log(`loop: status unavailable (${error instanceof Error ? error.message.split('\n')[0] : String(error)})`) } })
 loop.command('debrief').description('Human-facing explanation of what the loop is working on right now (in-flight issues, holds, escalations, cooldowns). Read-only; Markdown by default.').option('--issue <identifier>', 'restrict to one issue').option('--since <window>', 'how far back to look for escalations/events', '24h').action(function (this: Command, command: { readonly issue?: string; readonly since: string }) {
   const report = buildDebriefReport({ configPath: loopFile(this), issue: command.issue, since: command.since })

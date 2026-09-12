@@ -155,3 +155,9 @@ export {
   upsertProposedLearnings, writeLearningsLedger,
 } from './loop/memory.js'
 export type { LearningsLedger, MemoryContextPlan, MemoryPromptSelection } from './loop/memory.js'
+
+export {
+  clearIssueFailures, isIssuePaused, isStagePaused, issueFailurePath, listPausedIssues, pauseIssue, readIssueFailures,
+  readStagePause, recordIssueFailure, recordStageRunResult, resumeIssue, resumeStage, stageEntry, stagePausePath,
+} from './loop/resilience-state.js'
+export type { IssueFailureRecord, IssueFailureState, LoopStageName, StagePauseEntry, StagePauseState } from './loop/resilience-state.js'

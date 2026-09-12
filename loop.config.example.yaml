@@ -154,6 +154,11 @@ contract:
   maxBriefReferences: 4
   contextProviders: [doc-bridge]      # add rag when rag.enabled
 
+resilience:
+  maxConsecutiveFailures: 3          # pause an issue after this many consecutive contract/dispatch failures
+  pausedLabel: loop:paused           # applied to the issue in Linear; remove it (or `loop resume <id>`) to retry
+  stagePauseAfterRuns: 3             # pause `loop stage tick|deliver` itself after this many consecutive thrown runs
+
 schedule:
   tick: "*/5 * * * *"
   deliver: "*/10 * * * *"
