@@ -10,7 +10,7 @@ import { HarnessError } from '../kernel/errors.js'
 import { hashJson } from '../kernel/hash.js'
 import { renderWorkerBrief } from './brief.js'
 import { loadLoopConfig, type LoadedLoopConfig, type LoopConfig } from './config.js'
-import { assessContract, contractIsFresh, generateContract, readStoredContract, resolveDocContext, writeStoredContract, type StoredContract } from './contract.js'
+import { assessContract, contractIsFresh, extractResetsAt, generateContract, readStoredContract, resolveDocContext, writeStoredContract, type StoredContract } from './contract.js'
 import { activeCooldowns, readCooldowns } from './cooldown.js'
 import { countRunningWorkers, providerSpecs } from './doctor.js'
 import { openLoopMemory, planMemoryContext } from './memory.js'
@@ -214,7 +214,8 @@ export const runTick = async (input: TickInput): Promise<TickReport> => {
   const orchestratorCandidates = rankModels(config, 'orchestrator', state.providers, orchestratorExtras)
   const onProviderFailure = (failure: { readonly provider: string; readonly kind: string; readonly detail: string }): void => {
     if (dryRun) return
-    const entry = markProviderExhausted(loaded.stateDir, failure.provider, { initialMin: config.models.cooldown.initialMin, maxMin: config.models.cooldown.maxMin, reason: `${failure.kind}: ${(failure.detail.split('\n')[0] ?? '').slice(0, 200)}`, now: now() })
+    const resetsAt = extractResetsAt(failure.detail, now())
+    const entry = markProviderExhausted(loaded.stateDir, failure.provider, { initialMin: config.models.cooldown.initialMin, maxMin: config.models.cooldown.maxMin, reason: `${failure.kind}: ${(failure.detail.split('\n')[0] ?? '').slice(0, 200)}`, resetsAt, now: now() })
     notes.push(`provider ${failure.provider} marked cooling down until ${entry.until} (${failure.kind})`)
     appendLoopEvent(loaded.stateDir, { at: now().toISOString(), type: 'provider.cooldown', provider: failure.provider, kind: failure.kind, until: entry.until })
   }

@@ -10,7 +10,8 @@ import { createDispatchLedger, type DispatchLease } from '../execution/coordinat
 import { HarnessError } from '../kernel/errors.js'
 import { renderHandoffBrief } from './brief.js'
 import { loadLoopConfig, providerIdentity, type LoadedLoopConfig, type LoopConfig } from './config.js'
-import { activeCooldowns, readCooldowns } from './cooldown.js'
+import { classifyProviderFailure, extractResetsAt } from './contract.js'
+import { activeCooldowns, markProviderExhausted, readCooldowns } from './cooldown.js'
 import { providerSpecs } from './doctor.js'
 import { resolveCatalogCandidates } from './model-catalog/index.js'
 import { rankModels, type RankedModel } from './routing.js'
@@ -370,7 +371,19 @@ const handlePullRequest = async (ctx: Context, record: DispatchRecordFile, lease
     state = { ...state, prNumber: pr.number, reviews: { ...state.reviews, [pr.headSha]: { status: review.status, at: ctx.now().toISOString(), provider: review.provider, model: review.model, blocking: review.blocking.length, attempts } } }
     saveState(ctx, state)
     event(ctx, { type: 'pr.reviewed', issue: record.issue, pr: pr.number, head: pr.headSha, status: review.status, blocking: review.blocking.length, provider: review.provider, model: review.model })
-    if (review.status === 'incomplete') return { issue: record.issue, outcome: 'waiting', reason: review.summary, pr: pr.number, head: pr.headSha, review, actions }
+    if (review.status === 'incomplete') {
+      const failureKind = classifyProviderFailure(review.rawTail)
+      // Cooldown keys off the internal provider id (ctx.reviewer.provider, e.g. "codex"), not the review-CLI transport id
+      // (review.provider, e.g. "codex-cli") — those differ and detectProviders()/rankModels() only look up the former.
+      if (!ctx.dryRun && ctx.reviewer && (failureKind === 'quota' || failureKind === 'auth')) {
+        const reviewerProviderId = ctx.reviewer.provider
+        const resetsAt = extractResetsAt(review.rawTail, ctx.now())
+        const entry = markProviderExhausted(ctx.loaded.stateDir, reviewerProviderId, { initialMin: config.models.cooldown.initialMin, maxMin: config.models.cooldown.maxMin, reason: `${failureKind}: ${review.rawTail.split('\n').slice(-1)[0]?.slice(0, 200) ?? review.summary}`, resetsAt, now: ctx.now() })
+        actions.push(`reviewer ${reviewerProviderId} marked cooling down until ${entry.until} (${failureKind})`)
+        event(ctx, { type: 'provider.cooldown', provider: reviewerProviderId, kind: failureKind, until: entry.until, source: 'review' })
+      }
+      return { issue: record.issue, outcome: 'waiting', reason: review.summary, pr: pr.number, head: pr.headSha, review, actions }
+    }
     if (review.status === 'findings') return fixRound(ctx, record, lease, state, pr, 'review', `Loop: the code review of PR #${pr.number} (head ${pr.headSha.slice(0, 7)}) found ${review.blocking.length} issue(s) at or above "${config.delivery.review.minSeverity}". Address each one (or explain in the PR why it is not applicable), re-run \`${config.delivery.verifyCommand}\`, commit and push. Findings:\n${renderFindingsForWorker(review.blocking)}\nThe full review is on the PR. Reply here when pushed.`, `review found ${review.blocking.length} blocking finding(s)`, actions)
   } else if (prior.status === 'findings') return { issue: record.issue, outcome: 'waiting', reason: `review findings pending a new push (head ${pr.headSha.slice(0, 7)})`, pr: pr.number, head: pr.headSha, actions }
 

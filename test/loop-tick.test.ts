@@ -19,7 +19,7 @@ interface Env { readonly dir: string; readonly bin: string; readonly runner: Com
 const cleanups: string[] = []
 afterEach(() => { for (const dir of cleanups.splice(0)) rmSync(dir, { recursive: true, force: true }) })
 
-const makeEnv = (options: { readonly contract?: TaskContract | 'garbage'; readonly worktrees?: unknown; readonly failCreate?: boolean; readonly claudeAuthFails?: boolean; readonly accountList?: unknown } = {}): Env => {
+const makeEnv = (options: { readonly contract?: TaskContract | 'garbage'; readonly worktrees?: unknown; readonly failCreate?: boolean; readonly claudeAuthFails?: boolean; readonly claudeSessionLimit?: boolean; readonly accountList?: unknown } = {}): Env => {
   const dir = mkdtempSync(join(tmpdir(), 'agentskit-loop-tick-')); cleanups.push(dir)
   const bin = join(dir, 'bin'); rmSync(bin, { recursive: true, force: true })
   writeFileSync(join(dir, 'loop.config.yaml'), exampleYaml)
@@ -40,6 +40,7 @@ const makeEnv = (options: { readonly contract?: TaskContract | 'garbage'; readon
       if (key.startsWith('orca linear list-issues')) return ok(fixture(key.includes('--state Ready') ? 'list-issues-ready' : 'list-issues-todo'))
       if (key.startsWith('orca linear issue')) { const id = argv[3]; const issues = [...(fixture('list-issues-todo') as { result: { issues: { identifier: string }[] } }).result.issues, ...(fixture('list-issues-ready') as { result: { issues: { identifier: string }[] } }).result.issues]; const issue = issues.find((item) => item.identifier === id); return issue ? okResult({ issue: { ...issue, description: 'Add the binding.\n\n## Acceptance\n- tests pass' }, comments: [] }) : { code: 1, stdout: '', stderr: 'not found', timedOut: false, durationMs: 1 } }
       if (argv[0] === 'claude' && argv[1] === '-p' && options.claudeAuthFails) return { code: 1, stdout: 'Failed to authenticate: OAuth session expired and could not be refreshed\n', stderr: '', timedOut: false, durationMs: 1 }
+      if (argv[0] === 'claude' && argv[1] === '-p' && options.claudeSessionLimit) return { code: 1, stdout: "You've hit your session limit \u00b7 resets 10:40pm (America/Sao_Paulo)\n", stderr: '', timedOut: false, durationMs: 1 }
       if ((argv[0] === 'claude' && argv[1] === '-p') || (argv[0] === 'codex' && argv[1] === 'exec')) return contract === 'garbage' ? { code: 0, stdout: 'no contract here', stderr: '', timedOut: false, durationMs: 1 } : { code: 0, stdout: `thinking…\n${CONTRACT_OPEN}\n${JSON.stringify(contract)}\n${CONTRACT_CLOSE}\n`, stderr: '', timedOut: false, durationMs: 1 }
       if (key.startsWith('orca terminal create')) return okResult({ terminal: { handle: 'term_new' } })
       if (key.startsWith('orca terminal wait')) return okResult({ satisfied: true })
@@ -203,6 +204,20 @@ describe('tick', () => {
     expect(failed.results[0]).toMatchObject({ outcome: 'failed', reason: expect.stringContaining('[auth]') })
     expect(failed.notes.some((note) => note.includes('claude marked cooling down'))).toBe(true)
     expect(existsSync(join(loadLoopConfig(onlyClaude.configPath).stateDir, 'provider-cooldowns.json'))).toBe(true)
+  })
+
+  it('classifies a real Claude usage-limit message as quota (not "other") and marks a cooldown with the parsed reset time (regression: 2026-09-11 pilot loop — 19 unclassified contract failures over 7h because "You\'ve hit your session limit" fell through to "other" and never cooled down)', async () => {
+    // Default account fixture has codex exhausted (100% weekly) so claude is the only orchestrator candidate — isolates the classification/cooldown behaviour under test.
+    const env = makeEnv({ claudeSessionLimit: true })
+    const report = await runTick({ ...tickOptions(env), maxDispatch: 1 })
+    expect(report.results[0]).toMatchObject({ outcome: 'failed', reason: expect.stringContaining('[quota]') })
+    expect(report.notes.some((note) => note.includes('claude marked cooling down') && note.includes('quota'))).toBe(true)
+    const loaded = loadLoopConfig(env.configPath)
+    const cooldowns = JSON.parse(readFileSync(join(loaded.stateDir, 'provider-cooldowns.json'), 'utf8')) as Record<string, { readonly reason: string; readonly until: string }>
+    expect(cooldowns['claude']?.reason).toContain('quota')
+    // "resets 10:40pm" parsed into a concrete ISO instant rather than falling back to the blind exponential backoff.
+    expect(new Date(cooldowns['claude']?.until ?? '').getHours()).toBe(22)
+    expect(new Date(cooldowns['claude']?.until ?? '').getMinutes()).toBe(40)
   })
 
   it('leaves candidates without a cached contract for the next tick when the time budget is short', async () => {

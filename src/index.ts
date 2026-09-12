@@ -124,7 +124,7 @@ export type { LinearIssueDetail, LinearWriteOptions } from './adapters/linear-or
 export { PR_FIELDS, assessChecks, githubComment, githubCommentArgv, githubCommentExists, githubMerge, githubMergeArgv, githubOpenPullRequests, githubPullRequest, githubPullRequestsForBranch, parsePullRequest, touchesProtectedPaths } from './adapters/github-cli.js'
 export type { CheckOutcome, ChecksAssessment, GitHubCliOptions, PullRequestCheck, PullRequestSnapshot } from './adapters/github-cli.js'
 export { CONTRACT_CLOSE, CONTRACT_OPEN, CONTRACT_SCHEMA_VERSION, ContractOutcomeSchema, TaskContractSchema, assessContract, contractIsFresh, contractPath, generateContract, parseContractOutput, readStoredContract, renderContractPrompt, resolveDocContext, untrusted, writeStoredContract } from './loop/contract.js'
-export { classifyProviderFailure } from './loop/contract.js'
+export { classifyProviderFailure, extractResetsAt } from './loop/contract.js'
 export type { ContractAssessment, GenerateContractInput, ProviderFailure, StoredContract, TaskContract } from './loop/contract.js'
 export { renderHandoffBrief, renderWorkerBrief } from './loop/brief.js'
 export type { HandoffBriefInput } from './loop/brief.js'
