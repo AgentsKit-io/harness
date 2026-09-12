@@ -167,8 +167,8 @@ const sendToWorker = async (ctx: Context, record: DispatchRecordFile, text: stri
   try {
     const terminal = (await orcaTerminalList(ctx.runner, { worktree: `id:${record.worktreeId}` }, orcaOptions(ctx.config))).find((item) => item.handle === record.terminal)
     // ponytail: a live Orca shell with no recorded agent command cannot make progress; reactivate it once.
-    staleShell = Boolean(terminal && !terminal.command && /git:\(|➜\s|\$\s/.test(terminal.preview))
-    if (staleShell) actions.push(`worker terminal ${record.terminal} is a shell, not an agent; reactivating`)
+    staleShell = Boolean(terminal && !terminal.command && (/git:\(|➜\s|\$\s/.test(terminal.preview) || (!terminal.preview.trim() && terminal.lastOutputAt === null)))
+    if (staleShell) actions.push(`worker terminal ${record.terminal} is stale or a shell, not an active agent; reactivating`)
   } catch { /* send below remains the fallback when terminal metadata is unavailable */ }
   if (!staleShell) {
     try {
@@ -723,6 +723,9 @@ export const runDeliver = async (input: DeliverInput): Promise<DeliverReport> =>
         if (wasFinished && state.finishedAt) continue
         results.push(await handlePullRequest(ctx, record, lease, state, pr)); continue
       }
+      // A recorded merge is only recovery work before delivery state is persisted. Once the
+      // issue is already finished as merged, do not replay completion on every deliver tick.
+      if (state.finishedAt && state.finalOutcome === 'merged') continue
       const recordedMerge = readMergedEvent(loaded.stateDir, record.issue)
       if (recordedMerge) {
         try {

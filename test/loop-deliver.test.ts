@@ -330,6 +330,15 @@ describe('deliver', () => {
     expect(readDeliveryState(env.loaded.stateDir, 'ENG-10')).toMatchObject({ finalOutcome: 'merged', prNumber: 6112 })
   })
 
+  it('does not replay a recorded merge after delivery is already finished', async () => {
+    const env = setup({ pr: null, orcaWorktreeMissing: true, mergedEvent: { pr: 6112, sha: 'merge-sha' }, mergedEventPr: basePr({ state: 'MERGED', number: 6112, url: 'https://github.com/o/r/pull/6112' }) })
+    await deliver(env)
+    const second = await deliver(env)
+    expect(second.results).toEqual([])
+    const mergedEvents = readFileSync(join(env.loaded.stateDir, 'events.ndjson'), 'utf8').split('\n').filter(Boolean).map((line) => JSON.parse(line) as Record<string, unknown>).filter((event) => event['type'] === 'worker.merged')
+    expect(mergedEvents).toHaveLength(1)
+  })
+
   it('nudges an idle worker without a PR once, then marks it stuck and frees the slot while keeping the worktree', async () => {
     const env = setup({ pr: null, dispatchedAt: '2026-09-11T09:00:00.000Z' })
     const first = await deliver(env, { assumeIdle: true })
@@ -345,6 +354,13 @@ describe('deliver', () => {
     expect((await deliver(busy, { assumeIdle: false })).results[0]).toMatchObject({ outcome: 'waiting', reason: 'worker active' })
     const gone = setup({ pr: null, terminals: [] })
     expect((await deliver(gone)).results[0]).toMatchObject({ outcome: 'stuck', reason: expect.stringContaining('terminal gone') })
+  })
+
+  it('reactivates a connected terminal with no agent output before nudging', async () => {
+    const env = setup({ pr: null, terminals: [{ handle: 'term_w', connected: true, orphaned: false, lastOutputAt: null, preview: '', worktreeId: 'repo-1::/w/eng-10-demo' }] })
+    const report = await deliver(env, { assumeIdle: true })
+    expect(report.results[0]).toMatchObject({ outcome: 'nudged' })
+    expect(env.runner.calls.some((argv) => argv[1] === 'terminal' && argv[2] === 'create')).toBe(true)
   })
 
   it('hands off to another builder on the same worktree/branch when the current provider is exhausted', async () => {
