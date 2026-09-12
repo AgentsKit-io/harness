@@ -261,6 +261,17 @@ the gap, both unset (disabled) by default so an existing config is unaffected:
   stopped the same way — recorded as `cost-guard.tripped`. This is deliberately usage-delta, not call-count: it is
   the only per-issue cost signal Orca actually reports for an opaque worker CLI.
 
+## Dynamic outcome progress
+
+The contract's outcome list (`brief.ts`) is a static plan frozen before dispatch — it cannot become a live todo
+list without controlling the worker's own loop, which this harness deliberately does not do (ADR-0027). The brief
+documents a lightweight, optional convention instead: as the worker finishes or starts an outcome, it writes
+`progress.json` at the root of its own worktree, e.g. `{"o1": "done", "o2": "in-progress"}` (ids match the
+outcome list). `loop debrief` reads it back best-effort (`readOutcomeProgress`, `src/loop/progress.ts`) — a
+missing, unreadable, or malformed file is never an error, since nothing enforces the worker keeps it current and
+older dispatches never wrote one at all. When present, it shows as `N/M outcome(s) done` per in-flight issue
+instead of a flat "in flight".
+
 ## Skills pinned into the worker brief
 
 `brief.skills` (default `[]`) lists Markdown files, relative to `project.root`, that every worker brief embeds

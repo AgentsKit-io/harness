@@ -147,6 +147,8 @@ export { fetchTeamMembers, hasLocalConfig, localConfigPath, parseTeamMembers, pr
 export type { LocalConfigAnswers, LocalConfigPrompter, TeamMember } from './loop/local-config.js'
 export type { GuidedInstallIO, GuidedInstallInput, GuidedInstallReport } from './loop/guided-install.js'
 export { buildDebriefReport, renderDebriefMarkdown } from './loop/debrief.js'
+export { readOutcomeProgress } from './loop/progress.js'
+export type { OutcomeProgress, OutcomeProgressStatus } from './loop/progress.js'
 export type { DebriefInput, DebriefIssueRow, DebriefReport } from './loop/debrief.js'
 export { classifyWatchEvent, classifyWatchPhase, formatWatchEvent, snapshotWatchTargets, watchDeliveries } from './loop/watch.js'
 export type { WatchEvent, WatchEventKind, WatchInput, WatchReport, WatchTargetSnapshot } from './loop/watch.js'

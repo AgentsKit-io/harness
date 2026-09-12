@@ -112,5 +112,6 @@ ${untrusted(`linear:${issue.identifier}`, clip(issueText, input.maxIssueChars ??
 6. Open exactly one pull request against \`${config.project.baseBranch}\` with \`gh pr create --base ${config.project.baseBranch} --title "${issue.identifier}: <short title>" --body-file <file>\`. The body must contain: a summary, the outcome list with how each was verified, "Linear: ${issue.url}", and the line \`Loop-Contract: ${input.contract.digest}\`.
 7. After the PR exists run \`orca worktree set --worktree active --workspace-status in-review --json\` and \`orca linear attach --current --url <pr-url> --title "PR" --json\`. Do not change the Linear status; the loop does.
 8. If you are blocked (missing credentials, contradictory requirements, an outcome that cannot be met) do not guess: write the blocker into the PR body if a PR exists, otherwise run \`orca worktree set --worktree active --comment "BLOCKED: <reason>" --json\`, and stop.
-9. When the PR is open and steps 7 are done, print exactly \`LOOP_WORKER_DONE ${issue.identifier}\` and stop working.`
+9. When the PR is open and steps 7 are done, print exactly \`LOOP_WORKER_DONE ${issue.identifier}\` and stop working.
+10. Optional but helpful: as you finish each outcome above, write \`progress.json\` at the root of this worktree, e.g. \`{"o1": "done", "o2": "in-progress"}\` (ids match the outcome list). Nothing enforces this; it only makes \`loop status\`/\`loop debrief\` show real progress instead of "in flight".`
 }

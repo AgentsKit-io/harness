@@ -44,6 +44,8 @@ export {
 export type { LearningsLedger, MemoryContextPlan, MemoryPromptSelection } from './memory.js'
 
 export { buildDebriefReport, renderDebriefMarkdown } from './debrief.js'
+export { readOutcomeProgress } from './progress.js'
+export type { OutcomeProgress, OutcomeProgressStatus } from './progress.js'
 export type { DebriefInput, DebriefIssueRow, DebriefReport } from './debrief.js'
 export { classifyWatchEvent, classifyWatchPhase, formatWatchEvent, snapshotWatchTargets, watchDeliveries } from './watch.js'
 export type { WatchEvent, WatchEventKind, WatchInput, WatchReport, WatchTargetSnapshot } from './watch.js'
