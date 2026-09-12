@@ -45,6 +45,13 @@ export const LoopConfigSchema = z.object({
     baseBranch: nonEmpty.default('main'),
     root: nonEmpty.default('.'),
     stateDir: nonEmpty.default('.codex/loop'),
+    setup: z.object({
+      /** Argv (no shell — one element per arg, e.g. `[pnpm, install, --frozen-lockfile]`) run once in a freshly created worktree before the worker terminal opens. Unset/empty = skip. */
+      command: z.array(nonEmpty).min(1).optional(),
+      timeoutSec: z.number().int().positive().default(600),
+      /** When true, a failing/timing-out setup removes the worktree and counts as a dispatch failure instead of handing the worker a broken environment. */
+      required: z.boolean().default(true),
+    }).prefault({}),
   }),
   orca: z.object({
     bin: nonEmpty.default('orca'),

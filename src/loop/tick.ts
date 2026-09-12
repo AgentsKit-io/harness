@@ -63,6 +63,7 @@ export interface DispatchRecordFile {
   readonly url: string
   readonly briefDigest: string
   readonly skills: readonly PinnedSkillRef[]
+  readonly setup: { readonly command: readonly string[]; readonly exitCode: number | null; readonly durationMs: number; readonly timedOut: boolean } | null
 }
 
 export interface TickInput {
@@ -259,7 +260,8 @@ export const runTick = async (input: TickInput): Promise<TickReport> => {
   let dispatched = 0
   for (const candidate of state.candidates) {
     if (dispatched >= budget) break
-    if (remainingMs() < config.contract.timeoutMs + 120_000 && !readStoredContract(loaded.stateDir, candidate.identifier)) { notes.push(`time budget: ${candidate.identifier} left for the next tick (${Math.round(remainingMs() / 1000)}s remaining)`); continue }
+    const setupBudgetMs = config.project.setup.command ? config.project.setup.timeoutSec * 1000 : 0
+    if (remainingMs() < config.contract.timeoutMs + setupBudgetMs + 120_000 && !readStoredContract(loaded.stateDir, candidate.identifier)) { notes.push(`time budget: ${candidate.identifier} left for the next tick (${Math.round(remainingMs() / 1000)}s remaining)`); continue }
     if (isIssuePaused(loaded.stateDir, candidate.identifier)) {
       if (candidate.labels.includes(config.resilience.pausedLabel)) { results.push({ issue: candidate.identifier, outcome: 'skipped', reason: `paused after ${readIssueFailures(loaded.stateDir, candidate.identifier).consecutive} consecutive failures; remove the "${config.resilience.pausedLabel}" label or run "ak-harness loop resume ${candidate.identifier}" to retry` }); continue }
       // The pause label was removed on Linear since we last checked — treat that as the human's resume signal.
@@ -341,6 +343,18 @@ export const runTick = async (input: TickInput): Promise<TickReport> => {
       created = await orcaWorktreeCreate(input.runner, plan.argv, { timeoutMs: Math.max(config.orca.timeoutMs, 120_000) })
       // Orca names the branch `<git user>/<worktree>`; the Linear branchName is only a hint. Record and brief the real one.
       const actualBranch = created.branch || branch
+      let setupResult: { readonly command: readonly string[]; readonly exitCode: number | null; readonly durationMs: number; readonly timedOut: boolean } | null = null
+      if (config.project.setup.command?.length) {
+        const setupRun = await input.runner.run(config.project.setup.command, { cwd: created.path, timeoutMs: config.project.setup.timeoutSec * 1000 })
+        setupResult = { command: config.project.setup.command, exitCode: setupRun.code, durationMs: setupRun.durationMs, timedOut: setupRun.timedOut }
+        const setupFailed = setupRun.timedOut || setupRun.code !== 0
+        appendLoopEvent(loaded.stateDir, { at: now().toISOString(), type: 'worker.setup', issue: detail.identifier, worktreeId: created.id, ...setupResult, ok: !setupFailed })
+        if (setupFailed && config.project.setup.required) {
+          const detailMsg = setupRun.timedOut ? `timed out after ${config.project.setup.timeoutSec}s` : `exited ${setupRun.code}`
+          throw new Error(`setup command failed (${detailMsg}): ${[...setupResult.command].join(' ')}${setupRun.stderr ? ` — ${setupRun.stderr.slice(-300)}` : ''}`)
+        }
+        if (setupFailed) notes.push(`${detail.identifier}: setup command failed but project.setup.required is false — continuing`)
+      }
       const briefMemory = memory
         ? await planMemoryContext({
           adapter: memory,
@@ -372,7 +386,7 @@ export const runTick = async (input: TickInput): Promise<TickReport> => {
       const launched = await launchWorkerTerminal({ runner: input.runner, config, worktreeId: created.id, command: builder.tui, title, brief })
       if (!launched.accepted) notes.push(`${detail.identifier}: terminal ${launched.terminal} did not confirm the brief; deliver will nudge it if it stays idle`)
       ledger.recordDispatch({ lease: claim.lease, idempotencyKey: plan.idempotencyKey, commandDigest: plan.commandDigest })
-      const record: DispatchRecordFile = { issue: detail.identifier, worktreeId: created.id, worktree, branch: actualBranch, terminal: launched.terminal, provider: builder.provider, model: builder.model, contractDigest: stored.digest, leaseKey: claim.lease.key, leaseId: claim.lease.leaseId, dispatchedAt: now().toISOString(), url: detail.url, briefDigest, skills: skillRefs(pinnedSkills) }
+      const record: DispatchRecordFile = { issue: detail.identifier, worktreeId: created.id, worktree, branch: actualBranch, terminal: launched.terminal, provider: builder.provider, model: builder.model, contractDigest: stored.digest, leaseKey: claim.lease.key, leaseId: claim.lease.leaseId, dispatchedAt: now().toISOString(), url: detail.url, briefDigest, skills: skillRefs(pinnedSkills), setup: setupResult }
       writeJson(dispatchRecordPath(loaded.stateDir, detail.identifier), record)
       appendLoopEvent(loaded.stateDir, { at: record.dispatchedAt, type: 'worker.dispatched', ...record, command: builder.tui, briefAccepted: launched.accepted, tuiIdle: launched.idle })
       clearIssueFailures(loaded.stateDir, detail.identifier)

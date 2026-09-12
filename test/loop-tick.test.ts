@@ -19,10 +19,16 @@ interface Env { readonly dir: string; readonly bin: string; readonly runner: Com
 const cleanups: string[] = []
 afterEach(() => { for (const dir of cleanups.splice(0)) rmSync(dir, { recursive: true, force: true }) })
 
-const makeEnv = (options: { readonly contract?: TaskContract | 'garbage'; readonly worktrees?: unknown; readonly failCreate?: boolean; readonly claudeAuthFails?: boolean; readonly claudeSessionLimit?: boolean; readonly failAllContracts?: boolean; readonly accountList?: unknown; readonly briefSkills?: readonly string[] } = {}): Env => {
+const makeEnv = (options: { readonly contract?: TaskContract | 'garbage'; readonly worktrees?: unknown; readonly failCreate?: boolean; readonly claudeAuthFails?: boolean; readonly claudeSessionLimit?: boolean; readonly failAllContracts?: boolean; readonly accountList?: unknown; readonly briefSkills?: readonly string[]; readonly setup?: { readonly exitCode?: number; readonly timedOut?: boolean }; readonly setupRequired?: boolean } = {}): Env => {
   const dir = mkdtempSync(join(tmpdir(), 'agentskit-loop-tick-')); cleanups.push(dir)
   const bin = join(dir, 'bin'); rmSync(bin, { recursive: true, force: true })
-  const yaml = options.briefSkills?.length ? exampleYaml.replace('skills: []', `skills: [${options.briefSkills.join(', ')}]`) : exampleYaml
+  let yaml = options.briefSkills?.length ? exampleYaml.replace('skills: []', `skills: [${options.briefSkills.join(', ')}]`) : exampleYaml
+  if (options.setup) {
+    const setupBlock = '  setup:\n    # command: [pnpm, install, --frozen-lockfile]  # argv (no shell), run once in a freshly created worktree\n                                                     # before the worker terminal opens; unset = skip\n    timeoutSec: 600\n    required: true                    # failing/timing-out setup removes the worktree and counts as a dispatch failure\n'
+    const replacement = `  setup:\n    command: [setup-check]\n    timeoutSec: 600\n    required: ${options.setupRequired ?? true}\n`
+    if (!yaml.includes(setupBlock)) throw new Error('loop.config.example.yaml setup block text drifted from the test fixture')
+    yaml = yaml.replace(setupBlock, replacement)
+  }
   writeFileSync(join(dir, 'loop.config.yaml'), yaml)
   const binDir = mkdtempSync(join(tmpdir(), 'agentskit-loop-tick-bin-')); cleanups.push(binDir)
   for (const name of ['claude', 'codex', 'opencode', 'grok']) writeFileSync(join(binDir, name), '#!/bin/sh\nexit 0\n', { mode: 0o755 })
@@ -64,6 +70,7 @@ const makeEnv = (options: { readonly contract?: TaskContract | 'garbage'; readon
       if (key.startsWith('orca terminal wait')) return okResult({ satisfied: true })
       if (key.startsWith('orca terminal send')) return okResult({ accepted: true, requestId: 'r' })
       if (key.startsWith('orca worktree rm')) return okResult({ removed: true })
+      if (argv[0] === 'setup-check') return { code: options.setup?.exitCode ?? 0, stdout: 'installed', stderr: options.setup?.exitCode ? 'boom' : '', timedOut: options.setup?.timedOut ?? false, durationMs: 5 }
       if (key.startsWith('orca worktree create')) return options.failCreate ? { code: 1, stdout: JSON.stringify({ ok: false, error: { message: 'repo busy' } }), stderr: '', timedOut: false, durationMs: 1 } : okResult({ worktreeId: `repo-1::${dir}/w/${argv[argv.indexOf('--name') + 1]}`, path: `${dir}/w`, branch: `refs/heads/gituser/${argv[argv.indexOf('--name') + 1]}`, agentTerminalHandle: 'term_new' })
       if (key.startsWith('orca linear status set') || key.startsWith('orca linear comment add') || key.startsWith('orca linear label add')) return okResult({ ok: true })
       return { code: 127, stdout: '', stderr: `no fixture for ${key}`, timedOut: false, durationMs: 1 }
@@ -221,6 +228,44 @@ describe('tick', () => {
     writeFileSync(join(env.dir, 'AGENTS.md'), 'edited after dispatch', 'utf8')
     expect(readFileSync(briefFile, 'utf8')).toContain('original conventions')
     expect(readFileSync(briefFile, 'utf8')).not.toContain('edited after dispatch')
+  })
+
+  it('runs the configured setup command in the new worktree before opening the terminal, and records it on dispatch', async () => {
+    const env = makeEnv({ setup: { exitCode: 0 } })
+    const first = await runTick({ ...tickOptions(env), maxDispatch: 1 })
+    const [result] = first.results
+    expect(result).toMatchObject({ outcome: 'dispatched' })
+    const loaded = loadLoopConfig(env.configPath)
+    const record = readDispatchRecord(loaded.stateDir, result?.issue ?? '')
+    expect(record?.setup).toMatchObject({ command: ['setup-check'], exitCode: 0, timedOut: false })
+    const setupCallIndex = env.runner.calls.findIndex((argv) => argv[0] === 'setup-check')
+    const createCallIndex = env.runner.calls.findIndex((argv) => argv[1] === 'worktree' && argv[2] === 'create')
+    const termCreateIndex = env.runner.calls.findIndex((argv) => argv[1] === 'terminal' && argv[2] === 'create')
+    expect(setupCallIndex).toBeGreaterThan(createCallIndex)
+    expect(setupCallIndex).toBeLessThan(termCreateIndex)
+  })
+
+  it('required setup that fails removes the worktree, never opens a terminal, and counts as a dispatch failure', async () => {
+    const env = makeEnv({ setup: { exitCode: 1 } })
+    const report = await runTick({ ...tickOptions(env), maxDispatch: 1 })
+    expect(report.results[0]).toMatchObject({ outcome: 'failed', reason: expect.stringContaining('setup command failed') })
+    expect(env.runner.calls.some((argv) => argv[1] === 'terminal' && argv[2] === 'create')).toBe(false)
+    expect(env.runner.calls.some((argv) => argv[1] === 'worktree' && argv[2] === 'rm')).toBe(true)
+    const loaded = loadLoopConfig(env.configPath)
+    expect(readIssueFailures(loaded.stateDir, report.results[0]?.issue ?? '').consecutive).toBe(1)
+  })
+
+  it('required setup that times out fails the dispatch the same way as a non-zero exit', async () => {
+    const env = makeEnv({ setup: { timedOut: true } })
+    const report = await runTick({ ...tickOptions(env), maxDispatch: 1 })
+    expect(report.results[0]).toMatchObject({ outcome: 'failed', reason: expect.stringContaining('timed out') })
+  })
+
+  it('a failing setup with required: false only warns and still dispatches the worker', async () => {
+    const env = makeEnv({ setup: { exitCode: 1 }, setupRequired: false })
+    const report = await runTick({ ...tickOptions(env), maxDispatch: 1 })
+    expect(report.results[0]).toMatchObject({ outcome: 'dispatched' })
+    expect(report.notes.some((note) => note.includes('setup command failed but project.setup.required is false'))).toBe(true)
   })
 
   it('escalates a non-verifiable contract with one comment and the needs-info label instead of dispatching', async () => {

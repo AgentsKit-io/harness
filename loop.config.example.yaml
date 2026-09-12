@@ -9,6 +9,11 @@ project:
   baseBranch: main
   root: .                            # relative to this file
   stateDir: .codex/loop              # ledger, cooldowns, contracts
+  setup:
+    # command: [pnpm, install, --frozen-lockfile]  # argv (no shell), run once in a freshly created worktree
+                                                     # before the worker terminal opens; unset = skip
+    timeoutSec: 600
+    required: true                    # failing/timing-out setup removes the worktree and counts as a dispatch failure
 
 orca:
   bin: orca                          # on Linux outside Orca terminals use orca-ide (bare `orca` is the GNOME screen reader)

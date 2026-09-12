@@ -192,6 +192,24 @@ worker starting cold has no other way to see (e.g. `AGENTS.md`, `CLAUDE.md`, `do
 - `loop doctor` runs a `brief.skills` check confirming every configured file currently exists and is readable, so a
   typo or a moved file surfaces before the next dispatch fails.
 
+## Worktree setup command
+
+A freshly created Orca worktree is a bare checkout — no `node_modules`, no build output, nothing a worker can run
+tests against until it installs dependencies itself, wasting the first several minutes of every dispatch on the
+same shell commands. `project.setup.command` (unset by default; an argv array, e.g.
+`[pnpm, install, --frozen-lockfile]` — no shell, so no `&&`/`|`) runs once in the new worktree between
+`orca worktree create` and opening the worker's terminal.
+
+- `project.setup.timeoutSec` (default 600) bounds the run; the loop's per-tick time budget already reserves this
+  much time before attempting a dispatch, so a configured setup command cannot itself blow the tick budget.
+- `project.setup.required` (default `true`): a non-zero exit or a timeout removes the just-created worktree, never
+  opens a terminal, and fails the dispatch — recorded as a `worker.dispatch-failed` event and counted by the
+  per-issue consecutive-failure tracker above, exactly like a contract or worktree-create failure. Set it to
+  `false` to have a failing setup only log a note and still hand the worker its terminal.
+- Every run (pass or fail) is recorded as a `worker.setup` event and, when the dispatch succeeds, as `setup:
+  {command, exitCode, durationMs, timedOut}` on `dispatch.json` — enough to see in `loop retro` whether a slow or
+  flaky setup command is costing more dispatches than it saves.
+
 ## What the doctor checks
 
 | Check | Source | Blocking |
