@@ -159,6 +159,12 @@ resilience:
   pausedLabel: loop:paused           # applied to the issue in Linear; remove it (or `loop resume <id>`) to retry
   stagePauseAfterRuns: 3             # pause `loop stage tick|deliver` itself after this many consecutive thrown runs
 
+brief:
+  skills: []                         # e.g. [AGENTS.md, CLAUDE.md, docs/for-agents/INDEX.md] — paths relative to project.root,
+                                      # pinned verbatim into every worker brief (sha256-digested in dispatch.json); a
+                                      # missing file fails the dispatch instead of silently sending a worker without it
+  maxSkillChars: 6000                 # per-file cap; longer files are truncated with a visible note
+
 schedule:
   tick: "*/5 * * * *"
   deliver: "*/10 * * * *"

@@ -7,8 +7,8 @@ import { orcaAccountList, orcaAgentHooks, orcaTerminalCreate, orcaTerminalSend, 
 import { detectProviders, type ProviderAvailability } from '../adapters/providers.js'
 import { createDispatchLedger, type DispatchLedger, type DispatchLease } from '../execution/coordination.js'
 import { HarnessError } from '../kernel/errors.js'
-import { hashJson } from '../kernel/hash.js'
 import { renderWorkerBrief } from './brief.js'
+import { loadPinnedSkills, skillRefs, skillDigest, type PinnedSkillRef } from './skills.js'
 import { loadLoopConfig, type LoadedLoopConfig, type LoopConfig } from './config.js'
 import { assessContract, contractIsFresh, extractResetsAt, generateContract, readStoredContract, resolveDocContext, writeStoredContract, type StoredContract } from './contract.js'
 import { activeCooldowns, readCooldowns } from './cooldown.js'
@@ -61,6 +61,8 @@ export interface DispatchRecordFile {
   readonly leaseId: string
   readonly dispatchedAt: string
   readonly url: string
+  readonly briefDigest: string
+  readonly skills: readonly PinnedSkillRef[]
 }
 
 export interface TickInput {
@@ -118,6 +120,7 @@ export const busyIssues = (queue: readonly LoopIssue[], leases: readonly Dispatc
 }
 
 export const dispatchRecordPath = (stateDir: string, identifier: string): string => join(stateDir, 'issues', identifier, 'dispatch.json')
+export const briefPath = (stateDir: string, identifier: string): string => join(stateDir, 'issues', identifier, 'brief.md')
 export const readDispatchRecord = (stateDir: string, identifier: string): DispatchRecordFile | null => {
   const path = dispatchRecordPath(stateDir, identifier)
   if (!existsSync(path)) return null
@@ -351,6 +354,7 @@ export const runTick = async (input: TickInput): Promise<TickReport> => {
       const guidanceRefs = config.contract.maxBriefReferences > 0 && config.contract.briefScopes.length
         ? await resolveDocContext(loaded.root, `${detail.identifier} ${detail.title}`, config.contract.maxBriefReferences, config.contract.briefScopes)
         : []
+      const pinnedSkills = loadPinnedSkills(loaded.root, config.brief.skills, config.brief.maxSkillChars)
       const brief = renderWorkerBrief({
         issue: detail,
         contract: stored,
@@ -361,13 +365,16 @@ export const runTick = async (input: TickInput): Promise<TickReport> => {
         maxIssueChars: briefMemory.issueCharBudget,
         memoryBlock: briefMemory.memoryBlock,
         guidanceRefs,
+        skills: pinnedSkills,
       })
+      const briefDigest = skillDigest(brief)
+      writeFileSync(briefPath(loaded.stateDir, detail.identifier), brief, 'utf8')
       const launched = await launchWorkerTerminal({ runner: input.runner, config, worktreeId: created.id, command: builder.tui, title, brief })
       if (!launched.accepted) notes.push(`${detail.identifier}: terminal ${launched.terminal} did not confirm the brief; deliver will nudge it if it stays idle`)
       ledger.recordDispatch({ lease: claim.lease, idempotencyKey: plan.idempotencyKey, commandDigest: plan.commandDigest })
-      const record: DispatchRecordFile = { issue: detail.identifier, worktreeId: created.id, worktree, branch: actualBranch, terminal: launched.terminal, provider: builder.provider, model: builder.model, contractDigest: stored.digest, leaseKey: claim.lease.key, leaseId: claim.lease.leaseId, dispatchedAt: now().toISOString(), url: detail.url }
+      const record: DispatchRecordFile = { issue: detail.identifier, worktreeId: created.id, worktree, branch: actualBranch, terminal: launched.terminal, provider: builder.provider, model: builder.model, contractDigest: stored.digest, leaseKey: claim.lease.key, leaseId: claim.lease.leaseId, dispatchedAt: now().toISOString(), url: detail.url, briefDigest, skills: skillRefs(pinnedSkills) }
       writeJson(dispatchRecordPath(loaded.stateDir, detail.identifier), record)
-      appendLoopEvent(loaded.stateDir, { at: record.dispatchedAt, type: 'worker.dispatched', ...record, command: builder.tui, briefDigest: hashJson(brief), briefAccepted: launched.accepted, tuiIdle: launched.idle })
+      appendLoopEvent(loaded.stateDir, { at: record.dispatchedAt, type: 'worker.dispatched', ...record, command: builder.tui, briefAccepted: launched.accepted, tuiIdle: launched.idle })
       clearIssueFailures(loaded.stateDir, detail.identifier)
       try {
         await tracking.transition({ tracker: 'linear', issue: detail.identifier, from: detail.state, to: config.linear.inProgressState, reason: `loop dispatched ${builder.provider}/${builder.model} in ${created.id}` })

@@ -288,4 +288,18 @@ describe('loop doctor', () => {
     expect(report.checks.find((check) => check.id === 'orca.runtime')?.detail).toContain('without a JSON envelope')
     expect(report.checks.filter((check) => check.id.startsWith('routing.')).every((check) => check.status === 'failed')).toBe(true)
   })
+
+  it('flags a missing brief.skills file as failed, and passes when every configured file is readable', async () => {
+    const bin = fakeBinDir(['claude', 'codex', 'opencode', 'grok']); cleanups.push(bin)
+    const dir = mkdtempSync(join(tmpdir(), 'agentskit-loop-doctor-')); cleanups.push(dir)
+    const yaml = exampleYaml.replace('person: my-linear-display-name', 'person: person').replace('skills: []', 'skills: [AGENTS.md]')
+    writeFileSync(join(dir, 'loop.config.yaml'), yaml)
+    const runner = fakeRunner()
+    const missing = await runLoopDoctor({ configPath: join(dir, 'loop.config.yaml'), runner, env: { PATH: bin, XAI_API_KEY: 'k' }, platform: 'darwin', now: () => new Date('2026-09-11T12:00:00.000Z'), probe: false })
+    expect(missing.checks.find((check) => check.id === 'brief.skills')).toMatchObject({ status: 'failed', detail: expect.stringContaining('AGENTS.md') })
+    expect(missing.status).toBe('failed')
+    writeFileSync(join(dir, 'AGENTS.md'), '# Conventions', 'utf8')
+    const present = await runLoopDoctor({ configPath: join(dir, 'loop.config.yaml'), runner, env: { PATH: bin, XAI_API_KEY: 'k' }, platform: 'darwin', now: () => new Date('2026-09-11T12:00:00.000Z'), probe: false })
+    expect(present.checks.find((check) => check.id === 'brief.skills')).toMatchObject({ status: 'passed' })
+  })
 })

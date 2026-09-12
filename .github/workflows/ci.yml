@@ -47,6 +47,6 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm typecheck
-      - run: pnpm exec vitest run --config vitest.config.ts test/loop.test.ts test/loop-adapters.test.ts test/loop-tick.test.ts test/loop-deliver.test.ts test/loop-install.test.ts test/loop-guided-install.test.ts test/loop-retro.test.ts
+      - run: pnpm exec vitest run --config vitest.config.ts test/loop.test.ts test/loop-adapters.test.ts test/loop-tick.test.ts test/loop-deliver.test.ts test/loop-install.test.ts test/loop-guided-install.test.ts test/loop-retro.test.ts test/loop-debrief.test.ts test/loop-watch.test.ts test/loop-agent-registry.test.ts test/loop-memory.test.ts test/loop-contract-failure.test.ts test/loop-resilience-state.test.ts test/loop-skills.test.ts
       - run: pnpm build
       - run: node dist/cli.js loop validate -f loop.config.example.yaml --json

@@ -129,7 +129,7 @@ export type { ContractAssessment, GenerateContractInput, ProviderFailure, Stored
 export { renderHandoffBrief, renderWorkerBrief } from './loop/brief.js'
 export type { HandoffBriefInput } from './loop/brief.js'
 export type { WorkerBriefInput } from './loop/brief.js'
-export { appendLoopEvent, branchFor, busyIssues, dispatchRecordPath, gatherLoopState, launchWorkerTerminal, precheckTick, readDispatchRecord, writeDispatchRecord, runTick, worktreeNameFor } from './loop/tick.js'
+export { appendLoopEvent, branchFor, briefPath, busyIssues, dispatchRecordPath, gatherLoopState, launchWorkerTerminal, precheckTick, readDispatchRecord, writeDispatchRecord, runTick, worktreeNameFor } from './loop/tick.js'
 export type { DispatchRecordFile, LoopState, TickCandidateResult, TickInput, TickOutcome, TickReport } from './loop/tick.js'
 export { REVIEW_SEVERITIES, atLeast, buildReviewArgv, parseReviewResult, renderFindingsForWorker, runCodeReview, severityRank } from './adapters/code-review.js'
 export type { CodeReviewInput, CodeReviewOutcome, ReviewFinding, ReviewSeverity } from './adapters/code-review.js'
@@ -161,3 +161,6 @@ export {
   readStagePause, recordIssueFailure, recordStageRunResult, resumeIssue, resumeStage, stageEntry, stagePausePath,
 } from './loop/resilience-state.js'
 export type { IssueFailureRecord, IssueFailureState, LoopStageName, StagePauseEntry, StagePauseState } from './loop/resilience-state.js'
+
+export { loadPinnedSkills, renderPinnedSkills, skillDigest, skillRefs } from './loop/skills.js'
+export type { PinnedSkill, PinnedSkillRef } from './loop/skills.js'

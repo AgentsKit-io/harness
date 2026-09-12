@@ -3,6 +3,8 @@ import { detectProviders, remainingUsagePercent, undeclaredOrcaProviders, type P
 import { fetchLinearQueue, type LoopIssue } from '../adapters/linear-orca.js'
 import { findExecutable, type CommandRunner } from '../adapters/command.js'
 import { inspectDocBridgeIndex } from '../adapters/doc-bridge.js'
+import { existsSync, readFileSync } from 'node:fs'
+import { resolve } from 'node:path'
 import { HarnessError } from '../kernel/errors.js'
 import { MODEL_ROLES } from '../kernel/model-policy.js'
 import { loadLoopConfig, providerIdentity, type LoadedLoopConfig, type LoopConfig } from './config.js'
@@ -132,6 +134,20 @@ export const runLoopDoctor = async (input: LoopDoctorInput): Promise<LoopDoctorR
       push('doc-bridge.freshness', config.contract.requireDocBridge ? 'failed' : 'warning', `index age ${docBridge.ageHours.toFixed(1)}h exceeds ${maxAge}h — refresh Doc Bridge`)
     } else {
       push('doc-bridge.freshness', 'passed', `age ${docBridge.ageHours?.toFixed(1) ?? '?'}h ≤ ${maxAge}h`)
+    }
+  }
+
+  if (config.brief.skills.length) {
+    const unreadable: string[] = []
+    for (const relativePath of config.brief.skills) {
+      const absolute = resolve(loaded.root, relativePath)
+      if (!existsSync(absolute)) { unreadable.push(`${relativePath} (missing)`); continue }
+      try { readFileSync(absolute, 'utf8') } catch (error) { unreadable.push(`${relativePath} (${message(error)})`) }
+    }
+    if (unreadable.length) {
+      push('brief.skills', 'failed', `${unreadable.length} of ${config.brief.skills.length} pinned skill file(s) unreadable: ${unreadable.join(', ')} — dispatch will fail closed`)
+    } else {
+      push('brief.skills', 'passed', `${config.brief.skills.length} pinned skill file(s) present and readable`)
     }
   }
 

@@ -21,7 +21,7 @@ export { classifyProviderFailure, extractResetsAt } from './contract.js'
 export type { ContractAssessment, GenerateContractInput, ProviderFailure, StoredContract, TaskContract } from './contract.js'
 export { renderHandoffBrief, renderWorkerBrief } from './brief.js'
 export type { HandoffBriefInput, WorkerBriefInput } from './brief.js'
-export { appendLoopEvent, branchFor, busyIssues, dispatchRecordPath, gatherLoopState, launchWorkerTerminal, precheckTick, readDispatchRecord, writeDispatchRecord, runTick, worktreeNameFor } from './tick.js'
+export { appendLoopEvent, branchFor, briefPath, busyIssues, dispatchRecordPath, gatherLoopState, launchWorkerTerminal, precheckTick, readDispatchRecord, writeDispatchRecord, runTick, worktreeNameFor } from './tick.js'
 export type { DispatchRecordFile, LoopState, TickCandidateResult, TickInput, TickOutcome, TickReport } from './tick.js'
 export { deliveryStatePath, listDispatched, precheckDeliver, readDeliveryState, runDeliver } from './deliver.js'
 export type { DeliverInput, DeliverOutcome, DeliverReport, DeliverResult, DeliveryState } from './deliver.js'
@@ -52,3 +52,6 @@ export {
   readStagePause, recordIssueFailure, recordStageRunResult, resumeIssue, resumeStage, stageEntry, stagePausePath,
 } from './resilience-state.js'
 export type { IssueFailureRecord, IssueFailureState, LoopStageName, StagePauseEntry, StagePauseState } from './resilience-state.js'
+
+export { loadPinnedSkills, renderPinnedSkills, skillDigest, skillRefs } from './skills.js'
+export type { PinnedSkill, PinnedSkillRef } from './skills.js'

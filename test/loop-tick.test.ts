@@ -19,10 +19,11 @@ interface Env { readonly dir: string; readonly bin: string; readonly runner: Com
 const cleanups: string[] = []
 afterEach(() => { for (const dir of cleanups.splice(0)) rmSync(dir, { recursive: true, force: true }) })
 
-const makeEnv = (options: { readonly contract?: TaskContract | 'garbage'; readonly worktrees?: unknown; readonly failCreate?: boolean; readonly claudeAuthFails?: boolean; readonly claudeSessionLimit?: boolean; readonly failAllContracts?: boolean; readonly accountList?: unknown } = {}): Env => {
+const makeEnv = (options: { readonly contract?: TaskContract | 'garbage'; readonly worktrees?: unknown; readonly failCreate?: boolean; readonly claudeAuthFails?: boolean; readonly claudeSessionLimit?: boolean; readonly failAllContracts?: boolean; readonly accountList?: unknown; readonly briefSkills?: readonly string[] } = {}): Env => {
   const dir = mkdtempSync(join(tmpdir(), 'agentskit-loop-tick-')); cleanups.push(dir)
   const bin = join(dir, 'bin'); rmSync(bin, { recursive: true, force: true })
-  writeFileSync(join(dir, 'loop.config.yaml'), exampleYaml)
+  const yaml = options.briefSkills?.length ? exampleYaml.replace('skills: []', `skills: [${options.briefSkills.join(', ')}]`) : exampleYaml
+  writeFileSync(join(dir, 'loop.config.yaml'), yaml)
   const binDir = mkdtempSync(join(tmpdir(), 'agentskit-loop-tick-bin-')); cleanups.push(binDir)
   for (const name of ['claude', 'codex', 'opencode', 'grok']) writeFileSync(join(binDir, name), '#!/bin/sh\nexit 0\n', { mode: 0o755 })
   const calls: string[][] = []
@@ -181,6 +182,45 @@ describe('tick', () => {
     expect(second.queue.busy).toContain(result?.issue)
     expect(env.runner.calls.filter((argv) => argv[1] === 'worktree' && argv[2] === 'create')).toHaveLength(2)
     expect(env.runner.calls.filter((argv) => argv[0] === 'claude' && argv[1] === '-p')).toHaveLength(2)
+  })
+
+  it('pins configured skill files into the worker brief and records their digests on the dispatch record', async () => {
+    const env = makeEnv({ briefSkills: ['AGENTS.md'] })
+    writeFileSync(join(env.dir, 'AGENTS.md'), '# Conventions\nUse named exports only.', 'utf8')
+    const first = await runTick({ ...tickOptions(env), maxDispatch: 1 })
+    const [result] = first.results
+    expect(result).toMatchObject({ outcome: 'dispatched' })
+    const loaded = loadLoopConfig(env.configPath)
+    const record = readDispatchRecord(loaded.stateDir, result?.issue ?? '')
+    expect(record?.skills).toHaveLength(1)
+    expect(record?.skills[0]?.path).toBe('AGENTS.md')
+    expect(record?.briefDigest).toEqual(expect.any(String))
+    const briefText = readFileSync(join(loaded.stateDir, 'issues', result?.issue ?? '', 'brief.md'), 'utf8')
+    expect(briefText).toContain('## Skills (pinned')
+    expect(briefText).toContain('# Conventions')
+    expect(briefText).toContain('Use named exports only.')
+    const send = env.runner.calls.find((argv) => argv[1] === 'terminal' && argv[2] === 'send')
+    expect(send?.[send.indexOf('--text') + 1]).toContain('Use named exports only.')
+  })
+
+  it('fails the dispatch when a configured skill file is missing (fail-closed)', async () => {
+    const env = makeEnv({ briefSkills: ['MISSING.md'] })
+    const report = await runTick({ ...tickOptions(env), maxDispatch: 1 })
+    expect(report.results[0]).toMatchObject({ outcome: 'failed', reason: expect.stringContaining('MISSING.md') })
+    expect(createDispatchLedger(loadLoopConfig(env.configPath).stateDir).active()).toEqual([])
+  })
+
+  it('a skill file edited after dispatch does not change the persisted brief for that already-running worker', async () => {
+    const env = makeEnv({ briefSkills: ['AGENTS.md'] })
+    writeFileSync(join(env.dir, 'AGENTS.md'), 'original conventions', 'utf8')
+    const first = await runTick({ ...tickOptions(env), maxDispatch: 1 })
+    const [result] = first.results
+    const loaded = loadLoopConfig(env.configPath)
+    const briefFile = join(loaded.stateDir, 'issues', result?.issue ?? '', 'brief.md')
+    expect(readFileSync(briefFile, 'utf8')).toContain('original conventions')
+    writeFileSync(join(env.dir, 'AGENTS.md'), 'edited after dispatch', 'utf8')
+    expect(readFileSync(briefFile, 'utf8')).toContain('original conventions')
+    expect(readFileSync(briefFile, 'utf8')).not.toContain('edited after dispatch')
   })
 
   it('escalates a non-verifiable contract with one comment and the needs-info label instead of dispatching', async () => {

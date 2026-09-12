@@ -172,6 +172,26 @@ tick forever. (The 2026-09-11/12 pilot logged 19 such retries across 4 issues in
 Neither mechanism touches the existing `blocked`/`stuck` escalations (fix-round exhaustion, an idle worker with no
 PR) — those already label the issue and route it out of the queue via `linear.excludeLabels`.
 
+## Skills pinned into the worker brief
+
+`brief.skills` (default `[]`) lists Markdown files, relative to `project.root`, that every worker brief embeds
+verbatim under a `## Skills (pinned)` section — house conventions the orchestrator's contract can reference but a
+worker starting cold has no other way to see (e.g. `AGENTS.md`, `CLAUDE.md`, `docs/for-agents/INDEX.md`).
+
+- Reading and hashing happens once, at dispatch time (`loadPinnedSkills`, `src/loop/skills.ts`): each file is
+  sha256-digested and truncated at `brief.maxSkillChars` (default 6000) with a visible `[truncated N chars]` note so
+  one large file cannot exhaust the brief budget. A configured path that does not exist or cannot be read **fails
+  the dispatch** (fail-closed) rather than silently sending a worker without guidance it was told it would have —
+  the same worktree-cleanup and consecutive-failure accounting as any other dispatch failure applies.
+- The rendered brief is persisted to `<stateDir>/issues/<id>/brief.md`, and `dispatch.json` records `briefDigest`
+  (hash of the full brief) plus `skills: [{path, digest}]` — enough to prove after the fact exactly which revision
+  of a skill file a given worker saw.
+- **Pinning is by design, not by accident:** a handoff (`renderHandoffBrief`) reuses the worktree/branch state, not
+  the original brief, and never re-reads `brief.skills` — so editing a skill file after dispatch affects only
+  *future* dispatches, never a worker (or its handoff) already in flight.
+- `loop doctor` runs a `brief.skills` check confirming every configured file currently exists and is readable, so a
+  typo or a moved file surfaces before the next dispatch fails.
+
 ## What the doctor checks
 
 | Check | Source | Blocking |
@@ -181,6 +201,7 @@ PR) — those already label the issue and route it out of the queue via `linear.
 | `routing.<role>` | tiers from `models.<role>` filtered by provider availability | yes — a role with no available provider blocks |
 | `machine.slots` | `sampleMachine` + `adaptiveConcurrency`, free RAM reserve, WSL cap, running worktrees | no — 0 free slots is a warning, not a failure |
 | `linear.queue` | `orca linear list-issues` per configured state, filtered and ordered locally | yes — an unreachable Linear blocks |
+| `brief.skills` | existence + readability of each `brief.skills` path under `project.root` | yes when any are unreadable — dispatch would fail closed anyway |
 
 
 ## Dynamic model routing

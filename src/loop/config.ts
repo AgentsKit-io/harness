@@ -266,6 +266,12 @@ export const LoopConfigSchema = z.object({
     /** Consecutive *thrown* `loop stage` runs (config/adapter crash, not a normal idle/ok/blocked report) before that stage pauses itself. */
     stagePauseAfterRuns: z.number().int().positive().default(3),
   }).prefault({}),
+  brief: z.object({
+    /** Markdown files (paths relative to `project.root`) pinned verbatim into every worker brief, sha256-digested for traceability. Missing file = dispatch fails closed. */
+    skills: z.array(nonEmpty).default([]),
+    /** Per-file cap; a file over this length is truncated with a visible note rather than blowing the brief budget. */
+    maxSkillChars: z.number().int().positive().default(6_000),
+  }).prefault({}),
   schedule: z.object({
     tick: cron.default('*/5 * * * *'),
     deliver: cron.default('*/10 * * * *'),
