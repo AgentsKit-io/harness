@@ -123,6 +123,11 @@ export const readDispatchRecord = (stateDir: string, identifier: string): Dispat
   try { return JSON.parse(readFileSync(path, 'utf8')) as DispatchRecordFile } catch { return null }
 }
 const writeJson = (path: string, value: unknown): void => { mkdirSync(dirname(path), { recursive: true }); writeFileSync(path, `${JSON.stringify(value, null, 2)}\n`, 'utf8') }
+export const writeDispatchRecord = (stateDir: string, record: DispatchRecordFile): string => {
+  const path = dispatchRecordPath(stateDir, record.issue)
+  writeJson(path, record)
+  return path
+}
 export const appendLoopEvent = (stateDir: string, event: Record<string, unknown>): void => { const path = join(stateDir, 'events.ndjson'); mkdirSync(dirname(path), { recursive: true }); appendFileSync(path, `${JSON.stringify(event)}\n`, 'utf8') }
 
 export interface LoopState {

@@ -84,6 +84,25 @@ Optional SessionStart hook for Claude Code (`.claude/settings.json` of the targe
 
 It prints `loop: installed (2/2, last run …)` or the install command; it never installs or changes anything.
 
+## Worker handoff
+
+When a worker goes idle past `delivery.workerIdleTimeoutMin` (or its terminal disappears) **and** its provider is unavailable (exhausted usage, cooldown, missing binary), deliver does **not** immediately mark the issue stuck. Instead it:
+
+1. Picks the next available builder via the current routing mode (catalog/hybrid/…)
+2. Opens a **new terminal in the same worktree** (same Orca branch)
+3. Sends a continuation brief (`renderHandoffBrief`) — resume from `git status` / existing commits; do not recreate the branch
+4. Updates `dispatch.json` (`terminal`, `provider`, `model`) and appends `delivery.handoffs[]`
+
+Config (`delivery.handoff`, enabled by default):
+
+```yaml
+delivery:
+  handoff:
+    enabled: true
+    maxHandoffs: 2
+    onlyWhenProviderUnavailable: true
+```
+
 ## Deliver
 
 For every issue the loop dispatched (`<stateDir>/issues/<id>/dispatch.json`) and has not finished:
