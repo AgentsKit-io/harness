@@ -462,6 +462,17 @@ const handlePullRequest = async (ctx: Context, record: DispatchRecordFile, lease
     }
     return { issue: record.issue, outcome: 'held', reason: `touches protected paths: ${protectedFiles.join(', ')}`, pr: pr.number, head: pr.headSha, actions }
   }
+  const secretShapedFiles = touchesProtectedPaths(pr.files, config.delivery.secretFilePatterns)
+  if (secretShapedFiles.length) {
+    if (!ctx.dryRun && state.heldFor !== pr.headSha) {
+      const marker = `<!-- loop:secret-file:${pr.headSha} -->`
+      try { if (!(await githubCommentExists(ctx.runner, { repo: config.project.repo, number: pr.number, marker }))) await githubComment(ctx.runner, { repo: config.project.repo, number: pr.number, body: `**Loop: held for a human** — this PR touches file(s) shaped like a secret (${secretShapedFiles.join(', ')}). The loop cannot inspect diff content, only filenames, so it will not review or merge this automatically even if the content is innocuous. Remove the file or rename it, or ask a human to review.
+
+${marker}` }); actions.push('secret-file hold commented') } catch (error) { actions.push(`PR comment failed: ${message(error)}`) }
+      saveState(ctx, { ...state, prNumber: pr.number, heldFor: pr.headSha })
+    }
+    return { issue: record.issue, outcome: 'held', reason: `touches secret-shaped file(s): ${secretShapedFiles.join(', ')}`, pr: pr.number, head: pr.headSha, actions }
+  }
   if (pr.mergeable === 'CONFLICTING' || pr.mergeState === 'DIRTY') return fixRound(ctx, record, lease, state, pr, 'conflict', `Loop: PR #${pr.number} conflicts with ${config.project.baseBranch}. In this worktree run \`git fetch origin ${config.project.baseBranch} && git rebase origin/${config.project.baseBranch}\`, resolve conflicts keeping the contract's behaviour, re-run \`${config.delivery.verifyCommand}\`, then \`git push --force-with-lease\` (the only force allowed, on your own branch). Reply here when pushed.`, `conflicts with ${config.project.baseBranch}`, actions)
   const checks = assessChecks(pr.checks, config.delivery.requiredChecks, config.delivery.ignoreChecks)
   if (checks.status === 'red') return fixRound(ctx, record, lease, state, pr, 'ci', `Loop: CI is red on PR #${pr.number} (head ${pr.headSha.slice(0, 7)}). Failing checks: ${checks.failing.join(', ')}. Inspect them with \`gh pr checks ${pr.number} --repo ${config.project.repo}\` and \`gh run view --log-failed\`, fix the root cause (never skip or disable a check), re-run \`${config.delivery.verifyCommand}\`, commit and push. Reply here when pushed.`, `CI red: ${checks.failing.join(', ')}`, actions)
@@ -565,6 +576,14 @@ const handleIntakePullRequest = async (ctx: Context, identifier: string, pr: Pul
   const actions: string[] = []
   const { config } = ctx
   if (pr.isDraft) return { issue: identifier, outcome: 'waiting', reason: 'PR is a draft', pr: pr.number, head: pr.headSha, actions }
+  const secretShapedFiles = touchesProtectedPaths(pr.files, config.delivery.secretFilePatterns)
+  if (secretShapedFiles.length) {
+    if (state.heldFor !== pr.headSha) {
+      await commentOnIntakePr(ctx, pr, `**Loop review**: this PR touches file(s) shaped like a secret (${secretShapedFiles.join(', ')}). The loop cannot inspect diff content, only filenames, so it will not review this automatically even if the content is innocuous. A human needs to look at this one.`, actions)
+      saveState(ctx, { ...state, prNumber: pr.number, heldFor: pr.headSha })
+    }
+    return { issue: identifier, outcome: 'held', reason: `touches secret-shaped file(s): ${secretShapedFiles.join(', ')}`, pr: pr.number, head: pr.headSha, actions }
+  }
 
   if (pr.mergeable === 'CONFLICTING' || pr.mergeState === 'DIRTY') {
     const kind = 'conflict'

@@ -113,6 +113,7 @@ For every issue the loop dispatched (`<stateDir>/issues/<id>/dispatch.json`) and
 | No PR, idle ≥ `workerIdleTimeoutMin` | one check-in via `terminal send`; idle again after that → **stuck**: lease released, issue → `returnState` + `blocked`, worktree kept |
 | No PR, terminal gone (> 5 min after dispatch) | **stuck** as above |
 | PR touches `selfEditPaths` | **held**: one PR comment, no review, no merge |
+| PR touches `secretFilePatterns` (`.env`, `*.pem`, `*.key`, `id_rsa`, `credentials.json`, … by default) | **held**: same as `selfEditPaths` — the loop cannot inspect diff content, only filenames, so this holds on the filename shape alone even if the content is innocuous |
 | PR conflicting | rebase instruction to the worker, once per head (does not count as a fix round) |
 | CI red | failing check names to the worker; counts as a fix round |
 | CI pending / required check missing | wait |

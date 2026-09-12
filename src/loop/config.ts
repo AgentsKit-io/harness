@@ -225,6 +225,13 @@ export const LoopConfigSchema = z.object({
       onlyWhenProviderUnavailable: z.boolean().default(true),
     }).prefault({}),
     selfEditPaths: z.array(nonEmpty).default([LOOP_CONFIG_FILE, '.github/**']),
+    /**
+     * Glob patterns (same matcher as `selfEditPaths`) for filenames that should never enter a PR the loop reviews
+     * or merges, regardless of the diff content — the loop cannot fetch a PR's actual diff content today, so this
+     * is a filename-shaped guardrail, not a secret-content scan. A PR touching one of these is held exactly like
+     * `selfEditPaths`, with a distinct reason. Defaults cover the most common accidentally-committed secret files.
+     */
+    secretFilePatterns: z.array(nonEmpty).default(['**/.env', '**/.env.*', '**/*.pem', '**/*.key', '**/id_rsa', '**/id_rsa.*', '**/credentials.json', '**/*.p12', '**/*.pfx']),
     /** Check names ignored when deciding CI is green (e.g. advisory bots). */
     ignoreChecks: z.array(nonEmpty).default([]),
     /** Check names that must be observed and green; empty = every reported check must pass. */

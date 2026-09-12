@@ -136,6 +136,8 @@ delivery:
   # maxDispatchMinutes: 240                # hard ceiling on one dispatch regardless of activity; unset = disabled
   handoff: { enabled: true, maxHandoffs: 2, onlyWhenProviderUnavailable: true }
   selfEditPaths: [loop.config.yaml, ".github/**"]   # PRs touching these never auto-merge
+  # secretFilePatterns: [...]              # default already covers .env, *.pem, *.key, id_rsa, credentials.json, etc.
+                                            # PRs touching a matching filename are held, never reviewed or merged
   ignoreChecks: []                   # advisory check names that never block
   requiredChecks: []                 # empty = every reported check must be green
   cleanupWorktree: true              # remove the Orca worktree after merge

@@ -484,6 +484,22 @@ describe('deliver', () => {
     const report = await deliver(env)
     expect(report.results[0]).toMatchObject({ outcome: 'merged' })
   })
+
+  it('holds a PR that touches a secret-shaped filename, without reviewing or merging it', async () => {
+    const env = setup({ pr: basePr({ files: [{ path: '.env' }] }) })
+    const report = await deliver(env)
+    expect(report.results[0]).toMatchObject({ outcome: 'held', reason: expect.stringContaining('secret-shaped file') })
+    expect(env.runner.calls.some((argv) => argv[0] === 'agentskit-review')).toBe(false)
+    expect(env.runner.calls.some((argv) => argv[0] === 'gh' && argv[1] === 'api' && argv.includes('--method'))).toBe(false)
+    const commentCall = env.runner.calls.find((argv) => argv[0] === 'gh' && argv[1] === 'pr' && argv[2] === 'comment')
+    expect(commentCall?.[commentCall.indexOf('--body') + 1]).toContain('.env')
+  })
+
+  it('does not hold a normal PR whose files do not match any secretFilePatterns', async () => {
+    const env = setup({ review: { code: 0 } })
+    const report = await deliver(env)
+    expect(report.results[0]).toMatchObject({ outcome: 'merged' })
+  })
 })
 
 describe('github label intake', () => {
@@ -531,6 +547,14 @@ describe('github label intake', () => {
     expect(intake).toMatchObject({ outcome: 'held' })
     expect(intake?.reason).toContain('label removed')
     expect(env.runner.calls.some((argv) => argv[0] === 'gh' && argv[1] === 'pr' && argv[2] === 'comment')).toBe(false)
+  })
+
+  it('holds an intake PR that touches a secret-shaped filename, without reviewing it', async () => {
+    const env = setup({ pr: null, intakePrs: [intakePr({ files: [{ path: 'id_rsa' }] })], intakeView: { 77: intakePr({ files: [{ path: 'id_rsa' }] }) } })
+    const report = await deliver(env)
+    const intake = report.results.find((result) => result.issue === 'pr-77')
+    expect(intake).toMatchObject({ outcome: 'held', reason: expect.stringContaining('secret-shaped file') })
+    expect(env.runner.calls.some((argv) => argv[0] === 'agentskit-review')).toBe(false)
   })
 
   it('does no intake discovery at all when github.intakeLabel is null', async () => {
