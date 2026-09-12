@@ -1,10 +1,10 @@
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
 import {
-  activeCooldowns, assessSlots, authStatusFor, availableMemoryBytes, parseMemInfo, parseVmStat, buildListIssuesArgv, compareVersions, cooldownUntil, countRunningWorkers, detectProviders, fetchLinearQueue, filterAndOrderQueue, findExecutable,
-  HarnessError, advanceQueueOwner, loadLoopConfig, markProviderExhausted, mergeLoopConfig, parseJsonEnvelope, parseLinearIssues, parseLoopConfigText, parseModelRef, parseOrcaAgentHooks, parseOrcaStatus, parseOrcaVersion, parseOrcaWorktrees, queueOwner,
+  activeCooldowns, assessSlots, authStatusFor, availableMemoryBytes, parseMemInfo, parseVmStat, buildListIssuesArgv, compareVersions, cooldownUntil, countRotationBlockingLeases, countRunningWorkers, detectProviders, fetchLinearQueue, filterAndOrderQueue, findExecutable,
+  HarnessError, advanceQueueOwner, createDispatchLedger, loadLoopConfig, markProviderExhausted, mergeLoopConfig, parseJsonEnvelope, parseLinearIssues, parseLoopConfigText, parseModelRef, parseOrcaAgentHooks, parseOrcaStatus, parseOrcaVersion, parseOrcaWorktrees, queueOwner,
   parseProviderUsage, providerSpecs, readCooldowns, renderHeadlessArgv, renderTuiCommand, routeAllRoles, runLoopDoctor, selectModel, validateLoopConfig,
 } from '../src/index.js'
 import type { CommandResult, CommandRunner, LoopConfig, ProviderAvailability } from '../src/index.js'
@@ -111,6 +111,19 @@ describe('loop config', () => {
     expect(advanceQueueOwner(loaded, { queueEmpty: true, activeLeases: 1 }).advanced).toBe(false)
     expect(advanceQueueOwner(loaded, { queueEmpty: true, activeLeases: 0, now: new Date('2026-09-12T00:00:00.000Z') })).toMatchObject({ owner: 'teammate', advanced: true })
     expect(queueOwner(loadLoopConfig(join(dir, 'loop.config.yaml')))).toBe('teammate')
+  })
+
+  it('does not let a delivery lease block rotation to the next owner', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'agentskit-loop-rotation-delivery-')); cleanups.push(dir)
+    writeFileSync(join(dir, 'loop.config.yaml'), exampleYaml.replace('person: my-linear-display-name', 'person: person').replace('    my-linear-display-name: <linear-user-id>', '    person: u1\n    teammate: u2').replace('    owners: [my-linear-display-name]', '    owners: [person, teammate]').replace('    enabled: false', '    enabled: true'))
+    const loaded = loadLoopConfig(join(dir, 'loop.config.yaml'))
+    const ledger = createDispatchLedger(loaded.stateDir)
+    const lease = ledger.claim({ tracker: 'linear', repository: 'org/demo', issue: 'ENG-1', worktree: 'eng-1', branch: 'person/eng-1', owner: 'loop:person' }).lease
+    mkdirSync(join(loaded.stateDir, 'issues', 'ENG-1'), { recursive: true })
+    writeFileSync(join(loaded.stateDir, 'issues', 'ENG-1', 'delivery.json'), JSON.stringify({ issue: 'ENG-1', prNumber: 42, reviews: {}, fixRounds: 0, nudges: [], handoffs: [], heldFor: null, finishedAt: null, finalOutcome: null }))
+    expect(countRotationBlockingLeases(loaded, [lease])).toBe(0)
+    expect(advanceQueueOwner(loaded, { queueEmpty: true, activeLeases: countRotationBlockingLeases(loaded, [lease]) })).toMatchObject({ owner: 'teammate', advanced: true })
+    expect(ledger.active()).toHaveLength(1)
   })
 })
 

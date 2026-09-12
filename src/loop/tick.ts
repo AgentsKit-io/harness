@@ -20,7 +20,7 @@ import { resolveCatalogCandidates } from './model-catalog/index.js'
 import { rankModels, routeAllRoles, type RoutingDecision } from './routing.js'
 import { assessSlots, type SlotAssessment, type SlotInput } from './slots.js'
 import { markProviderExhausted } from './cooldown.js'
-import { advanceQueueOwner, queueOwner } from './rotation.js'
+import { advanceQueueOwner, countRotationBlockingLeases, queueOwner } from './rotation.js'
 import { createLoopEventBus, loadLoopPlugins, type LoopEventBus, type LoopEventPayload } from './event-bus.js'
 
 export type TickOutcome = 'dispatched' | 'dry-run' | 'skipped' | 'escalated' | 'failed'
@@ -249,7 +249,7 @@ export const runTick = async (input: TickInput): Promise<TickReport> => {
   if (!builder) { notes.push('no builder provider available; nothing dispatched'); return { ...base, status: 'blocked', results, notes } }
   if (state.slots.free <= 0) { notes.push(`no free slot (${state.slots.running}/${state.slots.maxAgents})`); return { ...base, status: 'idle', results, notes } }
   if (!state.candidates.length) {
-    const rotation = dryRun ? { owner: state.person, advanced: false } : advanceQueueOwner(loaded, { queueEmpty: state.queue.length === 0, activeLeases: state.leases.length, now: now() })
+    const rotation = dryRun ? { owner: state.person, advanced: false } : advanceQueueOwner(loaded, { queueEmpty: state.queue.length === 0, activeLeases: countRotationBlockingLeases(loaded, state.leases), now: now() })
     if (rotation.advanced) notes.push(`queue drained for ${state.person}; switched to ${rotation.owner}`)
     else notes.push('queue has no dispatchable candidate')
     return { ...base, status: 'idle', results, notes }
