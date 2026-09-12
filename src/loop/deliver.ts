@@ -2,7 +2,7 @@ import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 
 import { dirname, join } from 'node:path'
 import type { CommandRunner } from '../adapters/command.js'
 import { renderFindingsForWorker, runCodeReview, type CodeReviewOutcome } from '../adapters/code-review.js'
-import { assessChecks, githubComment, githubCommentExists, githubMerge, githubOpenPullRequests, githubPullRequestsForBranch, touchesProtectedPaths, type PullRequestSnapshot } from '../adapters/github-cli.js'
+import { assessChecks, githubComment, githubCommentExists, githubLabelRemove, githubMerge, githubOpenPullRequests, githubPullRequest, githubPullRequestsForBranch, touchesProtectedPaths, type PullRequestSnapshot } from '../adapters/github-cli.js'
 import { createLinearTrackingAdapter, linearAttach, linearCommentAdd, linearLabelAdd } from '../adapters/linear-orca.js'
 import { orcaAccountList, orcaAgentHooks, orcaTerminalList, orcaTerminalSend, orcaTerminalWait, orcaWorktreeRemove, orcaWorktreeSet } from '../adapters/orca-cli.js'
 import { detectProviders, type ProviderAvailability } from '../adapters/providers.js'
@@ -10,11 +10,13 @@ import { createDispatchLedger, type DispatchLease } from '../execution/coordinat
 import { HarnessError } from '../kernel/errors.js'
 import { renderHandoffBrief } from './brief.js'
 import { loadLoopConfig, providerIdentity, type LoadedLoopConfig, type LoopConfig } from './config.js'
-import { activeCooldowns, readCooldowns } from './cooldown.js'
+import { classifyProviderFailure, extractResetsAt } from './contract.js'
+import { activeCooldowns, markProviderExhausted, readCooldowns } from './cooldown.js'
 import { providerSpecs } from './doctor.js'
 import { resolveCatalogCandidates } from './model-catalog/index.js'
 import { rankModels, type RankedModel } from './routing.js'
 import { appendLoopEvent, dispatchRecordPath, launchWorkerTerminal, readDispatchRecord, writeDispatchRecord, type DispatchRecordFile } from './tick.js'
+import { intakeIssueId, discoverIntake, listIntake } from './github-intake.js'
 
 export type DeliverOutcome = 'waiting' | 'reviewed' | 'fix-round' | 'nudged' | 'handed-off' | 'merged' | 'held' | 'blocked' | 'stuck' | 'abandoned' | 'failed' | 'dry-run'
 
@@ -370,7 +372,19 @@ const handlePullRequest = async (ctx: Context, record: DispatchRecordFile, lease
     state = { ...state, prNumber: pr.number, reviews: { ...state.reviews, [pr.headSha]: { status: review.status, at: ctx.now().toISOString(), provider: review.provider, model: review.model, blocking: review.blocking.length, attempts } } }
     saveState(ctx, state)
     event(ctx, { type: 'pr.reviewed', issue: record.issue, pr: pr.number, head: pr.headSha, status: review.status, blocking: review.blocking.length, provider: review.provider, model: review.model })
-    if (review.status === 'incomplete') return { issue: record.issue, outcome: 'waiting', reason: review.summary, pr: pr.number, head: pr.headSha, review, actions }
+    if (review.status === 'incomplete') {
+      const failureKind = classifyProviderFailure(review.rawTail)
+      // Cooldown keys off the internal provider id (ctx.reviewer.provider, e.g. "codex"), not the review-CLI transport id
+      // (review.provider, e.g. "codex-cli") — those differ and detectProviders()/rankModels() only look up the former.
+      if (!ctx.dryRun && ctx.reviewer && (failureKind === 'quota' || failureKind === 'auth')) {
+        const reviewerProviderId = ctx.reviewer.provider
+        const resetsAt = extractResetsAt(review.rawTail, ctx.now())
+        const entry = markProviderExhausted(ctx.loaded.stateDir, reviewerProviderId, { initialMin: config.models.cooldown.initialMin, maxMin: config.models.cooldown.maxMin, reason: `${failureKind}: ${review.rawTail.split('\n').slice(-1)[0]?.slice(0, 200) ?? review.summary}`, resetsAt, now: ctx.now() })
+        actions.push(`reviewer ${reviewerProviderId} marked cooling down until ${entry.until} (${failureKind})`)
+        event(ctx, { type: 'provider.cooldown', provider: reviewerProviderId, kind: failureKind, until: entry.until, source: 'review' })
+      }
+      return { issue: record.issue, outcome: 'waiting', reason: review.summary, pr: pr.number, head: pr.headSha, review, actions }
+    }
     if (review.status === 'findings') return fixRound(ctx, record, lease, state, pr, 'review', `Loop: the code review of PR #${pr.number} (head ${pr.headSha.slice(0, 7)}) found ${review.blocking.length} issue(s) at or above "${config.delivery.review.minSeverity}". Address each one (or explain in the PR why it is not applicable), re-run \`${config.delivery.verifyCommand}\`, commit and push. Findings:\n${renderFindingsForWorker(review.blocking)}\nThe full review is on the PR. Reply here when pushed.`, `review found ${review.blocking.length} blocking finding(s)`, actions)
   } else if (prior.status === 'findings') return { issue: record.issue, outcome: 'waiting', reason: `review findings pending a new push (head ${pr.headSha.slice(0, 7)})`, pr: pr.number, head: pr.headSha, actions }
 
@@ -396,6 +410,101 @@ const handlePullRequest = async (ctx: Context, record: DispatchRecordFile, lease
   actions.push(`merged as ${merged.sha ?? 'unknown sha'}`)
   event(ctx, { type: 'pr.merged', issue: record.issue, pr: pr.number, head: pr.headSha, sha: merged.sha })
   return complete(ctx, record, lease, state, pr, merged.sha, actions)
+}
+
+const commentOnIntakePr = async (ctx: Context, pr: PullRequestSnapshot, body: string, actions: string[]): Promise<boolean> => {
+  if (ctx.dryRun) { actions.push(`would comment on PR #${pr.number}: ${body.split('\n')[0]?.slice(0, 80)}`); return true }
+  try { await githubComment(ctx.runner, { repo: ctx.config.project.repo, number: pr.number, body }); actions.push('commented on PR'); return true }
+  catch (error) { actions.push(`PR comment failed: ${message(error)}`); return false }
+}
+
+const removeIntakeLabel = async (ctx: Context, pr: PullRequestSnapshot, actions: string[]): Promise<void> => {
+  const label = ctx.config.github.intakeLabel
+  if (!label || ctx.dryRun) return
+  try { await githubLabelRemove(ctx.runner, { repo: ctx.config.project.repo, number: pr.number, label }); actions.push(`label ${label} removed`) }
+  catch (error) { actions.push(`label removal failed: ${message(error)}`) }
+}
+
+const finishIntake = (ctx: Context, identifier: string, pr: PullRequestSnapshot, state: DeliveryState, outcome: DeliverOutcome, reason: string): void => {
+  if (ctx.dryRun) return
+  saveState(ctx, { ...state, prNumber: pr.number, finishedAt: ctx.now().toISOString(), finalOutcome: outcome })
+  event(ctx, { type: `github-intake.${outcome}`, pr: pr.number, reason })
+}
+
+/**
+ * Review-only path for a PR the loop never dispatched (picked up by `github.intakeLabel`, tracked as `pr-<n>` — no
+ * Linear issue, worktree or terminal exists for it). Checks/review/fix-round mirror `handlePullRequest`, but every
+ * nudge lands as a PR comment (there is no worker terminal to send to) and `github.reviewOnly` means a clean review
+ * always ends in `held`, never a merge — this loop only merges PRs it dispatched itself.
+ */
+const handleIntakePullRequest = async (ctx: Context, identifier: string, pr: PullRequestSnapshot, state: DeliveryState): Promise<DeliverResult> => {
+  const actions: string[] = []
+  const { config } = ctx
+  if (pr.isDraft) return { issue: identifier, outcome: 'waiting', reason: 'PR is a draft', pr: pr.number, head: pr.headSha, actions }
+
+  if (pr.mergeable === 'CONFLICTING' || pr.mergeState === 'DIRTY') {
+    const kind = 'conflict'
+    const already = state.nudges.some((nudge) => nudge.kind === kind && nudge.head === pr.headSha)
+    if (already) return { issue: identifier, outcome: 'waiting', reason: `conflict nudge already sent for head ${pr.headSha.slice(0, 7)}; waiting for a new push`, pr: pr.number, head: pr.headSha, actions }
+    await commentOnIntakePr(ctx, pr, `**Loop review**: PR #${pr.number} conflicts with \`${config.project.baseBranch}\`. Rebase and push; the loop will re-review once checks are green.`, actions)
+    saveState(ctx, { ...state, prNumber: pr.number, nudges: [...state.nudges, { kind, at: ctx.now().toISOString(), head: pr.headSha }] })
+    return { issue: identifier, outcome: ctx.dryRun ? 'dry-run' : 'fix-round', reason: `conflicts with ${config.project.baseBranch}`, pr: pr.number, head: pr.headSha, actions }
+  }
+
+  const checks = assessChecks(pr.checks, config.delivery.requiredChecks, config.delivery.ignoreChecks)
+  if (checks.status === 'red') {
+    const kind = 'ci'
+    const already = state.nudges.some((nudge) => nudge.kind === kind && nudge.head === pr.headSha)
+    if (already) return { issue: identifier, outcome: 'waiting', reason: `ci nudge already sent for head ${pr.headSha.slice(0, 7)}; waiting for a new push`, pr: pr.number, head: pr.headSha, actions }
+    await commentOnIntakePr(ctx, pr, `**Loop review**: CI is red on PR #${pr.number} (failing: ${checks.failing.join(', ')}). Push a fix; the loop will re-review.`, actions)
+    saveState(ctx, { ...state, prNumber: pr.number, nudges: [...state.nudges, { kind, at: ctx.now().toISOString(), head: pr.headSha }] })
+    return { issue: identifier, outcome: ctx.dryRun ? 'dry-run' : 'fix-round', reason: `CI red: ${checks.failing.join(', ')}`, pr: pr.number, head: pr.headSha, actions }
+  }
+  if (checks.status !== 'green') return { issue: identifier, outcome: 'waiting', reason: checks.status === 'missing' ? `required checks not reported yet: ${checks.missingRequired.join(', ')}` : `checks pending: ${checks.pending.join(', ')}`, pr: pr.number, head: pr.headSha, actions }
+
+  const prior = state.reviews[pr.headSha]
+  if (prior?.status === 'findings') return { issue: identifier, outcome: 'waiting', reason: `review findings pending a new push (head ${pr.headSha.slice(0, 7)})`, pr: pr.number, head: pr.headSha, actions }
+  if (!prior || prior.status === 'incomplete') {
+    if (prior && prior.attempts >= 2) return { issue: identifier, outcome: 'held', reason: 'review incomplete twice at this head; needs a human look', pr: pr.number, head: pr.headSha, actions }
+    if (!ctx.reviewer) return { issue: identifier, outcome: 'waiting', reason: 'no reviewer provider available', pr: pr.number, head: pr.headSha, actions }
+    if (ctx.dryRun) { actions.push(`would review with ${ctx.reviewer.provider}/${ctx.reviewer.model}`); return { issue: identifier, outcome: 'dry-run', reason: 'review pending', pr: pr.number, head: pr.headSha, actions } }
+    const { settings } = providerIdentity(config, ctx.reviewer.provider)
+    const resultFile = join(ctx.loaded.stateDir, 'issues', identifier, `review-${pr.headSha.slice(0, 12)}.json`)
+    mkdirSync(dirname(resultFile), { recursive: true })
+    const review = await runCodeReview(ctx.runner, { cli: config.delivery.review.cli, repo: config.project.repo, number: pr.number, provider: settings.reviewProvider ?? `${ctx.reviewer.provider}-cli`, model: ctx.reviewer.model, mode: config.delivery.review.mode, ...(config.delivery.review.transport ? { transport: config.delivery.review.transport } : {}), profile: config.delivery.review.profile, votes: config.delivery.review.votes, concurrency: config.delivery.review.concurrency, minSeverity: config.delivery.review.minSeverity, deadlineMs: ctx.reviewDeadlineMs, maxCalls: config.delivery.review.maxCalls, post: config.delivery.review.post, resultFile, cwd: ctx.loaded.root, env: ctx.env })
+    actions.push(`review ${review.status}: ${review.summary}`)
+    const attempts = (prior?.attempts ?? 0) + 1
+    const next: DeliveryState = { ...state, prNumber: pr.number, reviews: { ...state.reviews, [pr.headSha]: { status: review.status, at: ctx.now().toISOString(), provider: review.provider, model: review.model, blocking: review.blocking.length, attempts } } }
+    saveState(ctx, next)
+    event(ctx, { type: 'pr.reviewed', pr: pr.number, head: pr.headSha, status: review.status, blocking: review.blocking.length, provider: review.provider, model: review.model, source: 'github-intake' })
+    if (review.status === 'incomplete') {
+      const failureKind = classifyProviderFailure(review.rawTail)
+      if (!ctx.dryRun && (failureKind === 'quota' || failureKind === 'auth')) {
+        const reviewerProviderId = ctx.reviewer.provider
+        const resetsAt = extractResetsAt(review.rawTail, ctx.now())
+        const entry = markProviderExhausted(ctx.loaded.stateDir, reviewerProviderId, { initialMin: config.models.cooldown.initialMin, maxMin: config.models.cooldown.maxMin, reason: `${failureKind}: ${review.rawTail.split('\n').slice(-1)[0]?.slice(0, 200) ?? review.summary}`, resetsAt, now: ctx.now() })
+        actions.push(`reviewer ${reviewerProviderId} marked cooling down until ${entry.until} (${failureKind})`)
+        event(ctx, { type: 'provider.cooldown', provider: reviewerProviderId, kind: failureKind, until: entry.until, source: 'review' })
+      }
+      return { issue: identifier, outcome: 'waiting', reason: review.summary, pr: pr.number, head: pr.headSha, review, actions }
+    }
+    if (review.status === 'findings') {
+      const kind = 'review'
+      await commentOnIntakePr(ctx, pr, `**Loop review**: found ${review.blocking.length} issue(s) at or above "${config.delivery.review.minSeverity}" on PR #${pr.number} (head ${pr.headSha.slice(0, 7)}). Address each one (or explain why it does not apply) and push.
+${renderFindingsForWorker(review.blocking)}`, actions)
+      saveState(ctx, { ...next, nudges: [...next.nudges, { kind, at: ctx.now().toISOString(), head: pr.headSha }] })
+      return { issue: identifier, outcome: ctx.dryRun ? 'dry-run' : 'fix-round', reason: `review found ${review.blocking.length} blocking finding(s)`, pr: pr.number, head: pr.headSha, review, actions }
+    }
+    // clean — fall through to the held-for-human ending below with `next` as the state to finish with
+    state = next
+  }
+
+  // github.reviewOnly is a fixed loop guarantee (see LoopConfigSchema): a review-only intake PR is never merged
+  // automatically, however clean the review — merge is always a human decision for a PR this loop did not dispatch.
+  await commentOnIntakePr(ctx, pr, `**Loop review**: clean. This PR was picked up via the \`${config.github.intakeLabel}\` label; the loop reviews and comments only — merging is a human decision.`, actions)
+  await removeIntakeLabel(ctx, pr, actions)
+  finishIntake(ctx, identifier, pr, state, 'held', 'review clean; external PR — merge is human')
+  return { issue: identifier, outcome: ctx.dryRun ? 'dry-run' : 'held', reason: 'review clean; external PR — merge is human', pr: pr.number, head: pr.headSha, actions }
 }
 
 export const precheckDeliver = (stateDir: string): { readonly work: boolean; readonly reason: string; readonly active: number } => {
@@ -456,5 +565,36 @@ export const runDeliver = async (input: DeliverInput): Promise<DeliverReport> =>
       results.push({ issue: record.issue, outcome: 'failed', reason: message(error), actions: [] })
     }
   }
+
+  const intakeLabel = config.github.intakeLabel
+  if (intakeLabel) {
+    if (!dryRun) {
+      try { await discoverIntake(input.runner, { repo: config.project.repo, label: intakeLabel, stateDir: loaded.stateDir, now }) }
+      catch (error) { notes.push(`github intake discovery failed: ${message(error)}`) }
+    }
+    for (const tracked of listIntake(loaded.stateDir)) {
+      const identifier = intakeIssueId(tracked.pr)
+      if (input.onlyIssue && identifier !== input.onlyIssue) continue
+      const state = readDeliveryState(loaded.stateDir, identifier)
+      if (state.finishedAt) continue
+      try {
+        const pr = await githubPullRequest(input.runner, { repo: config.project.repo, number: tracked.pr })
+        if (pr.state !== 'OPEN') {
+          finishIntake(ctx, identifier, pr, state, pr.state === 'MERGED' ? 'merged' : 'abandoned', `PR #${pr.number} ${pr.state.toLowerCase()} outside the loop's review`)
+          results.push({ issue: identifier, outcome: dryRun ? 'dry-run' : pr.state === 'MERGED' ? 'merged' : 'abandoned', reason: `PR #${pr.number} ${pr.state.toLowerCase()} outside the loop's review`, pr: pr.number, actions: [] })
+          continue
+        }
+        if (!pr.labels.includes(intakeLabel)) {
+          finishIntake(ctx, identifier, pr, state, 'held', `${intakeLabel} label removed; loop stopped tracking PR #${pr.number}`)
+          results.push({ issue: identifier, outcome: dryRun ? 'dry-run' : 'held', reason: `${intakeLabel} label removed; loop stopped tracking PR #${pr.number}`, pr: pr.number, actions: [] })
+          continue
+        }
+        results.push(await handleIntakePullRequest(ctx, identifier, pr, state))
+      } catch (error) {
+        results.push({ issue: identifier, outcome: 'failed', reason: message(error), actions: [] })
+      }
+    }
+  }
+
   return { status: results.length ? 'ok' : 'idle', generatedAt: now().toISOString(), dryRun, reviewer: reviewer ? `${reviewer.provider}/${reviewer.model}` : null, results, notes }
 }

@@ -126,6 +126,25 @@ For every issue the loop dispatched (`<stateDir>/issues/<id>/dispatch.json`) and
 State lives in `<stateDir>/issues/<id>/delivery.json` (reviews per head, fix rounds, nudges) and every decision is
 appended to `<stateDir>/events.ndjson`. `--dry-run` reports the decision for each issue without touching anything.
 
+## GitHub label intake: reviewing PRs the loop never dispatched
+
+The loop's normal queue is Linear issues; `github.intakeLabel` (default `loop:review`, set to `null` to disable)
+lets a human ask it to review a PR it had nothing to do with — a contributor's PR, a manual branch, anything —
+without filing a Linear issue for it. Every `deliver` run lists open PRs carrying the label
+(`gh pr list --label <intakeLabel>`) and starts tracking any not seen before as `pr-<n>` under
+`<stateDir>/issues/pr-<n>/intake.json` (`{ pr, headRef, source: 'github-label', addedAt }`); tracking is
+idempotent, so discovery never re-adds a PR it already knows about.
+
+An intake PR runs the same checks → review → fix-round decisions as a normal dispatch (see the table above), with
+two differences forced by having no Linear issue and no worker terminal:
+
+- Every nudge (conflict, red CI, review findings) is posted as a **PR comment** instead of sent to a worker
+  terminal — there is no worker to nudge.
+- `github.reviewOnly` is a fixed guarantee, not a knob (the schema pins it to `true`): a clean review always ends
+  in **held**, commented as "merge is human", the label removed, and `finishedAt` recorded — this loop merges only
+  PRs it dispatched itself, never one it was only asked to review. If the label is removed on GitHub before the
+  loop finishes, it stops tracking the PR the same way (held, no further comments).
+
 ## One tick
 
 1. **Intake** — `orca linear list-issues` once per configured state, filtered and ordered locally; issues already
@@ -148,6 +167,68 @@ terminal handle, provider/model and lease for the deliver stage.
 
 Start from [`loop.config.example.yaml`](../loop.config.example.yaml) at the package root.
 
+## Resilience: auto-pause after repeated failures
+
+Two failure paths have no natural ceiling elsewhere in the pipeline — contract generation failing on every
+candidate, and a worktree/worker dispatch failing outright — because the issue never gets a worktree, a lease that
+would otherwise expire, or a label that would exclude it from the queue. Left alone, a single misclassified or
+persistent error (a quota message the classifier didn't recognise, a broken `orca worktree create`) retries every
+tick forever. (The 2026-09-11/12 pilot logged 19 such retries across 4 issues in 7h before this existed.)
+
+- `resilience.maxConsecutiveFailures` (default 3): after this many **consecutive** `contract.failed` or
+  `worker.dispatch-failed` events on the *same* issue, the loop stops retrying it: one deduplicated Linear comment
+  explaining why, the `resilience.pausedLabel` (default `loop:paused`), and the issue is skipped locally on every
+  later tick regardless of whether that label is in `linear.excludeLabels`. A successful dispatch clears the
+  counter. State lives in `<stateDir>/issues/<id>/failures.json` (`loop paused` lists every paused issue).
+- **Resuming** an issue: remove the `loop:paused` label on Linear (the next tick notices via `list-issues` and
+  clears the local state itself) or run `ak-harness loop resume <issue>`, which also best-effort removes the label.
+- `resilience.stagePauseAfterRuns` (default 3): a scheduled `loop stage tick|deliver` run that *throws* (a config or
+  adapter crash, not a normal idle/ok/blocked report) this many times in a row pauses that stage — `loop stage`
+  then short-circuits to a `{"status":"paused", ...}` report instead of running, so a crash loop cannot spend budget
+  or provider usage under Orca. `ak-harness loop resume --stage tick|deliver` clears it; a single successful run
+  clears it automatically. State lives in `<stateDir>/paused.json`.
+
+Neither mechanism touches the existing `blocked`/`stuck` escalations (fix-round exhaustion, an idle worker with no
+PR) — those already label the issue and route it out of the queue via `linear.excludeLabels`.
+
+## Skills pinned into the worker brief
+
+`brief.skills` (default `[]`) lists Markdown files, relative to `project.root`, that every worker brief embeds
+verbatim under a `## Skills (pinned)` section — house conventions the orchestrator's contract can reference but a
+worker starting cold has no other way to see (e.g. `AGENTS.md`, `CLAUDE.md`, `docs/for-agents/INDEX.md`).
+
+- Reading and hashing happens once, at dispatch time (`loadPinnedSkills`, `src/loop/skills.ts`): each file is
+  sha256-digested and truncated at `brief.maxSkillChars` (default 6000) with a visible `[truncated N chars]` note so
+  one large file cannot exhaust the brief budget. A configured path that does not exist or cannot be read **fails
+  the dispatch** (fail-closed) rather than silently sending a worker without guidance it was told it would have —
+  the same worktree-cleanup and consecutive-failure accounting as any other dispatch failure applies.
+- The rendered brief is persisted to `<stateDir>/issues/<id>/brief.md`, and `dispatch.json` records `briefDigest`
+  (hash of the full brief) plus `skills: [{path, digest}]` — enough to prove after the fact exactly which revision
+  of a skill file a given worker saw.
+- **Pinning is by design, not by accident:** a handoff (`renderHandoffBrief`) reuses the worktree/branch state, not
+  the original brief, and never re-reads `brief.skills` — so editing a skill file after dispatch affects only
+  *future* dispatches, never a worker (or its handoff) already in flight.
+- `loop doctor` runs a `brief.skills` check confirming every configured file currently exists and is readable, so a
+  typo or a moved file surfaces before the next dispatch fails.
+
+## Worktree setup command
+
+A freshly created Orca worktree is a bare checkout — no `node_modules`, no build output, nothing a worker can run
+tests against until it installs dependencies itself, wasting the first several minutes of every dispatch on the
+same shell commands. `project.setup.command` (unset by default; an argv array, e.g.
+`[pnpm, install, --frozen-lockfile]` — no shell, so no `&&`/`|`) runs once in the new worktree between
+`orca worktree create` and opening the worker's terminal.
+
+- `project.setup.timeoutSec` (default 600) bounds the run; the loop's per-tick time budget already reserves this
+  much time before attempting a dispatch, so a configured setup command cannot itself blow the tick budget.
+- `project.setup.required` (default `true`): a non-zero exit or a timeout removes the just-created worktree, never
+  opens a terminal, and fails the dispatch — recorded as a `worker.dispatch-failed` event and counted by the
+  per-issue consecutive-failure tracker above, exactly like a contract or worktree-create failure. Set it to
+  `false` to have a failing setup only log a note and still hand the worker its terminal.
+- Every run (pass or fail) is recorded as a `worker.setup` event and, when the dispatch succeeds, as `setup:
+  {command, exitCode, durationMs, timedOut}` on `dispatch.json` — enough to see in `loop retro` whether a slow or
+  flaky setup command is costing more dispatches than it saves.
+
 ## What the doctor checks
 
 | Check | Source | Blocking |
@@ -157,6 +238,7 @@ Start from [`loop.config.example.yaml`](../loop.config.example.yaml) at the pack
 | `routing.<role>` | tiers from `models.<role>` filtered by provider availability | yes — a role with no available provider blocks |
 | `machine.slots` | `sampleMachine` + `adaptiveConcurrency`, free RAM reserve, WSL cap, running worktrees | no — 0 free slots is a warning, not a failure |
 | `linear.queue` | `orca linear list-issues` per configured state, filtered and ordered locally | yes — an unreachable Linear blocks |
+| `brief.skills` | existence + readability of each `brief.skills` path under `project.root` | yes when any are unreadable — dispatch would fail closed anyway |
 
 
 ## Dynamic model routing
@@ -185,6 +267,22 @@ declared `auth: api-key` need an environment variable, and the loop never reads 
 
 When a provider runs out of usage the loop records a cooldown in `<stateDir>/provider-cooldowns.json`:
 `initialMin` doubling up to `maxMin`, never earlier than the reset instant Orca reported.
+
+### Reasoning effort per role
+
+`models.effort.<role>` (`low | medium | high | xhigh`; defaults: orchestrator/reviewer `high`, builder `medium`,
+watcher `low`) is only applied for a provider that declares `providers.<id>.effortFlag` — a template such as
+`-c model_reasoning_effort={effort}` (codex) or `--reasoning-effort {effort}` (grok); a provider without one
+ignores it entirely, so leaving `effort` at its default is always safe. The flag (with `{effort}` substituted) is
+appended to `tui` as literal text, and appended as its own argv elements (split on whitespace, since headless argv
+is never shell-joined) to `headless`. `agentskit-review` has no reasoning-effort flag, so `models.effort.reviewer`
+is not currently wired into the review CLI call — it is validated and recorded for symmetry and for a future
+reviewer transport that supports it.
+
+Whichever effort a dispatched builder actually used is recorded as `effort` on `dispatch.json` and the
+`worker.dispatched` event; `loop retro`'s `dispatches.byProvider` groups by `provider/model@effort` (falling back
+to plain `provider/model` for older events with no effort recorded) so a retro can tell a slow `gpt-5.6-luna@high`
+run from a fast `@medium` one.
 
 ## Machine slots
 

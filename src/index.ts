@@ -100,7 +100,7 @@ export type { DetectProvidersInput, ProviderAuthStatus, ProviderAvailability, Pr
 export { buildListIssuesArgv, fetchLinearQueue, filterAndOrderQueue, parseLinearIssues } from './adapters/linear-orca.js'
 export type { FetchQueueInput, LinearListInput, LinearQueueFilter, LoopIssue } from './adapters/linear-orca.js'
 export { LOOP_CONFIG_FILE, LOOP_CONFIG_SCHEMA_VERSION, LOOP_LOCAL_CONFIG_FILE, LoopConfigSchema, loadLoopConfig, mergeLoopConfig, parseLoopConfigText, parseModelRef, providerIdentity, renderHeadlessArgv, renderTuiCommand, tiersFor, validateLoopConfig } from './loop/config.js'
-export type { LoadedLoopConfig, LoopConfig, LoopConfigInput, LoopProviderConfig, ModelReference } from './loop/config.js'
+export type { LoadedLoopConfig, LoopConfig, LoopConfigInput, LoopProviderConfig, ModelReference, EffortLevel } from './loop/config.js'
 export { AGENT_REGISTRY_SCHEMA_VERSION, AgentRegistryEntrySchema, AgentRegistrySchema, loadAgentRegistry, parseAgentRegistryText, resolveAgentForRole } from './loop/agent-registry.js'
 export type { AgentRegistry, AgentRegistryEntry, ResolvedAgent } from './loop/agent-registry.js'
 export { createProcessRunner } from './loop/process.js'
@@ -121,15 +121,15 @@ export { orcaAutomationCreateArgv, orcaAutomationEditArgv, orcaAutomationRemove,
 export type { OrcaAutomation, OrcaAutomationSpec, OrcaCreatedWorktree, OrcaSendReceipt, OrcaTerminal } from './adapters/orca-cli.js'
 export { createLinearTrackingAdapter, fetchLinearIssue, linearAttach, linearAttachArgv, linearCommentAdd, linearCommentAddArgv, linearLabelAdd, linearLabelArgv, linearLabelRemove, linearStatusSet, linearStatusSetArgv, parseLinearIssueDetail, writeIdFor } from './adapters/linear-orca.js'
 export type { LinearIssueDetail, LinearWriteOptions } from './adapters/linear-orca.js'
-export { PR_FIELDS, assessChecks, githubComment, githubCommentArgv, githubCommentExists, githubMerge, githubMergeArgv, githubOpenPullRequests, githubPullRequest, githubPullRequestsForBranch, parsePullRequest, touchesProtectedPaths } from './adapters/github-cli.js'
+export { PR_FIELDS, assessChecks, githubComment, githubCommentArgv, githubCommentExists, githubLabelRemove, githubMerge, githubMergeArgv, githubOpenPullRequests, githubPullRequest, githubPullRequestsForBranch, parsePullRequest, touchesProtectedPaths } from './adapters/github-cli.js'
 export type { CheckOutcome, ChecksAssessment, GitHubCliOptions, PullRequestCheck, PullRequestSnapshot } from './adapters/github-cli.js'
 export { CONTRACT_CLOSE, CONTRACT_OPEN, CONTRACT_SCHEMA_VERSION, ContractOutcomeSchema, TaskContractSchema, assessContract, contractIsFresh, contractPath, generateContract, parseContractOutput, readStoredContract, renderContractPrompt, resolveDocContext, untrusted, writeStoredContract } from './loop/contract.js'
-export { classifyProviderFailure } from './loop/contract.js'
+export { classifyProviderFailure, extractResetsAt } from './loop/contract.js'
 export type { ContractAssessment, GenerateContractInput, ProviderFailure, StoredContract, TaskContract } from './loop/contract.js'
 export { renderHandoffBrief, renderWorkerBrief } from './loop/brief.js'
 export type { HandoffBriefInput } from './loop/brief.js'
 export type { WorkerBriefInput } from './loop/brief.js'
-export { appendLoopEvent, branchFor, busyIssues, dispatchRecordPath, gatherLoopState, launchWorkerTerminal, precheckTick, readDispatchRecord, writeDispatchRecord, runTick, worktreeNameFor } from './loop/tick.js'
+export { appendLoopEvent, branchFor, briefPath, busyIssues, dispatchRecordPath, gatherLoopState, launchWorkerTerminal, precheckTick, readDispatchRecord, writeDispatchRecord, runTick, worktreeNameFor } from './loop/tick.js'
 export type { DispatchRecordFile, LoopState, TickCandidateResult, TickInput, TickOutcome, TickReport } from './loop/tick.js'
 export { REVIEW_SEVERITIES, atLeast, buildReviewArgv, parseReviewResult, renderFindingsForWorker, runCodeReview, severityRank } from './adapters/code-review.js'
 export type { CodeReviewInput, CodeReviewOutcome, ReviewFinding, ReviewSeverity } from './adapters/code-review.js'
@@ -155,3 +155,15 @@ export {
   upsertProposedLearnings, writeLearningsLedger,
 } from './loop/memory.js'
 export type { LearningsLedger, MemoryContextPlan, MemoryPromptSelection } from './loop/memory.js'
+
+export {
+  clearIssueFailures, isIssuePaused, isStagePaused, issueFailurePath, listPausedIssues, pauseIssue, readIssueFailures,
+  readStagePause, recordIssueFailure, recordStageRunResult, resumeIssue, resumeStage, stageEntry, stagePausePath,
+} from './loop/resilience-state.js'
+export type { IssueFailureRecord, IssueFailureState, LoopStageName, StagePauseEntry, StagePauseState } from './loop/resilience-state.js'
+
+export { loadPinnedSkills, renderPinnedSkills, skillDigest, skillRefs } from './loop/skills.js'
+export type { PinnedSkill, PinnedSkillRef } from './loop/skills.js'
+
+export { discoverIntake, intakeIssueId, intakePath, listIntake, readIntake } from './loop/github-intake.js'
+export type { IntakeRecord } from './loop/github-intake.js'

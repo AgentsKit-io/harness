@@ -122,9 +122,16 @@ export const githubPullRequestsForBranch = async (runner: CommandRunner, input: 
   return (Array.isArray(list) ? list : []).map(parsePullRequest).filter((pr) => pr.headRef === input.head)
 }
 
-export const githubOpenPullRequests = async (runner: CommandRunner, input: { readonly repo: string; readonly limit?: number }, options: GitHubCliOptions = {}): Promise<readonly PullRequestSnapshot[]> => {
-  const list = await ghJson(runner, ['pr', 'list', '--repo', input.repo, '--state', 'open', '--limit', String(input.limit ?? 50), '--json', PR_FIELDS.join(',')], options)
+export const githubOpenPullRequests = async (runner: CommandRunner, input: { readonly repo: string; readonly limit?: number; readonly label?: string }, options: GitHubCliOptions = {}): Promise<readonly PullRequestSnapshot[]> => {
+  const list = await ghJson(runner, ['pr', 'list', '--repo', input.repo, '--state', 'open', '--limit', String(input.limit ?? 50), ...(input.label ? ['--label', input.label] : []), '--json', PR_FIELDS.join(',')], options)
   return (Array.isArray(list) ? list : []).map(parsePullRequest)
+}
+
+/** Remove a label from a PR (best-effort — `gh` succeeds even if the label was already gone). */
+export const githubLabelRemove = async (runner: CommandRunner, input: { readonly repo: string; readonly number: number; readonly label: string }, options: GitHubCliOptions = {}): Promise<void> => {
+  const argv = [options.bin ?? 'gh', 'pr', 'edit', String(input.number), '--repo', input.repo, '--remove-label', input.label]
+  const outcome = await runner.run(argv, { timeoutMs: options.timeoutMs ?? 30_000, ...(options.cwd ? { cwd: options.cwd } : {}) })
+  if (outcome.code !== 0) fail(`gh pr edit --remove-label exited ${outcome.code ?? 'null'}: ${outcome.stderr.trim().slice(0, 300)}`, 'HARNESS_ERROR')
 }
 
 /** Squash/merge via REST with optimistic concurrency on the reviewed head SHA; GitHub refuses when the head moved. */

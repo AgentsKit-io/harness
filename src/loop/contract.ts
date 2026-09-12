@@ -185,11 +185,48 @@ export interface GenerateContractInput {
 
 const AUTH_PATTERN = /failed to authenticate|not logged in|oauth|unauthori[sz]ed|invalid api key|login required|authentication/i
 
+/**
+ * CLI-specific usage-limit phrasing that `classifyFailure`'s generic `quota|rate.?limit|too many requests|429`
+ * regex misses (observed on Claude Code, Codex and provider dashboards): "You've hit your session limit",
+ * "usage limit reached", "credit balance is too low", "spend limit reached", "temporarily limiting requests".
+ */
+const QUOTA_PATTERN = /hit your (?:session|weekly|monthly|usage)?\s?limit|usage limit|session limit|credit balance|spend limit|out of (?:credits|quota)|temporarily limiting|overloaded/i
+
 export const classifyProviderFailure = (detail: string, timedOut = false): ProviderFailure['kind'] => {
   if (timedOut) return 'timeout'
   if (AUTH_PATTERN.test(detail)) return 'auth'
+  if (QUOTA_PATTERN.test(detail)) return 'quota'
   const cls = classifyFailure(new Error(detail)).class
   return cls === 'quota' ? 'quota' : cls === 'timeout' ? 'timeout' : 'other'
+}
+
+/**
+ * Best-effort extraction of a reset instant from a CLI's own usage-limit message, e.g.
+ * "resets 10:40pm (America/Sao_Paulo)" or "resets in 3h". Returns null when nothing parses;
+ * callers fall back to the configured exponential cooldown.
+ */
+export const extractResetsAt = (detail: string, now: Date = new Date()): string | null => {
+  const relative = detail.match(/resets?\s+in\s+(\d+)\s*(h|hour|hours|m|min|minute|minutes)/i)
+  if (relative) {
+    const amount = Number(relative[1])
+    const unitMs = /^h/i.test(relative[2] ?? '') ? 3_600_000 : 60_000
+    if (Number.isFinite(amount)) return new Date(now.getTime() + amount * unitMs).toISOString()
+  }
+  const clockMatch = detail.match(/resets?\s+(?:at\s+)?(\d{1,2}):(\d{2})\s*(am|pm)?/i)
+  if (clockMatch) {
+    let hour = Number(clockMatch[1])
+    const minute = Number(clockMatch[2])
+    const meridiem = clockMatch[3]?.toLowerCase()
+    if (meridiem === 'pm' && hour < 12) hour += 12
+    if (meridiem === 'am' && hour === 12) hour = 0
+    if (Number.isFinite(hour) && Number.isFinite(minute)) {
+      const candidate = new Date(now)
+      candidate.setHours(hour, minute, 0, 0)
+      if (candidate.getTime() <= now.getTime()) candidate.setDate(candidate.getDate() + 1)
+      return candidate.toISOString()
+    }
+  }
+  return null
 }
 
 export const generateContract = async (input: GenerateContractInput): Promise<StoredContract> => {
@@ -237,7 +274,7 @@ export const generateContract = async (input: GenerateContractInput): Promise<St
   const failures: ProviderFailure[] = []
   for (const candidate of candidates) {
     const { settings } = providerIdentity(input.config, candidate.provider)
-    const argv = renderHeadlessArgv(settings, candidate.model, prompt)
+    const argv = renderHeadlessArgv(settings, candidate.model, prompt, candidate.effort)
     if (!argv) { failures.push({ provider: candidate.provider, model: candidate.model, kind: 'other', detail: `no headless argv template (models.providers.${candidate.provider}.headless)` }); continue }
     const outcome = await input.runner.run(argv, { timeoutMs: input.config.contract.timeoutMs, cwd: input.root })
     const detail = `${outcome.stderr.trim()}\n${outcome.stdout.trim()}`.trim().slice(0, 600)

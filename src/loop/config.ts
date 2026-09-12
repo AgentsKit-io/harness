@@ -33,7 +33,11 @@ const ProviderSchema = z.object({
   headless: z.array(nonEmpty).min(1).optional(),
   /** `agentskit-review --provider` id; defaults to `<key>-cli` (codex-cli, claude-cli, grok-cli, opencode-cli). */
   reviewProvider: nonEmpty.optional(),
+  /** Reasoning-effort flag template substituted with `{effort}` into `tui`/`headless` (e.g. codex `-c model_reasoning_effort={effort}`, grok `--reasoning-effort {effort}`). Providers without one ignore `models.effort`. */
+  effortFlag: nonEmpty.optional(),
 })
+
+const effortLevel = z.enum(['low', 'medium', 'high', 'xhigh'])
 
 const tiers = z.array(z.array(modelRef).min(1)).min(1)
 
@@ -45,6 +49,13 @@ export const LoopConfigSchema = z.object({
     baseBranch: nonEmpty.default('main'),
     root: nonEmpty.default('.'),
     stateDir: nonEmpty.default('.codex/loop'),
+    setup: z.object({
+      /** Argv (no shell — one element per arg, e.g. `[pnpm, install, --frozen-lockfile]`) run once in a freshly created worktree before the worker terminal opens. Unset/empty = skip. */
+      command: z.array(nonEmpty).min(1).optional(),
+      timeoutSec: z.number().int().positive().default(600),
+      /** When true, a failing/timing-out setup removes the worktree and counts as a dispatch failure instead of handing the worker a broken environment. */
+      required: z.boolean().default(true),
+    }).prefault({}),
   }),
   orca: z.object({
     bin: nonEmpty.default('orca'),
@@ -123,6 +134,13 @@ export const LoopConfigSchema = z.object({
       exhaustedPercent: z.number().min(1).max(100).default(100),
     }).prefault({}),
     providers: z.record(z.string().trim().regex(/^[a-z0-9][a-z0-9_-]*$/i), ProviderSchema),
+    /** Reasoning effort requested per role; only applied for providers whose `effortFlag` is set. */
+    effort: z.object({
+      orchestrator: effortLevel.default('high'),
+      reviewer: effortLevel.default('high'),
+      builder: effortLevel.default('medium'),
+      watcher: effortLevel.default('low'),
+    }).prefault({}),
   }),
   machine: z.object({
     floor: z.number().int().min(1).default(1),
@@ -252,6 +270,32 @@ export const LoopConfigSchema = z.object({
     enabled: z.boolean().default(false),
     allowTools: z.array(nonEmpty).default([]),
   }).prefault({}),
+  github: z.object({
+    /** A PR labeled with this on GitHub is picked up by deliver even though the loop never dispatched it. Set null to disable intake entirely. */
+    intakeLabel: nonEmpty.nullable().default('loop:review'),
+    /** Intake PRs are always review + comment only; this loop never merges a PR it did not dispatch, regardless of a clean review. */
+    reviewOnly: z.literal(true).default(true),
+  }).prefault({}),
+  resilience: z.object({
+    /**
+     * Consecutive failures on the same issue — contract generation failing on every candidate, or a worker/worktree
+     * dispatch failing — before the loop stops retrying it and escalates instead of spinning every tick. (Pilot
+     * 2026-09-11: one unclassified quota error produced 19 silent retries across 4 issues over 7h with no cap.)
+     * `contract.escalated` (a genuine "needs more information" decision) does not count; a successful dispatch,
+     * a clean/findings review, or a merge clears the counter.
+     */
+    maxConsecutiveFailures: z.number().int().positive().default(3),
+    /** Label applied (and checked for removal, to auto-resume) when an issue is paused after `maxConsecutiveFailures`. */
+    pausedLabel: nonEmpty.default('loop:paused'),
+    /** Consecutive *thrown* `loop stage` runs (config/adapter crash, not a normal idle/ok/blocked report) before that stage pauses itself. */
+    stagePauseAfterRuns: z.number().int().positive().default(3),
+  }).prefault({}),
+  brief: z.object({
+    /** Markdown files (paths relative to `project.root`) pinned verbatim into every worker brief, sha256-digested for traceability. Missing file = dispatch fails closed. */
+    skills: z.array(nonEmpty).default([]),
+    /** Per-file cap; a file over this length is truncated with a visible note rather than blowing the brief budget. */
+    maxSkillChars: z.number().int().positive().default(6_000),
+  }).prefault({}),
   schedule: z.object({
     tick: cron.default('*/5 * * * *'),
     deliver: cron.default('*/10 * * * *'),
@@ -354,7 +398,21 @@ export const providerIdentity = (config: LoopConfig, provider: string): { readon
   return { orcaAgent: settings.orcaAgent ?? provider, orcaUsageKey: settings.orcaUsageKey ?? provider, settings }
 }
 
-export const renderTuiCommand = (settings: LoopProviderConfig, model: string): string => settings.tui.replaceAll('{model}', model)
+export type EffortLevel = z.infer<typeof effortLevel>
+
+const renderEffortFlag = (settings: LoopProviderConfig, effort: EffortLevel | undefined): string | null =>
+  effort && settings.effortFlag ? settings.effortFlag.replaceAll('{effort}', effort) : null
+
+export const renderTuiCommand = (settings: LoopProviderConfig, model: string, effort?: EffortLevel): string => {
+  const base = settings.tui.replaceAll('{model}', model)
+  const flag = renderEffortFlag(settings, effort)
+  return flag ? `${base} ${flag}` : base
+}
 
 /** Substitute `{model}` / `{prompt}` inside each headless argv element; the prompt stays one argv element, never shell-joined. */
-export const renderHeadlessArgv = (settings: LoopProviderConfig, model: string, prompt: string): readonly string[] | null => settings.headless ? settings.headless.map((part) => part.replaceAll('{model}', model).replaceAll('{prompt}', prompt)) : null
+export const renderHeadlessArgv = (settings: LoopProviderConfig, model: string, prompt: string, effort?: EffortLevel): readonly string[] | null => {
+  if (!settings.headless) return null
+  const argv = settings.headless.map((part) => part.replaceAll('{model}', model).replaceAll('{prompt}', prompt))
+  const flag = renderEffortFlag(settings, effort)
+  return flag ? [...argv, ...flag.split(/\s+/).filter(Boolean)] : argv
+}

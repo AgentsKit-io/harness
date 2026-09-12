@@ -1,19 +1,20 @@
 import { appendFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import type { CommandRunner } from '../adapters/command.js'
-import { createLinearTrackingAdapter, fetchLinearIssue, fetchLinearQueue, linearCommentAdd, linearLabelAdd, type LinearIssueDetail, type LoopIssue } from '../adapters/linear-orca.js'
+import { createLinearTrackingAdapter, fetchLinearIssue, fetchLinearQueue, linearCommentAdd, linearLabelAdd, linearLabelRemove, type LinearIssueDetail, type LoopIssue } from '../adapters/linear-orca.js'
 import { createOrcaDispatchPlan } from '../adapters/orca.js'
 import { orcaAccountList, orcaAgentHooks, orcaTerminalCreate, orcaTerminalSend, orcaTerminalWait, orcaWorktreeCreate, orcaWorktreeRemove, orcaWorktrees, type OrcaWorktree } from '../adapters/orca-cli.js'
 import { detectProviders, type ProviderAvailability } from '../adapters/providers.js'
 import { createDispatchLedger, type DispatchLedger, type DispatchLease } from '../execution/coordination.js'
 import { HarnessError } from '../kernel/errors.js'
-import { hashJson } from '../kernel/hash.js'
 import { renderWorkerBrief } from './brief.js'
-import { loadLoopConfig, type LoadedLoopConfig, type LoopConfig } from './config.js'
-import { assessContract, contractIsFresh, generateContract, readStoredContract, resolveDocContext, writeStoredContract, type StoredContract } from './contract.js'
+import { loadPinnedSkills, skillRefs, skillDigest, type PinnedSkillRef } from './skills.js'
+import { loadLoopConfig, type EffortLevel, type LoadedLoopConfig, type LoopConfig } from './config.js'
+import { assessContract, contractIsFresh, extractResetsAt, generateContract, readStoredContract, resolveDocContext, writeStoredContract, type StoredContract } from './contract.js'
 import { activeCooldowns, readCooldowns } from './cooldown.js'
 import { countRunningWorkers, providerSpecs } from './doctor.js'
 import { openLoopMemory, planMemoryContext } from './memory.js'
+import { clearIssueFailures, isIssuePaused, pauseIssue, readIssueFailures, recordIssueFailure } from './resilience-state.js'
 import { MODEL_ROLES } from '../kernel/model-policy.js'
 import { resolveCatalogCandidates } from './model-catalog/index.js'
 import { rankModels, routeAllRoles, type RoutingDecision } from './routing.js'
@@ -60,6 +61,10 @@ export interface DispatchRecordFile {
   readonly leaseId: string
   readonly dispatchedAt: string
   readonly url: string
+  readonly briefDigest: string
+  readonly skills: readonly PinnedSkillRef[]
+  readonly setup: { readonly command: readonly string[]; readonly exitCode: number | null; readonly durationMs: number; readonly timedOut: boolean } | null
+  readonly effort: EffortLevel
 }
 
 export interface TickInput {
@@ -117,6 +122,7 @@ export const busyIssues = (queue: readonly LoopIssue[], leases: readonly Dispatc
 }
 
 export const dispatchRecordPath = (stateDir: string, identifier: string): string => join(stateDir, 'issues', identifier, 'dispatch.json')
+export const briefPath = (stateDir: string, identifier: string): string => join(stateDir, 'issues', identifier, 'brief.md')
 export const readDispatchRecord = (stateDir: string, identifier: string): DispatchRecordFile | null => {
   const path = dispatchRecordPath(stateDir, identifier)
   if (!existsSync(path)) return null
@@ -214,7 +220,8 @@ export const runTick = async (input: TickInput): Promise<TickReport> => {
   const orchestratorCandidates = rankModels(config, 'orchestrator', state.providers, orchestratorExtras)
   const onProviderFailure = (failure: { readonly provider: string; readonly kind: string; readonly detail: string }): void => {
     if (dryRun) return
-    const entry = markProviderExhausted(loaded.stateDir, failure.provider, { initialMin: config.models.cooldown.initialMin, maxMin: config.models.cooldown.maxMin, reason: `${failure.kind}: ${(failure.detail.split('\n')[0] ?? '').slice(0, 200)}`, now: now() })
+    const resetsAt = extractResetsAt(failure.detail, now())
+    const entry = markProviderExhausted(loaded.stateDir, failure.provider, { initialMin: config.models.cooldown.initialMin, maxMin: config.models.cooldown.maxMin, reason: `${failure.kind}: ${(failure.detail.split('\n')[0] ?? '').slice(0, 200)}`, resetsAt, now: now() })
     notes.push(`provider ${failure.provider} marked cooling down until ${entry.until} (${failure.kind})`)
     appendLoopEvent(loaded.stateDir, { at: now().toISOString(), type: 'provider.cooldown', provider: failure.provider, kind: failure.kind, until: entry.until })
   }
@@ -232,10 +239,36 @@ export const runTick = async (input: TickInput): Promise<TickReport> => {
   const write = { bin: config.orca.bin, workspaceId: config.linear.workspaceId, orca: { timeoutMs: config.orca.timeoutMs } }
   const tracking = createLinearTrackingAdapter(input.runner, { ...write, dryRun })
   const memory = openLoopMemory(loaded)
+  /**
+   * Record a failure for `issue` and, once `resilience.maxConsecutiveFailures` is crossed, pause it: label it in
+   * Linear (deduplicated comment explaining why) so it stops being retried every tick until a human removes the
+   * label or runs `ak-harness loop resume <issue>`. Unlike the existing needs-info/blocked escalations, this covers
+   * failures that happen *before* dispatch (contract generation, worktree creation) and therefore have no worktree
+   * or lease to release — only the local failure counter and, optionally, a Linear label.
+   */
+  const recordFailureAndMaybePause = async (issue: string, kind: string, reason: string): Promise<void> => {
+    if (dryRun) return
+    const failureState = recordIssueFailure(loaded.stateDir, issue, kind, reason, now())
+    if (failureState.consecutive < config.resilience.maxConsecutiveFailures) return
+    pauseIssue(loaded.stateDir, issue, reason, now())
+    const body = `**Loop: paused after ${failureState.consecutive} consecutive failures**\n\nMost recent (\`${kind}\`): ${reason.split('\n')[0]?.slice(0, 300)}\n\nThe loop will not retry this issue until you remove the \`${config.resilience.pausedLabel}\` label (or run \`ak-harness loop resume ${issue}\`).\n\n<!-- loop:paused:${issue}:${failureState.consecutive} -->`
+    try {
+      await linearCommentAdd(input.runner, { issue, body, dedupeKey: `paused:${issue}:${failureState.consecutive}` }, write)
+      await linearLabelAdd(input.runner, { issue, labels: [config.resilience.pausedLabel] }, write)
+    } catch (error) { notes.push(`pause notification for ${issue} failed: ${message(error)}`) }
+    appendLoopEvent(loaded.stateDir, { at: now().toISOString(), type: 'issue.paused', issue, kind, consecutive: failureState.consecutive, reason })
+  }
   let dispatched = 0
   for (const candidate of state.candidates) {
     if (dispatched >= budget) break
-    if (remainingMs() < config.contract.timeoutMs + 120_000 && !readStoredContract(loaded.stateDir, candidate.identifier)) { notes.push(`time budget: ${candidate.identifier} left for the next tick (${Math.round(remainingMs() / 1000)}s remaining)`); continue }
+    const setupBudgetMs = config.project.setup.command ? config.project.setup.timeoutSec * 1000 : 0
+    if (remainingMs() < config.contract.timeoutMs + setupBudgetMs + 120_000 && !readStoredContract(loaded.stateDir, candidate.identifier)) { notes.push(`time budget: ${candidate.identifier} left for the next tick (${Math.round(remainingMs() / 1000)}s remaining)`); continue }
+    if (isIssuePaused(loaded.stateDir, candidate.identifier)) {
+      if (candidate.labels.includes(config.resilience.pausedLabel)) { results.push({ issue: candidate.identifier, outcome: 'skipped', reason: `paused after ${readIssueFailures(loaded.stateDir, candidate.identifier).consecutive} consecutive failures; remove the "${config.resilience.pausedLabel}" label or run "ak-harness loop resume ${candidate.identifier}" to retry` }); continue }
+      // The pause label was removed on Linear since we last checked — treat that as the human's resume signal.
+      if (!dryRun) clearIssueFailures(loaded.stateDir, candidate.identifier)
+      notes.push(`${candidate.identifier}: resumed (the "${config.resilience.pausedLabel}" label was removed)`)
+    }
     let detail: LinearIssueDetail
     try { detail = await fetchLinearIssue(input.runner, candidate.identifier, write) } catch (error) { results.push({ issue: candidate.identifier, outcome: 'failed', reason: `issue fetch failed: ${message(error)}` }); continue }
 
@@ -279,7 +312,12 @@ export const runTick = async (input: TickInput): Promise<TickReport> => {
           },
         })
         if (!dryRun) writeStoredContract(loaded.stateDir, stored)
-      } catch (error) { if (!dryRun) appendLoopEvent(loaded.stateDir, { at: now().toISOString(), type: 'contract.failed', issue: detail.identifier, error: message(error) }); results.push({ issue: detail.identifier, outcome: 'failed', reason: `contract generation failed: ${message(error)}` }); continue }
+      } catch (error) {
+        const reason = `contract generation failed: ${message(error)}`
+        if (!dryRun) { appendLoopEvent(loaded.stateDir, { at: now().toISOString(), type: 'contract.failed', issue: detail.identifier, error: message(error) }); await recordFailureAndMaybePause(detail.identifier, 'contract.failed', reason) }
+        results.push({ issue: detail.identifier, outcome: 'failed', reason })
+        continue
+      }
     }
     const assessment = assessContract(stored.contract)
     if (!assessment.dispatchable) {
@@ -306,6 +344,18 @@ export const runTick = async (input: TickInput): Promise<TickReport> => {
       created = await orcaWorktreeCreate(input.runner, plan.argv, { timeoutMs: Math.max(config.orca.timeoutMs, 120_000) })
       // Orca names the branch `<git user>/<worktree>`; the Linear branchName is only a hint. Record and brief the real one.
       const actualBranch = created.branch || branch
+      let setupResult: { readonly command: readonly string[]; readonly exitCode: number | null; readonly durationMs: number; readonly timedOut: boolean } | null = null
+      if (config.project.setup.command?.length) {
+        const setupRun = await input.runner.run(config.project.setup.command, { cwd: created.path, timeoutMs: config.project.setup.timeoutSec * 1000 })
+        setupResult = { command: config.project.setup.command, exitCode: setupRun.code, durationMs: setupRun.durationMs, timedOut: setupRun.timedOut }
+        const setupFailed = setupRun.timedOut || setupRun.code !== 0
+        appendLoopEvent(loaded.stateDir, { at: now().toISOString(), type: 'worker.setup', issue: detail.identifier, worktreeId: created.id, ...setupResult, ok: !setupFailed })
+        if (setupFailed && config.project.setup.required) {
+          const detailMsg = setupRun.timedOut ? `timed out after ${config.project.setup.timeoutSec}s` : `exited ${setupRun.code}`
+          throw new Error(`setup command failed (${detailMsg}): ${[...setupResult.command].join(' ')}${setupRun.stderr ? ` — ${setupRun.stderr.slice(-300)}` : ''}`)
+        }
+        if (setupFailed) notes.push(`${detail.identifier}: setup command failed but project.setup.required is false — continuing`)
+      }
       const briefMemory = memory
         ? await planMemoryContext({
           adapter: memory,
@@ -319,6 +369,7 @@ export const runTick = async (input: TickInput): Promise<TickReport> => {
       const guidanceRefs = config.contract.maxBriefReferences > 0 && config.contract.briefScopes.length
         ? await resolveDocContext(loaded.root, `${detail.identifier} ${detail.title}`, config.contract.maxBriefReferences, config.contract.briefScopes)
         : []
+      const pinnedSkills = loadPinnedSkills(loaded.root, config.brief.skills, config.brief.maxSkillChars)
       const brief = renderWorkerBrief({
         issue: detail,
         contract: stored,
@@ -329,13 +380,17 @@ export const runTick = async (input: TickInput): Promise<TickReport> => {
         maxIssueChars: briefMemory.issueCharBudget,
         memoryBlock: briefMemory.memoryBlock,
         guidanceRefs,
+        skills: pinnedSkills,
       })
+      const briefDigest = skillDigest(brief)
+      writeFileSync(briefPath(loaded.stateDir, detail.identifier), brief, 'utf8')
       const launched = await launchWorkerTerminal({ runner: input.runner, config, worktreeId: created.id, command: builder.tui, title, brief })
       if (!launched.accepted) notes.push(`${detail.identifier}: terminal ${launched.terminal} did not confirm the brief; deliver will nudge it if it stays idle`)
       ledger.recordDispatch({ lease: claim.lease, idempotencyKey: plan.idempotencyKey, commandDigest: plan.commandDigest })
-      const record: DispatchRecordFile = { issue: detail.identifier, worktreeId: created.id, worktree, branch: actualBranch, terminal: launched.terminal, provider: builder.provider, model: builder.model, contractDigest: stored.digest, leaseKey: claim.lease.key, leaseId: claim.lease.leaseId, dispatchedAt: now().toISOString(), url: detail.url }
+      const record: DispatchRecordFile = { issue: detail.identifier, worktreeId: created.id, worktree, branch: actualBranch, terminal: launched.terminal, provider: builder.provider, model: builder.model, contractDigest: stored.digest, leaseKey: claim.lease.key, leaseId: claim.lease.leaseId, dispatchedAt: now().toISOString(), url: detail.url, briefDigest, skills: skillRefs(pinnedSkills), setup: setupResult, effort: builder.effort }
       writeJson(dispatchRecordPath(loaded.stateDir, detail.identifier), record)
-      appendLoopEvent(loaded.stateDir, { at: record.dispatchedAt, type: 'worker.dispatched', ...record, command: builder.tui, briefDigest: hashJson(brief), briefAccepted: launched.accepted, tuiIdle: launched.idle })
+      appendLoopEvent(loaded.stateDir, { at: record.dispatchedAt, type: 'worker.dispatched', ...record, command: builder.tui, briefAccepted: launched.accepted, tuiIdle: launched.idle })
+      clearIssueFailures(loaded.stateDir, detail.identifier)
       try {
         await tracking.transition({ tracker: 'linear', issue: detail.identifier, from: detail.state, to: config.linear.inProgressState, reason: `loop dispatched ${builder.provider}/${builder.model} in ${created.id}` })
         await linearCommentAdd(input.runner, { issue: detail.identifier, body: `**Loop: dispatched**\n\nWorker \`${builder.provider}/${builder.model}\` started in Orca worktree \`${worktree}\` on branch \`${actualBranch}\` (contract \`${stored.digest.slice(0, 12)}\`). It will open a PR against \`${config.project.baseBranch}\` when the contract's outcomes pass.\n\n<!-- loop:dispatched:${claim.lease.leaseId} -->`, dedupeKey: `dispatched:${detail.identifier}:${claim.lease.leaseId}` }, write)
@@ -346,6 +401,7 @@ export const runTick = async (input: TickInput): Promise<TickReport> => {
       ledger.release(claim.lease, `dispatch failed: ${message(error)}`)
       if (created) { try { await orcaWorktreeRemove(input.runner, { worktree: `id:${created.id}`, force: true }, { bin: config.orca.bin, timeoutMs: 60_000 }); notes.push(`${detail.identifier}: removed half-created worktree ${created.id}`) } catch (cleanup) { notes.push(`${detail.identifier}: worktree ${created.id} left behind (${message(cleanup)})`) } }
       appendLoopEvent(loaded.stateDir, { at: now().toISOString(), type: 'worker.dispatch-failed', issue: detail.identifier, error: message(error) })
+      await recordFailureAndMaybePause(detail.identifier, 'worker.dispatch-failed', `dispatch failed: ${message(error)}`)
       results.push({ issue: detail.identifier, outcome: 'failed', reason: `dispatch failed: ${message(error)}`, branch, worktree, argv: plan.argv })
     }
   }

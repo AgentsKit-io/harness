@@ -5,7 +5,7 @@ import { afterEach, describe, expect, it } from 'vitest'
 import {
   activeCooldowns, assessSlots, authStatusFor, availableMemoryBytes, parseMemInfo, parseVmStat, buildListIssuesArgv, compareVersions, cooldownUntil, countRunningWorkers, detectProviders, fetchLinearQueue, filterAndOrderQueue, findExecutable,
   HarnessError, loadLoopConfig, markProviderExhausted, mergeLoopConfig, parseJsonEnvelope, parseLinearIssues, parseLoopConfigText, parseModelRef, parseOrcaAgentHooks, parseOrcaStatus, parseOrcaVersion, parseOrcaWorktrees,
-  parseProviderUsage, providerSpecs, readCooldowns, routeAllRoles, runLoopDoctor, selectModel, validateLoopConfig,
+  parseProviderUsage, providerSpecs, readCooldowns, renderHeadlessArgv, renderTuiCommand, routeAllRoles, runLoopDoctor, selectModel, validateLoopConfig,
 } from '../src/index.js'
 import type { CommandResult, CommandRunner, LoopConfig, ProviderAvailability } from '../src/index.js'
 
@@ -215,6 +215,38 @@ describe('providers, usage, routing, cooldown', () => {
     expect(none['orchestrator'].skipped).toHaveLength(4)
   })
 
+  it('renders the configured per-role reasoning effort into tui/headless only for providers with an effortFlag', () => {
+    const config = validateLoopConfig({
+      ...JSON.parse(JSON.stringify(baseConfig())),
+      models: {
+        ...baseConfig().models,
+        effort: { orchestrator: 'high', reviewer: 'high', builder: 'xhigh', watcher: 'low' },
+        providers: {
+          claude: { bin: 'claude', auth: 'subscription', envKeys: ['ANTHROPIC_API_KEY'], tui: 'claude --model {model} --permission-mode auto', effortFlag: '--effort {effort}' },
+          codex: { bin: 'codex', auth: 'subscription', tui: 'codex -m {model} --full-auto', headless: ['codex', 'exec', '-m', '{model}', '{prompt}'], effortFlag: '-c model_reasoning_effort={effort}' },
+          opencode: { bin: 'opencode', orcaUsageKey: 'opencodeGo', tui: 'opencode -m {model}' },
+          grok: { bin: 'grok', auth: 'subscription', tui: 'grok -m {model}' },
+        },
+      },
+    })
+    const claudeSettings = config.models.providers['claude']!
+    expect(renderTuiCommand(claudeSettings, 'opus', 'high')).toBe('claude --model opus --permission-mode auto --effort high')
+    expect(renderTuiCommand(claudeSettings, 'opus')).toBe('claude --model opus --permission-mode auto')
+    const opencodeSettings = config.models.providers['opencode']!
+    expect(renderTuiCommand(opencodeSettings, 'glm', 'high')).toBe('opencode -m glm') // no effortFlag configured: ignored
+
+    const codexSettings = config.models.providers['codex']!
+    expect(renderHeadlessArgv(codexSettings, 'gpt-5.6-sol', 'do the thing', 'high')).toEqual(['codex', 'exec', '-m', 'gpt-5.6-sol', 'do the thing', '-c', 'model_reasoning_effort=high'])
+    expect(renderHeadlessArgv(codexSettings, 'gpt-5.6-sol', 'do the thing')).toEqual(['codex', 'exec', '-m', 'gpt-5.6-sol', 'do the thing'])
+
+    const availability: readonly ProviderAvailability[] = ['claude', 'codex', 'opencode', 'grok'].map((id) => ({ id, binary: `/bin/${id}`, hookState: 'unknown', auth: 'ok', usage: { status: 'unknown', error: null, windows: [], exhausted: false, resetsAt: null, hasAuth: null }, probe: 'skipped', coolingDownUntil: null, available: true, reasons: [] }))
+    const orchestrator = selectModel(config, 'orchestrator', availability)
+    expect(orchestrator.selected).toMatchObject({ effort: 'high' })
+    const builder = selectModel(config, 'builder', availability)
+    expect(builder.selected).toMatchObject({ effort: 'xhigh' })
+    expect(builder.selected?.tui).toContain('model_reasoning_effort=xhigh')
+  })
+
   it('applies exponential cooldown capped at maxMin and never earlier than a known reset', () => {
     const from = new Date('2026-09-11T12:00:00.000Z')
     expect(cooldownUntil(0, 30, 240, from)).toBe('2026-09-11T12:30:00.000Z')
@@ -287,5 +319,19 @@ describe('loop doctor', () => {
     expect(report.checks.find((check) => check.id === 'orca.version')).toMatchObject({ status: 'failed' })
     expect(report.checks.find((check) => check.id === 'orca.runtime')?.detail).toContain('without a JSON envelope')
     expect(report.checks.filter((check) => check.id.startsWith('routing.')).every((check) => check.status === 'failed')).toBe(true)
+  })
+
+  it('flags a missing brief.skills file as failed, and passes when every configured file is readable', async () => {
+    const bin = fakeBinDir(['claude', 'codex', 'opencode', 'grok']); cleanups.push(bin)
+    const dir = mkdtempSync(join(tmpdir(), 'agentskit-loop-doctor-')); cleanups.push(dir)
+    const yaml = exampleYaml.replace('person: my-linear-display-name', 'person: person').replace('skills: []', 'skills: [AGENTS.md]')
+    writeFileSync(join(dir, 'loop.config.yaml'), yaml)
+    const runner = fakeRunner()
+    const missing = await runLoopDoctor({ configPath: join(dir, 'loop.config.yaml'), runner, env: { PATH: bin, XAI_API_KEY: 'k' }, platform: 'darwin', now: () => new Date('2026-09-11T12:00:00.000Z'), probe: false })
+    expect(missing.checks.find((check) => check.id === 'brief.skills')).toMatchObject({ status: 'failed', detail: expect.stringContaining('AGENTS.md') })
+    expect(missing.status).toBe('failed')
+    writeFileSync(join(dir, 'AGENTS.md'), '# Conventions', 'utf8')
+    const present = await runLoopDoctor({ configPath: join(dir, 'loop.config.yaml'), runner, env: { PATH: bin, XAI_API_KEY: 'k' }, platform: 'darwin', now: () => new Date('2026-09-11T12:00:00.000Z'), probe: false })
+    expect(present.checks.find((check) => check.id === 'brief.skills')).toMatchObject({ status: 'passed' })
   })
 })

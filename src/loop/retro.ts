@@ -126,7 +126,7 @@ export const buildRetroReport = async (input: RetroInput): Promise<RetroReport> 
   for (const event of escalations) for (const reason of Array.isArray(event['reasons']) ? event['reasons'].map(String) : []) { const key = normalizeReason(reason); reasonCounts.set(key, (reasonCounts.get(key) ?? 0) + 1) }
   const dispatchEvents = events.filter((event) => event.type === 'worker.dispatched')
   const byProvider: Record<string, number> = {}
-  for (const event of dispatchEvents) { const key = `${String(event['provider'] ?? '?')}/${String(event['model'] ?? '?')}`; byProvider[key] = (byProvider[key] ?? 0) + 1 }
+  for (const event of dispatchEvents) { const effort = event['effort']; const key = `${String(event['provider'] ?? '?')}/${String(event['model'] ?? '?')}${effort ? `@${String(effort)}` : ''}`; byProvider[key] = (byProvider[key] ?? 0) + 1 }
 
   const issuesDir = join(loaded.stateDir, 'issues')
   const rows: RetroIssueRow[] = []

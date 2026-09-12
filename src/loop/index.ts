@@ -1,5 +1,5 @@
 export { LOOP_CONFIG_FILE, LOOP_CONFIG_SCHEMA_VERSION, LOOP_LOCAL_CONFIG_FILE, LoopConfigSchema, loadLoopConfig, mergeLoopConfig, parseLoopConfigText, parseModelRef, providerIdentity, renderTuiCommand, tiersFor, validateLoopConfig } from './config.js'
-export type { LoadedLoopConfig, LoopConfig, LoopConfigInput, LoopProviderConfig, ModelReference } from './config.js'
+export type { LoadedLoopConfig, LoopConfig, LoopConfigInput, LoopProviderConfig, ModelReference, EffortLevel } from './config.js'
 export { AGENT_REGISTRY_SCHEMA_VERSION, AgentRegistryEntrySchema, AgentRegistrySchema, loadAgentRegistry, parseAgentRegistryText, resolveAgentForRole } from './agent-registry.js'
 export type { AgentRegistry, AgentRegistryEntry, ResolvedAgent } from './agent-registry.js'
 export { createProcessRunner } from './process.js'
@@ -17,11 +17,11 @@ export type { CooldownEntry, CooldownState } from './cooldown.js'
 export { countRunningWorkers, providerSpecs, runLoopDoctor } from './doctor.js'
 export type { DoctorCheck, DoctorCheckStatus, LoopDoctorInput, LoopDoctorReport } from './doctor.js'
 export { CONTRACT_CLOSE, CONTRACT_OPEN, CONTRACT_SCHEMA_VERSION, ContractOutcomeSchema, TaskContractSchema, assessContract, contractIsFresh, contractPath, generateContract, parseContractOutput, readStoredContract, renderContractPrompt, resolveDocContext, untrusted, writeStoredContract } from './contract.js'
-export { classifyProviderFailure } from './contract.js'
+export { classifyProviderFailure, extractResetsAt } from './contract.js'
 export type { ContractAssessment, GenerateContractInput, ProviderFailure, StoredContract, TaskContract } from './contract.js'
 export { renderHandoffBrief, renderWorkerBrief } from './brief.js'
 export type { HandoffBriefInput, WorkerBriefInput } from './brief.js'
-export { appendLoopEvent, branchFor, busyIssues, dispatchRecordPath, gatherLoopState, launchWorkerTerminal, precheckTick, readDispatchRecord, writeDispatchRecord, runTick, worktreeNameFor } from './tick.js'
+export { appendLoopEvent, branchFor, briefPath, busyIssues, dispatchRecordPath, gatherLoopState, launchWorkerTerminal, precheckTick, readDispatchRecord, writeDispatchRecord, runTick, worktreeNameFor } from './tick.js'
 export type { DispatchRecordFile, LoopState, TickCandidateResult, TickInput, TickOutcome, TickReport } from './tick.js'
 export { deliveryStatePath, listDispatched, precheckDeliver, readDeliveryState, runDeliver } from './deliver.js'
 export type { DeliverInput, DeliverOutcome, DeliverReport, DeliverResult, DeliveryState } from './deliver.js'
@@ -46,3 +46,15 @@ export { buildDebriefReport, renderDebriefMarkdown } from './debrief.js'
 export type { DebriefInput, DebriefIssueRow, DebriefReport } from './debrief.js'
 export { classifyWatchEvent, classifyWatchPhase, formatWatchEvent, snapshotWatchTargets, watchDeliveries } from './watch.js'
 export type { WatchEvent, WatchEventKind, WatchInput, WatchReport, WatchTargetSnapshot } from './watch.js'
+
+export {
+  clearIssueFailures, isIssuePaused, isStagePaused, issueFailurePath, listPausedIssues, pauseIssue, readIssueFailures,
+  readStagePause, recordIssueFailure, recordStageRunResult, resumeIssue, resumeStage, stageEntry, stagePausePath,
+} from './resilience-state.js'
+export type { IssueFailureRecord, IssueFailureState, LoopStageName, StagePauseEntry, StagePauseState } from './resilience-state.js'
+
+export { loadPinnedSkills, renderPinnedSkills, skillDigest, skillRefs } from './skills.js'
+export type { PinnedSkill, PinnedSkillRef } from './skills.js'
+
+export { discoverIntake, intakeIssueId, intakePath, listIntake, readIntake } from './github-intake.js'
+export type { IntakeRecord } from './github-intake.js'

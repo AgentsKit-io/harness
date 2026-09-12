@@ -7,7 +7,7 @@ const packageJson = JSON.parse(readFileSync('package.json', 'utf8'))
 const { digest, ...body } = manifest
 const failures = []
 if (manifest.type !== 'agentskit-harness-release-manifest' || manifest.schemaVersion !== 1) failures.push('invalid release manifest type/schema')
-if (manifest.package !== packageJson.name || manifest.version !== packageJson.version || manifest.version !== '0.5.0') failures.push('release/package version mismatch')
+if (manifest.package !== packageJson.name || manifest.version !== packageJson.version) failures.push('release/package version mismatch')
 if (!manifest.publication?.trustedPublishing || manifest.publication?.usesNpmToken) failures.push('publication must use Trusted Publishing without NPM_TOKEN')
 if (manifest.publication?.branch !== 'main') failures.push('publication branch must be main')
 if (!Array.isArray(manifest.blockedCriteria) || manifest.blockedCriteria.length === 0) failures.push('unverified release blockers must be explicit')
