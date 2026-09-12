@@ -14,6 +14,8 @@ import { assessContract, contractIsFresh, generateContract, readStoredContract, 
 import { activeCooldowns, readCooldowns } from './cooldown.js'
 import { countRunningWorkers, providerSpecs } from './doctor.js'
 import { openLoopMemory, planMemoryContext } from './memory.js'
+import { MODEL_ROLES } from '../kernel/model-policy.js'
+import { resolveCatalogCandidates } from './model-catalog/index.js'
 import { rankModels, routeAllRoles, type RoutingDecision } from './routing.js'
 import { assessSlots, type SlotAssessment, type SlotInput } from './slots.js'
 import { markProviderExhausted } from './cooldown.js'
@@ -144,7 +146,19 @@ export const gatherLoopState = async (input: { readonly loaded: LoadedLoopConfig
     fetchLinearQueue(input.runner, { bin: config.orca.bin, workspaceId: config.linear.workspaceId, teamKey: config.linear.teamKey, assignee: config.linear.person, filter: config.linear, orca }),
   ])
   const providers = await detectProviders({ providers: providerSpecs(config), accountList, agentHooks, env: input.env, platform: input.platform, exhaustedPercent: config.models.cooldown.exhaustedPercent, cooldowns: activeCooldowns(readCooldowns(input.loaded.stateDir), input.now()), now: input.now })
-  const routing = routeAllRoles(config, providers)
+  const availableIds = providers.filter((provider) => provider.available).map((provider) => provider.id)
+  const extrasByRole = config.models.routing.mode === 'catalog'
+    ? Object.fromEntries(await Promise.all(MODEL_ROLES.map(async (role) => [role, await resolveCatalogCandidates({
+      config,
+      role,
+      availableProviderIds: availableIds,
+      runner: input.runner,
+      stateDir: input.loaded.stateDir,
+      env: input.env,
+      now: input.now,
+    })] as const)))
+    : {}
+  const routing = routeAllRoles(config, providers, extrasByRole)
   const running = countRunningWorkers(worktrees)
   const slots = assessSlots({ machine: config.machine, running, platform: input.platform, ...input.machine })
   const leases = input.ledger.active()
@@ -181,7 +195,18 @@ export const runTick = async (input: TickInput): Promise<TickReport> => {
   const results: TickCandidateResult[] = []
   const state = await gatherLoopState({ loaded, runner: input.runner, ledger, env: input.env, platform: input.platform, now, onlyIssue: input.onlyIssue, machine: input.machine })
   const orchestrator = state.routing['orchestrator'] ?? { role: 'orchestrator', selected: null, skipped: [] }
-  const orchestratorCandidates = rankModels(config, 'orchestrator', state.providers)
+  const orchestratorExtras = config.models.routing.mode === 'catalog'
+    ? await resolveCatalogCandidates({
+      config,
+      role: 'orchestrator',
+      availableProviderIds: state.providers.filter((provider) => provider.available).map((provider) => provider.id),
+      runner: input.runner,
+      stateDir: loaded.stateDir,
+      env: input.env,
+      now,
+    })
+    : []
+  const orchestratorCandidates = rankModels(config, 'orchestrator', state.providers, orchestratorExtras)
   const onProviderFailure = (failure: { readonly provider: string; readonly kind: string; readonly detail: string }): void => {
     if (dryRun) return
     const entry = markProviderExhausted(loaded.stateDir, failure.provider, { initialMin: config.models.cooldown.initialMin, maxMin: config.models.cooldown.maxMin, reason: `${failure.kind}: ${(failure.detail.split('\n')[0] ?? '').slice(0, 200)}`, now: now() })

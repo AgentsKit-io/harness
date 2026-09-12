@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.7.0] - 2026-09-12
+
+- Dynamic model routing: `models.routing.mode` (`tiers` | `hybrid` | `dynamic` | `catalog`). Default `tiers` preserves 0.6 behaviour.
+- `hybrid`/`dynamic` rank available providers by **remaining Orca usage** (most-constrained window) so work follows quota instead of fixed YAML order.
+- Living model catalog (`catalog` mode): CLI discovery (`grok models`), builtin catalog, optional Artificial Analysis cache (`ARTIFICIAL_ANALYSIS_API_KEY`), role quality bands (`frontier`/`balanced`/`fast`).
+- Doctor reports remaining usage, why a model was chosen, and Orca integrations missing from `models.providers`.
+
 ## [0.6.0] - 2026-09-12
 
 - Loop **approved memory** for token reduction and continuous improvement: file store under `stateDir`, recall into contract/brief with `preferOverDocBridge` + issue-char shrink, human-only `ak-harness loop learning promote`, `memory.recalled` events.

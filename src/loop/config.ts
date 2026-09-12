@@ -80,6 +80,41 @@ export const LoopConfigSchema = z.object({
     reviewer: tiers,
     builder: tiers,
     watcher: tiers,
+    /** How candidates are ordered. `tiers` = YAML order (0.6 behaviour). `hybrid` = keep tiers, rank by remaining usage inside each. `dynamic` = flatten + usage. `catalog` = discover models via CLI/AA/builtin + usage. */
+    routing: z.object({
+      mode: z.enum(['tiers', 'hybrid', 'dynamic', 'catalog']).default('tiers'),
+      /** Which usage window drives remaining%. `max` = most constrained window. */
+      usageMetric: z.enum(['max', 'session', 'weekly', 'monthly']).default('max'),
+      /** Prefer providers with live usage % over those with unknown usage (e.g. grok often has no %). */
+      preferKnownUsage: z.boolean().default(true),
+      excludeProviders: z.array(nonEmpty).default([]),
+      /** If non-empty, only these providers may be selected (still must be declared under providers). */
+      includeProviders: z.array(nonEmpty).default([]),
+      /** Hard pin per role (`provider/model`). If pinned provider is unavailable, fall through unless pinStrict. */
+      pin: z.object({
+        orchestrator: modelRef.optional(),
+        reviewer: modelRef.optional(),
+        builder: modelRef.optional(),
+        watcher: modelRef.optional(),
+      }).prefault({}),
+      pinStrict: z.boolean().default(false),
+    }).prefault({}),
+    /** Quality band when `routing.mode: catalog` (and as soft bias in hybrid). */
+    roles: z.object({
+      orchestrator: z.object({ quality: z.enum(['frontier', 'balanced', 'fast']).default('frontier'), preferCreators: z.array(nonEmpty).default([]) }).prefault({}),
+      reviewer: z.object({ quality: z.enum(['frontier', 'balanced', 'fast']).default('frontier'), preferCreators: z.array(nonEmpty).default([]) }).prefault({}),
+      builder: z.object({ quality: z.enum(['frontier', 'balanced', 'fast']).default('balanced'), preferCreators: z.array(nonEmpty).default([]) }).prefault({}),
+      watcher: z.object({ quality: z.enum(['frontier', 'balanced', 'fast']).default('fast'), preferCreators: z.array(nonEmpty).default([]) }).prefault({}),
+    }).prefault({}),
+    catalog: z.object({
+      sources: z.array(z.enum(['cli', 'artificial-analysis', 'builtin'])).default(['cli', 'builtin']),
+      artificialAnalysis: z.object({
+        enabled: z.boolean().default(false),
+        apiKeyEnv: nonEmpty.default('ARTIFICIAL_ANALYSIS_API_KEY'),
+        cacheHours: z.number().positive().default(24),
+        endpoint: nonEmpty.default('https://artificialanalysis.ai/api/v2/data/llms/models'),
+      }).prefault({}),
+    }).prefault({}),
     cooldown: z.object({
       initialMin: z.number().int().positive().default(30),
       maxMin: z.number().int().positive().default(240),

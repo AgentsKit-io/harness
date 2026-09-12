@@ -2,7 +2,7 @@
   "type": "agentskit-harness-release-manifest",
   "schemaVersion": 1,
   "package": "@agentskit/harness",
-  "version": "0.6.0",
+  "version": "0.7.0",
   "channel": "latest",
   "sourceRevision": "b8cfe596e5f30f2c373b89f00f271079b296feaf",
   "requiredChecks": [

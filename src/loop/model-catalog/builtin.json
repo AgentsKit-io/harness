@@ -1,0 +1,36 @@
+{
+  "schemaVersion": 1,
+  "providers": {
+    "claude": {
+      "creator": "anthropic",
+      "models": [
+        { "id": "opus", "quality": "frontier", "codingScore": 90 },
+        { "id": "sonnet", "quality": "balanced", "codingScore": 80 },
+        { "id": "haiku", "quality": "fast", "codingScore": 55 }
+      ]
+    },
+    "codex": {
+      "creator": "openai",
+      "models": [
+        { "id": "gpt-5.6-sol", "quality": "frontier", "codingScore": 92 },
+        { "id": "gpt-5.6-luna", "quality": "balanced", "codingScore": 78 },
+        { "id": "gpt-5.4", "quality": "balanced", "codingScore": 70 }
+      ]
+    },
+    "opencode": {
+      "creator": "opencode",
+      "models": [
+        { "id": "opencode-go/glm-5.3", "quality": "balanced", "codingScore": 72 },
+        { "id": "opencode-go/glm-5.3-flash", "quality": "fast", "codingScore": 58 }
+      ]
+    },
+    "grok": {
+      "creator": "xai",
+      "models": [
+        { "id": "grok-4.6", "quality": "frontier", "codingScore": 85 },
+        { "id": "grok-4.5", "quality": "balanced", "codingScore": 75 },
+        { "id": "grok-4-fast", "quality": "fast", "codingScore": 60 }
+      ]
+    }
+  }
+}
