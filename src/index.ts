@@ -137,6 +137,7 @@ export { deliveryStatePath, listDispatched, precheckDeliver, readDeliveryState, 
 export type { DeliverInput, DeliverOutcome, DeliverReport, DeliverResult, DeliveryState } from './loop/deliver.js'
 export { LOOP_STAGES, automationName, automationPrompt, automationSpecs, installLoopAutomations, loopStatus, parseAutomationRuns, precheckCommand, shellQuote, uninstallLoopAutomations } from './loop/install.js'
 export type { AutomationStatus, InstallAction, InstallInput, InstallReport, LoopStage, LoopStatusReport } from './loop/install.js'
+export { advanceQueueOwner, queueOwner, rotationStatePath } from './loop/rotation.js'
 export { installPreflight, runGuidedInstall } from './loop/guided-install.js'
 export { createRichIO } from './loop/ui/terminal.js'
 export type { RichIO } from './loop/ui/terminal.js'
@@ -167,3 +168,6 @@ export type { PinnedSkill, PinnedSkillRef } from './loop/skills.js'
 
 export { discoverIntake, intakeIssueId, intakePath, listIntake, readIntake } from './loop/github-intake.js'
 export type { IntakeRecord } from './loop/github-intake.js'
+
+export { createLoopEventBus, loadLoopPlugins } from './loop/event-bus.js'
+export type { LoopEventBus, LoopEventListener, LoopEventPayload, LoopHookListener, LoopHookName, LoopHookPayload, LoopHookResult, LoopPluginModule } from './loop/event-bus.js'

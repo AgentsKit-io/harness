@@ -29,6 +29,10 @@ linear:
   person: my-linear-display-name     # the ONLY queue this machine drains
   people:                            # display name -> Linear user id (orca linear team members …)
     my-linear-display-name: <linear-user-id>
+  rotation:
+    enabled: false                   # set true to advance through owners when the current dispatchable queue drains
+    owners: [my-linear-display-name] # ordered display names; the first entry is the initial owner
+    advanceWhenEmpty: true           # never switch while an active lease remains
   states: [Todo, Ready]              # dispatchable states; anything already started is left alone
   excludeLabels: [blocked, needs-info]
   requireLabels: []
@@ -80,7 +84,8 @@ models:
       bin: codex
       auth: subscription
       envKeys: [OPENAI_API_KEY]
-      tui: "codex -m {model} --full-auto"
+      # Codex 0.154+ uses explicit approval/sandbox flags; --full-auto is not a valid CLI option.
+      tui: "codex -m {model} -s workspace-write -a never"
       headless: [codex, exec, -m, "{model}", -s, read-only, --skip-git-repo-check, "{prompt}"]
       # effortFlag: "-c model_reasoning_effort={effort}"
     opencode:
@@ -172,6 +177,12 @@ github:
   intakeLabel: loop:review           # a PR with this label is reviewed even though the loop never dispatched it;
                                       # null disables intake entirely
   reviewOnly: true                   # fixed: intake PRs are always review + comment, never auto-merged
+
+plugins:
+  modules: []                        # e.g. [scripts/loop-plugins/notify.mjs] — local .mjs files (relative to
+                                      # project.root, never fetched over the network) loaded once per tick/deliver;
+                                      # each exports { id, apply(bus) } and can subscribe to loop events or block a
+                                      # beforeDispatch/beforeReview/beforeMerge hook — see docs/LOOP.md
 
 resilience:
   maxConsecutiveFailures: 3          # pause an issue after this many consecutive contract/dispatch failures

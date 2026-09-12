@@ -12,6 +12,8 @@ import { activeCooldowns, readCooldowns } from './cooldown.js'
 import { resolveCatalogCandidates } from './model-catalog/index.js'
 import { routeAllRoles, type RoutingDecision } from './routing.js'
 import { assessSlots, type SlotAssessment } from './slots.js'
+import { queueOwner } from './rotation.js'
+import { createLoopEventBus, loadLoopPlugins } from './event-bus.js'
 
 export type DoctorCheckStatus = 'passed' | 'warning' | 'failed'
 export interface DoctorCheck { readonly id: string; readonly status: DoctorCheckStatus; readonly detail: string }
@@ -47,13 +49,20 @@ export const providerSpecs = (config: LoopConfig): readonly ProviderSpec[] => Ob
   return { id, bin: settings.bin, auth: settings.auth, envKeys: settings.envKeys, orcaUsageKey, ...(settings.probe ? { probe: settings.probe } : {}) }
 })
 
-/** Count worktrees the loop treats as live workers: not archived, not the main checkout, with a live terminal or a linked Linear issue. */
-export const countRunningWorkers = (worktrees: readonly OrcaWorktree[]): number => worktrees.filter((item) => !item.isArchived && !item.isMainWorktree && (item.liveTerminalCount > 0 || item.linkedLinearIssue !== null)).length
+/** Count worktrees still doing implementation work. Review/completed worktrees keep their lease for delivery, but must not consume a builder slot. */
+export const countRunningWorkers = (worktrees: readonly OrcaWorktree[]): number => worktrees.filter((item) => {
+  if (item.isArchived || item.isMainWorktree) return false
+  // ponytail: only explicit terminal lifecycle states are excluded; unknown states stay fail-closed.
+  const status = item.workspaceStatus.trim().toLowerCase()
+  if (status === 'in-review' || status === 'completed') return false
+  return item.liveTerminalCount > 0 || item.linkedLinearIssue !== null
+}).length
 
 export const runLoopDoctor = async (input: LoopDoctorInput): Promise<LoopDoctorReport> => {
   const now = input.now ?? (() => new Date())
   const loaded = input.loaded ?? loadLoopConfig(input.configPath)
   const { config } = loaded
+  const person = queueOwner(loaded)
   const orcaOptions = { bin: config.orca.bin, timeoutMs: config.orca.timeoutMs }
   const checks: DoctorCheck[] = []
   const push = (id: string, status: DoctorCheckStatus, detail: string): void => { checks.push({ id, status, detail }) }
@@ -118,8 +127,8 @@ export const runLoopDoctor = async (input: LoopDoctorInput): Promise<LoopDoctorR
   let queue: readonly LoopIssue[] = []
   let queueError: string | null = null
   try {
-    queue = await fetchLinearQueue(input.runner, { bin: config.orca.bin, workspaceId: config.linear.workspaceId, teamKey: config.linear.teamKey, assignee: config.linear.person, filter: config.linear, orca: orcaOptions })
-    push('linear.queue', 'passed', `${queue.length} dispatchable issue(s) for ${config.linear.person} in ${config.linear.states.join('/')}`)
+    queue = await fetchLinearQueue(input.runner, { bin: config.orca.bin, workspaceId: config.linear.workspaceId, teamKey: config.linear.teamKey, assignee: person, filter: config.linear, orca: orcaOptions })
+    push('linear.queue', 'passed', `${queue.length} dispatchable issue(s) for ${person} in ${config.linear.states.join('/')}`)
   } catch (error) { queueError = message(error); push('linear.queue', 'failed', queueError) }
 
   const docBridge = inspectDocBridgeIndex(loaded.root)
@@ -151,6 +160,15 @@ export const runLoopDoctor = async (input: LoopDoctorInput): Promise<LoopDoctorR
     }
   }
 
+  if (config.plugins.modules.length) {
+    const { loaded: loadedModules, errors: pluginErrors } = await loadLoopPlugins(loaded.root, config.plugins.modules, createLoopEventBus())
+    if (pluginErrors.length) {
+      push('plugins.modules', 'failed', `${pluginErrors.length} of ${config.plugins.modules.length} plugin module(s) failed to load: ${pluginErrors.map((failure) => `${failure.path} (${failure.error})`).join(', ')}`)
+    } else {
+      push('plugins.modules', 'passed', `${loadedModules.length} plugin module(s) loaded (${loadedModules.join(', ')})`)
+    }
+  }
+
   const reviewCli = config.delivery.review.cli
   const reviewBin = findExecutable(reviewCli, input.env ?? process.env, input.platform ?? process.platform)
   // Warning (not failed): tick can still dispatch; deliver waits until the review CLI is available.
@@ -173,7 +191,7 @@ export const runLoopDoctor = async (input: LoopDoctorInput): Promise<LoopDoctorR
   return {
     status: failed ? 'failed' : 'passed',
     generatedAt: now().toISOString(),
-    config: { path: loaded.path, hash: loaded.configHash, project: config.project.name, repo: config.project.repo, person: config.linear.person, stateDir: loaded.stateDir },
+    config: { path: loaded.path, hash: loaded.configHash, project: config.project.name, repo: config.project.repo, person, stateDir: loaded.stateDir },
     orca: { binary: config.orca.bin, version, minVersion: config.orca.minVersion, status, error: orcaError },
     providers,
     routing,

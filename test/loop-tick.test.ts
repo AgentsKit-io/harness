@@ -19,7 +19,7 @@ interface Env { readonly dir: string; readonly bin: string; readonly runner: Com
 const cleanups: string[] = []
 afterEach(() => { for (const dir of cleanups.splice(0)) rmSync(dir, { recursive: true, force: true }) })
 
-const makeEnv = (options: { readonly contract?: TaskContract | 'garbage'; readonly worktrees?: unknown; readonly failCreate?: boolean; readonly claudeAuthFails?: boolean; readonly claudeSessionLimit?: boolean; readonly failAllContracts?: boolean; readonly accountList?: unknown; readonly briefSkills?: readonly string[]; readonly setup?: { readonly exitCode?: number; readonly timedOut?: boolean }; readonly setupRequired?: boolean } = {}): Env => {
+const makeEnv = (options: { readonly contract?: TaskContract | 'garbage'; readonly worktrees?: unknown; readonly failCreate?: boolean; readonly claudeAuthFails?: boolean; readonly claudeSessionLimit?: boolean; readonly failAllContracts?: boolean; readonly accountList?: unknown; readonly briefSkills?: readonly string[]; readonly setup?: { readonly exitCode?: number; readonly timedOut?: boolean }; readonly setupRequired?: boolean; readonly pluginSource?: string } = {}): Env => {
   const dir = mkdtempSync(join(tmpdir(), 'agentskit-loop-tick-')); cleanups.push(dir)
   const bin = join(dir, 'bin'); rmSync(bin, { recursive: true, force: true })
   let yaml = options.briefSkills?.length ? exampleYaml.replace('skills: []', `skills: [${options.briefSkills.join(', ')}]`) : exampleYaml
@@ -28,6 +28,10 @@ const makeEnv = (options: { readonly contract?: TaskContract | 'garbage'; readon
     const replacement = `  setup:\n    command: [setup-check]\n    timeoutSec: 600\n    required: ${options.setupRequired ?? true}\n`
     if (!yaml.includes(setupBlock)) throw new Error('loop.config.example.yaml setup block text drifted from the test fixture')
     yaml = yaml.replace(setupBlock, replacement)
+  }
+  if (options.pluginSource !== undefined) {
+    writeFileSync(join(dir, 'plugin.mjs'), options.pluginSource, 'utf8')
+    yaml = yaml.replace('modules: []', 'modules: [plugin.mjs]')
   }
   writeFileSync(join(dir, 'loop.config.yaml'), yaml)
   const binDir = mkdtempSync(join(tmpdir(), 'agentskit-loop-tick-bin-')); cleanups.push(binDir)
@@ -191,6 +195,43 @@ describe('tick', () => {
     expect(env.runner.calls.filter((argv) => argv[0] === 'claude' && argv[1] === '-p')).toHaveLength(2)
   })
 
+  it('loads a plugins.modules script and runs beforeDispatch/afterDispatch hooks around a real dispatch', async () => {
+    const env = makeEnv({ pluginSource: `
+      export default {
+        id: 'test-plugin',
+        apply(bus) {
+          globalThis.__hookCalls = []
+          bus.hook('beforeDispatch', (payload) => { globalThis.__hookCalls.push(['before', payload.issue]) })
+          bus.hook('afterDispatch', (payload) => { globalThis.__hookCalls.push(['after', payload.issue]) })
+          bus.on('worker.dispatched', (event) => { globalThis.__hookCalls.push(['event', event.issue]) })
+        },
+      }
+    ` })
+    const report = await runTick({ ...tickOptions(env), maxDispatch: 1 })
+    expect(report.results[0]).toMatchObject({ outcome: 'dispatched' })
+    const calls = (globalThis as { __hookCalls?: readonly [string, string][] }).__hookCalls ?? []
+    const issue = report.results[0]?.issue
+    expect(calls).toEqual([['before', issue], ['event', issue], ['after', issue]])
+  })
+
+  it('a beforeDispatch hook that blocks skips the dispatch instead of creating a worktree', async () => {
+    const env = makeEnv({ pluginSource: `
+      export default { id: 'blocker', apply(bus) { bus.hook('beforeDispatch', () => ({ block: true, reason: 'not now' })) } }
+    ` })
+    const report = await runTick({ ...tickOptions(env), maxDispatch: 1 })
+    expect(report.results[0]).toMatchObject({ outcome: 'skipped', reason: expect.stringContaining('blocked by plugin: not now') })
+    expect(env.runner.calls.some((argv) => argv[1] === 'worktree' && argv[2] === 'create')).toBe(false)
+    expect(createDispatchLedger(loadLoopConfig(env.configPath).stateDir).active()).toEqual([])
+  })
+
+  it('a plugin module that fails to load is reported as a note and does not stop the tick', async () => {
+    const env = makeEnv()
+    writeFileSync(env.configPath, readFileSync(env.configPath, 'utf8').replace('modules: []', 'modules: [missing-plugin.mjs]'))
+    const report = await runTick({ ...tickOptions(env), maxDispatch: 1 })
+    expect(report.notes.some((note) => note.includes('missing-plugin.mjs') && note.includes('failed to load'))).toBe(true)
+    expect(report.results[0]).toMatchObject({ outcome: 'dispatched' })
+  })
+
   it('pins configured skill files into the worker brief and records their digests on the dispatch record', async () => {
     const env = makeEnv({ briefSkills: ['AGENTS.md'] })
     writeFileSync(join(env.dir, 'AGENTS.md'), '# Conventions\nUse named exports only.', 'utf8')
@@ -243,6 +284,14 @@ describe('tick', () => {
     const termCreateIndex = env.runner.calls.findIndex((argv) => argv[1] === 'terminal' && argv[2] === 'create')
     expect(setupCallIndex).toBeGreaterThan(createCallIndex)
     expect(setupCallIndex).toBeLessThan(termCreateIndex)
+  })
+
+  it('fits a configured setup timeout inside the bounded stage budget instead of skipping every candidate', async () => {
+    const env = makeEnv({ setup: { exitCode: 0 } })
+    const report = await runTick({ ...tickOptions(env), maxDispatch: 1, budgetMs: 540_000 })
+    expect(report.results[0]).toMatchObject({ outcome: 'dispatched' })
+    const setupCall = env.runner.calls.find((argv) => argv[0] === 'setup-check')
+    expect(setupCall).toBeDefined()
   })
 
   it('required setup that fails removes the worktree, never opens a terminal, and counts as a dispatch failure', async () => {

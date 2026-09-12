@@ -20,6 +20,8 @@ import { resolveCatalogCandidates } from './model-catalog/index.js'
 import { rankModels, routeAllRoles, type RoutingDecision } from './routing.js'
 import { assessSlots, type SlotAssessment, type SlotInput } from './slots.js'
 import { markProviderExhausted } from './cooldown.js'
+import { advanceQueueOwner, queueOwner } from './rotation.js'
+import { createLoopEventBus, loadLoopPlugins, type LoopEventBus, type LoopEventPayload } from './event-bus.js'
 
 export type TickOutcome = 'dispatched' | 'dry-run' | 'skipped' | 'escalated' | 'failed'
 
@@ -134,9 +136,15 @@ export const writeDispatchRecord = (stateDir: string, record: DispatchRecordFile
   writeJson(path, record)
   return path
 }
-export const appendLoopEvent = (stateDir: string, event: Record<string, unknown>): void => { const path = join(stateDir, 'events.ndjson'); mkdirSync(dirname(path), { recursive: true }); appendFileSync(path, `${JSON.stringify(event)}\n`, 'utf8') }
+export const appendLoopEvent = (stateDir: string, event: Record<string, unknown>, bus?: LoopEventBus): void => {
+  const path = join(stateDir, 'events.ndjson')
+  mkdirSync(dirname(path), { recursive: true })
+  appendFileSync(path, `${JSON.stringify(event)}\n`, 'utf8')
+  if (bus && typeof event['type'] === 'string') bus.emit(event as LoopEventPayload)
+}
 
 export interface LoopState {
+  readonly person: string
   readonly providers: readonly ProviderAvailability[]
   readonly routing: Readonly<Record<string, RoutingDecision>>
   readonly worktrees: readonly OrcaWorktree[]
@@ -149,12 +157,13 @@ export interface LoopState {
 
 export const gatherLoopState = async (input: { readonly loaded: LoadedLoopConfig; readonly runner: CommandRunner; readonly ledger: DispatchLedger; readonly env?: NodeJS.ProcessEnv; readonly platform?: NodeJS.Platform; readonly now: () => Date; readonly onlyIssue?: string; readonly machine?: TickInput['machine'] }): Promise<LoopState> => {
   const { config } = input.loaded
+  const person = queueOwner(input.loaded)
   const orca = { bin: config.orca.bin, timeoutMs: config.orca.timeoutMs }
   const [accountList, agentHooks, worktrees, queue] = await Promise.all([
     orcaAccountList(input.runner, orca).catch(() => ({})),
     orcaAgentHooks(input.runner, orca).catch(() => ({}) as Readonly<Record<string, 'installed' | 'not_installed' | 'unknown'>>),
     orcaWorktrees(input.runner, orca),
-    fetchLinearQueue(input.runner, { bin: config.orca.bin, workspaceId: config.linear.workspaceId, teamKey: config.linear.teamKey, assignee: config.linear.person, filter: config.linear, orca }),
+    fetchLinearQueue(input.runner, { bin: config.orca.bin, workspaceId: config.linear.workspaceId, teamKey: config.linear.teamKey, assignee: person, filter: config.linear, orca }),
   ])
   const providers = await detectProviders({ providers: providerSpecs(config), accountList, agentHooks, env: input.env, platform: input.platform, exhaustedPercent: config.models.cooldown.exhaustedPercent, cooldowns: activeCooldowns(readCooldowns(input.loaded.stateDir), input.now()), now: input.now })
   const availableIds = providers.filter((provider) => provider.available).map((provider) => provider.id)
@@ -173,9 +182,9 @@ export const gatherLoopState = async (input: { readonly loaded: LoadedLoopConfig
   const running = countRunningWorkers(worktrees)
   const slots = assessSlots({ machine: config.machine, running, platform: input.platform, ...input.machine })
   const leases = input.ledger.active()
-  const busy = busyIssues(queue, leases, worktrees, config.linear.person)
+  const busy = busyIssues(queue, leases, worktrees, person)
   const candidates = queue.filter((issue) => !busy.has(issue.identifier) && (!input.onlyIssue || issue.identifier === input.onlyIssue))
-  return { providers, routing, worktrees, slots, queue, leases, busy, candidates }
+  return { person, providers, routing, worktrees, slots, queue, leases, busy, candidates }
 }
 
 /** Read-only: exit-0 semantics for Orca `--precheck`. Work exists when a slot is free, a builder is routable, and a candidate waits. */
@@ -204,6 +213,11 @@ export const runTick = async (input: TickInput): Promise<TickReport> => {
   const ledger = createDispatchLedger(loaded.stateDir)
   const notes: string[] = []
   const results: TickCandidateResult[] = []
+  const bus = createLoopEventBus()
+  if (config.plugins.modules.length) {
+    const { errors } = await loadLoopPlugins(loaded.root, config.plugins.modules, bus)
+    for (const failure of errors) notes.push(`plugin ${failure.path} failed to load: ${failure.error}`)
+  }
   const state = await gatherLoopState({ loaded, runner: input.runner, ledger, env: input.env, platform: input.platform, now, onlyIssue: input.onlyIssue, machine: input.machine })
   const orchestrator = state.routing['orchestrator'] ?? { role: 'orchestrator', selected: null, skipped: [] }
   const orchestratorExtras = config.models.routing.mode === 'catalog'
@@ -223,14 +237,19 @@ export const runTick = async (input: TickInput): Promise<TickReport> => {
     const resetsAt = extractResetsAt(failure.detail, now())
     const entry = markProviderExhausted(loaded.stateDir, failure.provider, { initialMin: config.models.cooldown.initialMin, maxMin: config.models.cooldown.maxMin, reason: `${failure.kind}: ${(failure.detail.split('\n')[0] ?? '').slice(0, 200)}`, resetsAt, now: now() })
     notes.push(`provider ${failure.provider} marked cooling down until ${entry.until} (${failure.kind})`)
-    appendLoopEvent(loaded.stateDir, { at: now().toISOString(), type: 'provider.cooldown', provider: failure.provider, kind: failure.kind, until: entry.until })
+    appendLoopEvent(loaded.stateDir, { at: now().toISOString(), type: 'provider.cooldown', provider: failure.provider, kind: failure.kind, until: entry.until }, bus)
   }
   const builder = state.routing['builder']?.selected ?? null
   const summary = { orchestrator: orchestrator.selected ? `${orchestrator.selected.provider}/${orchestrator.selected.model}` : null, builder: builder ? `${builder.provider}/${builder.model}` : null }
   const base = { generatedAt: now().toISOString(), dryRun, slots: { maxAgents: state.slots.maxAgents, running: state.slots.running, free: state.slots.free, reasons: state.slots.reasons }, routing: summary, queue: { total: state.queue.length, busy: [...state.busy], candidates: state.candidates.map((issue) => issue.identifier) } }
   if (!builder) { notes.push('no builder provider available; nothing dispatched'); return { ...base, status: 'blocked', results, notes } }
   if (state.slots.free <= 0) { notes.push(`no free slot (${state.slots.running}/${state.slots.maxAgents})`); return { ...base, status: 'idle', results, notes } }
-  if (!state.candidates.length) { notes.push('queue has no dispatchable candidate'); return { ...base, status: 'idle', results, notes } }
+  if (!state.candidates.length) {
+    const rotation = dryRun ? { owner: state.person, advanced: false } : advanceQueueOwner(loaded, { queueEmpty: state.queue.length === 0, activeLeases: state.leases.length, now: now() })
+    if (rotation.advanced) notes.push(`queue drained for ${state.person}; switched to ${rotation.owner}`)
+    else notes.push('queue has no dispatchable candidate')
+    return { ...base, status: 'idle', results, notes }
+  }
 
   const budget = Math.min(state.slots.free, input.maxDispatch ?? state.slots.free)
   const startedAt = Date.now()
@@ -256,12 +275,17 @@ export const runTick = async (input: TickInput): Promise<TickReport> => {
       await linearCommentAdd(input.runner, { issue, body, dedupeKey: `paused:${issue}:${failureState.consecutive}` }, write)
       await linearLabelAdd(input.runner, { issue, labels: [config.resilience.pausedLabel] }, write)
     } catch (error) { notes.push(`pause notification for ${issue} failed: ${message(error)}`) }
-    appendLoopEvent(loaded.stateDir, { at: now().toISOString(), type: 'issue.paused', issue, kind, consecutive: failureState.consecutive, reason })
+    appendLoopEvent(loaded.stateDir, { at: now().toISOString(), type: 'issue.paused', issue, kind, consecutive: failureState.consecutive, reason }, bus)
+    await bus.runHook('onPause', { issue, kind, consecutive: failureState.consecutive, reason })
   }
   let dispatched = 0
   for (const candidate of state.candidates) {
     if (dispatched >= budget) break
-    const setupBudgetMs = config.project.setup.command ? config.project.setup.timeoutSec * 1000 : 0
+    // Reserve only the portion of the configured setup timeout that can fit this stage. A full 600 s setup
+    // timeout must not make the 600 s stage mathematically unable to dispatch its first worker.
+    const setupBudgetMs = config.project.setup.command
+      ? Number.isFinite(timeBudgetMs) ? Math.min(config.project.setup.timeoutSec * 1000, Math.max(0, timeBudgetMs - config.contract.timeoutMs - 125_000)) : config.project.setup.timeoutSec * 1000
+      : 0
     if (remainingMs() < config.contract.timeoutMs + setupBudgetMs + 120_000 && !readStoredContract(loaded.stateDir, candidate.identifier)) { notes.push(`time budget: ${candidate.identifier} left for the next tick (${Math.round(remainingMs() / 1000)}s remaining)`); continue }
     if (isIssuePaused(loaded.stateDir, candidate.identifier)) {
       if (candidate.labels.includes(config.resilience.pausedLabel)) { results.push({ issue: candidate.identifier, outcome: 'skipped', reason: `paused after ${readIssueFailures(loaded.stateDir, candidate.identifier).consecutive} consecutive failures; remove the "${config.resilience.pausedLabel}" label or run "ak-harness loop resume ${candidate.identifier}" to retry` }); continue }
@@ -308,13 +332,13 @@ export const runTick = async (input: TickInput): Promise<TickReport> => {
               docBridgeAfter: plan.docBridgeAfter,
               approxCharsSaved: plan.approxCharsSaved,
               memoryDigest: plan.memoryDigest,
-            })
+            }, bus)
           },
         })
         if (!dryRun) writeStoredContract(loaded.stateDir, stored)
       } catch (error) {
         const reason = `contract generation failed: ${message(error)}`
-        if (!dryRun) { appendLoopEvent(loaded.stateDir, { at: now().toISOString(), type: 'contract.failed', issue: detail.identifier, error: message(error) }); await recordFailureAndMaybePause(detail.identifier, 'contract.failed', reason) }
+        if (!dryRun) { appendLoopEvent(loaded.stateDir, { at: now().toISOString(), type: 'contract.failed', issue: detail.identifier, error: message(error) }, bus); await recordFailureAndMaybePause(detail.identifier, 'contract.failed', reason) }
         results.push({ issue: detail.identifier, outcome: 'failed', reason })
         continue
       }
@@ -322,14 +346,17 @@ export const runTick = async (input: TickInput): Promise<TickReport> => {
     const assessment = assessContract(stored.contract)
     if (!assessment.dispatchable) {
       try { await escalate({ runner: input.runner, config, issue: detail, stored: { ...stored, assessment }, dryRun }) } catch (error) { notes.push(`escalation for ${detail.identifier} failed: ${message(error)}`) }
-      if (!dryRun) appendLoopEvent(loaded.stateDir, { at: now().toISOString(), type: 'contract.escalated', issue: detail.identifier, reasons: assessment.reasons, digest: stored.digest })
+      if (!dryRun) {
+        appendLoopEvent(loaded.stateDir, { at: now().toISOString(), type: 'contract.escalated', issue: detail.identifier, reasons: assessment.reasons, digest: stored.digest }, bus)
+        await bus.runHook('onEscalate', { issue: detail.identifier, reasons: assessment.reasons, digest: stored.digest })
+      }
       results.push({ issue: detail.identifier, outcome: 'escalated', reason: assessment.reasons.join('; '), contractDigest: stored.digest })
       continue
     }
 
-    const branch = branchFor(detail, config.linear.person)
+    const branch = branchFor(detail, state.person)
     const worktree = worktreeNameFor(detail)
-    const claim = ledger.claim({ tracker: 'linear', repository: config.project.repo, issue: detail.identifier, worktree, branch, owner: input.owner ?? `loop:${config.linear.person}` })
+    const claim = ledger.claim({ tracker: 'linear', repository: config.project.repo, issue: detail.identifier, worktree, branch, owner: input.owner ?? `loop:${state.person}` })
     if (claim.decision === 'already-claimed') { results.push({ issue: detail.identifier, outcome: 'skipped', reason: `lease already held by ${claim.lease.owner} since ${claim.lease.claimedAt}` }); continue }
     const plan = createOrcaDispatchPlan({ repository: config.orca.repoSelector ?? `path:${loaded.root}`, worktree, branch, baseBranch: config.project.baseBranch, launch: 'worktree-only', linearIssue: detail.url || detail.identifier, comment: `loop · ${detail.identifier} · ${builder.provider}/${builder.model}`, noParent: true, orcaBin: config.orca.bin })
     const title = `loop ${detail.identifier} · ${builder.provider}`
@@ -339,6 +366,12 @@ export const runTick = async (input: TickInput): Promise<TickReport> => {
       dispatched += 1
       continue
     }
+    const beforeDispatch = await bus.runHook('beforeDispatch', { issue: detail.identifier, provider: builder.provider, model: builder.model, branch, worktree })
+    if (beforeDispatch.block) {
+      ledger.release(claim.lease, `blocked by plugin: ${beforeDispatch.reason}`)
+      results.push({ issue: detail.identifier, outcome: 'skipped', reason: `blocked by plugin: ${beforeDispatch.reason}` })
+      continue
+    }
     let created: Awaited<ReturnType<typeof orcaWorktreeCreate>> | null = null
     try {
       created = await orcaWorktreeCreate(input.runner, plan.argv, { timeoutMs: Math.max(config.orca.timeoutMs, 120_000) })
@@ -346,10 +379,11 @@ export const runTick = async (input: TickInput): Promise<TickReport> => {
       const actualBranch = created.branch || branch
       let setupResult: { readonly command: readonly string[]; readonly exitCode: number | null; readonly durationMs: number; readonly timedOut: boolean } | null = null
       if (config.project.setup.command?.length) {
-        const setupRun = await input.runner.run(config.project.setup.command, { cwd: created.path, timeoutMs: config.project.setup.timeoutSec * 1000 })
+        const setupTimeoutMs = Number.isFinite(timeBudgetMs) ? Math.max(1_000, Math.min(config.project.setup.timeoutSec * 1000, remainingMs() - 120_000)) : config.project.setup.timeoutSec * 1000
+        const setupRun = await input.runner.run(config.project.setup.command, { cwd: created.path, timeoutMs: setupTimeoutMs })
         setupResult = { command: config.project.setup.command, exitCode: setupRun.code, durationMs: setupRun.durationMs, timedOut: setupRun.timedOut }
         const setupFailed = setupRun.timedOut || setupRun.code !== 0
-        appendLoopEvent(loaded.stateDir, { at: now().toISOString(), type: 'worker.setup', issue: detail.identifier, worktreeId: created.id, ...setupResult, ok: !setupFailed })
+        appendLoopEvent(loaded.stateDir, { at: now().toISOString(), type: 'worker.setup', issue: detail.identifier, worktreeId: created.id, ...setupResult, ok: !setupFailed }, bus)
         if (setupFailed && config.project.setup.required) {
           const detailMsg = setupRun.timedOut ? `timed out after ${config.project.setup.timeoutSec}s` : `exited ${setupRun.code}`
           throw new Error(`setup command failed (${detailMsg}): ${[...setupResult.command].join(' ')}${setupRun.stderr ? ` — ${setupRun.stderr.slice(-300)}` : ''}`)
@@ -389,7 +423,8 @@ export const runTick = async (input: TickInput): Promise<TickReport> => {
       ledger.recordDispatch({ lease: claim.lease, idempotencyKey: plan.idempotencyKey, commandDigest: plan.commandDigest })
       const record: DispatchRecordFile = { issue: detail.identifier, worktreeId: created.id, worktree, branch: actualBranch, terminal: launched.terminal, provider: builder.provider, model: builder.model, contractDigest: stored.digest, leaseKey: claim.lease.key, leaseId: claim.lease.leaseId, dispatchedAt: now().toISOString(), url: detail.url, briefDigest, skills: skillRefs(pinnedSkills), setup: setupResult, effort: builder.effort }
       writeJson(dispatchRecordPath(loaded.stateDir, detail.identifier), record)
-      appendLoopEvent(loaded.stateDir, { at: record.dispatchedAt, type: 'worker.dispatched', ...record, command: builder.tui, briefAccepted: launched.accepted, tuiIdle: launched.idle })
+      appendLoopEvent(loaded.stateDir, { at: record.dispatchedAt, type: 'worker.dispatched', ...record, command: builder.tui, briefAccepted: launched.accepted, tuiIdle: launched.idle }, bus)
+      await bus.runHook('afterDispatch', { issue: detail.identifier, provider: record.provider, model: record.model, branch: record.branch, worktreeId: record.worktreeId })
       clearIssueFailures(loaded.stateDir, detail.identifier)
       try {
         await tracking.transition({ tracker: 'linear', issue: detail.identifier, from: detail.state, to: config.linear.inProgressState, reason: `loop dispatched ${builder.provider}/${builder.model} in ${created.id}` })
@@ -400,7 +435,7 @@ export const runTick = async (input: TickInput): Promise<TickReport> => {
     } catch (error) {
       ledger.release(claim.lease, `dispatch failed: ${message(error)}`)
       if (created) { try { await orcaWorktreeRemove(input.runner, { worktree: `id:${created.id}`, force: true }, { bin: config.orca.bin, timeoutMs: 60_000 }); notes.push(`${detail.identifier}: removed half-created worktree ${created.id}`) } catch (cleanup) { notes.push(`${detail.identifier}: worktree ${created.id} left behind (${message(cleanup)})`) } }
-      appendLoopEvent(loaded.stateDir, { at: now().toISOString(), type: 'worker.dispatch-failed', issue: detail.identifier, error: message(error) })
+      appendLoopEvent(loaded.stateDir, { at: now().toISOString(), type: 'worker.dispatch-failed', issue: detail.identifier, error: message(error) }, bus)
       await recordFailureAndMaybePause(detail.identifier, 'worker.dispatch-failed', `dispatch failed: ${message(error)}`)
       results.push({ issue: detail.identifier, outcome: 'failed', reason: `dispatch failed: ${message(error)}`, branch, worktree, argv: plan.argv })
     }

@@ -74,6 +74,12 @@ export const LoopConfigSchema = z.object({
     person: nonEmpty,
     /** Display name → Linear user id, for `assignee set` and audit; the queue itself filters by display name. */
     people: z.record(nonEmpty, nonEmpty).default({}),
+    /** Optional ordered handoff between owners after the current dispatchable queue drains. */
+    rotation: z.object({
+      enabled: z.boolean().default(false),
+      owners: z.array(nonEmpty).default([]),
+      advanceWhenEmpty: z.boolean().default(true),
+    }).prefault({}),
     states: z.array(nonEmpty).min(1).default(['Todo', 'Ready']),
     excludeLabels: z.array(nonEmpty).default(['blocked', 'needs-info']),
     requireLabels: z.array(nonEmpty).default([]),
@@ -269,6 +275,16 @@ export const LoopConfigSchema = z.object({
     /** Public API / future CLI only in 0.6.0 — not wired into tick/deliver. */
     enabled: z.boolean().default(false),
     allowTools: z.array(nonEmpty).default([]),
+  }).prefault({}),
+  plugins: z.object({
+    /**
+     * Local `.mjs` files (relative to `project.root`) loaded once at the start of `tick`/`deliver`; each exports
+     * `{ id, apply(bus) }` and gets the loop's in-process event bus to subscribe to (`src/loop/event-bus.ts`) —
+     * events (`contract.failed`, `worker.dispatched`, …) and lifecycle hooks (`beforeDispatch`, `beforeMerge`, …
+     * a `before*` hook can block the action). Same trust level as `agents.registry.yaml`: files already in this
+     * repo, never fetched over the network.
+     */
+    modules: z.array(nonEmpty).default([]),
   }).prefault({}),
   github: z.object({
     /** A PR labeled with this on GitHub is picked up by deliver even though the loop never dispatched it. Set null to disable intake entirely. */

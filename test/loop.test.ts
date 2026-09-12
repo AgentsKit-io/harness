@@ -4,7 +4,7 @@ import { join } from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
 import {
   activeCooldowns, assessSlots, authStatusFor, availableMemoryBytes, parseMemInfo, parseVmStat, buildListIssuesArgv, compareVersions, cooldownUntil, countRunningWorkers, detectProviders, fetchLinearQueue, filterAndOrderQueue, findExecutable,
-  HarnessError, loadLoopConfig, markProviderExhausted, mergeLoopConfig, parseJsonEnvelope, parseLinearIssues, parseLoopConfigText, parseModelRef, parseOrcaAgentHooks, parseOrcaStatus, parseOrcaVersion, parseOrcaWorktrees,
+  HarnessError, advanceQueueOwner, loadLoopConfig, markProviderExhausted, mergeLoopConfig, parseJsonEnvelope, parseLinearIssues, parseLoopConfigText, parseModelRef, parseOrcaAgentHooks, parseOrcaStatus, parseOrcaVersion, parseOrcaWorktrees, queueOwner,
   parseProviderUsage, providerSpecs, readCooldowns, renderHeadlessArgv, renderTuiCommand, routeAllRoles, runLoopDoctor, selectModel, validateLoopConfig,
 } from '../src/index.js'
 import type { CommandResult, CommandRunner, LoopConfig, ProviderAvailability } from '../src/index.js'
@@ -101,6 +101,17 @@ describe('loop config', () => {
     expect(overlaid.configHash).not.toBe(loaded.configHash)
     expect(mergeLoopConfig({ a: { b: 1, c: [1, 2] }, d: 1 }, { a: { c: [3] }, e: 2 })).toEqual({ a: { b: 1, c: [3] }, d: 1, e: 2 })
   })
+
+  it('advances the configured queue owner once the dispatchable queue and leases are empty', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'agentskit-loop-rotation-')); cleanups.push(dir)
+    writeFileSync(join(dir, 'loop.config.yaml'), exampleYaml.replace('person: my-linear-display-name', 'person: person').replace('    my-linear-display-name: <linear-user-id>', '    person: u1\n    teammate: u2').replace('    owners: [my-linear-display-name]', '    owners: [person, teammate]').replace('    enabled: false', '    enabled: true'))
+    const loaded = loadLoopConfig(join(dir, 'loop.config.yaml'))
+    expect(queueOwner(loaded)).toBe('person')
+    expect(advanceQueueOwner(loaded, { queueEmpty: false, activeLeases: 0 }).advanced).toBe(false)
+    expect(advanceQueueOwner(loaded, { queueEmpty: true, activeLeases: 1 }).advanced).toBe(false)
+    expect(advanceQueueOwner(loaded, { queueEmpty: true, activeLeases: 0, now: new Date('2026-09-12T00:00:00.000Z') })).toMatchObject({ owner: 'teammate', advanced: true })
+    expect(queueOwner(loadLoopConfig(join(dir, 'loop.config.yaml')))).toBe('teammate')
+  })
 })
 
 describe('orca and linear parsers', () => {
@@ -115,6 +126,11 @@ describe('orca and linear parsers', () => {
     const worktrees = parseOrcaWorktrees(result('worktree-ps'))
     expect(worktrees[0]).toMatchObject({ branch: 'person/eng-1-demo', linkedLinearIssue: 'ENG-1', liveTerminalCount: 1, isMainWorktree: false })
     expect(countRunningWorkers(worktrees)).toBe(1)
+    expect(countRunningWorkers([
+      ...worktrees,
+      { ...worktrees[0]!, workspaceStatus: 'in-review', branch: 'person/eng-2-review', linkedLinearIssue: 'ENG-2' },
+      { ...worktrees[0]!, workspaceStatus: 'completed', branch: 'person/eng-3-done', linkedLinearIssue: 'ENG-3' },
+    ])).toBe(1)
     expect(parseOrcaAgentHooks(result('agent-hooks'))).toMatchObject({ claude: 'installed', codex: 'installed', gemini: 'not_installed' })
   })
 
@@ -333,5 +349,18 @@ describe('loop doctor', () => {
     writeFileSync(join(dir, 'AGENTS.md'), '# Conventions', 'utf8')
     const present = await runLoopDoctor({ configPath: join(dir, 'loop.config.yaml'), runner, env: { PATH: bin, XAI_API_KEY: 'k' }, platform: 'darwin', now: () => new Date('2026-09-11T12:00:00.000Z'), probe: false })
     expect(present.checks.find((check) => check.id === 'brief.skills')).toMatchObject({ status: 'passed' })
+  })
+
+  it('flags a plugins.modules file that fails to load as failed, and passes once it loads cleanly', async () => {
+    const bin = fakeBinDir(['claude', 'codex', 'opencode', 'grok']); cleanups.push(bin)
+    const dir = mkdtempSync(join(tmpdir(), 'agentskit-loop-doctor-')); cleanups.push(dir)
+    const yaml = exampleYaml.replace('person: my-linear-display-name', 'person: person').replace('modules: []', 'modules: [plugin.mjs]')
+    writeFileSync(join(dir, 'loop.config.yaml'), yaml)
+    const runner = fakeRunner()
+    const missing = await runLoopDoctor({ configPath: join(dir, 'loop.config.yaml'), runner, env: { PATH: bin, XAI_API_KEY: 'k' }, platform: 'darwin', now: () => new Date('2026-09-11T12:00:00.000Z'), probe: false })
+    expect(missing.checks.find((check) => check.id === 'plugins.modules')).toMatchObject({ status: 'failed', detail: expect.stringContaining('plugin.mjs') })
+    writeFileSync(join(dir, 'plugin.mjs'), 'export default { id: "ok", apply() {} }', 'utf8')
+    const present = await runLoopDoctor({ configPath: join(dir, 'loop.config.yaml'), runner, env: { PATH: bin, XAI_API_KEY: 'k' }, platform: 'darwin', now: () => new Date('2026-09-11T12:00:00.000Z'), probe: false })
+    expect(present.checks.find((check) => check.id === 'plugins.modules')).toMatchObject({ status: 'passed', detail: expect.stringContaining('ok') })
   })
 })

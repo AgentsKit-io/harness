@@ -36,6 +36,7 @@ interface Scenario {
   readonly intakeView?: Record<number, Record<string, unknown>>
   readonly sendRejects?: number
   readonly orcaWorktreeMissing?: boolean
+  readonly pluginSource?: string
 }
 
 const basePr = (over: Record<string, unknown> = {}): Record<string, unknown> => ({ ...(fixture('gh-pr-view') as Record<string, unknown>), headRefName: 'person/eng-10-demo', files: [{ path: 'packages/demo/src/index.ts' }], statusCheckRollup: [{ __typename: 'CheckRun', name: 'ci', conclusion: 'SUCCESS', status: 'COMPLETED' }], mergeable: 'MERGEABLE', mergeStateStatus: 'CLEAN', state: 'OPEN', number: 42, url: 'https://github.com/o/r/pull/42', ...over })
@@ -45,7 +46,12 @@ const setup = (initial: Scenario = {}) => {
   const dir = mkdtempSync(join(tmpdir(), 'agentskit-loop-deliver-')); cleanups.push(dir)
   const bin = mkdtempSync(join(tmpdir(), 'agentskit-loop-deliver-bin-')); cleanups.push(bin)
   for (const name of ['claude', 'codex', 'opencode', 'grok']) writeFileSync(join(bin, name), '#!/bin/sh\nexit 0\n', { mode: 0o755 })
-  writeFileSync(join(dir, 'loop.config.yaml'), exampleYaml)
+  let yaml = exampleYaml
+  if (initial.pluginSource !== undefined) {
+    writeFileSync(join(dir, 'plugin.mjs'), initial.pluginSource, 'utf8')
+    yaml = yaml.replace('modules: []', 'modules: [plugin.mjs]')
+  }
+  writeFileSync(join(dir, 'loop.config.yaml'), yaml)
   const loaded = loadLoopConfig(join(dir, 'loop.config.yaml'))
   const ledger = createDispatchLedger(loaded.stateDir)
   const claim = ledger.claim({ tracker: 'linear', repository: 'org/demo', issue: 'ENG-10', worktree: 'eng-10-demo', branch: 'person/eng-10-demo', owner: 'test' })
@@ -365,6 +371,60 @@ describe('deliver', () => {
     const result = (await deliver(noReviewer)).results[0]
     expect(result).toMatchObject({ outcome: 'waiting', reason: 'no reviewer provider available' })
     expect(listDispatched(noReviewer.loaded.stateDir)).toHaveLength(1)
+  })
+
+  it('runs beforeReview/afterReview hooks around the review call and lets a plugin block it', async () => {
+    const calls = setup({
+      review: { code: 0 },
+      pluginSource: `
+        export default {
+          id: 'review-logger',
+          apply(bus) {
+            globalThis.__reviewHooks = []
+            bus.hook('beforeReview', (payload) => { globalThis.__reviewHooks.push(['before', payload.pr]) })
+            bus.hook('afterReview', (payload) => { globalThis.__reviewHooks.push(['after', payload.status]) })
+          },
+        }
+      `,
+    })
+    const report = await deliver(calls)
+    expect(report.results[0]).toMatchObject({ outcome: 'merged' })
+    expect((globalThis as { __reviewHooks?: readonly unknown[] }).__reviewHooks).toEqual([['before', 42], ['after', 'clean']])
+
+    const blocked = setup({
+      review: { code: 0 },
+      pluginSource: `export default { id: 'blocker', apply(bus) { bus.hook('beforeReview', () => ({ block: true, reason: 'quiet hours' })) } }`,
+    })
+    const blockedReport = await deliver(blocked)
+    expect(blockedReport.results[0]).toMatchObject({ outcome: 'waiting', reason: expect.stringContaining('review blocked by plugin: quiet hours') })
+    expect(blocked.runner.calls.some((argv) => argv[0] === 'agentskit-review')).toBe(false)
+  })
+
+  it('runs beforeMerge/afterMerge hooks around the merge call and lets a plugin hold it instead', async () => {
+    const merged = setup({
+      review: { code: 0 },
+      pluginSource: `
+        export default {
+          id: 'merge-logger',
+          apply(bus) {
+            globalThis.__mergeHooks = []
+            bus.hook('beforeMerge', (payload) => { globalThis.__mergeHooks.push(['before', payload.pr]) })
+            bus.hook('afterMerge', (payload) => { globalThis.__mergeHooks.push(['after', payload.sha]) })
+          },
+        }
+      `,
+    })
+    const report = await deliver(merged)
+    expect(report.results[0]).toMatchObject({ outcome: 'merged' })
+    expect((globalThis as { __mergeHooks?: readonly unknown[] }).__mergeHooks).toEqual([['before', 42], ['after', 'deadbeef']])
+
+    const held = setup({
+      review: { code: 0 },
+      pluginSource: `export default { id: 'holder', apply(bus) { bus.hook('beforeMerge', () => ({ block: true, reason: 'freeze window' })) } }`,
+    })
+    const heldReport = await deliver(held)
+    expect(heldReport.results[0]).toMatchObject({ outcome: 'held', reason: expect.stringContaining('merge blocked by plugin: freeze window') })
+    expect(held.runner.calls.some((argv) => argv[0] === 'gh' && argv[1] === 'api' && argv.includes('--method'))).toBe(false)
   })
 })
 

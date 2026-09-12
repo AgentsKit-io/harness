@@ -145,6 +145,40 @@ two differences forced by having no Linear issue and no worker terminal:
   PRs it dispatched itself, never one it was only asked to review. If the label is removed on GitHub before the
   loop finishes, it stops tracking the PR the same way (held, no further comments).
 
+## Event bus and orchestration hooks
+
+`appendLoopEvent` writes every loop event to `<stateDir>/events.ndjson`, but nothing could react to one *while it
+happens*, and there was no deterministic way to say "don't do this" before a consequential action. `plugins.modules`
+(`loop.config.yaml`, empty by default — zero behavior change until configured) lists local `.mjs` files, relative to
+`project.root` (same trust level as `agents.registry.yaml`: files already in this repo, never fetched over a
+network), loaded once at the start of `tick`/`deliver`. Each exports `{ id, apply(bus) }`:
+
+```js
+export default {
+  id: 'slack-notify',
+  apply(bus) {
+    bus.on('worker.dispatched', (event) => { /* … */ })
+    bus.hook('beforeMerge', (payload) => {
+      if (isFrozeWindow()) return { block: true, reason: 'release freeze' }
+    })
+  },
+}
+```
+
+- `bus.on(type | '*', listener)` subscribes to the loop's existing event vocabulary (`contract.failed`,
+  `worker.dispatched`, `pr.reviewed`, `provider.cooldown`, `issue.paused`, …) live, in addition to the ndjson log.
+- `bus.hook(name, listener)` subscribes to an **orchestration lifecycle hook**: `beforeDispatch`, `afterDispatch`,
+  `beforeReview`, `afterReview`, `beforeMerge`, `afterMerge`, `onPause`, `onEscalate`. A `before*` listener may
+  return `{ block: true, reason }` to stop the action (surfaced as a `skipped`/`waiting`/`held` result with the
+  reason); every other hook is notification-only. This is deliberately **not** a hook into the worker's own
+  model/tool loop — the worker is an opaque external CLI (ADR-0027) and that loop is invisible to us. These hooks
+  fire around the orchestration decisions we actually make: dispatch, review, merge.
+- A listener or hook that throws is swallowed (never fatal — a broken plugin must not stop tick or deliver) and,
+  for a hook, its error is reported back through `runHook`'s `errors`.
+- `loop doctor` runs a `plugins.modules` check confirming every configured module exists and loads cleanly.
+
+See `src/loop/event-bus.ts` for the full API (`createLoopEventBus`, `loadLoopPlugins`).
+
 ## One tick
 
 1. **Intake** — `orca linear list-issues` once per configured state, filtered and ordered locally; issues already
@@ -263,7 +297,8 @@ its binary is on PATH, its auth is not known to be missing, no Orca usage window
 
 Providers authenticate through their own CLI login (`claude login`, `codex login`, `grok login`); only providers
 declared `auth: api-key` need an environment variable, and the loop never reads its value. Orca has no per-run model flag; the chosen model is rendered into `providers.<id>.tui` (for example
-`codex -m {model} --full-auto`) and launched in the worker terminal.
+`codex -m {model} -s workspace-write -a never`) and launched in the worker terminal. The explicit
+approval policy keeps YOLO runs non-interactive while the workspace sandbox limits changes to the assigned worktree.
 
 When a provider runs out of usage the loop records a cooldown in `<stateDir>/provider-cooldowns.json`:
 `initialMin` doubling up to `maxMin`, never earlier than the reset instant Orca reported.
@@ -306,7 +341,7 @@ the published dependency tree. `@agentskit/harness` stays dependency-light (`com
 | Trigger | `.doc-bridge/index.json` exists under `project.root` |
 | Knob | `contract.maxContextReferences` (default `6`; `0` disables) |
 | Behaviour | Query is `"<issue id> <title>"`. Up to N deterministic references are appended to the orchestrator prompt. Missing or malformed index → **no refs** (loop continues). |
-| Boundary | No `@agentskit/doc-bridge` import; the adapter only reads the local index contract ([ADR-0003](ADR-0003-doc-bridge-context-binding.md)). Index build/refresh stays with Doc Bridge (`pnpm docs:bridge:index` in repos that use it). |
+| Boundary | No `@agentskit/doc-bridge` import; the adapter only reads the local index contract ([ADR-0003](ADR-0003-doc-bridge-context-binding.md)). Contract resolution rejects indexes older than `contract.docBridgeMaxAgeHours`; exact source freshness remains a Doc Bridge gate. Index build/refresh stays with Doc Bridge (`pnpm docs:bridge:index` in repos that use it). |
 
 ### Code Review (`agentskit-review`)
 
