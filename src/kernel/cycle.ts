@@ -72,7 +72,7 @@ const validateIteration = (iteration: ImprovementCycleIteration, index: number):
     if (typeof result !== 'object' || result === null || Array.isArray(result)) return fail(`iterations[${index}].steps[${stepIndex}] must be an object.`, 'INVALID_INPUT')
     if (result.step !== IMPROVEMENT_CYCLE_STEPS[stepIndex]) return fail(`iterations[${index}].steps[${stepIndex}] must be ${IMPROVEMENT_CYCLE_STEPS[stepIndex]}.`, 'INVALID_INPUT')
     if (!['passed', 'failed', 'blocked', 'pending'].includes(result.status)) return fail(`iterations[${index}].steps[${stepIndex}].status is invalid.`, 'INVALID_INPUT')
-    if (result.status !== 'passed' && !nonEmpty(result.reason, `iterations[${index}].steps[${stepIndex}].reason`)) return fail(`iterations[${index}].steps[${stepIndex}].reason is required when the step does not pass.`, 'INVALID_INPUT')
+    if (result.status !== 'passed' && (typeof result.reason !== 'string' || !result.reason.trim())) return fail(`iterations[${index}].steps[${stepIndex}].reason is required when the step does not pass.`, 'INVALID_INPUT')
   })
   if (iteration.adjustment !== undefined) nonEmpty(iteration.adjustment, `iterations[${index}].adjustment`)
   return { ...iteration, metrics: validateMetrics(iteration.metrics, index) }
