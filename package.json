@@ -38,6 +38,7 @@
     "build": "tsup && node -e \"console.log(JSON.stringify({status:'passed',criteria:['package']}))\"",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "pnpm typecheck && vitest run --config vitest.config.ts test && node -e \"console.log(JSON.stringify({status:'passed',criteria:['package']}))\"",
+    "test:coverage": "vitest run --config vitest.config.ts --coverage test",
     "test:contract": "pnpm typecheck && vitest run --config vitest.config.ts test/contract.test.ts && node -e \"console.log(JSON.stringify({status:'passed',criteria:['protocol']}))\"",
     "test:extensibility": "pnpm typecheck && vitest run --config vitest.config.ts test/extensibility.test.ts && node -e \"console.log(JSON.stringify({status:'passed',criteria:['extensibility']}))\"",
     "test:event-log": "pnpm typecheck && vitest run --config vitest.config.ts test/extensibility.test.ts test/harness.test.ts -t \"ordered append-only lifecycle log|complete typed task through human approval|authorization only when tracking|human rejection\" && node -e \"console.log(JSON.stringify({status:'passed',criteria:['event-log','verification-attestation','approval-attestation']}))\"",
@@ -94,6 +95,7 @@
   "devDependencies": {
     "@types/node": "^22.10.0",
     "@types/react": "^19.3.0",
+    "@vitest/coverage-v8": "4.1.11",
     "tsup": "^8.5.0",
     "typescript": "^5.7.2",
     "vitest": "^4.1.10"
