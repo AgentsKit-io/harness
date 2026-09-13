@@ -1,4 +1,4 @@
-import { appendFileSync, existsSync, mkdirSync, readFileSync, renameSync, statSync, writeFileSync } from 'node:fs'
+import { appendFileSync, closeSync, existsSync, mkdirSync, openSync, readFileSync, renameSync, statSync, unlinkSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import type { CommandRunner } from '../adapters/command.js'
 import { createLinearTrackingAdapter, fetchLinearIssue, fetchLinearQueue, linearCommentAdd, linearLabelAdd, linearLabelRemove, type LinearIssueDetail, type LoopIssue } from '../adapters/linear-orca.js'
@@ -143,14 +143,53 @@ export const writeDispatchRecord = (stateDir: string, record: DispatchRecordFile
 /** Above this, the hot `events.ndjson` file rotates to an archive instead of growing forever — a 24/7 loop
  * emits several events per dispatch, and every `retro`/`debrief` read loads the whole file into memory. */
 const EVENTS_ROTATE_AT_BYTES = 10 * 1024 * 1024
+const EVENTS_LOCK_STALE_MS = 5_000
+const EVENTS_LOCK_MAX_ATTEMPTS = 100
+const EVENTS_LOCK_RETRY_MS = 10
+
+/**
+ * `tick` and `deliver` are separate scheduled processes that can call `appendLoopEvent` on the same
+ * `events.ndjson` at (near-)the same instant. Without a lock, two processes that both see the file over
+ * `EVENTS_ROTATE_AT_BYTES` could both rename it — a same-millisecond timestamp collision overwrites one
+ * process's archive, or one process's rename "succeeds" against a file the other already moved, silently
+ * dropping events. Serializing only the rotation decision (not the append itself) is enough: even a write that
+ * lands in the archive instead of the fresh file mid-rotation is not data loss, since `readLoopEvents` merges
+ * archives back in — the lock only needs to stop two processes from racing the rename itself.
+ */
+const acquireEventsLock = (lockFilePath: string): number | null => {
+  for (let attempt = 0; attempt < EVENTS_LOCK_MAX_ATTEMPTS; attempt += 1) {
+    try {
+      return openSync(lockFilePath, 'wx')
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code !== 'EEXIST') throw error
+      try { if (Date.now() - statSync(lockFilePath).mtimeMs > EVENTS_LOCK_STALE_MS) unlinkSync(lockFilePath) } catch { /* another process already cleared it, or still holds it */ }
+      Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, EVENTS_LOCK_RETRY_MS)
+    }
+  }
+  return null
+}
 
 export const appendLoopEvent = (stateDir: string, event: Record<string, unknown>, bus?: LoopEventBus, now: () => Date = () => new Date()): void => {
   const path = join(stateDir, 'events.ndjson')
   mkdirSync(dirname(path), { recursive: true })
+  const lockFilePath = `${path}.lock`
+  const lockFd = acquireEventsLock(lockFilePath)
   try {
-    if (statSync(path).size > EVENTS_ROTATE_AT_BYTES) renameSync(path, join(stateDir, `events-archive-${now().getTime()}.ndjson`))
-  } catch { /* rotation is best-effort — never let it break event logging itself */ }
-  appendFileSync(path, `${JSON.stringify(event)}\n`, 'utf8')
+    // Rotation only runs when the lock was actually acquired — skipping it under contention (rather than racing
+    // the rename unlocked) is always safe: the file just grows a little past the threshold until the next
+    // successful attempt rotates it.
+    if (lockFd !== null) {
+      try {
+        if (statSync(path).size > EVENTS_ROTATE_AT_BYTES) renameSync(path, join(stateDir, `events-archive-${now().getTime()}.ndjson`))
+      } catch { /* rotation is best-effort — never let it break event logging itself */ }
+    }
+    appendFileSync(path, `${JSON.stringify(event)}\n`, 'utf8')
+  } finally {
+    if (lockFd !== null) {
+      try { closeSync(lockFd) } catch { /* already closed */ }
+      try { unlinkSync(lockFilePath) } catch { /* already removed */ }
+    }
+  }
   if (bus && typeof event['type'] === 'string') bus.emit(event as LoopEventPayload)
 }
 
