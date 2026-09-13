@@ -1,5 +1,25 @@
 # Changelog
 
+## [0.12.0] - 2026-09-13
+
+Closes gaps found reusing Orca instead of reinventing it. Orchestration mutations (`run-create`, `task-create`,
+`worker-start`, `send`) were verified to require a live Orca terminal pane and cannot be called from the loop's
+headless `tick`/`deliver` — every angle was tried (worker-side sends, coordinator-of-own-Run) and all failed
+structurally, not from a config gap. What *is* reachable headlessly turned into real fixes below.
+
+- **Escalations now carry the worker's own diagnosis**: `loop deliver`'s stuck/blocked escalations capture the
+  dispatched worker's terminal output (`terminal read --screen`, best-effort) and fold it into the Linear comment.
+  Two real incidents showed the worker had already explained the blocker in plain language (an explicit "BLOCKED:
+  ..." reply, a sandboxed git error) that the idle/no-PR heuristic was discarding.
+- **Slot assessment uses Orca's real memory diagnostic**: the harness's own `vm_stat`-based free-RAM estimate and
+  static `machine.agentRssMb` guess were measured to run roughly 2x more conservative than `orca diagnostics
+  memory`'s macOS memory-pressure reading, at the same instant. `assessSlots` now prefers `host.availableMemory`
+  and the average of real per-session RSS when Orca's diagnostic is available, falling back to the previous
+  behavior otherwise.
+- **`ak-harness-loop` Orca Skill**: an installable `SKILL.md` (`skills/ak-harness-loop/`) documenting the
+  read-only vs. mutating `loop` commands and the operational constraints this release's investigation surfaced,
+  so a future agent session doesn't have to rediscover them.
+
 ## [0.11.0] - 2026-09-13
 
 - **Read-only loop observability**: added `ak-harness loop observe` plus the public `runObservability` and
