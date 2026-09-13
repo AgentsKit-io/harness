@@ -9,13 +9,13 @@ import { createDispatchLedger, type DispatchLedger, type DispatchLease } from '.
 import { HarnessError } from '../kernel/errors.js'
 import { renderWorkerBrief } from './brief.js'
 import { loadPinnedSkills, skillRefs, skillDigest, type PinnedSkillRef } from './skills.js'
-import { loadLoopConfig, type EffortLevel, type LoadedLoopConfig, type LoopConfig } from './config.js'
+import { loadLoopConfig, type EffortLevel, type LoadedLoopConfig, type LoopConfig, type ModelReference } from './config.js'
 import { assessContract, contractIsFresh, extractResetsAt, generateContract, readStoredContract, resolveDocContext, writeStoredContract, type StoredContract } from './contract.js'
 import { activeCooldowns, readCooldowns } from './cooldown.js'
 import { countRunningWorkers, providerSpecs } from './doctor.js'
 import { openLoopMemory, planMemoryContext } from './memory.js'
 import { clearIssueFailures, isIssuePaused, pauseIssue, readIssueFailures, recordIssueFailure } from './resilience-state.js'
-import { MODEL_ROLES } from '../kernel/model-policy.js'
+import { MODEL_ROLES, type ModelRole } from '../kernel/model-policy.js'
 import { resolveCatalogCandidates } from './model-catalog/index.js'
 import { rankModels, routeAllRoles, type RoutingDecision } from './routing.js'
 import { assessSlots, type SlotAssessment, type SlotInput } from './slots.js'
@@ -157,6 +157,8 @@ export interface LoopState {
   readonly leases: readonly DispatchLease[]
   readonly busy: ReadonlySet<string>
   readonly candidates: readonly LoopIssue[]
+  /** Catalog-discovered candidates per role (`models.routing.mode: catalog`), already resolved for `routing` above — reused by `runTick` for `generateContract`'s candidate fallback so it isn't resolved twice per tick. */
+  readonly extrasByRole: Partial<Record<ModelRole, readonly ModelReference[]>>
 }
 
 export const gatherLoopState = async (input: { readonly loaded: LoadedLoopConfig; readonly runner: CommandRunner; readonly ledger: DispatchLedger; readonly env?: NodeJS.ProcessEnv; readonly platform?: NodeJS.Platform; readonly now: () => Date; readonly onlyIssue?: string; readonly machine?: TickInput['machine'] }): Promise<LoopState> => {
@@ -171,7 +173,7 @@ export const gatherLoopState = async (input: { readonly loaded: LoadedLoopConfig
   ])
   const providers = await detectProviders({ providers: providerSpecs(config), accountList, agentHooks, env: input.env, platform: input.platform, exhaustedPercent: config.models.cooldown.exhaustedPercent, cooldowns: activeCooldowns(readCooldowns(input.loaded.stateDir), input.now()), now: input.now })
   const availableIds = providers.filter((provider) => provider.available).map((provider) => provider.id)
-  const extrasByRole = config.models.routing.mode === 'catalog'
+  const extrasByRole: Partial<Record<ModelRole, readonly ModelReference[]>> = config.models.routing.mode === 'catalog'
     ? Object.fromEntries(await Promise.all(MODEL_ROLES.map(async (role) => [role, await resolveCatalogCandidates({
       config,
       role,
@@ -188,7 +190,7 @@ export const gatherLoopState = async (input: { readonly loaded: LoadedLoopConfig
   const leases = input.ledger.active()
   const busy = busyIssues(queue, leases, worktrees, person)
   const candidates = queue.filter((issue) => !busy.has(issue.identifier) && (!input.onlyIssue || issue.identifier === input.onlyIssue))
-  return { person, providers, routing, worktrees, slots, queue, leases, busy, candidates }
+  return { person, providers, routing, worktrees, slots, queue, leases, busy, candidates, extrasByRole }
 }
 
 /** Read-only: exit-0 semantics for Orca `--precheck`. Work exists when a slot is free, a builder is routable, and a candidate waits. */
@@ -224,18 +226,9 @@ export const runTick = async (input: TickInput): Promise<TickReport> => {
   }
   const state = await gatherLoopState({ loaded, runner: input.runner, ledger, env: input.env, platform: input.platform, now, onlyIssue: input.onlyIssue, machine: input.machine })
   const orchestrator = state.routing['orchestrator'] ?? { role: 'orchestrator', selected: null, skipped: [] }
-  const orchestratorExtras = config.models.routing.mode === 'catalog'
-    ? await resolveCatalogCandidates({
-      config,
-      role: 'orchestrator',
-      availableProviderIds: state.providers.filter((provider) => provider.available).map((provider) => provider.id),
-      runner: input.runner,
-      stateDir: loaded.stateDir,
-      env: input.env,
-      now,
-    })
-    : []
-  const orchestratorCandidates = rankModels(config, 'orchestrator', state.providers, orchestratorExtras)
+  // `gatherLoopState` already resolved catalog candidates for every role (including orchestrator) to compute
+  // `state.routing` — reuse that instead of resolving the same provider/model catalog a second time this tick.
+  const orchestratorCandidates = rankModels(config, 'orchestrator', state.providers, state.extrasByRole['orchestrator'] ?? [])
   const onProviderFailure = (failure: { readonly provider: string; readonly kind: string; readonly detail: string }): void => {
     if (dryRun) return
     const resetsAt = extractResetsAt(failure.detail, now())
@@ -282,6 +275,19 @@ export const runTick = async (input: TickInput): Promise<TickReport> => {
     appendLoopEvent(loaded.stateDir, { at: now().toISOString(), type: 'issue.paused', issue, kind, consecutive: failureState.consecutive, reason }, bus)
     await bus.runHook('onPause', { issue, kind, consecutive: failureState.consecutive, reason })
   }
+  // `brief.skills` cannot change mid-tick — memoize the read+hash so several dispatches in the same tick share
+  // one file read instead of one each. Kept lazy (not read until the first dispatch actually needs it) and called
+  // from inside the per-candidate try/catch below, so a missing skill file still fails only that one candidate's
+  // dispatch — exactly as before — instead of aborting the whole tick.
+  let pinnedSkillsOnce: ReturnType<typeof loadPinnedSkills> | { readonly error: unknown } | undefined
+  const getPinnedSkills = (): ReturnType<typeof loadPinnedSkills> => {
+    if (pinnedSkillsOnce === undefined) {
+      try { pinnedSkillsOnce = loadPinnedSkills(loaded.root, config.brief.skills, config.brief.maxSkillChars) }
+      catch (error) { pinnedSkillsOnce = { error }; throw error }
+    }
+    if ('error' in pinnedSkillsOnce) throw pinnedSkillsOnce.error
+    return pinnedSkillsOnce
+  }
   let dispatched = 0
   for (const candidate of state.candidates) {
     if (dispatched >= budget) break
@@ -290,9 +296,11 @@ export const runTick = async (input: TickInput): Promise<TickReport> => {
     const setupBudgetMs = config.project.setup.command
       ? Number.isFinite(timeBudgetMs) ? Math.min(config.project.setup.timeoutSec * 1000, Math.max(0, timeBudgetMs - config.contract.timeoutMs - 125_000)) : config.project.setup.timeoutSec * 1000
       : 0
-    if (remainingMs() < config.contract.timeoutMs + setupBudgetMs + 120_000 && !readStoredContract(loaded.stateDir, candidate.identifier)) { notes.push(`time budget: ${candidate.identifier} left for the next tick (${Math.round(remainingMs() / 1000)}s remaining)`); continue }
-    if (isIssuePaused(loaded.stateDir, candidate.identifier)) {
-      if (candidate.labels.includes(config.resilience.pausedLabel)) { results.push({ issue: candidate.identifier, outcome: 'skipped', reason: `paused after ${readIssueFailures(loaded.stateDir, candidate.identifier).consecutive} consecutive failures; remove the "${config.resilience.pausedLabel}" label or run "ak-harness loop resume ${candidate.identifier}" to retry` }); continue }
+    const cachedContract = readStoredContract(loaded.stateDir, candidate.identifier)
+    if (remainingMs() < config.contract.timeoutMs + setupBudgetMs + 120_000 && !cachedContract) { notes.push(`time budget: ${candidate.identifier} left for the next tick (${Math.round(remainingMs() / 1000)}s remaining)`); continue }
+    const failureState = readIssueFailures(loaded.stateDir, candidate.identifier)
+    if (failureState.pausedAt !== null) {
+      if (candidate.labels.includes(config.resilience.pausedLabel)) { results.push({ issue: candidate.identifier, outcome: 'skipped', reason: `paused after ${failureState.consecutive} consecutive failures; remove the "${config.resilience.pausedLabel}" label or run "ak-harness loop resume ${candidate.identifier}" to retry` }); continue }
       // The pause label was removed on Linear since we last checked — treat that as the human's resume signal.
       if (!dryRun) clearIssueFailures(loaded.stateDir, candidate.identifier)
       notes.push(`${candidate.identifier}: resumed (the "${config.resilience.pausedLabel}" label was removed)`)
@@ -300,8 +308,10 @@ export const runTick = async (input: TickInput): Promise<TickReport> => {
     let detail: LinearIssueDetail
     try { detail = await fetchLinearIssue(input.runner, candidate.identifier, write) } catch (error) { results.push({ issue: candidate.identifier, outcome: 'failed', reason: `issue fetch failed: ${message(error)}` }); continue }
 
-    let stored = readStoredContract(loaded.stateDir, detail.identifier)
-    const memoryProbe = memory
+    let stored = cachedContract
+    // Reused below for the worker brief too (memory content cannot change mid-tick) — computing it once instead of
+    // twice per dispatch halves this dispatch's memory-recall I/O (file reads + ranking) when memory.enabled.
+    const memoryPlan = memory
       ? await planMemoryContext({
         adapter: memory,
         config,
@@ -311,7 +321,7 @@ export const runTick = async (input: TickInput): Promise<TickReport> => {
         references: [],
       })
       : null
-    if (stored && !contractIsFresh(stored, detail, config.contract.reuseHours, now(), memoryProbe?.memoryDigest)) stored = null
+    if (stored && !contractIsFresh(stored, detail, config.contract.reuseHours, now(), memoryPlan?.memoryDigest)) stored = null
     if (!stored) {
       if (input.skipContractGeneration) { results.push({ issue: detail.identifier, outcome: 'skipped', reason: 'no cached contract; generation skipped' }); continue }
       if (!orchestratorCandidates.length) { results.push({ issue: detail.identifier, outcome: 'skipped', reason: 'no orchestrator provider available to freeze a contract' }); continue }
@@ -397,20 +407,11 @@ export const runTick = async (input: TickInput): Promise<TickReport> => {
         }
         if (setupFailed) notes.push(`${detail.identifier}: setup command failed but project.setup.required is false — continuing`)
       }
-      const briefMemory = memory
-        ? await planMemoryContext({
-          adapter: memory,
-          config,
-          issueId: detail.identifier,
-          issueTitle: detail.title,
-          project: config.project.name,
-          references: [],
-        })
-        : { memoryBlock: '', issueCharBudget: config.contract.maxIssueChars, hits: [] as const }
+      const briefMemory = memoryPlan ?? { memoryBlock: '', issueCharBudget: config.contract.maxIssueChars, hits: [] as const }
       const guidanceRefs = config.contract.maxBriefReferences > 0 && config.contract.briefScopes.length
         ? await resolveDocContext(loaded.root, `${detail.identifier} ${detail.title}`, config.contract.maxBriefReferences, config.contract.briefScopes)
         : []
-      const pinnedSkills = loadPinnedSkills(loaded.root, config.brief.skills, config.brief.maxSkillChars)
+      const pinnedSkills = getPinnedSkills()
       const brief = renderWorkerBrief({
         issue: detail,
         contract: stored,

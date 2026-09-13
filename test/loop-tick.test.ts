@@ -3,7 +3,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
 import {
-  CONTRACT_CLOSE, CONTRACT_OPEN, assessContract, busyIssues, contractIsFresh, createDispatchLedger, isIssuePaused, linearLabelRemove, loadLoopConfig, parseContractOutput, parseLinearIssueDetail, precheckTick, readDispatchRecord, readIssueFailures, readStoredContract, recordIssueFailure, renderContractPrompt, renderWorkerBrief, resumeIssue, runTick, untrusted, worktreeNameFor, writeStoredContract,
+  CONTRACT_CLOSE, CONTRACT_OPEN, assessContract, busyIssues, contractIsFresh, createDispatchLedger, isIssuePaused, linearLabelRemove, loadLoopConfig, parseContractOutput, parseLinearIssueDetail, precheckTick, readCliModelsCache, readDispatchRecord, readIssueFailures, readStoredContract, recordIssueFailure, renderContractPrompt, renderWorkerBrief, resumeIssue, runTick, untrusted, worktreeNameFor, writeStoredContract,
 } from '../src/index.js'
 import type { CommandResult, CommandRunner, StoredContract, TaskContract } from '../src/index.js'
 
@@ -19,7 +19,7 @@ interface Env { readonly dir: string; readonly bin: string; readonly runner: Com
 const cleanups: string[] = []
 afterEach(() => { for (const dir of cleanups.splice(0)) rmSync(dir, { recursive: true, force: true }) })
 
-const makeEnv = (options: { readonly contract?: TaskContract | 'garbage'; readonly worktrees?: unknown; readonly failCreate?: boolean; readonly claudeAuthFails?: boolean; readonly claudeSessionLimit?: boolean; readonly failAllContracts?: boolean; readonly accountList?: unknown; readonly briefSkills?: readonly string[]; readonly setup?: { readonly exitCode?: number; readonly timedOut?: boolean }; readonly setupRequired?: boolean; readonly pluginSource?: string; readonly issueDescription?: string; readonly securityPii?: { readonly action?: 'redact' | 'warn' | 'block' } } = {}): Env => {
+const makeEnv = (options: { readonly contract?: TaskContract | 'garbage'; readonly worktrees?: unknown; readonly failCreate?: boolean; readonly claudeAuthFails?: boolean; readonly claudeSessionLimit?: boolean; readonly failAllContracts?: boolean; readonly accountList?: unknown; readonly briefSkills?: readonly string[]; readonly setup?: { readonly exitCode?: number; readonly timedOut?: boolean }; readonly setupRequired?: boolean; readonly pluginSource?: string; readonly issueDescription?: string; readonly securityPii?: { readonly action?: 'redact' | 'warn' | 'block' }; readonly catalogMode?: boolean } = {}): Env => {
   const dir = mkdtempSync(join(tmpdir(), 'agentskit-loop-tick-')); cleanups.push(dir)
   const bin = join(dir, 'bin'); rmSync(bin, { recursive: true, force: true })
   let yaml = options.briefSkills?.length ? exampleYaml.replace('skills: []', `skills: [${options.briefSkills.join(', ')}]`) : exampleYaml
@@ -38,6 +38,7 @@ const makeEnv = (options: { readonly contract?: TaskContract | 'garbage'; readon
     writeFileSync(join(dir, 'plugin.mjs'), options.pluginSource, 'utf8')
     yaml = yaml.replace('modules: []', 'modules: [plugin.mjs]')
   }
+  if (options.catalogMode) yaml = yaml.replace('mode: hybrid', 'mode: catalog')
   writeFileSync(join(dir, 'loop.config.yaml'), yaml)
   const binDir = mkdtempSync(join(tmpdir(), 'agentskit-loop-tick-bin-')); cleanups.push(binDir)
   for (const name of ['claude', 'codex', 'opencode', 'grok']) writeFileSync(join(binDir, name), '#!/bin/sh\nexit 0\n', { mode: 0o755 })
@@ -71,6 +72,7 @@ const makeEnv = (options: { readonly contract?: TaskContract | 'garbage'; readon
       }
       if (key.startsWith('orca linear list-issues')) return ok(applyExtraLabels(fixture(key.includes('--state Ready') ? 'list-issues-ready' : 'list-issues-todo') as never))
       if (key.startsWith('orca linear issue')) { const id = argv[3]; const issues = [...(fixture('list-issues-todo') as { result: { issues: { identifier: string }[] } }).result.issues, ...(fixture('list-issues-ready') as { result: { issues: { identifier: string }[] } }).result.issues]; const issue = issues.find((item) => item.identifier === id); return issue ? okResult({ issue: { ...issue, description: options.issueDescription ?? 'Add the binding.\n\n## Acceptance\n- tests pass' }, comments: [] }) : { code: 1, stdout: '', stderr: 'not found', timedOut: false, durationMs: 1 } }
+      if (argv[0] === 'grok' && argv[1] === 'models') return { code: 0, stdout: '- grok-4.6\n', stderr: '', timedOut: false, durationMs: 1 }
       if (argv[0] === 'claude' && argv[1] === '-p' && options.claudeAuthFails) return { code: 1, stdout: 'Failed to authenticate: OAuth session expired and could not be refreshed\n', stderr: '', timedOut: false, durationMs: 1 }
       if (argv[0] === 'claude' && argv[1] === '-p' && options.claudeSessionLimit) return { code: 1, stdout: "You've hit your session limit \u00b7 resets 10:40pm (America/Sao_Paulo)\n", stderr: '', timedOut: false, durationMs: 1 }
       if (((argv[0] === 'claude' && argv[1] === '-p') || (argv[0] === 'codex' && argv[1] === 'exec')) && options.failAllContracts) return { code: 1, stdout: 'exit 1: transient tool error', stderr: '', timedOut: false, durationMs: 1 }
@@ -219,6 +221,21 @@ describe('tick', () => {
     expect(second.queue.busy).toContain(result?.issue)
     expect(env.runner.calls.filter((argv) => argv[1] === 'worktree' && argv[2] === 'create')).toHaveLength(2)
     expect(env.runner.calls.filter((argv) => argv[0] === 'claude' && argv[1] === '-p')).toHaveLength(2)
+  })
+
+  it('resolves the catalog for every role once per tick, and never re-spawns the CLI on a second tick within the cache TTL', async () => {
+    const env = makeEnv({ catalogMode: true })
+    const first = await runTick({ ...tickOptions(env), maxDispatch: 1 })
+    expect(first.results[0]).toMatchObject({ outcome: 'dispatched' })
+    const firstGrokSpawns = env.runner.calls.filter((argv) => argv[0] === 'grok' && argv[1] === 'models').length
+    expect(firstGrokSpawns).toBeGreaterThan(0)
+    expect(readCliModelsCache(loadLoopConfig(env.configPath).stateDir, 'grok')?.ids).toContain('grok-4.6')
+    env.runner.calls.length = 0
+    // ENG-10 is now busy (dispatched); this second tick has nothing to dispatch, but still resolves routing for
+    // every role — with a warm cache (fix #3) and no redundant orchestrator-specific re-resolve (fix #5), it
+    // should spawn the CLI zero times.
+    await runTick({ ...tickOptions(env), maxDispatch: 1 })
+    expect(env.runner.calls.some((argv) => argv[0] === 'grok' && argv[1] === 'models')).toBe(false)
   })
 
   it('loads a plugins.modules script and runs beforeDispatch/afterDispatch hooks around a real dispatch', async () => {
