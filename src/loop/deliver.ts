@@ -4,7 +4,7 @@ import type { CommandRunner } from '../adapters/command.js'
 import { atLeast, parseReviewResult, renderFindingsForWorker, runCodeReview, type CodeReviewOutcome } from '../adapters/code-review.js'
 import { assessChecks, githubComment, githubCommentExists, githubLabelRemove, githubMerge, githubOpenPullRequests, githubPullRequest, githubPullRequestsForBranch, touchesProtectedPaths, type PullRequestSnapshot } from '../adapters/github-cli.js'
 import { createLinearTrackingAdapter, linearAttach, linearCommentAdd, linearLabelAdd, linearLabelRemove } from '../adapters/linear-orca.js'
-import { orcaAccountList, orcaAgentHooks, orcaTerminalList, orcaTerminalSend, orcaTerminalWait, orcaWorktreeRemove, orcaWorktreeSet } from '../adapters/orca-cli.js'
+import { orcaAccountList, orcaAgentHooks, orcaTerminalList, orcaTerminalScreen, orcaTerminalSend, orcaTerminalWait, orcaWorktreeRemove, orcaWorktreeSet } from '../adapters/orca-cli.js'
 import { detectProviders, remainingUsagePercent, type ProviderAvailability } from '../adapters/providers.js'
 import { createDispatchLedger, type DispatchLease } from '../execution/coordination.js'
 import { HarnessError } from '../kernel/errors.js'
@@ -202,11 +202,28 @@ const sendToWorker = async (ctx: Context, record: DispatchRecordFile, text: stri
   } catch (error) { actions.push(`worker reactivation failed: ${message(error)}`); return false }
 }
 
+/**
+ * The worker's own terminal often already explains the blocker in plain language (e.g. "BLOCKED: Orca runtime
+ * unavailable" or a sandboxed `index.lock` error) — reading it is a plain `terminal read`, no orchestration
+ * mutation involved, so it works from this headless process. Best-effort: a capture failure must never block the
+ * escalation itself.
+ */
+const captureWorkerOutput = async (ctx: Context, terminal: string | null): Promise<string | null> => {
+  if (!terminal) return null
+  try {
+    const screen = (await orcaTerminalScreen(ctx.runner, { terminal }, orcaOptions(ctx.config))).trim()
+    return screen ? screen.slice(-2000) : null
+  } catch { return null }
+}
+
 const escalateLinear = async (ctx: Context, record: DispatchRecordFile, kind: 'stuck' | 'blocked' | 'abandoned', body: string, actions: string[]): Promise<void> => {
   if (ctx.dryRun) { actions.push(`would mark ${kind} in Linear and Orca`); return }
+  const workerOutput = await captureWorkerOutput(ctx, record.terminal)
+  const fullBody = workerOutput ? `${body}\n\n<details><summary>Worker's last terminal output</summary>\n\n\`\`\`\n${workerOutput}\n\`\`\`\n\n</details>` : body
+  if (workerOutput) actions.push('captured worker terminal output for the escalation')
   const linear = linearOptions(ctx.config)
   try {
-    await linearCommentAdd(ctx.runner, { issue: record.issue, body: `${body}\n\n<!-- loop:${kind}:${record.leaseId} -->`, dedupeKey: `${kind}:${record.issue}:${record.leaseId}` }, linear)
+    await linearCommentAdd(ctx.runner, { issue: record.issue, body: `${fullBody}\n\n<!-- loop:${kind}:${record.leaseId} -->`, dedupeKey: `${kind}:${record.issue}:${record.leaseId}` }, linear)
     await linearLabelAdd(ctx.runner, { issue: record.issue, labels: [ctx.config.linear.blockedLabel] }, linear)
     await createLinearTrackingAdapter(ctx.runner, linear).transition({ tracker: 'linear', issue: record.issue, to: ctx.config.delivery.returnState, reason: `loop ${kind}` })
     actions.push(`Linear: comment + ${ctx.config.linear.blockedLabel} + ${ctx.config.delivery.returnState}`)

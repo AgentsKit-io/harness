@@ -39,6 +39,8 @@ interface Scenario {
   readonly pluginSource?: string
   readonly initialRemainingPercent?: number | null
   readonly claudeUsedPercent?: number
+  /** Fake `orca terminal read --screen` output for the dispatched worker's terminal (`term_w`), used to test escalation capture. */
+  readonly terminalScreen?: string
 }
 
 const basePr = (over: Record<string, unknown> = {}): Record<string, unknown> => ({ ...(fixture('gh-pr-view') as Record<string, unknown>), headRefName: 'person/eng-10-demo', files: [{ path: 'packages/demo/src/index.ts' }], statusCheckRollup: [{ __typename: 'CheckRun', name: 'ci', conclusion: 'SUCCESS', status: 'COMPLETED' }], mergeable: 'MERGEABLE', mergeStateStatus: 'CLEAN', state: 'OPEN', number: 42, url: 'https://github.com/o/r/pull/42', ...over })
@@ -101,6 +103,7 @@ const setup = (initial: Scenario = {}) => {
       }
       if (argv[0] === 'gh' && argv[1] === 'pr' && argv[2] === 'edit') return { code: 0, stdout: '', stderr: '', timedOut: false, durationMs: 1 }
       if (key.startsWith('orca terminal list')) return okResult({ terminals: scenario.terminals ?? [{ handle: 'term_w', connected: true, orphaned: false, lastOutputAt: Date.parse('2026-09-11T10:30:00.000Z'), worktreeId: 'repo-1::/w/eng-10-demo' }] })
+      if (key.startsWith('orca terminal read')) return scenario.terminalScreen === undefined ? { code: 127, stdout: '', stderr: 'no fixture for terminal read', timedOut: false, durationMs: 1 } : okResult({ tail: scenario.terminalScreen })
       if (key.startsWith('orca terminal create')) return okResult({ handle: 'term_handoff', terminal: { handle: 'term_handoff' } })
       if (key.startsWith('orca terminal wait')) return okResult({ satisfied: true })
       if (key.startsWith('orca terminal send')) {
@@ -366,6 +369,26 @@ describe('deliver', () => {
     expect((await deliver(busy, { assumeIdle: false })).results[0]).toMatchObject({ outcome: 'waiting', reason: 'worker active' })
     const gone = setup({ pr: null, terminals: [] })
     expect((await deliver(gone)).results[0]).toMatchObject({ outcome: 'stuck', reason: expect.stringContaining('terminal gone') })
+  })
+
+  it('includes the worker\'s own terminal output in the stuck escalation, when available', async () => {
+    const env = setup({ pr: null, dispatchedAt: '2026-09-11T09:00:00.000Z', terminalScreen: 'BLOCKED: Orca runtime remains unavailable (runtime_unavailable). I could not reconcile Linear or GitHub.' })
+    await deliver(env, { assumeIdle: true })
+    await deliver(env, { assumeIdle: true })
+    await deliver(env, { assumeIdle: true, now: () => new Date('2026-09-11T13:00:00.000Z') })
+    const comment = env.runner.calls.find((argv) => argv[1] === 'linear' && argv[2] === 'comment')
+    expect(comment).toBeDefined()
+    const body = comment?.[comment.indexOf('--body') + 1] ?? ''
+    expect(body).toContain('BLOCKED: Orca runtime remains unavailable')
+    expect(body).toContain("Worker's last terminal output")
+
+    const noOutput = setup({ pr: null, dispatchedAt: '2026-09-11T09:00:00.000Z' })
+    await deliver(noOutput, { assumeIdle: true })
+    await deliver(noOutput, { assumeIdle: true })
+    await deliver(noOutput, { assumeIdle: true, now: () => new Date('2026-09-11T13:00:00.000Z') })
+    const plainComment = noOutput.runner.calls.find((argv) => argv[1] === 'linear' && argv[2] === 'comment')
+    const plainBody = plainComment?.[plainComment.indexOf('--body') + 1] ?? ''
+    expect(plainBody).not.toContain("Worker's last terminal output")
   })
 
   it('reactivates a connected terminal with no agent output before nudging', async () => {
