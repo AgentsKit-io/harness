@@ -63,6 +63,45 @@ export const listCliModels = async (
   return []
 }
 
+const cliModelsCachePath = (stateDir: string, provider: string): string => join(stateDir, 'catalog', `cli-${provider}.json`)
+
+export const readCliModelsCache = (stateDir: string, provider: string): { readonly fetchedAt: string; readonly ids: readonly string[] } | null => {
+  const path = cliModelsCachePath(stateDir, provider)
+  if (!existsSync(path)) return null
+  try {
+    const raw = readJson<{ fetchedAt: string; ids: string[] }>(path)
+    return typeof raw.fetchedAt === 'string' && Array.isArray(raw.ids) ? { fetchedAt: raw.fetchedAt, ids: raw.ids } : null
+  } catch { return null }
+}
+
+export const writeCliModelsCache = (stateDir: string, provider: string, ids: readonly string[], now: Date = new Date()): void => {
+  const path = cliModelsCachePath(stateDir, provider)
+  mkdirSync(dirname(path), { recursive: true })
+  const tmp = `${path}.${process.pid}.tmp`
+  writeFileSync(tmp, `${JSON.stringify({ fetchedAt: now.toISOString(), ids }, null, 2)}\n`, 'utf8')
+  renameSync(tmp, path)
+}
+
+/**
+ * `listCliModels`, but cached for `cacheHours` (like `readAaCache`/`writeAaCache` below): a provider's CLI model
+ * list barely changes between releases, so spawning the CLI (e.g. `grok models`) on every tick/deliver run for
+ * every role that needs it is wasted subprocess time — cache once, reuse until stale.
+ */
+export const listCliModelsCached = async (
+  provider: string,
+  bin: string,
+  runner: CommandRunner,
+  stateDir: string,
+  cacheHours: number,
+  now: () => Date = () => new Date(),
+): Promise<readonly string[]> => {
+  const cached = readCliModelsCache(stateDir, provider)
+  if (cached && now().getTime() - Date.parse(cached.fetchedAt) <= cacheHours * 3_600_000) return cached.ids
+  const ids = await listCliModels(provider, bin, runner)
+  if (ids.length) writeCliModelsCache(stateDir, provider, ids, now())
+  return ids.length ? ids : (cached?.ids ?? [])
+}
+
 export interface ArtificialAnalysisModel {
   readonly slug: string
   readonly name: string
@@ -178,7 +217,9 @@ export const resolveCatalogCandidates = async (input: {
       const settings = config.models.providers[provider]
       if (settings) {
         try {
-          const ids = await listCliModels(provider, settings.bin, input.runner)
+          const ids = input.stateDir
+            ? await listCliModelsCached(provider, settings.bin, input.runner, input.stateDir, config.models.catalog.cliCacheHours, input.now)
+            : await listCliModels(provider, settings.bin, input.runner)
           for (const id of ids) {
             const resolved = resolveAlias(provider, id, aliases)
             const existing = builtin[provider]?.models.find((model) => model.id === resolved)

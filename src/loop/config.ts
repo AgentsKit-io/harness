@@ -125,6 +125,8 @@ export const LoopConfigSchema = z.object({
     }).prefault({}),
     catalog: z.object({
       sources: z.array(z.enum(['cli', 'artificial-analysis', 'builtin'])).default(['cli', 'builtin']),
+      /** How long a provider's CLI-discovered model list (e.g. `grok models`) is trusted before spawning the CLI again — it rarely changes between releases. */
+      cliCacheHours: z.number().positive().default(6),
       artificialAnalysis: z.object({
         enabled: z.boolean().default(false),
         apiKeyEnv: nonEmpty.default('ARTIFICIAL_ANALYSIS_API_KEY'),
