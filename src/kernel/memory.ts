@@ -88,6 +88,19 @@ export const createKvMemoryAdapter = (store: AgentMemoryKvStore, options: { read
     const scopeMatch = record.scope === 'global' || (record.scope === 'issue' ? Boolean(issueId && record.source.includes(issueId)) : Boolean(project && record.source.includes(project)))
     return scopeMatch && (!query || `${record.summary} ${record.source}`.toLowerCase().includes(query))
   }
+  // `recall` re-reads every stored record from the backing store on every call — real cost for a KV store backed
+  // by files. A caller doing several recalls in the same short-lived process (e.g. one loop `tick` dispatching
+  // several issues) does not need the full record set re-fetched each time, since nothing else in that process
+  // writes to this store except `remember` below. Cache it for the adapter's lifetime and drop the cache on the
+  // one write path that can invalidate it.
+  let allRecordsCache: readonly AgentMemoryRecord[] | null = null
+  const allRecords = async (): Promise<readonly AgentMemoryRecord[]> => {
+    if (allRecordsCache) return allRecordsCache
+    const ids = await store.get(indexKey)
+    const records = Array.isArray(ids) ? await Promise.all(ids.filter((id): id is string => typeof id === 'string').map((id) => store.get(`agentskit-harness:memory:${id}`))) : []
+    allRecordsCache = records.filter((record): record is AgentMemoryRecord => Boolean(record && typeof record === 'object' && (record as AgentMemoryRecord).approved === true))
+    return allRecordsCache
+  }
   return {
     id: options.id ?? 'agentskit-kv',
     version: options.version ?? '1',
@@ -99,13 +112,13 @@ export const createKvMemoryAdapter = (store: AgentMemoryKvStore, options: { read
       const index = Array.isArray(ids) ? ids.filter((id): id is string => typeof id === 'string') : []
       if (!index.includes(valid.id)) await store.set(indexKey, [...index, valid.id].sort())
       await store.set(`agentskit-harness:memory:${valid.id}`, valid)
+      allRecordsCache = null
       writes += 1
     },
     async recall({ query, issueId, project, sourceRevision }) {
       reads += 1
-      const ids = await store.get(indexKey)
-      const records = Array.isArray(ids) ? await Promise.all(ids.filter((id): id is string => typeof id === 'string').map((id) => store.get(`agentskit-harness:memory:${id}`))) : []
-      const hits = records.filter((record): record is AgentMemoryRecord => Boolean(record && typeof record === 'object' && (record as AgentMemoryRecord).approved === true))
+      const records = await allRecords()
+      const hits = records
         .filter((record) => matches(record, query.trim().toLowerCase(), issueId, project))
         .map((record) => ({ record, relevant: true, stale: sourceRevision !== undefined && record.sourceRevision !== sourceRevision }))
       relevantHits += hits.length
