@@ -172,6 +172,18 @@ describe('deliver', () => {
     expect(again.results).toEqual([])
   })
 
+  it('skips a merged issue on a later deliver run without any GitHub call at all', async () => {
+    const env = setup({ review: { code: 0 } })
+    await deliver(env) // merges ENG-10
+    expect(readDeliveryState(env.loaded.stateDir, 'ENG-10')).toMatchObject({ finalOutcome: 'merged' })
+    env.runner.calls.length = 0 // clear the merge run's own calls before observing the *next* run
+    const again = await deliver(env)
+    expect(again.results).toEqual([])
+    const prListCalls = env.runner.calls.filter((argv) => argv[0] === 'gh' && argv[1] === 'pr' && argv[2] === 'list')
+    expect(prListCalls.some((argv) => argv.includes('--head'))).toBe(false) // exact-branch search for ENG-10
+    expect(prListCalls.some((argv) => argv.includes('100') && !argv.includes('--label'))).toBe(false) // orca-branch fallback search
+  })
+
   it('sends review findings to the worker as a fix round, never re-reviews the same head, and blocks after the budget', async () => {
     const env = setup({ review: { code: 1, findings: [{ severity: 'high', title: 'Bug', file: 'a.ts', line: 2, rationale: 'wrong' }] } })
     const first = await deliver(env)

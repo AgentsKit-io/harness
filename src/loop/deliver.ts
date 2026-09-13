@@ -98,7 +98,7 @@ const lastReviewHead = (state: DeliveryState): string | null => {
   return heads.at(-1) ?? state.heldFor
 }
 
-/** Every issue the loop dispatched and has not finished. */
+/** Every issue the loop ever dispatched (finished or not) — callers that only care about in-flight work must filter on `readDeliveryState(...).finishedAt` themselves. */
 export const listDispatched = (stateDir: string): readonly DispatchRecordFile[] => {
   const dir = join(stateDir, 'issues')
   if (!existsSync(dir)) return []
@@ -689,6 +689,11 @@ export const runDeliver = async (input: DeliverInput): Promise<DeliverReport> =>
   for (const record of listDispatched(loaded.stateDir)) {
     if (input.onlyIssue && record.issue !== input.onlyIssue) continue
     let state = readDeliveryState(loaded.stateDir, record.issue)
+    // A merged issue is never in `resumableOutcomes` (blocked/stuck/abandoned/held) and can never legitimately
+    // come back to life — polling GitHub for it on every future tick, forever, only grows with total historical
+    // dispatch count instead of current in-flight work. Every other finished outcome still needs to be re-checked
+    // (a human may push a fix, or reopen a closed PR) so this skip is deliberately narrow to `merged` alone.
+    if (state.finishedAt && state.finalOutcome === 'merged') continue
     const lease = leases.get(record.issue)
     if (!state.finishedAt) {
       const ageMinutes = minutesBetween(now(), record.dispatchedAt)
@@ -723,9 +728,6 @@ export const runDeliver = async (input: DeliverInput): Promise<DeliverReport> =>
         if (wasFinished && state.finishedAt) continue
         results.push(await handlePullRequest(ctx, record, lease, state, pr)); continue
       }
-      // A recorded merge is only recovery work before delivery state is persisted. Once the
-      // issue is already finished as merged, do not replay completion on every deliver tick.
-      if (state.finishedAt && state.finalOutcome === 'merged') continue
       const recordedMerge = readMergedEvent(loaded.stateDir, record.issue)
       if (recordedMerge) {
         try {
