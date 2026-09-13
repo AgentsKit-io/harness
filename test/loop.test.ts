@@ -318,6 +318,24 @@ describe('machine slots', () => {
     const starved = assessSlots({ machine, running: 0, sample: sample(20, 96), platform: 'darwin', freeBytes: 0.5 * gb, totalBytes: 32 * gb })
     expect(starved).toMatchObject({ maxAgents: 1, free: 1 })
   })
+
+  it('prefers orca diagnostics memory over the vm_stat guess and averages real agent RSS, but explicit freeBytes/totalBytes still win', () => {
+    // Same free RAM the vm_stat-only 'tight' case above used (5.5 GB), but reported through orcaMemory instead —
+    // must produce the identical result, proving the value actually flows through this new path.
+    const viaOrca = assessSlots({ machine, running: 1, sample: sample(20, 40), platform: 'darwin', orcaMemory: { availableBytes: 5.5 * gb, totalBytes: 32 * gb, agentRssSamples: [] } })
+    expect(viaOrca.maxAgents).toBe(2)
+    expect(viaOrca.freeRamGb).toBeCloseTo(5.5, 1)
+
+    // Real measured RSS (600 MB average) is far below the static 1400 MB guess, so more agents fit in the same RAM.
+    const measured = assessSlots({ machine, running: 1, sample: sample(20, 40), platform: 'darwin', orcaMemory: { availableBytes: 5.5 * gb, totalBytes: 32 * gb, agentRssSamples: [500 * 1024 ** 2, 700 * 1024 ** 2] } })
+    expect(measured.maxAgents).toBeGreaterThan(viaOrca.maxAgents)
+    const tighter = assessSlots({ machine, running: 1, sample: sample(20, 40), platform: 'darwin', orcaMemory: { availableBytes: 3 * gb, totalBytes: 32 * gb, agentRssSamples: [500 * 1024 ** 2, 700 * 1024 ** 2] } })
+    expect(tighter.reasons.join(' ')).toContain('600 MB each (measured)')
+
+    // An explicit freeBytes/totalBytes (the existing test-injection path) must still override orcaMemory.
+    const overridden = assessSlots({ machine, running: 1, sample: sample(20, 40), platform: 'darwin', freeBytes: 20 * gb, totalBytes: 32 * gb, orcaMemory: { availableBytes: 0.5 * gb, totalBytes: 1 * gb, agentRssSamples: [] } })
+    expect(overridden.maxAgents).toBe(5)
+  })
 })
 
 describe('loop doctor', () => {

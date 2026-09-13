@@ -115,6 +115,36 @@ export const orcaWorktrees = async (runner: CommandRunner, options: OrcaCliOptio
 export const orcaAgentHooks = async (runner: CommandRunner, options: OrcaCliOptions = {}): Promise<Readonly<Record<string, OrcaAgentHookState>>> => parseOrcaAgentHooks(await orcaJson(runner, ['agent', 'hooks', 'status'], options))
 export const orcaAccountList = async (runner: CommandRunner, options: OrcaCliOptions = {}): Promise<unknown> => orcaJson(runner, ['account', 'list'], options)
 
+export interface OrcaMemorySample {
+  /** Bytes the OS can hand to a new process right now, from macOS's real memory-pressure API — not a `vm_stat`
+   * page-category approximation. Verified 2026-09-13 to read roughly 2x higher than the harness's own `vm_stat`
+   * sum at the same instant, so prefer this when it's available. */
+  readonly availableBytes: number
+  readonly totalBytes: number | null
+  /** Real RSS (bytes) of every currently-running dispatched worker session Orca can see, for averaging into a
+   * measured per-agent cost instead of the static `machine.agentRssMb` guess. */
+  readonly agentRssSamples: readonly number[]
+}
+
+/** Best-effort: a failed or unparseable `diagnostics memory` call must never block slot assessment. */
+export const orcaDiagnosticsMemory = async (runner: CommandRunner, options: OrcaCliOptions = {}): Promise<OrcaMemorySample | null> => {
+  try {
+    const result = await orcaJson(runner, ['diagnostics', 'memory'], options)
+    if (!isRecord(result)) return null
+    const host = isRecord(result['host']) ? result['host'] : {}
+    const availableBytes = host['availableMemory']
+    if (typeof availableBytes !== 'number' || !Number.isFinite(availableBytes) || availableBytes <= 0) return null
+    const totalBytes = typeof host['totalMemory'] === 'number' ? host['totalMemory'] : null
+    const worktrees = Array.isArray(result['worktrees']) ? result['worktrees'] : []
+    const agentRssSamples = worktrees.filter(isRecord)
+      .flatMap((worktree) => Array.isArray(worktree['sessions']) ? worktree['sessions'] : [])
+      .filter(isRecord)
+      .map((session) => session['memory'])
+      .filter((value): value is number => typeof value === 'number' && Number.isFinite(value) && value > 0)
+    return { availableBytes, totalBytes, agentRssSamples }
+  } catch { return null }
+}
+
 // ---- worktree lifecycle -------------------------------------------------------------------------
 
 export interface OrcaCreatedWorktree {

@@ -3,7 +3,7 @@ import { dirname, join } from 'node:path'
 import type { CommandRunner } from '../adapters/command.js'
 import { createLinearTrackingAdapter, fetchLinearIssue, fetchLinearQueue, linearCommentAdd, linearLabelAdd, linearLabelRemove, type LinearIssueDetail, type LoopIssue } from '../adapters/linear-orca.js'
 import { createOrcaDispatchPlan } from '../adapters/orca.js'
-import { orcaAccountList, orcaAgentHooks, orcaTerminalCreate, orcaTerminalSend, orcaTerminalWait, orcaWorktreeCreate, orcaWorktreeRemove, orcaWorktrees, type OrcaWorktree } from '../adapters/orca-cli.js'
+import { orcaAccountList, orcaAgentHooks, orcaDiagnosticsMemory, orcaTerminalCreate, orcaTerminalSend, orcaTerminalWait, orcaWorktreeCreate, orcaWorktreeRemove, orcaWorktrees, type OrcaWorktree } from '../adapters/orca-cli.js'
 import { detectProviders, type ProviderAvailability } from '../adapters/providers.js'
 import { createDispatchLedger, type DispatchLedger, type DispatchLease } from '../execution/coordination.js'
 import { HarnessError } from '../kernel/errors.js'
@@ -172,11 +172,12 @@ export const gatherLoopState = async (input: { readonly loaded: LoadedLoopConfig
   const { config } = input.loaded
   const person = queueOwner(input.loaded)
   const orca = { bin: config.orca.bin, timeoutMs: config.orca.timeoutMs }
-  const [accountList, agentHooks, worktrees, queue] = await Promise.all([
+  const [accountList, agentHooks, worktrees, queue, orcaMemory] = await Promise.all([
     orcaAccountList(input.runner, orca).catch(() => ({})),
     orcaAgentHooks(input.runner, orca).catch(() => ({}) as Readonly<Record<string, 'installed' | 'not_installed' | 'unknown'>>),
     orcaWorktrees(input.runner, orca),
     fetchLinearQueue(input.runner, { bin: config.orca.bin, workspaceId: config.linear.workspaceId, teamKey: config.linear.teamKey, assignee: person, filter: config.linear, orca }),
+    orcaDiagnosticsMemory(input.runner, orca),
   ])
   const providers = await detectProviders({ providers: providerSpecs(config), accountList, agentHooks, env: input.env, platform: input.platform, exhaustedPercent: config.models.cooldown.exhaustedPercent, cooldowns: activeCooldowns(readCooldowns(input.loaded.stateDir), input.now()), now: input.now })
   const availableIds = providers.filter((provider) => provider.available).map((provider) => provider.id)
@@ -193,7 +194,7 @@ export const gatherLoopState = async (input: { readonly loaded: LoadedLoopConfig
     : {}
   const routing = routeAllRoles(config, providers, extrasByRole)
   const running = countRunningWorkers(worktrees)
-  const slots = assessSlots({ machine: config.machine, running, platform: input.platform, ...input.machine })
+  const slots = assessSlots({ machine: config.machine, running, platform: input.platform, orcaMemory, ...input.machine })
   const leases = input.ledger.active()
   const busy = busyIssues(queue, leases, worktrees, person)
   const candidates = queue.filter((issue) => !busy.has(issue.identifier) && (!input.onlyIssue || issue.identifier === input.onlyIssue))
