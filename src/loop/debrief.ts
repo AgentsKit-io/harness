@@ -186,7 +186,7 @@ export const buildDebriefReport = (input: DebriefInput): DebriefReport => {
   }
   const inFlight = rows.filter((row) => !row.finalOutcome && row.phase !== 'escalated')
   const held = rows.filter((row) => row.phase === 'held' || row.phase === 'held-incomplete-review' || row.heldFor)
-  const events = readLoopEvents(stateDir).filter((event) => Date.parse(event.at) >= since.getTime())
+  const events = readLoopEvents(stateDir, since.getTime()).filter((event) => Date.parse(event.at) >= since.getTime())
   const recentEscalations = events
     .filter((event) => event.type === 'contract.escalated')
     .slice(-10)

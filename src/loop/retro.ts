@@ -68,10 +68,27 @@ export interface RetroReport {
 
 const isRecord = (value: unknown): value is Record<string, unknown> => typeof value === 'object' && value !== null && !Array.isArray(value)
 
-export const readLoopEvents = (stateDir: string): readonly LoopEvent[] => {
-  const path = join(stateDir, 'events.ndjson')
+const parseEventsFile = (path: string): LoopEvent[] => {
   if (!existsSync(path)) return []
   return readFileSync(path, 'utf8').split(/\r?\n/).filter(Boolean).flatMap((line) => { try { const parsed = JSON.parse(line) as unknown; return isRecord(parsed) && typeof parsed['at'] === 'string' && typeof parsed['type'] === 'string' ? [parsed as LoopEvent] : [] } catch { return [] } })
+}
+
+const eventsArchivePattern = /^events-archive-(\d+)\.ndjson$/
+
+/** `sinceMs`, when given, skips a rotated archive whose rotation time is older than the window — every event in
+ * that file was written before its own rotation, so if the rotation itself predates `sinceMs` nothing inside can
+ * be in range (see `appendLoopEvent` in tick.ts for the rotation side). Omit `sinceMs` to read everything, exactly
+ * as before archives existed. */
+export const readLoopEvents = (stateDir: string, sinceMs?: number): readonly LoopEvent[] => {
+  const archives = existsSync(stateDir)
+    ? readdirSync(stateDir)
+        .map((name) => name.match(eventsArchivePattern))
+        .filter((match): match is RegExpMatchArray => match !== null)
+        .map((match) => ({ path: join(stateDir, match[0]), rotatedAtMs: Number(match[1]) }))
+        .filter((archive) => sinceMs === undefined || archive.rotatedAtMs >= sinceMs)
+        .sort((a, b) => a.rotatedAtMs - b.rotatedAtMs)
+    : []
+  return [...archives.flatMap((archive) => parseEventsFile(archive.path)), ...parseEventsFile(join(stateDir, 'events.ndjson'))]
 }
 
 export const parseSince = (value: string | undefined, now: Date): Date => {
@@ -130,7 +147,7 @@ export const buildRetroReport = async (input: RetroInput): Promise<RetroReport> 
   const now = (input.now ?? (() => new Date()))()
   const since = parseSince(input.since, now)
   const inWindow = (at: string | null | undefined): boolean => typeof at === 'string' && Date.parse(at) >= since.getTime() && Date.parse(at) <= now.getTime()
-  const events = readLoopEvents(loaded.stateDir).filter((event) => inWindow(event.at))
+  const events = readLoopEvents(loaded.stateDir, since.getTime()).filter((event) => inWindow(event.at))
   const counts: Record<string, number> = {}
   for (const event of events) counts[event.type] = (counts[event.type] ?? 0) + 1
 

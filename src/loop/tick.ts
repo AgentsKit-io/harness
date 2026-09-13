@@ -1,4 +1,4 @@
-import { appendFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
+import { appendFileSync, existsSync, mkdirSync, readFileSync, renameSync, statSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import type { CommandRunner } from '../adapters/command.js'
 import { createLinearTrackingAdapter, fetchLinearIssue, fetchLinearQueue, linearCommentAdd, linearLabelAdd, linearLabelRemove, type LinearIssueDetail, type LoopIssue } from '../adapters/linear-orca.js'
@@ -140,9 +140,16 @@ export const writeDispatchRecord = (stateDir: string, record: DispatchRecordFile
   writeJson(path, record)
   return path
 }
-export const appendLoopEvent = (stateDir: string, event: Record<string, unknown>, bus?: LoopEventBus): void => {
+/** Above this, the hot `events.ndjson` file rotates to an archive instead of growing forever — a 24/7 loop
+ * emits several events per dispatch, and every `retro`/`debrief` read loads the whole file into memory. */
+const EVENTS_ROTATE_AT_BYTES = 10 * 1024 * 1024
+
+export const appendLoopEvent = (stateDir: string, event: Record<string, unknown>, bus?: LoopEventBus, now: () => Date = () => new Date()): void => {
   const path = join(stateDir, 'events.ndjson')
   mkdirSync(dirname(path), { recursive: true })
+  try {
+    if (statSync(path).size > EVENTS_ROTATE_AT_BYTES) renameSync(path, join(stateDir, `events-archive-${now().getTime()}.ndjson`))
+  } catch { /* rotation is best-effort — never let it break event logging itself */ }
   appendFileSync(path, `${JSON.stringify(event)}\n`, 'utf8')
   if (bus && typeof event['type'] === 'string') bus.emit(event as LoopEventPayload)
 }
