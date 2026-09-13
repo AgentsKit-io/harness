@@ -1,3 +1,16 @@
+# 0.12.0 release candidate
+
+Reuses Orca instead of reinventing it, where Orca's own tooling gives a better answer than the harness's own
+heuristics: `loop deliver` escalations now fold in the dispatched worker's own terminal output (best-effort,
+`terminal read --screen`) so a human sees the worker's own diagnosis instead of a generic idle/no-PR message; slot
+assessment prefers Orca's `diagnostics memory` (macOS's real memory-pressure reading) and real per-session RSS over
+the harness's own `vm_stat` approximation and static per-agent guess, which were measured roughly 2x more
+conservative at the same instant. Also ships an installable `ak-harness-loop` Orca Skill documenting the loop's
+commands and the operational constraints this release's investigation confirmed (Orca's orchestration mutations —
+`run-create`/`task-create`/`worker-start`/`send` — require a live coordinator terminal pane and cannot be called
+from the loop's headless `tick`/`deliver`, verified from every angle tried). Publication remains gated on a merge
+to `main` through npm Trusted Publishing.
+
 # 0.11.0 release candidate
 
 Read-only loop observability for the keep-pushing SDLC loop: deterministic anomaly detection and operating metrics

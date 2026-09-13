@@ -5,14 +5,14 @@
   "stateDir": ".codex/verification",
   "autonomy": "yolo",
   "contract": {
-    "intent": "Validate the 0.11.0 modular SDLC engine with explicit capability boundaries, deterministic phase execution, provenance-bound artifacts, replaceable real-execution adapters, and read-only loop observability with measured assurance.",
+    "intent": "Validate the 0.12.0 modular SDLC engine with explicit capability boundaries, deterministic phase execution, provenance-bound artifacts, replaceable real-execution adapters, and read-only loop observability with measured assurance.",
     "scope": {
       "inScope": ["package source", "public CLI", "tests", "release workflow", "repository governance docs", "coordination ledger", "quota recovery", "machine guard policy", "file-scoped preflight", "block/status/retro records", "provider-neutral Orca and tracking adapters", "capability-boundary module organization", "public API compatibility", "versioned artifact envelopes", "decision log artifact records", "idempotent phase resume", "coding-agent adapter", "adapter assurance and telemetry", "dry-run external effects"],
       "outOfScope": ["GitHub repository creation", "npm publication", "external Linear/GitHub/Orca mutations", "dashboard hosting", "product decisions", "provider credentials"]
     },
     "ambiguities": [],
     "outcomes": [
-      { "id": "package", "statement": "The package typechecks, tests, builds, and packs as @agentskit/harness 0.11.0.", "checks": ["package-tests", "package-build", "package-pack"] },
+      { "id": "package", "statement": "The package typechecks, tests, builds, and packs as @agentskit/harness 0.12.0.", "checks": ["package-tests", "package-build", "package-pack"] },
       { "id": "cli", "statement": "The real CLI is runnable and exposes both ak-harness and ak-verify.", "checks": ["cli"] },
       { "id": "governance", "statement": "Repository governance and release documentation are complete and internally consistent.", "checks": ["repository-docs", "workflow"] }
       ,{ "id": "coordination", "statement": "Issue/worktree claims and dispatch records are atomic, idempotent, and human-recoverable.", "checks": ["coordination"] }
@@ -23,7 +23,7 @@
       ,{ "id": "eval-battery", "statement": "A versioned eval battery covers all execution layers and supported components, repeats deterministically, reports min/median/max, and blocks unknown, stale, critical, subjective, or unapproved regression evidence.", "checks": ["eval-battery"] }
       ,{ "id": "compatibility-contract", "statement": "AgentsKit ecosystem compatibility is represented by pinned revisions, real-adapter commands, baseline bindings, and fail-closed evidence assessment.", "checks": ["compatibility-contract"] }
       ,{ "id": "adoption", "statement": "A new consumer can run the documented minimum profile and adapter example without importing internal modules, with troubleshooting and organization guidance available.", "checks": ["adoption"] }
-      ,{ "id": "release-manifest", "statement": "The 0.11.0 release candidate has a versioned manifest, current package metadata, and a main-only Trusted Publishing path with explicit unresolved blockers.", "checks": ["release-manifest"] }
+      ,{ "id": "release-manifest", "statement": "The 0.12.0 release candidate has a versioned manifest, current package metadata, and a main-only Trusted Publishing path with explicit unresolved blockers.", "checks": ["release-manifest"] }
       ,{ "id": "records", "statement": "Portable block, status, retro/learning, model-policy, and machine-policy records validate deterministically.", "checks": ["records"] }
       ,{ "id": "adapters", "statement": "Coding-agent, Orca, Doc Bridge, memory, cache, runtime, and tracking adapters expose provider-neutral contracts with explicit assurance, telemetry, bounded failures, and idempotent dry-run behavior.", "checks": ["adapters"] }
       ,{ "id": "module-boundaries", "statement": "Capability modules are organized under explicit boundaries and forbidden kernel/provider imports fail deterministically.", "checks": ["boundaries"] }
