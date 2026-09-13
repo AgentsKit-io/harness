@@ -3,7 +3,7 @@ import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import {
   assessChecks, createLinearTrackingAdapter, createOrcaDispatchPlan, githubCommentArgv, githubMerge, githubMergeArgv, githubPullRequest, githubPullRequestsForBranch, linearAttachArgv, linearCommentAddArgv, linearLabelArgv, linearStatusSetArgv,
-  orcaAutomationCreateArgv, orcaAutomationEditArgv, orcaTerminalSend, orcaWorktreeCreate, orcaWorktreeSetArgv, parseLinearIssueDetail, parseOrcaAutomations, parseOrcaSendReceipt, parseOrcaTerminals, parseOrcaWorktreeCreate, parsePullRequest, touchesProtectedPaths, writeIdFor,
+  orcaAutomationCreateArgv, orcaAutomationEditArgv, orcaDiagnosticsMemory, orcaTerminalSend, orcaWorktreeCreate, orcaWorktreeSetArgv, parseLinearIssueDetail, parseOrcaAutomations, parseOrcaSendReceipt, parseOrcaTerminals, parseOrcaWorktreeCreate, parsePullRequest, touchesProtectedPaths, writeIdFor,
 } from '../src/index.js'
 import type { CommandResult, CommandRunner } from '../src/index.js'
 
@@ -129,5 +129,20 @@ describe('github cli', () => {
     expect(githubCommentArgv({ repo: 'o/r', number: 1, body: 'hi' })).toEqual(['gh', 'pr', 'comment', '1', '--repo', 'o/r', '--body', 'hi'])
     const failing = recorder(() => ({ code: 1, stdout: '', stderr: 'gh: not logged in', timedOut: false, durationMs: 1 }))
     await expect(githubPullRequest(failing, { repo: 'o/r', number: 1 })).rejects.toThrow(/not logged in/)
+  })
+})
+
+describe('orca diagnostics memory', () => {
+  it('extracts available/total host memory and real per-session agent RSS', async () => {
+    const runner = recorder(() => ok({ ok: true, result: { host: { availableMemory: 9_277_129_359, totalMemory: 17_179_869_184 }, worktrees: [{ sessions: [{ memory: 52_625_408 }] }, { sessions: [{ memory: 2_572_288 }, { memory: 'not-a-number' }] }] } }))
+    const sample = await orcaDiagnosticsMemory(runner)
+    expect(sample).toEqual({ availableBytes: 9_277_129_359, totalBytes: 17_179_869_184, agentRssSamples: [52_625_408, 2_572_288] })
+  })
+
+  it('is best-effort: a failed call, malformed envelope, or missing/invalid availableMemory all resolve to null', async () => {
+    expect(await orcaDiagnosticsMemory(recorder(() => ({ code: 1, stdout: '', stderr: 'boom', timedOut: false, durationMs: 1 })))).toBeNull()
+    expect(await orcaDiagnosticsMemory(recorder(() => ok({ ok: true, result: { host: {} } })))).toBeNull()
+    expect(await orcaDiagnosticsMemory(recorder(() => ok({ ok: true, result: { host: { availableMemory: -1 } } })))).toBeNull()
+    expect(await orcaDiagnosticsMemory(recorder(() => ok({ ok: true, result: 'not an object' })))).toBeNull()
   })
 })

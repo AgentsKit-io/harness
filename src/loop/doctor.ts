@@ -1,4 +1,4 @@
-import { compareVersions, orcaAccountList, orcaAgentHooks, orcaStatus, orcaVersion, orcaWorktrees, type OrcaStatus, type OrcaWorktree } from '../adapters/orca-cli.js'
+import { compareVersions, orcaAccountList, orcaAgentHooks, orcaDiagnosticsMemory, orcaStatus, orcaVersion, orcaWorktrees, type OrcaStatus, type OrcaWorktree } from '../adapters/orca-cli.js'
 import { detectProviders, remainingUsagePercent, undeclaredOrcaProviders, type ProviderAvailability, type ProviderSpec } from '../adapters/providers.js'
 import { fetchLinearQueue, type LoopIssue } from '../adapters/linear-orca.js'
 import { findExecutable, type CommandRunner } from '../adapters/command.js'
@@ -123,7 +123,8 @@ export const runLoopDoctor = async (input: LoopDoctorInput): Promise<LoopDoctorR
   let workersError: string | null = null
   try { worktrees = await orcaWorktrees(input.runner, orcaOptions) } catch (error) { workersError = message(error); push('orca.worktrees', 'warning', `worktree ps unavailable: ${workersError}`) }
   const running = countRunningWorkers(worktrees)
-  const machine = assessSlots({ machine: config.machine, running, platform: input.platform })
+  const orcaMemory = await orcaDiagnosticsMemory(input.runner, orcaOptions)
+  const machine = assessSlots({ machine: config.machine, running, platform: input.platform, orcaMemory })
   push('machine.slots', machine.free > 0 ? 'passed' : 'warning', `${machine.free} free of ${machine.maxAgents} (running ${running}, cpus ${machine.sample.cpus}, load ${machine.sample.load1PerCpuPercent}%, free RAM ${machine.freeRamGb} GB)${machine.reasons.length ? `; ${machine.reasons.join('; ')}` : ''}`)
 
   let queue: readonly LoopIssue[] = []

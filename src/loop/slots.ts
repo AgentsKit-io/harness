@@ -1,6 +1,7 @@
 import { execFileSync } from 'node:child_process'
 import { existsSync, readFileSync } from 'node:fs'
 import { freemem, release, totalmem } from 'node:os'
+import type { OrcaMemorySample } from '../adapters/orca-cli.js'
 import { adaptiveConcurrency, sampleMachine } from '../execution/machine.js'
 import type { MachineSample } from '../kernel/types.js'
 import type { LoopConfig } from './config.js'
@@ -27,6 +28,13 @@ export interface SlotInput {
   readonly osRelease?: string
   readonly freeBytes?: number
   readonly totalBytes?: number
+  /**
+   * `orca diagnostics memory` result, when the caller fetched one. Preferred over the `vm_stat` approximation and
+   * the static `machine.agentRssMb` guess — verified 2026-09-13 that Orca's own macOS memory-pressure reading runs
+   * roughly 2x higher than this module's `vm_stat` sum at the same instant, and Orca already measures real
+   * per-session RSS instead of guessing it. `freeBytes`/`totalBytes` (explicit test overrides) still win over this.
+   */
+  readonly orcaMemory?: OrcaMemorySample | null
 }
 
 /** Parse `vm_stat` (macOS): reclaimable = free + inactive + speculative + purgeable pages. */
@@ -58,8 +66,8 @@ export const isWsl = (platform: NodeJS.Platform = process.platform, osRelease: s
 export const assessSlots = (input: SlotInput): SlotAssessment => {
   const platform = input.platform ?? process.platform
   const wsl = isWsl(platform, input.osRelease)
-  const freeBytes = input.freeBytes ?? availableMemoryBytes(platform)
-  const totalBytes = input.totalBytes ?? totalmem()
+  const freeBytes = input.freeBytes ?? input.orcaMemory?.availableBytes ?? availableMemoryBytes(platform)
+  const totalBytes = input.totalBytes ?? input.orcaMemory?.totalBytes ?? totalmem()
   // The kernel sampler reports bare free pages; re-express memory pressure against reclaimable memory so macOS is not permanently "critical".
   const sample = input.sample ?? { ...sampleMachine(), memoryUsedPercent: Number(Math.max(0, Math.min(100, (1 - freeBytes / Math.max(1, totalBytes)) * 100)).toFixed(2)) }
   const freeRamGb = Number((freeBytes / 1024 ** 3).toFixed(2))
@@ -68,9 +76,13 @@ export const assessSlots = (input: SlotInput): SlotAssessment => {
   const adaptive = adaptiveConcurrency(ceiling, sample, { warningPercent: input.machine.warningPercent, criticalPercent: input.machine.criticalPercent })
   if (adaptive < ceiling) reasons.push(`machine pressure capped concurrency at ${adaptive} (load ${sample.load1PerCpuPercent}%, memory ${sample.memoryUsedPercent}%)`)
   const reservedBytes = input.machine.minFreeRamGb * 1024 ** 3
-  const perAgentBytes = input.machine.agentRssMb * 1024 ** 2
+  const measuredAgentBytes = input.orcaMemory?.agentRssSamples.length
+    ? input.orcaMemory.agentRssSamples.reduce((total, value) => total + value, 0) / input.orcaMemory.agentRssSamples.length
+    : null
+  const perAgentBytes = measuredAgentBytes ?? input.machine.agentRssMb * 1024 ** 2
+  const perAgentMb = Math.round(perAgentBytes / 1024 ** 2)
   const ramBound = Math.max(0, Math.floor((freeBytes - reservedBytes) / perAgentBytes)) + input.running
-  if (ramBound < adaptive) reasons.push(`free RAM ${freeRamGb} GB minus ${input.machine.minFreeRamGb} GB reserve fits ${Math.max(0, ramBound - input.running)} more agent(s) at ${input.machine.agentRssMb} MB each`)
+  if (ramBound < adaptive) reasons.push(`free RAM ${freeRamGb} GB minus ${input.machine.minFreeRamGb} GB reserve fits ${Math.max(0, ramBound - input.running)} more agent(s) at ${perAgentMb} MB each${measuredAgentBytes ? ' (measured)' : ''}`)
   let maxAgents = Math.min(adaptive, ramBound)
   if (wsl && maxAgents > input.machine.wslCap) { maxAgents = input.machine.wslCap; reasons.push(`WSL cap ${input.machine.wslCap}: host Defender load is invisible from the distro`) }
   maxAgents = Math.max(input.machine.floor, maxAgents)
