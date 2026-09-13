@@ -8,6 +8,7 @@ import { detectProviders, type ProviderAvailability } from '../adapters/provider
 import { createDispatchLedger, type DispatchLedger, type DispatchLease } from '../execution/coordination.js'
 import { HarnessError } from '../kernel/errors.js'
 import { renderWorkerBrief } from './brief.js'
+import { writeJsonAtomic } from './fs-atomic.js'
 import { loadPinnedSkills, skillRefs, skillDigest, type PinnedSkillRef } from './skills.js'
 import { loadLoopConfig, type EffortLevel, type LoadedLoopConfig, type LoopConfig, type ModelReference } from './config.js'
 import { assessContract, contractIsFresh, extractResetsAt, generateContract, readStoredContract, resolveDocContext, writeStoredContract, type StoredContract } from './contract.js'
@@ -134,10 +135,9 @@ export const readDispatchRecord = (stateDir: string, identifier: string): Dispat
   if (!existsSync(path)) return null
   try { return JSON.parse(readFileSync(path, 'utf8')) as DispatchRecordFile } catch { return null }
 }
-const writeJson = (path: string, value: unknown): void => { mkdirSync(dirname(path), { recursive: true }); writeFileSync(path, `${JSON.stringify(value, null, 2)}\n`, 'utf8') }
 export const writeDispatchRecord = (stateDir: string, record: DispatchRecordFile): string => {
   const path = dispatchRecordPath(stateDir, record.issue)
-  writeJson(path, record)
+  writeJsonAtomic(path, record)
   return path
 }
 /** Above this, the hot `events.ndjson` file rotates to an archive instead of growing forever — a 24/7 loop
@@ -441,7 +441,7 @@ export const runTick = async (input: TickInput): Promise<TickReport> => {
       if (!launched.accepted) notes.push(`${detail.identifier}: terminal ${launched.terminal} did not confirm the brief; deliver will nudge it if it stays idle`)
       ledger.recordDispatch({ lease: claim.lease, idempotencyKey: plan.idempotencyKey, commandDigest: plan.commandDigest })
       const record: DispatchRecordFile = { issue: detail.identifier, worktreeId: created.id, worktree, branch: actualBranch, terminal: launched.terminal, provider: builder.provider, model: builder.model, contractDigest: stored.digest, leaseKey: claim.lease.key, leaseId: claim.lease.leaseId, dispatchedAt: now().toISOString(), url: detail.url, briefDigest, skills: skillRefs(pinnedSkills), setup: setupResult, effort: builder.effort, initialRemainingPercent: builder.remainingPercent, worktreePath: created.path }
-      writeJson(dispatchRecordPath(loaded.stateDir, detail.identifier), record)
+      writeJsonAtomic(dispatchRecordPath(loaded.stateDir, detail.identifier), record)
       appendLoopEvent(loaded.stateDir, { at: record.dispatchedAt, type: 'worker.dispatched', ...record, command: builder.tui, briefAccepted: launched.accepted, tuiIdle: launched.idle }, bus)
       await bus.runHook('afterDispatch', { issue: detail.identifier, provider: record.provider, model: record.model, branch: record.branch, worktreeId: record.worktreeId })
       clearIssueFailures(loaded.stateDir, detail.identifier)
