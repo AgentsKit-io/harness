@@ -211,7 +211,12 @@ export const rankModels = (
   extraCandidates: readonly ModelReference[] = [],
 ): readonly RankedModel[] => {
   const byId = new Map(availability.map((item) => [item.id, item]))
-  const { ranked } = availableFromTiers(config, role, availability)
+  const { ranked, skipped } = availableFromTiers(config, role, availability)
+  if (config.models.routing.pin[role]) {
+    const pinned = applyPin(config, role, availability, skipped)
+    if (pinned) return [pinned, ...ranked.filter((item) => !(item.provider === pinned.provider && item.model === pinned.model))]
+    if (config.models.routing.pinStrict) return []
+  }
   const extras: RankedModel[] = []
   let extraIndex = 10_000
   for (const ref of extraCandidates) {

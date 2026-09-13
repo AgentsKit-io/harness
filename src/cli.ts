@@ -1,11 +1,12 @@
 #!/usr/bin/env node
 import { createHash } from 'node:crypto'
-import { readFileSync } from 'node:fs'
+import { closeSync, existsSync, mkdirSync, openSync, readFileSync, statSync, unlinkSync, writeFileSync } from 'node:fs'
+import { join } from 'node:path'
 import { Command } from 'commander'
 import { approveRun, ARTIFACT_SCHEMA_VERSION, assessAcceptance, assessBlock, assessDiscovery, assessImprovementCycle, assessIntegration, assessPilot, assessPreflight, assessProduction, assessWip, assessWorktreeCleanup, authorizeRun, benchmarkRuns, cancelRun, cleanTaskArtifacts, composePullRequest, createDispatchLedger, createDocBridgeContextProvider, createStatusSnapshot, exportEvidenceBundle, FileArtifactStore, loadBenchmarkManifest, loadConfig, loadLatestRun, parseRetro, planFilePreflight, planRun, readArtifactFile, readContextSnapshots, readEvidenceTrustStore, reconcileRun, recordBenchmarkObservation, renderArtifactMarkdown, retryRun, selectRuntime, startRun, validateBlockManifest, validateStatusSnapshot, verifyEvidenceBundle, verifyRun } from './index.js'
 import type { BenchmarkObservationEvidence } from './execution/metrics.js'
 import { fail } from './kernel/errors.js'
-import { buildDebriefReport, buildRetroReport, createProcessRunner, createRichIO, fetchLinearIssue, formatWatchEvent, generateContract, installLoopAutomations, linearLabelRemove, loadLoopConfig, openLoopMemory, promoteLearningsToMemory, runGuidedInstall, loopStatus, renderDebriefMarkdown, renderRetroMarkdown, retroLearnings, runRetroStage, precheckDeliver, precheckTick, rankModels, readLearningsLedger, readStoredContract, runDeliver, runLoopDoctor, runTick, uninstallLoopAutomations, watchDeliveries, writeStoredContract, isStagePaused, recordStageRunResult, resumeIssue, resumeStage, readIssueFailures, stageEntry, listPausedIssues, type LoopStageName } from './index.js'
+import { buildDebriefReport, buildRetroReport, createProcessRunner, createRichIO, fetchLinearIssue, formatWatchEvent, generateContract, installLoopAutomations, linearLabelRemove, loadLoopConfig, openLoopMemory, promoteLearningsToMemory, runGuidedInstall, loopStatus, renderDebriefMarkdown, renderObservabilityMarkdown, renderRetroMarkdown, retroLearnings, runRetroStage, precheckDeliver, precheckTick, rankModels, readLearningsLedger, readStoredContract, runDeliver, runLoopDoctor, runObservability, runTick, uninstallLoopAutomations, watchDeliveries, writeStoredContract, isStagePaused, recordStageRunResult, resumeIssue, resumeStage, readIssueFailures, stageEntry, listPausedIssues, type LoopStageName } from './index.js'
 import { FileEventStore, inspectEventLogLock, recoverEventLogLock } from './kernel/events.js'
 
 interface CliOptions { readonly config: string; readonly json: boolean }
@@ -14,6 +15,21 @@ const program = new Command()
 program.name('ak-harness').description('Portable, evidence-backed development harness for coding agents.').version(packageJson.version).option('-c, --config <path>', 'verification contract path', '.codex/verification.json').option('--json', 'emit machine-readable output')
 const options = (): CliOptions => program.opts<CliOptions>()
 const print = (value: unknown): void => { if (options().json) console.log(JSON.stringify(value)); else console.log(typeof value === 'string' ? value : JSON.stringify(value, null, 2)) }
+const acquireStageLock = (stateDir: string, stage: string): (() => void) | null => {
+  const path = join(stateDir, `.stage-${stage}.lock`)
+  mkdirSync(stateDir, { recursive: true })
+  try {
+    const fd = openSync(path, 'wx')
+    writeFileSync(fd, `${JSON.stringify({ pid: process.pid, stage, at: new Date().toISOString() })}\n`, 'utf8')
+    closeSync(fd)
+    return () => { try { unlinkSync(path) } catch { /* another run recovered the stale lock */ } }
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code !== 'EEXIST') throw error
+    // ponytail: one lock per stage; a 30-minute ceiling recovers a killed process without a daemon.
+    try { if (Date.now() - statSync(path).mtimeMs > 30 * 60_000) { unlinkSync(path); return acquireStageLock(stateDir, stage) } } catch { /* lock disappeared; next scheduled run retries */ }
+    return null
+  }
+}
 const readBenchmarkEvidence = (path: string): { readonly evidence: readonly BenchmarkObservationEvidence[]; readonly digest: string } => {
   try {
     const content = readFileSync(path, 'utf8')
@@ -90,6 +106,12 @@ loop.command('stage <stage>').description('Run one stage (tick | deliver | retro
     process.exitCode = 1
     return
   }
+  const stageLock = acquireStageLock(loaded.stateDir, stage)
+  if (!stageLock) {
+    console.log(JSON.stringify({ status: 'locked', stage, reason: 'another stage run is still active' }, null, 2))
+    process.exitCode = 1
+    return
+  }
   const budgetMs = Math.max(60_000, loaded.config.schedule.stageTimeoutSec * 1000 - 60_000)
   const threshold = loaded.config.resilience.stagePauseAfterRuns
   try {
@@ -100,6 +122,8 @@ loop.command('stage <stage>').description('Run one stage (tick | deliver | retro
     const reason = error instanceof Error ? error.message : String(error)
     const entry = stage !== 'retro' ? recordStageRunResult(loaded.stateDir, trackedStage, { succeeded: false, reason }, threshold) : null
     console.log(JSON.stringify({ status: 'error', stage, error: reason, ...(entry ? { consecutiveFailures: entry.consecutiveFailures, paused: entry.pausedAt !== null } : {}) }, null, 2))
+  } finally {
+    stageLock()
   }
   process.exitCode = 1
 })
@@ -145,6 +169,13 @@ loop.command('debrief').description('Human-facing explanation of what the loop i
   const report = buildDebriefReport({ configPath: loopFile(this), issue: command.issue, since: command.since })
   if (options().json) return print(report)
   console.log(renderDebriefMarkdown(report))
+})
+loop.command('observe').description('Read-only anomaly scan and operating metrics for the loop (queue, workers, delivery, machine, memory, cache, tokens).').option('--since <window>', 'window such as 24h, 7d or an ISO date', '24h').option('--precheck', 'exit 0 when an action is required, 1 when healthy (for schedulers)').action(async function (this: Command, command: { readonly since: string; readonly precheck?: boolean }) {
+  const report = await runObservability({ configPath: loopFile(this), runner: createProcessRunner(), since: command.since })
+  if (options().json) print(report)
+  else console.log(renderObservabilityMarkdown(report))
+  if (command.precheck) process.exitCode = report.status === 'action_required' ? 0 : 1
+  else if (report.status === 'action_required') process.exitCode = 2
 })
 loop.command('watch').description('Watch delivery.json (+ optional live PR) for in-flight issues; prints DONE / FAILED / ACTION_REQUIRED / PROGRESS. Read-only.').option('--issue <identifier>', 'restrict to one issue').option('--interval <seconds>', 'poll interval', (value: string) => Number(value), 30).option('--once', 'single snapshot then exit').option('--timeout <seconds>', 'stop after N seconds (0 = until terminal)', (value: string) => Number(value), 0).option('--no-live-pr', 'do not call gh; filesystem state only').action(async function (this: Command, command: { readonly issue?: string; readonly interval: number; readonly once?: boolean; readonly timeout: number; readonly livePr: boolean }) {
   const report = await watchDeliveries({

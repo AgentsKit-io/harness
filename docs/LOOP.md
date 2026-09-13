@@ -25,6 +25,7 @@ ak-harness loop uninstall [--dry-run]                 # remove them
 ak-harness loop status                                # what Orca knows: enabled, trigger, provider, latest run
 ak-harness loop hook                                  # one status line for a SessionStart hook; never mutates
 ak-harness loop debrief [--issue ENG-123] [--since 24h]  # human-facing: what is in flight, held, escalated
+ak-harness loop observe [--since 24h] [--json]           # anomaly scan + queue, delivery, machine, memory/cache metrics
 ak-harness loop watch [--issue ENG-123] [--once] [--interval 30]  # poll delivery/PR; DONE|FAILED|ACTION_REQUIRED
 ak-harness loop retro [--since 7d] [--json|--learnings]  # weekly digest + calibration suggestions
 ```
@@ -46,6 +47,12 @@ so it is safe to run from a SessionStart hook or a chat agent that needs context
 | `PROGRESS` | still moving (waiting for PR, review pending, …) |
 
 Use `--once` for a single snapshot; omit it to block until a terminal outcome (or `--timeout <seconds>`).
+
+`loop observe` is the scheduler-friendly health view. It reuses the doctor, debrief and durable event log, then
+checks for a connected terminal with no output, an active claim without `delivery.json`, a finalized dirty worktree,
+a ready queue with an idle slot, and an in-flight review/worker past `delivery.workerIdleTimeoutMin`. It also reports
+machine pressure, provider headroom, delivery counts, fix rounds, memory recalls, cached contracts and observed token
+fields. It is read-only; `--precheck` uses exit 0 for an actionable anomaly and exit 1 when healthy.
 
 ## Running 24/7 with Orca
 

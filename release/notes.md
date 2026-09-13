@@ -1,3 +1,9 @@
+# 0.11.0 release candidate
+
+Read-only loop observability for the keep-pushing SDLC loop: deterministic anomaly detection and operating metrics
+for queue, delivery, machine pressure, provider headroom, memory, cache, reviews, fix rounds, lead time, and
+observed token fields. Publication remains gated on a merge to `main` through npm Trusted Publishing.
+
 # 0.8.0 release candidate
 
 Worker handoff: continue in-flight tickets on the same Orca worktree/branch with another provider when usage runs out.
