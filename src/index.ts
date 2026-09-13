@@ -112,7 +112,7 @@ export { rankModels, routeAllRoles, selectModel } from './loop/routing.js'
 export type { RankedModel, RoutingDecision, RoutingSkip } from './loop/routing.js'
 export {
   fetchArtificialAnalysisModels, listCliModels, loadAliases, loadBuiltinCatalog, parseArtificialAnalysisPayload,
-  parseGrokModelsOutput, readAaCache, resolveAlias, resolveCatalogCandidates, writeAaCache,
+  parseGrokModelsOutput, readAaCache, readCliModelsCache, resolveAlias, resolveCatalogCandidates, listCliModelsCached, writeAaCache, writeCliModelsCache,
 } from './loop/model-catalog/index.js'
 export type { ArtificialAnalysisModel, CatalogModel, ModelQuality, ProviderCatalog } from './loop/model-catalog/index.js'
 export { activeCooldowns, clearProviderCooldown, cooldownPath, markProviderExhausted, readCooldowns } from './loop/cooldown.js'
@@ -139,7 +139,7 @@ export { deliveryStatePath, listDispatched, precheckDeliver, readDeliveryState, 
 export type { DeliverInput, DeliverOutcome, DeliverReport, DeliverResult, DeliveryState } from './loop/deliver.js'
 export { LOOP_STAGES, automationName, automationPrompt, automationSpecs, installLoopAutomations, loopStatus, parseAutomationRuns, precheckCommand, shellQuote, uninstallLoopAutomations } from './loop/install.js'
 export type { AutomationStatus, InstallAction, InstallInput, InstallReport, LoopStage, LoopStatusReport } from './loop/install.js'
-export { advanceQueueOwner, queueOwner, rotationStatePath } from './loop/rotation.js'
+export { advanceQueueOwner, countRotationBlockingLeases, queueOwner, rotationStatePath } from './loop/rotation.js'
 export { installPreflight, runGuidedInstall } from './loop/guided-install.js'
 export { createRichIO } from './loop/ui/terminal.js'
 export type { RichIO } from './loop/ui/terminal.js'
@@ -150,6 +150,8 @@ export { buildDebriefReport, renderDebriefMarkdown } from './loop/debrief.js'
 export { readOutcomeProgress } from './loop/progress.js'
 export type { OutcomeProgress, OutcomeProgressStatus } from './loop/progress.js'
 export type { DebriefInput, DebriefIssueRow, DebriefReport } from './loop/debrief.js'
+export { assessObservability, renderObservabilityMarkdown, runObservability } from './loop/observability.js'
+export type { ObservabilityAnomaly, ObservabilityMetrics, ObservabilityReport, ObservabilitySeverity, ObservabilitySnapshot, ObservabilityTerminal } from './loop/observability.js'
 export { classifyWatchEvent, classifyWatchPhase, formatWatchEvent, snapshotWatchTargets, watchDeliveries } from './loop/watch.js'
 export type { WatchEvent, WatchEventKind, WatchInput, WatchReport, WatchTargetSnapshot } from './loop/watch.js'
 export { HARNESS_REPO_URL, buildRetroReport, buildSuggestions, normalizeReason, parseSince, readLoopEvents, renderRetroMarkdown, retroLearnings, runRetroStage } from './loop/retro.js'

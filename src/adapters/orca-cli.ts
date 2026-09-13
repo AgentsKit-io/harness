@@ -201,11 +201,20 @@ export interface OrcaSendReceipt { readonly accepted: boolean; readonly requestI
 
 export const parseOrcaSendReceipt = (result: unknown): OrcaSendReceipt => {
   const record = isRecord(result) ? result : {}
-  const receipt = isRecord(record['receipt']) ? record['receipt'] : record
-  const stages = Array.isArray(receipt['stages']) ? receipt['stages'].map((stage: unknown) => isRecord(stage) ? str(stage['stage'], str(stage['name'])) : str(stage)).filter(Boolean) : []
-  // Orca returns `ok:true` with a null/empty result for a plain send; only an explicit `accepted:false` means the input was refused.
-  const accepted = receipt['accepted'] === false ? false : receipt['accepted'] === true || stages.includes('input_accepted') || (result === null || result === undefined || Object.keys(record).length === 0)
-  return { accepted, requestId: str(receipt['requestId'], str(record['requestId'])) || null, stages, warnings: Array.isArray(record['warnings']) ? record['warnings'].map((warning: unknown) => isRecord(warning) ? str(warning['message'], JSON.stringify(warning)) : str(warning)) : [] }
+  // Current Orca wraps the receipt as `result.send.prompt`; older hosts use `receipt` or the top level.
+  const send = isRecord(record['send']) ? record['send'] : null
+  const prompt = send && isRecord(send['prompt']) ? send['prompt'] : null
+  const receipt = isRecord(record['receipt']) ? record['receipt'] : send ?? record
+  const rawStages = Array.isArray(receipt['stages']) ? receipt['stages'] : prompt && Array.isArray(prompt['stages']) ? prompt['stages'] : []
+  const stages = rawStages.map((stage: unknown) => isRecord(stage) ? str(stage['stage'], str(stage['name'])) : str(stage)).filter(Boolean)
+  // Orca may report `accepted:false` when --wait-submit times out after the input was queued.
+  // A queued/accepted input is still safe to treat as delivered; only an explicit refusal
+  // without an acceptance stage should fail the transport.
+  const inputAccepted = stages.some((stage) => ['input_accepted', 'input_queued', 'prompt_accepted', 'queued'].includes(stage.toLowerCase()))
+  const acceptedValue = receipt['accepted'] ?? send?.['accepted']
+  const accepted = inputAccepted || acceptedValue === true || (acceptedValue !== false && (result === null || result === undefined || Object.keys(record).length === 0))
+  const warnings = Array.isArray(record['warnings']) ? record['warnings'] : send && Array.isArray(send['warnings']) ? send['warnings'] : []
+  return { accepted, requestId: str(receipt['requestId'], str(prompt?.['requestId'], str(record['requestId']))) || null, stages, warnings: warnings.map((warning: unknown) => isRecord(warning) ? str(warning['message'], JSON.stringify(warning)) : str(warning)) }
 }
 
 export const orcaTerminalSend = async (runner: CommandRunner, input: { readonly terminal: string; readonly text: string; readonly enter?: boolean; readonly waitSubmitSeconds?: number }, options: OrcaCliOptions = {}): Promise<OrcaSendReceipt> => parseOrcaSendReceipt(await orcaJson(runner, ['terminal', 'send', '--terminal', input.terminal, '--text', input.text, ...(input.enter === false ? [] : ['--enter']), ...(input.waitSubmitSeconds ? ['--wait-submit', String(input.waitSubmitSeconds)] : [])], { ...options, timeoutMs: options.timeoutMs ?? ((input.waitSubmitSeconds ?? 0) * 1000 + 30_000) }))

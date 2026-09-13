@@ -1,4 +1,4 @@
-import { existsSync, readFileSync, readdirSync } from 'node:fs'
+import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs'
 import { join } from 'node:path'
 import type { CommandRunner } from '../adapters/command.js'
 import { linearCommentAdd } from '../adapters/linear-orca.js'
@@ -6,12 +6,24 @@ import { orcaAutomationRuns, orcaAutomationsList } from '../adapters/orca-cli.js
 import { hashJson } from '../kernel/hash.js'
 import { parseRetro, type LearningRecord } from '../kernel/learning.js'
 import { loadLoopConfig, type LoadedLoopConfig, type LoopConfig } from './config.js'
-import { readStoredContract } from './contract.js'
+import { contractPath, readStoredContract } from './contract.js'
 import { readCooldowns } from './cooldown.js'
-import { readDeliveryState } from './deliver.js'
+import { deliveryStatePath, readDeliveryState } from './deliver.js'
 import { LOOP_STAGES, automationName } from './install.js'
 import { openLoopMemory, upsertProposedLearnings } from './memory.js'
-import { readDispatchRecord } from './tick.js'
+import { dispatchRecordPath, readDispatchRecord } from './tick.js'
+import { queueOwner } from './rotation.js'
+
+/** Newest mtime across an issue's state files, or `null` if none exist. Every field `buildRetroReport` filters
+ * on (`dispatchedAt`, `finishedAt`, `contract.generatedAt`) is written in the same call that last touched its
+ * file, so the file's mtime is always >= that field's value — a file untouched since before the report window
+ * cannot contain a timestamp inside it, letting us skip the full JSON read+parse for issues clearly out of range. */
+const newestIssueMtimeMs = (stateDir: string, issue: string): number | null => {
+  const mtimes = [dispatchRecordPath(stateDir, issue), deliveryStatePath(stateDir, issue), contractPath(stateDir, issue)]
+    .map((path) => { try { return statSync(path).mtimeMs } catch { return null } })
+    .filter((value): value is number => value !== null)
+  return mtimes.length ? Math.max(...mtimes) : null
+}
 
 export interface LoopEvent { readonly at: string; readonly type: string; readonly issue?: string; readonly [key: string]: unknown }
 
@@ -56,10 +68,27 @@ export interface RetroReport {
 
 const isRecord = (value: unknown): value is Record<string, unknown> => typeof value === 'object' && value !== null && !Array.isArray(value)
 
-export const readLoopEvents = (stateDir: string): readonly LoopEvent[] => {
-  const path = join(stateDir, 'events.ndjson')
+const parseEventsFile = (path: string): LoopEvent[] => {
   if (!existsSync(path)) return []
   return readFileSync(path, 'utf8').split(/\r?\n/).filter(Boolean).flatMap((line) => { try { const parsed = JSON.parse(line) as unknown; return isRecord(parsed) && typeof parsed['at'] === 'string' && typeof parsed['type'] === 'string' ? [parsed as LoopEvent] : [] } catch { return [] } })
+}
+
+const eventsArchivePattern = /^events-archive-(\d+)\.ndjson$/
+
+/** `sinceMs`, when given, skips a rotated archive whose rotation time is older than the window — every event in
+ * that file was written before its own rotation, so if the rotation itself predates `sinceMs` nothing inside can
+ * be in range (see `appendLoopEvent` in tick.ts for the rotation side). Omit `sinceMs` to read everything, exactly
+ * as before archives existed. */
+export const readLoopEvents = (stateDir: string, sinceMs?: number): readonly LoopEvent[] => {
+  const archives = existsSync(stateDir)
+    ? readdirSync(stateDir)
+        .map((name) => name.match(eventsArchivePattern))
+        .filter((match): match is RegExpMatchArray => match !== null)
+        .map((match) => ({ path: join(stateDir, match[0]), rotatedAtMs: Number(match[1]) }))
+        .filter((archive) => sinceMs === undefined || archive.rotatedAtMs >= sinceMs)
+        .sort((a, b) => a.rotatedAtMs - b.rotatedAtMs)
+    : []
+  return [...archives.flatMap((archive) => parseEventsFile(archive.path)), ...parseEventsFile(join(stateDir, 'events.ndjson'))]
 }
 
 export const parseSince = (value: string | undefined, now: Date): Date => {
@@ -114,10 +143,11 @@ export interface RetroInput {
 export const buildRetroReport = async (input: RetroInput): Promise<RetroReport> => {
   const loaded = input.loaded ?? loadLoopConfig(input.configPath)
   const { config } = loaded
+  const person = queueOwner(loaded)
   const now = (input.now ?? (() => new Date()))()
   const since = parseSince(input.since, now)
   const inWindow = (at: string | null | undefined): boolean => typeof at === 'string' && Date.parse(at) >= since.getTime() && Date.parse(at) <= now.getTime()
-  const events = readLoopEvents(loaded.stateDir).filter((event) => inWindow(event.at))
+  const events = readLoopEvents(loaded.stateDir, since.getTime()).filter((event) => inWindow(event.at))
   const counts: Record<string, number> = {}
   for (const event of events) counts[event.type] = (counts[event.type] ?? 0) + 1
 
@@ -134,6 +164,8 @@ export const buildRetroReport = async (input: RetroInput): Promise<RetroReport> 
   if (existsSync(issuesDir)) for (const entry of readdirSync(issuesDir, { withFileTypes: true })) {
     if (!entry.isDirectory()) continue
     const issue = entry.name
+    const newestMtime = newestIssueMtimeMs(loaded.stateDir, issue)
+    if (newestMtime !== null && newestMtime < since.getTime()) continue
     const dispatch = readDispatchRecord(loaded.stateDir, issue)
     const delivery = readDeliveryState(loaded.stateDir, issue)
     const contract = readStoredContract(loaded.stateDir, issue)
@@ -190,7 +222,7 @@ export const buildRetroReport = async (input: RetroInput): Promise<RetroReport> 
     generatedAt: now.toISOString(),
     window: { since: since.toISOString(), until: now.toISOString(), days: Number(((now.getTime() - since.getTime()) / 86_400_000).toFixed(2)) },
     project: config.project.repo,
-    person: config.linear.person,
+    person,
     counts,
     escalations: { total: escalations.length, issues: [...new Set(escalations.map((event) => String(event.issue ?? '?')))], reasons: [...reasonCounts.entries()].map(([reason, count]) => ({ reason, count })).sort((left, right) => right.count - left.count) },
     dispatches: { total: dispatchEvents.length, failed: counts['worker.dispatch-failed'] ?? 0, byProvider },

@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.11.0] - 2026-09-13
+
+- **Read-only loop observability**: added `ak-harness loop observe` plus the public `runObservability` and
+  `assessObservability` APIs. The report combines doctor/debrief/event-log data with Orca terminal/worktree
+  inspection and exposes queue, delivery, machine, provider, memory, cache, review, fix-round, lead-time, and
+  observed-token metrics.
+- **Deterministic anomaly detection**: flags connected terminals without output, active claims without
+  `delivery.json`, finalized dirty worktrees, ready queues with idle slots but no recent dispatch, and stalled
+  in-flight workers/reviews. `--precheck` returns scheduler-friendly exit codes without mutating state.
+- **Operator documentation and coverage**: added ADR-0031, module-boundary documentation, and focused regression
+  tests for the observability rules.
+
 ## [0.10.0] - 2026-09-12
 
 Closes the gaps found comparing this harness against LangChain's "custom agent harness" article. The structural

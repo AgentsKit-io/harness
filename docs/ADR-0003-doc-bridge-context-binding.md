@@ -6,9 +6,16 @@
 ## Decision
 
 The harness provides a dependency-free `createDocBridgeContextProvider` adapter
-that reads the local `.doc-bridge/index.json` contract. It returns at most
-eight deterministic references, carries the index `contentHash` as source
-provenance, and computes a stable snapshot hash.
+that reads the local `.doc-bridge/index.json` contract. It searches both the
+knowledge corpus and `lookup.ownership` records, deduplicates references by
+path with ownership tie-breaking, returns at most eight deterministic
+references, carries the index `contentHash` as source provenance, and computes
+a stable snapshot hash.
+
+When `contract.docBridgeMaxAgeHours` is greater than zero, the adapter rejects
+an index older than that budget before attaching context. This is an age guard,
+not a source-content proof; the exact Doc Bridge hash gate remains the required
+check for CI and release evidence.
 
 `planRun` accepts resolved context snapshots and freezes them into `run.json`
 with a `contextHash`. The lifecycle log records one `context.attached` event per

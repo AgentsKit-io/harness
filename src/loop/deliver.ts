@@ -9,7 +9,7 @@ import { detectProviders, remainingUsagePercent, type ProviderAvailability } fro
 import { createDispatchLedger, type DispatchLease } from '../execution/coordination.js'
 import { HarnessError } from '../kernel/errors.js'
 import { renderHandoffBrief } from './brief.js'
-import { loadLoopConfig, providerIdentity, type LoadedLoopConfig, type LoopConfig } from './config.js'
+import { loadLoopConfig, providerIdentity, type LoadedLoopConfig, type LoopConfig, type ModelReference } from './config.js'
 import { classifyProviderFailure, extractResetsAt, readStoredContract } from './contract.js'
 import { activeCooldowns, markProviderExhausted, readCooldowns } from './cooldown.js'
 import { providerSpecs } from './doctor.js'
@@ -98,7 +98,7 @@ const lastReviewHead = (state: DeliveryState): string | null => {
   return heads.at(-1) ?? state.heldFor
 }
 
-/** Every issue the loop dispatched and has not finished. */
+/** Every issue the loop ever dispatched (finished or not) — callers that only care about in-flight work must filter on `readDeliveryState(...).finishedAt` themselves. */
 export const listDispatched = (stateDir: string): readonly DispatchRecordFile[] => {
   const dir = join(stateDir, 'issues')
   if (!existsSync(dir)) return []
@@ -121,6 +121,8 @@ interface Context {
   readonly notes: string[]
   readonly reviewDeadlineMs: number
   readonly bus: LoopEventBus
+  /** Catalog-discovered builder candidates (`models.routing.mode: catalog`), already resolved once for the initial `builder` pick — reused by `pickHandoffBuilder` so a stuck-worker handoff considers the same pool instead of only YAML tiers. */
+  readonly builderExtras: readonly ModelReference[]
 }
 
 const orcaOptions = (config: LoopConfig) => ({ bin: config.orca.bin, timeoutMs: config.orca.timeoutMs })
@@ -257,7 +259,7 @@ const providerUnavailable = (ctx: Context, providerId: string): boolean => {
 }
 
 const pickHandoffBuilder = (ctx: Context, record: DispatchRecordFile): RankedModel | null => {
-  const ranked = rankModels(ctx.config, 'builder', ctx.providers)
+  const ranked = rankModels(ctx.config, 'builder', ctx.providers, ctx.builderExtras)
   const different = ranked.find((candidate) => candidate.provider !== record.provider || candidate.model !== record.model)
   return different ?? null
 }
@@ -672,7 +674,8 @@ export const runDeliver = async (input: DeliverInput): Promise<DeliverReport> =>
     ? resolveCatalogCandidates({ config, role, availableProviderIds: availableIds, runner: input.runner, stateDir: loaded.stateDir, env: input.env, now })
     : Promise.resolve([])
   const reviewer = rankModels(config, 'reviewer', providers, await catalogExtras('reviewer'))[0] ?? null
-  const builder = rankModels(config, 'builder', providers, await catalogExtras('builder'))[0] ?? null
+  const builderExtras = await catalogExtras('builder')
+  const builder = rankModels(config, 'builder', providers, builderExtras)[0] ?? null
   let env = input.env ?? process.env
   if (!env['GITHUB_TOKEN'] && !env['GH_TOKEN']) { try { const token = await input.runner.run(['gh', 'auth', 'token'], { timeoutMs: 10_000 }); if (token.code === 0 && token.stdout.trim()) env = { ...env, GITHUB_TOKEN: token.stdout.trim(), GH_TOKEN: token.stdout.trim() } } catch { /* review runs without a token and reports incomplete */ } }
   const reviewDeadlineMs = input.budgetMs ? Math.max(60_000, Math.min(config.delivery.review.deadlineMs, input.budgetMs - 90_000)) : config.delivery.review.deadlineMs
@@ -682,13 +685,18 @@ export const runDeliver = async (input: DeliverInput): Promise<DeliverReport> =>
     const { errors } = await loadLoopPlugins(loaded.root, config.plugins.modules, bus)
     for (const failure of errors) notes.push(`plugin ${failure.path} failed to load: ${failure.error}`)
   }
-  const ctx: Context = { loaded, config, runner: input.runner, now, dryRun, reviewer, builder, providers, env, ...(input.assumeIdle === undefined ? {} : { assumeIdle: input.assumeIdle }), notes, reviewDeadlineMs, bus }
+  const ctx: Context = { loaded, config, runner: input.runner, now, dryRun, reviewer, builder, providers, env, ...(input.assumeIdle === undefined ? {} : { assumeIdle: input.assumeIdle }), notes, reviewDeadlineMs, bus, builderExtras }
   const ledger = createDispatchLedger(loaded.stateDir)
   const leases = new Map(ledger.active().map((lease) => [lease.issue, lease]))
   const results: DeliverResult[] = []
   for (const record of listDispatched(loaded.stateDir)) {
     if (input.onlyIssue && record.issue !== input.onlyIssue) continue
     let state = readDeliveryState(loaded.stateDir, record.issue)
+    // A merged issue is never in `resumableOutcomes` (blocked/stuck/abandoned/held) and can never legitimately
+    // come back to life — polling GitHub for it on every future tick, forever, only grows with total historical
+    // dispatch count instead of current in-flight work. Every other finished outcome still needs to be re-checked
+    // (a human may push a fix, or reopen a closed PR) so this skip is deliberately narrow to `merged` alone.
+    if (state.finishedAt && state.finalOutcome === 'merged') continue
     const lease = leases.get(record.issue)
     if (!state.finishedAt) {
       const ageMinutes = minutesBetween(now(), record.dispatchedAt)
@@ -723,9 +731,6 @@ export const runDeliver = async (input: DeliverInput): Promise<DeliverReport> =>
         if (wasFinished && state.finishedAt) continue
         results.push(await handlePullRequest(ctx, record, lease, state, pr)); continue
       }
-      // A recorded merge is only recovery work before delivery state is persisted. Once the
-      // issue is already finished as merged, do not replay completion on every deliver tick.
-      if (state.finishedAt && state.finalOutcome === 'merged') continue
       const recordedMerge = readMergedEvent(loaded.stateDir, record.issue)
       if (recordedMerge) {
         try {

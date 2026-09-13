@@ -1,8 +1,11 @@
-import { describe, expect, it } from 'vitest'
+import { mkdtempSync, rmSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
+import { afterEach, describe, expect, it } from 'vitest'
 import type { ProviderAvailability, ProviderUsage } from '../src/adapters/providers.js'
 import { remainingUsagePercent, usageRankTuple } from '../src/adapters/providers.js'
 import { LoopConfigSchema } from '../src/loop/config.js'
-import { parseGrokModelsOutput, resolveCatalogCandidates } from '../src/loop/model-catalog/index.js'
+import { parseGrokModelsOutput, readCliModelsCache, resolveCatalogCandidates } from '../src/loop/model-catalog/index.js'
 import { rankModels, selectModel } from '../src/loop/routing.js'
 
 const usage = (windows: { kind: string; usedPercent: number }[], exhausted = false): ProviderUsage => ({
@@ -76,6 +79,12 @@ describe('usage-aware routing', () => {
     expect(ranked[0]).toMatchObject({ provider: 'claude' })
   })
 
+  it('rankModels honors a configured pin before usage ranking', () => {
+    const config = base({ mode: 'catalog', pin: { reviewer: 'claude/opus' } })
+    const ranked = rankModels(config, 'reviewer', [avail('codex', 5), avail('claude', 90)])
+    expect(ranked[0]).toMatchObject({ provider: 'claude', model: 'opus', reason: 'pinned claude/opus' })
+  })
+
   it('preferKnownUsage ranks known remaining before unknown', () => {
     const known = usageRankTuple(usage([{ kind: 'weekly', usedPercent: 50 }]), 'max', true)
     const unknown = usageRankTuple({ status: 'unknown', error: null, windows: [], exhausted: false, resetsAt: null, hasAuth: true }, 'max', true)
@@ -96,5 +105,48 @@ describe('usage-aware routing', () => {
     expect(refs.some((ref) => ref.provider === 'grok')).toBe(true)
     const selected = selectModel(config, 'builder', [avail('grok', 20)], refs).selected
     expect(selected?.provider).toBe('grok')
+  })
+
+  describe('CLI catalog cache', () => {
+    const cleanups: string[] = []
+    afterEach(() => { for (const dir of cleanups.splice(0)) rmSync(dir, { recursive: true, force: true }) })
+    const tempStateDir = (): string => { const dir = mkdtempSync(join(tmpdir(), 'agentskit-catalog-cache-')); cleanups.push(dir); return dir }
+    const grokRunner = (calls: string[][]) => ({ run: async (argv: readonly string[]) => { calls.push([...argv]); return { code: 0, stdout: '- grok-4.6\n', stderr: '', timedOut: false, durationMs: 1 } } })
+
+    it('spawns the CLI once, then serves the cache until it goes stale', async () => {
+      const config = base({ mode: 'catalog' })
+      const stateDir = tempStateDir()
+      const calls: string[][] = []
+      const runner = grokRunner(calls)
+      let now = new Date('2026-09-13T00:00:00.000Z')
+      const args = { config, role: 'builder' as const, availableProviderIds: ['grok'], runner, stateDir, now: () => now }
+
+      const first = await resolveCatalogCandidates(args)
+      expect(first.some((ref) => ref.model.includes('grok-4.6'))).toBe(true)
+      expect(calls).toHaveLength(1)
+      expect(readCliModelsCache(stateDir, 'grok')?.ids).toEqual(['grok-4.6'])
+
+      now = new Date(now.getTime() + 60 * 60_000) // 1h later, well inside the 6h default cliCacheHours
+      await resolveCatalogCandidates(args)
+      expect(calls).toHaveLength(1) // served from cache, no second spawn
+
+      now = new Date(now.getTime() + 6 * 3_600_000) // past cliCacheHours
+      await resolveCatalogCandidates(args)
+      expect(calls).toHaveLength(2) // cache was stale, spawned again
+    })
+
+    it('falls back to the stale cache instead of an empty list when a refresh attempt fails', async () => {
+      const config = base({ mode: 'catalog' })
+      const stateDir = tempStateDir()
+      const failingRunner = { run: async () => ({ code: 1, stdout: '', stderr: 'boom', timedOut: false, durationMs: 1 }) }
+      const okRunner = grokRunner([])
+      let now = new Date('2026-09-13T00:00:00.000Z')
+      await resolveCatalogCandidates({ config, role: 'builder', availableProviderIds: ['grok'], runner: okRunner, stateDir, now: () => now })
+      expect(readCliModelsCache(stateDir, 'grok')?.ids).toEqual(['grok-4.6'])
+
+      now = new Date(now.getTime() + 7 * 3_600_000) // force a stale-cache refresh attempt
+      const refs = await resolveCatalogCandidates({ config, role: 'builder', availableProviderIds: ['grok'], runner: failingRunner, stateDir, now: () => now })
+      expect(refs.some((ref) => ref.model.includes('grok-4.6'))).toBe(true) // kept the stale cache instead of going empty
+    })
   })
 })

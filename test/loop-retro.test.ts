@@ -1,4 +1,4 @@
-import { appendFileSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { appendFileSync, mkdirSync, mkdtempSync, readFileSync, rmSync, utimesSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
@@ -94,6 +94,22 @@ describe('loop retro', () => {
     const offline = await buildRetroReport({ loaded: env.loaded, since: '7d', now: () => NOW, skipOrca: true })
     expect(offline.orca).toBeNull()
     expect(offline.digest).not.toBe(report.digest)
+  })
+
+  it('skips the full JSON read for an issue whose state files are older than the report window', async () => {
+    const env = setup()
+    const t = (h: number) => new Date(NOW.getTime() - h * 3_600_000).toISOString()
+    env.issue('ENG-STALE', { 'delivery.json': { issue: 'ENG-STALE', prNumber: 1, reviews: {}, fixRounds: 0, nudges: [], heldFor: null, finishedAt: t(200), finalOutcome: 'merged' } })
+    const staleTime = new Date(NOW.getTime() - 200 * 3_600_000)
+    for (const name of ['delivery.json']) utimesSync(join(env.state, 'issues', 'ENG-STALE', name), staleTime, staleTime)
+    // Corrupt the file so any code path that still tries to JSON.parse it throws — proves the pre-filter
+    // actually skipped the read instead of merely being redundant with the correct outcome.
+    writeFileSync(join(env.state, 'issues', 'ENG-STALE', 'delivery.json'), 'not valid json {{{', 'utf8')
+    utimesSync(join(env.state, 'issues', 'ENG-STALE', 'delivery.json'), staleTime, staleTime)
+    env.event(t(1), 'worker.dispatched', { issue: 'ENG-FRESH', provider: 'claude', model: 'sonnet' })
+    env.issue('ENG-FRESH', { 'dispatch.json': { issue: 'ENG-FRESH', worktreeId: 'w', worktree: 'w', branch: 'b', terminal: 't', provider: 'claude', model: 'sonnet', contractDigest: 'd', leaseKey: 'k', leaseId: 'l', dispatchedAt: t(1), url: 'u' } })
+    const report = await buildRetroReport({ loaded: env.loaded, runner: { run: async () => ok({ ok: true, result: { runs: [] } }) }, since: '7d', now: () => NOW })
+    expect(report.issues.map((row) => row.issue)).toEqual(['ENG-FRESH'])
   })
 
   it('emits the steady suggestion when nothing signals, and specific ones when thresholds trip', () => {

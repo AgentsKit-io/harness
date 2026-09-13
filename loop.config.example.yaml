@@ -32,7 +32,7 @@ linear:
   rotation:
     enabled: false                   # set true to advance through owners when the current dispatchable queue drains
     owners: [my-linear-display-name] # ordered display names; the first entry is the initial owner
-    advanceWhenEmpty: true           # never switch while an active lease remains
+    advanceWhenEmpty: true           # never switch while an implementation lease remains
   states: [Todo, Ready]              # dispatchable states; anything already started is left alone
   excludeLabels: [blocked, needs-info]
   requireLabels: []

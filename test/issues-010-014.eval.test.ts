@@ -22,6 +22,25 @@ it('010 evaluates the context contribution seam (with-context beats control)', a
   expect(control.accuracy).toBe(1)
 })
 
+it('createKvMemoryAdapter caches recall reads and invalidates on remember', async () => {
+  const kv = new Map<string, unknown>()
+  let getCalls = 0
+  const store = { get: async (key: string) => { getCalls += 1; return kv.get(key) }, set: async (key: string, value: unknown) => { kv.set(key, value) } }
+  const adapter = createKvMemoryAdapter(store)
+  await adapter.remember({ id: 'm1', scope: 'global', summary: 'cached record', source: 'test', sourceRevision: 'rev', contentHash: 'h1', approved: true })
+  getCalls = 0
+  await adapter.recall({ query: 'cached' })
+  const callsAfterFirstRecall = getCalls
+  expect(callsAfterFirstRecall).toBeGreaterThan(0)
+  await adapter.recall({ query: 'cached' })
+  expect(getCalls).toBe(callsAfterFirstRecall) // second recall is served from the in-process cache, no new store reads
+  await adapter.remember({ id: 'm2', scope: 'global', summary: 'second record', source: 'test', sourceRevision: 'rev', contentHash: 'h2', approved: true })
+  getCalls = 0
+  const hits = await adapter.recall({ query: '' })
+  expect(getCalls).toBeGreaterThan(0) // remember() invalidated the cache, so this recall re-reads
+  expect(hits.map((hit) => hit.record.id).sort()).toEqual(['m1', 'm2'])
+})
+
 it('011 evaluates cache reuse and key-bound invalidation', async () => {
   const cache = createLlmCache<string>()
   const key = createLlmCacheKey({ sourceRevision: 'rev', contractHash: 'contract', configHash: 'config', provider: 'fixture', model: 'fixed', systemPromptHash: 's', inputHash: 'i', operation: 'context' })
