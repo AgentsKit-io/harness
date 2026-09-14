@@ -1,4 +1,4 @@
-import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, readdirSync, readFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import type { CommandRunner } from '../adapters/command.js'
 import { atLeast, parseReviewResult, renderFindingsForWorker, runCodeReview, type CodeReviewOutcome } from '../adapters/code-review.js'
@@ -9,6 +9,7 @@ import { detectProviders, remainingUsagePercent, type ProviderAvailability } fro
 import { createDispatchLedger, type DispatchLease } from '../execution/coordination.js'
 import { HarnessError } from '../kernel/errors.js'
 import { renderHandoffBrief } from './brief.js'
+import { writeJsonAtomic } from './fs-atomic.js'
 import { loadLoopConfig, providerIdentity, type LoadedLoopConfig, type LoopConfig, type ModelReference } from './config.js'
 import { classifyProviderFailure, extractResetsAt, readStoredContract } from './contract.js'
 import { activeCooldowns, markProviderExhausted, readCooldowns } from './cooldown.js'
@@ -79,7 +80,6 @@ export interface DeliverInput {
 
 const message = (error: unknown): string => error instanceof HarnessError ? `${error.code}: ${error.message}` : error instanceof Error ? error.message : String(error)
 const isMissingOrcaWorktree = (error: unknown): boolean => message(error).includes('selector_not_found')
-const writeJson = (path: string, value: unknown): void => { mkdirSync(dirname(path), { recursive: true }); writeFileSync(path, `${JSON.stringify(value, null, 2)}\n`, 'utf8') }
 
 export const deliveryStatePath = (stateDir: string, identifier: string): string => join(stateDir, 'issues', identifier, 'delivery.json')
 export const readDeliveryState = (stateDir: string, identifier: string): DeliveryState => {
@@ -128,7 +128,7 @@ interface Context {
 const orcaOptions = (config: LoopConfig) => ({ bin: config.orca.bin, timeoutMs: config.orca.timeoutMs })
 const linearOptions = (config: LoopConfig) => ({ bin: config.orca.bin, workspaceId: config.linear.workspaceId, orca: { timeoutMs: config.orca.timeoutMs } })
 
-const saveState = (ctx: Context, state: DeliveryState): void => { if (!ctx.dryRun) writeJson(deliveryStatePath(ctx.loaded.stateDir, state.issue), state) }
+const saveState = (ctx: Context, state: DeliveryState): void => { if (!ctx.dryRun) writeJsonAtomic(deliveryStatePath(ctx.loaded.stateDir, state.issue), state) }
 const event = (ctx: Context, payload: Record<string, unknown>): void => { if (!ctx.dryRun) appendLoopEvent(ctx.loaded.stateDir, { at: ctx.now().toISOString(), ...payload }, ctx.bus) }
 
 /** Recover a merge recorded by this loop when GitHub no longer lists the deleted head branch. */
@@ -739,7 +739,7 @@ export const runDeliver = async (input: DeliverInput): Promise<DeliverReport> =>
       if (!open.length) {
         // The worker may have pushed the branch Orca assigned (`<git user>/<worktree>`) rather than the recorded one.
         const candidates = (await githubOpenPullRequests(input.runner, { repo: config.project.repo, limit: 100 })).filter((item) => item.headRef === record.branch || item.headRef.endsWith(`/${record.worktree}`) || item.headRef === record.worktree)
-        if (candidates.length) { open = candidates; if (!dryRun) writeJson(dispatchRecordPath(loaded.stateDir, record.issue), { ...record, branch: candidates[0]!.headRef }); notes.push(`${record.issue}: PR found on branch ${candidates[0]!.headRef}; dispatch record updated`) }
+        if (candidates.length) { open = candidates; if (!dryRun) writeJsonAtomic(dispatchRecordPath(loaded.stateDir, record.issue), { ...record, branch: candidates[0]!.headRef }); notes.push(`${record.issue}: PR found on branch ${candidates[0]!.headRef}; dispatch record updated`) }
       }
       const pr = open[0]
       if (pr) {
