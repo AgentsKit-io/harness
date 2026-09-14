@@ -1,4 +1,4 @@
-import { appendFileSync, existsSync, mkdirSync, readFileSync, renameSync, statSync, writeFileSync } from 'node:fs'
+import { appendFileSync, closeSync, existsSync, mkdirSync, openSync, readFileSync, renameSync, statSync, unlinkSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import type { CommandRunner } from '../adapters/command.js'
 import { createLinearTrackingAdapter, fetchLinearIssue, fetchLinearQueue, linearCommentAdd, linearLabelAdd, linearLabelRemove, type LinearIssueDetail, type LoopIssue } from '../adapters/linear-orca.js'
@@ -8,6 +8,7 @@ import { detectProviders, type ProviderAvailability } from '../adapters/provider
 import { createDispatchLedger, type DispatchLedger, type DispatchLease } from '../execution/coordination.js'
 import { HarnessError } from '../kernel/errors.js'
 import { renderWorkerBrief } from './brief.js'
+import { writeJsonAtomic } from './fs-atomic.js'
 import { loadPinnedSkills, skillRefs, skillDigest, type PinnedSkillRef } from './skills.js'
 import { loadLoopConfig, type EffortLevel, type LoadedLoopConfig, type LoopConfig, type ModelReference } from './config.js'
 import { assessContract, contractIsFresh, extractResetsAt, generateContract, readStoredContract, resolveDocContext, writeStoredContract, type StoredContract } from './contract.js'
@@ -134,23 +135,61 @@ export const readDispatchRecord = (stateDir: string, identifier: string): Dispat
   if (!existsSync(path)) return null
   try { return JSON.parse(readFileSync(path, 'utf8')) as DispatchRecordFile } catch { return null }
 }
-const writeJson = (path: string, value: unknown): void => { mkdirSync(dirname(path), { recursive: true }); writeFileSync(path, `${JSON.stringify(value, null, 2)}\n`, 'utf8') }
 export const writeDispatchRecord = (stateDir: string, record: DispatchRecordFile): string => {
   const path = dispatchRecordPath(stateDir, record.issue)
-  writeJson(path, record)
+  writeJsonAtomic(path, record)
   return path
 }
 /** Above this, the hot `events.ndjson` file rotates to an archive instead of growing forever — a 24/7 loop
  * emits several events per dispatch, and every `retro`/`debrief` read loads the whole file into memory. */
 const EVENTS_ROTATE_AT_BYTES = 10 * 1024 * 1024
+const EVENTS_LOCK_STALE_MS = 5_000
+const EVENTS_LOCK_MAX_ATTEMPTS = 100
+const EVENTS_LOCK_RETRY_MS = 10
+
+/**
+ * `tick` and `deliver` are separate scheduled processes that can call `appendLoopEvent` on the same
+ * `events.ndjson` at (near-)the same instant. Without a lock, two processes that both see the file over
+ * `EVENTS_ROTATE_AT_BYTES` could both rename it — a same-millisecond timestamp collision overwrites one
+ * process's archive, or one process's rename "succeeds" against a file the other already moved, silently
+ * dropping events. Serializing only the rotation decision (not the append itself) is enough: even a write that
+ * lands in the archive instead of the fresh file mid-rotation is not data loss, since `readLoopEvents` merges
+ * archives back in — the lock only needs to stop two processes from racing the rename itself.
+ */
+const acquireEventsLock = (lockFilePath: string): number | null => {
+  for (let attempt = 0; attempt < EVENTS_LOCK_MAX_ATTEMPTS; attempt += 1) {
+    try {
+      return openSync(lockFilePath, 'wx')
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code !== 'EEXIST') throw error
+      try { if (Date.now() - statSync(lockFilePath).mtimeMs > EVENTS_LOCK_STALE_MS) unlinkSync(lockFilePath) } catch { /* another process already cleared it, or still holds it */ }
+      Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, EVENTS_LOCK_RETRY_MS)
+    }
+  }
+  return null
+}
 
 export const appendLoopEvent = (stateDir: string, event: Record<string, unknown>, bus?: LoopEventBus, now: () => Date = () => new Date()): void => {
   const path = join(stateDir, 'events.ndjson')
   mkdirSync(dirname(path), { recursive: true })
+  const lockFilePath = `${path}.lock`
+  const lockFd = acquireEventsLock(lockFilePath)
   try {
-    if (statSync(path).size > EVENTS_ROTATE_AT_BYTES) renameSync(path, join(stateDir, `events-archive-${now().getTime()}.ndjson`))
-  } catch { /* rotation is best-effort — never let it break event logging itself */ }
-  appendFileSync(path, `${JSON.stringify(event)}\n`, 'utf8')
+    // Rotation only runs when the lock was actually acquired — skipping it under contention (rather than racing
+    // the rename unlocked) is always safe: the file just grows a little past the threshold until the next
+    // successful attempt rotates it.
+    if (lockFd !== null) {
+      try {
+        if (statSync(path).size > EVENTS_ROTATE_AT_BYTES) renameSync(path, join(stateDir, `events-archive-${now().getTime()}.ndjson`))
+      } catch { /* rotation is best-effort — never let it break event logging itself */ }
+    }
+    appendFileSync(path, `${JSON.stringify(event)}\n`, 'utf8')
+  } finally {
+    if (lockFd !== null) {
+      try { closeSync(lockFd) } catch { /* already closed */ }
+      try { unlinkSync(lockFilePath) } catch { /* already removed */ }
+    }
+  }
   if (bus && typeof event['type'] === 'string') bus.emit(event as LoopEventPayload)
 }
 
@@ -441,7 +480,7 @@ export const runTick = async (input: TickInput): Promise<TickReport> => {
       if (!launched.accepted) notes.push(`${detail.identifier}: terminal ${launched.terminal} did not confirm the brief; deliver will nudge it if it stays idle`)
       ledger.recordDispatch({ lease: claim.lease, idempotencyKey: plan.idempotencyKey, commandDigest: plan.commandDigest })
       const record: DispatchRecordFile = { issue: detail.identifier, worktreeId: created.id, worktree, branch: actualBranch, terminal: launched.terminal, provider: builder.provider, model: builder.model, contractDigest: stored.digest, leaseKey: claim.lease.key, leaseId: claim.lease.leaseId, dispatchedAt: now().toISOString(), url: detail.url, briefDigest, skills: skillRefs(pinnedSkills), setup: setupResult, effort: builder.effort, initialRemainingPercent: builder.remainingPercent, worktreePath: created.path }
-      writeJson(dispatchRecordPath(loaded.stateDir, detail.identifier), record)
+      writeJsonAtomic(dispatchRecordPath(loaded.stateDir, detail.identifier), record)
       appendLoopEvent(loaded.stateDir, { at: record.dispatchedAt, type: 'worker.dispatched', ...record, command: builder.tui, briefAccepted: launched.accepted, tuiIdle: launched.idle }, bus)
       await bus.runHook('afterDispatch', { issue: detail.identifier, provider: record.provider, model: record.model, branch: record.branch, worktreeId: record.worktreeId })
       clearIssueFailures(loaded.stateDir, detail.identifier)

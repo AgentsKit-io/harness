@@ -38,6 +38,7 @@
     "build": "tsup && node -e \"console.log(JSON.stringify({status:'passed',criteria:['package']}))\"",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "pnpm typecheck && vitest run --config vitest.config.ts test && node -e \"console.log(JSON.stringify({status:'passed',criteria:['package']}))\"",
+    "test:coverage": "vitest run --config vitest.config.ts --coverage test",
     "test:contract": "pnpm typecheck && vitest run --config vitest.config.ts test/contract.test.ts && node -e \"console.log(JSON.stringify({status:'passed',criteria:['protocol']}))\"",
     "test:extensibility": "pnpm typecheck && vitest run --config vitest.config.ts test/extensibility.test.ts && node -e \"console.log(JSON.stringify({status:'passed',criteria:['extensibility']}))\"",
     "test:event-log": "pnpm typecheck && vitest run --config vitest.config.ts test/extensibility.test.ts test/harness.test.ts -t \"ordered append-only lifecycle log|complete typed task through human approval|authorization only when tracking|human rejection\" && node -e \"console.log(JSON.stringify({status:'passed',criteria:['event-log','verification-attestation','approval-attestation']}))\"",
@@ -67,6 +68,7 @@
     "test:boundaries": "pnpm typecheck && vitest run --config vitest.config.ts test/boundaries.test.ts && node scripts/verify-dependency-directions.mjs",
     "test:phase-executor": "pnpm typecheck && vitest run --config vitest.config.ts test/phase-executor.test.ts && node -e \"console.log(JSON.stringify({status:'passed',criteria:['phase-executor']}))\"",
     "test:artifacts": "pnpm typecheck && vitest run --config vitest.config.ts test/artifacts.test.ts && node scripts/verify-artifact-cli.mjs",
+    "test:loop-watch-sigint": "pnpm typecheck && pnpm build >/dev/null && node scripts/verify-loop-watch-sigint.mjs",
     "test:adapters": "pnpm typecheck && vitest run --config vitest.config.ts test/adapters.test.ts && node -e \"console.log(JSON.stringify({status:'passed',criteria:['adapters']}))\"",
     "test:loop": "pnpm typecheck && vitest run --config vitest.config.ts test/loop.test.ts test/loop-adapters.test.ts test/loop-tick.test.ts test/loop-deliver.test.ts test/loop-install.test.ts test/loop-guided-install.test.ts test/loop-retro.test.ts test/loop-debrief.test.ts test/loop-watch.test.ts test/loop-observability.test.ts test/loop-agent-registry.test.ts test/loop-memory.test.ts test/loop-contract-failure.test.ts test/loop-resilience-state.test.ts test/loop-skills.test.ts test/loop-github-intake.test.ts test/loop-event-bus.test.ts test/loop-progress.test.ts && node -e \"console.log(JSON.stringify({status:'passed',criteria:['loop-config','loop-providers','loop-routing','loop-doctor','loop-adapters','loop-tick','loop-deliver','loop-install','loop-debrief','loop-watch','loop-observability','loop-agent-registry','loop-memory','loop-contract-failure','loop-resilience-state','loop-skills','loop-github-intake','loop-event-bus','loop-progress']}))\"",
     "test:review": "pnpm typecheck && vitest run --config vitest.config.ts test/review.test.ts && node -e \"console.log(JSON.stringify({status:'passed',criteria:['review-delivery']}))\"",
@@ -94,6 +96,7 @@
   "devDependencies": {
     "@types/node": "^22.10.0",
     "@types/react": "^19.3.0",
+    "@vitest/coverage-v8": "4.1.11",
     "tsup": "^8.5.0",
     "typescript": "^5.7.2",
     "vitest": "^4.1.10"
