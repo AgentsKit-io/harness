@@ -105,10 +105,10 @@ describe('buildDebriefReport phases and headline', () => {
     expect(renderDebriefMarkdown(report)).not.toContain('Needs-info')
   })
 
-  it('drops an explicitly requested issue with no dispatch/delivery/contract state — the "always include" branch for input.issue is shadowed by the unconditional skip check right after it, so --issue on a truly untouched id currently reports nothing rather than an idle row', () => {
+  it('includes an explicitly requested issue with no dispatch/delivery/contract state as an idle row (fixed upstream: the "always include" branch for input.issue used to be shadowed by an unconditional skip check right after it)', () => {
     const env = setup()
     const report = buildDebriefReport({ loaded: env.loaded, issue: 'ENG-404', now: () => NOW })
-    expect(report.inFlight).toEqual([])
+    expect(report.inFlight).toMatchObject([{ issue: 'ENG-404', phase: 'idle', summary: 'Not yet dispatched' }])
     expect(report.held).toEqual([])
   })
 
@@ -159,7 +159,7 @@ describe('buildDebriefReport phases and headline', () => {
     const env = setup()
     env.issue('ENG-1', { 'delivery.json': { issue: 'ENG-1', prNumber: null, reviews: { r1: { status: 'incomplete', at: '2026-09-12T11:30:00.000Z', provider: 'p', model: 'm', blocking: 0, attempts: 1 } }, fixRounds: 0, heldFor: null, finishedAt: null, finalOutcome: null } })
     const report = buildDebriefReport({ loaded: env.loaded, now: () => NOW })
-    expect(report.inFlight[0]).toMatchObject({ issue: 'ENG-1', phase: 'idle', summary: 'In flight', dispatchedAt: null })
+    expect(report.inFlight[0]).toMatchObject({ issue: 'ENG-1', phase: 'idle', summary: 'Not yet dispatched', dispatchedAt: null })
   })
 
   it('summarizes a custom final outcome not explicitly handled (merged/held) via the generic "Finished as" fallback', () => {
