@@ -1,5 +1,48 @@
 import { expect, it } from 'vitest'
-import { createMcpToolBridge, createPolicyGate, hashMcpArgs } from '../src/index.js'
+import { HarnessError, createMcpToolBridge, createPolicyGate, hashMcpArgs } from '../src/index.js'
+
+const okPolicy = createPolicyGate({ rules: [{ id: 'allow-search', effect: 'allow', toolIds: ['search'], reason: 'ok' }] })
+
+it('rejects construction with a policy that has no evaluate function', () => {
+  // @ts-expect-error — exercising the runtime guard for a malformed policy
+  expect(() => createMcpToolBridge({ policy: {}, allowTools: ['search'], call: async () => undefined })).toThrow(HarnessError)
+})
+
+it('rejects construction when allowTools is not an array of non-empty strings', () => {
+  // @ts-expect-error — exercising the runtime guard for a malformed allowTools
+  expect(() => createMcpToolBridge({ policy: okPolicy, allowTools: 'search', call: async () => undefined })).toThrow(HarnessError)
+  expect(() => createMcpToolBridge({ policy: okPolicy, allowTools: ['search', ''], call: async () => undefined })).toThrow(HarnessError)
+  expect(() => createMcpToolBridge({ policy: okPolicy, allowTools: ['search', '  '], call: async () => undefined })).toThrow(HarnessError)
+})
+
+it('rejects construction without a call function', () => {
+  // @ts-expect-error — exercising the runtime guard for a missing call function
+  expect(() => createMcpToolBridge({ policy: okPolicy, allowTools: ['search'] })).toThrow(HarnessError)
+})
+
+it('rejects an invoke input that is not a plain object', async () => {
+  const bridge = createMcpToolBridge({ policy: okPolicy, allowTools: ['search'], call: async () => undefined })
+  // @ts-expect-error — exercising the runtime guard for a malformed invoke input
+  await expect(bridge.invoke(null)).rejects.toThrow(HarnessError)
+  // @ts-expect-error — exercising the runtime guard for a malformed invoke input
+  await expect(bridge.invoke(['search'])).rejects.toThrow(HarnessError)
+})
+
+it('rejects an invoke input with a missing or blank toolId', async () => {
+  const bridge = createMcpToolBridge({ policy: okPolicy, allowTools: ['search'], call: async () => undefined })
+  // @ts-expect-error — exercising the runtime guard for a missing toolId
+  await expect(bridge.invoke({})).rejects.toThrow(HarnessError)
+  await expect(bridge.invoke({ toolId: '  ' })).rejects.toThrow(HarnessError)
+})
+
+it('rejects a policy decision with an unrecognised decision value', async () => {
+  const bridge = createMcpToolBridge({
+    policy: { evaluate: () => ({ decision: 'maybe', policyId: 'bad' } as never) },
+    allowTools: ['search'],
+    call: async () => undefined,
+  })
+  await expect(bridge.invoke({ toolId: 'search' })).rejects.toThrow(/MCP policy decision is invalid/)
+})
 
 it('blocks tools outside the allowlist without calling the underlying handler', async () => {
   let called = 0
