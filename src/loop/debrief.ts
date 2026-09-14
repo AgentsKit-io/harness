@@ -80,6 +80,7 @@ const phaseOf = (dispatch: DispatchRecordFile | null, delivery: DeliveryState): 
 }
 
 const summarize = (phase: string, delivery: DeliveryState, dispatch: DispatchRecordFile | null): string => {
+  if (phase === 'idle') return 'Not yet dispatched'
   if (phase === 'merged') return `Merged PR #${delivery.prNumber ?? '?'}`
   if (phase === 'held' || phase === 'held-incomplete-review') {
     if (delivery.heldFor) return `Held for a human (self-edit or protected path at ${delivery.heldFor.slice(0, 7)})`
@@ -180,7 +181,10 @@ export const buildDebriefReport = (input: DebriefInput): DebriefReport => {
         })
         continue
       }
-      continue
+      // An explicitly requested issue (`--issue X`) is shown even when it is merely idle (no dispatch or
+      // delivery activity yet, contract dispatchable or absent) — otherwise `debrief --issue X` on a
+      // perfectly normal not-yet-dispatched issue silently returns nothing, despite the caller naming it.
+      if (!input.issue) continue
     }
     rows.push(rowFor({ issue, dispatch, delivery, intent, repo: config.project.repo, now }))
   }
