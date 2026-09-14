@@ -1,5 +1,42 @@
 # Changelog
 
+## [0.13.0] - 2026-09-14
+
+A full-codebase test-coverage sweep (every module in `src/kernel/`, `src/execution/`, `src/adapters/`, and most of
+`src/loop/` brought to 90%+ statements/branches) that surfaced eight real bugs along the way, each fixed in its own
+focused PR rather than folded silently into a test change.
+
+- **Per-issue state files are now written atomically**: `dispatch.json`, `delivery.json`, and `contract.json` were
+  each written with a plain `writeFileSync` straight to the final path. `tick` and `deliver` run as separate
+  scheduled processes against the same state directory, and `readDeliveryState` already treats malformed JSON as
+  "no state yet" rather than erroring — so a crash mid-write or a read racing a write could silently reset
+  `fixRounds`/`nudges`/`finalOutcome` instead of surfacing the corruption. Consolidated the three duplicated unsafe
+  writes into one shared `src/loop/fs-atomic.ts` (temp file + atomic rename).
+- **`events.ndjson` rotation is now serialized**: `appendLoopEvent`'s size-based rotation (`statSync` →
+  `renameSync` → `appendFileSync`) had no lock, so two scheduled processes rotating the same file near-
+  simultaneously could overwrite one process's archive or drop events. Only the rotation decision is now gated
+  behind a lock file; a busy lock skips rotation for that call rather than racing it, and a lock older than 5s is
+  treated as an abandoned crash artifact and cleared.
+- **PII scanner recognizes current-format secrets**: added `sk-proj-...` (current OpenAI project keys), fine-
+  grained GitHub PATs, Google API keys, Stripe live keys, PEM private-key blocks, and the AWS secret-access-key
+  half (previously only the `AKIA` access-key id was matched).
+- **`Ctrl-C` now actually stops `loop watch`**: its SIGINT handler only set `process.exitCode` without calling
+  `process.exit()`, so the long-running poll loop (and its `gh`/`orca` shell-outs) kept running in the background
+  after a cancelled watch.
+- **Raw throws reclassified as `HarnessError`**: `retro.ts`'s `--since` parsing and `doc-bridge.ts`'s index
+  freshness/readability checks threw plain `Error`, so these bad-input/bad-state failures fell through the CLI's
+  generic exit-1 catch-all instead of the classified exit-code path every other validation failure uses.
+- **Fixed two `execution/agent.ts` session-recorder bugs**: a dead `executing` Set that could never affect
+  control flow (removed), and a structurally-invalid-but-non-throwing runtime result that was being swallowed into
+  a generic, retryable `RUNTIME_ERROR` instead of surfacing as its own distinct failure.
+- **`findExecutable` now checks the execute bit**: a non-executable regular file sitting on `PATH` with a matching
+  name was reported as a runnable binary, only to fail with `EACCES` at actual spawn time.
+- **`loop debrief --issue X` no longer returns an empty report** for a normal, not-yet-dispatched issue: the
+  "always include an explicitly requested issue" fast path was shadowed by an unconditional second skip check
+  right after it.
+
+Everything else in this release is test-only: no other production behavior changed.
+
 ## [0.12.0] - 2026-09-13
 
 Closes gaps found reusing Orca instead of reinventing it. Orchestration mutations (`run-create`, `task-create`,
