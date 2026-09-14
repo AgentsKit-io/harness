@@ -1,5 +1,6 @@
 import { existsSync, readFileSync, statSync } from 'node:fs'
 import { resolve } from 'node:path'
+import { fail } from '../kernel/errors.js'
 import { hashJson } from '../kernel/hash.js'
 import { hashContextSnapshot } from '../context/index.js'
 import type { AdapterTelemetry } from '../kernel/adapter-contract.js'
@@ -83,9 +84,9 @@ export const createDocBridgeContextProvider = ({ root, indexPath = '.doc-bridge/
     const started = Date.now()
     const ageBudget = maxAgeHours ?? 0
     const inspection = ageBudget > 0 ? inspectDocBridgeIndex(root, indexPath, now()) : null
-    if (inspection?.error) throw new Error(`Doc Bridge index is unreadable: ${inspection.error}`)
+    if (inspection?.error) fail(`Doc Bridge index is unreadable: ${inspection.error}`, 'INVALID_STATE')
     if (inspection?.ageHours !== null && inspection?.ageHours !== undefined && inspection.ageHours > ageBudget) {
-      throw new Error(`Doc Bridge index is ${inspection.ageHours.toFixed(1)}h old; refresh it before resolving context.`)
+      fail(`Doc Bridge index is ${inspection.ageHours.toFixed(1)}h old; refresh it before resolving context.`, 'STALE')
     }
     const document = index(root, indexPath)
     const contentHash = sourceHash(document)
