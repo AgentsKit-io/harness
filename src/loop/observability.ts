@@ -1,4 +1,5 @@
 import { existsSync } from 'node:fs'
+import { join } from 'node:path'
 import type { CommandRunner } from '../adapters/command.js'
 import { remainingUsagePercent } from '../adapters/providers.js'
 import { orcaTerminalList, orcaWorktrees, type OrcaTerminal, type OrcaWorktree } from '../adapters/orca-cli.js'
@@ -69,6 +70,8 @@ export interface ObservabilitySnapshot {
   readonly workerIdleTimeoutMin: number
   readonly queueReady: number
   readonly freeSlots: number
+  /** A scheduled loop stage currently owns the coordination lock. */
+  readonly stageBusy?: boolean
   readonly runningWorkers: number
   readonly maxAgents: number
   readonly activeClaims: number
@@ -107,7 +110,7 @@ export const assessObservability = (input: ObservabilitySnapshot): Observability
   for (const worktree of input.finalizedDirtyWorktrees) anomalies.push({ id: 'finalized-dirty-worktree', severity: 'action_required', issue: worktree.issue, message: `finalized worktree ${worktree.worktreeId} still has ${worktree.files} uncommitted file(s)`, evidence: { ...worktree } })
   const latestDispatch = input.events.filter((event) => event.type === 'worker.dispatched').map((event) => Date.parse(event.at)).filter(Number.isFinite).sort((a, b) => b - a)[0]
   const quietForMin = latestDispatch === undefined ? Number.POSITIVE_INFINITY : Math.max(0, Math.round((Date.parse(input.generatedAt) - latestDispatch) / 60_000))
-  if (input.queueReady > 0 && input.freeSlots > 0 && quietForMin >= 15) anomalies.push({ id: 'queue-ready-no-dispatch', severity: 'action_required', issue: null, message: `${input.queueReady} ready issue(s) and ${input.freeSlots} free slot(s), but no dispatch in ${Number.isFinite(quietForMin) ? `${quietForMin} min` : 'the observation window'}`, evidence: { queueReady: input.queueReady, freeSlots: input.freeSlots, quietForMin } })
+  if (!input.stageBusy && input.queueReady > 0 && input.freeSlots > 0 && quietForMin >= 15) anomalies.push({ id: 'queue-ready-no-dispatch', severity: 'action_required', issue: null, message: `${input.queueReady} ready issue(s) and ${input.freeSlots} free slot(s), but no dispatch in ${Number.isFinite(quietForMin) ? `${quietForMin} min` : 'the observation window'}`, evidence: { queueReady: input.queueReady, freeSlots: input.freeSlots, quietForMin } })
   for (const row of input.issues) {
     if (row.heldFor || !stalledPhases.has(row.phase) || row.ageMin === null || row.ageMin < input.workerIdleTimeoutMin) continue
     anomalies.push({ id: 'stalled-delivery', severity: 'action_required', issue: row.issue, message: `${row.issue} is in ${row.phase} for ${row.ageMin} min (threshold ${input.workerIdleTimeoutMin} min)`, evidence: { issue: row.issue, phase: row.phase, ageMin: row.ageMin, thresholdMin: input.workerIdleTimeoutMin } })
@@ -168,6 +171,7 @@ export const runObservability = async (input: { readonly configPath?: string; re
     .filter((lease) => !existsSync(deliveryStatePath(loaded.stateDir, lease.issue)) && !existsSync(dispatchRecordPath(loaded.stateDir, lease.issue)))
     .map((lease) => lease.issue)
   const records = listDispatched(loaded.stateDir)
+  const stageBusy = existsSync(join(loaded.stateDir, '.stage-tick.lock')) || existsSync(join(loaded.stateDir, '.stage-deliver.lock'))
   const completed = records.map((record) => ({ record, state: readDeliveryState(loaded.stateDir, record.issue) })).filter(({ state }) => state.finishedAt && Date.parse(state.finishedAt) >= since.getTime())
   const leadTimes = completed.map(({ record, state }) => (state.finishedAt ? (Date.parse(state.finishedAt) - Date.parse(record.dispatchedAt)) / 60_000 : null)).filter((value): value is number => value !== null && Number.isFinite(value)).sort((a, b) => a - b)
   const medianLeadTimeMin = leadTimes.length ? leadTimes.length % 2 ? leadTimes[Math.floor(leadTimes.length / 2)]! : (leadTimes[leadTimes.length / 2 - 1]! + leadTimes[leadTimes.length / 2]!) / 2 : null
@@ -178,7 +182,7 @@ export const runObservability = async (input: { readonly configPath?: string; re
   const machine = { cpuCount: doctor.machine.sample.cpus, load1PerCpuPercent: doctor.machine.sample.load1PerCpuPercent, memoryUsedPercent: doctor.machine.sample.memoryUsedPercent, freeRamGb: doctor.machine.freeRamGb }
   const snapshot: ObservabilitySnapshot = {
     generatedAt: at.toISOString(), project: doctor.config.project, person: doctor.config.person, windowHours: Math.max(1, Math.round((at.getTime() - since.getTime()) / 3_600_000)), workerIdleTimeoutMin: loaded.config.delivery.workerIdleTimeoutMin,
-    queueReady: doctor.queue.count, freeSlots: doctor.machine.free, runningWorkers: doctor.workers.running, maxAgents: doctor.machine.maxAgents, activeClaims: active.length, missingDeliveryIssues,
+    queueReady: doctor.queue.count, freeSlots: doctor.machine.free, stageBusy, runningWorkers: doctor.workers.running, maxAgents: doctor.machine.maxAgents, activeClaims: active.length, missingDeliveryIssues,
     terminals: terminals.map(compactTerminal), finalizedDirtyWorktrees: await dirtyFinalizedWorktrees(input.runner, worktrees), issues: debrief.inFlight.map(({ issue, phase, ageMin, heldFor }) => ({ issue, phase, ageMin, heldFor })), events,
     merged: uniqueIssues(events, ['pr.merged', 'worker.merged']), blocked: Math.max(records.filter((record) => readDeliveryState(loaded.stateDir, record.issue).finalOutcome === 'blocked').length, uniqueIssues(events, ['worker.blocked'])), fixRounds: records.reduce((total, record) => total + readDeliveryState(loaded.stateDir, record.issue).fixRounds, 0),
     reviewFindings: count(events, 'pr.reviewed') - count(events.filter((event) => event['status'] !== 'findings'), 'pr.reviewed'), reviewIncomplete: events.filter((event) => event.type === 'pr.reviewed' && event['status'] === 'incomplete').length,
