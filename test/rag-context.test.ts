@@ -56,3 +56,40 @@ it('runs argv through CommandRunner, substitutes query placeholders, and fails c
   }
   await expect(createArgvRagContextProvider({ runner: badJson, argv: ['rag-query'] }).resolve({ query: 'x' })).rejects.toThrow(/valid JSON/)
 })
+
+it('rejects a reference relevance outside 0-1, and reads optional title/version/contentHash when present', () => {
+  expect(() => parseRagQueryOutput({ references: [{ id: 'x', uri: 'u', relevance: 1.1 }], sourceHash: 'h' })).toThrow(/relevance must be between 0 and 1/)
+  expect(() => parseRagQueryOutput({ references: [{ id: 'x', uri: 'u', relevance: -0.1 }], sourceHash: 'h' })).toThrow(/relevance must be between 0 and 1/)
+  const full = parseRagQueryOutput({ references: [{ id: 'x', uri: 'u', title: 't', version: 'v1', contentHash: 'c' }], sourceHash: 'h' })
+  expect(full.references[0]).toMatchObject({ title: 't', version: 'v1', contentHash: 'c' })
+})
+
+it('rejects a non-object RAG query output and a non-array references field', () => {
+  expect(() => parseRagQueryOutput('nope')).toThrow(/must be a JSON object/)
+  expect(() => parseRagQueryOutput({ references: 'nope', sourceHash: 'h' })).toThrow(/references must be an array/)
+})
+
+it('createRagContextProvider rejects a missing or non-function query, and an invalid result shape from it', async () => {
+  expect(() => createRagContextProvider({ query: undefined as never })).toThrow(/requires a query function/)
+  const badShape = createRagContextProvider({ query: async () => ({ references: 'nope', sourceHash: 'h' }) as never })
+  await expect(badShape.resolve({ query: 'x' })).rejects.toThrow(/returned an invalid result/)
+  const noSourceHash = createRagContextProvider({ query: async () => ({ references: [], sourceHash: '' }) })
+  await expect(noSourceHash.resolve({ query: 'x' })).rejects.toThrow(/returned an invalid result/)
+})
+
+it('createArgvRagContextProvider rejects a missing runner, an empty/malformed argv, and an invalid timeoutMs', () => {
+  expect(() => createArgvRagContextProvider({ runner: undefined as never, argv: ['x'] })).toThrow(/requires a CommandRunner/)
+  expect(() => createArgvRagContextProvider({ runner: { run: async () => ({}) as never }, argv: [] })).toThrow(/non-empty argv/)
+  expect(() => createArgvRagContextProvider({ runner: { run: async () => ({}) as never }, argv: [''] })).toThrow(/non-empty argv/)
+  expect(() => createArgvRagContextProvider({ runner: { run: async () => ({}) as never }, argv: ['x'], timeoutMs: 0 })).toThrow(/timeoutMs must be a positive number/)
+})
+
+it('createArgvRagContextProvider fails closed on a timeout, and passes cwd through when provided', async () => {
+  const timedOutRunner: CommandRunner = { run: async () => ({ code: null, stdout: '', stderr: '', timedOut: true, durationMs: 1 }) }
+  await expect(createArgvRagContextProvider({ runner: timedOutRunner, argv: ['rag-query'] }).resolve({ query: 'x' })).rejects.toThrow(/timed out after/)
+
+  const calls: unknown[] = []
+  const trackingRunner: CommandRunner = { run: async (_argv, options) => { calls.push(options); return { code: 0, stdout: JSON.stringify({ references: [], sourceHash: 'h' }), stderr: '', timedOut: false, durationMs: 1 } } }
+  await createArgvRagContextProvider({ runner: trackingRunner, argv: ['rag-query'], cwd: '/work' }).resolve({ query: 'x' })
+  expect(calls[0]).toMatchObject({ cwd: '/work' })
+})
