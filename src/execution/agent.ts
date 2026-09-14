@@ -62,7 +62,6 @@ export const createSessionRecorder = ({ stateDir, run, adapter, policy, runtime,
   const approvals = new Map<string, { readonly turnId: string; readonly toolId: string; readonly argumentsHash: string; readonly policyId: string; readonly reason: string }>()
   const released = new Map<string, { readonly turnId: string; readonly toolId: string; readonly argumentsHash: string; executionStarted: boolean }>()
   const attempts = new Map<string, number>()
-  const executing = new Set<string>()
   let ended = false
   if (resume) {
     const prior = store.read(run.runId).filter((event) => event.sessionId === id)
@@ -90,7 +89,30 @@ export const createSessionRecorder = ({ stateDir, run, adapter, policy, runtime,
     recoverTool: (input) => { open(); const actionId = required(input.actionId, 'actionId'); const action = pending.get(actionId) ?? fail(`Tool action is not pending: ${actionId}.`, 'INVALID_STATE'); if (!action.executionStarted) fail(`Tool action does not require recovery: ${actionId}.`, 'INVALID_STATE'); if (input.actor !== undefined && input.actor !== 'human') fail('Tool recovery requires a human actor.', 'HUMAN_APPROVAL_REQUIRED'); if (input.decision !== 'retry' && input.decision !== 'abandon') fail('Tool recovery decision is invalid.', 'INVALID_INPUT'); const reason = input.decision === 'retry' ? 'Human authorized a retry after interruption.' : 'Human abandoned the interrupted tool action.'; const recovery = append('tool.recovery.recorded', { turnId: action.turnId, actionId, toolId: action.toolId, decision: input.decision, actor: 'human', reason }); if (input.decision === 'retry') { action.executionStarted = false; return recovery } pending.delete(actionId); return append('tool.blocked', { turnId: action.turnId, actionId, toolId: action.toolId, policyId: 'recovery', reason }) },
     completeTool: complete,
     failTool: failAction,
-    executeTool: async (input) => { open(); const actionId = required(input.actionId, 'actionId'); const action = pending.get(actionId) ?? fail(`Tool action is not pending: ${actionId}.`, 'INVALID_STATE'); if (action.executionStarted) fail(`Tool action requires human recovery decision: ${actionId}.`, 'HUMAN_APPROVAL_REQUIRED'); if (executing.has(actionId)) fail(`Tool action is already executing: ${actionId}.`, 'INVALID_STATE'); executing.add(actionId); action.executionStarted = true; const attempt = (attempts.get(actionId) ?? 0) + 1; attempts.set(actionId, attempt); append('tool.execution.started', { actionId, turnId: action.turnId, toolId: action.toolId, attempt }); try { const result = await runtime.execute({ actionId, turnId: action.turnId, toolId: action.toolId, argumentsHash: action.argumentsHash, arguments: input.arguments }); if (result.status === 'completed') { complete({ actionId, resultHash: result.resultHash, durationMs: result.durationMs, runtimeEvidence: result.runtimeEvidence }); return result } if (result.status === 'failed') { failAction({ actionId, errorCode: result.errorCode, retryable: result.retryable, durationMs: result.durationMs, runtimeEvidence: result.runtimeEvidence }); return result } return fail('Runtime returned an invalid execution result.', 'HARNESS_ERROR') } catch { const result = { status: 'failed' as const, errorCode: 'RUNTIME_ERROR', retryable: true, durationMs: 0 }; if (pending.has(actionId)) failAction({ actionId, ...result }); return result } finally { executing.delete(actionId) } },
+    executeTool: async (input) => {
+      open()
+      const actionId = required(input.actionId, 'actionId')
+      const action = pending.get(actionId) ?? fail(`Tool action is not pending: ${actionId}.`, 'INVALID_STATE')
+      if (action.executionStarted) fail(`Tool action requires human recovery decision: ${actionId}.`, 'HUMAN_APPROVAL_REQUIRED')
+      action.executionStarted = true
+      const attempt = (attempts.get(actionId) ?? 0) + 1
+      attempts.set(actionId, attempt)
+      append('tool.execution.started', { actionId, turnId: action.turnId, toolId: action.toolId, attempt })
+      let result: ToolExecutionResult
+      try {
+        result = await runtime.execute({ actionId, turnId: action.turnId, toolId: action.toolId, argumentsHash: action.argumentsHash, arguments: input.arguments })
+      } catch {
+        // Only a throw from the runtime itself is treated as a generic, retryable RUNTIME_ERROR — a
+        // structurally invalid (but non-throwing) result is a runtime *implementation* bug, not a tool
+        // failure, and must not be silently downgraded into the same retryable bucket below.
+        const failure = { status: 'failed' as const, errorCode: 'RUNTIME_ERROR', retryable: true, durationMs: 0 }
+        if (pending.has(actionId)) failAction({ actionId, ...failure })
+        return failure
+      }
+      if (result.status === 'completed') { complete({ actionId, resultHash: result.resultHash, durationMs: result.durationMs, runtimeEvidence: result.runtimeEvidence }); return result }
+      if (result.status === 'failed') { failAction({ actionId, errorCode: result.errorCode, retryable: result.retryable, durationMs: result.durationMs, runtimeEvidence: result.runtimeEvidence }); return result }
+      return fail('Runtime returned an invalid execution result.', 'HARNESS_ERROR')
+    },
     end: (status) => { open(); if (!['completed', 'failed', 'cancelled'].includes(status)) fail('Session status is invalid.', 'INVALID_INPUT'); if (pending.size) fail('Session cannot end while tool actions are pending.', 'INVALID_STATE'); if (approvals.size) fail('Session cannot end while tool approvals are pending.', 'HUMAN_APPROVAL_REQUIRED'); const event = append('session.ended', { status }); ended = true; return event },
   }
   if (resume) append('session.resumed', { recovery: 'event-log' })

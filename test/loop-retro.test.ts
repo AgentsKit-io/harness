@@ -2,7 +2,7 @@ import { appendFileSync, mkdirSync, mkdtempSync, readFileSync, rmSync, utimesSyn
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
-import { buildRetroReport, buildSuggestions, loadLoopConfig, normalizeReason, parseSince, readLoopEvents, renderRetroMarkdown, retroLearnings } from '../src/index.js'
+import { HarnessError, buildRetroReport, buildSuggestions, loadLoopConfig, normalizeReason, parseSince, readLoopEvents, renderRetroMarkdown, retroLearnings } from '../src/index.js'
 import type { CommandResult, CommandRunner, RetroReport } from '../src/index.js'
 
 const exampleYaml = readFileSync(join(process.cwd(), 'loop.config.example.yaml'), 'utf8').replace('person: my-linear-display-name', 'person: person')
@@ -30,6 +30,13 @@ describe('loop retro', () => {
     expect(parseSince('12h', NOW).toISOString()).toBe('2026-09-12T00:00:00.000Z')
     expect(parseSince('2026-09-10T00:00:00Z', NOW).toISOString()).toBe('2026-09-10T00:00:00.000Z')
     expect(() => parseSince('yesterday', NOW)).toThrow(/Unrecognised/)
+    try {
+      parseSince('yesterday', NOW)
+      expect.unreachable('parseSince should have thrown')
+    } catch (error) {
+      expect(error).toBeInstanceOf(HarnessError)
+      expect((error as HarnessError).code).toBe('INVALID_INPUT')
+    }
     expect(normalizeReason('2 blocking ambiguities: The audit registry (.codex/x) is missing | Are the blockers merged?')).toBe('blocking ambiguity: The audit registry (.codex/x) is missing')
     expect(normalizeReason('no outcome maps to an executable check (command or test)')).toBe('no outcome maps to an executable check (command or test)')
     expect(readLoopEvents('/nonexistent/dir')).toEqual([])
