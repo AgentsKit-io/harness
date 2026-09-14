@@ -87,8 +87,13 @@ export const assessImprovementCycle = (input: ImprovementCycleInput): Improvemen
   const iterations = input.iterations.map(validateIteration)
   iterations.forEach((iteration, index) => {
     if (iteration.iteration !== index + 1) return fail('iterations must be sequential and start at 1.', 'INVALID_INPUT')
-    if (index > 0 && iterations[index - 1]?.steps.every((step) => step.status === 'passed')) return fail('a completed cycle cannot have later iterations.', 'INVALID_INPUT')
-    if (index < iterations.length - 1 && !iteration.adjustment) return fail(`iterations[${index}].adjustment is required before repeating.`, 'INVALID_INPUT')
+    const isLast = index === iterations.length - 1
+    const iterationComplete = iteration.steps.every((step) => step.status === 'passed')
+    // Check this iteration's own completeness before its adjustment requirement: a passing iteration followed
+    // by a stray extra one should be told to drop the extra iteration, not to add a nonsensical adjustment to
+    // an iteration that already succeeded.
+    if (iterationComplete && !isLast) return fail('a completed cycle cannot have later iterations.', 'INVALID_INPUT')
+    if (!isLast && !iteration.adjustment) return fail(`iterations[${index}].adjustment is required before repeating.`, 'INVALID_INPUT')
   })
   const matrix = iterations.map((iteration): CycleMatrixRow => {
     const statuses = Object.fromEntries(iteration.steps.map((step) => [step.step, step.status])) as Record<ImprovementCycleStep, CycleStepStatus>

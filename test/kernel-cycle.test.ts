@@ -33,9 +33,12 @@ describe('assessImprovementCycle: input validation', () => {
     expect(() => assessImprovementCycle({ cycleId: 'c', maxIterations: 2, iterations: [{ iteration: 2, steps: allPassed }] })).toThrow(/must be sequential and start at 1/)
   })
 
-  it('rejects a later iteration after an already-complete one', () => {
-    // an adjustment on iteration 1 is required to get past the "adjustment before repeating" check
-    // first, so this branch is only reachable when a complete iteration nonetheless carries one.
+  it('rejects a later iteration after an already-complete one, even without an adjustment on it', () => {
+    const iterations = [{ iteration: 1, steps: allPassed }, { iteration: 2, steps: allPassed }]
+    expect(() => assessImprovementCycle({ cycleId: 'c', maxIterations: 3, iterations })).toThrow(/a completed cycle cannot have later iterations/)
+  })
+
+  it('rejects a later iteration after an already-complete one that also happens to carry an adjustment', () => {
     const iterations = [{ iteration: 1, steps: allPassed, adjustment: 'unnecessary but present' }, { iteration: 2, steps: allPassed }]
     expect(() => assessImprovementCycle({ cycleId: 'c', maxIterations: 3, iterations })).toThrow(/a completed cycle cannot have later iterations/)
   })
