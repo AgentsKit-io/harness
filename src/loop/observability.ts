@@ -6,6 +6,7 @@ import { createDispatchLedger } from '../execution/coordination.js'
 import { contractPath } from './contract.js'
 import { buildDebriefReport, type DebriefIssueRow } from './debrief.js'
 import { deliveryStatePath, listDispatched, readDeliveryState } from './deliver.js'
+import { dispatchRecordPath } from './tick.js'
 import { loadLoopConfig, type LoadedLoopConfig } from './config.js'
 import { buildRetroReport, parseSince, readLoopEvents, type LoopEvent } from './retro.js'
 import { runLoopDoctor, type LoopDoctorReport } from './doctor.js'
@@ -159,7 +160,13 @@ export const runObservability = async (input: { readonly configPath?: string; re
   const events = readLoopEvents(loaded.stateDir).filter((event) => Date.parse(event.at) >= since.getTime() && Date.parse(event.at) <= at.getTime())
   const ledger = createDispatchLedger(loaded.stateDir)
   const active = ledger.active()
-  const missingDeliveryIssues = active.filter((lease) => !existsSync(deliveryStatePath(loaded.stateDir, lease.issue))).map((lease) => lease.issue)
+  // A dispatch claim legitimately exists before the first delivery pass writes
+  // delivery.json. Flag only the unrecoverable case: a claim with neither the
+  // dispatch record nor delivery state. This avoids treating healthy workers
+  // waiting for their first PR as a production incident.
+  const missingDeliveryIssues = active
+    .filter((lease) => !existsSync(deliveryStatePath(loaded.stateDir, lease.issue)) && !existsSync(dispatchRecordPath(loaded.stateDir, lease.issue)))
+    .map((lease) => lease.issue)
   const records = listDispatched(loaded.stateDir)
   const completed = records.map((record) => ({ record, state: readDeliveryState(loaded.stateDir, record.issue) })).filter(({ state }) => state.finishedAt && Date.parse(state.finishedAt) >= since.getTime())
   const leadTimes = completed.map(({ record, state }) => (state.finishedAt ? (Date.parse(state.finishedAt) - Date.parse(record.dispatchedAt)) / 60_000 : null)).filter((value): value is number => value !== null && Number.isFinite(value)).sort((a, b) => a - b)
