@@ -2,7 +2,7 @@ import { mkdirSync, mkdtempSync, utimesSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { expect, it } from 'vitest'
-import { createDocBridgeContextProvider } from '../src/index.js'
+import { HarnessError, createDocBridgeContextProvider } from '../src/index.js'
 
 it('resolves real indexed knowledge with a stable source and snapshot hash', async () => {
   const root = mkdtempSync(join(tmpdir(), 'agentskit-harness-doc-bridge-test-'))
@@ -31,6 +31,22 @@ it('rejects an index beyond the configured age budget before returning context',
   utimesSync(path, old, old)
   const provider = createDocBridgeContextProvider({ root, maxAgeHours: 24, now: () => new Date('2020-01-03T00:00:00.000Z').getTime() })
   await expect(provider.resolve({ query: 'guide' })).rejects.toThrow('refresh it before resolving context')
+  await provider.resolve({ query: 'guide' }).catch((error: unknown) => {
+    expect(error).toBeInstanceOf(HarnessError)
+    expect((error as HarnessError).code).toBe('STALE')
+  })
+})
+
+it('fails with a classified error when the index cannot be parsed', async () => {
+  const root = mkdtempSync(join(tmpdir(), 'agentskit-harness-doc-bridge-unreadable-'))
+  mkdirSync(join(root, '.doc-bridge'), { recursive: true })
+  writeFileSync(join(root, '.doc-bridge', 'index.json'), 'not json')
+  const provider = createDocBridgeContextProvider({ root, maxAgeHours: 24 })
+  await expect(provider.resolve({ query: 'guide' })).rejects.toThrow('Doc Bridge index is unreadable')
+  await provider.resolve({ query: 'guide' }).catch((error: unknown) => {
+    expect(error).toBeInstanceOf(HarnessError)
+    expect((error as HarnessError).code).toBe('INVALID_STATE')
+  })
 })
 
 it('abstains on unrelated terms and ranks grounded token matches', async () => {
