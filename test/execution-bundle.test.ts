@@ -97,6 +97,27 @@ describe('verifyEvidenceBundle: metadata validation', () => {
     const wrongSig = { ...b, signature: { ...b.signature, publicKeyPem: otherKey.publicKey.export({ type: 'spki', format: 'pem' }).toString() } }
     expect(() => verifyEvidenceBundle(writeBundle(wrongSig))).toThrow(/signature is invalid/)
   })
+
+  it('rejects a single file whose base64 payload exceeds maxFileBytes, before ever decoding it', () => {
+    const b = validBundle()
+    const oversized = { path: 'runs/run-1/extra.bin', sha256: 'a'.repeat(64), contentBase64: 'A'.repeat(1000) }
+    const bundleWithOversizedFile = { ...b, files: [...b.files, oversized] }
+    expect(() => verifyEvidenceBundle(writeBundle(bundleWithOversizedFile), { maxFileBytes: 100 })).toThrow(/exceeds the maximum allowed size: runs\/run-1\/extra\.bin/)
+  })
+
+  it('rejects a bundle whose files individually fit but collectively exceed maxTotalBytes', () => {
+    const b = validBundle()
+    const sha256 = (input: string): string => createHash('sha256').update(input).digest('hex')
+    const extraContent = 'x'.repeat(200)
+    const extra = { path: 'runs/run-1/extra.bin', sha256: sha256(extraContent), contentBase64: Buffer.from(extraContent).toString('base64') }
+    const bundleWithExtra = { ...b, files: [...b.files, extra] }
+    expect(() => verifyEvidenceBundle(writeBundle(bundleWithExtra), { maxFileBytes: 1_000, maxTotalBytes: 150 })).toThrow(/exceeds the maximum total allowed size/)
+  })
+
+  it('accepts a bundle within custom, smaller limits', () => {
+    const b = validBundle()
+    expect(verifyEvidenceBundle(writeBundle(b), { maxFileBytes: 1_000, maxTotalBytes: 1_000 })).toMatchObject({ status: 'verified' })
+  })
 })
 
 describe('readEvidenceTrustStore', () => {
