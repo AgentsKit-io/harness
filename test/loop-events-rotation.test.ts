@@ -1,4 +1,4 @@
-import { mkdtempSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync } from 'node:fs'
+import { closeSync, mkdtempSync, openSync, readFileSync, readdirSync, rmSync, statSync, utimesSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
@@ -20,6 +20,35 @@ describe('events.ndjson rotation', () => {
     const hot = readFileSync(join(stateDir, 'events.ndjson'), 'utf8')
     expect(hot).not.toContain('x'.repeat(100))
     expect(JSON.parse(hot.trim())).toMatchObject({ issue: 'ENG-1' })
+  })
+
+  it('skips rotation (but still appends) when another process holds a fresh lock, and cleans up its own lock afterward', () => {
+    const stateDir = tempStateDir()
+    writeFileSync(join(stateDir, 'events.ndjson'), `${'x'.repeat(11 * 1024 * 1024)}\n`, 'utf8')
+    const lockPath = join(stateDir, 'events.ndjson.lock')
+    const held = openSync(lockPath, 'wx') // simulate another process mid-rotation, lock freshly taken
+    try {
+      appendLoopEvent(stateDir, { at: '2026-09-13T00:00:00.000Z', type: 'worker.dispatched', issue: 'ENG-1' }, undefined, () => new Date('2026-09-13T00:00:00.000Z'))
+    } finally { closeSync(held) }
+    // No rotation happened — the held lock was never touched, only cleaned up by whoever created it.
+    expect(readdirSync(stateDir).filter((name) => name.startsWith('events-archive-'))).toHaveLength(0)
+    // The event still landed in the (still-oversized) hot file — appending is never blocked by lock contention.
+    const hot = readFileSync(join(stateDir, 'events.ndjson'), 'utf8')
+    expect(hot).toContain('"issue":"ENG-1"')
+    expect(hot).toContain('x'.repeat(100)) // the pre-existing oversized content is still there, untouched
+  })
+
+  it('recovers a stale lock (from a crashed holder) instead of waiting on it forever, then rotates normally', () => {
+    const stateDir = tempStateDir()
+    writeFileSync(join(stateDir, 'events.ndjson'), `${'x'.repeat(11 * 1024 * 1024)}\n`, 'utf8')
+    const lockPath = join(stateDir, 'events.ndjson.lock')
+    closeSync(openSync(lockPath, 'wx'))
+    const old = new Date(Date.now() - 60_000)
+    utimesSync(lockPath, old, old) // backdate it well past the 5s staleness threshold
+    appendLoopEvent(stateDir, { at: '2026-09-13T00:00:00.000Z', type: 'worker.dispatched', issue: 'ENG-2' }, undefined, () => new Date('2026-09-13T00:00:00.000Z'))
+    expect(readdirSync(stateDir).some((name) => name.startsWith('events-archive-'))).toBe(true)
+    const hot = readFileSync(join(stateDir, 'events.ndjson'), 'utf8')
+    expect(JSON.parse(hot.trim())).toMatchObject({ issue: 'ENG-2' })
   })
 
   it('never rotates while under the threshold', () => {
