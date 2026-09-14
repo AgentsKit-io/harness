@@ -24,12 +24,6 @@ const linuxSwap = (): number | undefined => {
   return Number(((1 - (values['SwapFree'] ?? 0) / values['SwapTotal']) * 100).toFixed(2))
 }
 
-const percentile95 = (values: readonly number[]): number => {
-  if (!values.length) return 0
-  const sorted = [...values].sort((left, right) => left - right)
-  return sorted[Math.min(sorted.length - 1, Math.ceil(sorted.length * 0.95) - 1)] ?? 0
-}
-
 export const sampleMachine = (): MachineSample => {
   const cpus = Math.max(1, cpuInfo().length)
   const load1 = Math.max(0, loadavg()[0] ?? 0)
