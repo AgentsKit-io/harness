@@ -247,5 +247,8 @@ benchmark.command('baseline <taskId>').description('Record one controlled baseli
   print(recordBenchmarkObservation(manifestPath, { taskId, status, source: command.source, ...(evidence ? { evidence: evidence.evidence, evidenceDigest: evidence.digest } : {}), ...(command.recordedAt ? { recordedAt: command.recordedAt } : {}), ...(command.attempts === undefined ? {} : { attempts: command.attempts }), ...(command.durationMs === undefined ? {} : { durationMs: command.durationMs }), ...(command.reviewMinutes === undefined ? {} : { reviewMinutes: command.reviewMinutes }), ...(command.escapedIncomplete === undefined ? {} : { escapedIncomplete: command.escapedIncomplete }) }))
 })
 program.command('clean').description('Remove only configured task-owned temporary artifacts.').action(() => print(cleanTaskArtifacts(options().config)))
-process.on('SIGINT', () => { process.stderr.write('Cancelled.\n'); process.exitCode = 130 })
+// `process.exitCode` alone does not terminate the process while an event-loop timer is still pending — `loop
+// watch` without `--once`/`--timeout` sits in a live `setTimeout` poll loop, so setting only the exit code let
+// Ctrl-C print "Cancelled." while the polling (and its `gh`/`orca` shell-outs) kept running in the background.
+process.on('SIGINT', () => { process.stderr.write('Cancelled.\n'); process.exit(130) })
 try { await program.parseAsync(process.argv) } catch (error) { const value = error instanceof Error ? error : new Error(String(error)); process.stderr.write(`${'code' in value ? String(value.code) : 'HARNESS_ERROR'}: ${value.message}\n`); process.exitCode = 'code' in value && value.code === 'INVALID_INPUT' ? 2 : 1 }
