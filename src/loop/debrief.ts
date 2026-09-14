@@ -59,11 +59,11 @@ const minutesBetween = (later: Date, earlier: string | null): number | null => {
   return Number.isFinite(ms) ? Math.max(0, Math.round(ms / 60_000)) : null
 }
 
-const latestReview = (state: DeliveryState): { readonly status: string; readonly attempts: number } | null => {
+const latestReview = (state: DeliveryState): { readonly status: string; readonly attempts: number; readonly at: string } | null => {
   const entries = Object.values(state.reviews)
   if (entries.length === 0) return null
   const latest = entries.reduce((best, item) => (item.at > best.at ? item : best))
-  return { status: latest.status, attempts: latest.attempts }
+  return { status: latest.status, attempts: latest.attempts, at: latest.at }
 }
 
 const phaseOf = (dispatch: DispatchRecordFile | null, delivery: DeliveryState): string => {
@@ -107,6 +107,12 @@ const rowFor = (input: {
 }): DebriefIssueRow => {
   const phase = phaseOf(input.dispatch, input.delivery)
   const review = latestReview(input.delivery)
+  // Review-driven phases begin when the current review was recorded, not when
+  // the worker was originally dispatched. Using dispatchedAt made a fresh
+  // review appear stalled for hours and caused false observer escalations.
+  const phaseStartedAt = phase === 'review-incomplete' || phase === 'fix-round' || phase === 'ready-to-merge'
+    ? review?.at ?? input.dispatch?.dispatchedAt ?? null
+    : input.dispatch?.dispatchedAt ?? null
   return {
     issue: input.issue,
     progress: readOutcomeProgress(input.dispatch?.worktreePath),
@@ -120,7 +126,7 @@ const rowFor = (input: {
     pr: input.delivery.prNumber,
     prUrl: prUrl(input.repo, input.delivery.prNumber),
     dispatchedAt: input.dispatch?.dispatchedAt ?? null,
-    ageMin: minutesBetween(input.now, input.dispatch?.dispatchedAt ?? null),
+    ageMin: minutesBetween(input.now, phaseStartedAt),
     fixRounds: input.delivery.fixRounds,
     reviewStatus: review ? `${review.status}×${review.attempts}` : null,
     heldFor: input.delivery.heldFor,
