@@ -1,5 +1,5 @@
 import { delimiter, isAbsolute, join } from 'node:path'
-import { existsSync, statSync } from 'node:fs'
+import { accessSync, constants, existsSync, statSync } from 'node:fs'
 
 export interface CommandResult {
   readonly code: number | null
@@ -20,8 +20,15 @@ export interface CommandRunner {
   run(argv: readonly string[], options?: CommandRunOptions): Promise<CommandResult>
 }
 
+/** A regular file that the current process can actually execute — not just one that happens to sit at this
+ * path. `X_OK` is meaningless on Windows (any existing file passes), which is correct there: PATHEXT is what
+ * decides runnability, not a POSIX-style permission bit. */
 const executable = (path: string): boolean => {
-  try { return statSync(path).isFile() } catch { return false }
+  try {
+    if (!statSync(path).isFile()) return false
+    accessSync(path, constants.X_OK)
+    return true
+  } catch { return false }
 }
 
 /** Resolve an executable on PATH without spawning a shell. Honours PATHEXT on Windows. */

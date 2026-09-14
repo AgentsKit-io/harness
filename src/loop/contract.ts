@@ -1,5 +1,5 @@
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
-import { dirname, join } from 'node:path'
+import { existsSync, readFileSync } from 'node:fs'
+import { join } from 'node:path'
 import { z } from 'zod'
 import type { CommandRunner } from '../adapters/command.js'
 import type { LinearIssueDetail } from '../adapters/linear-orca.js'
@@ -9,6 +9,7 @@ import type { ContextReference } from '../context/index.js'
 import { fail } from '../kernel/errors.js'
 import { hashJson } from '../kernel/hash.js'
 import { providerIdentity, renderHeadlessArgv, type LoopConfig } from './config.js'
+import { writeJsonAtomic } from './fs-atomic.js'
 import { classifyFailure } from '../kernel/resilience.js'
 import { scanForPii, type PiiMatch } from '../kernel/pii.js'
 import type { AgentMemoryAdapter } from '../kernel/memory.js'
@@ -80,8 +81,7 @@ export const readStoredContract = (stateDir: string, identifier: string): Stored
 
 export const writeStoredContract = (stateDir: string, stored: StoredContract): string => {
   const path = contractPath(stateDir, stored.issue)
-  mkdirSync(dirname(path), { recursive: true })
-  writeFileSync(path, `${JSON.stringify(stored, null, 2)}\n`, 'utf8')
+  writeJsonAtomic(path, stored)
   return path
 }
 
