@@ -1,3 +1,15 @@
+# 0.13.0 release candidate
+
+A full-codebase test-coverage sweep (every module in `src/kernel/`, `src/execution/`, `src/adapters/`, and most of
+`src/loop/` brought to 90%+ statements/branches) that surfaced eight real bugs, each fixed in its own focused PR:
+atomic writes for per-issue state files (`dispatch.json`/`delivery.json`/`contract.json`), a lock around
+`events.ndjson` rotation, PII-scanner coverage for current-format secrets (OpenAI project keys, fine-grained GitHub
+PATs, Google/Stripe keys, PEM blocks, AWS secret keys), a fixed `Ctrl-C` for `loop watch`, raw throws in
+`retro.ts`/`doc-bridge.ts` reclassified as `HarnessError`, two `execution/agent.ts` session-recorder bugs (dead
+code; a swallowed invalid-runtime-result error), an execute-bit check in `findExecutable`, and a `loop debrief
+--issue X` fix for a normal not-yet-dispatched issue. Everything else in this release is test-only. Publication
+remains gated on a merge to `main` through npm Trusted Publishing.
+
 # 0.12.0 release candidate
 
 Reuses Orca instead of reinventing it, where Orca's own tooling gives a better answer than the harness's own

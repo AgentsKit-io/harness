@@ -2,9 +2,9 @@
   "type": "agentskit-harness-release-manifest",
   "schemaVersion": 1,
   "package": "@agentskit/harness",
-  "version": "0.12.0",
+  "version": "0.13.0",
   "channel": "latest",
-  "sourceRevision": "922d2444ef48bfc89e58ccbe0553efc06a09c877",
+  "sourceRevision": "7eed0dcb3162a8808a27e38290356cf005d7c94e",
   "requiredChecks": [
     "typecheck",
     "test",
@@ -32,5 +32,5 @@
     "pilot-benchmark"
   ],
   "nextBaseline": "benchmarks/harness-0.4.0-baseline.json",
-  "digest": "439805502a4fdd074491269cf733b4144f968ac2ef4b32a6271a4c21102ecc7a"
+  "digest": "599670762fa2f8b1c4bd6bf1a0aa9c0dfa40cffbf77781d6cf15ee048cc79000"
 }
