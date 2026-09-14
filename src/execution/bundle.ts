@@ -96,7 +96,14 @@ export const exportEvidenceBundle = async ({ configPath, runId, outputPath, priv
   return bundle
 }
 
-export const verifyEvidenceBundle = (path: string, { trustedKeys = [] }: { readonly trustedKeys?: readonly TrustedEvidenceKey[] } = {}): EvidenceBundleVerification => {
+/** Per-file and total caps on decoded evidence content: without them, a corrupted or hostile bundle could carry
+ * arbitrarily large (or arbitrarily many) `contentBase64` blobs and exhaust memory during verification, before
+ * any hash or signature check ever runs. The base64-length pre-check happens before `Buffer.from` decodes
+ * anything, so an oversized single file is rejected without allocating its decoded buffer at all. */
+export const EVIDENCE_MAX_FILE_BYTES = 25 * 1_048_576
+export const EVIDENCE_MAX_TOTAL_BYTES = 200 * 1_048_576
+
+export const verifyEvidenceBundle = (path: string, { trustedKeys = [], maxFileBytes = EVIDENCE_MAX_FILE_BYTES, maxTotalBytes = EVIDENCE_MAX_TOTAL_BYTES }: { readonly trustedKeys?: readonly TrustedEvidenceKey[]; readonly maxFileBytes?: number; readonly maxTotalBytes?: number } = {}): EvidenceBundleVerification => {
   const bundle = parseBundle(path)
   if (bundle.type !== 'agentskit-harness-evidence-bundle' || bundle.schemaVersion !== EVIDENCE_BUNDLE_SCHEMA_VERSION || !bundle.runId || !validKeyId(bundle.signerKeyId) || !validDigest(bundle.payloadHash) || bundle.signature?.algorithm !== 'ed25519' || bundle.signature.keyId !== bundle.signerKeyId || typeof bundle.signature.publicKeyPem !== 'string' || typeof bundle.signature.signatureBase64 !== 'string' || !Array.isArray(bundle.files)) fail('Evidence bundle metadata is invalid.', 'HARNESS_ERROR')
   if (trustedKeys.length) {
@@ -106,10 +113,14 @@ export const verifyEvidenceBundle = (path: string, { trustedKeys = [] }: { reado
     if (trusted.publicKeyPem !== bundle.signature.publicKeyPem) fail(`Evidence bundle key does not match trust store: ${bundle.signerKeyId}`, 'HARNESS_ERROR')
   }
   const paths = new Set<string>()
+  let totalBytes = 0
   for (const file of bundle.files) {
     if (!file || typeof file.path !== 'string' || paths.has(file.path) || !validDigest(file.sha256) || typeof file.contentBase64 !== 'string') fail('Evidence bundle file metadata is invalid.', 'HARNESS_ERROR')
     paths.add(file.path)
+    if (file.contentBase64.length > Math.ceil(maxFileBytes / 3) * 4) fail(`Evidence bundle file exceeds the maximum allowed size: ${file.path}`, 'HARNESS_ERROR')
     const content = Buffer.from(file.contentBase64, 'base64')
+    totalBytes += content.length
+    if (totalBytes > maxTotalBytes) fail('Evidence bundle exceeds the maximum total allowed size.', 'HARNESS_ERROR')
     if (sha256(content) !== file.sha256) fail(`Evidence bundle file hash mismatch: ${file.path}`, 'HARNESS_ERROR')
   }
   if (!paths.has(`runs/${bundle.runId}/run.json`) || !paths.has(`runs/${bundle.runId}/events.ndjson`)) fail('Evidence bundle is missing the run projection or event log.', 'HARNESS_ERROR')
