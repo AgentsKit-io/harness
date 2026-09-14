@@ -1,8 +1,8 @@
-import { existsSync, mkdtempSync } from 'node:fs'
+import { existsSync, mkdtempSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { expect, it } from 'vitest'
-import { FileArtifactStore, FileEventStore, artifactIsFresh, createArtifactEnvelope, createPhaseArtifact, executePhaseProfile, resumeStateFromArtifacts, validateArtifactEnvelope } from '../src/index.js'
+import { FileArtifactStore, FileEventStore, artifactDigest, artifactIsFresh, createArtifactEnvelope, createPhaseArtifact, executePhaseProfile, readArtifactFile, renderArtifactMarkdown, resumeStateFromArtifacts, validateArtifactEnvelope } from '../src/index.js'
 import { sha256 } from '../src/kernel/hash.js'
 
 const digest = (value: string): string => sha256(value)
@@ -32,6 +32,52 @@ it('persists JSON and Markdown once and records one idempotent event', () => {
   expect(new FileEventStore(stateDir).read(artifact.runId).map((event) => event.type)).toEqual(['artifact.recorded'])
 })
 
+it('rejects rewriting the same artifactId with different content, and lists an empty run as []', () => {
+  const stateDir = mkdtempSync(join(tmpdir(), 'agentskit-harness-artifact-conflict-'))
+  const store = new FileArtifactStore(stateDir)
+  const artifact = createArtifactEnvelope({ ...base, artifactType: 'decision', payload: { decision: 'a' } })
+  store.write(artifact)
+  const conflicting = createArtifactEnvelope({ ...base, artifactType: 'decision', payload: { decision: 'b' }, artifactId: artifact.artifactId })
+  expect(() => store.write(conflicting)).toThrow(/already exists with different content/)
+  expect(store.list('no-such-run')).toEqual([])
+})
+
+it('renders readable Markdown and computes a stable digest', () => {
+  const artifact = createArtifactEnvelope({ ...base, artifactType: 'finding', payload: { detail: 'x' } })
+  const markdown = renderArtifactMarkdown(artifact)
+  expect(markdown).toContain(`# finding artifact ${artifact.artifactId}`)
+  expect(markdown).toContain(artifact.runId)
+  expect(artifactDigest(artifact)).toBe(sha256(JSON.stringify(artifact)))
+})
+
+it('reads and validates an artifact envelope from a file path', () => {
+  const stateDir = mkdtempSync(join(tmpdir(), 'agentskit-harness-artifact-readfile-'))
+  const artifact = createArtifactEnvelope({ ...base, artifactType: 'finding', payload: { detail: 'x' } })
+  const path = join(stateDir, 'a.json')
+  writeFileSync(path, JSON.stringify(artifact))
+  expect(readArtifactFile(path)).toEqual(artifact)
+})
+
+it('validateArtifactEnvelope rejects every malformed field', () => {
+  const valid = createArtifactEnvelope({ ...base, artifactType: 'finding', payload: { detail: 'x' } })
+  expect(() => validateArtifactEnvelope(null)).toThrow(/must be an object/)
+  expect(() => validateArtifactEnvelope({ ...valid, type: 'wrong' })).toThrow(/type or schemaVersion is invalid/)
+  expect(() => validateArtifactEnvelope({ ...valid, schemaVersion: 2 })).toThrow(/type or schemaVersion is invalid/)
+  expect(() => validateArtifactEnvelope({ ...valid, artifactType: 'not-a-type' })).toThrow(/artifactType is invalid/)
+  expect(() => validateArtifactEnvelope({ ...valid, artifactVersion: 0 })).toThrow(/artifactVersion must be a positive integer/)
+  expect(() => validateArtifactEnvelope({ ...valid, createdAt: 'not-a-date' })).toThrow(/createdAt must be a valid timestamp/)
+  expect(() => validateArtifactEnvelope({ ...valid, payloadHash: 'not-hex' })).toThrow(/lowercase SHA-256 digest/)
+  expect(() => validateArtifactEnvelope({ ...valid, artifactId: '!!!' })).toThrow(/artifactId is invalid/)
+  expect(() => validateArtifactEnvelope({ ...valid, contractHash: 'not-hex' })).toThrow(/lowercase SHA-256 digest/)
+  expect(() => validateArtifactEnvelope({ ...valid, runId: '' })).toThrow(/runId is required/)
+  expect(() => validateArtifactEnvelope({ ...valid, artifactHash: 'a'.repeat(64) })).toThrow(/artifactHash does not match envelope/)
+})
+
+it('createArtifactEnvelope rejects an invalid artifactType and a mismatched explicit payloadHash', () => {
+  expect(() => createArtifactEnvelope({ ...base, artifactType: 'not-a-type' as never, payload: {} })).toThrow(/artifactType is invalid/)
+  expect(() => createArtifactEnvelope({ ...base, artifactType: 'plan', payload: { a: 1 }, payloadHash: 'a'.repeat(64) })).toThrow(/payloadHash does not match payload/)
+})
+
 it('builds resume state from phase artifacts without replaying completed handlers', async () => {
   const discover = createPhaseArtifact({ ...base, artifactVersion: 1 }, { id: 'discover', effect: 'read', decision: 'pass', attempts: 1, skipped: false, outputs: { plan: 'restored' } })
   const resume = resumeStateFromArtifacts([discover])
@@ -50,4 +96,15 @@ it('builds resume state from phase artifacts without replaying completed handler
   expect(discoverCalls).toBe(0)
   expect(implementCalls).toBe(1)
   expect(report.outputs).toEqual({ plan: 'restored', change: 'done' })
+})
+
+it('resumeStateFromArtifacts ignores non-phase artifacts and non-pass phase decisions, and keeps the latest version', () => {
+  const decision = createArtifactEnvelope({ ...base, artifactType: 'decision', payload: { x: 1 } })
+  const failedPhase = createPhaseArtifact({ ...base, artifactVersion: 1 }, { id: 'discover', effect: 'read', decision: 'block', attempts: 1, skipped: false })
+  const v1 = createPhaseArtifact({ ...base, artifactVersion: 1 }, { id: 'implement', effect: 'write', decision: 'pass', attempts: 1, skipped: false, outputs: { change: 'v1' } })
+  const v2 = createPhaseArtifact({ ...base, artifactVersion: 2 }, { id: 'implement', effect: 'write', decision: 'pass', attempts: 2, skipped: false, outputs: { change: 'v2' } })
+  const resume = resumeStateFromArtifacts([decision, failedPhase, v1, v2])
+  expect(resume.completed['discover']).toBeUndefined()
+  expect(resume.completed['implement']).toMatchObject({ outputs: { change: 'v2' } })
+  expect(resume.outputs).toEqual({ change: 'v2' })
 })

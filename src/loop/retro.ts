@@ -3,6 +3,7 @@ import { join } from 'node:path'
 import type { CommandRunner } from '../adapters/command.js'
 import { linearCommentAdd } from '../adapters/linear-orca.js'
 import { orcaAutomationRuns, orcaAutomationsList } from '../adapters/orca-cli.js'
+import { fail } from '../kernel/errors.js'
 import { hashJson } from '../kernel/hash.js'
 import { parseRetro, type LearningRecord } from '../kernel/learning.js'
 import { loadLoopConfig, type LoadedLoopConfig, type LoopConfig } from './config.js'
@@ -96,7 +97,7 @@ export const parseSince = (value: string | undefined, now: Date): Date => {
   const match = value.match(/^(\d+)([dhm])$/)
   if (match) { const amount = Number(match[1]); const unit = match[2] === 'd' ? 86_400_000 : match[2] === 'h' ? 3_600_000 : 60_000; return new Date(now.getTime() - amount * unit) }
   const parsed = Date.parse(value)
-  if (Number.isNaN(parsed)) throw new Error(`Unrecognised --since value: ${value} (use 7d, 12h, 30m or an ISO date)`)
+  if (Number.isNaN(parsed)) fail(`Unrecognised --since value: ${value} (use 7d, 12h, 30m or an ISO date)`, 'INVALID_INPUT')
   return new Date(parsed)
 }
 
