@@ -14,8 +14,13 @@ Portable, evidence-backed development protocol for coding agents. The harness fr
 usage-aware fallback, orchestrator-frozen contracts, adversarial review, squash-merge, and one deduplicated
 escalation when a ticket cannot be verified. Everything project-specific lives in `loop.config.yaml`
 (start from [`loop.config.example.yaml`](loop.config.example.yaml)). Guide: [`docs/LOOP.md`](docs/LOOP.md)
-(setup, Orca automations, Doc Bridge + `agentskit-review` wiring, AgentsKit ecosystem map, SDLC extension ideas) ·
+(setup, Orca automations, Doc Bridge + `agentskit-review` wiring, AgentsKit ecosystem map) ·
 decision record: [`docs/ADR-0027-keep-pushing-loop.md`](docs/ADR-0027-keep-pushing-loop.md).
+
+**Where this is going:** [`docs/ROADMAP-SDLC.md`](docs/ROADMAP-SDLC.md) is the agreed design for the full
+SDLC — a vague goal interviewed into a PRD, an architecture voted on, issues decomposed, each one built by
+a planner/lead/verifier pipeline, reviewed, merged, released behind a human gate, and a retro that tunes
+the loop itself. It states which pieces exist today versus what is new work, and the order to build them.
 
 ## Install
 
