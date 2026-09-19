@@ -165,10 +165,31 @@ describe('orca and linear parsers', () => {
       { ...base, identifier: 'F', state: 'In Progress', priority: 1, updatedAt: '2026-01-06T00:00:00.000Z' },
       { ...base, identifier: 'B', state: 'Todo', priority: 1, updatedAt: '2026-01-01T00:00:00.000Z' },
     ]
-    const filter = { states: ['Todo', 'Ready'], excludeLabels: ['blocked'], requireLabels: [], projects: [], order: ['priority', 'updatedAt'] as const, maxQueue: 10, queueOwnership: 'person' as const }
+    const filter = { states: ['Todo', 'Ready'], excludeLabels: ['blocked'], requireLabels: [], anyLabels: [], projects: [], order: ['priority', 'updatedAt'] as const, maxQueue: 10, queueOwnership: 'person' as const }
     expect(filterAndOrderQueue(issues, filter).map((issue) => issue.identifier)).toEqual(['B', 'D', 'C', 'A'])
     expect(filterAndOrderQueue(issues, { ...filter, maxQueue: 2 }).map((issue) => issue.identifier)).toEqual(['B', 'D'])
     expect(filterAndOrderQueue(issues, { ...filter, projects: ['Alpha'] })).toEqual([])
+  })
+
+  // `anyLabels` existe porque `requireLabels` é AND: declarar duas camadas nele não casa NADA, e uma
+  // fila que volta vazia é indistinguível de "não há trabalho" — o pior modo de falha deste loop.
+  it('filters by any-of labels without demanding all of them, and keeps AND separate', () => {
+    const base = { id: 'x', title: 't', url: 'u', stateType: 'unstarted', assignee: null, assigneeId: null, priorityLabel: 'x', project: null, branchName: null, createdAt: '2026-01-01T00:00:00.000Z', updatedAt: '2026-01-01T00:00:00.000Z', state: 'Ready', priority: 1 }
+    const issues = [
+      { ...base, identifier: 'L2', labels: ['layer:L2', 'type:fix'] },
+      { ...base, identifier: 'L3', labels: ['layer:L3'] },
+      { ...base, identifier: 'L4', labels: ['layer:L4'] },
+    ]
+    const filter = { states: ['Ready'], excludeLabels: [], requireLabels: [], anyLabels: [], projects: [], order: ['priority'] as const, maxQueue: 10, queueOwnership: 'unassigned' as const }
+
+    // As duas camadas desta máquina: casa qualquer uma, não as duas juntas.
+    expect(filterAndOrderQueue(issues, { ...filter, anyLabels: ['layer:L2', 'layer:L3'] }).map((i) => i.identifier)).toEqual(['L2', 'L3'])
+    // O mesmo par em `requireLabels` não casa nada — é a armadilha que este campo remove.
+    expect(filterAndOrderQueue(issues, { ...filter, requireLabels: ['layer:L2', 'layer:L3'] })).toEqual([])
+    // Os dois eixos convivem: qualquer uma das camadas E sempre `type:fix`.
+    expect(filterAndOrderQueue(issues, { ...filter, anyLabels: ['layer:L2', 'layer:L3'], requireLabels: ['type:fix'] }).map((i) => i.identifier)).toEqual(['L2'])
+    // Vazio continua significando "sem restrição", não "nada passa".
+    expect(filterAndOrderQueue(issues, filter).map((i) => i.identifier)).toEqual(['L2', 'L3', 'L4'])
   })
 
   // The queue the loop reads is not always "my issues". With `queueOwnership: 'unassigned'` the

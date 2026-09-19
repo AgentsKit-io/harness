@@ -93,7 +93,14 @@ export const LoopConfigSchema = z.object({
     queueOwnership: z.enum(['person', 'unassigned']).default('person'),
     states: z.array(nonEmpty).min(1).default(['Todo', 'Ready']),
     excludeLabels: z.array(nonEmpty).default(['blocked', 'needs-info']),
+    /** ALL of these must be on the issue (AND). */
     requireLabels: z.array(nonEmpty).default([]),
+    /**
+     * At least ONE of these must be on the issue (OR) — how a machine declares the slices of the board
+     * it drains, e.g. `[layer:L2, layer:L3]`. `requireLabels` cannot say this: it demands every label on
+     * the same issue, so two layers there match nothing and the queue comes back silently empty.
+     */
+    anyLabels: z.array(nonEmpty).default([]),
     projects: z.array(nonEmpty).default([]),
     order: z.array(z.enum(['priority', 'updatedAt', 'createdAt'])).min(1).default(['priority', 'updatedAt']),
     maxQueue: z.number().int().positive().default(50),

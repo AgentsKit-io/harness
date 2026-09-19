@@ -25,7 +25,20 @@ export interface LoopIssue {
 export interface LinearQueueFilter {
   readonly states: readonly string[]
   readonly excludeLabels: readonly string[]
+  /** Every one of these must be present on the issue (AND). Empty = no constraint. */
   readonly requireLabels: readonly string[]
+  /**
+   * At least ONE of these must be present (OR). Empty or absent = no constraint.
+   *
+   * This is what lets a machine declare the slices of the board it drains — `layer:L2` or `layer:L3` —
+   * which `requireLabels` cannot express: it demands all of them on the same issue, so listing two
+   * layers matches nothing at all. A queue that silently returns zero is the worst failure mode this
+   * loop has, because it is indistinguishable from "no work to do".
+   *
+   * Optional on purpose: the config schema always supplies it, and a caller that builds the filter by
+   * hand keeps working untouched. A new field on a published type should not crash an existing consumer.
+   */
+  readonly anyLabels?: readonly string[]
   readonly projects: readonly string[]
   readonly order: readonly ('priority' | 'updatedAt' | 'createdAt')[]
   readonly maxQueue: number
@@ -39,8 +52,10 @@ export interface LinearQueueFilter {
    * assignee becomes a TRANSIENT CLAIM — the loop writes it when it dispatches and clears it when the
    * item comes back. That is what lets several machines drain one queue without two of them picking the
    * same issue, and it is why an unowned issue is the normal state rather than a lost one.
+   *
+   * Absent reads as `person`, so a caller that builds the filter by hand keeps the historical behaviour.
    */
-  readonly queueOwnership: 'person' | 'unassigned'
+  readonly queueOwnership?: 'person' | 'unassigned'
 }
 
 /** The `--assignee` value the queue is listed with. `null` is Orca's literal for "unassigned". */
@@ -100,6 +115,11 @@ export const filterAndOrderQueue = (issues: readonly LoopIssue[], filter: Linear
     if (!states.has(issue.state)) return false
     if (issue.labels.some((label) => exclude.has(label))) return false
     if (filter.requireLabels.length && !filter.requireLabels.every((label) => issue.labels.includes(label))) return false
+    // OR, and deliberately a separate field from `requireLabels`: a machine declaring the layers it
+    // drains needs "any of these", and folding both meanings into one list would make it impossible to
+    // say "layer:L2 or layer:L3, and always type:fix".
+    const anyLabels = filter.anyLabels ?? []
+    if (anyLabels.length && !anyLabels.some((label) => issue.labels.includes(label))) return false
     if (filter.projects.length && (!issue.project || !filter.projects.includes(issue.project))) return false
     return true
   })
