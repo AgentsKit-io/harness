@@ -8,7 +8,9 @@ project:
   repo: my-org/my-project            # GitHub owner/name used for PR review and merge
   baseBranch: main
   root: .                            # relative to this file
-  stateDir: .codex/loop              # ledger, cooldowns, contracts
+  stateDir: .ak-loop                 # runtime state: ledger, cooldowns, contracts, events, agent memory, plans.
+                                     # Per machine — add it to .gitignore. The config (this file) stays at the
+                                     # repo root and IS versioned.
   setup:
     # command: [pnpm, install, --frozen-lockfile]  # argv (no shell), run once in a freshly created worktree
                                                      # before the worker terminal opens; unset = skip

@@ -12,7 +12,7 @@ import {
 import type { LoadedLoopConfig } from '../src/loop/config.js'
 
 const baseConfig = (memory: Record<string, unknown> = {}) => LoopConfigSchema.parse({
-  project: { name: 'demo', repo: 'Acme/demo', stateDir: '.codex/loop' },
+  project: { name: 'demo', repo: 'Acme/demo', stateDir: '.ak-loop' },
   linear: { workspaceId: 'ws', teamKey: 'ENG', person: 'alice' },
   models: {
     orchestrator: [['claude/opus']],

@@ -48,7 +48,12 @@ export const LoopConfigSchema = z.object({
     repo: z.string().trim().regex(/^[\w.-]+\/[\w.-]+$/, 'must be owner/name'),
     baseBranch: nonEmpty.default('main'),
     root: nonEmpty.default('.'),
-    stateDir: nonEmpty.default('.codex/loop'),
+    /**
+     * Where the loop keeps everything that is NOT the project's configuration: dispatch ledger, delivery
+     * state, contracts, events, agent memory, plans. Meant to be gitignored — the configuration lives at
+     * the repo root as `loop.config.yaml`, versioned; this directory is runtime state, per machine.
+     */
+    stateDir: nonEmpty.default('.ak-loop'),
     setup: z.object({
       /** Argv (no shell — one element per arg, e.g. `[pnpm, install, --frozen-lockfile]`) run once in a freshly created worktree before the worker terminal opens. Unset/empty = skip. */
       command: z.array(nonEmpty).min(1).optional(),

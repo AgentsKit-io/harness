@@ -24,7 +24,7 @@ layer: what to dispatch, when to nudge/hand off/escalate, when to merge.
 
 Every command below needs `-f <path-to-loop.config.yaml>` unless you are already in the project
 root (defaults to `./loop.config.yaml`). One project = one config file = one `stateDir`
-(`.codex/loop` by default). Never guess the path — `find . -maxdepth 2 -name loop.config.yaml`.
+(`.ak-loop` by default, gitignored). Never guess the path — `find . -maxdepth 2 -name loop.config.yaml`.
 
 ## Read-only inspection (always safe, no side effects)
 

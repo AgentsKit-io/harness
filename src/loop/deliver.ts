@@ -188,7 +188,7 @@ const sendToWorker = async (ctx: Context, record: DispatchRecordFile, text: stri
       const frozen = stored
         ? `\n\n## Frozen contract (inline coordinator copy; digest ${stored.digest.slice(0, 12)})\n${JSON.stringify(stored.contract, null, 2)}\n`
         : ''
-      brief = `Resume ${record.issue} on branch ${record.branch}. The coordinator has already frozen and validated the contract; the coordinator state directory is outside this isolated worktree, so do not block on a missing .codex/loop file. Address the review findings, run \`${ctx.config.delivery.verifyCommand}\`, commit and push, then report LOOP_WORKER_DONE ${record.issue}.${frozen}`
+      brief = `Resume ${record.issue} on branch ${record.branch}. The coordinator has already frozen and validated the contract; the coordinator state directory is outside this isolated worktree, so do not block on a missing ${ctx.config.project.stateDir} file. Address the review findings, run \`${ctx.config.delivery.verifyCommand}\`, commit and push, then report LOOP_WORKER_DONE ${record.issue}.${frozen}`
       actions.push(stored ? 'brief missing; generated recovery brief with inline contract' : 'brief missing; generated recovery brief')
     }
     const relaunched = await launchWorkerTerminal({ runner: ctx.runner, config: ctx.config, worktreeId: record.worktreeId, command: ctx.builder.tui, title: `loop ${record.issue}`, brief, idleTimeoutMs: 10_000 })

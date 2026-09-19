@@ -13,7 +13,7 @@ const avail = (id: string, usedPercent: number, available = true): ProviderAvail
 })
 
 const base = (routing: Record<string, unknown> = {}) => LoopConfigSchema.parse({
-  project: { name: 'demo', repo: 'Acme/demo', stateDir: '.codex/loop' },
+  project: { name: 'demo', repo: 'Acme/demo', stateDir: '.ak-loop' },
   linear: { workspaceId: 'ws', teamKey: 'ENG', person: 'alice' },
   models: {
     routing,

@@ -12,7 +12,7 @@ afterEach(() => { for (const dir of cleanups.splice(0)) rmSync(dir, { recursive:
 const tempStateDir = (): string => { const dir = mkdtempSync(join(tmpdir(), 'agentskit-catalog-')); cleanups.push(dir); return dir }
 
 const base = (overrides: Record<string, unknown> = {}) => LoopConfigSchema.parse({
-  project: { name: 'demo', repo: 'Acme/demo', stateDir: '.codex/loop' },
+  project: { name: 'demo', repo: 'Acme/demo', stateDir: '.ak-loop' },
   linear: { workspaceId: 'ws', teamKey: 'ENG', person: 'alice' },
   models: {
     orchestrator: [['codex/gpt-5.6-sol', 'claude/opus'], ['grok/grok-4.5']],
