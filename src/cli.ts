@@ -1,13 +1,13 @@
 #!/usr/bin/env node
 import { createHash } from 'node:crypto'
-import { closeSync, existsSync, mkdirSync, openSync, readFileSync, statSync, unlinkSync, writeFileSync } from 'node:fs'
-import { join } from 'node:path'
+import { readFileSync } from 'node:fs'
 import { Command } from 'commander'
 import { approveRun, ARTIFACT_SCHEMA_VERSION, assessAcceptance, assessBlock, assessDiscovery, assessImprovementCycle, assessIntegration, assessPilot, assessPreflight, assessProduction, assessWip, assessWorktreeCleanup, authorizeRun, benchmarkRuns, cancelRun, cleanTaskArtifacts, composePullRequest, createDispatchLedger, createDocBridgeContextProvider, createStatusSnapshot, exportEvidenceBundle, FileArtifactStore, loadBenchmarkManifest, loadConfig, loadLatestRun, parseRetro, planFilePreflight, planRun, readArtifactFile, readContextSnapshots, readEvidenceTrustStore, reconcileRun, recordBenchmarkObservation, renderArtifactMarkdown, retryRun, selectRuntime, startRun, validateBlockManifest, validateStatusSnapshot, verifyEvidenceBundle, verifyRun } from './index.js'
 import type { BenchmarkObservationEvidence } from './execution/metrics.js'
 import { fail } from './kernel/errors.js'
 import { buildDebriefReport, buildRetroReport, createProcessRunner, createRichIO, fetchLinearIssue, formatWatchEvent, generateContract, installLoopAutomations, linearLabelRemove, loadLoopConfig, openLoopMemory, promoteLearningsToMemory, runGuidedInstall, loopStatus, renderDebriefMarkdown, renderObservabilityMarkdown, renderRetroMarkdown, retroLearnings, runRetroStage, precheckDeliver, precheckTick, rankModels, readLearningsLedger, readStoredContract, runDeliver, runLoopDoctor, runObservability, runTick, uninstallLoopAutomations, watchDeliveries, writeStoredContract, isStagePaused, recordStageRunResult, resumeIssue, resumeStage, readIssueFailures, stageEntry, listPausedIssues, type LoopStageName } from './index.js'
 import { FileEventStore, inspectEventLogLock, recoverEventLogLock } from './kernel/events.js'
+import { acquireStageLock } from './loop/stage-lock.js'
 
 interface CliOptions { readonly config: string; readonly json: boolean }
 const packageJson = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8')) as { readonly version: string }
@@ -15,21 +15,6 @@ const program = new Command()
 program.name('ak-harness').description('Portable, evidence-backed development harness for coding agents.').version(packageJson.version).option('-c, --config <path>', 'verification contract path', '.codex/verification.json').option('--json', 'emit machine-readable output')
 const options = (): CliOptions => program.opts<CliOptions>()
 const print = (value: unknown): void => { if (options().json) console.log(JSON.stringify(value)); else console.log(typeof value === 'string' ? value : JSON.stringify(value, null, 2)) }
-const acquireStageLock = (stateDir: string, stage: string): (() => void) | null => {
-  const path = join(stateDir, `.stage-${stage}.lock`)
-  mkdirSync(stateDir, { recursive: true })
-  try {
-    const fd = openSync(path, 'wx')
-    writeFileSync(fd, `${JSON.stringify({ pid: process.pid, stage, at: new Date().toISOString() })}\n`, 'utf8')
-    closeSync(fd)
-    return () => { try { unlinkSync(path) } catch { /* another run recovered the stale lock */ } }
-  } catch (error) {
-    if ((error as NodeJS.ErrnoException).code !== 'EEXIST') throw error
-    // ponytail: one lock per stage; a 30-minute ceiling recovers a killed process without a daemon.
-    try { if (Date.now() - statSync(path).mtimeMs > 30 * 60_000) { unlinkSync(path); return acquireStageLock(stateDir, stage) } } catch { /* lock disappeared; next scheduled run retries */ }
-    return null
-  }
-}
 const readBenchmarkEvidence = (path: string): { readonly evidence: readonly BenchmarkObservationEvidence[]; readonly digest: string } => {
   try {
     const content = readFileSync(path, 'utf8')
@@ -226,8 +211,8 @@ loopLearning.command('promote').description('Human-only: promote learning IDs in
 program.command('start').description('Move a planned run into implementation.').action(() => print(startRun(loadConfig(options().config))))
 program.command('verify').description('Execute every configured check and record evidence.').action(async () => print(await verifyRun({ configPath: options().config })))
 program.command('run').description('Alias for verify, compatible with the common protocol.').action(async () => print(await verifyRun({ configPath: options().config })))
-program.command('approve <run-id-or-decision> [decision-or-run-id]').description('Record human approval or rejection. Accepts <run-id> <decision> or <decision> <run-id>.').option('--by <actor>', 'approval actor', 'human').action(async (first: string, second: string | undefined, command: { readonly by: string }) => { const args = decisionArgs(first, second); print(await approveRun({ configPath: options().config, ...args, actor: command.by })) })
-program.command('authorize <run-id-or-decision> [decision-or-run-id]').description('Authorize or reject declared external tracking. Accepts <run-id> <decision> or <decision> <run-id>.').option('--by <actor>', 'approval actor', 'human').action(async (first: string, second: string | undefined, command: { readonly by: string }) => { const args = decisionArgs(first, second); print(await authorizeRun({ configPath: options().config, ...args, actor: command.by })) })
+program.command('approve <run-id-or-decision> [decision-or-run-id]').description('Record human approval or rejection. Use only <decision> to apply it to the latest pending run; run IDs remain an audit detail.').option('--by <actor>', 'approval actor', 'human').action(async (first: string, second: string | undefined, command: { readonly by: string }) => { const args = decisionArgs(first, second); print(await approveRun({ configPath: options().config, ...args, actor: command.by })) })
+program.command('authorize <run-id-or-decision> [decision-or-run-id]').description('Authorize or reject declared external tracking. Use only <decision> to apply it to the latest pending run; run IDs remain an audit detail.').option('--by <actor>', 'approval actor', 'human').action(async (first: string, second: string | undefined, command: { readonly by: string }) => { const args = decisionArgs(first, second); print(await authorizeRun({ configPath: options().config, ...args, actor: command.by })) })
 program.command('retry').description('Create a new implementation attempt after a blocked or stale run.').action(async () => print(await retryRun({ configPath: options().config })))
 program.command('cancel [run-id]').description('Cancel an active run.').option('--by <actor>', 'cancellation actor', 'human').option('--reason <reason>', 'cancellation reason', 'Run cancelled by a human.').action(async (runId: string | undefined, command: { readonly by: string; readonly reason: string }) => print(await cancelRun({ configPath: options().config, runId, reason: command.reason, actor: command.by })))
 program.command('status').description('Show the latest run after reconciling its audit evidence.').action(async () => { const loaded = loadConfig(options().config); print(loadLatestRun(loaded.stateDir) ? await reconcileRun({ configPath: options().config }) : { state: 'CLARIFYING', message: 'No run exists.' }) })

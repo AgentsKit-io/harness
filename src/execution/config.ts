@@ -11,7 +11,7 @@ interface RawRecord { readonly [key: string]: unknown }
 interface RawScope extends RawRecord { readonly inScope?: unknown; readonly outOfScope?: unknown }
 interface RawContract extends RawRecord { readonly intent?: unknown; readonly scope?: unknown; readonly ambiguities?: unknown; readonly outcomes?: unknown }
 interface RawCheck extends RawRecord { readonly id?: unknown; readonly category?: unknown; readonly command?: unknown; readonly required?: unknown; readonly reason?: unknown; readonly timeoutMs?: unknown; readonly execution?: unknown; readonly capabilities?: unknown; readonly evidence?: unknown; readonly dependsOn?: unknown }
-interface RawTracking extends RawRecord { readonly required?: unknown; readonly target?: unknown; readonly reason?: unknown }
+interface RawTracking extends RawRecord { readonly required?: unknown; readonly target?: unknown; readonly reason?: unknown; readonly authorization?: unknown }
 interface RawConfig extends RawRecord { readonly schemaVersion?: unknown; readonly project?: unknown; readonly root?: unknown; readonly stateDir?: unknown; readonly profile?: unknown; readonly profiles?: unknown; readonly runtime?: unknown; readonly autonomy?: unknown; readonly contract?: unknown; readonly checks?: unknown; readonly surfaces?: unknown; readonly tracking?: unknown; readonly verification?: unknown; readonly budget?: unknown; readonly cleanup?: unknown }
 interface RawBudget extends RawRecord { readonly maxDurationMs?: unknown }
 interface RawVerification extends RawRecord { readonly maxConcurrency?: unknown }
@@ -103,6 +103,7 @@ export const validateConfig = (rawValue: unknown): VerificationConfig => {
   const trackingRaw = isRecord(raw['tracking']) ? raw['tracking'] as RawTracking : { required: false, reason: 'tracking is not configured for this run.' }
   if (trackingRaw['required'] === true && typeof trackingRaw['target'] !== 'string') fail('tracking.target is required when tracking is enabled.', 'INVALID_CONFIG')
   if (trackingRaw['required'] !== true && typeof trackingRaw['reason'] !== 'string') fail('tracking.reason is required when tracking is disabled.', 'INVALID_CONFIG')
+  if (trackingRaw['authorization'] !== undefined && trackingRaw['authorization'] !== 'goal' && trackingRaw['authorization'] !== 'separate') fail('tracking.authorization must be goal or separate.', 'INVALID_CONFIG')
   const budgetRaw = raw['budget'] === undefined ? undefined : asRecord(raw['budget'], 'budget') as RawBudget
   if (budgetRaw && budgetRaw['maxDurationMs'] !== undefined && (!Number.isInteger(budgetRaw['maxDurationMs']) || typeof budgetRaw['maxDurationMs'] !== 'number' || budgetRaw['maxDurationMs'] < 1)) fail('budget.maxDurationMs must be positive.', 'INVALID_CONFIG')
   const verificationRaw = raw['verification'] === undefined ? undefined : asRecord(raw['verification'], 'verification') as RawVerification
@@ -112,7 +113,7 @@ export const validateConfig = (rawValue: unknown): VerificationConfig => {
   const benchmarkRaw = raw['benchmark'] === undefined ? undefined : asRecord(raw['benchmark'], 'benchmark') as RawBenchmark
   const benchmark = benchmarkRaw ? { suiteId: stringValue(benchmarkRaw['suiteId'], 'benchmark.suiteId'), taskId: stringValue(benchmarkRaw['taskId'], 'benchmark.taskId'), mode: benchmarkRaw['mode'] === 'harness' ? 'harness' as const : fail('benchmark.mode must be harness.', 'INVALID_CONFIG') } : undefined
   const contract: TaskContract = { intent: stringValue(contractRaw['intent'], 'contract.intent'), scope, ambiguities, outcomes }
-  const tracking: TrackingConfig = { required: trackingRaw['required'] === true, ...(typeof trackingRaw['target'] === 'string' ? { target: trackingRaw['target'] } : {}), ...(typeof trackingRaw['reason'] === 'string' ? { reason: trackingRaw['reason'] } : {}) }
+  const tracking: TrackingConfig = { required: trackingRaw['required'] === true, authorization: trackingRaw['authorization'] === 'separate' ? 'separate' : 'goal', ...(typeof trackingRaw['target'] === 'string' ? { target: trackingRaw['target'] } : {}), ...(typeof trackingRaw['reason'] === 'string' ? { reason: trackingRaw['reason'] } : {}) }
   return { schemaVersion: 1, project, ...(typeof raw['root'] === 'string' ? { root: raw['root'] } : {}), ...(typeof raw['stateDir'] === 'string' ? { stateDir: raw['stateDir'] } : {}), profile: typeof raw['profile'] === 'string' ? raw['profile'] : 'strict', runtime, autonomy, contract, surfaces, checks, tracking, ...(verificationRaw ? { verification: { maxConcurrency: verificationRaw['maxConcurrency'] as number | undefined } } : {}), ...(budgetRaw ? { budget: { maxDurationMs: budgetRaw['maxDurationMs'] as number | undefined } } : {}), ...(cleanup ? { cleanup } : {}), ...(benchmark ? { benchmark } : {}) }
 }
 

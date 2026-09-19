@@ -164,7 +164,7 @@ How these seams are wired into the keep-pushing loop (and what is still only a k
 | --- | --- | --- | --- |
 | Doc Bridge | `src/adapters/doc-bridge.ts` | Reads a local index | Keep behind `ContextProvider`; measure context hit/quality separately. |
 | Orca | `src/adapters/orca.ts` | None; produces argv and lifecycle projections only | Keep lease/worktree/issue-lock/SHA planning provider-neutral; execution belongs to the orchestrator. |
-| Linear/GitHub/other tracker | `src/adapters/tracking.ts` callback | Caller-owned network mutation | Require idempotency key and explicit tracking authorization. |
+| Linear/GitHub/other tracker | `src/adapters/tracking.ts` callback | Caller-owned network mutation | Require idempotency key; goal approval covers declared tracking by default, with `tracking.authorization: "separate"` as an explicit opt-out. |
 | Orca CLI (loop) | `src/adapters/orca-cli.ts`, `src/adapters/linear-orca.ts` via `CommandRunner` | Read-only `--json` calls in the doctor; dispatch/mutation arrive in later loop phases | Argv only, never a shell string; every call bounded by a timeout; envelope `ok:false` fails closed. |
 | Coding-agent CLIs | `src/adapters/providers.ts` | PATH lookup and optional probe command | Env keys are names only; usage comes from Orca, never from provider SDKs. |
 | GitHub | `src/adapters/github-cli.ts` via `CommandRunner` | `gh pr view/list` (optionally `--label`), `gh api PUT …/merge` with `sha=<reviewed head>`, `gh pr comment`, `gh pr edit --remove-label` | Merge is refused by GitHub when the head moved; every call argv-based and bounded; label intake never calls the merge argv. |

@@ -105,14 +105,21 @@ it('validates real-browser screenshot evidence and its hash', async () => {
   expect(loadLatestRun(fixture.stateDir)?.checks[0].evidence?.artifacts?.[0]?.sha256).toBe(hash(readFileSync(join(fixture.root, 'artifacts/screen.txt')).toString()))
 })
 
-it('requires authorization only when tracking is declared', async () => {
+it('covers declared goal-scoped tracking with the same human approval', async () => {
   const fixture = project([{ id: 'logic', category: 'logic', command: evidenceCommand({ status: 'passed', criteria: ['outcome-0'] }), evidence: 'structured' }], [], { required: true, target: 'github:fixture/repo#1' })
   await runToVerify(fixture)
+  const approved = await approveRun({ configPath: fixture.configPath, decision: 'approved' })
+  expect(approved.state).toBe('COMPLETE')
+  expect(approved.authorization?.verificationDigest).toBe(approved.humanApproval?.verificationDigest)
+  await expect(reconcileRun({ configPath: fixture.configPath })).resolves.toMatchObject({ state: 'COMPLETE', runId: approved.runId })
+  expect(new FileEventStore(fixture.stateDir).read(approved.runId).at(-1)).toMatchObject({ type: 'authorization.recorded', payload: { decision: 'approved', resultingState: 'COMPLETE', verificationDigest: approved.verificationDigest, target: 'github:fixture/repo#1' } })
+})
+
+it('keeps separate tracking authorization available as an explicit opt-out', async () => {
+  const fixture = project([{ id: 'logic', category: 'logic', command: evidenceCommand({ status: 'passed', criteria: ['outcome-0'] }), evidence: 'structured' }], [], { required: true, target: 'github:fixture/repo#1', authorization: 'separate' })
+  await runToVerify(fixture)
   expect((await approveRun({ configPath: fixture.configPath, decision: 'approved' })).state).toBe('AWAITING_AUTHORIZATION')
-  const authorized = await authorizeRun({ configPath: fixture.configPath, decision: 'approved' })
-  expect(authorized.state).toBe('COMPLETE')
-  expect(authorized.authorization?.verificationDigest).toBe(authorized.humanApproval?.verificationDigest)
-  expect(new FileEventStore(fixture.stateDir).read(authorized.runId).at(-1)).toMatchObject({ type: 'authorization.recorded', payload: { decision: 'approved', resultingState: 'COMPLETE', verificationDigest: authorized.verificationDigest, target: 'github:fixture/repo#1' } })
+  expect((await authorizeRun({ configPath: fixture.configPath, decision: 'approved' })).state).toBe('COMPLETE')
 })
 
 it('blocks a human rejection instead of treating it as completion', async () => {
@@ -177,7 +184,7 @@ it('rejects approval attempts made by an agent actor', async () => {
 })
 
 it('blocks rejected external tracking authorization', async () => {
-  const fixture = project([{ id: 'logic', category: 'logic', command: evidenceCommand({ status: 'passed', criteria: ['outcome-0'] }), evidence: 'structured' }], [], { required: true, target: 'github:fixture/repo#1' })
+  const fixture = project([{ id: 'logic', category: 'logic', command: evidenceCommand({ status: 'passed', criteria: ['outcome-0'] }), evidence: 'structured' }], [], { required: true, target: 'github:fixture/repo#1', authorization: 'separate' })
   await runToVerify(fixture)
   await approveRun({ configPath: fixture.configPath, decision: 'approved' })
   expect((await authorizeRun({ configPath: fixture.configPath, decision: 'rejected' })).state).toBe('BLOCKED')

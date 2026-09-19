@@ -36,7 +36,7 @@ ak-harness doctor --json
 ak-harness plan approved --by human
 ak-harness start
 ak-verify run --json
-ak-verify approve <run-id> approved --by human --json
+ak-verify approve approved --by human --json
 ak-harness cancel <run-id> --by human --reason "Requirements changed"
 ak-harness benchmark --manifest benchmarks/harness-phase-0.json --json
 ```
@@ -90,7 +90,12 @@ that must match the `verification.completed` event before human approval. Human
 approvals, rejections, and tracking authorizations are then recorded as
 hash-chained `approval.recorded` or `authorization.recorded` events bound to
 that digest, source revision, and contract hash. The stable `run.json` remains
-the CLI projection and evidence index.
+the CLI projection and evidence index. The run ID and hashes are audit fields,
+not inputs a human needs to provide: `ak-verify approve approved` resolves the
+latest pending run. By default, a declared tracking target is covered by the
+same goal approval and records both lifecycle events. Set
+`tracking.authorization` to `"separate"` only when a project explicitly needs
+a second human decision.
 
 Use `ak-harness audit [run-id]` to reconcile a run projection with its verified
 events. `ak-harness status` performs the same reconciliation before reporting
@@ -157,7 +162,7 @@ contract is frozen:
 
 `runtime.kind` chooses the executor used by an integration: `process` is a bounded shell-free local child process; `docker` adds the Docker sandbox. The choice is frozen in the resolved contract and therefore changes its hash. Docker remains fail-closed when its daemon or image is unavailable.
 
-`autonomy: "yolo"` removes the generic final review only after every applicable check passes, tracking is disabled, and the frozen contract has no ambiguity. It never auto-approves a material decision, external tracking, or a tool rule that requires approval.
+`autonomy: "yolo"` removes the generic final review only after every applicable check passes, tracking is disabled, and the frozen contract has no ambiguity. It never auto-approves a material decision, external tracking, or a tool rule that requires approval. A human goal approval covers declared intermediate work and goal-scoped tracking; it does not waive evidence, freshness, or ambiguity gates.
 
 The phase executor applies the same rule to a declarative SDLC profile. A profile
 declares dependencies, inputs/outputs, gates, bounded retries, budgets, and an
