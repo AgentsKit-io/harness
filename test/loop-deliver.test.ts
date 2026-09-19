@@ -41,6 +41,8 @@ interface Scenario {
   readonly claudeUsedPercent?: number
   /** Fake `orca terminal read --screen` output for the dispatched worker's terminal (`term_w`), used to test escalation capture. */
   readonly terminalScreen?: string
+  /** `linear.queueOwnership`; `unassigned` makes the assignee a claim the escalation has to release. */
+  readonly queueOwnership?: 'person' | 'unassigned'
 }
 
 const basePr = (over: Record<string, unknown> = {}): Record<string, unknown> => ({ ...(fixture('gh-pr-view') as Record<string, unknown>), headRefName: 'person/eng-10-demo', files: [{ path: 'packages/demo/src/index.ts' }], statusCheckRollup: [{ __typename: 'CheckRun', name: 'ci', conclusion: 'SUCCESS', status: 'COMPLETED' }], mergeable: 'MERGEABLE', mergeStateStatus: 'CLEAN', state: 'OPEN', number: 42, url: 'https://github.com/o/r/pull/42', ...over })
@@ -54,6 +56,11 @@ const setup = (initial: Scenario = {}) => {
   if (initial.pluginSource !== undefined) {
     writeFileSync(join(dir, 'plugin.mjs'), initial.pluginSource, 'utf8')
     yaml = yaml.replace('modules: []', 'modules: [plugin.mjs]')
+  }
+  if (initial.queueOwnership) {
+    const ownershipLine = '  queueOwnership: person '
+    if (!yaml.includes(ownershipLine)) throw new Error('loop.config.example.yaml queueOwnership line drifted from the test fixture')
+    yaml = yaml.replace(ownershipLine, `  queueOwnership: ${initial.queueOwnership} `)
   }
   writeFileSync(join(dir, 'loop.config.yaml'), yaml)
   const loaded = loadLoopConfig(join(dir, 'loop.config.yaml'))
@@ -369,6 +376,24 @@ describe('deliver', () => {
     expect((await deliver(busy, { assumeIdle: false })).results[0]).toMatchObject({ outcome: 'waiting', reason: 'worker active' })
     const gone = setup({ pr: null, terminals: [] })
     expect((await deliver(gone)).results[0]).toMatchObject({ outcome: 'stuck', reason: expect.stringContaining('terminal gone') })
+  })
+
+  // Under `queueOwnership: 'unassigned'` a returned issue MUST lose its assignee. Returning it to the
+  // queue state while it still carries this machine's name makes it invisible to a queue that filters on
+  // "no assignee" — it would sit in the dispatchable state forever, held by a worker that is gone.
+  it('releases the assignee claim when it returns a stuck issue to the queue', async () => {
+    const env = setup({ pr: null, dispatchedAt: '2026-09-11T09:00:00.000Z', queueOwnership: 'unassigned' })
+    await deliver(env, { assumeIdle: true })
+    const stuck = await deliver(env, { assumeIdle: true, now: () => new Date('2026-09-11T13:00:00.000Z') })
+    expect(stuck.results[0]).toMatchObject({ outcome: 'stuck' })
+    expect(env.runner.calls.some((argv) => argv[1] === 'linear' && argv[2] === 'assignee' && argv[3] === 'clear')).toBe(true)
+  })
+
+  it('leaves the assignee alone under person ownership — there it is ownership, not a claim', async () => {
+    const env = setup({ pr: null, dispatchedAt: '2026-09-11T09:00:00.000Z' })
+    await deliver(env, { assumeIdle: true })
+    await deliver(env, { assumeIdle: true, now: () => new Date('2026-09-11T13:00:00.000Z') })
+    expect(env.runner.calls.some((argv) => argv[1] === 'linear' && argv[2] === 'assignee')).toBe(false)
   })
 
   it('includes the worker\'s own terminal output in the stuck escalation, when available', async () => {

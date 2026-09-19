@@ -80,6 +80,17 @@ export const LoopConfigSchema = z.object({
       owners: z.array(nonEmpty).default([]),
       advanceWhenEmpty: z.boolean().default(true),
     }).prefault({}),
+    /**
+     * Whose queue this machine drains. `person` (default) keeps the historical behaviour: the issues
+     * assigned to `linear.person`. `unassigned` drains the issues with NO assignee and turns the
+     * assignee into a transient claim — written on dispatch, cleared when the item returns — so
+     * several machines can share one priority-ordered queue without colliding.
+     *
+     * Note when switching to `unassigned`: clearing the assignees is then REQUIRED, not cosmetic. With
+     * `person` and an emptied backlog the queue comes back empty and the loop looks healthy while doing
+     * nothing.
+     */
+    queueOwnership: z.enum(['person', 'unassigned']).default('person'),
     states: z.array(nonEmpty).min(1).default(['Todo', 'Ready']),
     excludeLabels: z.array(nonEmpty).default(['blocked', 'needs-info']),
     requireLabels: z.array(nonEmpty).default([]),

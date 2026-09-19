@@ -26,7 +26,13 @@ orca:
 linear:
   workspaceId: <linear-workspace-id> # orca linear team list --workspace all --json
   teamKey: ENG
-  person: my-linear-display-name     # the ONLY queue this machine drains
+  person: my-linear-display-name     # the queue this machine drains (and, under unassigned ownership, the name it claims with)
+  queueOwnership: person             # person = the issues assigned to `person`. unassigned = the issues nobody holds,
+                                     # with the assignee as a transient claim the loop writes on dispatch and clears on
+                                     # return, so several machines share one priority-ordered queue.
+                                     # Switching to unassigned REQUIRES clearing the backlog's assignees: with `person`
+                                     # and an unassigned backlog the queue comes back empty and the loop looks healthy
+                                     # while doing nothing.
   people:                            # display name -> Linear user id (orca linear team members …)
     my-linear-display-name: <linear-user-id>
   rotation:

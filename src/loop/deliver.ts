@@ -3,7 +3,7 @@ import { dirname, join } from 'node:path'
 import type { CommandRunner } from '../adapters/command.js'
 import { atLeast, parseReviewResult, renderFindingsForWorker, runCodeReview, type CodeReviewOutcome } from '../adapters/code-review.js'
 import { assessChecks, githubComment, githubCommentExists, githubLabelRemove, githubMerge, githubOpenPullRequests, githubPullRequest, githubPullRequestsForBranch, touchesProtectedPaths, type PullRequestSnapshot } from '../adapters/github-cli.js'
-import { createLinearTrackingAdapter, linearAttach, linearCommentAdd, linearLabelAdd, linearLabelRemove } from '../adapters/linear-orca.js'
+import { createLinearTrackingAdapter, linearAssigneeClear, linearAttach, linearCommentAdd, linearLabelAdd, linearLabelRemove } from '../adapters/linear-orca.js'
 import { orcaAccountList, orcaAgentHooks, orcaTerminalList, orcaTerminalScreen, orcaTerminalSend, orcaTerminalWait, orcaWorktreeRemove, orcaWorktreeSet } from '../adapters/orca-cli.js'
 import { detectProviders, remainingUsagePercent, type ProviderAvailability } from '../adapters/providers.js'
 import { createDispatchLedger, type DispatchLease } from '../execution/coordination.js'
@@ -226,6 +226,13 @@ const escalateLinear = async (ctx: Context, record: DispatchRecordFile, kind: 's
     await linearCommentAdd(ctx.runner, { issue: record.issue, body: `${fullBody}\n\n<!-- loop:${kind}:${record.leaseId} -->`, dedupeKey: `${kind}:${record.issue}:${record.leaseId}` }, linear)
     await linearLabelAdd(ctx.runner, { issue: record.issue, labels: [ctx.config.linear.blockedLabel] }, linear)
     await createLinearTrackingAdapter(ctx.runner, linear).transition({ tracker: 'linear', issue: record.issue, to: ctx.config.delivery.returnState, reason: `loop ${kind}` })
+    // Release the claim, under `queueOwnership: 'unassigned'`. Returning an issue to the queue state
+    // while it still carries this machine's assignee would make it invisible to the queue — which
+    // filters on "no assignee" — so it would sit in `Ready` forever, owned by a worker that is gone.
+    if (ctx.config.linear.queueOwnership === 'unassigned') {
+      await linearAssigneeClear(ctx.runner, { issue: record.issue }, linear)
+      actions.push('Linear: assignee cleared (claim released)')
+    }
     actions.push(`Linear: comment + ${ctx.config.linear.blockedLabel} + ${ctx.config.delivery.returnState}`)
   } catch (error) { actions.push(`Linear escalation failed: ${message(error)}`) }
   try { await orcaWorktreeSet(ctx.runner, { worktree: `id:${record.worktreeId}`, comment: `LOOP ${kind.toUpperCase()}: ${body.split('\n')[0]?.slice(0, 120)}` }, orcaOptions(ctx.config)); actions.push('Orca worktree comment set') } catch (error) { actions.push(`Orca comment failed: ${message(error)}`) }

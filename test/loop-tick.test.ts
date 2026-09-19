@@ -19,7 +19,7 @@ interface Env { readonly dir: string; readonly bin: string; readonly runner: Com
 const cleanups: string[] = []
 afterEach(() => { for (const dir of cleanups.splice(0)) rmSync(dir, { recursive: true, force: true }) })
 
-const makeEnv = (options: { readonly contract?: TaskContract | 'garbage'; readonly worktrees?: unknown; readonly failCreate?: boolean; readonly claudeAuthFails?: boolean; readonly claudeSessionLimit?: boolean; readonly failAllContracts?: boolean; readonly accountList?: unknown; readonly briefSkills?: readonly string[]; readonly setup?: { readonly exitCode?: number; readonly timedOut?: boolean }; readonly setupRequired?: boolean; readonly pluginSource?: string; readonly issueDescription?: string; readonly securityPii?: { readonly action?: 'redact' | 'warn' | 'block' }; readonly catalogMode?: boolean } = {}): Env => {
+const makeEnv = (options: { readonly contract?: TaskContract | 'garbage'; readonly worktrees?: unknown; readonly failCreate?: boolean; readonly claudeAuthFails?: boolean; readonly claudeSessionLimit?: boolean; readonly failAllContracts?: boolean; readonly accountList?: unknown; readonly briefSkills?: readonly string[]; readonly setup?: { readonly exitCode?: number; readonly timedOut?: boolean }; readonly setupRequired?: boolean; readonly pluginSource?: string; readonly issueDescription?: string; readonly securityPii?: { readonly action?: 'redact' | 'warn' | 'block' }; readonly catalogMode?: boolean; readonly queueOwnership?: 'person' | 'unassigned' } = {}): Env => {
   const dir = mkdtempSync(join(tmpdir(), 'agentskit-loop-tick-')); cleanups.push(dir)
   const bin = join(dir, 'bin'); rmSync(bin, { recursive: true, force: true })
   let yaml = options.briefSkills?.length ? exampleYaml.replace('skills: []', `skills: [${options.briefSkills.join(', ')}]`) : exampleYaml
@@ -39,6 +39,11 @@ const makeEnv = (options: { readonly contract?: TaskContract | 'garbage'; readon
     yaml = yaml.replace('modules: []', 'modules: [plugin.mjs]')
   }
   if (options.catalogMode) yaml = yaml.replace('mode: hybrid', 'mode: catalog')
+  if (options.queueOwnership) {
+    const ownershipLine = '  queueOwnership: person '
+    if (!yaml.includes(ownershipLine)) throw new Error('loop.config.example.yaml queueOwnership line drifted from the test fixture')
+    yaml = yaml.replace(ownershipLine, `  queueOwnership: ${options.queueOwnership} `)
+  }
   writeFileSync(join(dir, 'loop.config.yaml'), yaml)
   const binDir = mkdtempSync(join(tmpdir(), 'agentskit-loop-tick-bin-')); cleanups.push(binDir)
   for (const name of ['claude', 'codex', 'opencode', 'grok']) writeFileSync(join(binDir, name), '#!/bin/sh\nexit 0\n', { mode: 0o755 })
@@ -83,7 +88,7 @@ const makeEnv = (options: { readonly contract?: TaskContract | 'garbage'; readon
       if (key.startsWith('orca worktree rm')) return okResult({ removed: true })
       if (argv[0] === 'setup-check') return { code: options.setup?.exitCode ?? 0, stdout: 'installed', stderr: options.setup?.exitCode ? 'boom' : '', timedOut: options.setup?.timedOut ?? false, durationMs: 5 }
       if (key.startsWith('orca worktree create')) return options.failCreate ? { code: 1, stdout: JSON.stringify({ ok: false, error: { message: 'repo busy' } }), stderr: '', timedOut: false, durationMs: 1 } : okResult({ worktreeId: `repo-1::${dir}/w/${argv[argv.indexOf('--name') + 1]}`, path: `${dir}/w`, branch: `refs/heads/gituser/${argv[argv.indexOf('--name') + 1]}`, agentTerminalHandle: 'term_new' })
-      if (key.startsWith('orca linear status set') || key.startsWith('orca linear comment add') || key.startsWith('orca linear label add')) return okResult({ ok: true })
+      if (key.startsWith('orca linear status set') || key.startsWith('orca linear comment add') || key.startsWith('orca linear label add') || key.startsWith('orca linear assignee set') || key.startsWith('orca linear assignee clear')) return okResult({ ok: true })
       return { code: 127, stdout: '', stderr: `no fixture for ${key}`, timedOut: false, durationMs: 1 }
     },
   }
@@ -225,6 +230,29 @@ describe('tick', () => {
     expect(second.queue.busy).toContain(result?.issue)
     expect(env.runner.calls.filter((argv) => argv[1] === 'worktree' && argv[2] === 'create')).toHaveLength(2)
     expect(env.runner.calls.filter((argv) => argv[0] === 'claude' && argv[1] === '-p')).toHaveLength(2)
+  })
+
+  // Under `queueOwnership: 'unassigned'` the assignee is a claim, not ownership. What makes it safe is the
+  // ORDER: the worker exists before the claim is written, so a dispatch that dies half-way never leaves an
+  // issue assigned to a worker that was never started.
+  it('claims the issue for this machine only after the dispatch succeeded', async () => {
+    const env = makeEnv({ queueOwnership: 'unassigned' })
+    const report = await runTick({ ...tickOptions(env), maxDispatch: 1 })
+    expect(report.results[0]?.outcome).toBe('dispatched')
+    const claim = env.runner.calls.find((argv) => argv[1] === 'linear' && argv[2] === 'assignee' && argv[3] === 'set')
+    expect(claim?.[claim.indexOf('--assignee') + 1]).toBe(loadLoopConfig(env.configPath).config.linear.person)
+    const claimAt = env.runner.calls.findIndex((argv) => argv[1] === 'linear' && argv[2] === 'assignee')
+    const terminalAt = env.runner.calls.findIndex((argv) => argv[1] === 'terminal' && argv[2] === 'create')
+    expect(terminalAt).toBeGreaterThanOrEqual(0)
+    expect(claimAt).toBeGreaterThan(terminalAt)
+    // The status move must still happen: it is what actually takes the issue out of the queue.
+    expect(env.runner.calls.some((argv) => argv[1] === 'linear' && argv[2] === 'status')).toBe(true)
+  })
+
+  it('never writes an assignee under person ownership — there the assignee is the filter', async () => {
+    const env = makeEnv()
+    await runTick({ ...tickOptions(env), maxDispatch: 1 })
+    expect(env.runner.calls.some((argv) => argv[1] === 'linear' && argv[2] === 'assignee')).toBe(false)
   })
 
   it('resolves the catalog for every role once per tick, and never re-spawns the CLI on a second tick within the cache TTL', async () => {

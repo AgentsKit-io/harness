@@ -1,7 +1,7 @@
 import { appendFileSync, closeSync, existsSync, mkdirSync, openSync, readFileSync, renameSync, statSync, unlinkSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import type { CommandRunner } from '../adapters/command.js'
-import { createLinearTrackingAdapter, fetchLinearIssue, fetchLinearQueue, linearCommentAdd, linearLabelAdd, linearLabelRemove, type LinearIssueDetail, type LoopIssue } from '../adapters/linear-orca.js'
+import { createLinearTrackingAdapter, fetchLinearIssue, fetchLinearQueue, linearAssigneeSet, linearCommentAdd, linearLabelAdd, linearLabelRemove, type LinearIssueDetail, type LoopIssue } from '../adapters/linear-orca.js'
 import { createOrcaDispatchPlan } from '../adapters/orca.js'
 import { orcaAccountList, orcaAgentHooks, orcaDiagnosticsMemory, orcaTerminalCreate, orcaTerminalSend, orcaTerminalWait, orcaWorktreeCreate, orcaWorktreeRemove, orcaWorktrees, type OrcaWorktree } from '../adapters/orca-cli.js'
 import { detectProviders, type ProviderAvailability } from '../adapters/providers.js'
@@ -498,6 +498,22 @@ export const runTick = async (input: TickInput): Promise<TickReport> => {
       appendLoopEvent(loaded.stateDir, { at: record.dispatchedAt, type: 'worker.dispatched', ...record, command: builder.tui, briefAccepted: launched.accepted, tuiIdle: launched.idle }, bus)
       await bus.runHook('afterDispatch', { issue: detail.identifier, provider: record.provider, model: record.model, branch: record.branch, worktreeId: record.worktreeId })
       clearIssueFailures(loaded.stateDir, detail.identifier)
+      // The claim, under `queueOwnership: 'unassigned'`: written only AFTER the dispatch succeeded, so a
+      // failed dispatch never leaves an issue claimed by a worker that does not exist.
+      //
+      // In its own try/catch, and deliberately not fatal: what actually removes the issue from the queue
+      // is the transition below (the queue reads `linear.states`, which does not include the in-progress
+      // state), so a failed claim must not cost the status move and the dispatch comment. It is still
+      // recorded as an event, because an unclaimed in-flight issue is exactly what a second machine would
+      // pick up if the states were ever widened.
+      if (config.linear.queueOwnership === 'unassigned') {
+        try {
+          await linearAssigneeSet(input.runner, { issue: detail.identifier, assignee: state.person }, write)
+        } catch (error) {
+          notes.push(`${detail.identifier}: assignee claim failed after dispatch: ${message(error)}`)
+          appendLoopEvent(loaded.stateDir, { at: now().toISOString(), type: 'queue.claim-failed', issue: detail.identifier, assignee: state.person, error: message(error) }, bus)
+        }
+      }
       try {
         await tracking.transition({ tracker: 'linear', issue: detail.identifier, from: detail.state, to: config.linear.inProgressState, reason: `loop dispatched ${builder.provider}/${builder.model} in ${created.id}` })
         await linearCommentAdd(input.runner, { issue: detail.identifier, body: `**Loop: dispatched**\n\nWorker \`${builder.provider}/${builder.model}\` started in Orca worktree \`${worktree}\` on branch \`${actualBranch}\` (contract \`${stored.digest.slice(0, 12)}\`). It will open a PR against \`${config.project.baseBranch}\` when the contract's outcomes pass.\n\n<!-- loop:dispatched:${claim.lease.leaseId} -->`, dedupeKey: `dispatched:${detail.identifier}:${claim.lease.leaseId}` }, write)

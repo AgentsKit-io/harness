@@ -4,7 +4,7 @@ import { join } from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
 import {
   activeCooldowns, assessSlots, authStatusFor, availableMemoryBytes, parseMemInfo, parseVmStat, buildListIssuesArgv, compareVersions, cooldownUntil, countRotationBlockingLeases, countRunningWorkers, detectProviders, fetchLinearQueue, filterAndOrderQueue, findExecutable,
-  HarnessError, advanceQueueOwner, createDispatchLedger, loadLoopConfig, markProviderExhausted, mergeLoopConfig, parseJsonEnvelope, parseLinearIssues, parseLoopConfigText, parseModelRef, parseOrcaAgentHooks, parseOrcaStatus, parseOrcaVersion, parseOrcaWorktrees, queueOwner,
+  HarnessError, advanceQueueOwner, createDispatchLedger, linearAssigneeClearArgv, linearAssigneeSetArgv, loadLoopConfig, queueAssigneeFilter, markProviderExhausted, mergeLoopConfig, parseJsonEnvelope, parseLinearIssues, parseLoopConfigText, parseModelRef, parseOrcaAgentHooks, parseOrcaStatus, parseOrcaVersion, parseOrcaWorktrees, queueOwner,
   parseProviderUsage, providerSpecs, readCooldowns, renderHeadlessArgv, renderTuiCommand, routeAllRoles, runLoopDoctor, selectModel, validateLoopConfig,
 } from '../src/index.js'
 import type { CommandResult, CommandRunner, LoopConfig, ProviderAvailability } from '../src/index.js'
@@ -165,10 +165,34 @@ describe('orca and linear parsers', () => {
       { ...base, identifier: 'F', state: 'In Progress', priority: 1, updatedAt: '2026-01-06T00:00:00.000Z' },
       { ...base, identifier: 'B', state: 'Todo', priority: 1, updatedAt: '2026-01-01T00:00:00.000Z' },
     ]
-    const filter = { states: ['Todo', 'Ready'], excludeLabels: ['blocked'], requireLabels: [], projects: [], order: ['priority', 'updatedAt'] as const, maxQueue: 10 }
+    const filter = { states: ['Todo', 'Ready'], excludeLabels: ['blocked'], requireLabels: [], projects: [], order: ['priority', 'updatedAt'] as const, maxQueue: 10, queueOwnership: 'person' as const }
     expect(filterAndOrderQueue(issues, filter).map((issue) => issue.identifier)).toEqual(['B', 'D', 'C', 'A'])
     expect(filterAndOrderQueue(issues, { ...filter, maxQueue: 2 }).map((issue) => issue.identifier)).toEqual(['B', 'D'])
     expect(filterAndOrderQueue(issues, { ...filter, projects: ['Alpha'] })).toEqual([])
+  })
+
+  // The queue the loop reads is not always "my issues". With `queueOwnership: 'unassigned'` the
+  // assignee stops being ownership and becomes a claim: the queue is what nobody holds, ordered by
+  // priority, and the loop writes the assignee only after a dispatch succeeds. Getting this wrong is
+  // silent in the worst way — asking for "person's issues" in a backlog whose assignees were cleared
+  // returns an empty queue, and the loop then reports itself healthy while doing nothing at all.
+  it('lists the unassigned queue under unassigned ownership, and the person\u2019s under person', () => {
+    expect(queueAssigneeFilter({ queueOwnership: 'unassigned' }, 'person')).toBe('null')
+    expect(queueAssigneeFilter({ queueOwnership: 'person' }, 'person')).toBe('person')
+  })
+
+  it('claims and releases an issue through Orca, one flag per argument', () => {
+    expect(linearAssigneeSetArgv({ issue: 'ENG-1', assignee: 'person', workspaceId: 'ws-1' })).toEqual(['orca', 'linear', 'assignee', 'set', 'ENG-1', '--assignee', 'person', '--workspace', 'ws-1', '--json'])
+    expect(linearAssigneeClearArgv({ issue: 'ENG-1', workspaceId: 'ws-1' })).toEqual(['orca', 'linear', 'assignee', 'clear', 'ENG-1', '--workspace', 'ws-1', '--json'])
+  })
+
+  it('asks Orca for the unassigned queue when ownership is unassigned', async () => {
+    const runner = fakeRunner()
+    const config = baseConfig()
+    await fetchLinearQueue(runner, { workspaceId: 'ws-1', teamKey: 'ENG', assignee: 'person', filter: { ...config.linear, queueOwnership: 'unassigned' } })
+    const listed = runner.calls.filter((argv) => argv.includes('list-issues'))
+    expect(listed.length).toBeGreaterThan(0)
+    for (const argv of listed) expect(argv[argv.indexOf('--assignee') + 1]).toBe('null')
   })
 
   it('fetches one page per configured state and merges them', async () => {
