@@ -134,6 +134,28 @@ export const LoopConfigSchema = z.object({
       }),
     )
     .default([]),
+  /**
+   * Stricter review for the slices of the board that deserve it, keyed by label.
+   *
+   * The review IS the gate when there is no CI, and not every change carries the same risk: a contract
+   * that freezes evidence and a copy tweak should not be judged with the same budget. First matching
+   * entry wins, and it only overrides the fields it names — everything else falls back to
+   * `delivery.review`.
+   */
+  reviewOverrides: z
+    .array(
+      z.object({
+        /** Matches when the issue carries at least ONE of these labels. */
+        anyLabels: z.array(nonEmpty).min(1),
+        votes: z.number().int().positive().max(5).optional(),
+        minSeverity: z.enum(['nit', 'med', 'high', 'blocker']).optional(),
+        /** Mesmo enum de `delivery.review.profile` — um perfil inventado aqui só falharia no CLI. */
+        profile: z.enum(['fast', 'full']).optional(),
+        /** Why this slice is stricter — read by whoever wonders about the cost. */
+        reason: nonEmpty.optional(),
+      }),
+    )
+    .default([]),
   models: z.object({
     orchestrator: tiers,
     reviewer: tiers,
@@ -502,6 +524,33 @@ export const renderTuiCommand = (settings: LoopProviderConfig, model: string, ef
   const base = settings.tui.replaceAll('{model}', model)
   const flag = renderEffortFlag(settings, effort)
   return flag ? `${base} ${flag}` : base
+}
+
+/** The review settings in force for one issue — `delivery.review` with any label override applied. */
+export type EffectiveReviewSettings = LoopConfig['delivery']['review'] & { readonly overriddenBy: string | null }
+
+/**
+ * Resolve the review settings for an issue from its labels (`reviewOverrides`).
+ *
+ * First match wins, and only the fields it names are replaced — an override that sets `votes` must not
+ * silently reset the deadline, the transport or the CLI. `overriddenBy` carries the matched label so the
+ * deliver log can say WHY a review cost two votes instead of one; a stricter gate that cannot explain
+ * itself reads as a bug.
+ */
+export const resolveReviewSettings = (config: LoopConfig, labels: readonly string[] = []): EffectiveReviewSettings => {
+  const base = config.delivery.review
+  for (const override of config.reviewOverrides) {
+    const matched = override.anyLabels.find((label) => labels.includes(label))
+    if (matched === undefined) continue
+    return {
+      ...base,
+      ...(override.votes !== undefined ? { votes: override.votes } : {}),
+      ...(override.minSeverity !== undefined ? { minSeverity: override.minSeverity } : {}),
+      ...(override.profile !== undefined ? { profile: override.profile } : {}),
+      overriddenBy: matched,
+    }
+  }
+  return { ...base, overriddenBy: null }
 }
 
 /** Substitute `{model}` / `{prompt}` inside each headless argv element; the prompt stays one argv element, never shell-joined. */

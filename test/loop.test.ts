@@ -4,7 +4,7 @@ import { join } from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
 import {
   activeCooldowns, assessSlots, authStatusFor, availableMemoryBytes, parseMemInfo, parseVmStat, buildListIssuesArgv, compareVersions, cooldownUntil, countRotationBlockingLeases, countRunningWorkers, detectProviders, fetchLinearQueue, filterAndOrderQueue, findExecutable,
-  HarnessError, advanceQueueOwner, createDispatchLedger, linearAssigneeClearArgv, linearAssigneeSetArgv, loadLoopConfig, queueAssigneeFilter, markProviderExhausted, mergeLoopConfig, parseJsonEnvelope, parseLinearIssues, parseLoopConfigText, parseModelRef, parseOrcaAgentHooks, parseOrcaStatus, parseOrcaVersion, parseOrcaWorktrees, queueOwner,
+  HarnessError, advanceQueueOwner, createDispatchLedger, linearAssigneeClearArgv, linearAssigneeSetArgv, loadLoopConfig, queueAssigneeFilter, resolveReviewSettings, markProviderExhausted, mergeLoopConfig, parseJsonEnvelope, parseLinearIssues, parseLoopConfigText, parseModelRef, parseOrcaAgentHooks, parseOrcaStatus, parseOrcaVersion, parseOrcaWorktrees, queueOwner,
   parseProviderUsage, providerSpecs, readCooldowns, renderHeadlessArgv, renderTuiCommand, routeAllRoles, runLoopDoctor, selectModel, validateLoopConfig,
 } from '../src/index.js'
 import type { CommandResult, CommandRunner, LoopConfig, ProviderAvailability } from '../src/index.js'
@@ -200,6 +200,36 @@ describe('orca and linear parsers', () => {
   it('lists the unassigned queue under unassigned ownership, and the person\u2019s under person', () => {
     expect(queueAssigneeFilter({ queueOwnership: 'unassigned' }, 'person')).toBe('null')
     expect(queueAssigneeFilter({ queueOwnership: 'person' }, 'person')).toBe('person')
+  })
+
+  // A revisão É o gate quando não há CI, e não toda mudança carrega o mesmo risco. O override existe
+  // para reforçar só as camadas do caminho crítico, sem pagar dois votos em cada ajuste de copy.
+  it('reinforces the review only for the labels that ask for it, and says which label did it', () => {
+    const config = baseConfig()
+    const strict = {
+      ...config,
+      reviewOverrides: [
+        { anyLabels: ['layer:L2', 'layer:L3'], votes: 2, minSeverity: 'nit' as const, reason: 'caminho crítico' },
+      ],
+    }
+
+    const plain = resolveReviewSettings(strict, ['layer:L4'])
+    expect(plain.votes).toBe(config.delivery.review.votes)
+    expect(plain.overriddenBy).toBeNull()
+
+    const reinforced = resolveReviewSettings(strict, ['type:fix', 'layer:L3'])
+    expect(reinforced.votes).toBe(2)
+    expect(reinforced.minSeverity).toBe('nit')
+    // Diz QUAL label reforçou: um gate mais caro que não se explica é lido como bug.
+    expect(reinforced.overriddenBy).toBe('layer:L3')
+    // Só os campos nomeados mudam — um override de votos não pode zerar o deadline nem trocar o CLI.
+    expect(reinforced.deadlineMs).toBe(config.delivery.review.deadlineMs)
+    expect(reinforced.cli).toBe(config.delivery.review.cli)
+
+    // Sem override configurado, nada muda para ninguém.
+    expect(resolveReviewSettings(config, ['layer:L2']).overriddenBy).toBeNull()
+    // Sem labels (registro antigo de despacho), cai no global em vez de explodir.
+    expect(resolveReviewSettings(strict).overriddenBy).toBeNull()
   })
 
   it('claims and releases an issue through Orca, one flag per argument', () => {

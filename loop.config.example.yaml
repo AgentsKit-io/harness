@@ -23,6 +23,15 @@ orca:
   minVersion: 1.4.200
   timeoutMs: 20000
 
+# Revisão mais rigorosa só nas fatias que pedem, por label. A revisão É o gate quando não há CI, e um
+# contrato que congela evidência não deve ser julgado com o mesmo orçamento de um ajuste de copy.
+# Primeira entrada que casa vence, e só os campos nomeados são trocados.
+# reviewOverrides:
+#   - anyLabels: [layer:L2, layer:L3]
+#     votes: 2
+#     minSeverity: nit
+#     reason: caminho crítico do MVP
+
 # Suítes já vermelhas na branch base. O harness NÃO roda o verifyCommand — o worker roda, na worktree
 # dele — então tolerar falha conhecida é informação no briefing, não parsing de saída. A issue de
 # rastreamento é obrigatória: quarentena sem dono vira permanente.
