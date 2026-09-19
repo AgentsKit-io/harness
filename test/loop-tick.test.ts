@@ -19,7 +19,7 @@ interface Env { readonly dir: string; readonly bin: string; readonly runner: Com
 const cleanups: string[] = []
 afterEach(() => { for (const dir of cleanups.splice(0)) rmSync(dir, { recursive: true, force: true }) })
 
-const makeEnv = (options: { readonly contract?: TaskContract | 'garbage'; readonly worktrees?: unknown; readonly failCreate?: boolean; readonly claudeAuthFails?: boolean; readonly claudeSessionLimit?: boolean; readonly failAllContracts?: boolean; readonly accountList?: unknown; readonly briefSkills?: readonly string[]; readonly setup?: { readonly exitCode?: number; readonly timedOut?: boolean }; readonly setupRequired?: boolean; readonly pluginSource?: string; readonly issueDescription?: string; readonly securityPii?: { readonly action?: 'redact' | 'warn' | 'block' }; readonly catalogMode?: boolean; readonly queueOwnership?: 'person' | 'unassigned' } = {}): Env => {
+const makeEnv = (options: { readonly contract?: TaskContract | 'garbage'; readonly worktrees?: unknown; readonly failCreate?: boolean; readonly claudeAuthFails?: boolean; readonly claudeSessionLimit?: boolean; readonly failAllContracts?: boolean; readonly accountList?: unknown; readonly briefSkills?: readonly string[]; readonly setup?: { readonly exitCode?: number; readonly timedOut?: boolean }; readonly setupRequired?: boolean; readonly pluginSource?: string; readonly issueDescription?: string; readonly securityPii?: { readonly action?: 'redact' | 'warn' | 'block' }; readonly catalogMode?: boolean; readonly queueOwnership?: 'person' | 'unassigned'; readonly knownFailures?: readonly { readonly path: string; readonly issue: string; readonly reason: string }[] } = {}): Env => {
   const dir = mkdtempSync(join(tmpdir(), 'agentskit-loop-tick-')); cleanups.push(dir)
   const bin = join(dir, 'bin'); rmSync(bin, { recursive: true, force: true })
   let yaml = options.briefSkills?.length ? exampleYaml.replace('skills: []', `skills: [${options.briefSkills.join(', ')}]`) : exampleYaml
@@ -39,6 +39,12 @@ const makeEnv = (options: { readonly contract?: TaskContract | 'garbage'; readon
     yaml = yaml.replace('modules: []', 'modules: [plugin.mjs]')
   }
   if (options.catalogMode) yaml = yaml.replace('mode: hybrid', 'mode: catalog')
+  if (options.knownFailures?.length) {
+    const block = options.knownFailures
+      .map((entry) => `  - path: ${entry.path}\n    issue: ${entry.issue}\n    reason: ${entry.reason}`)
+      .join('\n')
+    yaml = `${yaml}\nknownFailures:\n${block}\n`
+  }
   if (options.queueOwnership) {
     const ownershipLine = '  queueOwnership: person '
     if (!yaml.includes(ownershipLine)) throw new Error('loop.config.example.yaml queueOwnership line drifted from the test fixture')
@@ -138,6 +144,30 @@ describe('contract', () => {
     const brief = renderWorkerBrief({ issue, contract: stored, config: loaded.config, branch: 'person/eng-10-demo', provider: 'claude', model: 'sonnet' })
     for (const needle of ['ENG-10', 'person/eng-10-demo', loaded.config.delivery.verifyCommand, 'pnpm --filter demo test', 'Loop-Contract: abcdef123456ffff', 'loop.config.yaml', 'LOOP_WORKER_DONE ENG-10', 'workspace-status in-review', '<untrusted source="linear:ENG-10">']) expect(brief).toContain(needle)
     expect(brief).not.toContain('--dangerously')
+    // Sem `knownFailures` declarado, a seção não existe — nada de cabeçalho vazio convidando o worker a
+    // achar que alguma falha é tolerável.
+    expect(brief).not.toContain('Já vermelho na base')
+  })
+
+  // O harness NÃO roda o `verifyCommand` — o worker roda, na worktree dele. Então tolerar suíte já
+  // vermelha na base não é parsing de saída (o harness nunca a vê): é informação no briefing. Sem isto o
+  // worker reprova por defeito alheio, ou conserta algo fora do contrato para a verificação passar.
+  it('tells the worker which suites are already red on the base, with the tracking issue', () => {
+    const env = makeEnv({
+      knownFailures: [
+        { path: 'packages/os-headless/tests/property/file-secret-store-race.property.test.ts', issue: 'AGE-1757', reason: 'escrita paralela perde chaves' },
+      ],
+    })
+    const loaded = loadLoopConfig(env.configPath)
+    const issue = parseLinearIssueDetail({ issue: (fixture('list-issues-todo') as { result: { issues: unknown[] } }).result.issues[0], comments: [] })
+    const stored: StoredContract = { schemaVersion: 1, issue: issue.identifier, issueUpdatedAt: issue.updatedAt, generatedAt: 'now', provider: 'codex', model: 'gpt-5.6-sol', contract: goodContract, digest: 'abcdef123456ffff', assessment: assessContract(goodContract), source: 'llm' }
+    const brief = renderWorkerBrief({ issue, contract: stored, config: loaded.config, branch: 'person/eng-10-demo', provider: 'claude', model: 'sonnet' })
+    expect(brief).toContain('Já vermelho na base')
+    expect(brief).toContain('file-secret-store-race.property.test.ts')
+    // A issue de rastreamento viaja junto: quarentena sem dono vira permanente.
+    expect(brief).toContain('AGE-1757')
+    // E a regra 3 passa a admitir a exceção, em vez de exigir o impossível.
+    expect(brief).toContain('except the suites listed under "Já vermelho na base"')
   })
 
   it('redacts, warns on, or blocks PII-shaped issue text in the worker brief when security.pii is enabled', () => {

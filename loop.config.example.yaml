@@ -23,6 +23,14 @@ orca:
   minVersion: 1.4.200
   timeoutMs: 20000
 
+# Suítes já vermelhas na branch base. O harness NÃO roda o verifyCommand — o worker roda, na worktree
+# dele — então tolerar falha conhecida é informação no briefing, não parsing de saída. A issue de
+# rastreamento é obrigatória: quarentena sem dono vira permanente.
+# knownFailures:
+#   - path: packages/foo/tests/bar.test.ts
+#     issue: ENG-123
+#     reason: corrida de escrita em arquivo, pré-existente
+
 linear:
   workspaceId: <linear-workspace-id> # orca linear team list --workspace all --json
   teamKey: ENG

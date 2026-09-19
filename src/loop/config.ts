@@ -110,6 +110,30 @@ export const LoopConfigSchema = z.object({
     blockedLabel: nonEmpty.default('blocked'),
     needsInfoLabel: nonEmpty.default('needs-info'),
   }),
+  /**
+   * Suites already red on the base branch, declared so a worker is not asked to pass a verification that
+   * nobody can pass.
+   *
+   * The harness does NOT run `delivery.verifyCommand` — the worker does, in its own worktree, before
+   * opening the PR. So tolerating known breakage cannot be done by parsing output the harness never
+   * sees: it has to be *told* to the worker, which is what this list does.
+   *
+   * Every entry carries the tracking issue on purpose. A quarantine without an owner becomes permanent,
+   * and the worker needs to know the failure is someone else's to avoid "fixing" it inside an unrelated
+   * task.
+   */
+  knownFailures: z
+    .array(
+      z.object({
+        /** Path or suite name as the runner prints it. */
+        path: nonEmpty,
+        /** Tracking issue — no anonymous quarantine. */
+        issue: nonEmpty,
+        /** Why it is red, in one line. */
+        reason: nonEmpty,
+      }),
+    )
+    .default([]),
   models: z.object({
     orchestrator: tiers,
     reviewer: tiers,
