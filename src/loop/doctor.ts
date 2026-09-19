@@ -131,7 +131,11 @@ export const runLoopDoctor = async (input: LoopDoctorInput): Promise<LoopDoctorR
   let queueError: string | null = null
   try {
     queue = await fetchLinearQueue(input.runner, { bin: config.orca.bin, workspaceId: config.linear.workspaceId, teamKey: config.linear.teamKey, assignee: person, filter: config.linear, orca: orcaOptions })
-    push('linear.queue', 'passed', `${queue.length} dispatchable issue(s) for ${person} in ${config.linear.states.join('/')}`)
+    // Say WHICH queue was read. Under `unassigned` ownership the old wording ("for <person>") described
+    // the opposite of what was listed, and a diagnostic that misnames its own subject is how the empty
+    // queue went unnoticed in the first place.
+    const whose = config.linear.queueOwnership === 'unassigned' ? 'unassigned' : `assigned to ${person}`
+    push('linear.queue', 'passed', `${queue.length} dispatchable issue(s) ${whose} in ${config.linear.states.join('/')}`)
   } catch (error) { queueError = message(error); push('linear.queue', 'failed', queueError) }
 
   const docBridge = inspectDocBridgeIndex(loaded.root)
