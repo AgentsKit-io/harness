@@ -160,7 +160,7 @@ export type { LoopEvent, RetroInput, RetroIssueRow, RetroReport, RetroStageRepor
 export {
   createFileMemoryAdapter, createFileMemoryKvStore, learningToMemoryRecord, learningsPath, memoryDigestOf, openLoopMemory,
   planMemoryContext, preferMemoryOverDocBridge, promoteLearningsToMemory, readLearningsLedger, selectMemoryForPrompt,
-  upsertProposedLearnings, writeLearningsLedger,
+  learningsReadyToPromote, upsertProposedLearnings, upsertProposedLearningsDryRun, writeLearningsLedger,
 } from './loop/memory.js'
 export type { LearningsLedger, MemoryContextPlan, MemoryPromptSelection } from './loop/memory.js'
 

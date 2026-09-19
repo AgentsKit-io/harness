@@ -200,18 +200,62 @@ export const writeLearningsLedger = (stateDir: string, ledger: LearningsLedger):
   renameSync(tmp, path)
 }
 
-/** Merge proposed learnings into the ledger without changing promoted/rejected rows. */
+/**
+ * Merge proposed learnings into the ledger without changing promoted/rejected rows.
+ *
+ * A lesson proposed again **counts**: the id is content-derived, so recurrence used to be silently
+ * deduplicated and a pattern was indistinguishable from a one-off. `sightings` is what
+ * `memory.recurrence` reads to offer a promotion.
+ */
 export const upsertProposedLearnings = (stateDir: string, proposed: readonly LearningRecord[]): LearningsLedger => {
   const current = readLearningsLedger(stateDir)
   const byId = new Map(current.records.map((record) => [record.id, record]))
   for (const record of proposed) {
     const existing = byId.get(record.id)
-    if (!existing || existing.status === 'proposed') byId.set(record.id, record)
+    if (!existing) { byId.set(record.id, { ...record, sightings: record.sightings ?? 1 }); continue }
+    // Já promovida ou rejeitada: a decisão humana manda, e nem o texto nem a contagem a reabrem.
+    if (existing.status !== 'proposed') continue
+    byId.set(record.id, { ...record, sightings: (existing.sightings ?? 1) + 1 })
   }
   const ledger = { records: [...byId.values()] }
   writeLearningsLedger(stateDir, ledger)
   return ledger
 }
+
+/**
+ * What the ledger WOULD look like after this merge, without writing it.
+ *
+ * `loop retro --dry-run` has to show the same recurrence hint as a real run; computing it from the
+ * unwritten merge is what keeps the dry run honest instead of showing counts one retro behind.
+ */
+export const upsertProposedLearningsDryRun = (stateDir: string, proposed: readonly LearningRecord[]): LearningsLedger => {
+  const byId = new Map(readLearningsLedger(stateDir).records.map((record) => [record.id, record]))
+  for (const record of proposed) {
+    const existing = byId.get(record.id)
+    if (!existing) { byId.set(record.id, { ...record, sightings: record.sightings ?? 1 }); continue }
+    if (existing.status !== 'proposed') continue
+    byId.set(record.id, { ...record, sightings: (existing.sightings ?? 1) + 1 })
+  }
+  return { records: [...byId.values()] }
+}
+
+/**
+ * Lessons that recurred enough to deserve a human's keystroke, newest-count first.
+ *
+ * Deliberately a *suggestion*: `promoteLearnings` refuses a non-human actor (ADR-0019), and memory is
+ * read into every worker brief — a wrong lesson promoted without a human becomes a wrong instruction on
+ * every future task. This removes the analysis, not the decision.
+ */
+export const learningsReadyToPromote = (
+  ledger: LearningsLedger,
+  config: Pick<LoopConfig, 'memory'>,
+): readonly LearningRecord[] =>
+  ledger.records
+    .filter((record) => record.status === 'proposed')
+    .filter((record) => (record.sightings ?? 1) >= config.memory.recurrence.minSightings)
+    .filter((record) => config.memory.categories.includes(record.category))
+    .sort((left, right) => (right.sightings ?? 1) - (left.sightings ?? 1))
+    .slice(0, config.memory.recurrence.maxPerRun)
 
 export const promoteLearningsToMemory = async (input: {
   readonly stateDir: string

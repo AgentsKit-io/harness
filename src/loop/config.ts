@@ -343,6 +343,23 @@ export const LoopConfigSchema = z.object({
     categories: z.array(z.enum(['worked', 'problem', 'adjustment', 'other'])).default(['adjustment']),
     shrinkIssueCharsWhenMemory: z.boolean().default(true),
     issueCharsWithMemory: z.number().int().positive().default(4_000),
+    /**
+     * When a lesson stops being an anecdote and starts being a pattern.
+     *
+     * A learning proposed `minSightings` times is surfaced by `loop retro` as ready to promote, with the
+     * exact command — so the human act is one keystroke instead of an analysis, and at most `maxPerRun`
+     * are offered at a time.
+     *
+     * It does NOT promote by itself, and that is deliberate: `promoteLearnings` refuses any actor that is
+     * not human (`HUMAN_APPROVAL_REQUIRED`), which is ADR-0019's attestation rule. Memory is read into
+     * every worker brief, so a wrong lesson promoted without a human is a wrong instruction repeated on
+     * every future task. Removing that gate is an ADR amendment, not a config knob.
+     */
+    recurrence: z.object({
+      /** How many sightings make a lesson a pattern. Below 2 is "it happened once". */
+      minSightings: z.number().int().min(2).max(20).default(2),
+      maxPerRun: z.number().int().positive().max(20).default(3),
+    }).prefault({}),
   }).prefault({}),
   agents: z.object({
     registryPath: nonEmpty.default('agents.registry.yaml'),

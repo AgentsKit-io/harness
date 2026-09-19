@@ -11,7 +11,7 @@ import { contractPath, readStoredContract } from './contract.js'
 import { readCooldowns } from './cooldown.js'
 import { deliveryStatePath, readDeliveryState } from './deliver.js'
 import { LOOP_STAGES, automationName } from './install.js'
-import { openLoopMemory, upsertProposedLearnings } from './memory.js'
+import { learningsReadyToPromote, openLoopMemory, upsertProposedLearnings, upsertProposedLearningsDryRun } from './memory.js'
 import { dispatchRecordPath, readDispatchRecord } from './tick.js'
 import { queueOwner } from './rotation.js'
 
@@ -294,10 +294,20 @@ export const runRetroStage = async (input: {
   const report = await buildRetroReport({ loaded, runner: input.runner, since: input.since ?? '7d' })
   const markdown = renderRetroMarkdown(report)
   const learnings = retroLearnings(report, markdown)
-  if (!input.dryRun) upsertProposedLearnings(loaded.stateDir, learnings)
+  const ledger = input.dryRun
+    ? upsertProposedLearningsDryRun(loaded.stateDir, learnings)
+    : upsertProposedLearnings(loaded.stateDir, learnings)
   const memory = openLoopMemory(loaded)
+  // Lição que reapareceu o bastante vira sugestão com o comando pronto: o trabalho humano deixa de ser
+  // analisar o ledger e passa a ser uma tecla. A decisão continua humana (ADR-0019).
+  const ready = learningsReadyToPromote(ledger, loaded.config)
+  const readyNote = ready.length
+    ? `\n\nPadrão recorrente (visto ${loaded.config.memory.recurrence.minSightings}× ou mais) — pronto para promover:\n${ready
+        .map((record) => `- \`${record.id}\` (${record.sightings ?? 1}×, ${record.category}) — ${record.text.slice(0, 160)}`)
+        .join('\n')}\n\n\`\`\`\nak-harness loop learning promote --ids ${ready.map((record) => record.id).join(',')} --by human\n\`\`\``
+    : ''
   const memoryNote = memory && loaded.config.memory.enabled
-    ? `\n\n## Memory\nenabled · preferOverDocBridge=${loaded.config.memory.preferOverDocBridge} · maxRecall=${loaded.config.memory.maxRecall} · promote with \`ak-harness loop learning promote --ids … --by human\``
+    ? `\n\n## Memory\nenabled · preferOverDocBridge=${loaded.config.memory.preferOverDocBridge} · maxRecall=${loaded.config.memory.maxRecall} · promote with \`ak-harness loop learning promote --ids … --by human\`${readyNote}`
     : '\n\n## Memory\ndisabled (`memory.enabled: false`)'
   const body = `${markdown}${memoryNote}\n\n<!-- loop:retro:${report.digest} -->`
   if (input.dryRun) return { status: 'dry-run', issue, digest: report.digest, posted: false, learningsProposed: learnings.length, detail: 'would comment on Linear' }
