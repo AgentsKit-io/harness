@@ -1,7 +1,7 @@
 import { appendFileSync, closeSync, existsSync, mkdirSync, openSync, readFileSync, renameSync, statSync, unlinkSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import type { CommandRunner } from '../adapters/command.js'
-import { createLinearTrackingAdapter, fetchLinearIssue, fetchLinearQueue, linearCommentAdd, linearLabelAdd, linearLabelRemove, type LinearIssueDetail, type LoopIssue } from '../adapters/linear-orca.js'
+import { createLinearTrackingAdapter, fetchLinearIssue, fetchLinearQueue, linearAssigneeSet, linearCommentAdd, linearLabelAdd, linearLabelRemove, type LinearIssueDetail, type LoopIssue } from '../adapters/linear-orca.js'
 import { createOrcaDispatchPlan } from '../adapters/orca.js'
 import { orcaAccountList, orcaAgentHooks, orcaDiagnosticsMemory, orcaTerminalCreate, orcaTerminalSend, orcaTerminalWait, orcaWorktreeCreate, orcaWorktreeRemove, orcaWorktrees, type OrcaWorktree } from '../adapters/orca-cli.js'
 import { detectProviders, type ProviderAvailability } from '../adapters/providers.js'
@@ -72,6 +72,12 @@ export interface DispatchRecordFile {
   readonly initialRemainingPercent: number | null
   /** Absolute path to the Orca worktree, so `loop status`/`debrief`/`watch` can best-effort read `progress.json` from it. */
   readonly worktreePath: string
+  /**
+   * The issue's labels at dispatch time, frozen here so `deliver` can resolve `reviewOverrides` without
+   * a second Linear read — and so a label edited mid-flight cannot change the gate a running item is
+   * judged by. Absent on records written before this field existed; readers fall back to no override.
+   */
+  readonly labels?: readonly string[]
 }
 
 export interface TickInput {
@@ -139,6 +145,19 @@ export const writeDispatchRecord = (stateDir: string, record: DispatchRecordFile
   const path = dispatchRecordPath(stateDir, record.issue)
   writeJsonAtomic(path, record)
   return path
+}
+
+/** A fresh dispatch is a new delivery attempt; do not let a previous stuck/blocked attempt keep precheck idle. */
+const resetDeliveryStateForDispatch = (stateDir: string, issue: string): void => {
+  const path = join(stateDir, 'issues', issue, 'delivery.json')
+  if (!existsSync(path)) return
+  try {
+    const previous = JSON.parse(readFileSync(path, 'utf8')) as { readonly finalOutcome?: unknown }
+    if (!['stuck', 'blocked', 'abandoned'].includes(String(previous.finalOutcome))) return
+  } catch { return }
+  // `writeJsonAtomic` e não `writeJson`: o remoto trocou toda escrita de estado por escrita atômica
+  // (PR #80), e um reset de estado de entrega escrito pela metade é pior que nenhum reset.
+  writeJsonAtomic(path, { issue, prNumber: null, reviews: {}, fixRounds: 0, nudges: [], handoffs: [], heldFor: null, finishedAt: null, finalOutcome: null })
 }
 /** Above this, the hot `events.ndjson` file rotates to an archive instead of growing forever — a 24/7 loop
  * emits several events per dispatch, and every `retro`/`debrief` read loads the whole file into memory. */
@@ -479,11 +498,28 @@ export const runTick = async (input: TickInput): Promise<TickReport> => {
       const launched = await launchWorkerTerminal({ runner: input.runner, config, worktreeId: created.id, command: builder.tui, title, brief })
       if (!launched.accepted) notes.push(`${detail.identifier}: terminal ${launched.terminal} did not confirm the brief; deliver will nudge it if it stays idle`)
       ledger.recordDispatch({ lease: claim.lease, idempotencyKey: plan.idempotencyKey, commandDigest: plan.commandDigest })
-      const record: DispatchRecordFile = { issue: detail.identifier, worktreeId: created.id, worktree, branch: actualBranch, terminal: launched.terminal, provider: builder.provider, model: builder.model, contractDigest: stored.digest, leaseKey: claim.lease.key, leaseId: claim.lease.leaseId, dispatchedAt: now().toISOString(), url: detail.url, briefDigest, skills: skillRefs(pinnedSkills), setup: setupResult, effort: builder.effort, initialRemainingPercent: builder.remainingPercent, worktreePath: created.path }
+      const record: DispatchRecordFile = { issue: detail.identifier, worktreeId: created.id, worktree, branch: actualBranch, terminal: launched.terminal, provider: builder.provider, model: builder.model, contractDigest: stored.digest, leaseKey: claim.lease.key, leaseId: claim.lease.leaseId, dispatchedAt: now().toISOString(), url: detail.url, briefDigest, skills: skillRefs(pinnedSkills), setup: setupResult, effort: builder.effort, initialRemainingPercent: builder.remainingPercent, worktreePath: created.path, labels: [...detail.labels] }
+      resetDeliveryStateForDispatch(loaded.stateDir, detail.identifier)
       writeJsonAtomic(dispatchRecordPath(loaded.stateDir, detail.identifier), record)
       appendLoopEvent(loaded.stateDir, { at: record.dispatchedAt, type: 'worker.dispatched', ...record, command: builder.tui, briefAccepted: launched.accepted, tuiIdle: launched.idle }, bus)
       await bus.runHook('afterDispatch', { issue: detail.identifier, provider: record.provider, model: record.model, branch: record.branch, worktreeId: record.worktreeId })
       clearIssueFailures(loaded.stateDir, detail.identifier)
+      // The claim, under `queueOwnership: 'unassigned'`: written only AFTER the dispatch succeeded, so a
+      // failed dispatch never leaves an issue claimed by a worker that does not exist.
+      //
+      // In its own try/catch, and deliberately not fatal: what actually removes the issue from the queue
+      // is the transition below (the queue reads `linear.states`, which does not include the in-progress
+      // state), so a failed claim must not cost the status move and the dispatch comment. It is still
+      // recorded as an event, because an unclaimed in-flight issue is exactly what a second machine would
+      // pick up if the states were ever widened.
+      if (config.linear.queueOwnership === 'unassigned') {
+        try {
+          await linearAssigneeSet(input.runner, { issue: detail.identifier, assignee: state.person }, write)
+        } catch (error) {
+          notes.push(`${detail.identifier}: assignee claim failed after dispatch: ${message(error)}`)
+          appendLoopEvent(loaded.stateDir, { at: now().toISOString(), type: 'queue.claim-failed', issue: detail.identifier, assignee: state.person, error: message(error) }, bus)
+        }
+      }
       try {
         await tracking.transition({ tracker: 'linear', issue: detail.identifier, from: detail.state, to: config.linear.inProgressState, reason: `loop dispatched ${builder.provider}/${builder.model} in ${created.id}` })
         await linearCommentAdd(input.runner, { issue: detail.identifier, body: `**Loop: dispatched**\n\nWorker \`${builder.provider}/${builder.model}\` started in Orca worktree \`${worktree}\` on branch \`${actualBranch}\` (contract \`${stored.digest.slice(0, 12)}\`). It will open a PR against \`${config.project.baseBranch}\` when the contract's outcomes pass.\n\n<!-- loop:dispatched:${claim.lease.leaseId} -->`, dedupeKey: `dispatched:${detail.identifier}:${claim.lease.leaseId}` }, write)

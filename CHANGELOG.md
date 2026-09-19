@@ -1,5 +1,63 @@
 # Changelog
 
+## [0.14.0] - 2026-09-19
+
+A queue that several machines can drain, a review whose strictness matches the risk, and four fixes that
+were sitting unpublished. Motivated by a real 24/7 loop that had been silently doing nothing: the config
+was invalid, the queue asked for the wrong assignee, and the diagnostic misnamed its own subject.
+
+### The queue stops being "my issues"
+
+- **`linear.queueOwnership`** (`person` | `unassigned`, default `person`, nothing changes unless you opt
+  in). Under `unassigned` the queue lists with `--assignee null` and the assignee becomes a **transient
+  claim**: written right after a dispatch succeeds, cleared when the item comes back. That is what lets
+  several machines share one priority-ordered queue without two of them picking the same issue.
+  The claim is non-fatal and gets its own `queue.claim-failed` event — what actually removes an issue from
+  the queue is the status transition, so a failed claim must not cost the transition or the comment.
+- **`linear.anyLabels`** — "at least one of these" (OR), because `requireLabels` is AND: listing two
+  layers there demands both on the same issue and matches **nothing**. A queue that returns zero is
+  indistinguishable from "no work to do", which is the worst failure mode this loop has.
+- `loop doctor` now says **which** queue it read. Under `unassigned` ownership it used to print
+  "for \<person\>" — the opposite of what it listed, and that is how an empty queue goes unnoticed.
+
+### Review strictness that matches the risk
+
+- **`reviewOverrides`** — stricter review for the slices that deserve it, keyed by label. First match
+  wins and only the named fields are replaced: an override that raises `votes` must not silently reset
+  the deadline or swap the CLI. The matched label travels to the deliver log, because a gate that costs
+  more without explaining itself reads as a bug.
+- The labels come from the **dispatch record**, not a fresh Linear read, so editing a label mid-flight
+  cannot change the gate a running item is judged by.
+
+### Telling the worker the truth about the base branch
+
+- **`knownFailures`** — suites already red on the base, declared with the tracking issue (mandatory: a
+  quarantine without an owner becomes permanent). The harness does **not** run `verifyCommand` — the
+  worker does, in its own worktree — so tolerating known breakage is information in the brief, not output
+  parsing. Without it, every item touching a broken package fails verification for someone else's defect.
+
+### Memory: recurrence instead of guesswork
+
+- Learning ids are content-derived, so a lesson that reappeared was silently deduplicated and a pattern
+  looked exactly like a one-off. **`sightings` now counts**, and `loop retro` offers the lessons that hit
+  `memory.recurrence.minSightings` with the promote command already filled in.
+- Promotion still requires a human (`HUMAN_APPROVAL_REQUIRED`, ADR-0019). Memory is read into every
+  worker brief: a wrong lesson promoted without a human is a wrong instruction on every future task.
+
+### One human approval covers the goal's own effects
+
+- **`tracking.authorization`** (`goal` | `separate`, default `goal`). Approving the verification result
+  now authorizes the declared external effect too, recording `authorization.recorded` at the same
+  instant. `separate` keeps the old two-gate behaviour.
+
+### Fixes that had never shipped
+
+- Phase age and worker age are different numbers: `ageMin` counts from dispatch, `phaseAgeMin` from the
+  event that started the phase. An item in review for 10 minutes used to show the dispatch age and looked
+  stuck for hours.
+- Stale delivery state is reset on redispatch, dead stage locks recover, queue alerts are ignored during
+  scheduled stages, and expected pre-PR delivery gaps stop being reported as problems.
+
 ## [0.13.0] - 2026-09-14
 
 A full-codebase test-coverage sweep (every module in `src/kernel/`, `src/execution/`, `src/adapters/`, and most of

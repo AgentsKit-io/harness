@@ -29,4 +29,9 @@ describe('loop observability', () => {
     expect(report.anomalies).toHaveLength(0)
     expect(renderObservabilityMarkdown(report)).toContain('## Metrics')
   })
+
+  it('does not report an idle queue while a scheduled stage owns the lock', () => {
+    const report = assessObservability({ ...base, stageBusy: true, queueReady: 1, freeSlots: 1, events: [] })
+    expect(report.anomalies.map((item) => item.id)).not.toContain('queue-ready-no-dispatch')
+  })
 })

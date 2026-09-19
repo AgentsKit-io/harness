@@ -11,6 +11,14 @@ export interface LearningRecord {
   readonly text: string
   readonly status: LearningStatus
   readonly recordedAt: string
+  /**
+   * How many retros proposed this same lesson. Absent reads as 1.
+   *
+   * The id is content-derived, so a recurring lesson used to be silently deduplicated and looked exactly
+   * like a one-off. Counting is what separates a pattern from an anecdote — and it is the number
+   * `memory.recurrence` uses to offer a promotion.
+   */
+  readonly sightings?: number
 }
 
 const text = (value: unknown, label: string): string => {

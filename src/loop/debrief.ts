@@ -29,7 +29,14 @@ export interface DebriefIssueRow {
   readonly pr: number | null
   readonly prUrl: string | null
   readonly dispatchedAt: string | null
+  /** Quanto tempo o worker está no item, contado do despacho. É a idade do worker, não da fase. */
   readonly ageMin: number | null
+  /**
+   * Quanto tempo o item está **nesta fase**, contado do evento que a começou (a revisão corrente, e
+   * não o despacho original). Sem isto, um item que entrou em revisão há 10 min aparecia com a idade
+   * do despacho — 3 h — e parecia travado quando não estava.
+   */
+  readonly phaseAgeMin: number | null
   readonly fixRounds: number
   readonly reviewStatus: string | null
   readonly heldFor: string | null
@@ -59,11 +66,11 @@ const minutesBetween = (later: Date, earlier: string | null): number | null => {
   return Number.isFinite(ms) ? Math.max(0, Math.round(ms / 60_000)) : null
 }
 
-const latestReview = (state: DeliveryState): { readonly status: string; readonly attempts: number } | null => {
+const latestReview = (state: DeliveryState): { readonly status: string; readonly attempts: number; readonly at: string } | null => {
   const entries = Object.values(state.reviews)
   if (entries.length === 0) return null
   const latest = entries.reduce((best, item) => (item.at > best.at ? item : best))
-  return { status: latest.status, attempts: latest.attempts }
+  return { status: latest.status, attempts: latest.attempts, at: latest.at }
 }
 
 const phaseOf = (dispatch: DispatchRecordFile | null, delivery: DeliveryState): string => {
@@ -107,6 +114,12 @@ const rowFor = (input: {
 }): DebriefIssueRow => {
   const phase = phaseOf(input.dispatch, input.delivery)
   const review = latestReview(input.delivery)
+  // Review-driven phases begin when the current review was recorded, not when
+  // the worker was originally dispatched. Using dispatchedAt made a fresh
+  // review appear stalled for hours and caused false observer escalations.
+  const phaseStartedAt = phase === 'review-incomplete' || phase === 'fix-round' || phase === 'ready-to-merge'
+    ? review?.at ?? input.dispatch?.dispatchedAt ?? null
+    : input.dispatch?.dispatchedAt ?? null
   return {
     issue: input.issue,
     progress: readOutcomeProgress(input.dispatch?.worktreePath),
@@ -121,6 +134,7 @@ const rowFor = (input: {
     prUrl: prUrl(input.repo, input.delivery.prNumber),
     dispatchedAt: input.dispatch?.dispatchedAt ?? null,
     ageMin: minutesBetween(input.now, input.dispatch?.dispatchedAt ?? null),
+    phaseAgeMin: minutesBetween(input.now, phaseStartedAt),
     fixRounds: input.delivery.fixRounds,
     reviewStatus: review ? `${review.status}×${review.attempts}` : null,
     heldFor: input.delivery.heldFor,
@@ -172,7 +186,10 @@ export const buildDebriefReport = (input: DebriefInput): DebriefReport => {
           pr: null,
           prUrl: null,
           dispatchedAt: null,
+          // Escalado por contrato: não houve despacho, então a idade do "worker" é a do contrato, e a
+          // fase começou no mesmo instante — aqui as duas coincidem por natureza, não por descuido.
           ageMin: minutesBetween(now, contract.generatedAt),
+          phaseAgeMin: minutesBetween(now, contract.generatedAt),
           fixRounds: 0,
           reviewStatus: null,
           heldFor: null,
@@ -238,7 +255,9 @@ export const renderDebriefMarkdown = (report: DebriefReport): string => {
   } else {
     lines.push('## In flight', '')
     for (const row of report.inFlight) {
-      lines.push(`### ${row.issue} — ${row.phase}`)
+      // A fase e o worker têm idades diferentes, e confundi-las já fez um item em revisão há 10 min
+      // parecer travado há horas. A linha da fase conta da fase; a do worker, do despacho.
+      lines.push(`### ${row.issue} — ${row.phase}${row.phaseAgeMin !== null ? ` · ${row.phaseAgeMin} min nesta fase` : ''}`)
       lines.push(`- ${row.summary}`)
       if (row.contractIntent) lines.push(`- Intent: ${row.contractIntent}`)
       if (row.provider) lines.push(`- Worker: \`${row.provider}/${row.model}\`${row.ageMin !== null ? ` · ${row.ageMin} min` : ''}`)

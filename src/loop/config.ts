@@ -80,9 +80,27 @@ export const LoopConfigSchema = z.object({
       owners: z.array(nonEmpty).default([]),
       advanceWhenEmpty: z.boolean().default(true),
     }).prefault({}),
+    /**
+     * Whose queue this machine drains. `person` (default) keeps the historical behaviour: the issues
+     * assigned to `linear.person`. `unassigned` drains the issues with NO assignee and turns the
+     * assignee into a transient claim — written on dispatch, cleared when the item returns — so
+     * several machines can share one priority-ordered queue without colliding.
+     *
+     * Note when switching to `unassigned`: clearing the assignees is then REQUIRED, not cosmetic. With
+     * `person` and an emptied backlog the queue comes back empty and the loop looks healthy while doing
+     * nothing.
+     */
+    queueOwnership: z.enum(['person', 'unassigned']).default('person'),
     states: z.array(nonEmpty).min(1).default(['Todo', 'Ready']),
     excludeLabels: z.array(nonEmpty).default(['blocked', 'needs-info']),
+    /** ALL of these must be on the issue (AND). */
     requireLabels: z.array(nonEmpty).default([]),
+    /**
+     * At least ONE of these must be on the issue (OR) — how a machine declares the slices of the board
+     * it drains, e.g. `[layer:L2, layer:L3]`. `requireLabels` cannot say this: it demands every label on
+     * the same issue, so two layers there match nothing and the queue comes back silently empty.
+     */
+    anyLabels: z.array(nonEmpty).default([]),
     projects: z.array(nonEmpty).default([]),
     order: z.array(z.enum(['priority', 'updatedAt', 'createdAt'])).min(1).default(['priority', 'updatedAt']),
     maxQueue: z.number().int().positive().default(50),
@@ -92,6 +110,52 @@ export const LoopConfigSchema = z.object({
     blockedLabel: nonEmpty.default('blocked'),
     needsInfoLabel: nonEmpty.default('needs-info'),
   }),
+  /**
+   * Suites already red on the base branch, declared so a worker is not asked to pass a verification that
+   * nobody can pass.
+   *
+   * The harness does NOT run `delivery.verifyCommand` — the worker does, in its own worktree, before
+   * opening the PR. So tolerating known breakage cannot be done by parsing output the harness never
+   * sees: it has to be *told* to the worker, which is what this list does.
+   *
+   * Every entry carries the tracking issue on purpose. A quarantine without an owner becomes permanent,
+   * and the worker needs to know the failure is someone else's to avoid "fixing" it inside an unrelated
+   * task.
+   */
+  knownFailures: z
+    .array(
+      z.object({
+        /** Path or suite name as the runner prints it. */
+        path: nonEmpty,
+        /** Tracking issue — no anonymous quarantine. */
+        issue: nonEmpty,
+        /** Why it is red, in one line. */
+        reason: nonEmpty,
+      }),
+    )
+    .default([]),
+  /**
+   * Stricter review for the slices of the board that deserve it, keyed by label.
+   *
+   * The review IS the gate when there is no CI, and not every change carries the same risk: a contract
+   * that freezes evidence and a copy tweak should not be judged with the same budget. First matching
+   * entry wins, and it only overrides the fields it names — everything else falls back to
+   * `delivery.review`.
+   */
+  reviewOverrides: z
+    .array(
+      z.object({
+        /** Matches when the issue carries at least ONE of these labels. */
+        anyLabels: z.array(nonEmpty).min(1),
+        votes: z.number().int().positive().max(5).optional(),
+        minSeverity: z.enum(['nit', 'med', 'high', 'blocker']).optional(),
+        /** Mesmo enum de `delivery.review.profile` — um perfil inventado aqui só falharia no CLI. */
+        profile: z.enum(['fast', 'full']).optional(),
+        /** Why this slice is stricter — read by whoever wonders about the cost. */
+        reason: nonEmpty.optional(),
+      }),
+    )
+    .default([]),
   models: z.object({
     orchestrator: tiers,
     reviewer: tiers,
@@ -279,6 +343,23 @@ export const LoopConfigSchema = z.object({
     categories: z.array(z.enum(['worked', 'problem', 'adjustment', 'other'])).default(['adjustment']),
     shrinkIssueCharsWhenMemory: z.boolean().default(true),
     issueCharsWithMemory: z.number().int().positive().default(4_000),
+    /**
+     * When a lesson stops being an anecdote and starts being a pattern.
+     *
+     * A learning proposed `minSightings` times is surfaced by `loop retro` as ready to promote, with the
+     * exact command — so the human act is one keystroke instead of an analysis, and at most `maxPerRun`
+     * are offered at a time.
+     *
+     * It does NOT promote by itself, and that is deliberate: `promoteLearnings` refuses any actor that is
+     * not human (`HUMAN_APPROVAL_REQUIRED`), which is ADR-0019's attestation rule. Memory is read into
+     * every worker brief, so a wrong lesson promoted without a human is a wrong instruction repeated on
+     * every future task. Removing that gate is an ADR amendment, not a config knob.
+     */
+    recurrence: z.object({
+      /** How many sightings make a lesson a pattern. Below 2 is "it happened once". */
+      minSightings: z.number().int().min(2).max(20).default(2),
+      maxPerRun: z.number().int().positive().max(20).default(3),
+    }).prefault({}),
   }).prefault({}),
   agents: z.object({
     registryPath: nonEmpty.default('agents.registry.yaml'),
@@ -460,6 +541,33 @@ export const renderTuiCommand = (settings: LoopProviderConfig, model: string, ef
   const base = settings.tui.replaceAll('{model}', model)
   const flag = renderEffortFlag(settings, effort)
   return flag ? `${base} ${flag}` : base
+}
+
+/** The review settings in force for one issue — `delivery.review` with any label override applied. */
+export type EffectiveReviewSettings = LoopConfig['delivery']['review'] & { readonly overriddenBy: string | null }
+
+/**
+ * Resolve the review settings for an issue from its labels (`reviewOverrides`).
+ *
+ * First match wins, and only the fields it names are replaced — an override that sets `votes` must not
+ * silently reset the deadline, the transport or the CLI. `overriddenBy` carries the matched label so the
+ * deliver log can say WHY a review cost two votes instead of one; a stricter gate that cannot explain
+ * itself reads as a bug.
+ */
+export const resolveReviewSettings = (config: LoopConfig, labels: readonly string[] = []): EffectiveReviewSettings => {
+  const base = config.delivery.review
+  for (const override of config.reviewOverrides) {
+    const matched = override.anyLabels.find((label) => labels.includes(label))
+    if (matched === undefined) continue
+    return {
+      ...base,
+      ...(override.votes !== undefined ? { votes: override.votes } : {}),
+      ...(override.minSeverity !== undefined ? { minSeverity: override.minSeverity } : {}),
+      ...(override.profile !== undefined ? { profile: override.profile } : {}),
+      overriddenBy: matched,
+    }
+  }
+  return { ...base, overriddenBy: null }
 }
 
 /** Substitute `{model}` / `{prompt}` inside each headless argv element; the prompt stays one argv element, never shell-joined. */

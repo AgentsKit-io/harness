@@ -101,7 +101,8 @@ export { authStatusFor, cooldownUntil, detectProviders, parseProviderUsage, pars
 export type { DetectProvidersInput, ProviderAuthStatus, ProviderAvailability, ProviderSpec, ProviderUsage, UsageWindow } from './adapters/providers.js'
 export { buildListIssuesArgv, fetchLinearQueue, filterAndOrderQueue, parseLinearIssues } from './adapters/linear-orca.js'
 export type { FetchQueueInput, LinearListInput, LinearQueueFilter, LoopIssue } from './adapters/linear-orca.js'
-export { LOOP_CONFIG_FILE, LOOP_CONFIG_SCHEMA_VERSION, LOOP_LOCAL_CONFIG_FILE, LoopConfigSchema, loadLoopConfig, mergeLoopConfig, parseLoopConfigText, parseModelRef, providerIdentity, renderHeadlessArgv, renderTuiCommand, tiersFor, validateLoopConfig } from './loop/config.js'
+export { LOOP_CONFIG_FILE, LOOP_CONFIG_SCHEMA_VERSION, LOOP_LOCAL_CONFIG_FILE, LoopConfigSchema, loadLoopConfig, mergeLoopConfig, parseLoopConfigText, parseModelRef, providerIdentity, renderHeadlessArgv, renderTuiCommand, resolveReviewSettings, tiersFor, validateLoopConfig } from './loop/config.js'
+export type { EffectiveReviewSettings } from './loop/config.js'
 export type { LoadedLoopConfig, LoopConfig, LoopConfigInput, LoopProviderConfig, ModelReference, EffortLevel } from './loop/config.js'
 export { AGENT_REGISTRY_SCHEMA_VERSION, AgentRegistryEntrySchema, AgentRegistrySchema, loadAgentRegistry, parseAgentRegistryText, resolveAgentForRole } from './loop/agent-registry.js'
 export type { AgentRegistry, AgentRegistryEntry, ResolvedAgent } from './loop/agent-registry.js'
@@ -121,7 +122,7 @@ export { countRunningWorkers, providerSpecs, runLoopDoctor } from './loop/doctor
 export type { DoctorCheck, DoctorCheckStatus, LoopDoctorInput, LoopDoctorReport } from './loop/doctor.js'
 export { orcaAutomationCreateArgv, orcaAutomationEditArgv, orcaAutomationRemove, orcaAutomationRun, orcaAutomationRuns, orcaAutomationsList, orcaTerminalCreate, orcaTerminalList, orcaTerminalScreen, orcaTerminalSend, orcaTerminalWait, orcaWorktreeCreate, orcaWorktreeRemove, orcaWorktreeSet, orcaWorktreeSetArgv, parseOrcaAutomations, parseOrcaSendReceipt, parseOrcaTerminals, parseOrcaWorktreeCreate } from './adapters/orca-cli.js'
 export type { OrcaAutomation, OrcaAutomationSpec, OrcaCreatedWorktree, OrcaSendReceipt, OrcaTerminal } from './adapters/orca-cli.js'
-export { createLinearTrackingAdapter, fetchLinearIssue, linearAttach, linearAttachArgv, linearCommentAdd, linearCommentAddArgv, linearLabelAdd, linearLabelArgv, linearLabelRemove, linearStatusSet, linearStatusSetArgv, parseLinearIssueDetail, writeIdFor } from './adapters/linear-orca.js'
+export { createLinearTrackingAdapter, fetchLinearIssue, linearAssigneeClear, linearAssigneeClearArgv, linearAssigneeSet, linearAssigneeSetArgv, linearAttach, linearAttachArgv, linearCommentAdd, linearCommentAddArgv, linearLabelAdd, linearLabelArgv, linearLabelRemove, linearStatusSet, linearStatusSetArgv, parseLinearIssueDetail, queueAssigneeFilter, writeIdFor } from './adapters/linear-orca.js'
 export type { LinearIssueDetail, LinearWriteOptions } from './adapters/linear-orca.js'
 export { PR_FIELDS, assessChecks, githubComment, githubCommentArgv, githubCommentExists, githubLabelRemove, githubMerge, githubMergeArgv, githubOpenPullRequests, githubPullRequest, githubPullRequestsForBranch, parsePullRequest, touchesProtectedPaths } from './adapters/github-cli.js'
 export type { CheckOutcome, ChecksAssessment, GitHubCliOptions, PullRequestCheck, PullRequestSnapshot } from './adapters/github-cli.js'
@@ -159,7 +160,7 @@ export type { LoopEvent, RetroInput, RetroIssueRow, RetroReport, RetroStageRepor
 export {
   createFileMemoryAdapter, createFileMemoryKvStore, learningToMemoryRecord, learningsPath, memoryDigestOf, openLoopMemory,
   planMemoryContext, preferMemoryOverDocBridge, promoteLearningsToMemory, readLearningsLedger, selectMemoryForPrompt,
-  upsertProposedLearnings, writeLearningsLedger,
+  learningsReadyToPromote, upsertProposedLearnings, upsertProposedLearningsDryRun, writeLearningsLedger,
 } from './loop/memory.js'
 export type { LearningsLedger, MemoryContextPlan, MemoryPromptSelection } from './loop/memory.js'
 

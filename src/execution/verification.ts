@@ -192,7 +192,8 @@ export const reconcileRun = async ({ configPath, runId }: { readonly configPath:
   }
   if ((run.state === 'AWAITING_AUTHORIZATION' || run.state === 'COMPLETE') && run.autonomy !== 'yolo') {
     const approval = events.filter((event) => event.type === 'approval.recorded').at(-1) ?? fail('Terminal run is missing its human approval event.', 'HARNESS_ERROR')
-    assertDecisionProjection(run, approval.payload, run.state === 'COMPLETE' && !loaded.config.tracking.required ? 'COMPLETE' : 'AWAITING_AUTHORIZATION')
+    const goalScopedTracking = loaded.config.tracking.required && loaded.config.tracking.authorization !== 'separate'
+    assertDecisionProjection(run, approval.payload, run.state === 'COMPLETE' && (goalScopedTracking || !loaded.config.tracking.required) ? 'COMPLETE' : 'AWAITING_AUTHORIZATION')
     if (!run.humanApproval || run.humanApproval.actor !== 'human' || run.humanApproval.verificationDigest !== run.verificationDigest || run.humanApproval.sourceRevision !== run.sourceRevision || run.humanApproval.contractHash !== run.contractHash) fail('Human approval projection is inconsistent with its audit event.', 'HARNESS_ERROR')
   }
   if (run.state === 'COMPLETE' && loaded.config.tracking.required) {
@@ -208,9 +209,17 @@ export const approveRun = async ({ configPath, runId, decision, actor = 'human' 
   if (run.state !== 'AWAITING_HUMAN_APPROVAL') fail(`Cannot approve from ${run.state}.`, 'INVALID_STATE')
   await assertFresh(loaded, run); assertVerificationAttestation(loaded, run)
   if (!approvedDecision(decision)) { const blocked = transition(run, 'BLOCKED', 'Human rejected the verification result.', 'human') as VerificationRun; saveRun(loaded.stateDir, blocked); recordDecision(loaded, run, 'approval.recorded', { decision: 'rejected', resultingState: blocked.state, verificationDigest: run.verificationDigest!, actor: 'human', sourceRevision: run.sourceRevision, contractHash: run.contractHash }); setLatest(loaded.stateDir, blocked); return blocked }
-  const nextState = loaded.config.tracking.required ? 'AWAITING_AUTHORIZATION' : 'COMPLETE'
-  const next = { ...transition(run, nextState, 'Human approved the verification result.', 'human'), humanApproval: { actor: 'human', at: now(), sourceRevision: run.sourceRevision, contractHash: run.contractHash, verificationDigest: run.verificationDigest } } as VerificationRun
-  saveRun(loaded.stateDir, next); recordDecision(loaded, run, 'approval.recorded', { decision: 'approved', resultingState: nextState, verificationDigest: run.verificationDigest!, actor: 'human', sourceRevision: run.sourceRevision, contractHash: run.contractHash }); setLatest(loaded.stateDir, next); return next
+  const separateTrackingAuthorization = loaded.config.tracking.required && loaded.config.tracking.authorization === 'separate'
+  const nextState = separateTrackingAuthorization ? 'AWAITING_AUTHORIZATION' : 'COMPLETE'
+  const humanApproval = { actor: 'human' as const, at: now(), sourceRevision: run.sourceRevision, contractHash: run.contractHash, verificationDigest: run.verificationDigest }
+  const authorization = loaded.config.tracking.required && !separateTrackingAuthorization
+    ? { actor: 'human' as const, at: humanApproval.at, target: loaded.config.tracking.target!, sourceRevision: run.sourceRevision, contractHash: run.contractHash, verificationDigest: run.verificationDigest }
+    : undefined
+  const next = { ...transition(run, nextState, 'Human approved the verification result and all goal-scoped effects.', 'human'), humanApproval, ...(authorization ? { authorization } : {}) } as VerificationRun
+  saveRun(loaded.stateDir, next)
+  recordDecision(loaded, run, 'approval.recorded', { decision: 'approved', resultingState: nextState, verificationDigest: run.verificationDigest!, actor: 'human', sourceRevision: run.sourceRevision, contractHash: run.contractHash })
+  if (authorization) recordDecision(loaded, run, 'authorization.recorded', { decision: 'approved', resultingState: 'COMPLETE', verificationDigest: run.verificationDigest!, actor: 'human', target: authorization.target, sourceRevision: run.sourceRevision, contractHash: run.contractHash })
+  setLatest(loaded.stateDir, next); return next
 }
 
 export const authorizeRun = async ({ configPath, runId, decision, actor = 'human' }: { readonly configPath: string; readonly runId?: string; readonly decision: string; readonly actor?: string }): Promise<VerificationRun> => {

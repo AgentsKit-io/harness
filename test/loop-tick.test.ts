@@ -1,9 +1,9 @@
-import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
 import {
-  CONTRACT_CLOSE, CONTRACT_OPEN, assessContract, busyIssues, contractIsFresh, createDispatchLedger, isIssuePaused, linearLabelRemove, loadLoopConfig, parseContractOutput, parseLinearIssueDetail, precheckTick, readCliModelsCache, readDispatchRecord, readIssueFailures, readStoredContract, recordIssueFailure, renderContractPrompt, renderWorkerBrief, resumeIssue, runTick, untrusted, worktreeNameFor, writeStoredContract,
+  CONTRACT_CLOSE, CONTRACT_OPEN, assessContract, busyIssues, contractIsFresh, createDispatchLedger, deliveryStatePath, isIssuePaused, linearLabelRemove, loadLoopConfig, parseContractOutput, parseLinearIssueDetail, precheckTick, readCliModelsCache, readDispatchRecord, readDeliveryState, readIssueFailures, readStoredContract, recordIssueFailure, renderContractPrompt, renderWorkerBrief, resumeIssue, runTick, untrusted, worktreeNameFor, writeStoredContract,
 } from '../src/index.js'
 import type { CommandResult, CommandRunner, StoredContract, TaskContract } from '../src/index.js'
 
@@ -19,7 +19,7 @@ interface Env { readonly dir: string; readonly bin: string; readonly runner: Com
 const cleanups: string[] = []
 afterEach(() => { for (const dir of cleanups.splice(0)) rmSync(dir, { recursive: true, force: true }) })
 
-const makeEnv = (options: { readonly contract?: TaskContract | 'garbage'; readonly worktrees?: unknown; readonly failCreate?: boolean; readonly claudeAuthFails?: boolean; readonly claudeSessionLimit?: boolean; readonly failAllContracts?: boolean; readonly accountList?: unknown; readonly briefSkills?: readonly string[]; readonly setup?: { readonly exitCode?: number; readonly timedOut?: boolean }; readonly setupRequired?: boolean; readonly pluginSource?: string; readonly issueDescription?: string; readonly securityPii?: { readonly action?: 'redact' | 'warn' | 'block' }; readonly catalogMode?: boolean } = {}): Env => {
+const makeEnv = (options: { readonly contract?: TaskContract | 'garbage'; readonly worktrees?: unknown; readonly failCreate?: boolean; readonly claudeAuthFails?: boolean; readonly claudeSessionLimit?: boolean; readonly failAllContracts?: boolean; readonly accountList?: unknown; readonly briefSkills?: readonly string[]; readonly setup?: { readonly exitCode?: number; readonly timedOut?: boolean }; readonly setupRequired?: boolean; readonly pluginSource?: string; readonly issueDescription?: string; readonly securityPii?: { readonly action?: 'redact' | 'warn' | 'block' }; readonly catalogMode?: boolean; readonly queueOwnership?: 'person' | 'unassigned'; readonly knownFailures?: readonly { readonly path: string; readonly issue: string; readonly reason: string }[] } = {}): Env => {
   const dir = mkdtempSync(join(tmpdir(), 'agentskit-loop-tick-')); cleanups.push(dir)
   const bin = join(dir, 'bin'); rmSync(bin, { recursive: true, force: true })
   let yaml = options.briefSkills?.length ? exampleYaml.replace('skills: []', `skills: [${options.briefSkills.join(', ')}]`) : exampleYaml
@@ -39,6 +39,17 @@ const makeEnv = (options: { readonly contract?: TaskContract | 'garbage'; readon
     yaml = yaml.replace('modules: []', 'modules: [plugin.mjs]')
   }
   if (options.catalogMode) yaml = yaml.replace('mode: hybrid', 'mode: catalog')
+  if (options.knownFailures?.length) {
+    const block = options.knownFailures
+      .map((entry) => `  - path: ${entry.path}\n    issue: ${entry.issue}\n    reason: ${entry.reason}`)
+      .join('\n')
+    yaml = `${yaml}\nknownFailures:\n${block}\n`
+  }
+  if (options.queueOwnership) {
+    const ownershipLine = '  queueOwnership: person '
+    if (!yaml.includes(ownershipLine)) throw new Error('loop.config.example.yaml queueOwnership line drifted from the test fixture')
+    yaml = yaml.replace(ownershipLine, `  queueOwnership: ${options.queueOwnership} `)
+  }
   writeFileSync(join(dir, 'loop.config.yaml'), yaml)
   const binDir = mkdtempSync(join(tmpdir(), 'agentskit-loop-tick-bin-')); cleanups.push(binDir)
   for (const name of ['claude', 'codex', 'opencode', 'grok']) writeFileSync(join(binDir, name), '#!/bin/sh\nexit 0\n', { mode: 0o755 })
@@ -83,7 +94,7 @@ const makeEnv = (options: { readonly contract?: TaskContract | 'garbage'; readon
       if (key.startsWith('orca worktree rm')) return okResult({ removed: true })
       if (argv[0] === 'setup-check') return { code: options.setup?.exitCode ?? 0, stdout: 'installed', stderr: options.setup?.exitCode ? 'boom' : '', timedOut: options.setup?.timedOut ?? false, durationMs: 5 }
       if (key.startsWith('orca worktree create')) return options.failCreate ? { code: 1, stdout: JSON.stringify({ ok: false, error: { message: 'repo busy' } }), stderr: '', timedOut: false, durationMs: 1 } : okResult({ worktreeId: `repo-1::${dir}/w/${argv[argv.indexOf('--name') + 1]}`, path: `${dir}/w`, branch: `refs/heads/gituser/${argv[argv.indexOf('--name') + 1]}`, agentTerminalHandle: 'term_new' })
-      if (key.startsWith('orca linear status set') || key.startsWith('orca linear comment add') || key.startsWith('orca linear label add')) return okResult({ ok: true })
+      if (key.startsWith('orca linear status set') || key.startsWith('orca linear comment add') || key.startsWith('orca linear label add') || key.startsWith('orca linear assignee set') || key.startsWith('orca linear assignee clear')) return okResult({ ok: true })
       return { code: 127, stdout: '', stderr: `no fixture for ${key}`, timedOut: false, durationMs: 1 }
     },
   }
@@ -133,6 +144,30 @@ describe('contract', () => {
     const brief = renderWorkerBrief({ issue, contract: stored, config: loaded.config, branch: 'person/eng-10-demo', provider: 'claude', model: 'sonnet' })
     for (const needle of ['ENG-10', 'person/eng-10-demo', loaded.config.delivery.verifyCommand, 'pnpm --filter demo test', 'Loop-Contract: abcdef123456ffff', 'loop.config.yaml', 'LOOP_WORKER_DONE ENG-10', 'workspace-status in-review', '<untrusted source="linear:ENG-10">']) expect(brief).toContain(needle)
     expect(brief).not.toContain('--dangerously')
+    // Sem `knownFailures` declarado, a seção não existe — nada de cabeçalho vazio convidando o worker a
+    // achar que alguma falha é tolerável.
+    expect(brief).not.toContain('Já vermelho na base')
+  })
+
+  // O harness NÃO roda o `verifyCommand` — o worker roda, na worktree dele. Então tolerar suíte já
+  // vermelha na base não é parsing de saída (o harness nunca a vê): é informação no briefing. Sem isto o
+  // worker reprova por defeito alheio, ou conserta algo fora do contrato para a verificação passar.
+  it('tells the worker which suites are already red on the base, with the tracking issue', () => {
+    const env = makeEnv({
+      knownFailures: [
+        { path: 'packages/os-headless/tests/property/file-secret-store-race.property.test.ts', issue: 'AGE-1757', reason: 'escrita paralela perde chaves' },
+      ],
+    })
+    const loaded = loadLoopConfig(env.configPath)
+    const issue = parseLinearIssueDetail({ issue: (fixture('list-issues-todo') as { result: { issues: unknown[] } }).result.issues[0], comments: [] })
+    const stored: StoredContract = { schemaVersion: 1, issue: issue.identifier, issueUpdatedAt: issue.updatedAt, generatedAt: 'now', provider: 'codex', model: 'gpt-5.6-sol', contract: goodContract, digest: 'abcdef123456ffff', assessment: assessContract(goodContract), source: 'llm' }
+    const brief = renderWorkerBrief({ issue, contract: stored, config: loaded.config, branch: 'person/eng-10-demo', provider: 'claude', model: 'sonnet' })
+    expect(brief).toContain('Já vermelho na base')
+    expect(brief).toContain('file-secret-store-race.property.test.ts')
+    // A issue de rastreamento viaja junto: quarentena sem dono vira permanente.
+    expect(brief).toContain('AGE-1757')
+    // E a regra 3 passa a admitir a exceção, em vez de exigir o impossível.
+    expect(brief).toContain('except the suites listed under "Já vermelho na base"')
   })
 
   it('redacts, warns on, or blocks PII-shaped issue text in the worker brief when security.pii is enabled', () => {
@@ -189,6 +224,9 @@ describe('tick', () => {
 
   it('dispatches into a worktree, records the lease, moves Linear, and never double-dispatches', async () => {
     const env = makeEnv()
+    const initial = loadLoopConfig(env.configPath)
+    mkdirSync(join(initial.stateDir, 'issues', 'ENG-10'), { recursive: true })
+    writeFileSync(deliveryStatePath(initial.stateDir, 'ENG-10'), JSON.stringify({ issue: 'ENG-10', prNumber: 6147, reviews: { stale: { status: 'findings', at: 'old', provider: 'claude', model: 'sonnet', blocking: 1, attempts: 1 } }, fixRounds: 2, nudges: [{ kind: 'review', at: 'old', head: 'old' }], handoffs: [], heldFor: null, finishedAt: 'old', finalOutcome: 'stuck' }))
     const first = await runTick({ ...tickOptions(env), maxDispatch: 1 })
     expect(first.status).toBe('ok')
     const [result] = first.results
@@ -198,6 +236,7 @@ describe('tick', () => {
     expect(ledger.active()).toHaveLength(1)
     expect(ledger.active()[0]?.issue).toBe(result?.issue)
     expect(readDispatchRecord(loaded.stateDir, result?.issue ?? '')).toMatchObject({ worktreeId: expect.stringContaining('repo-1::'), provider: 'claude', model: 'sonnet', branch: expect.stringMatching(/^gituser\//) })
+    expect(readDeliveryState(loaded.stateDir, 'ENG-10')).toMatchObject({ issue: 'ENG-10', prNumber: null, reviews: {}, fixRounds: 0, nudges: [], finishedAt: null, finalOutcome: null })
     expect(result?.branch).toMatch(/^gituser\//)
     expect(readStoredContract(loaded.stateDir, result?.issue ?? '')?.assessment.dispatchable).toBe(true)
     const statusCall = env.runner.calls.find((argv) => argv[1] === 'linear' && argv[2] === 'status')
@@ -221,6 +260,29 @@ describe('tick', () => {
     expect(second.queue.busy).toContain(result?.issue)
     expect(env.runner.calls.filter((argv) => argv[1] === 'worktree' && argv[2] === 'create')).toHaveLength(2)
     expect(env.runner.calls.filter((argv) => argv[0] === 'claude' && argv[1] === '-p')).toHaveLength(2)
+  })
+
+  // Under `queueOwnership: 'unassigned'` the assignee is a claim, not ownership. What makes it safe is the
+  // ORDER: the worker exists before the claim is written, so a dispatch that dies half-way never leaves an
+  // issue assigned to a worker that was never started.
+  it('claims the issue for this machine only after the dispatch succeeded', async () => {
+    const env = makeEnv({ queueOwnership: 'unassigned' })
+    const report = await runTick({ ...tickOptions(env), maxDispatch: 1 })
+    expect(report.results[0]?.outcome).toBe('dispatched')
+    const claim = env.runner.calls.find((argv) => argv[1] === 'linear' && argv[2] === 'assignee' && argv[3] === 'set')
+    expect(claim?.[claim.indexOf('--assignee') + 1]).toBe(loadLoopConfig(env.configPath).config.linear.person)
+    const claimAt = env.runner.calls.findIndex((argv) => argv[1] === 'linear' && argv[2] === 'assignee')
+    const terminalAt = env.runner.calls.findIndex((argv) => argv[1] === 'terminal' && argv[2] === 'create')
+    expect(terminalAt).toBeGreaterThanOrEqual(0)
+    expect(claimAt).toBeGreaterThan(terminalAt)
+    // The status move must still happen: it is what actually takes the issue out of the queue.
+    expect(env.runner.calls.some((argv) => argv[1] === 'linear' && argv[2] === 'status')).toBe(true)
+  })
+
+  it('never writes an assignee under person ownership — there the assignee is the filter', async () => {
+    const env = makeEnv()
+    await runTick({ ...tickOptions(env), maxDispatch: 1 })
+    expect(env.runner.calls.some((argv) => argv[1] === 'linear' && argv[2] === 'assignee')).toBe(false)
   })
 
   it('resolves the catalog for every role once per tick, and never re-spawns the CLI on a second tick within the cache TTL', async () => {

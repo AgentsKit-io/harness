@@ -6,7 +6,7 @@ import { renderContractPrompt, resolveDocContext } from '../src/loop/contract.js
 import { renderWorkerBrief } from '../src/loop/brief.js'
 import {
   createFileMemoryAdapter, learningToMemoryRecord, planMemoryContext, preferMemoryOverDocBridge,
-  promoteLearningsToMemory, selectMemoryForPrompt, upsertProposedLearnings,
+  learningsReadyToPromote, promoteLearningsToMemory, selectMemoryForPrompt, upsertProposedLearnings,
 } from '../src/loop/memory.js'
 import { LoopConfigSchema } from '../src/loop/config.js'
 import type { LearningRecord } from '../src/kernel/learning.js'
@@ -164,6 +164,15 @@ describe('loop memory', () => {
       recordedAt: '2026-09-11T00:00:00Z',
     }
     upsertProposedLearnings(stateDir, [proposed])
+    // Reaparecer conta. O id é derivado do conteúdo, então antes disto uma lição recorrente era
+    // deduplicada em silêncio e um padrão ficava indistinguível de um acaso.
+    const twice = upsertProposedLearnings(stateDir, [proposed])
+    expect(twice.records.find((record) => record.id === 'L-abc')?.sightings).toBe(2)
+    // Visto 2× e na categoria configurada ⇒ oferecido para promoção humana.
+    expect(learningsReadyToPromote(twice, baseConfig()).map((record) => record.id)).toEqual(['L-abc'])
+    // Uma só aparição não é padrão.
+    const single = upsertProposedLearnings(stateDir, [{ ...proposed, id: 'L-one', text: 'aconteceu uma vez' }])
+    expect(learningsReadyToPromote(single, baseConfig()).map((record) => record.id)).not.toContain('L-one')
     const adapter = createFileMemoryAdapter(join(stateDir, 'memory'))
     await expect(promoteLearningsToMemory({
       stateDir,

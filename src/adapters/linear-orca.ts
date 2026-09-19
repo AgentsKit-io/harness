@@ -25,11 +25,42 @@ export interface LoopIssue {
 export interface LinearQueueFilter {
   readonly states: readonly string[]
   readonly excludeLabels: readonly string[]
+  /** Every one of these must be present on the issue (AND). Empty = no constraint. */
   readonly requireLabels: readonly string[]
+  /**
+   * At least ONE of these must be present (OR). Empty or absent = no constraint.
+   *
+   * This is what lets a machine declare the slices of the board it drains — `layer:L2` or `layer:L3` —
+   * which `requireLabels` cannot express: it demands all of them on the same issue, so listing two
+   * layers matches nothing at all. A queue that silently returns zero is the worst failure mode this
+   * loop has, because it is indistinguishable from "no work to do".
+   *
+   * Optional on purpose: the config schema always supplies it, and a caller that builds the filter by
+   * hand keeps working untouched. A new field on a published type should not crash an existing consumer.
+   */
+  readonly anyLabels?: readonly string[]
   readonly projects: readonly string[]
   readonly order: readonly ('priority' | 'updatedAt' | 'createdAt')[]
   readonly maxQueue: number
+  /**
+   * Whose queue this is.
+   *
+   * `person` (the default, and the only historical behaviour) drains the issues ASSIGNED to
+   * `linear.person`: the assignee is ownership, and an issue nobody owns is invisible.
+   *
+   * `unassigned` inverts that: the queue is the issues with NO assignee, ordered by priority, and the
+   * assignee becomes a TRANSIENT CLAIM — the loop writes it when it dispatches and clears it when the
+   * item comes back. That is what lets several machines drain one queue without two of them picking the
+   * same issue, and it is why an unowned issue is the normal state rather than a lost one.
+   *
+   * Absent reads as `person`, so a caller that builds the filter by hand keeps the historical behaviour.
+   */
+  readonly queueOwnership?: 'person' | 'unassigned'
 }
+
+/** The `--assignee` value the queue is listed with. `null` is Orca's literal for "unassigned". */
+export const queueAssigneeFilter = (filter: Pick<LinearQueueFilter, 'queueOwnership'>, person: string): string =>
+  filter.queueOwnership === 'unassigned' ? 'null' : person
 
 export interface LinearListInput {
   readonly bin?: string
@@ -84,6 +115,11 @@ export const filterAndOrderQueue = (issues: readonly LoopIssue[], filter: Linear
     if (!states.has(issue.state)) return false
     if (issue.labels.some((label) => exclude.has(label))) return false
     if (filter.requireLabels.length && !filter.requireLabels.every((label) => issue.labels.includes(label))) return false
+    // OR, and deliberately a separate field from `requireLabels`: a machine declaring the layers it
+    // drains needs "any of these", and folding both meanings into one list would make it impossible to
+    // say "layer:L2 or layer:L3, and always type:fix".
+    const anyLabels = filter.anyLabels ?? []
+    if (anyLabels.length && !anyLabels.some((label) => issue.labels.includes(label))) return false
     if (filter.projects.length && (!issue.project || !filter.projects.includes(issue.project))) return false
     return true
   })
@@ -105,7 +141,10 @@ export interface FetchQueueInput extends Omit<LinearListInput, 'state' | 'limit'
 
 /** One `list-issues` call per configured state (Orca keeps only the last repeated `--state`), then filter/order locally. */
 export const fetchLinearQueue = async (runner: CommandRunner, input: FetchQueueInput): Promise<readonly LoopIssue[]> => {
-  const pages = await Promise.all(input.filter.states.map(async (state) => parseLinearIssues(await orcaJson(runner, buildListIssuesArgv({ workspaceId: input.workspaceId, teamKey: input.teamKey, assignee: input.assignee, state, limit: input.pageLimit ?? 200 }).slice(1), { ...input.orca, ...(input.bin ? { bin: input.bin } : {}) }))))
+  // The queue's `--assignee` is NOT always the person: under `queueOwnership: 'unassigned'` it is
+  // Orca's literal `null`, because there the assignee is a claim the loop writes, not the filter.
+  const assignee = queueAssigneeFilter(input.filter, input.assignee)
+  const pages = await Promise.all(input.filter.states.map(async (state) => parseLinearIssues(await orcaJson(runner, buildListIssuesArgv({ workspaceId: input.workspaceId, teamKey: input.teamKey, assignee, state, limit: input.pageLimit ?? 200 }).slice(1), { ...input.orca, ...(input.bin ? { bin: input.bin } : {}) }))))
   return filterAndOrderQueue(pages.flat(), input.filter)
 }
 
@@ -141,6 +180,9 @@ export const writeIdFor = (key: string): string => {
   return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-4${hex.slice(13, 16)}-${((Number.parseInt(hex.slice(16, 17), 16) & 0x3) | 0x8).toString(16)}${hex.slice(17, 20)}-${hex.slice(20, 32)}`
 }
 
+export const linearAssigneeSetArgv = (input: { readonly issue: string; readonly assignee: string; readonly workspaceId: string }, bin = 'orca'): readonly string[] => [bin, 'linear', 'assignee', 'set', input.issue, '--assignee', input.assignee, '--workspace', input.workspaceId, '--json']
+export const linearAssigneeClearArgv = (input: { readonly issue: string; readonly workspaceId: string }, bin = 'orca'): readonly string[] => [bin, 'linear', 'assignee', 'clear', input.issue, '--workspace', input.workspaceId, '--json']
+
 export const linearStatusSetArgv = (input: { readonly issue: string; readonly to: string; readonly workspaceId: string }, bin = 'orca'): readonly string[] => [bin, 'linear', 'status', 'set', input.issue, '--to', input.to, '--workspace', input.workspaceId, '--json']
 export const linearCommentAddArgv = (input: { readonly issue: string; readonly body: string; readonly workspaceId: string; readonly writeId?: string }, bin = 'orca'): readonly string[] => [bin, 'linear', 'comment', 'add', input.issue, '--body', input.body, '--workspace', input.workspaceId, ...(input.writeId ? ['--write-id', input.writeId] : []), '--json']
 export const linearLabelArgv = (input: { readonly issue: string; readonly labels: readonly string[]; readonly workspaceId: string; readonly action: 'add' | 'remove' }, bin = 'orca'): readonly string[] => [bin, 'linear', 'label', input.action, input.issue, ...input.labels.flatMap((label) => ['--label', label]), '--workspace', input.workspaceId, '--json']
@@ -148,6 +190,15 @@ export const linearAttachArgv = (input: { readonly issue: string; readonly url: 
 
 export const linearStatusSet = async (runner: CommandRunner, input: { readonly issue: string; readonly to: string }, options: LinearWriteOptions): Promise<unknown> => orcaJson(runner, linearStatusSetArgv({ ...input, workspaceId: options.workspaceId }).slice(1), scoped(options))
 export const linearCommentAdd = async (runner: CommandRunner, input: { readonly issue: string; readonly body: string; readonly dedupeKey?: string }, options: LinearWriteOptions): Promise<unknown> => orcaJson(runner, linearCommentAddArgv({ issue: input.issue, body: input.body, workspaceId: options.workspaceId, ...(input.dedupeKey ? { writeId: writeIdFor(input.dedupeKey) } : {}) }).slice(1), scoped(options))
+/**
+ * Claim an issue for this machine. Under `queueOwnership: 'unassigned'` this is what takes the issue
+ * OUT of every other machine's queue, so it runs right after the dispatch succeeds — never before, or a
+ * failed dispatch would leave the item claimed by nobody's worker.
+ */
+export const linearAssigneeSet = async (runner: CommandRunner, input: { readonly issue: string; readonly assignee: string }, options: LinearWriteOptions): Promise<unknown> => orcaJson(runner, linearAssigneeSetArgv({ ...input, workspaceId: options.workspaceId }).slice(1), scoped(options))
+/** Release the claim, putting the issue back in the unassigned queue. Pairs with `linearAssigneeSet`. */
+export const linearAssigneeClear = async (runner: CommandRunner, input: { readonly issue: string }, options: LinearWriteOptions): Promise<unknown> => orcaJson(runner, linearAssigneeClearArgv({ ...input, workspaceId: options.workspaceId }).slice(1), scoped(options))
+
 export const linearLabelAdd = async (runner: CommandRunner, input: { readonly issue: string; readonly labels: readonly string[] }, options: LinearWriteOptions): Promise<unknown> => orcaJson(runner, linearLabelArgv({ ...input, action: 'add', workspaceId: options.workspaceId }).slice(1), scoped(options))
 export const linearLabelRemove = async (runner: CommandRunner, input: { readonly issue: string; readonly labels: readonly string[] }, options: LinearWriteOptions): Promise<unknown> => orcaJson(runner, linearLabelArgv({ ...input, action: 'remove', workspaceId: options.workspaceId }).slice(1), scoped(options))
 export const linearAttach = async (runner: CommandRunner, input: { readonly issue: string; readonly url: string; readonly title?: string; readonly dedupeKey?: string }, options: LinearWriteOptions): Promise<unknown> => orcaJson(runner, linearAttachArgv({ issue: input.issue, url: input.url, ...(input.title ? { title: input.title } : {}), workspaceId: options.workspaceId, ...(input.dedupeKey ? { writeId: writeIdFor(input.dedupeKey) } : {}) }).slice(1), scoped(options))

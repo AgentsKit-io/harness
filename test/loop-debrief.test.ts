@@ -132,4 +132,16 @@ describe('loop debrief', () => {
     expect(md).toContain('## Recent escalations')
     expect(md).toContain('## Recent events')
   })
+
+  it('ages review phases from the current review instead of the original dispatch', () => {
+    const env = setup()
+    env.issue('ENG-3', {
+      'dispatch.json': { issue: 'ENG-3', worktreeId: 'w', worktree: 'eng-3', branch: 'u/eng-3', terminal: 't', provider: 'claude', model: 'sonnet', contractDigest: 'd', leaseKey: 'k', leaseId: 'l', dispatchedAt: '2026-09-12T08:00:00.000Z', url: 'https://linear.app/x/ENG-3' },
+      'delivery.json': { issue: 'ENG-3', prNumber: 10, reviews: { aaa: { status: 'incomplete', at: '2026-09-12T11:50:00.000Z', provider: 'claude-cli', model: 'opus', blocking: 0, attempts: 1 } }, fixRounds: 0, nudges: [], heldFor: null, finishedAt: null, finalOutcome: null },
+    })
+    const report = buildDebriefReport({ loaded: env.loaded, now: () => NOW })
+    // `phaseAgeMin` conta da revisão corrente (10 min); `ageMin` segue contando do despacho (4 h),
+    // porque a linha do worker responde "há quanto tempo este worker está nisto".
+    expect(report.inFlight[0]).toMatchObject({ phase: 'review-incomplete', phaseAgeMin: 10, ageMin: 240 })
+  })
 })

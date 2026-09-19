@@ -53,6 +53,8 @@ export interface TrackingConfig {
   readonly required: boolean
   readonly target?: string
   readonly reason?: string
+  /** Goal approval covers tracking unless a project explicitly opts out. */
+  readonly authorization?: 'goal' | 'separate'
 }
 
 export interface BenchmarkBinding {

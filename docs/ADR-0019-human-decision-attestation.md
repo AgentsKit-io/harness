@@ -13,7 +13,10 @@ Record `approval.recorded` and `authorization.recorded` events in the existing
 hash-chained lifecycle log. Each event contains the decision, resulting state,
 verification digest, source revision, contract hash, and human actor; tracking
 authorization also contains its declared target. Rejections are recorded too,
-so every human terminal decision is auditable.
+so every human terminal decision is auditable. The default tracking mode is
+goal-scoped: one human approval covers the declared tracking effect and emits
+both events. A project may set `tracking.authorization: "separate"` when an
+independent tracking decision is required.
 
 The existing freshness and verification-attestation checks run before either
 decision is accepted. The `run.json` fields remain a convenient projection,
@@ -22,6 +25,8 @@ but the event is the audit record.
 ## Consequences
 
 Consumers can independently prove which verified result was approved and which
-external tracking target was authorized. Legacy logs remain readable and are
-reported as legacy until they contain the new hashed event protocol. This is an
-audit attestation, not a digital signature or external notarization.
+external tracking target was authorized. Humans do not need to copy a run ID or
+digest: approval commands resolve the latest pending run, while the identifiers
+remain in the audit record. Legacy logs remain readable and are reported as
+legacy until they contain the new hashed event protocol. This is an audit
+attestation, not a digital signature or external notarization.
