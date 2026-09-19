@@ -140,6 +140,8 @@ describe('loop debrief', () => {
       'delivery.json': { issue: 'ENG-3', prNumber: 10, reviews: { aaa: { status: 'incomplete', at: '2026-09-12T11:50:00.000Z', provider: 'claude-cli', model: 'opus', blocking: 0, attempts: 1 } }, fixRounds: 0, nudges: [], heldFor: null, finishedAt: null, finalOutcome: null },
     })
     const report = buildDebriefReport({ loaded: env.loaded, now: () => NOW })
-    expect(report.inFlight[0]).toMatchObject({ phase: 'review-incomplete', ageMin: 10 })
+    // `phaseAgeMin` conta da revisão corrente (10 min); `ageMin` segue contando do despacho (4 h),
+    // porque a linha do worker responde "há quanto tempo este worker está nisto".
+    expect(report.inFlight[0]).toMatchObject({ phase: 'review-incomplete', phaseAgeMin: 10, ageMin: 240 })
   })
 })

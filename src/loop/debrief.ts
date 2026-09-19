@@ -29,7 +29,14 @@ export interface DebriefIssueRow {
   readonly pr: number | null
   readonly prUrl: string | null
   readonly dispatchedAt: string | null
+  /** Quanto tempo o worker está no item, contado do despacho. É a idade do worker, não da fase. */
   readonly ageMin: number | null
+  /**
+   * Quanto tempo o item está **nesta fase**, contado do evento que a começou (a revisão corrente, e
+   * não o despacho original). Sem isto, um item que entrou em revisão há 10 min aparecia com a idade
+   * do despacho — 3 h — e parecia travado quando não estava.
+   */
+  readonly phaseAgeMin: number | null
   readonly fixRounds: number
   readonly reviewStatus: string | null
   readonly heldFor: string | null
@@ -126,7 +133,8 @@ const rowFor = (input: {
     pr: input.delivery.prNumber,
     prUrl: prUrl(input.repo, input.delivery.prNumber),
     dispatchedAt: input.dispatch?.dispatchedAt ?? null,
-    ageMin: minutesBetween(input.now, phaseStartedAt),
+    ageMin: minutesBetween(input.now, input.dispatch?.dispatchedAt ?? null),
+    phaseAgeMin: minutesBetween(input.now, phaseStartedAt),
     fixRounds: input.delivery.fixRounds,
     reviewStatus: review ? `${review.status}×${review.attempts}` : null,
     heldFor: input.delivery.heldFor,
@@ -178,7 +186,10 @@ export const buildDebriefReport = (input: DebriefInput): DebriefReport => {
           pr: null,
           prUrl: null,
           dispatchedAt: null,
+          // Escalado por contrato: não houve despacho, então a idade do "worker" é a do contrato, e a
+          // fase começou no mesmo instante — aqui as duas coincidem por natureza, não por descuido.
           ageMin: minutesBetween(now, contract.generatedAt),
+          phaseAgeMin: minutesBetween(now, contract.generatedAt),
           fixRounds: 0,
           reviewStatus: null,
           heldFor: null,
@@ -244,7 +255,9 @@ export const renderDebriefMarkdown = (report: DebriefReport): string => {
   } else {
     lines.push('## In flight', '')
     for (const row of report.inFlight) {
-      lines.push(`### ${row.issue} — ${row.phase}`)
+      // A fase e o worker têm idades diferentes, e confundi-las já fez um item em revisão há 10 min
+      // parecer travado há horas. A linha da fase conta da fase; a do worker, do despacho.
+      lines.push(`### ${row.issue} — ${row.phase}${row.phaseAgeMin !== null ? ` · ${row.phaseAgeMin} min nesta fase` : ''}`)
       lines.push(`- ${row.summary}`)
       if (row.contractIntent) lines.push(`- Intent: ${row.contractIntent}`)
       if (row.provider) lines.push(`- Worker: \`${row.provider}/${row.model}\`${row.ageMin !== null ? ` · ${row.ageMin} min` : ''}`)
