@@ -4,6 +4,12 @@
 rodada, com a **0.14.0** como ponto de partida medido: 26 forks, 7 assunções declaradas, 12 passos de
 construção. Tudo aqui foi resposta direta, não inferência.
 
+> **Estado em 2026-09-20:** os 12 passos estão implementados em `main` (não publicados). O que ficou de
+> fora está dito onde cai: as alavancas de custo 1 (prefixo estável de cache) e 4 (contexto pinado por
+> digest) não foram feitas — são trabalho de forma de prompt — e o lead com subagentes continua dentro da
+> sessão do worker, como a restrição de 13/09 obriga. A §6 abaixo foi atualizada; o CHANGELOG tem o
+> detalhe por passo.
+
 Escopo: **este repositório**. Onde o texto cita um projeto consumidor, é exemplo — o primeiro consumidor
 é o `agentskit-os`, que carrega o `loop.config.yaml`, as labels de camada no tracker e as issues de
 processo. Nada aqui é trabalho no repositório do consumidor.
@@ -171,49 +177,55 @@ Nuvem (sandbox remoto) fica como terceira, depois.
 | Overlay local por máquina | existe |
 | 8 hooks de plugin (`onEscalate` incluso) | existe |
 | Adapter de tracking (Linear) e de SCM (GitHub) acoplados | existe, **sem interface formal** |
-| Memória com recorrência | existe; promoção auto = **código pendente** (ADR emendada) |
-| **`plan`** (entrevista → plano → decomposição, máquina de estados, driver terminal + app) | **novo** |
-| **Pipeline de papéis no worker** (planner, votação 2/3, lead+subagentes, verify, dod) | **novo** |
-| **DoD de projeto** + prova no corpo da PR | **novo** |
-| **`release`** com gate humano e deploy declarado | **novo** |
-| **Global do usuário** (`~/.agentskit/harness.yaml`) + camada de team | **novo** |
-| **Canal de escalação** via `onEscalate` lendo o global | **novo** (o hook existe; o plugin não) |
-| **Knobs auto-ajustáveis** com intervalo, commit e reversão | **novo** |
-| **Interfaces `TrackerConnector` / `ScmConnector`** | **novo** (extrair do que existe) |
+| Memória com recorrência | existe; promoção auto **feita** (passo 3): `memory.autoPromote`, ator `loop-auto` |
+| **`plan`** (entrevista → plano → decomposição, máquina de estados, driver terminal) | **feito** (passo 6) |
+| **Pipeline de papéis no worker** (planner, votação 2/3, verify, dod) | **feito** (passo 5); lead+subagentes seguem dentro da sessão do worker |
+| **DoD de projeto** + prova no corpo da PR | **feito** (passo 4) |
+| **`release`** com gate humano e deploy declarado | **feito** (passo 7) |
+| **Global do usuário** (`~/.agentskit/harness.yaml`) + camada de team | **feito** (passo 2) |
+| **Canal de escalação** via `onEscalate` lendo o global | **feito** (passo 2): `notifications.webhook` + `notifications.command` |
+| **Knobs auto-ajustáveis** com intervalo, commit e reversão | **feito** (passo 3): `tuning` |
+| **Interfaces `TrackerConnector` / `ScmConnector`** | **feito** (passo 8); tick e deliver escrevem só pela interface |
 | CI babysitting (checks vermelhos → fix round) | existe; vira interruptor de perfil |
-| **`plan.architect`** (desenho de sistema votado + aprovado) | **novo** |
-| **Perfis `flows:` + regra de seleção por issue** | **novo** |
-| **`loop install` idempotente + shim no Orca + `loop stage observe`** | `install` existe; reconciliação, shim e observe são **novos** |
-| **`RunnerConnector` + runner `local`** | **novo** (extrair do Orca, depois tmux) |
+| **`plan.architect`** (desenho de sistema votado + aprovado) | **feito** (passo 6) |
+| **Perfis `flows:` + regra de seleção por issue** | **feito** (passo 2) |
+| **`loop install` idempotente + shim no Orca + `loop stage observe`** | **feito** (passo 1) |
+| **`RunnerConnector` + runner `local`** | **feito** (passo 8): Orca + git worktree/tmux/crontab |
 | Failover de provedor, cooldown, tiers, `maxUsageDeltaPercent`, esforço por papel | existe |
 | Bateria de eval de agentes (`runEvalBattery`, `runAgentEval`) | existe; vira o gate de melhoria de agente |
 | `guided-install` | existe; vira `loop init` grelhado |
 | `agents.registry.yaml` (papel → provedor/modelo) | existe; passa a mapear papel → agente do registry em `agents/<id>/` |
-| **Presets por tipo de projeto + override por stage/papel/perfil** | **novo** |
-| **Melhoria de agente por diff + eval + reversão** | **novo** (em cima da eval existente) |
-| **`routing.policy` + `budget.perProvider` / `budget.perIssue`** | **novo** |
-| **Quatro alavancas de custo** | **novo** (prefixo estável, verificador barato, modelo por tamanho, contexto por digest) |
-| **`intake`**, **`maintain`**, release notes + rollback em `release` | **novo** |
+| **Presets por tipo de projeto** | **feito** (passo 10): 5 presets + `extends` + `loop init` grelhado |
+| **Melhoria de agente por nota + eval + reversão** | **feito** (passo 11): `agents.autoImprove`, papéis críticos ficam com humano |
+| **`routing.policy` + `budget.perProvider` / `budget.perIssueTokens`** | **feito** (passo 9) |
+| **Quatro alavancas de custo** | **2 de 4** (passo 9): verificador barato e modelo por tamanho feitos; prefixo estável e contexto por digest **não** |
+| **`intake`**, **`maintain`**, release notes + rollback em `release` | **feito** (passos 7 e 12) |
 
-## 7. Ordem de construção (cada passo deixa o loop funcionando)
-1. **Automações reconciliadas + shim + `loop stage observe`** — corrige a raiz do defeito de hoje e faz
+## 7. Ordem de construção (cada passo deixa o loop funcionando) — **todos implementados em 2026-09-20**
+1. **[feito]** **Automações reconciliadas + shim + `loop stage observe`** — corrige a raiz do defeito de hoje e faz
    o loop atual rodar de forma reproduzível. Só motor.
-2. **Global + team** na config, **perfis `flows:`** e **canal de escalação** — configurável por pessoa,
+2. **[feito]** **Global + team** na config, **perfis `flows:`** e **canal de escalação** — configurável por pessoa,
    projeto e tipo de demanda, e passa a chamar humano.
-3. **Promoção de memória `loop-auto`** (ADR já emendada) e **knobs auto-ajustáveis** — o retro melhora
+3. **[feito]** **Promoção de memória `loop-auto`** (ADR já emendada) e **knobs auto-ajustáveis** — o retro melhora
    o loop sozinho.
-4. **DoD de projeto + prova na PR** — o deliver exige as duas listas.
-5. **Pipeline de papéis no worker** — planner → votação → lead → verify, opcional por perfil; default
-   `builder → review`.
-6. **`plan`** com **architect** — requisitos e desenho, driver terminal primeiro, app depois.
-7. **`release`** — promoção + deploy com aprovação.
-8. **`RunnerConnector` + runner local** e **`TrackerConnector`/`ScmConnector`** — extrair as interfaces
-   do que existe e provar cada uma com a segunda implementação.
-9. **Custo e uso**: as quatro alavancas, `routing.policy` e os dois tetos — cada uma mede antes/depois no
-   retro. Entram cedo se o gasto do passo 5 (votação) exigir.
-10. **Presets por tipo + `loop init` grelhado** — quando houver o segundo projeto usando o motor.
-11. **Papéis como agentes do registry + melhoria por diff/eval** — depois de os papéis existirem (5).
-12. **`intake`**, **`maintain`**, notes e rollback em `release` — fecham o ciclo; dependem de 7.
+4. **[feito]** **DoD de projeto + prova na PR** — o deliver exige as duas listas.
+5. **[feito, parcial]** **Pipeline de papéis no worker** — planner → votação → verify, opcional por perfil; default
+   `builder → review`. O **lead com subagentes continua dentro da sessão do worker**, como a restrição de 13/09
+   obriga: o harness orquestra as fases, não os subagentes.
+6. **[feito]** **`plan`** com **architect** — requisitos e desenho, driver terminal. O app ainda não.
+7. **[feito]** **`release`** — promoção + deploy com aprovação.
+8. **[feito]** **`RunnerConnector` + runner local** e **`TrackerConnector`/`ScmConnector`** — extrair as interfaces
+   do que existe e provar cada uma com a segunda implementação. `tick` e `deliver` só escrevem pelo tracker;
+   o runner `local` (git worktree + tmux + crontab) é a segunda implementação que torna a interface honesta.
+9. **[feito, 2 das 4 alavancas]** **Custo e uso**: `routing.policy` e os dois tetos estão de pé; das alavancas,
+   **verificador barato antes do modelo** e **modelo por tamanho da mudança** foram feitas. **Prefixo estável de
+   cache** e **contexto pinado por digest** não — são trabalho de forma de prompt no briefing e no contrato, e
+   dizer isso é mais barato do que fingir.
+10. **[feito]** **Presets por tipo + `loop init` grelhado** — cinco presets, `extends:` como camada mais baixa.
+11. **[feito, com uma diferença]** **Papéis como agentes do registry + melhoria por eval** — o retro propõe **uma
+    nota datada** nas instruções do agente pior avaliado, não um diff gerado por modelo; a bateria de eval é o
+    gate, `architect` e `reviewer` nunca mudam sozinhos, e publicar no registry continua sendo gesto humano.
+12. **[feito]** **`intake`**, **`maintain`**, notes e rollback em `release` — fecham o ciclo.
 
 ## 7b. Cobertura do fluxo da imagem (PRD → ARCHITECT → DECOMPOSER → IMPLEMENTERS → TEST+REVIEW → CI)
 | Caixa | Onde vive no desenho |

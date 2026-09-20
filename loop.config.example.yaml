@@ -3,11 +3,23 @@
 # Never put secrets in this file: `envKeys` are the NAMES of environment variables the loop checks, not their values.
 schemaVersion: 1
 
+# Defaults for this kind of project, merged BELOW every other layer: it fills silence and overrides nothing.
+# `ak-harness loop init` writes a config that extends one of these and states only what the preset cannot know.
+# extends: web-app                   # web-app | library | monorepo | data-pipeline | mobile
+
+# Four layers, most specific wins, each with one owner:
+#   1. ~/.agentskit/harness.yaml          the user   — identity, models/providers, effort, machine capacity, notifications
+#   2. loop.config.yaml (this file)       the project — weighs more than the global, which stays untouched
+#   3. loop.config.team.<key>.yaml        the team    — what diverges between teams in the same repo (`project.team`)
+#   4. loop.config.local.yaml             the machine — gitignored, the last word
+# `$AK_HARNESS_CONFIG` moves the global file, `$AK_LOOP_TEAM` overrides the team key, `$AK_HARNESS_NO_GLOBAL=1`
+# loads the project without the user layer (what CI sees).
 project:
   name: my-project
   repo: my-org/my-project            # GitHub owner/name used for PR review and merge
   baseBranch: main
   root: .                            # relative to this file
+  # team: platform                   # selects loop.config.team.platform.yaml; a declared team without a file fails loudly
   stateDir: .ak-loop                 # runtime state: ledger, cooldowns, contracts, events, agent memory, plans.
                                      # Per machine — add it to .gitignore. The config (this file) stays at the
                                      # repo root and IS versioned.
@@ -82,6 +94,11 @@ models:
     mode: hybrid
     usageMetric: max
     preferKnownUsage: true
+    # policy: quality-first          # quality-first | usage-balanced | cost-first — orders the candidates a role
+                                     # already allows; it never widens the set
+  # cost:                            # relative cost per provider/model, any unit; only the order matters
+  #   codex/gpt-5.6-luna: 1
+  #   claude/opus: 9
   # roles: { orchestrator: { quality: frontier }, builder: { quality: balanced }, watcher: { quality: fast } }
   # catalog: { sources: [cli, builtin], artificialAnalysis: { enabled: false } }
   # Tiers, in order. Inside a tier the first provider with usage available wins.
@@ -150,6 +167,9 @@ delivery:
     minSeverity: med
     # doctorProbe: help                 # nit < med < high < blocker; findings at/above this block auto-merge
     deadlineMs: 600000
+    # smallChangeLines: 0            # >0: a change at or below this many lines (or docs-only) is reviewed by the
+                                     # cheapest candidate instead of the strongest — cost lever 3
+    # criticalPaths: []              # path prefixes that always get the strongest reviewer, whatever the size
   # smoke:
   #   enabled: false
   #   kind: verify-argv
@@ -182,10 +202,129 @@ memory:
   # maxBlockChars: 1200
   # categories: [adjustment]         # only these LearningRecord categories become memory on promote
   # issueCharsWithMemory: 4000
+  # recurrence:
+  #   minSightings: 2                # a lesson proposed this many times is a pattern, not an anecdote
+  #   maxPerRun: 3
+  # autoPromote:
+  #   enabled: false                 # true: the retro promotes the recurring lessons itself, as `loop-auto`
+                                     # (never as `human` — ADR-0019, amendment 2026-09-19). Revoke any of them with
+                                     # `ak-harness loop learning reject --ids … --by human`.
 
+# Where work comes from when nobody typed it. Each source is argv printing a JSON array of alerts
+# ({ id?, title, body?, severity?, url?, count? }); the same alert is filed once per dedupe window, with its
+# evidence, in the queue's entry state. A severity mapped here is the only way the incident flow starts by itself.
+# intake:
+#   enabled: false
+#   labels: [source:alert]
+#   dedupeWindowHours: 168
+#   maxPerRun: 5
+#   flowBySeverity: { p0: incident }
+#   sources:
+#     - id: sentry
+#       command: [./scripts/sentry-alerts.sh]
+#       labels: [area:runtime]
+
+# Dependencies, security and licences on a schedule — inside the loop, under the same DoD. A check with nothing
+# to decide files nothing; that is the difference from a bot that opens a PR every morning.
+# maintain:
+#   enabled: false
+#   dedupeWindowHours: 168
+#   checks:
+#     - id: audit
+#       command: [pnpm, audit]
+#       title: "Security advisories need a decision"
+#       fileWhen: exit-code        # exit-code | output
+#       labels: [area:security]
+
+# Ceilings on what the loop may spend. A budget that is reached ESCALATES; it never insists — the loop calling the
+# same model again with less headroom is how a bad hour becomes a bad week.
+# budget:
+#   perProvider: 100                 # % of a provider's window the loop may use; the rest stays for the human
+#   perIssueTokens: 0                # tokens one issue may cost across every loop call; 0 = no ceiling
+
+# Which implementation of each connector this project uses. The engine speaks only to the interfaces
+# (TrackerConnector, ScmConnector, RunnerConnector); adding Jira, GitLab or a cloud sandbox is a new
+# implementation and a new value here, never a change in tick, deliver or release.
+# connectors:
+#   tracker: linear
+#   scm: github
+#   runner: orca                     # `local` = git worktree + tmux + the system crontab, no Orca at all
+#   local:
+#     worktreeRoot: ../.ak-worktrees
+#     tmuxBin: tmux
+#     cronMarker: "# ak-harness"     # every crontab line the harness owns carries it; nothing else is touched
+
+# Promotion and deploy. The loop closes an issue when it merges into `project.baseBranch` — the integration
+# branch. `release` moves the approved batch to `branch` and runs the project's deploy, and it never starts
+# without `ak-harness loop release approve`: everything that acts on the world keeps a human in front of it.
+# release:
+#   enabled: false
+#   branch: production
+#   deploy: [./scripts/deploy.sh]     # argv (no shell), run in project.root after the promotion push
+#   smoke: [./scripts/smoke.sh]       # non-zero → rollback (when declared) and escalate
+#   notesFile: RELEASE-NOTES.md       # release notes for the batch, newest first, committed before promoting
+#   rollback: [./scripts/rollback.sh] # the project declares what undoing its own deploy means
+
+# The roles that run per issue. The planner and the vote run IN THE HARNESS, headless, before dispatch — the same
+# shape as freezing the contract: the model writes the plan and the votes, the machine counts them and decides. A
+# worker is only launched once a plan has consensus, so it starts from an approved plan instead of inventing one.
+# Default (nothing declared) is today's behaviour: builder → review.
+# worker:
+#   plan:
+#     enabled: false
+#     votes: 3                        # how many agents vote
+#     approvals: 2                    # how many must approve
+#     maxCycles: 3                    # plan → vote → replan cycles before it becomes a human's problem
+#     timeoutMs: 300000
+
+# The project's half of the Definition of Done — the same list for every issue, every item provable. The issue's
+# half is the frozen contract's outcomes. A PR merges only when both lists are proven, and the loop writes the two
+# lists with the worker's evidence onto the PR. There is no `manual` kind: what cannot be proven is not a DoD item.
+# dod:
+#   evidenceFile: .ak-loop/dod.json   # where the worker records its proofs, relative to the worktree root
+#   items:
+#     - id: verify
+#       description: lint and tests pass
+#       kind: command                 # the worker runs it in its worktree; exit 0 is the proof
+#       command: [pnpm, lint]
+#     - id: test-for-new-code
+#       description: new code ships a test
+#       kind: file-changed            # the PR must touch a path matching `glob`
+#       glob: "**/*.test.ts"
+#     - id: no-todo
+#       description: no TODO left behind
+#       kind: pattern-absent          # no changed file may contain `pattern`
+#       pattern: "TODO|FIXME"
+#       paths: ["src/**"]
+
+# Knobs the retro may move by itself, each inside a declared range and justified by a declared metric — and
+# reverted by the same metric when the next cycle is worse (that knob is then frozen until a human clears it).
+# Never auto-adjustable, whatever is listed here: models, providers, gates and branches.
+# tuning:
+#   enabled: false
+#   maxChangesPerRetro: 1            # one change per cycle, so a bad cycle stays explainable
+#   commit: false                    # true: commit the edited loop.config.yaml with the reason and the evidence
+#   knobs:
+#     - path: delivery.review.minSeverity
+#       metric: review-findings-ratio     # metrics: review-findings-ratio · stuck-count · fix-rounds-per-merge · escalation-count
+#       values: [med, nit]                # ordered ladder, cheapest first
+#     - path: delivery.workerIdleTimeoutMin
+#       metric: stuck-count
+#       min: 15
+#       max: 45
+#       step: 5
+
+# The roles are agents the project installed (`npx agentskit add <id>` → `agents/<id>/`): the code is yours, the
+# copy in the repo IS the version, git is the history. With autoImprove the retro proposes ONE dated note to the
+# instructions of the role with the worst outcome-per-run ratio, and keeps it only if the eval still passes.
+# `architect` and `reviewer` are never auto-changed, and publishing back to the registry is always a human.
 # agents:
 #   registryPath: agents.registry.yaml
 #   requireRegistry: false
+#   autoImprove: false
+#   evalCommand: [npm, run, eval]    # without it nothing is adopted: a change that cannot be measured is a guess
+#   maxAutoLines: 5                  # a bigger proposal waits for a human
+#   minRatio: 0.5                    # bad outcomes per run below which no role is worth improving
 
 # rag:
 #   enabled: false
@@ -236,14 +375,57 @@ brief:
                                       # missing file fails the dispatch instead of silently sending a worker without it
   maxSkillChars: 6000                 # per-file cap; longer files are truncated with a visible note
 
+# Named flow profiles: one motor, several kinds of demand. A profile replaces only the fields it names; a selection
+# rule picks one per issue by LABEL, then PROJECT, then PRIORITY (a label is an intention, a priority is a signal),
+# and `flows.default` covers everything else. `flow:<name>` on an issue always wins.
+# flows:
+#   default: enterprise
+#   profiles:
+#     enterprise:
+#       review: { votes: 2, minSeverity: nit }
+#       merge: { requireChecks: true, requireHumanApproval: true }
+#       reason: critical path
+#     poc:
+#       review: { votes: 1, minSeverity: high }
+#       merge: { requireChecks: false }     # no CI babysitting: the review is the gate, and no runner bill
+#       maxFixRounds: 1
+#     incident:
+#       review: { votes: 1, minSeverity: blocker }
+#       merge: { requireChecks: false, requireHumanApproval: false }
+#   select:
+#     - flow: incident
+#       anyLabels: [sev1]
+#       priorities: [Urgent]
+
+# Where the loop calls a human. The tracker comment always happens — this is the channel on top of it. Two generic
+# shapes, zero vendor code: a webhook (Slack, Discord, Telegram bot, n8n) and a local command (system notification,
+# mail CLI). This file is versioned, so the URL comes from an environment variable; a literal `url` belongs only in
+# the user's own ~/.agentskit/harness.yaml.
+# notifications:
+#   events: [contract.escalated, contract.failed, issue.paused, stage.paused, pr.merge-refused]
+#   webhook:
+#     urlEnv: LOOP_WEBHOOK_URL
+#     headers: { x-source: harness }
+#   command: [terminal-notifier, -title, AgentsKit, -message, "{summary}"]   # {summary} {event} {issue} {json}
+
 schedule:
   tick: "*/5 * * * *"
   deliver: "*/10 * * * *"
   precheckTimeoutSec: 120
   harnessCommand: ak-harness         # how the Orca automation runs the harness inside the workspace
-  namePrefix: loop                   # automations: loop-tick, loop-deliver[, loop-retro]
+  namePrefix: loop                   # automations: loop-tick, loop-deliver[, loop-retro][, loop-observe]
   # retro: weekly                     # with retroIssue, installs <prefix>-retro
   # retroIssue: AGE-0                 # Linear issue that receives the digest comment
+  # This file is the source of truth for every automation. `loop install` reconciles Orca against it — creating what
+  # is missing, editing only what drifted, switching off what this file stopped declaring — so changing a schedule is
+  # editing the YAML and running install, never editing the automation inside Orca.
+  # observe: "*/15 * * * *"           # installs <prefix>-observe: a read-only health scan whose precheck exits 0 —
+                                      # launching the observer agent — only when a problem is new or overdue
+  # observer:
+  #   since: 24h                      # event window the scan reads
+  #   reminderHours: 2                # an unresolved, already-reported problem set repeats at most this often
+  #   schedulerStallMin: 20           # no automation run in this long means the scheduler itself stopped
+  #   staleLockMin: 30                # a stage lock older than this is abandoned, not a long run
   runner: precheck                   # the stage runs inside Orca's precheck command; no agent session is ever opened
   stageTimeoutSec: 600               # Orca caps prechecks at 600 s; one tick/deliver run must fit
   # provider: claude                 # Orca agent that executes the automation prompt (default: watcher role)

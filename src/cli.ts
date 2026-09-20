@@ -5,7 +5,7 @@ import { Command } from 'commander'
 import { approveRun, ARTIFACT_SCHEMA_VERSION, assessAcceptance, assessBlock, assessDiscovery, assessImprovementCycle, assessIntegration, assessPilot, assessPreflight, assessProduction, assessWip, assessWorktreeCleanup, authorizeRun, benchmarkRuns, cancelRun, cleanTaskArtifacts, composePullRequest, createDispatchLedger, createDocBridgeContextProvider, createStatusSnapshot, exportEvidenceBundle, FileArtifactStore, loadBenchmarkManifest, loadConfig, loadLatestRun, parseRetro, planFilePreflight, planRun, readArtifactFile, readContextSnapshots, readEvidenceTrustStore, reconcileRun, recordBenchmarkObservation, renderArtifactMarkdown, retryRun, selectRuntime, startRun, validateBlockManifest, validateStatusSnapshot, verifyEvidenceBundle, verifyRun } from './index.js'
 import type { BenchmarkObservationEvidence } from './execution/metrics.js'
 import { fail } from './kernel/errors.js'
-import { buildDebriefReport, buildRetroReport, createProcessRunner, createRichIO, fetchLinearIssue, formatWatchEvent, generateContract, installLoopAutomations, linearLabelRemove, loadLoopConfig, openLoopMemory, promoteLearningsToMemory, runGuidedInstall, loopStatus, renderDebriefMarkdown, renderObservabilityMarkdown, renderRetroMarkdown, retroLearnings, runRetroStage, precheckDeliver, precheckTick, rankModels, readLearningsLedger, readStoredContract, runDeliver, runLoopDoctor, runObservability, runTick, uninstallLoopAutomations, watchDeliveries, writeStoredContract, isStagePaused, recordStageRunResult, resumeIssue, resumeStage, readIssueFailures, stageEntry, listPausedIssues, type LoopStageName } from './index.js'
+import { appendLoopEvent, buildDebriefReport, buildNotification, buildRetroReport, createProcessRunner, createRichIO, fetchLinearIssue, formatWatchEvent, generateContract, installLoopAutomations, linearLabelRemove, loadLoopConfig, openLoopMemory, promoteLearningsToMemory, runGuidedInstall, runLoopInit, loopStatus, renderDebriefMarkdown, renderObservabilityMarkdown, renderRetroMarkdown, retroLearnings, runRetroStage, precheckDeliver, precheckTick, rankModels, promoteLearnings, readLearningsLedger, startPlan, interviewRound, answerRound, approvePlan, architectRound, approveDesign, decomposeRound, createPlannedIssues, designApproved, listPlans, prdGaps, readPlanState, writePlanState, renderPlanMarkdown, readStoredContract, writeLearningsLedger, runDeliver, runLoopDoctor, notifyHuman, runIntakeStage, runMaintainStage, readReleaseBatch, readReleaseState, approveRelease, renderReleaseMarkdown, runReleaseStage, runObservability, runObserveStage, runTick, uninstallLoopAutomations, watchDeliveries, writeStoredContract, isStagePaused, recordStageRunResult, resumeIssue, resumeStage, readIssueFailures, stageEntry, listPausedIssues, type LoopStageName } from './index.js'
 import { FileEventStore, inspectEventLogLock, recoverEventLogLock } from './kernel/events.js'
 import { acquireStageLock } from './loop/stage-lock.js'
 
@@ -79,10 +79,31 @@ loop.command('validate').description('Validate loop.config.yaml and print the ef
 loop.command('doctor').description('Check Orca, providers, usage, machine slots, routing, and the Linear queue without dispatching.').option('--no-probe', 'skip provider probe commands').action(async function (this: Command, command: { readonly probe: boolean }) { const report = await runLoopDoctor({ configPath: loopFile(this), runner: createProcessRunner(), probe: command.probe }); print(report); if (report.status === 'failed') process.exitCode = 1 })
 loop.command('precheck <stage>').description('Read-only Orca precheck: exit 0 when the stage (tick | deliver) has work.').action(async function (this: Command, stage: string) { if (stage !== 'tick' && stage !== 'deliver') fail(`Unknown precheck stage: ${stage}`, 'INVALID_INPUT'); const result = stage === 'tick' ? await precheckTick({ configPath: loopFile(this), runner: createProcessRunner() }) : precheckDeliver(loadLoopConfig(loopFile(this)).stateDir); print(result); process.exitCode = result.work ? 0 : 1 })
 loop.command('deliver').description('Drive dispatched workers to merge: PR detection, CI, review, fix rounds, squash-merge, Linear Done, cleanup.').option('--dry-run', 'decide only; no terminal input, no review, no merge, no Linear write').option('--issue <identifier>', 'restrict to one issue').action(async function (this: Command, command: { readonly dryRun?: boolean; readonly issue?: string }) { print(await runDeliver({ configPath: loopFile(this), runner: createProcessRunner(), dryRun: command.dryRun ?? false, onlyIssue: command.issue })) })
-loop.command('stage <stage>').description('Run one stage (tick | deliver | retro) as an Orca precheck: prints the JSON report and ALWAYS exits 1 so Orca records the run without launching an agent.').action(async function (this: Command, stage: string) {
-  if (stage !== 'tick' && stage !== 'deliver' && stage !== 'retro') fail(`Unknown stage: ${stage}`, 'INVALID_INPUT')
+loop.command('stage <stage>').description('Run one stage (tick | deliver | retro | observe | release | intake | maintain) as an Orca precheck: prints the JSON report and exits 1 so Orca records the run without launching an agent — except `observe`, which exits 0 when a human has to look.').action(async function (this: Command, stage: string) {
+  if (stage !== 'tick' && stage !== 'deliver' && stage !== 'retro' && stage !== 'observe' && stage !== 'release' && stage !== 'intake' && stage !== 'maintain') fail(`Unknown stage: ${stage}`, 'INVALID_INPUT')
   const runner = createProcessRunner(); const file = loopFile(this)
   const loaded = loadLoopConfig(file)
+  if (stage === 'intake' || stage === 'maintain') {
+    // Both create issues and nothing else; like every scheduled stage they exit 1 so Orca records the run.
+    const report = stage === 'intake' ? await runIntakeStage({ loaded, runner }) : await runMaintainStage({ loaded, runner })
+    console.log(JSON.stringify(report, null, 2))
+    process.exitCode = 1
+    return
+  }
+  if (stage === 'release') {
+    // Promotion and deploy act on the world, so this stage only ever finishes work a human already approved.
+    const report = await runReleaseStage({ loaded, runner })
+    console.log(JSON.stringify(report, null, 2))
+    process.exitCode = 1
+    return
+  }
+  if (stage === 'observe') {
+    // The one stage whose exit code is a decision, not a convention: 0 asks Orca to launch the observer agent.
+    const report = await runObserveStage({ loaded, runner })
+    console.log(JSON.stringify({ ...report, observability: { status: report.observability.status, anomalies: report.observability.anomalies, metrics: report.observability.metrics } }, null, 2))
+    process.exitCode = report.notify ? 0 : 1
+    return
+  }
   const trackedStage = stage as LoopStageName
   // retro has no auto-pause: it is a lower-frequency, best-effort digest, not a stage that can spin every 5-10 min.
   if (stage !== 'retro' && isStagePaused(loaded.stateDir, trackedStage)) {
@@ -106,6 +127,12 @@ loop.command('stage <stage>').description('Run one stage (tick | deliver | retro
   } catch (error) {
     const reason = error instanceof Error ? error.message : String(error)
     const entry = stage !== 'retro' ? recordStageRunResult(loaded.stateDir, trackedStage, { succeeded: false, reason }, threshold) : null
+    // A stage that just auto-paused is the loop stopping on its own: it gets an event in the durable log and a
+    // call to whichever channel the user declared, because nobody is watching this terminal.
+    if (entry?.pausedAt) {
+      appendLoopEvent(loaded.stateDir, { at: new Date().toISOString(), type: 'stage.paused', stage, reason, consecutiveFailures: entry.consecutiveFailures })
+      await notifyHuman({ config: loaded.config, runner, notification: buildNotification(loaded.config, 'stage.paused', { stage, reason, consecutiveFailures: entry.consecutiveFailures }) })
+    }
     console.log(JSON.stringify({ status: 'error', stage, error: reason, ...(entry ? { consecutiveFailures: entry.consecutiveFailures, paused: entry.pausedAt !== null } : {}) }, null, 2))
   } finally {
     stageLock()
@@ -121,6 +148,19 @@ loop.command('contract <identifier>').description('Freeze (or show) the orchestr
   const stored = await generateContract({ runner, config: loaded.config, root: loaded.root, issue, candidates })
   if (!command.dryRun) writeStoredContract(loaded.stateDir, stored)
   print(stored)
+})
+loop.command('init').description('Grill the essentials and write loop.config.yaml from a preset (web-app | library | monorepo | data-pipeline | mobile). Everything the preset already says is left unsaid.').option('--preset <name>', 'skip the question and use this preset').option('--repo <owner/name>', 'GitHub repository').option('--name <name>', 'project name').option('--team <key>', 'Linear team key').option('--workspace <id>', 'Linear workspace id').option('--person <name>', 'whose queue this machine drains').option('--global', 'also write ~/.agentskit/harness.yaml when it does not exist').option('--force', 'replace an existing file').option('--dry-run', 'print what it would write').action(async function (this: Command, command: { readonly preset?: string; readonly repo?: string; readonly name?: string; readonly team?: string; readonly workspace?: string; readonly person?: string; readonly global?: boolean; readonly force?: boolean; readonly dryRun?: boolean }) {
+  const io = createRichIO()
+  const result = await runLoopInit({
+    directory: process.cwd(),
+    io,
+    answers: { ...(command.preset ? { preset: command.preset as never } : {}), ...(command.repo ? { repo: command.repo } : {}), ...(command.name ? { name: command.name } : {}), ...(command.team ? { teamKey: command.team } : {}), ...(command.workspace ? { workspaceId: command.workspace } : {}), ...(command.person ? { person: command.person } : {}) },
+    writeGlobal: command.global ?? false,
+    force: command.force ?? false,
+    dryRun: command.dryRun ?? false,
+  })
+  print({ status: result.wrote.length ? 'ok' : 'skipped', wrote: result.wrote, skipped: result.skipped, preset: result.answers.preset, next: `ak-harness loop doctor -f ${JSON.stringify(result.configPath)}` })
+  if (!result.wrote.length) process.exitCode = 1
 })
 loop.command('install').description('Guided install: doctor + environment checks, optional dry-run tick, then create/update the Orca automations after confirmation (idempotent by name).').option('--yes', 'accept every prompt (non-interactive)').option('--force', 'continue past failed checks').option('--skip-rehearsal', 'do not run the dry-run tick').option('--skip-local-config', 'do not offer to create loop.config.local.yaml').option('--dry-run', 'show checks and the exact orca argv; create nothing').option('--provider <agent>', 'Orca agent id that runs the automation prompt').option('--plain', 'legacy behaviour: no checks, no prompts, install immediately').action(async function (this: Command, command: { readonly yes?: boolean; readonly force?: boolean; readonly skipRehearsal?: boolean; readonly skipLocalConfig?: boolean; readonly dryRun?: boolean; readonly provider?: string; readonly plain?: boolean }) {
   if (command.plain) { const report = await installLoopAutomations({ configPath: loopFile(this), runner: createProcessRunner(), dryRun: command.dryRun ?? false, provider: command.provider }); print(report); if (report.status === 'failed') process.exitCode = 1; return }
@@ -189,6 +229,84 @@ loop.command('retro').description('Digest of the loop over a window: escalations
   if (options().json) return print(report)
   console.log(markdown)
 })
+const loopPlan = loop.command('plan').description('Requirements → PRD → technical design → issues. One question per round, two human gates, and the queue entry stays a human gesture.')
+const planDeps = async (command: Command) => {
+  const loaded = loadLoopConfig(loopFile(command))
+  const runner = createProcessRunner()
+  const doctor = await runLoopDoctor({ loaded, runner, probe: false })
+  return { loaded, runner, candidates: rankModels(loaded.config, 'orchestrator', doctor.providers), voters: rankModels(loaded.config, 'reviewer', doctor.providers) }
+}
+const planOrFail = (loaded: ReturnType<typeof loadLoopConfig>, id: string) => readPlanState(loaded.stateDir, id) ?? fail(`No plan "${id}" under ${loaded.stateDir}/plans.`, 'INVALID_INPUT')
+
+loopPlan.command('start <objective...>').description('Start a plan from a vague objective and ask the first question.').action(async function (this: Command, objective: readonly string[]) {
+  const deps = await planDeps(this)
+  const started = startPlan(objective.join(' '), new Date())
+  const next = await interviewRound(deps, started)
+  writePlanState(deps.loaded.stateDir, next)
+  print({ id: next.id, phase: next.phase, pending: next.pending, answer: `ak-harness loop plan answer ${next.id} "<your answer>"` })
+})
+loopPlan.command('answer <id> <answer...>').description('Answer the open question and ask the next one. The interview ends when the PRD has no gap left — the machine decides that, not the model.').action(async function (this: Command, id: string, answer: readonly string[]) {
+  const deps = await planDeps(this)
+  const answered = answerRound(planOrFail(deps.loaded, id), answer.join(' '), new Date())
+  const next = await interviewRound(deps, answered)
+  writePlanState(deps.loaded.stateDir, next)
+  print({ id: next.id, phase: next.phase, pending: next.pending, gaps: prdGaps(next.prd), ...(next.phase === 'review' ? { approve: `ak-harness loop plan approve ${next.id}` } : {}) })
+})
+loopPlan.command('show [id]').description('Show a plan (Markdown by default), or list every plan when no id is given.').action(function (this: Command, id: string | undefined) {
+  const loaded = loadLoopConfig(loopFile(this))
+  if (!id) return print(listPlans(loaded.stateDir).map((plan) => ({ id: plan.id, phase: plan.phase, objective: plan.objective, issues: plan.issues.length, updatedAt: plan.updatedAt })))
+  const state = planOrFail(loaded, id)
+  if (options().json) return print(state)
+  console.log(renderPlanMarkdown(state))
+})
+loopPlan.command('approve <id>').description('Human gate: approve the PRD, which starts the architect.').option('--by <actor>', 'who approves', 'human').action(function (this: Command, id: string, command: { readonly by: string }) {
+  const loaded = loadLoopConfig(loopFile(this))
+  const next = approvePlan(planOrFail(loaded, id), command.by, new Date())
+  writePlanState(loaded.stateDir, next)
+  print({ id, phase: next.phase, next: `ak-harness loop plan architect ${id}` })
+})
+loopPlan.command('architect <id>').description('Produce the technical design for the whole PRD and put it to a vote (2 of 3 by default).').action(async function (this: Command, id: string) {
+  const deps = await planDeps(this)
+  const next = await architectRound(deps, planOrFail(deps.loaded, id))
+  writePlanState(deps.loaded.stateDir, next)
+  const consensus = designApproved(next, deps.loaded.config)
+  print({ id, consensus, cycles: next.designCycles, votes: next.designVotes, ...(consensus ? { next: `ak-harness loop plan approve-design ${id}` } : { objections: next.designVotes.flatMap((vote) => vote.objections) }) })
+  if (!consensus) process.exitCode = 1
+})
+loopPlan.command('approve-design <id>').description('Human gate: approve the design after it reached consensus. Everything built afterwards inherits it.').option('--by <actor>', 'who approves', 'human').action(function (this: Command, id: string, command: { readonly by: string }) {
+  const loaded = loadLoopConfig(loopFile(this))
+  const next = approveDesign(planOrFail(loaded, id), command.by, new Date(), loaded.config)
+  writePlanState(loaded.stateDir, next)
+  print({ id, phase: next.phase, next: `ak-harness loop plan decompose ${id}` })
+})
+loopPlan.command('decompose <id>').description('Break the approved design into issues. Without --create nothing is written to the tracker.').option('--create', 'create the issues in the tracker, in the queue entry state').action(async function (this: Command, id: string, command: { readonly create?: boolean }) {
+  const deps = await planDeps(this)
+  const decomposed = await decomposeRound(deps, planOrFail(deps.loaded, id))
+  writePlanState(deps.loaded.stateDir, decomposed)
+  if (!command.create) return print({ id, issues: decomposed.issues, create: `ak-harness loop plan decompose ${id} --create` })
+  const created = await createPlannedIssues(deps, decomposed)
+  writePlanState(deps.loaded.stateDir, created)
+  print({ id, phase: created.phase, issues: created.issues.map((issue) => ({ identifier: issue.identifier ?? null, title: issue.title, layer: issue.layer, designRef: issue.designRef })), note: `created in "${deps.loaded.config.linear.states[0] ?? 'Todo'}" — moving them to a dispatchable state stays a human gesture` })
+})
+const loopRelease = loop.command('release').description('Promote the integration branch to the release branch and run the project deploy — only for a batch a human approved.')
+loopRelease.command('status').description('What is merged on the integration branch and not yet released, and whether it is approved.').action(async function (this: Command) {
+  const loaded = loadLoopConfig(loopFile(this))
+  const batch = await readReleaseBatch({ loaded, runner: createProcessRunner() })
+  const approval = readReleaseState(loaded.stateDir).approval
+  print({ ...batch, approval, approve: approval ? null : `ak-harness loop release approve` })
+})
+loopRelease.command('approve').description('Human gate: approve exactly the batch currently on the integration branch. Anything merged afterwards needs its own approval.').option('--by <actor>', 'who approves', 'human').action(async function (this: Command, command: { readonly by: string }) {
+  const loaded = loadLoopConfig(loopFile(this))
+  const batch = await readReleaseBatch({ loaded, runner: createProcessRunner() })
+  const approval = approveRelease({ loaded, batch, actor: command.by })
+  print({ status: 'approved', ...approval, next: `ak-harness loop stage release -f ${JSON.stringify(loaded.path)}` })
+})
+loopRelease.command('run').description('Promote and deploy the approved batch (same work as `loop stage release`, but with a human-readable report).').option('--dry-run', 'show what would happen; touch nothing').action(async function (this: Command, command: { readonly dryRun?: boolean }) {
+  const report = await runReleaseStage({ loaded: loadLoopConfig(loopFile(this)), runner: createProcessRunner(), dryRun: command.dryRun ?? false })
+  if (options().json) print(report)
+  else console.log(renderReleaseMarkdown(report))
+  if (report.status === 'failed' || report.status === 'rolled-back') process.exitCode = 1
+})
 const loopLearning = loop.command('learning').description('Continuous-improvement learnings ledger and approved memory writes.')
 loopLearning.command('list').description('Show the learnings ledger under stateDir (proposed/promoted/rejected).').action(function (this: Command) {
   const loaded = loadLoopConfig(loopFile(this))
@@ -207,6 +325,20 @@ loopLearning.command('promote').description('Human-only: promote learning IDs in
     sourceRevision: command.revision ?? 'unknown',
   })
   print({ status: 'ok', remembered: result.remembered, ledger: result.ledger })
+})
+loopLearning.command('reject').description('Revoke learnings — including any the loop promoted by itself as `loop-auto`. The record stays in the ledger, marked rejected, and stops reaching worker briefs.').requiredOption('--ids <ids>', 'comma-separated learning ids').option('--by <actor>', 'who revokes', 'human').action(function (this: Command, command: { readonly ids: string; readonly by: string }) {
+  const loaded = loadLoopConfig(loopFile(this))
+  const ids = command.ids.split(',').map((id) => id.trim()).filter(Boolean)
+  if (!ids.length) fail('--ids must list at least one learning id', 'INVALID_INPUT')
+  const ledger = readLearningsLedger(loaded.stateDir)
+  const records = promoteLearnings(ledger.records, { actor: command.by, ids, status: 'rejected' })
+  writeLearningsLedger(loaded.stateDir, { records })
+  print({ status: 'ok', rejected: ids, ledger: { records } })
+})
+loopLearning.command('promoted').description('List the learnings currently promoted, and which of them the loop promoted by itself.').action(function (this: Command) {
+  const loaded = loadLoopConfig(loopFile(this))
+  const promoted = readLearningsLedger(loaded.stateDir).records.filter((record) => record.status === 'promoted')
+  print({ total: promoted.length, records: promoted.map((record) => ({ id: record.id, category: record.category, sightings: record.sightings ?? 1, text: record.text })) })
 })
 program.command('start').description('Move a planned run into implementation.').action(() => print(startRun(loadConfig(options().config))))
 program.command('verify').description('Execute every configured check and record evidence.').action(async () => print(await verifyRun({ configPath: options().config })))
