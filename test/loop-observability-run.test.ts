@@ -2,7 +2,7 @@ import { appendFileSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFile
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
-import { createDispatchLedger, loadLoopConfig, runObservability } from '../src/index.js'
+import { createDispatchLedger, loadLoopConfig, readObserverState, runObservability, runObserveStage } from '../src/index.js'
 import type { CommandResult, CommandRunner } from '../src/index.js'
 
 const fixture = (name: string): unknown => JSON.parse(readFileSync(join(process.cwd(), 'test/fixtures/loop', `${name}.json`), 'utf8')) as unknown
@@ -78,5 +78,33 @@ describe('runObservability', () => {
     const report = await runObservability({ loaded: env.loaded, runner, now: () => new Date('2026-09-13T12:00:00.000Z') })
     expect(report.anomalies.some((item) => item.id === 'claim-without-delivery' && item.issue === 'ENG-5')).toBe(true)
     expect(report.metrics.merged).toBe(1)
+  })
+})
+
+describe('runObserveStage', () => {
+  it('scans, remembers the problem set on disk, and stays silent on the second identical scan', async () => {
+    const env = setup()
+    const now = new Date('2026-09-13T12:00:00.000Z')
+    // No automations exist yet in this fake Orca, so the scan has real problems to report.
+    const runner = fakeRunner({ 'orca automations list --json': ok({ ok: true, result: { automations: [] } }) })
+    const first = await runObserveStage({ loaded: env.loaded, runner, now: () => now })
+    expect(first).toMatchObject({ status: 'action_required', notify: true, reason: 'new-problems' })
+    expect(first.problems.map((problem) => problem.id)).toContain('automation-missing:loop-tick')
+    expect(first.observability.project).toBe('my-project')
+    expect(readObserverState(env.loaded.stateDir)).toMatchObject({ signature: first.signature, firstSeenAt: now.toISOString() })
+
+    const second = await runObserveStage({ loaded: env.loaded, runner, now: () => new Date('2026-09-13T12:05:00.000Z') })
+    expect(second).toMatchObject({ notify: false, reason: 'already-notified', signature: first.signature })
+
+    // `persist: false` is how a human can run the scan without moving the automation's own dedupe state.
+    const dry = await runObserveStage({ loaded: env.loaded, runner, now: () => new Date('2026-09-13T20:00:00.000Z'), persist: false })
+    expect(dry.notify).toBe(true)
+    expect(readObserverState(env.loaded.stateDir).lastNotifiedAt).toBe(now.toISOString())
+  })
+
+  it('reports the automation list being unreachable as a problem of its own', async () => {
+    const env = setup()
+    const report = await runObserveStage({ loaded: env.loaded, runner: fakeRunner(), now: () => new Date('2026-09-13T12:00:00.000Z') })
+    expect(report.problems.map((problem) => problem.id)).toContain('automations:unavailable')
   })
 })
