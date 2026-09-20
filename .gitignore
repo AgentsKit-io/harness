@@ -14,3 +14,8 @@ test-results/
 coverage/
 loop.config.local.yaml
 .codex/loop/
+apps/docs/.next/
+apps/docs/out/
+apps/docs/.source/
+apps/docs/public/
+apps/docs/next-env.d.ts

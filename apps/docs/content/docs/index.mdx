@@ -1,0 +1,34 @@
+---
+title: Harness
+description: The keep-pushing loop for your SDLC — what it is, what it does not do, and where to start.
+---
+
+`@agentskit/harness` runs one project's software development lifecycle unattended: a vague objective becomes a
+PRD, the PRD becomes a design and issues, each issue becomes a contract, a worker in its own worktree, a
+reviewed pull request proven against a definition of done, a merge — and, behind a human gate, a release.
+
+It is a CLI and a library. There is no daemon, no dashboard and no database: the state is files in
+`.ak-loop/` next to your repository, and the schedule is whatever your machine already uses (Orca automations,
+or the system crontab).
+
+## What the harness decides, and what it does not
+
+The harness orchestrates: what to dispatch, who runs each role, when to nudge, hand off or escalate, what
+blocks a merge, and when a batch may be promoted.
+
+It does **not** drive the worker's own model and tool loop. Each worker is an opaque CLI session — claude,
+codex, grok, opencode — in its own worktree. The harness hands it a brief and reads what it leaves behind:
+three files in `.ak-loop/` that say what it planned, what it ran, and what it proved. The loop advances on
+files it can check, never on what a terminal said.
+
+## Where to start
+
+- **[Quickstart](/docs/get-started/quickstart)** — `loop init` → `loop doctor` → `loop install` → the first tick.
+- **[Stages](/docs/concepts/stages)** — the six state machines and what each one decides.
+- **[Definition of done](/docs/concepts/definition-of-done)** — the two lists that gate every merge.
+
+## Requirements
+
+Node.js 22 or newer, a git repository with a committed `HEAD`, at least one coding-agent CLI on `PATH`, and a
+tracker the loop can read a queue from. `ak-harness loop doctor` tells you which of those is missing before
+anything is dispatched.

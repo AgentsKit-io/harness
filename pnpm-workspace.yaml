@@ -1,0 +1,5 @@
+# The docs site is its own package. Next and React 19 must never reach the harness root, which renders its
+# TUI with ink and would happily resolve a React the ink version was not built against.
+packages:
+  - .
+  - apps/*

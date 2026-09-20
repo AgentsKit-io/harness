@@ -1,0 +1,36 @@
+@import 'tailwindcss';
+@import 'fumadocs-ui/css/neutral.css';
+@import 'fumadocs-ui/css/preset.css';
+
+:root {
+  --harness-ink: #111714;
+  --harness-paper: #f7f8f3;
+  --harness-paper-strong: #f4f7f2;
+  --harness-night: #0b0f0d;
+  --harness-accent: #f778ba;
+  --color-fd-muted-foreground: #626862;
+}
+
+.dark {
+  --color-fd-muted-foreground: #b8bdb8;
+}
+
+html { scroll-behavior: smooth; }
+body { background: var(--harness-paper); color: var(--harness-ink); }
+.dark body { background: var(--harness-night); color: var(--harness-paper-strong); }
+::selection { background: color-mix(in srgb, var(--harness-accent) 35%, transparent); }
+
+body { min-width: 0; overflow-x: clip; }
+main, article, [class*='fd-docs'], [class*='prose'] { min-width: 0; max-width: 100%; }
+pre { max-width: 100%; overflow-x: auto; }
+code { overflow-wrap: anywhere; }
+table { display: block; max-width: 100%; overflow-x: auto; }
+
+/* GitHub Light's comment token misses WCAG AA against the docs code surface. */
+html:not(.dark) [style*='--shiki-light:#6E7781'] {
+  --shiki-light: #57606a !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { scroll-behavior: auto !important; animation-duration: 0.01ms !important; }
+}

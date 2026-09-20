@@ -37,6 +37,9 @@
   "scripts": {
     "build": "tsup && node -e \"console.log(JSON.stringify({status:'passed',criteria:['package']}))\"",
     "typecheck": "tsc -p tsconfig.json --noEmit",
+    "docs:dev": "pnpm --filter @agentskit/harness-docs dev",
+    "docs:build": "pnpm --filter @agentskit/harness-docs build",
+    "docs:typecheck": "pnpm --filter @agentskit/harness-docs typecheck",
     "test": "pnpm typecheck && vitest run --config vitest.config.ts test && node -e \"console.log(JSON.stringify({status:'passed',criteria:['package']}))\"",
     "test:coverage": "vitest run --config vitest.config.ts --coverage test",
     "test:contract": "pnpm typecheck && vitest run --config vitest.config.ts test/contract.test.ts && node -e \"console.log(JSON.stringify({status:'passed',criteria:['protocol']}))\"",

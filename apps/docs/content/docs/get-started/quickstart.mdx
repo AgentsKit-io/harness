@@ -1,0 +1,77 @@
+---
+title: Quickstart
+description: From nothing to a first dispatched issue in four commands, none of which touches anything before you say so.
+---
+
+Four commands, in order. Each one is safe to run again, and nothing before the last touches your repository,
+your tracker or your schedule.
+
+## 1. Write the config
+
+```bash
+npx ak-harness loop init
+```
+
+It asks only what a preset cannot answer — the repository, the project name, the tracker team and workspace,
+whose queue this machine drains — and writes `loop.config.yaml` from one of five presets (`web-app`,
+`library`, `monorepo`, `data-pipeline`, `mobile`). Everything the preset already says is left out of the
+file, so the config diff shows what *this* project decided.
+
+`--dry-run` prints the file it would write. `--global` also creates `~/.agentskit/harness.yaml` — the
+providers, binaries and notification channels shared by every project on this machine.
+
+## 2. Check the machine
+
+```bash
+npx ak-harness loop doctor
+```
+
+Nothing is dispatched. It checks the runner and its version, the provider CLIs and their remaining usage, the
+routing decision per role, this machine's free slots, the queue, the review CLI, the installed agents your
+registry points at, and the flow profiles your rules reference. Exit code 1 means a check failed.
+
+Then rehearse a dispatch without doing one:
+
+```bash
+npx ak-harness loop tick --dry-run --max 1
+```
+
+It prints which issue, which contract, which worktree and which model — and writes nothing.
+
+## 3. Install the schedule
+
+```bash
+npx ak-harness loop install
+```
+
+The guided install: the checks again, an optional rehearsal, an offer to create `loop.config.local.yaml` for
+this machine, and then — after you confirm — the automations that run `loop stage tick` and
+`loop stage deliver` on the schedule in `schedule.*`. Idempotent by name: running it again reconciles instead
+of duplicating. `--dry-run` shows the exact argv and creates nothing.
+
+## 4. Watch the first tick
+
+```bash
+npx ak-harness loop tick --max 1     # contract → (plan → vote) → dispatch one issue
+npx ak-harness loop watch --once     # what each in-flight issue is doing
+npx ak-harness loop deliver          # PR → checks → review → definition of done → merge
+```
+
+Once the automations are installed, do not run `tick`/`deliver` by hand on the same project: that races the
+scheduled run and can double-dispatch. Use the read-only commands instead — `loop debrief` (what the loop is
+doing right now), `loop observe` (anomalies and metrics), `loop retro --since 7d` (how it has been doing),
+`loop paused` (what it stopped on).
+
+## What the worker leaves behind
+
+Every worker writes three files into `.ak-loop/` at the root of its worktree:
+
+| File | What it holds |
+|---|---|
+| `plan.md` | The plan it actually followed, and where it departed from the approved one. |
+| `verify.json` | What it ran and what happened, outcome by outcome, with the evidence. |
+| `dod.json` | The definition-of-done proofs, one per item of both lists. |
+
+`loop deliver` reads them before the merge gate. A file that is missing comes back to the worker as a fix
+round **naming the file**; a file that exists but does not match its schema is treated as worse than absent,
+because it looks like evidence.
