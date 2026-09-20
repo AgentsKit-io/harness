@@ -49,15 +49,23 @@ export const LOOP_EVENT_TYPES = {
   /** The PR conflicts with the base branch; the rebase instruction went back to the worker. It costs no fix round. */
   'worker.conflict-round': ['issue', 'pr', 'head', 'round'],
 
-  /** Delivery finished for this issue, with the outcome that closed it. One per terminal outcome. */
+  /** Delivery finished for this issue: the pull request was merged and the issue closed out. */
   'worker.merged': ['issue', 'reason', 'worktreeId'],
+  /** Held for a human: protected paths, a secret-shaped file, a crossed layer boundary, or a gate the config demands. */
   'worker.held': ['issue', 'reason', 'worktreeId'],
+  /** Blocked: the fix rounds ran out, or a circuit breaker stopped the dispatch. */
   'worker.blocked': ['issue', 'reason', 'worktreeId'],
+  /** The worker stopped producing output for longer than the idle timeout and could not be revived. */
   'worker.stuck': ['issue', 'reason', 'worktreeId'],
+  /** The pull request was closed without merging, or the branch disappeared. */
   'worker.abandoned': ['issue', 'reason', 'worktreeId'],
+  /** The delivery pass itself failed - a tool, a credential, an unexpected state. */
   'worker.failed': ['issue', 'reason', 'worktreeId'],
+  /** Nothing to do at this head: the pass ended waiting for CI, a push, or a human. */
   'worker.waiting': ['issue', 'reason', 'worktreeId'],
+  /** The review ran and the pass ended there, without merging. */
   'worker.reviewed': ['issue', 'reason', 'worktreeId'],
+  /** The pass ended by sending the worker back to work. */
   'worker.fix-round': ['issue', 'reason', 'worktreeId'],
 
   /** A review ran against a PR, with the verdict and who gave it. `source` marks a PR that came from GitHub intake. */
@@ -70,16 +78,27 @@ export const LOOP_EVENT_TYPES = {
   'pr.smoke-failed': ['issue', 'pr', 'head', 'detail'],
 
   /** A PR the loop did not dispatch, adopted through GitHub intake, reached a terminal outcome. */
+  /** Merged by the loop. */
   'github-intake.merged': ['pr', 'reason'],
+  /** Held for a human. */
   'github-intake.held': ['pr', 'reason'],
+  /** Out of fix rounds. */
   'github-intake.blocked': ['pr', 'reason'],
+  /** The pass over it failed. */
   'github-intake.failed': ['pr', 'reason'],
+  /** It stopped moving. */
   'github-intake.stuck': ['pr', 'reason'],
+  /** Closed without merging. */
   'github-intake.abandoned': ['pr', 'reason'],
+  /** Nothing to do at this head. */
   'github-intake.waiting': ['pr', 'reason'],
+  /** Reviewed without merging. */
   'github-intake.reviewed': ['pr', 'reason'],
+  /** Sent back to its author. */
   'github-intake.fix-round': ['pr', 'reason'],
+  /** Its author was nudged. */
   'github-intake.nudged': ['pr', 'reason'],
+  /** It changed hands. */
   'github-intake.handed-off': ['pr', 'reason'],
 
   /** A batch is on the integration branch with nobody's approval behind it. Emitted once per head. */
@@ -118,10 +137,13 @@ export const LOOP_EVENT_TYPES = {
   /** A whole stage was paused after consecutive failures. */
   'stage.paused': ['stage', 'reason', 'consecutiveFailures'],
 
-  /** The retro's agent-improvement pass reached a verdict for one role's installed agent. */
+  /** The retro's agent-improvement pass adopted a dated note into the agent's instructions; the eval passed. */
   'agent.adopted': ['role', 'agent', 'detail'],
+  /** Nothing was adopted: no installed agent for the role, or nothing to measure the change with. */
   'agent.rejected': ['role', 'agent', 'detail'],
+  /** A proposal was recorded for a human: a critical role, too many lines, or an agent that is code. */
   'agent.needs-human': ['role', 'agent', 'detail'],
+  /** The change was applied, the eval did not pass, and the file was put back exactly as it was. */
   'agent.reverted': ['role', 'agent', 'detail'],
 
   /** A tuning knob moved by itself after a retro, inside its declared range and justified by its declared metric. */

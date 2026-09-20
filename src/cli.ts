@@ -371,4 +371,13 @@ program.command('clean').description('Remove only configured task-owned temporar
 // watch` without `--once`/`--timeout` sits in a live `setTimeout` poll loop, so setting only the exit code let
 // Ctrl-C print "Cancelled." while the polling (and its `gh`/`orca` shell-outs) kept running in the background.
 process.on('SIGINT', () => { process.stderr.write('Cancelled.\n'); process.exit(130) })
-try { await program.parseAsync(process.argv) } catch (error) { const value = error instanceof Error ? error : new Error(String(error)); process.stderr.write(`${'code' in value ? String(value.code) : 'HARNESS_ERROR'}: ${value.message}\n`); process.exitCode = 'code' in value && value.code === 'INVALID_INPUT' ? 2 : 1 }
+/**
+ * The command tree, exported so `pnpm docs:generate` can walk it instead of parsing `--help` output.
+ *
+ * The reference is generated from the program itself; anything else drifts the moment a flag is renamed.
+ */
+export const cliProgram = program
+
+// Under introspection the module is imported for its tree, not run: parsing `process.argv` there would try to
+// execute whatever command the generator itself was invoked with.
+if (process.env['AK_HARNESS_CLI_INTROSPECT'] !== '1') try { await program.parseAsync(process.argv) } catch (error) { const value = error instanceof Error ? error : new Error(String(error)); process.stderr.write(`${'code' in value ? String(value.code) : 'HARNESS_ERROR'}: ${value.message}\n`); process.exitCode = 'code' in value && value.code === 'INVALID_INPUT' ? 2 : 1 }

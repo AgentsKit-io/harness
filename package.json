@@ -38,6 +38,7 @@
     "build": "tsup && node -e \"console.log(JSON.stringify({status:'passed',criteria:['package']}))\"",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "docs:dev": "pnpm --filter @agentskit/harness-docs dev",
+    "docs:generate": "node scripts/gen-docs-reference.mjs",
     "docs:artifacts": "node scripts/build-docs-artifacts.mjs",
     "docs:build": "pnpm docs:artifacts && pnpm --filter @agentskit/harness-docs build",
     "test:docs-artifacts": "node --test scripts/docs-artifacts-contract.test.mjs",
