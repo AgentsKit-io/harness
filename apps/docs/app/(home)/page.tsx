@@ -1,26 +1,15 @@
-import Link from 'next/link'
+import type { Metadata } from 'next'
+import './home.css'
+import { HarnessHome } from '@/components/home/harness-home'
+import { SITE_URL } from '@/lib/site'
 
-/**
- * Placeholder home.
- *
- * The real one is being designed separately (`HOME-BRIEF.md` at the repository root). This exists so `/` is a
- * page and not a 404, and so the route it will replace already points at the documentation.
- */
+export const metadata: Metadata = {
+  title: 'Harness — the keep-pushing loop for your SDLC',
+  description:
+    'From a vague objective to production without babysitting an agent — interview, plan, votes, worker, review, merge, release. Every transition is the machine’s decision over an explicit state.',
+  alternates: { canonical: `${SITE_URL}/` },
+}
+
 export default function HomePage() {
-  return (
-    <main className="mx-auto flex min-h-[70vh] w-full max-w-3xl flex-col justify-center gap-6 px-5 py-24">
-      <p className="font-mono text-xs uppercase tracking-[0.18em] text-fd-muted-foreground">AgentsKit Harness</p>
-      <h1 className="text-4xl font-semibold tracking-tight sm:text-5xl">The keep-pushing loop for your SDLC</h1>
-      <p className="max-w-2xl text-lg text-fd-muted-foreground">
-        A vague objective interviewed into a PRD, issues contracted and dispatched into their own worktrees,
-        reviewed, proven against a definition of done, merged, and released behind a human gate — unattended,
-        on a schedule.
-      </p>
-      <p>
-        <Link className="font-medium underline underline-offset-4" href="/docs">
-          Read the documentation →
-        </Link>
-      </p>
-    </main>
-  )
+  return <HarnessHome />
 }
