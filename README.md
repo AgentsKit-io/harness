@@ -8,19 +8,42 @@ docbridge:
 
 Portable, evidence-backed development protocol for coding agents. The harness freezes a task contract, executes every configured check, binds evidence to the current source revision, detects stale results, and applies the configured controlled or YOLO approval policy.
 
-## Keep-pushing loop (Orca)
+## The keep-pushing loop
 
-`ak-harness loop …` drains one person's Linear queue through Orca worktrees 24/7 — tiered model routing with
-usage-aware fallback, orchestrator-frozen contracts, adversarial review, squash-merge, and one deduplicated
-escalation when a ticket cannot be verified. Everything project-specific lives in `loop.config.yaml`
-(start from [`loop.config.example.yaml`](loop.config.example.yaml)). Guide: [`docs/LOOP.md`](docs/LOOP.md)
-(setup, Orca automations, Doc Bridge + `agentskit-review` wiring, AgentsKit ecosystem map) ·
-decision record: [`docs/ADR-0027-keep-pushing-loop.md`](docs/ADR-0027-keep-pushing-loop.md).
+`ak-harness loop …` runs one project's whole SDLC, unattended, on top of Orca worktrees (or plain git
+worktrees + tmux) and a Linear queue:
 
-**Where this is going:** [`docs/ROADMAP-SDLC.md`](docs/ROADMAP-SDLC.md) is the agreed design for the full
-SDLC — a vague goal interviewed into a PRD, an architecture voted on, issues decomposed, each one built by
-a planner/lead/verifier pipeline, reviewed, merged, released behind a human gate, and a retro that tunes
-the loop itself. It states which pieces exist today versus what is new work, and the order to build them.
+- **plan** — a vague objective interviewed into a PRD one question at a time, a technical design voted on
+  by three agents, and issues decomposed from the approved design. Two human gates, and creating the queue
+  entries stays a human gesture.
+- **tick** — the queue drained into contracts the orchestrator freezes, an optional plan with 2-of-3
+  consensus, and a worker dispatched into its own worktree with tiered, usage-aware model routing.
+- **deliver** — PR detection, CI, the project's cheap verification, an adversarial review, the definition
+  of done proven in two lists, squash-merge, and one deduplicated escalation when a ticket cannot be
+  verified.
+- **observe** / **retro** — a read-only anomaly scan with scheduler exit codes, and a digest that proposes
+  what to tune; a knob moves only inside a declared range, justified by a declared metric.
+- **release** — the integration branch promoted to the release branch only for a batch a human approved,
+  then deploy, smoke, and the declared rollback when the smoke fails.
+- **intake** / **maintain** — external alerts and recurring checks filed as tracked issues, deduplicated by
+  fingerprint.
+
+The worker's own model and tool loop stays opaque: the harness orchestrates what to dispatch, when to nudge,
+hand off or escalate, and when to merge. Everything project-specific lives in `loop.config.yaml` (start from
+[`loop.config.example.yaml`](loop.config.example.yaml), or run `ak-harness loop init`).
+
+Guide: [`docs/LOOP.md`](docs/LOOP.md) (setup, Orca automations, Doc Bridge + `agentskit-review` wiring,
+AgentsKit ecosystem map) · first run: [`docs/GETTING-STARTED.md`](docs/GETTING-STARTED.md) · decision
+records: [ADR-0027](docs/ADR-0027-keep-pushing-loop.md) (the loop),
+[ADR-0032](docs/ADR-0032-loop-stages-as-state-machines.md) (stages as state machines),
+[ADR-0033](docs/ADR-0033-four-config-layers-and-presets.md) (configuration layers),
+[ADR-0034](docs/ADR-0034-connectors-tracker-scm-runner.md) (connectors),
+[ADR-0035](docs/ADR-0035-definition-of-done-two-lists.md) (definition of done),
+[ADR-0036](docs/ADR-0036-bounded-self-modification.md) (bounded self-modification),
+[ADR-0037](docs/ADR-0037-cost-policy-ceilings-and-levers.md) (cost).
+
+**What is still open:** [`docs/ROADMAP-SDLC.md`](docs/ROADMAP-SDLC.md) tracks what each stage does today and
+what remains — it is the plan of record, kept honest against the code rather than ahead of it.
 
 ## Install
 
