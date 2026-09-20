@@ -13,7 +13,7 @@ describe('portable orchestration records', () => {
   it('parses and promotes retro learnings only with human approval', () => {
     const records = parseRetro('## Problems\n- Tests were too broad\n## Adjustments\n- Narrow by changed file', 'B-1')
     expect(records).toHaveLength(2)
-    expect(() => promoteLearnings(records, { actor: 'agent', ids: [records[0]!.id] })).toThrow(/human actor/)
+    expect(() => promoteLearnings(records, { actor: 'agent', ids: [records[0]!.id] })).toThrow(/human or "loop-auto" actor/)
     expect(promoteLearnings(records, { actor: 'human', ids: [records[0]!.id] })[0]!.status).toBe('promoted')
   })
 

@@ -45,8 +45,13 @@ describe('parseRetro', () => {
 describe('promoteLearnings', () => {
   const records = parseRetro('## Problems\n- Tests were too broad', 'B-1')
 
-  it('requires a human actor', () => {
-    expect(() => promoteLearnings(records, { actor: 'agent', ids: [records[0]!.id] })).toThrow(/human actor/)
+  it('accepts the automated promoter as a named actor of its own (ADR-0019 amendment)', () => {
+    const promoted = promoteLearnings(records, { actor: 'loop-auto', ids: [records[0]!.id] })
+    expect(promoted[0]).toMatchObject({ id: records[0]!.id, status: 'promoted' })
+  })
+
+  it('requires a human or the automated promoter', () => {
+    expect(() => promoteLearnings(records, { actor: 'agent', ids: [records[0]!.id] })).toThrow(/human or "loop-auto" actor/)
   })
 
   it('rejects a blank id in the ids list', () => {
