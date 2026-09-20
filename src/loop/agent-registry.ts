@@ -14,6 +14,14 @@ export const AgentRegistryEntrySchema = z.object({
   model: nonEmpty.optional(),
   tui: nonEmpty.optional(),
   headless: z.array(nonEmpty).min(1).optional(),
+  /**
+   * Directory of the installed agent (`npx agentskit add <id>` copies it to `agents/<id>/`), relative to
+   * `project.root`. The code is the project's: the copy in the repository IS the version, and git is its history.
+   * Present only for roles a project installed an agent for; a role without one runs on the provider alone.
+   */
+  path: nonEmpty.optional(),
+  /** Instruction file inside `path` the harness may propose improvements to. Defaults to `AGENT.md`. */
+  instructions: nonEmpty.default('AGENT.md'),
 })
 
 export const AgentRegistrySchema = z.object({
