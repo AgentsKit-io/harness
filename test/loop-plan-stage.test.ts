@@ -148,7 +148,9 @@ describe('decomposition', () => {
     expect(save).toContain('--state')
     expect(save[save.indexOf('--state') + 1]).toBe('Todo')
     expect(save[save.indexOf('--label') + 1]).toBe('layer:L1')
-    expect(save.join(' ')).toContain('**Design**: api')
+    // The design travels as content, not as a pointer: the module's own responsibility is in the issue body.
+    expect(save.join(' ')).toContain('**Design — api**')
+    expect(save.join(' ')).toContain('**api** — r')
   })
 })
 

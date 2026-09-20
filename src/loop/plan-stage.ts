@@ -8,6 +8,8 @@ import { hashJson } from '../kernel/hash.js'
 import { providerIdentity, renderHeadlessArgv, type LoadedLoopConfig, type LoopConfig } from './config.js'
 import { classifyProviderFailure, untrusted, type ProviderFailure } from './contract.js'
 import { writeJsonAtomic } from './fs-atomic.js'
+import { designExcerptFor } from './documents.js'
+import { renderLayersForPrompt } from './layers.js'
 import { tallyVotes, type CastVote } from './plan-vote.js'
 import type { RankedModel } from './routing.js'
 
@@ -206,9 +208,9 @@ ${JSON.stringify(state.prd, null, 2)}
 
 Approved design:
 ${JSON.stringify(state.design, null, 2)}
-
+${renderLayersForPrompt(config)}
 Answer as JSON between the exact markers ${ISSUES_OPEN} and ${ISSUES_CLOSE}: an array of issues, each one
-{ "title": "…", "description": "what to do and why, referencing the design", "layer": "<one of: ${config.linear.anyLabels.join(', ') || 'no layer labels configured'}>", "priority": "urgent|high|medium|low", "acceptance": ["verifiable criterion a machine can check"], "designRef": "the module, contract or decision id this issue implements" }
+{ "title": "…", "description": "what to do and why, referencing the design", "layer": "<one of: ${config.layers.length ? config.layers.map((layer) => layer.label).join(', ') : config.linear.anyLabels.join(', ') || 'no layers configured'}>", "priority": "urgent|high|medium|low", "acceptance": ["verifiable criterion a machine can check"], "designRef": "the module, contract or decision id this issue implements" }
 
 Rules: every issue points at a part of the design — a ticket that points at nothing invents its own architecture. Every acceptance criterion must be checkable without a human's judgement. Order matters: follow the design's sequence. Split anything that cannot be delivered in one pull request.`
 
@@ -340,7 +342,10 @@ export const createPlannedIssues = async (deps: PlanStageDeps, state: PlanStageS
   const created: (PlannedIssue & { identifier?: string; url?: string })[] = []
   for (const issue of state.issues) {
     if (issue.identifier) { created.push(issue); continue }
-    const description = `${issue.description}\n\n**Acceptance**\n${issue.acceptance.map((item) => `- [ ] ${item}`).join('\n')}\n\n**Design**: ${issue.designRef}\n\n<!-- loop:plan:${state.id} -->`
+    // The design travels as content, not as a pointer: a worker that cannot fetch the reference invents the
+    // architecture instead of implementing the one that was approved.
+    const excerpt = designExcerptFor(state.design, issue.designRef)
+    const description = `${issue.description}\n\n**Acceptance**\n${issue.acceptance.map((item) => `- [ ] ${item}`).join('\n')}\n\n**Design — ${issue.designRef}**\n\n${excerpt || '_not found in the approved design_'}\n\n<!-- loop:plan:${state.id} -->`
     const result = await linearSaveIssue(deps.runner, {
       team: config.linear.teamKey, title: issue.title, description, state: entryState,
       priority: priorityFor(issue), ...(issue.layer ? { labels: [issue.layer] } : {}),

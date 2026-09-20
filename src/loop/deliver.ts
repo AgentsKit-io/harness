@@ -5,6 +5,7 @@ import { atLeast, parseReviewResult, renderFindingsForWorker, runCodeReview, typ
 import { assessChecks, githubComment, githubCommentExists, githubLabelRemove, githubMerge, githubOpenPullRequests, githubPullRequest, githubPullRequestsForBranch, touchesProtectedPaths, type PullRequestSnapshot } from '../adapters/github-cli.js'
 import { resolveConnectors, type ScmConnector, type TrackerConnector } from './connectors.js'
 import { issueBudget, modelForChange } from './budget.js'
+import { assessBoundary } from './layers.js'
 import { orcaAccountList, orcaAgentHooks, orcaTerminalList, orcaTerminalScreen, orcaTerminalSend, orcaTerminalWait, orcaWorktreeRemove, orcaWorktreeSet } from '../adapters/orca-cli.js'
 import { detectProviders, remainingUsagePercent, type ProviderAvailability } from '../adapters/providers.js'
 import { createDispatchLedger, type DispatchLease } from '../execution/coordination.js'
@@ -599,6 +600,13 @@ ${marker}` }); actions.push('secret-file hold commented') } catch (error) { acti
       }
       actions.push(`definition of done proven (${dod.lines.length} item(s))`)
     }
+  }
+  // A layer is a boundary, not a suggestion: crossing it is always reported, and held only where the project said
+  // the boundary is real (`layers[].enforce`). Reporting first is what lets a team draw the line before it bites.
+  const boundary = assessBoundary(config, record.labels ?? [], pr.files)
+  if (boundary.detail) {
+    actions.push(`layer boundary: ${boundary.detail}`)
+    if (boundary.enforced) return { issue: record.issue, outcome: 'held', reason: `outside its layer boundary — ${boundary.detail}`, pr: pr.number, head: pr.headSha, ...(review ? { review } : {}), actions }
   }
   if (!flow.merge.auto) return { issue: record.issue, outcome: 'held', reason: 'review clean; auto-merge disabled', pr: pr.number, head: pr.headSha, ...(review ? { review } : {}), actions }
   if (flow.merge.requireHumanApproval && pr.reviewDecision !== 'APPROVED') return { issue: record.issue, outcome: 'held', reason: `review clean and checks green, but delivery.merge.requireHumanApproval is set and no human has approved PR #${pr.number} on GitHub yet`, pr: pr.number, head: pr.headSha, ...(review ? { review } : {}), actions }

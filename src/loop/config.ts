@@ -605,6 +605,38 @@ export const LoopConfigSchema = z.object({
     }).prefault({}),
   }).prefault({}),
   /**
+   * The slices of the codebase, each with the one thing that decides it: a label the tracker carries, a file
+   * boundary, and the test that closes it.
+   *
+   * This is the source; a layer's description in the tracker is a reflection of it, never the other way round.
+   * The decomposer reads these to place an issue, the brief tells the worker which test closes its layer, and
+   * the cheap verifier runs that test instead of the whole suite when the issue belongs to one.
+   */
+  layers: z.array(z.object({
+    id: nonEmpty,
+    /** The tracker label that puts an issue in this layer, e.g. `layer:L2`. */
+    label: nonEmpty,
+    description: z.string().trim().default(''),
+    /** Globs the layer owns. A PR for this layer touching anything else is reported, and held when `enforce`. */
+    paths: z.array(nonEmpty).default([]),
+    /** The command that closes this layer. Used by the brief and by the pre-review verifier. */
+    verify: z.string().trim().default(''),
+    /** Off by default: a boundary that blocks before a team has drawn it properly costs more than it protects. */
+    enforce: z.boolean().default(false),
+  })).default([]),
+  /**
+   * Where the PRD, the technical design and the decisions live once a human approves them.
+   *
+   * `file` writes them into the repository, which is what makes them reviewable, diffable and greppable by the
+   * workers that come later. `none` keeps them only in the loop's state. A tracker-document backend is the seam
+   * this leaves open; Orca's CLI has no document command today, so there is nothing honest to implement against.
+   */
+  documents: z.object({
+    backend: z.enum(['file', 'none']).default('file'),
+    prdPath: nonEmpty.default('docs/prd'),
+    designPath: nonEmpty.default('docs/design'),
+  }).prefault({}),
+  /**
    * The project's half of the Definition of Done: the same list for every issue, and every item provable.
    *
    * The issue's half is the frozen contract's `outcomes`. A PR merges only when both lists are proven, and the

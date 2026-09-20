@@ -5,7 +5,7 @@ import { Command } from 'commander'
 import { approveRun, ARTIFACT_SCHEMA_VERSION, assessAcceptance, assessBlock, assessDiscovery, assessImprovementCycle, assessIntegration, assessPilot, assessPreflight, assessProduction, assessWip, assessWorktreeCleanup, authorizeRun, benchmarkRuns, cancelRun, cleanTaskArtifacts, composePullRequest, createDispatchLedger, createDocBridgeContextProvider, createStatusSnapshot, exportEvidenceBundle, FileArtifactStore, loadBenchmarkManifest, loadConfig, loadLatestRun, parseRetro, planFilePreflight, planRun, readArtifactFile, readContextSnapshots, readEvidenceTrustStore, reconcileRun, recordBenchmarkObservation, renderArtifactMarkdown, retryRun, selectRuntime, startRun, validateBlockManifest, validateStatusSnapshot, verifyEvidenceBundle, verifyRun } from './index.js'
 import type { BenchmarkObservationEvidence } from './execution/metrics.js'
 import { fail } from './kernel/errors.js'
-import { appendLoopEvent, buildDebriefReport, buildNotification, buildRetroReport, createProcessRunner, createRichIO, fetchLinearIssue, formatWatchEvent, generateContract, installLoopAutomations, linearLabelRemove, loadLoopConfig, openLoopMemory, promoteLearningsToMemory, runGuidedInstall, runLoopInit, loopStatus, renderDebriefMarkdown, renderObservabilityMarkdown, renderRetroMarkdown, retroLearnings, runRetroStage, precheckDeliver, precheckTick, rankModels, promoteLearnings, readLearningsLedger, startPlan, interviewRound, answerRound, approvePlan, architectRound, approveDesign, decomposeRound, createPlannedIssues, designApproved, listPlans, prdGaps, readPlanState, writePlanState, renderPlanMarkdown, readStoredContract, writeLearningsLedger, runDeliver, runLoopDoctor, notifyHuman, runIntakeStage, runMaintainStage, readReleaseBatch, readReleaseState, approveRelease, renderReleaseMarkdown, runReleaseStage, runObservability, runObserveStage, runTick, uninstallLoopAutomations, watchDeliveries, writeStoredContract, isStagePaused, recordStageRunResult, resumeIssue, resumeStage, readIssueFailures, stageEntry, listPausedIssues, type LoopStageName } from './index.js'
+import { appendLoopEvent, buildDebriefReport, buildNotification, buildRetroReport, createProcessRunner, createRichIO, fetchLinearIssue, formatWatchEvent, generateContract, installLoopAutomations, linearLabelRemove, loadLoopConfig, openLoopMemory, promoteLearningsToMemory, runGuidedInstall, runLoopInit, loopStatus, renderDebriefMarkdown, renderObservabilityMarkdown, renderRetroMarkdown, retroLearnings, runRetroStage, precheckDeliver, precheckTick, rankModels, promoteLearnings, writePrdDocument, writeDesignDocument, readLearningsLedger, startPlan, interviewRound, answerRound, approvePlan, architectRound, approveDesign, decomposeRound, createPlannedIssues, designApproved, listPlans, prdGaps, readPlanState, writePlanState, renderPlanMarkdown, readStoredContract, writeLearningsLedger, runDeliver, runLoopDoctor, notifyHuman, runIntakeStage, runMaintainStage, readReleaseBatch, readReleaseState, approveRelease, renderReleaseMarkdown, runReleaseStage, runObservability, runObserveStage, runTick, uninstallLoopAutomations, watchDeliveries, writeStoredContract, isStagePaused, recordStageRunResult, resumeIssue, resumeStage, readIssueFailures, stageEntry, listPausedIssues, type LoopStageName } from './index.js'
 import { FileEventStore, inspectEventLogLock, recoverEventLogLock } from './kernel/events.js'
 import { acquireStageLock } from './loop/stage-lock.js'
 
@@ -263,7 +263,9 @@ loopPlan.command('approve <id>').description('Human gate: approve the PRD, which
   const loaded = loadLoopConfig(loopFile(this))
   const next = approvePlan(planOrFail(loaded, id), command.by, new Date())
   writePlanState(loaded.stateDir, next)
-  print({ id, phase: next.phase, next: `ak-harness loop plan architect ${id}` })
+  // Approval is what makes the PRD a document people read, so it lands in the repository here and not before.
+  const document = writePrdDocument(loaded, next)
+  print({ id, phase: next.phase, ...(document ? { wrote: document.path } : {}), next: `ak-harness loop plan architect ${id}` })
 })
 loopPlan.command('architect <id>').description('Produce the technical design for the whole PRD and put it to a vote (2 of 3 by default).').action(async function (this: Command, id: string) {
   const deps = await planDeps(this)
@@ -277,7 +279,8 @@ loopPlan.command('approve-design <id>').description('Human gate: approve the des
   const loaded = loadLoopConfig(loopFile(this))
   const next = approveDesign(planOrFail(loaded, id), command.by, new Date(), loaded.config)
   writePlanState(loaded.stateDir, next)
-  print({ id, phase: next.phase, next: `ak-harness loop plan decompose ${id}` })
+  const document = writeDesignDocument(loaded, next)
+  print({ id, phase: next.phase, ...(document ? { wrote: document.path } : {}), next: `ak-harness loop plan decompose ${id}` })
 })
 loopPlan.command('decompose <id>').description('Break the approved design into issues. Without --create nothing is written to the tracker.').option('--create', 'create the issues in the tracker, in the queue entry state').action(async function (this: Command, id: string, command: { readonly create?: boolean }) {
   const deps = await planDeps(this)
