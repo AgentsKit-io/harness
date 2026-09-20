@@ -201,7 +201,7 @@ const acquireEventsLock = (lockFilePath: string): number | null => {
   return null
 }
 
-export const appendLoopEvent = (stateDir: string, event: Record<string, unknown>, bus?: LoopEventBus, now: () => Date = () => new Date()): void => {
+export const appendLoopEvent = (stateDir: string, event: LoopEventPayload, bus?: LoopEventBus, now: () => Date = () => new Date()): void => {
   const path = join(stateDir, 'events.ndjson')
   mkdirSync(dirname(path), { recursive: true })
   const lockFilePath = `${path}.lock`

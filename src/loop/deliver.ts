@@ -21,7 +21,7 @@ import { resolveCatalogCandidates } from './model-catalog/index.js'
 import { rankModels, type RankedModel } from './routing.js'
 import { appendLoopEvent, briefPath, dispatchRecordPath, launchWorkerTerminal, readDispatchRecord, writeDispatchRecord, type DispatchRecordFile } from './tick.js'
 import { intakeIssueId, discoverIntake, listIntake } from './github-intake.js'
-import { createLoopEventBus, loadLoopPlugins, type LoopEventBus } from './event-bus.js'
+import { createLoopEventBus, loadLoopPlugins, type LoopEventBus, type LoopEventPayload } from './event-bus.js'
 import { attachNotifier } from './notify.js'
 import { applyRoleSettings, resolveFlowSettings, resolveRoleSettings, workerPhaseEnabled, type EffectiveFlowSettings } from './flows.js'
 import { assessDod, readDodEvidence, renderDodMarkdown } from './dod.js'
@@ -140,7 +140,7 @@ interface Context {
 const orcaOptions = (config: LoopConfig) => ({ bin: config.orca.bin, timeoutMs: config.orca.timeoutMs })
 
 const saveState = (ctx: Context, state: DeliveryState): void => { if (!ctx.dryRun) writeJsonAtomic(deliveryStatePath(ctx.loaded.stateDir, state.issue), state) }
-const event = (ctx: Context, payload: Record<string, unknown>): void => { if (!ctx.dryRun) appendLoopEvent(ctx.loaded.stateDir, { at: ctx.now().toISOString(), ...payload }, ctx.bus) }
+const event = (ctx: Context, payload: LoopEventPayload): void => { if (!ctx.dryRun) appendLoopEvent(ctx.loaded.stateDir, { at: ctx.now().toISOString(), ...payload }, ctx.bus) }
 
 /** Recover a merge recorded by this loop when GitHub no longer lists the deleted head branch. */
 const readMergedEvent = (stateDir: string, issue: string): { readonly pr: number; readonly head?: string; readonly sha?: string } | null => {
@@ -264,7 +264,8 @@ const reopenFinishedIssue = async (ctx: Context, record: DispatchRecordFile, sta
   return next
 }
 
-const finish = (ctx: Context, record: DispatchRecordFile, lease: DispatchLease | undefined, state: DeliveryState, outcome: DeliverOutcome, reason: string): void => {
+/** `dry-run` is not an outcome anything finishes on: this function returns before writing, so the type says so. */
+const finish = (ctx: Context, record: DispatchRecordFile, lease: DispatchLease | undefined, state: DeliveryState, outcome: Exclude<DeliverOutcome, 'dry-run'>, reason: string): void => {
   if (ctx.dryRun) return
   if (lease) { try { createDispatchLedger(ctx.loaded.stateDir).release(lease, `${outcome}: ${reason}`) } catch (error) { ctx.notes.push(`lease release for ${record.issue} failed: ${message(error)}`) } }
   saveState(ctx, { ...state, finishedAt: ctx.now().toISOString(), finalOutcome: outcome })
@@ -691,7 +692,7 @@ const removeIntakeLabel = async (ctx: Context, pr: PullRequestSnapshot, actions:
   catch (error) { actions.push(`label removal failed: ${message(error)}`) }
 }
 
-const finishIntake = (ctx: Context, identifier: string, pr: PullRequestSnapshot, state: DeliveryState, outcome: DeliverOutcome, reason: string): void => {
+const finishIntake = (ctx: Context, identifier: string, pr: PullRequestSnapshot, state: DeliveryState, outcome: Exclude<DeliverOutcome, 'dry-run'>, reason: string): void => {
   if (ctx.dryRun) return
   saveState(ctx, { ...state, prNumber: pr.number, finishedAt: ctx.now().toISOString(), finalOutcome: outcome })
   event(ctx, { type: `github-intake.${outcome}`, pr: pr.number, reason })

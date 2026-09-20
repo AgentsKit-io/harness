@@ -187,6 +187,8 @@ export { discoverIntake, intakeIssueId, intakePath, listIntake, readIntake } fro
 export type { IntakeRecord } from './loop/github-intake.js'
 
 export { createLoopEventBus, loadLoopPlugins } from './loop/event-bus.js'
+export { LOOP_EVENT_TYPES, isLoopEventType } from './loop/event-vocabulary.js'
+export type { LoopEventType } from './loop/event-vocabulary.js'
 export { attachNotifier, buildNotification, notificationSummary, notificationsConfigured, notifyHuman } from './loop/notify.js'
 export { applyRoleSettings, resolveFlow, resolveFlowSettings, resolveRoleSettings, unknownFlowReferences, workerPhaseEnabled } from './loop/flows.js'
 export { applyToYaml, applyTuning, nextValue, planTuning, readMetrics, readTuningState, renderTuningMarkdown, tuningStatePath } from './loop/tuning.js'

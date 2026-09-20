@@ -4,7 +4,7 @@
   "package": "@agentskit/harness",
   "packageVersion": "0.14.0",
   "entryPoint": "src/index.ts",
-  "sourceDigest": "5e9b31214ba94f0f5677a62a6333b46c610135c04cfe30e612ceb825ed58f817",
+  "sourceDigest": "a1324850cb5f327b98dc3bca9ecab6513bb019fa279533c68863df2b55df78c2",
   "capabilities": [
     {
       "id": "public-surface:adapters/agent",
@@ -1169,6 +1169,17 @@
       ]
     },
     {
+      "id": "public-surface:loop/event-vocabulary",
+      "version": "0.14.0",
+      "kind": "composition",
+      "entryPoint": "src/index.ts",
+      "exports": [
+        "LOOP_EVENT_TYPES",
+        "LoopEventType",
+        "isLoopEventType"
+      ]
+    },
+    {
       "id": "public-surface:loop/flows",
       "version": "0.14.0",
       "kind": "composition",
@@ -1759,5 +1770,5 @@
       ]
     }
   ],
-  "digest": "2f2ed40920439a814331293261ae06a6e29a443b91485c2203516d6841b4bc22"
+  "digest": "27bd5309035a059132643a0c543c7e3f9412271754445b295354b938fe34e876"
 }
