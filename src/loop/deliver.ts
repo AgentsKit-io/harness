@@ -24,6 +24,7 @@ import { createLoopEventBus, loadLoopPlugins, type LoopEventBus } from './event-
 import { attachNotifier } from './notify.js'
 import { resolveFlowSettings, type EffectiveFlowSettings } from './flows.js'
 import { assessDod, readDodEvidence, renderDodMarkdown } from './dod.js'
+import { missingArtifacts, readPhaseArtifacts, readVerifyArtifact, verifyProofs, type PhaseArtifactName } from './artifacts.js'
 
 export type DeliverOutcome = 'waiting' | 'reviewed' | 'fix-round' | 'nudged' | 'handed-off' | 'merged' | 'held' | 'blocked' | 'stuck' | 'abandoned' | 'failed' | 'dry-run'
 
@@ -587,11 +588,31 @@ ${marker}` }); actions.push('secret-file hold commented') } catch (error) { acti
     if (review.status === 'findings') return fixRound(ctx, record, lease, state, pr, 'review', `Loop: the code review of PR #${pr.number} (head ${pr.headSha.slice(0, 7)}) found ${review.blocking.length} issue(s) at or above "${reviewSettings.minSeverity}". Address each one (or explain in the PR why it is not applicable), re-run \`${config.delivery.verifyCommand}\`, commit and push. Findings:\n${renderFindingsForWorker(review.blocking)}\nThe full review is on the PR. Reply here when pushed.`, `review found ${review.blocking.length} blocking finding(s)`, actions)
   } else if (prior.status === 'findings') return { issue: record.issue, outcome: 'waiting', reason: `review findings pending a new push (head ${pr.headSha.slice(0, 7)})`, pr: pr.number, head: pr.headSha, actions }
 
+  // The phase artifacts are the contract between the worker and the harness: the machine advances on files it can
+  // check, never on what a terminal said. A missing one comes back as a fix round **naming the file** — "which
+  // file?" is the only question the worker needs answered — and an unparseable one is called out as worse than
+  // absent, because it looks like evidence. `plan.md` is only asked for where a plan was approved to depart from.
+  // A record with no worktree path predates the worktree or lost it: the harness cannot read anything there, and
+  // blaming the worker for a file nobody can look for is how a loop invents work.
+  const artifacts = record.worktreePath ? readPhaseArtifacts(record.worktreePath, config) : []
+  const requiredArtifacts: readonly PhaseArtifactName[] = config.worker.plan.enabled ? ['plan', 'verify'] : ['verify']
+  const absentArtifacts = missingArtifacts(artifacts, requiredArtifacts)
+  if (absentArtifacts.length) {
+    const detail = absentArtifacts.map((artifact) => `\`${artifact.file}\` — ${artifact.detail}`).join('; ')
+    return fixRound(ctx, record, lease, state, pr, 'review', `Loop: PR #${pr.number} cannot be checked because the phase artifact(s) the loop reads are not there: ${detail}. Write each file at the root of this worktree, commit and push. \`verify.json\` is \`{ "ranAt": "<iso>", "command": "<what you ran>", "exitCode": 0, "outcomes": [{ "id": "<outcome id>", "status": "passed", "evidence": "<the line that proves it>" }] }\`.`, `missing phase artifact(s): ${absentArtifacts.map((artifact) => artifact.file).join(', ')}`, actions)
+  }
+
   // Both DoD lists, proven, before anything merges: the project's (`dod.items`) and the issue's (the frozen
   // contract's outcomes). The evidence goes on the PR either way, so a human reading it sees proof, not a promise.
   if (config.dod.items.length || readStoredContract(ctx.loaded.stateDir, record.issue)) {
     const stored = readStoredContract(ctx.loaded.stateDir, record.issue)
-    const dod = assessDod({ config, contract: stored?.contract ?? null, evidence: readDodEvidence(record.worktreePath, config), prFiles: pr.files })
+    // `verify.json` counts as evidence for an outcome the DoD file left unproven — the worker ran the check once;
+    // asking it to transcribe the same result into a second file only invents a way to be inconsistent. The
+    // explicit DoD proof still wins where both exist: it is the more specific statement.
+    const evidence = readDodEvidence(record.worktreePath, config)
+    const fromVerify = verifyProofs(readVerifyArtifact(record.worktreePath)).filter((proof) => !evidence.outcomes.some((recorded) => recorded.id === proof.id))
+    const dod = assessDod({ config, contract: stored?.contract ?? null, evidence: { ...evidence, outcomes: [...evidence.outcomes, ...fromVerify] }, prFiles: pr.files })
+    if (fromVerify.length) actions.push(`verify.json supplied ${fromVerify.length} outcome proof(s)`)
     if (dod.lines.length) {
       if (!ctx.dryRun) { try { const marker = `<!-- loop:dod:${pr.headSha}:${dod.complete ? 'complete' : `${dod.missing.length}-${dod.failed.length}`} -->`; if (!(await githubCommentExists(ctx.runner, { repo: config.project.repo, number: pr.number, marker }))) await githubComment(ctx.runner, { repo: config.project.repo, number: pr.number, body: `${renderDodMarkdown(dod)}\n\n${marker}` }) } catch (error) { actions.push(`DoD comment failed: ${message(error)}`) } }
       if (!dod.complete) {

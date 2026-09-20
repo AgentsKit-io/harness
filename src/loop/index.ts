@@ -79,6 +79,8 @@ export { attachNotifier, buildNotification, notificationSummary, notificationsCo
 export { resolveFlow, resolveFlowSettings, unknownFlowReferences } from './flows.js'
 export { applyToYaml, applyTuning, nextValue, planTuning, readMetrics, readTuningState, renderTuningMarkdown, tuningStatePath } from './tuning.js'
 export { assessDod, dodEvidencePath, readDodEvidence, renderDodForBrief, renderDodMarkdown } from './dod.js'
+export { ARTIFACT_DIR, VerifyArtifactSchema, artifactPath, missingArtifacts, readPhaseArtifacts, readPlanArtifact, readVerifyArtifact, renderArtifactsForBrief, verifyProofs } from './artifacts.js'
+export type { PhaseArtifact, PhaseArtifactName, VerifyArtifact } from './artifacts.js'
 export { assessBoundary, layerById, layerFor, renderLayersForPrompt, verifyCommandFor } from './layers.js'
 export type { BoundaryVerdict, Layer } from './layers.js'
 export { designExcerptFor, designPathFor, prdPathFor, renderDesignMarkdown, renderPrdMarkdown, writeDesignDocument, writePrdDocument } from './documents.js'

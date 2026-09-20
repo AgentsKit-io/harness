@@ -43,6 +43,8 @@ interface Scenario {
   readonly terminalScreen?: string
   /** `linear.queueOwnership`; `unassigned` makes the assignee a claim the escalation has to release. */
   readonly queueOwnership?: 'person' | 'unassigned'
+  /** Give the dispatch record a real worktree holding these `.ak-loop/` files, so the phase-artifact gate has something to read. */
+  readonly worktreeFiles?: Readonly<Record<string, string>>
 }
 
 const basePr = (over: Record<string, unknown> = {}): Record<string, unknown> => ({ ...(fixture('gh-pr-view') as Record<string, unknown>), headRefName: 'person/eng-10-demo', files: [{ path: 'packages/demo/src/index.ts' }], statusCheckRollup: [{ __typename: 'CheckRun', name: 'ci', conclusion: 'SUCCESS', status: 'COMPLETED' }], mergeable: 'MERGEABLE', mergeStateStatus: 'CLEAN', state: 'OPEN', number: 42, url: 'https://github.com/o/r/pull/42', ...over })
@@ -66,7 +68,13 @@ const setup = (initial: Scenario = {}) => {
   const loaded = loadLoopConfig(join(dir, 'loop.config.yaml'))
   const ledger = createDispatchLedger(loaded.stateDir)
   const claim = ledger.claim({ tracker: 'linear', repository: 'org/demo', issue: 'ENG-10', worktree: 'eng-10-demo', branch: 'person/eng-10-demo', owner: 'test' })
-  const record: DispatchRecordFile = { issue: 'ENG-10', worktreeId: 'repo-1::/w/eng-10-demo', worktree: 'eng-10-demo', branch: 'person/eng-10-demo', terminal: 'term_w', provider: 'claude', model: 'sonnet', contractDigest: 'abc', leaseKey: claim.lease.key, leaseId: claim.lease.leaseId, dispatchedAt: scenario.dispatchedAt ?? '2026-09-11T10:00:00.000Z', url: 'https://linear.app/x/issue/ENG-10', initialRemainingPercent: scenario.initialRemainingPercent ?? null } as DispatchRecordFile
+  let worktreePath: string | undefined
+  if (scenario.worktreeFiles) {
+    worktreePath = mkdtempSync(join(tmpdir(), 'agentskit-loop-deliver-wt-')); cleanups.push(worktreePath)
+    mkdirSync(join(worktreePath, '.ak-loop'), { recursive: true })
+    for (const [name, body] of Object.entries(scenario.worktreeFiles)) writeFileSync(join(worktreePath, '.ak-loop', name), body)
+  }
+  const record: DispatchRecordFile = { issue: 'ENG-10', worktreeId: 'repo-1::/w/eng-10-demo', worktree: 'eng-10-demo', branch: 'person/eng-10-demo', terminal: 'term_w', provider: 'claude', model: 'sonnet', contractDigest: 'abc', leaseKey: claim.lease.key, leaseId: claim.lease.leaseId, dispatchedAt: scenario.dispatchedAt ?? '2026-09-11T10:00:00.000Z', url: 'https://linear.app/x/issue/ENG-10', initialRemainingPercent: scenario.initialRemainingPercent ?? null, ...(worktreePath ? { worktreePath } : {}) } as DispatchRecordFile
   mkdirSync(join(loaded.stateDir, 'issues', 'ENG-10'), { recursive: true })
   writeFileSync(dispatchRecordPath(loaded.stateDir, 'ENG-10'), JSON.stringify(record))
   if (scenario.mergedEvent) writeFileSync(join(loaded.stateDir, 'events.ndjson'), `${JSON.stringify({ at: NOW.toISOString(), type: 'pr.merged', issue: 'ENG-10', ...scenario.mergedEvent })}\n`)
@@ -569,6 +577,20 @@ describe('deliver', () => {
     expect(env.runner.calls.some((argv) => argv[0] === 'gh' && argv[1] === 'api' && argv.includes('--method'))).toBe(false)
     const commentCall = env.runner.calls.find((argv) => argv[0] === 'gh' && argv[1] === 'pr' && argv[2] === 'comment')
     expect(commentCall?.[commentCall.indexOf('--body') + 1]).toContain('.env')
+  })
+
+  it('sends the worker back for a phase artifact it did not leave behind, naming the file', async () => {
+    const missing = await deliver(setup({ review: { code: 0 }, worktreeFiles: {} }))
+    expect(missing.results[0]).toMatchObject({ outcome: 'fix-round' })
+    expect(missing.results[0]?.reason).toContain('.ak-loop/verify.json')
+
+    // A file that exists but does not parse is worse than an absent one, and says so instead of merging.
+    const invalid = await deliver(setup({ review: { code: 0 }, worktreeFiles: { 'verify.json': '{ not json' } }))
+    expect(invalid.results[0]).toMatchObject({ outcome: 'fix-round' })
+    expect(invalid.results[0]?.reason).toContain('.ak-loop/verify.json')
+
+    const written = await deliver(setup({ review: { code: 0 }, worktreeFiles: { 'verify.json': JSON.stringify({ command: 'pnpm test', exitCode: 0, outcomes: [{ id: 'o1', status: 'passed', evidence: 'green' }] }) } }))
+    expect(written.results[0]).toMatchObject({ outcome: 'merged' })
   })
 
   it('does not hold a normal PR whose files do not match any secretFilePatterns', async () => {

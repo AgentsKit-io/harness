@@ -4,7 +4,7 @@
   "package": "@agentskit/harness",
   "packageVersion": "0.14.0",
   "entryPoint": "src/index.ts",
-  "sourceDigest": "8d58f40756bc056ad752e2fc10ef300f6403c6aa7d4bf0918ebe8f1913efb824",
+  "sourceDigest": "a52e72d8dad667e5bbd555100bdd44248a9a5abb95ad6a96b05a72056db00914",
   "capabilities": [
     {
       "id": "public-surface:adapters/agent",
@@ -912,6 +912,26 @@
       ]
     },
     {
+      "id": "public-surface:loop/artifacts",
+      "version": "0.14.0",
+      "kind": "composition",
+      "entryPoint": "src/index.ts",
+      "exports": [
+        "ARTIFACT_DIR",
+        "PhaseArtifact",
+        "PhaseArtifactName",
+        "VerifyArtifact",
+        "VerifyArtifactSchema",
+        "artifactPath",
+        "missingArtifacts",
+        "readPhaseArtifacts",
+        "readPlanArtifact",
+        "readVerifyArtifact",
+        "renderArtifactsForBrief",
+        "verifyProofs"
+      ]
+    },
+    {
       "id": "public-surface:loop/automations",
       "version": "0.14.0",
       "kind": "composition",
@@ -1729,5 +1749,5 @@
       ]
     }
   ],
-  "digest": "f5e9118b59732fe8e708cc130237cfe49c4dc3da4875e4faa8dbd02a5e2fdde9"
+  "digest": "6245a58e9d854aed8c86df6319e0c259f6f5313b16c03d707c5b155a97458707"
 }
