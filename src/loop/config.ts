@@ -52,6 +52,14 @@ const ProviderSchema = z.object({
   reviewProvider: nonEmpty.optional(),
   /** Reasoning-effort flag template substituted with `{effort}` into `tui`/`headless` (e.g. codex `-c model_reasoning_effort={effort}`, grok `--reasoning-effort {effort}`). Providers without one ignore `models.effort`. */
   effortFlag: nonEmpty.optional(),
+  /**
+   * Whether this CLI can delegate to subagents of its own.
+   *
+   * Only read when a flow asks its builder to lead (`flows.profiles.<name>.lead`). Off by default: claiming a
+   * provider delegates when it cannot produces a worker that spends its first minutes looking for a tool that
+   * does not exist.
+   */
+  subagents: z.boolean().default(false),
 })
 
 const effortLevel = z.enum(['low', 'medium', 'high', 'xhigh'])
@@ -759,6 +767,14 @@ export const LoopConfigSchema = z.object({
        * a flow.
        */
       stages: z.partialRecord(z.enum(WORKER_ROLES), z.boolean()).default({}),
+      /**
+       * The builder leads instead of typing: it delegates one plan item at a time and integrates the results.
+       *
+       * Only worth asking for where the provider has subagents (`models.providers.<id>.subagents`). Where it does
+       * not, the brief says so plainly and the dispatch record keeps that fact — silently dropping the request
+       * would leave a human reading "lead" in the config and a worker that never led anything.
+       */
+      lead: z.boolean().optional(),
       /** Free-form note shown wherever the flow is reported, so a costlier gate can explain itself. */
       reason: nonEmpty.optional(),
     })).default({}),

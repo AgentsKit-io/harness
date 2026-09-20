@@ -12,7 +12,7 @@ import { renderWorkerBrief } from './brief.js'
 import { readStoredPlan, runPlanWithVotes, writeStoredPlan, type StoredPlan } from './plan-vote.js'
 import { writeJsonAtomic } from './fs-atomic.js'
 import { loadPinnedSkills, skillRefs, skillDigest, type PinnedSkillRef } from './skills.js'
-import { loadLoopConfig, type EffortLevel, type LoadedLoopConfig, type LoopConfig, type ModelReference } from './config.js'
+import { loadLoopConfig, providerIdentity, type EffortLevel, type LoadedLoopConfig, type LoopConfig, type ModelReference } from './config.js'
 import { assessContract, contractIsFresh, extractResetsAt, generateContract, readStoredContract, resolveDocContext, writeStoredContract, type StoredContract } from './contract.js'
 import { activeCooldowns, readCooldowns } from './cooldown.js'
 import { countRunningWorkers, providerSpecs } from './doctor.js'
@@ -70,6 +70,12 @@ export interface DispatchRecordFile {
   readonly url: string
   readonly briefDigest: string
   readonly skills: readonly PinnedSkillRef[]
+  /**
+   * How this worker was told to work when its flow asked it to lead: `subagents` when the provider has them,
+   * `alone` when it does not. Absent when no flow asked. Recorded because a lead that never led is otherwise
+   * invisible to whoever reads the config and expects delegation.
+   */
+  readonly delegation?: 'subagents' | 'alone'
   readonly setup: { readonly command: readonly string[]; readonly exitCode: number | null; readonly durationMs: number; readonly timedOut: boolean } | null
   readonly effort: EffortLevel
   /** Builder provider's remaining Orca usage percent at dispatch time (`resilience.maxUsageDeltaPercent` cost guard); `null` when usage was unknown. */
@@ -554,6 +560,10 @@ export const runTick = async (input: TickInput): Promise<TickReport> => {
         ? await resolveDocContext(loaded.root, `${detail.identifier} ${detail.title}`, config.contract.maxBriefReferences, config.contract.briefScopes)
         : []
       const pinnedSkills = getPinnedSkills()
+      // A flow may ask its builder to lead. Whether it actually can is the provider's answer, and the brief says
+      // which of the two it got — a worker told nothing about delegation invents its own answer.
+      const delegation = flow.profile?.lead ? (providerIdentity(config, worker.provider).settings.subagents ? 'subagents' as const : 'alone' as const) : null
+      if (delegation === 'alone') notes.push(`${detail.identifier}: flow asked for a lead but ${worker.provider} has no subagents declared; the worker was told to work alone`)
       const brief = renderWorkerBrief({
         issue: detail,
         contract: stored,
@@ -565,6 +575,7 @@ export const runTick = async (input: TickInput): Promise<TickReport> => {
         memoryBlock: briefMemory.memoryBlock,
         guidanceRefs,
         skills: pinnedSkills,
+        ...(delegation ? { subagents: delegation === 'subagents' } : {}),
         ...(approvedPlan ? { plan: approvedPlan } : {}),
         onPiiDetected: (matches) => {
           appendLoopEvent(loaded.stateDir, { at: now().toISOString(), type: 'security.pii-detected', issue: detail.identifier, source: 'worker-brief', kinds: [...new Set(matches.map((match) => match.kind))], count: matches.length }, bus)
@@ -575,7 +586,7 @@ export const runTick = async (input: TickInput): Promise<TickReport> => {
       const launched = await launchWorkerTerminal({ runner: input.runner, config, worktreeId: created.id, command: worker.tui, title, brief })
       if (!launched.accepted) notes.push(`${detail.identifier}: terminal ${launched.terminal} did not confirm the brief; deliver will nudge it if it stays idle`)
       ledger.recordDispatch({ lease: claim.lease, idempotencyKey: plan.idempotencyKey, commandDigest: plan.commandDigest })
-      const record: DispatchRecordFile = { issue: detail.identifier, worktreeId: created.id, worktree, branch: actualBranch, terminal: launched.terminal, provider: worker.provider, model: worker.model, contractDigest: stored.digest, leaseKey: claim.lease.key, leaseId: claim.lease.leaseId, dispatchedAt: now().toISOString(), url: detail.url, briefDigest, skills: skillRefs(pinnedSkills), setup: setupResult, effort: worker.effort, initialRemainingPercent: worker.remainingPercent, worktreePath: created.path, labels: [...detail.labels], project: detail.project, priorityLabel: detail.priorityLabel }
+      const record: DispatchRecordFile = { issue: detail.identifier, worktreeId: created.id, worktree, branch: actualBranch, terminal: launched.terminal, provider: worker.provider, model: worker.model, contractDigest: stored.digest, leaseKey: claim.lease.key, leaseId: claim.lease.leaseId, dispatchedAt: now().toISOString(), url: detail.url, briefDigest, skills: skillRefs(pinnedSkills), ...(delegation ? { delegation } : {}), setup: setupResult, effort: worker.effort, initialRemainingPercent: worker.remainingPercent, worktreePath: created.path, labels: [...detail.labels], project: detail.project, priorityLabel: detail.priorityLabel }
       resetDeliveryStateForDispatch(loaded.stateDir, detail.identifier)
       writeJsonAtomic(dispatchRecordPath(loaded.stateDir, detail.identifier), record)
       appendLoopEvent(loaded.stateDir, { at: record.dispatchedAt, type: 'worker.dispatched', ...record, command: worker.tui, briefAccepted: launched.accepted, tuiIdle: launched.idle }, bus)
