@@ -1,0 +1,44 @@
+---
+title: How it works
+description: One pass through the whole cycle, from an objective nobody has written down to a released change.
+---
+
+<LoopFactory />
+
+## One issue, end to end
+
+<PipelineTrack />
+
+1. **The contract is frozen.** The orchestrator reads the issue and produces a contract: intent, scope,
+   outcomes, and for each outcome the check that proves it. An issue with no verifiable acceptance criterion
+   comes back with zero executable outcomes and one blocking ambiguity — which escalates to a human instead of
+   dispatching a worker to guess.
+2. **The plan is voted on**, when the project asked for one. The planner proposes, three agents vote, two
+   approvals start the work. A rejection must carry a concrete objection; one that cannot be answered is
+   discarded rather than counted. Three cycles without consensus is an ambiguous requirement, so it becomes a
+   human's problem with the objections attached.
+3. **The worker runs** in its own worktree, with a brief that opens with everything invariant for this
+   repository and closes with this issue. Nobody watches that terminal.
+4. **Delivery drives it to merge.** The PR is found, the checks are read, the project's cheap verification runs
+   before the expensive review, the review runs at the configured severity floor, and both definition-of-done
+   lists must be proven. Anything short of that is a fix round sent back to the same worker, with the finding,
+   the failing check or the missing file named.
+5. **The merge happens** — squash, by default — and the tracker is moved, the worktree removed, the slot
+   released.
+
+## What the harness will not do
+
+- **It will not drive the worker's model loop.** That session is opaque, and pretending otherwise would mean
+  inventing progress it cannot see.
+- **It will not merge on a promise.** Every gate reads a file or an API, never a sentence in a terminal.
+- **It will not release without a human.** The approval binds to a head sha, and anything merged afterwards is a
+  different batch needing its own approval.
+- **It will not quietly downgrade.** Out of budget, out of consensus, out of fix rounds: all escalations, none
+  of them a cheaper retry.
+
+## The rhythm
+
+`tick` every five minutes, `deliver` every ten, `observe` when you want a scan, `retro` weekly. Those are
+defaults in `schedule.*`, and `loop install` puts them in the scheduler for you. Between them the loop is not
+running at all: there is nothing to keep alive, and a machine that reboots loses nothing but the time until the
+next tick.

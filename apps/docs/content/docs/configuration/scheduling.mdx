@@ -1,0 +1,59 @@
+---
+title: Scheduling
+description: What runs when, why every stage exits 1, and how drift is found.
+---
+
+```yaml
+schedule:
+  tick: '*/5 * * * *'
+  deliver: '*/10 * * * *'
+  retro: 'FREQ=WEEKLY;BYDAY=MO;BYHOUR=9;BYMINUTE=0'
+  retroIssue: REP-1
+  observe: '*/30 * * * *'
+  observer:
+    since: 24h
+    reminderHours: 2
+    schedulerStallMin: 20
+    staleLockMin: 30
+  runner: precheck
+  stageTimeoutSec: 600
+  harnessCommand: ak-harness
+  namePrefix: loop
+```
+
+## Every automation is a shim
+
+Each one runs exactly `ak-harness loop stage <x> -f <config>` and nothing else. The work happens inside the
+scheduler's **precheck** command, which always exits 1 so the run is recorded without launching an agent
+session. That is `runner: precheck`, the default, and it is why the loop needs no agent to run itself.
+
+`observe` is the exception: its exit code **is** the decision — 0 when a human has to look, 1 when healthy — so
+a scheduler can escalate without any other integration.
+
+Two constraints worth remembering: a precheck is capped at 600 seconds, and `stageTimeoutSec` must fit inside
+it. A tick that cannot finish in its budget leaves the rest of the queue for the next one rather than running
+over.
+
+## `retro` needs both halves
+
+`schedule.retro` without `schedule.retroIssue` (or the other way round) installs nothing and says so in the
+notes. A digest with nowhere to go is not a schedule.
+
+## Install reconciles; it does not rewrite
+
+```bash
+ak-harness loop install            # create what is missing, edit what drifted
+ak-harness loop install --dry-run  # the exact argv, creating nothing
+ak-harness loop status             # what the scheduler has, and the last run of each
+```
+
+It compares every live automation with what `schedule:` declares — trigger, prompt, precheck command and
+timeout, provider, workspace, enabled — then **creates what is missing, edits only the drifted fields, leaves a
+matching automation untouched, and switches off (never deletes) one whose stage the config stopped declaring**.
+Each action names the fields it changed.
+
+## Drift is invisible to everything else
+
+`loop doctor`'s `automations.drift` check exists because a loop looks perfectly healthy while its scheduler
+runs a command nobody declares — an automation edited by hand months ago, still pointing at a config file that
+moved. The check reports the comparison and changes nothing; `loop install` is what reconciles it.

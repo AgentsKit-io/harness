@@ -1,0 +1,72 @@
+---
+title: Self-improvement
+description: The three things the loop may change about itself, each bounded, measured, attributed and off by default.
+---
+
+A loop that runs for weeks accumulates evidence about itself. Doing nothing with it wastes it; acting freely on
+it is how an autonomous system drifts from what its owners agreed to, one defensible step at a time. So the
+loop may change exactly three things.
+
+## 1. Promote a learning
+
+`memory.autoPromote.enabled`. A lesson seen `recurrence.minSightings` times is promoted by the retro itself,
+attributed to `loop-auto`, at most `recurrence.maxPerRun` per run. See [memory](/docs/concepts/memory).
+
+## 2. Move a knob
+
+```yaml
+tuning:
+  enabled: true
+  maxChangesPerRetro: 1
+  commit: false
+  knobs:
+    - path: delivery.review.minSeverity
+      metric: review-findings-ratio
+      values: [nit, med, high, blocker]
+    - path: delivery.maxFixRounds
+      metric: fix-rounds-per-merge
+      min: 1
+      max: 4
+      step: 1
+```
+
+A knob is auto-adjustable **only when it declares the metric that justifies moving it** — and that same metric
+is what moves it back. The next retro compares: worse than before the change means the knob returns and is
+frozen until a human clears it. A metric at zero never moves a knob, because a loop that keeps tightening a
+healthy gate eventually stops merging anything.
+
+The edit is written into `loop.config.yaml` in place, **with every comment preserved**, validated before it is
+kept, and recorded in `<stateDir>/tuning.json` with the reason and the evidence.
+
+Never auto-adjustable, whatever the config says: **models, providers, gates and branches** — the things that
+decide who pays and what reaches production.
+
+## 3. Improve an installed agent
+
+`agents.autoImprove`. The retro finds the role with the worst outcome-per-run ratio and proposes **one dated
+note** appended to that agent's instructions — not a diff written by a model.
+
+```yaml
+agents:
+  registryPath: agents.registry.yaml
+  autoImprove: true
+  evalCommand: [pnpm, run, eval]
+  maxAutoLines: 5
+```
+
+The eval is the gate, and the bar is **not worse**, not better: a change that leaves the score alone but makes
+the agent clearer is worth keeping, and a change that cannot be measured is never adopted — with no
+`evalCommand`, nothing is ever adopted. A failing eval puts the file back exactly as it was, because an agent
+left half-improved is worse than one never touched.
+
+Three things the machine never does here:
+
+- touch a **critical role** (`architect`, `reviewer`);
+- write more than `maxAutoLines` lines;
+- **publish** anything back to the registry.
+
+And one it stopped doing in 0.15.0: writing to an agent that is code. `npx agentskit add <id>` installs an
+agent as a directory of code; an HTML comment appended to `agent.ts` is a syntax error, not an improvement. The
+harness now edits only a markdown instructions file that already exists, and records everything else as
+`needs-human` with the note and the evidence intact. `loop doctor`'s `agents.registry` check says which
+instructions file it found for each installed agent.

@@ -8,8 +8,9 @@ PRD, the PRD becomes a design and issues, each issue becomes a contract, a worke
 reviewed pull request proven against a definition of done, a merge — and, behind a human gate, a release.
 
 It is a CLI and a library. There is no daemon, no dashboard and no database: the state is files in
-`.ak-loop/` next to your repository, and the schedule is whatever your machine already uses (Orca automations,
-or the system crontab).
+`.ak-loop/` next to your repository, and the schedule is whatever your machine already uses.
+
+<LoopFactory />
 
 ## What the harness decides, and what it does not
 
@@ -23,9 +24,16 @@ files it can check, never on what a terminal said.
 
 ## Where to start
 
-- **[Quickstart](/docs/get-started/quickstart)** — `loop init` → `loop doctor` → `loop install` → the first tick.
-- **[Stages](/docs/concepts/stages)** — the six state machines and what each one decides.
-- **[Definition of done](/docs/concepts/definition-of-done)** — the two lists that gate every merge.
+| If you want to… | Read |
+|---|---|
+| Get it running | [Quickstart](/docs/get-started/quickstart) |
+| Understand the shape | [How it works](/docs/get-started/how-it-works), [Stages](/docs/concepts/stages) |
+| Know what blocks a merge | [Definition of done](/docs/concepts/definition-of-done), [Phase artifacts](/docs/concepts/artifacts) |
+| Spend less | [Cost](/docs/concepts/cost), [Flows](/docs/concepts/flows) |
+| Know where it stops for you | [Human gates](/docs/concepts/human-gates) |
+| Operate one | [Operating the loop](/docs/guides/operating), [Troubleshooting](/docs/guides/troubleshooting) |
+| See it happen | [Examples](/docs/examples/first-loop) |
+| Look something up | [Configuration](/docs/reference/configuration), [CLI](/docs/reference/cli), [Events](/docs/reference/events) |
 
 ## Requirements
 

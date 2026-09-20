@@ -1,0 +1,69 @@
+---
+title: The four layers
+description: Where each setting belongs, and why the project outweighs the global file.
+---
+
+One person runs the loop on several repositories; one repository is run by several people, on machines that
+differ. Four files, merged in order and validated **once, as one config**:
+
+| Order | File | Owns |
+|---|---|---|
+| 1 | `~/.agentskit/harness.yaml` | The person and the machine: providers, binaries, notification channels |
+| 2 | `loop.config.yaml` | The project: versioned, reviewed, the same for everyone |
+| 3 | `loop.config.team.<key>.yaml` | What diverges inside one repository, per team |
+| 4 | `loop.config.local.yaml` | This machine (gitignored) |
+
+Below all of them sits `extends:` — the preset — which only fills silence.
+
+## The project outweighs the global
+
+A decision the repository states — the verification command, the base branch, the definition of done, the
+protected paths — is a decision a reviewer approved. A personal default must never quietly override it on one
+contributor's machine. The machine layer comes last because it describes facts about the machine, not about
+the work.
+
+## Steering it
+
+| Variable | Effect |
+|---|---|
+| `AK_HARNESS_CONFIG` | Use this config path |
+| `AK_LOOP_TEAM` | Which `loop.config.team.<key>.yaml` applies |
+| `AK_HARNESS_NO_GLOBAL=1` | Ignore the global layer entirely (what the tests use) |
+
+A declared team whose file is missing **fails loudly** rather than quietly running the defaults: a team layer
+that silently does not exist is worse than no team layer.
+
+## Seeing the result
+
+```bash
+ak-harness loop validate            # the effective config, and the hash of it
+ak-harness loop doctor              # which layers were found, plus everything else
+```
+
+Two configs that look different on disk can be identical in effect, so every report quotes the effective value
+rather than the file it came from. An absent layer is not an error.
+
+## What goes where, in practice
+
+```yaml
+# ~/.agentskit/harness.yaml — yours, on this machine
+models:
+  providers:
+    codex: { bin: codex, auth: subscription, tui: 'codex -m {model} -s danger-full-access -a never' }
+notifications:
+  command: [terminal-notifier, -message, '{summary}']
+```
+
+```yaml
+# loop.config.yaml — the project's, in the repository
+project: { name: report, repo: acme/report, baseBranch: main }
+delivery: { verifyCommand: 'pnpm lint && pnpm test' }
+dod:
+  items:
+    - { id: tests, description: the suite is green, kind: command, command: [pnpm, test] }
+```
+
+```yaml
+# loop.config.local.yaml — this machine only, gitignored
+machine: { minFreeRamGb: 12 }
+```

@@ -2,6 +2,9 @@ import defaultMdxComponents from 'fumadocs-ui/mdx'
 import { CodeBlock, Pre } from 'fumadocs-ui/components/codeblock'
 import type { HTMLAttributes } from 'react'
 import { Mermaid } from '@/components/mermaid'
+import { PipelineTrack } from '@/components/pipeline-track'
+import { LoopFactory } from '@/components/loop-factory'
+import { RunReplay } from '@/components/run-replay'
 
 /**
  * Fumadocs MDX map with explicit CodeBlock (Shiki highlight + copy button) and `<Mermaid chart={`…`} />`.
@@ -13,6 +16,9 @@ export function getMDXComponents(components?: Record<string, unknown>) {
   return {
     ...defaultMdxComponents,
     Mermaid,
+    PipelineTrack,
+    LoopFactory,
+    RunReplay,
     pre: ({ children, ...props }: HTMLAttributes<HTMLPreElement>) => (
       <CodeBlock {...props} allowCopy keepBackground>
         <Pre>{children}</Pre>

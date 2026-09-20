@@ -1,0 +1,73 @@
+---
+title: Releasing
+description: Promotion, deploy, smoke and rollback — for a batch a human approved, bound to a head sha.
+---
+
+`project.baseBranch` is where work integrates. `release.branch` is what reaches production. The release stage
+moves one to the other, and only for a batch someone approved.
+
+```yaml
+release:
+  enabled: true
+  branch: production
+  notesFile: CHANGELOG.md
+  deploy: [pnpm, run, deploy]
+  deployTimeoutSec: 900
+  smoke: [pnpm, run, smoke]
+  smokeTimeoutSec: 300
+  rollback: [pnpm, run, rollback]
+```
+
+Everything is argv, never a shell string. The harness knows how to sequence a release; it does not know how to
+deploy your service, and pretending otherwise is how a deploy command with a pipe in it becomes a production
+incident.
+
+## The sequence
+
+```bash
+ak-harness loop release status    # what is waiting, and what it is waiting for
+ak-harness loop release approve   # HUMAN GATE — binds to the current head sha
+ak-harness loop release run       # promote → deploy → smoke (→ rollback)
+```
+
+A real `release status`, captured read-only on 2026-09-20 against a repository with no release branch yet:
+
+```json
+{
+  "base": "main",
+  "branch": "production",
+  "head": null,
+  "commits": [],
+  "issues": [],
+  "error": "fatal: ambiguous argument 'production..main': unknown revision or path not in the working tree.",
+  "approval": null,
+  "approve": "ak-harness loop release approve"
+}
+```
+
+That is the honest shape of "you have not created the release branch yet": the error is git's own, passed
+through rather than reworded into something friendlier and less true.
+
+## The approval binds to a sha
+
+The approval records the head it was given for, and the number of commits it covered. Anything merged
+afterwards is a different batch and needs its own approval; a successful promotion spends the approval, so
+nothing merged later rides on it. An approval that outlived its commits would be a rubber stamp.
+
+While a batch waits, `release.waiting` fires **once per head** — deduplicated in `release.json` — so a cron
+running every few minutes does not turn a reminder into noise. A promotion clears the mark, and the next batch
+is news again.
+
+## When the smoke fails
+
+The declared `rollback` runs, the result is recorded either way, and the loop escalates. A project that
+declared no rollback is told so plainly rather than left guessing:
+
+> smoke failed after deploy and no release.rollback is declared — a human must decide
+
+## Release notes
+
+With `notesFile` set, the notes are written and committed **before** the promotion, so the branch that reaches
+production carries them. They are built from what actually merged — commit subjects, issue keys, the
+definition-of-done evidence — rather than from a model's summary, because a release note that cannot be checked
+against the log is a press release.

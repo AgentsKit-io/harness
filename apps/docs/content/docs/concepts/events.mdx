@@ -1,0 +1,66 @@
+---
+title: Events and plugins
+description: Every decision the loop makes writes an event, and the vocabulary is enforced by the compiler.
+---
+
+Every transition writes a line to `<stateDir>/events.ndjson` and emits on the plugin bus. Those events are how
+`debrief`, `observe`, `retro` and every notification channel know anything: the log is the source of truth, and
+no report keeps its own state.
+
+## The vocabulary is the contract
+
+`LOOP_EVENT_TYPES` names every event and the fields it carries, and `appendLoopEvent` accepts nothing else. An
+event whose name exists only inside a template string is an event nobody can subscribe to on purpose — you
+cannot list it, document it, or put it in `notifications.events` without reading the source first.
+
+The test closes the circle both ways: an emission that skipped the vocabulary fails, and so does a name
+declared in the vocabulary that nothing emits. The [events reference](/docs/reference/events) is generated from
+the same object.
+
+## Plugins
+
+```js
+// plugin.mjs — declared in `plugins.modules`
+export default function register(bus) {
+  bus.on('pr.merged', (event) => console.log(`merged #${event.pr} for ${event.issue}`))
+  bus.on('*', (event) => metrics.count(event.type))
+
+  bus.hook('beforeMerge', ({ issue, pr }) =>
+    isFriday() ? { block: true, reason: 'nobody merges on a Friday' } : undefined)
+}
+```
+
+Eight lifecycle hooks — `beforeDispatch`, `afterDispatch`, `beforeReview`, `afterReview`, `beforeMerge`,
+`afterMerge`, `onPause`, `onEscalate` — wrap the decisions the loop makes. A `before*` hook returning
+`{ block: true, reason }` stops the action; anything else, including a thrown error, does not. A listener that
+throws is treated as a non-blocking no-op and its error is collected: a broken plugin must not take down the
+loop.
+
+## Notifications
+
+The tracker comment is the record. A channel is what goes on top of it, and there are exactly two generic
+shapes, with no vendor code anywhere:
+
+```yaml
+notifications:
+  events: [contract.escalated, issue.paused, pr.merge-refused, release.waiting]
+  webhook:
+    urlEnv: LOOP_WEBHOOK_URL   # Slack, Discord, a Telegram bot, n8n — all the same shape
+  command: [terminal-notifier, -message, '{summary}']
+```
+
+`onEscalate` always reaches the channel, whatever `events` lists. A failing channel is reported, never fatal —
+and `loop doctor` warns when the URL variable is unset in this environment, because an unreachable webhook
+looks exactly like silence.
+
+## Reading the log
+
+```bash
+ak-harness loop retro --since 7d          # the digest, with calibration suggestions
+ak-harness loop observe --since 24h       # anomalies and metrics, read-only
+ak-harness loop debrief                   # what a human wants to know right now
+jq -r 'select(.type=="pr.merged") | .issue' .ak-loop/events.ndjson
+```
+
+The file is append-only and rotated by size; an archive is `events-archive-<epoch>.ndjson` next to it. Nothing
+ever rewrites a line, so a run's path can be reconstructed months later.

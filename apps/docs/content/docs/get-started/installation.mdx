@@ -1,0 +1,63 @@
+---
+title: Installation
+description: What the harness needs on the machine, and what it refuses to start without.
+---
+
+```bash
+pnpm add -D @agentskit/harness   # or: npm i -D @agentskit/harness
+```
+
+The package exposes two binaries: `ak-harness` (everything) and `ak-verify` (the same binary under the common
+verification-protocol name). Node.js 22 or newer.
+
+## What has to be there
+
+| Requirement | Why | What happens without it |
+|---|---|---|
+| A git repository with a committed `HEAD` | Evidence is bound to a revision; a repository with no first commit cannot prove currentness | `GIT_REQUIRED` |
+| At least one coding-agent CLI on `PATH` | The worker is that CLI, running in its own worktree | `loop doctor` reports the role as unroutable and `tick` dispatches nothing |
+| A runner: Orca, or git + tmux + cron | Where a worker actually runs | `connectors.runner` decides; `local` needs `tmux` and a crontab |
+| A tracker the loop can read | The queue | `loop doctor` fails the `linear.queue` check |
+| `gh`, authenticated | Pull requests, checks, comments, merge | `deliver` cannot see or merge anything |
+| `agentskit-review` on `PATH` | The adversarial review | `loop doctor` warns; `deliver` cannot review until it is installed |
+
+Run `ak-harness loop doctor` before anything else. It answers all of the above at once, without dispatching.
+
+## Where state lives
+
+`project.stateDir` — `.ak-loop` by default, next to `loop.config.yaml`, and gitignored. Inside it:
+
+| Path | What it holds |
+|---|---|
+| `events.ndjson` | Every event, append-only, rotated by size |
+| `issues/<id>/contract.json` | The frozen contract |
+| `issues/<id>/plan.json` | The approved plan and the votes that approved it |
+| `issues/<id>/dispatch.json` | Who is working on it, where, since when |
+| `issues/<id>/delivery.json` | Fix rounds, nudges, handoffs, the final outcome |
+| `release.json` | The current approval and the release history |
+| `plans/<id>/state.json` | A `loop plan` run, from objective to issues |
+
+Nothing else. No daemon, no database, no background process: every command reads those files, does its pass, and
+exits.
+
+## Providers
+
+Each entry under `models.providers` is a CLI the harness knows how to launch:
+
+```yaml
+models:
+  providers:
+    codex:
+      bin: codex
+      auth: subscription
+      tui: codex -m {model} -s danger-full-access -a never
+      headless: [codex, exec, --model, '{model}', '{prompt}']
+      effortFlag: -c model_reasoning_effort={effort}
+```
+
+`tui` is what runs in a worker's terminal; `headless` is what the harness calls for its own work (freezing a
+contract, writing a plan, casting a vote). A provider with no `headless` template can still build, but cannot be
+an orchestrator.
+
+One trap worth knowing: **Codex's `workspace-write` sandbox blocks `.git` writes and has no network**. A codex
+worker that cannot commit or push needs `-s danger-full-access` (or an equivalently open sandbox) in its `tui`.

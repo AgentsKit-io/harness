@@ -1,0 +1,52 @@
+---
+title: Memory
+description: What the loop is allowed to remember, who approved it, and why the attribution matters more than the storage.
+---
+
+Memory here is not a vector database and not a chat history. It is a small set of **approved project
+decisions** that a human (or, within declared bounds, the retro) promoted, recalled into a prompt when they are
+relevant, and attributed so they can be revoked.
+
+```yaml
+memory:
+  enabled: true
+  backend: file
+  maxRecall: 5
+  preferOverDocBridge: true
+  recurrence: { minSightings: 2, maxPerRun: 3 }
+  autoPromote: { enabled: false }
+```
+
+## From a lesson to a memory
+
+1. `loop retro` reads the event log and proposes **learnings** — the same lesson seen again and again.
+2. A learning proposed `recurrence.minSightings` times stops being an anecdote and is surfaced as ready to
+   promote, with the exact command, so the human act is one keystroke instead of an analysis.
+3. `promoteLearnings` writes it as a memory record with an actor: `human`, or `loop-auto` when
+   `memory.autoPromote.enabled` is on.
+
+The actor is the part that matters. A record nobody can tell apart from a human decision is a record nobody can
+safely revoke — which is why automatic promotion is never recorded as `human`
+(ADR-0019, amendment of 2026-09-19), and why `loop learning promoted` and
+`loop learning reject --ids … --by human` both exist.
+
+## Recall
+
+Before a contract is frozen or a brief is written, `planMemoryContext` selects what to include and reports what
+it cost and saved: hits, the Doc Bridge references before and after, the approximate characters saved, and a
+digest of the selection. That digest is frozen with the contract — memory changing is one of the three things
+that invalidate a cached contract, because a contract frozen under different decisions is a different contract.
+
+`preferOverDocBridge` decides the tie: an approved decision beats re-deriving the same fact from documentation,
+which is both cheaper and more likely to be current.
+
+## The honest limitation
+
+The `file` backend's recall is a **substring scan with a fixed relevance** over the deserialised records. So
+`maxRecall: 5` means "the first five records containing the token", not "the five most relevant". For a few
+dozen decisions that is fine and the ordering barely matters; for a few thousand it would not be, and a ranking
+that does not exist should not be implied.
+
+An SQLite/FTS5 backend — same `AgentMemoryAdapter` interface, same record format, same attestation, no new
+dependency, since `node:sqlite` ships with the Node 22 the package already requires — was designed and
+deliberately left out of this release.

@@ -1,0 +1,76 @@
+---
+title: One issue, three flows
+description: The same objective through enterprise, POC and incident — what changes, and what never does.
+---
+
+One motor, three kinds of demand. The issue is the same in all three: *the `/usage` endpoint returns stale
+counters after a plan change.*
+
+```yaml
+flows:
+  default: enterprise
+  profiles:
+    enterprise:
+      review: { votes: 3, minSeverity: nit }
+      merge: { requireChecks: true, requireHumanApproval: true }
+      roles: { review: { provider: codex, model: gpt-5.6-sol, effort: xhigh } }
+      reason: billing-adjacent
+    poc:
+      review: { votes: 1, minSeverity: high, profile: fast }
+      merge: { requireChecks: false }
+      maxFixRounds: 1
+      stages: { vote: false }
+    incident:
+      review: { votes: 1, minSeverity: blocker }
+      merge: { requireChecks: false, requireHumanApproval: false }
+      maxFixRounds: 1
+      stages: { planner: false, vote: false, review: false }
+      lead: true
+  select:
+    - flow: incident
+      anyLabels: [sev1]
+    - flow: poc
+      projects: [Spikes]
+```
+
+## What each one buys
+
+| | `enterprise` | `poc` | `incident` |
+|---|---|---|---|
+| Plan | planner + 3 votes, 2 approve | planner, no jury | none |
+| Builder | as routed | as routed | leads, delegating where the provider has subagents |
+| Cheap verify | yes | yes | yes |
+| Review | 3 votes at `nit`, on the strongest model | 1 vote at `high`, fast profile | **off**, recorded as off |
+| CI gating | red check is a fix round | not gating | not gating |
+| Human merge | required | not required | not required |
+| Fix rounds | project default | 1 | 1 |
+
+## What never changes, in any of them
+
+- The contract is frozen before dispatch, and refuses to dispatch what it cannot verify.
+- The worker writes its three artifacts, and a missing one is a fix round naming the file.
+- **Both definition-of-done lists are proven before the merge**, and the table is written onto the pull request.
+- Protected paths, secret-shaped filenames and an enforced layer boundary hold the merge.
+- Everything is logged, with the flow and the reason it was chosen.
+
+An incident flow buys speed by skipping a *review*, never by skipping *proof*. The difference matters at four
+in the morning, which is the only time anyone reads this table.
+
+## Reading which flow ran
+
+`deliver` writes the flow into the delivery actions, with what matched and why it cost what it cost:
+
+```text
+flow `enterprise` (default): billing-adjacent
+reviewer codex/gpt-5.6-sol named by flow `enterprise`
+local verify passed before review
+verify.json supplied 2 outcome proof(s)
+definition of done proven (5 item(s))
+```
+
+And for the incident, in the same list, the line that keeps everyone honest:
+
+```text
+flow `incident` (label sev1)
+review phase off for this flow
+```

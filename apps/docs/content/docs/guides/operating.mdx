@@ -1,0 +1,74 @@
+---
+title: Operating the loop
+description: The read-only commands, in the order an experienced operator reaches for them.
+---
+
+Everything here is read-only. None of it dispatches, reviews, merges or writes to a tracker.
+
+## The four questions
+
+| Question | Command |
+|---|---|
+| What is it doing right now? | `ak-harness loop debrief` |
+| Why isn't it working? | `ak-harness loop doctor` |
+| Is anything wrong that I cannot see? | `ak-harness loop observe --since 24h` |
+| How has it been doing? | `ak-harness loop retro --since 7d` |
+
+Plus `loop status` (what the scheduler has installed and when each stage last ran), `loop watch --once` (the
+phase of each in-flight issue) and `loop paused` (what the loop stopped on, from local state, with no network
+calls at all).
+
+## A real `observe`, captured on 2026-09-20
+
+Against a live pilot repository, read-only, with 0.15.0:
+
+```text
+# Loop observability — agentskit-os · <person>
+
+_action_required_ · generated 2026-09-20T21:41:35Z · last 24h
+
+## Metrics
+
+- Queue: 1 ready · 0 free slot(s) · 6/5 workers
+- Delivery: 6 in flight · 2 held · 0 merged · 3 blocked · 15 fix round(s)
+- Reviews: 0 findings · 0 incomplete
+- Machine: 10 CPU · 42.08% load · 48% memory · 8.32 GB free
+- Providers: claude 26%, codex 96%, opencode 0%, grok 81%
+- Memory/cache: 0 recall(s), 0 hit(s), 0 chars saved · 22 cached contract(s)
+- Tokens observed: n/a
+
+## Anomalies
+
+- **action_required** · AGE-1691: AGE-1691 is in awaiting-review for 5834 min (threshold 20 min)
+- **action_required** · AGE-1692: AGE-1692 is in waiting-for-pr for 5811 min (threshold 20 min)
+
+## Failing checks
+
+- **warning** `provider.opencode`: usage exhausted until 2026-09-22T13:16:45.013Z
+- **warning** `machine.slots`: 0 free of 5 (running 6, cpus 10, load 42.08%, free RAM 8.32 GB)
+- **warning** `automations.drift`: loop-tick: drifted (enabled); loop-deliver: drifted (enabled) — reconcile with
+  "ak-harness loop install -f <config>"
+
+_Read-only. Run `ak-harness loop tick` or `deliver` to act on the queue._
+```
+
+Paths and the operator's name are redacted; nothing else was edited, and the anomaly list was trimmed to two
+of five. Read it as what it is: a loop whose automations were switched off while a human worked on it, with
+several issues parked for far longer than the idle threshold.
+
+## Three things that look like failures and are not
+
+- **A worker that looks stuck may be asleep.** Orca hibernates an idle pane after
+  `agentHibernationIdleMs` (30 minutes by default). Check whether the terminal shows no recent output versus a
+  genuine error before escalating further.
+- **Fewer free slots than expected is usually RAM, not config.** `machine.floor` is a *minimum* concurrency,
+  not a cap; the ceiling comes from `machine.minFreeRamGb` and `machine.agentRssMb` against real free memory.
+  `loop doctor`'s `machine.slots` line shows the arithmetic.
+- **A blocked issue kept its worktree on purpose.** The lease is released and the slot freed, but the worktree
+  and the pull request stay for a human to look at.
+
+## Never race the scheduler
+
+Once `loop install` has put the automations in place, do not run `tick`/`deliver` by hand on the same project:
+that races the scheduled run and can double-dispatch or double-review. To reproduce a bug, use `--dry-run`, or
+stop the automation first.

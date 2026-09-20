@@ -1,0 +1,47 @@
+---
+title: Layers
+description: The slices of a codebase, each with the one command that closes it and the boundary it owns.
+---
+
+A layer is a slice of the repository with three things attached: the tracker label that places an issue in it,
+the globs it owns, and the one test that closes it.
+
+```yaml
+layers:
+  - id: L2-runtime
+    label: 'layer:L2'
+    description: the execution runtime and its adapters
+    paths: ['packages/runtime/**', 'packages/adapters/**']
+    verify: pnpm test packages/runtime
+    enforce: false
+```
+
+This block is the **source**. A layer's description in the tracker is a reflection of it, never the other way
+round.
+
+## What reads it
+
+- **The decomposer** places a new issue in a layer when it breaks an approved design into issues.
+- **The brief** tells the worker which layer its issue belongs to, what that layer owns, and the one command
+  that closes it — cheaper than the whole suite, and more specific than "run the tests".
+- **`deliver`** compares the pull request's changed files against the layer's globs and reports every crossing.
+
+## Reporting first, blocking later
+
+`enforce` is off by default, and that is the point. A boundary that blocks before a team has drawn it properly
+costs more than it protects: every legitimate cross-cutting change becomes a fight with the loop, and people
+learn to mislabel issues to get work through.
+
+So the default is: the crossing is always reported, on the pull request and in the delivery actions, and the
+merge continues. Turn `enforce: true` on for the layer once the reports stop surprising you — at that point the
+boundary is real, and holding a PR that crosses it is enforcing something the team already believes.
+
+Work outside the boundary has a name in the brief too: a bullet under **Follow-ups** in the pull request body,
+not code in this pull request.
+
+## Layers and the cheap verifier
+
+`verifyCommandFor` answers "what closes this issue" with the layer's own command when the issue belongs to one,
+and `delivery.verifyCommand` otherwise. That is [cost lever 1](/docs/concepts/cost): the cheap check runs before
+the expensive review, and on a monorepo the difference between one package's tests and the whole suite is most
+of the bill.

@@ -1,0 +1,53 @@
+---
+title: Running without Orca
+description: git worktree, tmux and the system crontab — the second implementation that keeps the runner seam honest.
+---
+
+```yaml
+connectors:
+  runner: local
+  local:
+    worktreeRoot: ../.ak-worktrees
+    tmuxBin: tmux
+    cronMarker: '# ak-harness'
+```
+
+That is the whole switch. `tick` creates a git worktree under `worktreeRoot`, opens a tmux session, sends the
+brief, and records the same dispatch record it would have recorded with Orca. `deliver` reads the same files.
+
+## What you need
+
+- `git` with worktree support (any modern version);
+- `tmux` on `PATH`;
+- a user crontab, if you want `loop install` to schedule the stages.
+
+No app, no daemon, no runtime to keep alive.
+
+## What changes
+
+| | `orca` | `local` |
+|---|---|---|
+| Worktrees | Orca-managed workspaces | `git worktree add` under `worktreeRoot` |
+| Terminals | Orca panes, with hibernation | tmux windows |
+| Schedule | Orca automations | crontab lines carrying `cronMarker` |
+| Usage reporting | `orca account list` per provider | Whatever each CLI itself reports |
+
+The last row is the one to plan for: without Orca's aggregated usage, `models.routing.mode: catalog` and the
+usage-balanced policy have less to work with. Tiers and failover still work; "most remaining window first" is
+only as good as what the provider CLI will tell you.
+
+## Two details, both learned from a bug
+
+**The brief is typed, then submitted.** `send` writes the literal text and presses Enter afterwards. Sending
+them together means any newline inside a brief submits it early — and a worker that received the first third of
+its instructions behaves worse than one that received none.
+
+**Only marked crontab lines are touched.** `schedule` reconciles the lines carrying `connectors.local.cronMarker`
+and leaves every other line exactly as it was. Your backups, your renewals, your cron from three jobs ago: the
+harness does not own them, so it does not rewrite them.
+
+## Why this exists at all
+
+An interface with one implementation is a guess about what varies. The local runner is the second
+implementation that makes `RunnerConnector` a real seam rather than a description of Orca — and the reason the
+tracker and SCM seams are documented as *not* proven yet.

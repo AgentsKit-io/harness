@@ -1,0 +1,70 @@
+---
+title: Models and routing
+description: Tiers, failover, cooldowns and pins — how a role gets a model, and what happens when it cannot.
+---
+
+Four roles pick from their own list: `orchestrator`, `reviewer`, `builder`, `watcher`. Each list is tiers,
+best first, and every tier is a set of `provider/model` references.
+
+```yaml
+models:
+  orchestrator: [[codex/gpt-5.6-sol], [claude/opus]]
+  reviewer:     [[codex/gpt-5.6-sol], [grok/grok-4.5]]
+  builder:      [[codex/gpt-5.6-luna, claude/sonnet], [grok/grok-4.5]]
+  watcher:      [[claude/haiku]]
+  effort: { orchestrator: high, reviewer: high, builder: medium, watcher: low }
+  routing:
+    mode: catalog
+    policy: quality-first
+    usageMetric: max
+    preferKnownUsage: true
+    pin: { reviewer: codex/gpt-5.6-sol }
+    pinStrict: false
+```
+
+## How a candidate is chosen
+
+| `routing.mode` | Order |
+|---|---|
+| `tiers` | YAML order, exactly as written |
+| `hybrid` | Tiers kept, ranked by remaining usage inside each |
+| `dynamic` | Tiers flattened, ranked by usage |
+| `catalog` | Models discovered from the CLIs / a catalogue, then ranked by usage |
+
+`policy` then orders what the tiers allowed — `quality-first`, `usage-balanced` or `cost-first` — and never
+widens the set. `preferKnownUsage` puts a provider that reports a real percentage ahead of one that reports
+nothing, because a measured window beats a guess.
+
+## Failover and cooldown
+
+A candidate that fails for a provider-level reason — quota, auth, a timeout — is put on **cooldown** and the
+next candidate is tried:
+
+```yaml
+models:
+  cooldown:
+    initialMin: 30
+    maxMin: 240
+    probeBeforeReenable: true
+    exhaustedPercent: 100
+```
+
+The cooldown is exponential up to `maxMin`, and the reason is recorded with the reset instant the CLI itself
+reported, where it reported one. `provider.cooldown` is an event, so a retro can tell "the loop was slow" from
+"one provider was down for six hours".
+
+## Pins
+
+`routing.pin.<role>` hard-pins a role. With `pinStrict: false` (the default) an unavailable pin falls through to
+the ordinary candidates; with `pinStrict: true` the role simply has no candidate, and the stage says so rather
+than quietly running something else.
+
+A flow can pin per role too (`flows.profiles.<name>.roles.<role>`), which **narrows** the candidate list for
+issues on that flow. Same rule: a pin nobody can serve falls through, and the dispatch record says who ran.
+
+## Effort
+
+`models.effort.<role>` is requested only where a provider declares an `effortFlag`; providers without one
+ignore it. A flow may override it per role, and the harness applies it to its own headless calls — the
+orchestrator, the planner, the voters. What a worker's CLI does with effort inside its own session is that
+CLI's business.

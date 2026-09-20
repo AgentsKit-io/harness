@@ -1,0 +1,55 @@
+---
+title: Plans and votes
+description: The planner proposes, agents vote, and the machine counts. Running out of cycles is not a retry.
+---
+
+With `worker.plan.enabled`, no worker is launched until a plan has consensus. The planner and the voters run
+**in the harness, headless, before dispatch** — the same shape as freezing a contract. The model writes the
+plan and writes the votes; the machine counts them and decides.
+
+```yaml
+worker:
+  plan:
+    enabled: true
+    votes: 3
+    approvals: 2      # two of three
+    maxCycles: 3
+    timeoutMs: 300000
+```
+
+## One cycle
+
+<Mermaid chart={`flowchart LR
+    P[planner writes the plan] --> V{votes}
+    V -->|approvals reached| A[approved · stored with the contract digest]
+    V -->|objections| R[replan with the objections quoted back]
+    R --> P
+    R -->|cycles exhausted| H[a human, with the objections still standing]`} />
+
+- **A rejection must carry a concrete objection**: an outcome no step reaches, a step outside the contract's
+  scope, new behaviour with no test, a risk with no containment, a step whose files contradict the contract's
+  touchpoints. Style is not an objection. A rejection with none is discarded rather than counted — an objection
+  nobody can act on is noise, and counting it would let a model veto work by disliking it.
+- **Every vote records the provider and model that cast it**, so "three votes" never quietly means one model
+  voting three times. With fewer candidates than votes the list wraps, and the record shows it.
+- **Running out of cycles is not a retry.** Three models disagreeing three times is an ambiguous requirement,
+  which is a human's problem; the unresolved objections are exactly what that human is being asked to settle.
+
+## What the worker sees
+
+An approved plan is quoted into the brief, with its digest and the tally, and one instruction attached:
+
+> This plan was reviewed and approved before you started. Follow it; if it turns out to be wrong, say so in the
+> PR body and explain what you did instead — do not silently replace it.
+
+That sentence is why `.ak-loop/plan.md` exists: the plan the worker *actually* followed, written down, is the
+only way the difference between the two ever reaches a reviewer.
+
+## Buying the plan without the jury
+
+A flow may switch the `vote` phase off (`flows.profiles.<name>.stages.vote: false`). The planner's plan then
+stands as written and is stored with **zero votes**, so every reader downstream — the brief, the debrief, the
+event — says `0/0 approved` instead of implying a consensus nobody was asked for.
+
+Which models plan and which vote is the flow's decision too: `roles.planner` and `roles.vote` name the provider,
+model, effort and timeout, and a pin narrows the candidates rather than widening them.

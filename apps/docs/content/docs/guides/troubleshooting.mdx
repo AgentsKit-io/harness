@@ -1,0 +1,71 @@
+---
+title: Troubleshooting
+description: The failures people actually hit, what causes them, and what to do.
+---
+
+## Nothing is dispatched
+
+```bash
+ak-harness loop doctor
+ak-harness loop tick --dry-run --max 1
+```
+
+| What doctor says | Cause | Fix |
+|---|---|---|
+| `no builder provider available` | Every candidate is out of quota, cooling down, or not on `PATH` | Wait for the window, or add a provider tier |
+| `machine.slots: 0 free of N` | Real memory pressure, or workers still running | Finish or clean up worktrees; `machine.minFreeRamGb` is the lever |
+| `linear.queue: failed` | The tracker call failed — often the runtime, not the credentials | Restart the runtime and retry |
+| `queue has no dispatchable candidate` | Everything ready is already busy, paused or claimed | `loop paused`, and check the labels a rule requires |
+| `flows.profiles: failed` | A rule references a profile that does not exist | Declare it, or delete the rule — a typo here changes nothing, silently |
+
+## A worker opened no pull request
+
+Read its terminal before assuming a timeout — the worker usually says what happened in plain language, and
+`deliver`'s escalation already folds that output into the tracker comment.
+
+The common causes, in order: a sandbox that cannot write `.git` (Codex needs `-s danger-full-access`),
+credentials the worktree does not have, and a contract the worker decided it could not satisfy — in which case
+it should have written the blocker into the ticket.
+
+## Fix rounds that repeat
+
+A fix round is only sent once per head: the loop waits for a new push before sending another. If the same round
+keeps coming back after real pushes, the finding is probably not what the worker thinks it is. `loop debrief`
+shows the count per issue; the pull request carries every round's text.
+
+`maxFixRounds` (or `flows.profiles.<name>.maxFixRounds`) is the ceiling. Reaching it blocks the issue *for a
+human* rather than continuing — by design.
+
+## The merge does not happen
+
+Walk the gates in order; `deliver`'s `actions` list names the one that stopped it:
+
+1. draft pull request;
+2. protected paths or a secret-shaped filename;
+3. conflicts with the base branch;
+4. checks (unless `merge.requireChecks` is off for this flow);
+5. the project's own verify;
+6. the review, at `minSeverity`;
+7. the phase artifacts;
+8. both definition-of-done lists;
+9. an enforced layer boundary;
+10. `merge.auto` and `requireHumanApproval`.
+
+## The automations drifted
+
+`loop doctor`'s `automations.drift` check compares every live automation with what `schedule:` declares. Drift
+is invisible to every other check — the loop looks healthy while the scheduler runs a command nobody declares.
+`loop install` reconciles: it creates what is missing, edits only the drifted fields, leaves a matching
+automation alone, and switches off (never deletes) one whose stage the config stopped declaring.
+
+## An issue is paused
+
+```bash
+ak-harness loop paused
+ak-harness loop resume <issue>          # or: --stage tick|deliver
+```
+
+A pause follows `resilience.maxConsecutiveFailures` failures on the same issue and adds the configured label.
+Removing that label in the tracker is also a resume signal — the next tick treats it as the human's decision.
+
+Find out *why* it paused before resuming: `loop doctor`, then `loop debrief --issue <id>`.

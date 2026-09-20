@@ -1,0 +1,62 @@
+---
+title: Presets
+description: Five kinds of project, and why a preset leaves your config file short.
+---
+
+`loop init` writes `loop.config.yaml` from a preset, and a preset is a set of **defaults**, not a template to
+fill in. Everything the preset already says is left out of the file it writes, so the config diff a reviewer
+reads shows what *this* project decided differently — and nothing else.
+
+```bash
+npx ak-harness loop init --preset monorepo
+npx ak-harness loop init --dry-run          # print what it would write
+```
+
+| Preset | Shapes it assumes |
+|---|---|
+| `web-app` | An app with a build and a test suite, a base branch, CI as the gate |
+| `library` | A package with a strict suite and a changelog; documentation matters more than deploys |
+| `monorepo` | Many packages: layers are worth drawing, and a layer's own test closes an issue |
+| `data-pipeline` | Long-running jobs, fixtures, verification that is not "run the tests" |
+| `mobile` | A build that is slow enough that the cheap check before the expensive review matters most |
+
+The preset sits **below every layer** as `extends:`: anything the project, team or machine states wins over it.
+
+## What `loop init` asks
+
+Only what a preset cannot answer:
+
+- the repository (`owner/name`) and the project name;
+- the tracker team key and workspace;
+- whose queue this machine drains.
+
+Everything else has a default that is right often enough to be a default. `--global` also creates
+`~/.agentskit/harness.yaml` when it does not exist — the providers, binaries and channels that belong to the
+machine rather than to any one project.
+
+## Growing out of a preset
+
+The two knobs worth turning first both raise the bar rather than the spend:
+
+```yaml
+dod:
+  items:
+    - { id: tests, description: the suite is green, kind: command, command: [pnpm, test] }
+
+delivery:
+  review:
+    minSeverity: med        # nit < med < high < blocker
+```
+
+And the one worth turning when a monorepo starts to hurt:
+
+```yaml
+layers:
+  - id: L2-runtime
+    label: 'layer:L2'
+    paths: ['packages/runtime/**']
+    verify: pnpm test packages/runtime
+```
+
+After that, read the [configuration reference](/docs/reference/configuration): it is generated from the schema,
+so it is never ahead of or behind the code.

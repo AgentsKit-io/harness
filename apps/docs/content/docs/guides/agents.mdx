@@ -1,0 +1,59 @@
+---
+title: Installed agents
+description: Mapping a role to an agent the project installed, and what the harness will and will not change about it.
+---
+
+A role can run on a provider alone, or on an agent the project installed — a directory of code and instructions
+that `npx agentskit add <id>` copies into the repository.
+
+```yaml
+# agents.registry.yaml
+schemaVersion: 1
+roles:
+  builder: builder-1
+  reviewer: reviewer-strict
+agents:
+  builder-1:
+    provider: claude
+    model: sonnet
+    path: agents/builder-1
+    instructions: AGENT.md
+  reviewer-strict:
+    provider: codex
+    path: agents/reviewer-strict
+    instructions: agent.ts
+```
+
+**The copy in the repository is the version, and git is its history.** There is no runtime fetch, no floating
+tag, no "latest" that changes under a running loop.
+
+## What `loop doctor` checks
+
+The `agents.registry` check confirms every `path` exists and says which instructions file it found:
+
+```text
+agents.registry  passed  builder-1 → agents/builder-1/AGENT.md ·
+                         reviewer-strict → agents/reviewer-strict/agent.ts (code — improvements go to a human)
+```
+
+A registry pointing at a directory nobody installed is a **failure**, not a warning: every run for that role
+silently falls back to the provider alone, and nothing else in the loop would say so.
+
+## Code is a perfectly good agent
+
+It only changes who applies an improvement. With `agents.autoImprove`, the retro may append one dated note to a
+**markdown** instructions file that already exists. For an agent that is code — or one whose declared
+instructions file is not there — the proposal is recorded as `needs-human`, with the note and the evidence
+intact, for a person to apply.
+
+The previous behaviour appended an HTML comment to whatever the registry named, and created an `AGENT.md` out
+of nothing when none existed. Neither is an improvement; the first is a syntax error.
+
+## What is never automatic
+
+- `architect` and `reviewer` — the critical roles — are never auto-changed, whatever the config says.
+- More than `agents.maxAutoLines` lines is a proposal, not a change.
+- Publishing anything back to the registry is a human's gesture, always.
+
+See [self-improvement](/docs/concepts/self-improvement) for the eval gate that decides whether a change is
+adopted at all.

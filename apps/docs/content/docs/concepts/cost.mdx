@@ -1,0 +1,58 @@
+---
+title: Cost
+description: The policy, the ceilings, the four levers — and what the harness cannot measure.
+---
+
+Start with the limit: **the loop cannot count what a worker's CLI spends.** That session is opaque; its model
+and tool calls never reach the harness. Everything here is about what the harness itself decides — who it
+calls, how often, with how much context — plus circuit breakers on signals it can actually observe.
+
+## The policy orders; it never widens
+
+`models.routing.policy` picks among the candidates a role's tiers already allow:
+
+| Policy | Order |
+|---|---|
+| `quality-first` (default) | The best available, with failover |
+| `usage-balanced` | Most remaining window first; unknown usage last, so a measured provider beats a guess |
+| `cost-first` | The cheapest the role can still use — `models.cost` when declared, otherwise the last tier |
+
+## The ceilings, all of them refusals
+
+| Ceiling | What it protects | What happens at the limit |
+|---|---|---|
+| `budget.perProvider` | The window you share with a human | The provider becomes unavailable *to the loop*, with the reason recorded |
+| `budget.perIssueTokens` | One runaway issue | Escalation — never a retry with less headroom |
+| `delivery.maxDispatchMinutes` | A worker that stopped making progress | The dispatch is stopped like a stuck worker: worktree kept, lease released |
+| `resilience.maxUsageDeltaPercent` | A worker burning a window | Same shape, different trigger |
+| `delivery.review.maxCalls`, the review deadline | The most frequently called role | The review ends and the pass reports it |
+
+## The four levers
+
+1. **The cheap check before the expensive one.** `delivery.verify.argv` runs before the review; a layer's own
+   test closes a layered issue instead of the whole suite. A build that does not compile never spends a
+   two-vote review.
+2. **The model matched to the change.** `delivery.review.smallChangeLines` and `delivery.review.criticalPaths`
+   send a small or documentation-only change to the cheapest candidate and anything touching a critical path to
+   the strongest — and the delivery actions say which reason chose which model.
+3. **A cacheable prefix.** The worker brief and the contract prompt open with everything invariant for the
+   repository and close with the issue, so two issues share the head of the prompt byte for byte. A test
+   measures that shared prefix and asserts a minimum length; without it the ordering would be decoration the
+   next edit silently undoes.
+4. **Delta instead of repetition.** Context a worker already holds is referenced by digest — a handoff points
+   at a pinned skill whose file still hashes to the record rather than copying it, and a fix round carries a
+   one-line anchor. The rule is deliberately asymmetric: when the digest does not match, the whole block goes
+   again. A worker without its context is worse than a worker that costs more.
+
+And, on top of all four, the flow: `stages` decides which phases run at all, which is the only lever that can
+take a cost to zero.
+
+## What is not measured
+
+- **Inside a worker session.** `budget.perIssueTokens` counts what the harness spent, not what the worker's CLI
+  did.
+- **Whether prompt caching actually hit.** Ordering is what the harness can offer; honouring it is the
+  provider's business, and no number here claims otherwise.
+- **Memory relevance.** The file memory adapter's recall is a substring scan with a fixed relevance, so
+  `memory.maxRecall: 5` means "the first five records containing the token", not "the five most relevant". An
+  SQLite/FTS5 backend was designed and deliberately left out of this release.

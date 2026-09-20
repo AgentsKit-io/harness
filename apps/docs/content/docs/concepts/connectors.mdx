@@ -1,0 +1,54 @@
+---
+title: Connectors
+description: Three seams — tracker, SCM, runner — and an honest account of which one is actually proven.
+---
+
+The stages talk to the outside world through three interfaces, chosen by `connectors.*`:
+
+| Seam | What it covers | Implementations today |
+|---|---|---|
+| `TrackerConnector` | The queue, an issue's detail, its states, comments, claims | `linear` |
+| `ScmConnector` | Pull requests, checks, comments, labels, merge | `github` |
+| `RunnerConnector` | Where work runs: a worktree and a terminal | `orca`, `local` |
+
+## The rule, and where it is not met yet
+
+**A seam is only proven by a second implementation.** An interface with one is a guess about what varies, and
+it is wrong in the same direction every time: the single vendor's shape leaks in, and nobody notices until the
+second one arrives.
+
+By that rule only the runner seam is proven. `local` — git worktree, tmux, the system crontab — is a genuinely
+different shape from Orca's worktrees and terminals, and keeping both working is what keeps the interface
+honest. The tracker and the SCM each have one implementation, and this page says so rather than implying a
+portability the harness does not have.
+
+An unknown value fails closed, naming the interface to implement:
+
+```
+Unknown tracker connector "jira". Implement it against the TrackerConnector interface
+and register it in resolveConnectors.
+```
+
+## The local runner
+
+```yaml
+connectors:
+  runner: local
+  local:
+    worktreeRoot: ../.ak-worktrees
+    tmuxBin: tmux
+    cronMarker: '# ak-harness'
+```
+
+Two details worth knowing, both learned the hard way:
+
+- **`send` types the literal text first and presses Enter after.** A newline inside a brief must not submit it
+  early, which is exactly what happens when the text and the key are sent together.
+- **`schedule` only reconciles crontab lines carrying `cronMarker`.** Every other line in your crontab is
+  somebody else's, and a scheduler that rewrites the whole file once is a scheduler nobody installs twice.
+
+## Adding one
+
+A new tracker or SCM is a factory in `connectors.ts` and a value in the enum — never a change in `tick`,
+`deliver` or `release`. Whatever that change forces the interface to grow is the measurement of how much of the
+first vendor had leaked into it.

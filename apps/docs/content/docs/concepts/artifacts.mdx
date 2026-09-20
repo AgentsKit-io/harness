@@ -1,0 +1,50 @@
+---
+title: Phase artifacts
+description: Three files in the worktree. The loop advances on what it can check, never on what a terminal said.
+---
+
+A worker's session is opaque: the harness cannot see its model calls, its tool calls or its reasoning. What it
+*can* see is a worktree. So the contract between the two is three files, at `.ak-loop/` in the worktree root.
+
+| File | What it holds | Who reads it |
+|---|---|---|
+| `plan.md` | The plan the worker actually followed, and where it departed from the approved one | A human, on the pull request |
+| `verify.json` | What it ran and what happened, outcome by outcome, with evidence | `deliver`, before the merge gate |
+| `dod.json` | The definition-of-done proofs, both lists | `deliver`, and the table it writes onto the PR |
+
+```json
+{
+  "ranAt": "2026-09-20T18:04:11.000Z",
+  "command": "pnpm test packages/report",
+  "exitCode": 0,
+  "outcomes": [
+    { "id": "o1", "status": "passed", "evidence": "42 passed | 0 failed" }
+  ]
+}
+```
+
+## Present, and valid
+
+`deliver` reads the artifacts before the merge gate and requires `verify.json` (and `plan.md` where a plan was
+approved). A file that is **missing** comes back as a fix round naming it — "which file?" is the only question
+the worker needs answered. A file that **exists but does not match its schema** is called out as *worse than
+absent*, because it looks like evidence.
+
+One exception, and it is about honesty rather than leniency: a dispatch record with no worktree path is left out
+of the gate entirely. The harness has nowhere to look, and blaming a worker for a file nobody can open is how a
+loop invents work.
+
+## `verify.json` counts as evidence
+
+An outcome the worker proved in `verify.json` but did not repeat in `dod.json` is still proven. It ran the check
+once; asking it to transcribe the same result into a second file only invents a way to be inconsistent. Where
+both exist, the explicit definition-of-done proof wins: it is the more specific statement.
+
+## Why files and not a terminal
+
+The alternative is reading the worker's screen. That fails in three ways at once: the text is unstructured, it
+scrolls away, and a model that says "all tests pass" is indistinguishable from a model that ran them. Files can
+be parsed, hashed, committed, attached to the pull request and read again next week.
+
+It is also what makes a handoff cheap. A new provider taking over an in-flight task reads git history and these
+three files; nothing about the previous session needs to survive.

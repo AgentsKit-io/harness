@@ -1,0 +1,58 @@
+---
+title: Intake and maintenance
+description: Alerts and recurring checks become tracked issues — deduplicated, with evidence, inside the same loop.
+---
+
+These two stages are what close the cycle: without them the loop only drains a queue somebody else fills.
+
+## `intake` — an alert becomes an issue
+
+```yaml
+intake:
+  enabled: true
+  sources:
+    - id: sentry
+      argv: [sentry-cli, issues, list, --json]
+    - id: posthog
+      argv: [node, scripts/posthog-errors.mjs]
+  flowLabelForSeverity:
+    critical: 'flow:incident'
+```
+
+Each source is argv that prints JSON alerts. The stage parses them, **fingerprints** each one, and files only
+what it has not filed before. The fingerprint is the whole mechanism: the same error firing two hundred times
+overnight is one issue, and the second night does not reopen it.
+
+A filed issue carries the evidence that produced it — the alert payload, the source, the severity — and the
+flow label its severity maps to. That last part is how an incident flow starts without a human typing anything.
+
+## `maintain` — the checks nobody remembers to run
+
+```yaml
+maintain:
+  enabled: true
+  checks:
+    - id: audit
+      argv: [pnpm, audit, --json]
+    - id: outdated
+      argv: [pnpm, outdated, --json]
+    - id: licences
+      argv: [node, scripts/check-licences.mjs]
+```
+
+The same shape, with a different trigger: a check runs, and an issue is filed **only when there is a decision to
+take**. A clean audit files nothing. This is what an external dependency bot does from outside, done inside the
+loop and held to the same definition of done — so the update is a pull request that proves the suite is green,
+not a pull request somebody has to babysit.
+
+## Both are scheduled, and both are read-mostly
+
+They create issues and nothing else: no dispatch, no merge, no deploy. Like every scheduled stage they exit 1
+so the scheduler records the run, and their events (`intake.filed`, `maintain.filed`) carry the issue, the
+source or check id, and the fingerprint.
+
+## GitHub intake, which is a different thing
+
+`deliver` can also adopt pull requests the loop did not dispatch — opened by a human or another tool — when
+they carry the configured label. They go through the same gates and reach the same outcomes, reported under
+`github-intake.*` events so the two populations stay distinguishable in a retro.

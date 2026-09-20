@@ -1,0 +1,59 @@
+---
+title: Driving a plan
+description: Turning a vague objective into issues, one question at a time, without answering for the human.
+---
+
+`loop plan` is built to be driven by an agent talking to a person. The machine asks one question at a time and
+decides when the interview is over; the person answers.
+
+```bash
+ak-harness loop plan start "we need usage-based billing for the API"
+# → { "planId": "…", "question": { "id": "q1", "text": "…" } }
+
+ak-harness loop plan answer q1 "per request, counted at the edge, billed monthly"
+# → the next question, or "the interview is done"
+
+ak-harness loop plan show <id>            # the PRD so far, as Markdown
+ak-harness loop plan approve <id>         # HUMAN GATE — the architect starts
+ak-harness loop plan architect <id>       # the design, then the vote
+ak-harness loop plan approve-design <id>  # HUMAN GATE — everything inherits this
+ak-harness loop plan decompose <id> --create
+```
+
+## The interview ends when the machine says so
+
+Not when a model declares itself finished. The PRD has required fields — `objective`, `users`, `inScope`,
+`successCriteria` — and the interview continues while any is empty or any question is open. A model that says
+it is done with a gap still open is asked again.
+
+## How to relay a question
+
+Put it to the person in substance, and add what you actually know:
+
+> **Which requests count as billable?**
+> From the codebase, three plausible answers:
+> 1. every request that reaches the router, including 4xx (simplest, matches the current metrics);
+> 2. only 2xx responses (kindest to customers, needs a change in the edge middleware);
+> 3. only requests that reached a model call (closest to real cost, hardest to measure).
+>
+> I would pick 2: it is what your pricing page already implies.
+
+A question relayed bare wastes the person's turn. A question with alternatives and a recommendation costs them
+one word.
+
+## The one rule
+
+**Never answer in the human's place.** Not "the obvious choice is X, recording X". Not a default because they
+are slow to reply. Not an inference from the codebase, however strong. Those answers *are* the requirements, and
+a requirement invented by an agent is how a plan ends up building the wrong thing confidently.
+
+"I don't know, decide later" is a real answer — record it, and the PRD carries it as an open point.
+
+## What comes out
+
+`decompose` produces issues that each carry a layer label, a priority, verifiable acceptance criteria and a
+`designRef` back to the approved design. Without `--create` nothing is written to the tracker. With it, they are
+created in the queue's **entry** state: moving them into the ready state is the single gate into the queue, and
+it stays a human gesture.
+
+The skill `ak-harness-loop` carries this same guidance for agents operating the loop from a chat session.
