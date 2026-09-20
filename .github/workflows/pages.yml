@@ -1,0 +1,54 @@
+name: Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: pnpm/action-setup@0ebf47130e4866e96fce0953f49152a61190b271 # v4
+        with:
+          version: 10.34.4
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 22
+          cache: pnpm
+      - uses: actions/configure-pages@983d7736d9b0ae728b81ab479565c72886d7745b # v5
+      - run: pnpm install --frozen-lockfile
+      # harness.agentskit.io is root-hosted: DOCS_BASE_PATH is never set here.
+      - run: pnpm docs:build
+        env:
+          NEXT_PUBLIC_SITE_URL: https://harness.agentskit.io
+      - name: Verify the product domain has no GitHub Pages subpath
+        run: |
+          node -e "
+            const fs = require('node:fs');
+            const html = fs.readFileSync('apps/docs/out/docs/index.html', 'utf8');
+            if (html.includes('href=\"/agentskit-harness/')) throw new Error('Pages still embeds the /agentskit-harness base path');
+            if (!html.includes('/docs/')) throw new Error('missing local docs links');
+          "
+      - name: Ensure CNAME for the custom domain
+        run: |
+          printf 'harness.agentskit.io\n' > apps/docs/out/CNAME
+          test -f apps/docs/out/CNAME
+      - uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
+        with:
+          path: apps/docs/out
+      - id: deployment
+        uses: actions/deploy-pages@cd2ce8fcbc39b97be8ca5fce6e763baed58fa128 # v5.0.0
