@@ -16,7 +16,11 @@ const pages = (directory = contentRoot, prefix = '') => readdirSync(directory, {
     : /\.mdx?$/.test(entry.name) ? [`${prefix}${entry.name}`] : [])
 
 test('the concise index and the full corpus have distinct jobs', () => {
-  assert.ok(llms.length < 8_000, `llms.txt should stay readable in one request, received ${llms.length} bytes`)
+  // One request, one read: the index carries a line per page plus the ecosystem, and the whole corpus lives
+  // in llms-full.txt. The ceiling is generous enough for the pages that exist and tight enough that
+  // pasting the corpus in here would fail.
+  assert.ok(llms.length < 16_000, `llms.txt should stay a concise index, received ${llms.length} bytes`)
+  assert.ok(full.length > llms.length * 4, 'llms-full.txt must be the corpus, not a second index')
   assert.ok(full.length > llms.length)
   assert.ok(llms.startsWith('# AgentsKit Harness'))
 })
