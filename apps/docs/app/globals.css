@@ -1,18 +1,16 @@
 @import 'tailwindcss';
 @import 'fumadocs-ui/css/neutral.css';
 @import 'fumadocs-ui/css/preset.css';
+/* Generated from the ecosystem's brand/tokens.json — never hand-edited, so the copy cannot drift. */
+@import './brand-tokens.css';
 
 :root {
-  --harness-ink: #111714;
+  --harness-ink: var(--ak-fg);
   --harness-paper: #f7f8f3;
   --harness-paper-strong: #f4f7f2;
-  --harness-night: #0b0f0d;
-  --harness-accent: #f778ba;
-  --color-fd-muted-foreground: #626862;
-}
-
-.dark {
-  --color-fd-muted-foreground: #b8bdb8;
+  --harness-night: var(--ak-bg);
+  --harness-accent: var(--ak-accent);
+  --color-fd-muted-foreground: var(--ak-muted);
 }
 
 html { scroll-behavior: smooth; }
