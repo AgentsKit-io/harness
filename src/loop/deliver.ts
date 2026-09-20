@@ -11,6 +11,7 @@ import { detectProviders, remainingUsagePercent, type ProviderAvailability } fro
 import { createDispatchLedger, type DispatchLease } from '../execution/coordination.js'
 import { HarnessError } from '../kernel/errors.js'
 import { renderHandoffBrief } from './brief.js'
+import { renderSkillsForHandoff } from './skills.js'
 import { writeJsonAtomic } from './fs-atomic.js'
 import { loadLoopConfig, providerIdentity, type LoadedLoopConfig, type LoopConfig, type ModelReference } from './config.js'
 import { classifyProviderFailure, extractResetsAt, readStoredContract } from './contract.js'
@@ -312,6 +313,11 @@ const performHandoff = async (
   reason: string,
   actions: string[],
 ): Promise<DeliverResult> => {
+  // What the previous worker was given, told to the next one as cheaply as it can be told: a pointer where the
+  // file on disk still hashes to the record, the whole file where it does not.
+  const skillsBlock = renderSkillsForHandoff(ctx.loaded.root, record.skills ?? [], ctx.config.brief.maxSkillChars)
+  if (skillsBlock.referenced.length) actions.push(`skills referenced by digest: ${skillsBlock.referenced.join(', ')}`)
+  if (skillsBlock.resent.length) actions.push(`skills re-sent in full (changed or missing): ${skillsBlock.resent.join(', ')}`)
   const brief = renderHandoffBrief({
     issue: record.issue,
     issueUrl: record.url,
@@ -324,6 +330,8 @@ const performHandoff = async (
     model: next.model,
     contractDigest: record.contractDigest,
     reason,
+    ...(record.briefDigest ? { briefDigest: record.briefDigest } : {}),
+    ...(skillsBlock.text ? { skillsBlock: skillsBlock.text } : {}),
   })
   if (ctx.dryRun) {
     actions.push(`would hand off ${record.provider}/${record.model} → ${next.provider}/${next.model} on ${record.branch}`)
@@ -475,7 +483,10 @@ const fixRound = async (ctx: Context, record: DispatchRecordFile, lease: Dispatc
   if (already) return { issue: record.issue, outcome: 'waiting', reason: `${kind} nudge already sent for head ${pr.headSha.slice(0, 7)}; waiting for a new push`, pr: pr.number, head: pr.headSha, actions }
   const counts = kind !== 'conflict'
   if (counts && state.fixRounds >= flowFor(ctx, record).maxFixRounds) return blockAfterRounds(ctx, record, lease, state, pr, why, actions)
-  const sent = await sendToWorker(ctx, record, text, actions)
+  // The worker already has its brief; the round points back at it by digest instead of re-sending what it holds.
+  // Delta, not repetition — and the anchor is what lets a worker that lost the thread find it again.
+  const anchor = record.briefDigest ? `\n\nContext: contract \`${record.contractDigest.slice(0, 12)}\` · brief \`${record.briefDigest.slice(0, 12)}\`${record.skills?.length ? ` · pinned skills: ${record.skills.map((skill) => `\`${skill.path}\``).join(', ')} — re-read them in the worktree, they are unchanged for this run` : ''}.` : ''
+  const sent = await sendToWorker(ctx, record, `${text}${anchor}`, actions)
   const next: DeliveryState = { ...state, prNumber: pr.number, fixRounds: sent && counts ? state.fixRounds + 1 : state.fixRounds, nudges: sent ? [...state.nudges, { kind, at: ctx.now().toISOString(), head: pr.headSha }] : state.nudges }
   saveState(ctx, next)
   if (sent) event(ctx, { type: `worker.${kind}-round`, issue: record.issue, pr: pr.number, head: pr.headSha, round: next.fixRounds })

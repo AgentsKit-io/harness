@@ -68,8 +68,8 @@ export {
 } from './resilience-state.js'
 export type { IssueFailureRecord, IssueFailureState, LoopStageName, StagePauseEntry, StagePauseState } from './resilience-state.js'
 
-export { loadPinnedSkills, renderPinnedSkills, skillDigest, skillRefs } from './skills.js'
-export type { PinnedSkill, PinnedSkillRef } from './skills.js'
+export { loadPinnedSkills, renderPinnedSkills, renderSkillsForHandoff, skillDigest, skillRefs } from './skills.js'
+export type { PinnedSkill, PinnedSkillRef, SkillHandoffBlock } from './skills.js'
 
 export { discoverIntake, intakeIssueId, intakePath, listIntake, readIntake } from './github-intake.js'
 export type { IntakeRecord } from './github-intake.js'

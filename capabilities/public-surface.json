@@ -4,7 +4,7 @@
   "package": "@agentskit/harness",
   "packageVersion": "0.14.0",
   "entryPoint": "src/index.ts",
-  "sourceDigest": "c64161a0540c8ec9e1f3761de6af7cc4adaff6af45e341dab3e5490294b90700",
+  "sourceDigest": "5e9b31214ba94f0f5677a62a6333b46c610135c04cfe30e612ceb825ed58f817",
   "capabilities": [
     {
       "id": "public-surface:adapters/agent",
@@ -1658,8 +1658,10 @@
       "exports": [
         "PinnedSkill",
         "PinnedSkillRef",
+        "SkillHandoffBlock",
         "loadPinnedSkills",
         "renderPinnedSkills",
+        "renderSkillsForHandoff",
         "skillDigest",
         "skillRefs"
       ]
@@ -1757,5 +1759,5 @@
       ]
     }
   ],
-  "digest": "94e2fbf6eff5a39e1e31c49f8ac380080db46fa10779cf8e4a2e13872c87b804"
+  "digest": "2f2ed40920439a814331293261ae06a6e29a443b91485c2203516d6841b4bc22"
 }

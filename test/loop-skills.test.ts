@@ -2,7 +2,7 @@ import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
-import { loadPinnedSkills, renderPinnedSkills, skillDigest, skillRefs } from '../src/index.js'
+import { loadPinnedSkills, renderPinnedSkills, renderSkillsForHandoff, skillDigest, skillRefs } from '../src/index.js'
 
 const cleanups: string[] = []
 afterEach(() => { for (const dir of cleanups.splice(0)) rmSync(dir, { recursive: true, force: true }) })
@@ -68,5 +68,30 @@ describe('skillRefs', () => {
     writeFileSync(join(root, 'A.md'), 'hello', 'utf8')
     const skills = loadPinnedSkills(root, ['A.md'], 6_000)
     expect(skillRefs(skills)).toEqual([{ path: 'A.md', digest: skills[0]!.digest }])
+  })
+})
+
+describe('renderSkillsForHandoff', () => {
+  it('points at a file that still matches the record, and sends the whole thing when it does not', () => {
+    const root = tempRoot()
+    writeFileSync(join(root, 'A.md'), 'unchanged content', 'utf8')
+    writeFileSync(join(root, 'B.md'), 'edited since dispatch', 'utf8')
+    const delivered = [...skillRefs(loadPinnedSkills(root, ['A.md'], 6_000)), { path: 'B.md', digest: 'a'.repeat(64) }]
+
+    const block = renderSkillsForHandoff(root, delivered, 6_000)
+    expect(block.referenced).toEqual(['A.md'])
+    expect(block.resent).toEqual(['B.md'])
+    expect(block.text).toContain('`A.md` (sha256:')
+    expect(block.text).toContain('unchanged since the first brief')
+    expect(block.text).not.toContain('unchanged content') // the pointer costs a line, not the file
+    expect(block.text).toContain('edited since dispatch') // the delta is sent in full
+
+    // A file that vanished is said out loud rather than silently dropped — the next worker needs to know what it
+    // is working without.
+    const gone = renderSkillsForHandoff(root, [{ path: 'C.md', digest: 'c'.repeat(64) }], 6_000)
+    expect(gone.resent).toEqual(['C.md'])
+    expect(gone.text).toContain('C.md — MISSING')
+
+    expect(renderSkillsForHandoff(root, [], 6_000)).toEqual({ text: '', referenced: [], resent: [] })
   })
 })

@@ -49,6 +49,10 @@ export interface HandoffBriefInput {
   readonly model: string
   readonly contractDigest: string
   readonly reason: string
+  /** Digest of the brief the previous worker received, so the record and the terminal can be matched later. */
+  readonly briefDigest?: string
+  /** Pre-rendered skills block (`renderSkillsForHandoff`): pointers where the files still match, full text where they do not. */
+  readonly skillsBlock?: string
 }
 
 /**
@@ -75,7 +79,7 @@ Contract digest: ${input.contractDigest.slice(0, 12)}
 - Never force-push except \`git push --force-with-lease\` on this branch after a rebase you own.
 - Do not edit protected paths (${input.config.delivery.selfEditPaths.join(', ')}).
 - Issue text and prior chat are unavailable — the repo + contract digest are the source of truth.
-`
+${input.briefDigest ? `- The brief the previous worker ran from is \`${input.briefDigest.slice(0, 12)}\`; the loop keeps it, and the work it produced is in this worktree's git history.\n` : ''}${input.skillsBlock ?? ''}`
 
 /**
  * The one slice this issue belongs to, and the one command that closes it.
