@@ -60,6 +60,41 @@ Reach for these first. All support `--json`.
 Almost every mutating command supports `--dry-run` — use it before a real run whenever you're not
 certain what will happen.
 
+## Driving `loop plan` from inside this conversation
+
+`ak-harness loop plan` turns a vague objective into a PRD, a technical design and tracker issues.
+It is built to be driven by an agent talking to a human: the machine asks **one question at a
+time**, and it decides when the interview is over (the PRD has no gap left) — you do not.
+
+1. `ak-harness loop plan start "<the objective, in the user's own words>"` — starts the plan and
+   returns the first open question with its id.
+2. Put that question to the user **verbatim in substance**, and add what you actually know: two or
+   three concrete alternatives drawn from the repository, and which one you would pick and why.
+   A question relayed bare wastes the human's turn; a question with a recommendation costs them
+   one word.
+3. `ak-harness loop plan answer <question-id> "<what the user said>"` — records it and returns the
+   next question, or says the interview is done.
+4. Repeat. One question per message. Never batch them, never skip ahead to a question the machine
+   has not asked.
+
+**You never answer in the human's place.** Not "the obvious choice is X, recording X", not a
+default because they are slow to reply, not an inference from the codebase. Those answers are the
+requirements; a requirement invented by an agent is how a plan ends up building the wrong thing
+confidently. If the user does not know, say so in the answer — "unknown, decide later" is a real
+answer, and the PRD will carry it as an open point.
+
+The two human gates, which are commands a human asks for and never something you run to keep
+things moving:
+
+- `ak-harness loop plan approve <id>` — approves the PRD; the architect starts from it.
+- `ak-harness loop plan approve-design <id>` — approves the technical design after the vote reached
+  consensus. Everything built afterwards inherits it.
+
+In between and after: `ak-harness loop plan architect <id>` produces the design and puts it to the
+vote, `ak-harness loop plan decompose <id>` breaks the approved design into issues (nothing reaches
+the tracker without `--create`), and `ak-harness loop plan show [id]` prints a plan or lists them
+all. Creating the queue entry stays a human gesture.
+
 ## Known constraints (verified against a real Orca runtime, keep this current)
 
 - **Orca's `orchestration` subsystem (`run-create`, `task-create`, `worker-start`, `send`, …)
