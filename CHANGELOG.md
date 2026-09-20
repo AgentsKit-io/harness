@@ -99,6 +99,21 @@ decided in conversation become ADRs 0032–0037.
 - The README describes the whole cycle instead of the 0.14 loop, and `docs/GETTING-STARTED.md` gains the happy
   path: `loop init` → `loop doctor` → `loop install` → the first tick.
 
+### The documentation site
+
+- **`apps/docs` — a Next.js + fumadocs site, its own package**, so Next and React 19 never reach the harness
+  runtime, which draws its TUI with ink. 38 pages in six sections, the eight stage state machines as diagrams,
+  four examples, and a `/for-agents` route. `harness.agentskit.io`, static export, GitHub Pages.
+- **The reference is generated from the code** (`pnpm docs:generate`): the configuration from the Zod schema
+  joined with the JSDoc by dotted path (neither source is sufficient alone — the schema has no `.describe()` and
+  the file has 155 JSDoc blocks), the CLI walked from the commander tree rather than parsed from `--help`, and
+  the events from the vocabulary. A documented path that does not exist in the schema is a hard error. The `docs`
+  job in CI runs `docs:generate --check`, which regenerates nothing and fails on drift.
+- `llms.txt`, `llms-full.txt` and the raw Markdown of every page, with a contract test that requires the corpus
+  to preserve each page byte for byte.
+- The captures in the examples are real, taken read-only against a pilot repository on 2026-09-20; everything
+  reconstructed says so on the page.
+
 ### The twelve steps of the roadmap, in the order they landed
 
 The automations stop drifting: the config file becomes the single source of truth for every scheduled automation,

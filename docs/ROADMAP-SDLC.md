@@ -206,7 +206,8 @@ Nuvem (sandbox remoto) fica como terceira, depois.
 | **`release.waiting`** | **feito** (0.15.0): uma vez por head, com bus e notificador no estágio |
 | **Vocabulário de eventos tipado** | **feito** (0.15.0): `LOOP_EVENT_TYPES` + `appendLoopEvent` estreitado; teste de igualdade de conjunto |
 | **Agente instalado é código** | **feito** (0.15.0): o harness só edita markdown existente; check `agents.registry` no doctor |
-| Site de documentação próprio (`harness.agentskit.io`) | **em construção** — §7e |
+| Site de documentação próprio (`harness.agentskit.io`) | **feito** (0.15.0): `apps/docs`, 38 páginas, referência gerada com gate de deriva no CI, `/for-agents`, `llms.txt`; falta ao humano apontar o DNS e ligar o Pages |
+| Entrada no ecossistema | **preparada**: commit local em `agentskit/` (branch `feat/ecosystem-harness`), `pnpm test:ecosystem` verde; o PR é gesto humano |
 | **`intake`**, **`maintain`**, release notes + rollback em `release` | **feito** (passos 7 e 12) |
 
 ## 7. Ordem de construção (cada passo deixa o loop funcionando) — **todos implementados em 2026-09-20**
