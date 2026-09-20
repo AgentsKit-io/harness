@@ -8,6 +8,7 @@ import { resolve } from 'node:path'
 import { HarnessError } from '../kernel/errors.js'
 import { MODEL_ROLES } from '../kernel/model-policy.js'
 import { automationSpecs, reconcileAutomations } from './automations.js'
+import { loadAgentRegistry } from './agent-registry.js'
 import { unknownFlowReferences } from './flows.js'
 import { notificationsConfigured } from './notify.js'
 import { loadLoopConfig, providerIdentity, type LoadedLoopConfig, type LoopConfig } from './config.js'
@@ -214,6 +215,28 @@ export const runLoopDoctor = async (input: LoopDoctorInput): Promise<LoopDoctorR
 
   if (config.memory.enabled) {
     push('memory', 'passed', `enabled · backend ${config.memory.backend} · store ${config.project.stateDir}/${config.memory.storePath} · preferOverDocBridge=${config.memory.preferOverDocBridge}`)
+  }
+
+  // An installed agent is a directory the project owns. A registry that points at one which is not there sends
+  // every run for that role to the provider alone — and nothing says so until someone reads the outcomes.
+  const registryPath = resolve(loaded.root, config.agents.registryPath)
+  if (existsSync(registryPath)) {
+    try {
+      const registry = loadAgentRegistry(registryPath)
+      const installed = Object.entries(registry.agents).filter(([, entry]) => entry.path)
+      const rows = installed.map(([agentId, entry]) => {
+        const dir = resolve(loaded.root, entry.path ?? '')
+        if (!existsSync(dir)) return { agentId, ok: false, detail: `${entry.path} is not in the repository` }
+        const instructions = resolve(dir, entry.instructions)
+        const markdown = /\.(?:md|markdown)$/i.test(entry.instructions)
+        if (!existsSync(instructions)) return { agentId, ok: false, detail: `${entry.path}/${entry.instructions} is not there` }
+        // Code is a perfectly good agent; it only means the harness proposes improvements instead of applying them.
+        return { agentId, ok: true, detail: `${entry.path}/${entry.instructions}${markdown ? '' : ' (code — improvements go to a human)'}` }
+      })
+      const broken = rows.filter((row) => !row.ok)
+      if (broken.length) push('agents.registry', 'failed', broken.map((row) => `${row.agentId}: ${row.detail}`).join('; '))
+      else if (rows.length) push('agents.registry', 'passed', rows.map((row) => `${row.agentId} → ${row.detail}`).join(' · '))
+    } catch (error) { push('agents.registry', 'failed', `${config.agents.registryPath}: ${message(error)}`) }
   }
 
   // A flow named by a rule but never defined changes nothing, silently — the worst shape a config typo can take.

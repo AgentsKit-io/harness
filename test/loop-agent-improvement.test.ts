@@ -1,4 +1,4 @@
-import { appendFileSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { appendFileSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
@@ -127,6 +127,27 @@ describe('what a machine never does alone', () => {
 
     const { loaded: bare } = setup(AUTO, false)
     expect((await improveAgent({ loaded: bare, runner: { run: async () => ok() }, signal: signal(), note: 'n', now: () => NOW })).detail).toContain('no agents.registry.yaml')
+  })
+
+  it('never edits an agent that is code, and never invents an instructions file that is not there', async () => {
+    const { dir, loaded } = setup()
+    // `npx agentskit add <id>` installs an agent as code: appending an HTML comment to it is a syntax error,
+    // not an improvement.
+    writeFileSync(join(dir, 'agents', 'builder-1', 'agent.ts'), 'export const agent = {}\n')
+    writeFileSync(join(dir, 'agents.registry.yaml'), 'schemaVersion: 1\nroles:\n  builder: builder-1\nagents:\n  builder-1:\n    provider: claude\n    path: agents/builder-1\n    instructions: agent.ts\n')
+    const code = await improveAgent({ loaded, runner: { run: async () => ok() }, signal: signal(), note: 'n', now: () => NOW })
+    expect(code.status).toBe('needs-human')
+    expect(code.detail).toContain('the installed agent is code')
+    expect(readFileSync(join(dir, 'agents', 'builder-1', 'agent.ts'), 'utf8')).toBe('export const agent = {}\n')
+    // The note still reaches a human, with the evidence that produced it.
+    expect(readImprovementState(loaded.stateDir).history.at(-1)).toMatchObject({ status: 'needs-human', role: 'builder' })
+
+    const { dir: other, loaded: missing } = setup()
+    rmSync(join(other, 'agents', 'builder-1', 'AGENT.md'))
+    const gone = await improveAgent({ loaded: missing, runner: { run: async () => ok() }, signal: signal(), note: 'n', now: () => NOW })
+    expect(gone.status).toBe('needs-human')
+    expect(gone.detail).toContain('does not exist')
+    expect(existsSync(join(other, 'agents', 'builder-1', 'AGENT.md'))).toBe(false)
   })
 
   it('writes nothing on a dry run', async () => {

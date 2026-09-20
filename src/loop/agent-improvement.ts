@@ -62,6 +62,13 @@ export interface AgentProposal {
   readonly addedLines: number
   readonly reason: string
   readonly digest: string
+  /**
+   * False when the harness must not write this change itself: the installed agent is code, or the instructions
+   * file it declares is not there. The proposal is still built — a human gets the note and the evidence.
+   */
+  readonly writable: boolean
+  /** Why it is or is not writable, in the words the record will carry. */
+  readonly instructionsDetail: string
 }
 
 export interface ImprovementRecord {
@@ -95,11 +102,22 @@ export const proposeAgentChange = (input: {
   const path = resolved.entry.path
   if (!path) return null
   const instructionsFile = resolve(input.loaded.root, path, resolved.entry.instructions)
-  const before = existsSync(instructionsFile) ? readFileSync(instructionsFile, 'utf8') : ''
+  // `npx agentskit add <id>` copies an agent as code. An HTML comment appended to `agent.ts` is not an
+  // improvement, it is a syntax error — so the harness only ever edits a markdown instructions file that is
+  // already there. Anything else becomes a note a human applies.
+  const markdown = /\.(?:md|markdown)$/i.test(resolved.entry.instructions)
+  const present = existsSync(instructionsFile)
+  const writable = markdown && present
+  const instructionsDetail = writable
+    ? `instructions at ${resolved.entry.instructions}`
+    : markdown
+      ? `${resolved.entry.instructions} does not exist under ${path}; the proposal is recorded for a human`
+      : `the installed agent is code (${resolved.entry.instructions}), not markdown instructions; the proposal is recorded for a human to apply`
+  const before = present ? readFileSync(instructionsFile, 'utf8') : ''
   const note = `\n<!-- loop-auto ${input.now.toISOString().slice(0, 10)} -->\n- ${input.note}\n`
   const after = `${before.trimEnd()}\n${note}`
   return {
-    role: input.signal.role, agentId: resolved.agentId, path, instructionsFile, before, after,
+    role: input.signal.role, agentId: resolved.agentId, path, instructionsFile, before, after, writable, instructionsDetail,
     addedLines: note.trim().split('\n').length,
     reason: `${input.signal.role}: ${input.signal.ratio.toFixed(2)} bad outcome(s) per run over ${input.signal.runs} run(s)`,
     digest: hashJson({ after }).slice(0, 12),
@@ -159,6 +177,7 @@ export const improveAgent = async (input: {
   }
 
   if (CRITICAL_ROLES.includes(proposal.role)) return record('needs-human', `${proposal.role} is a critical role; the proposal is recorded for a human to apply`, null)
+  if (!proposal.writable) return record('needs-human', proposal.instructionsDetail, null)
   if (proposal.addedLines > loaded.config.agents.maxAutoLines) return record('needs-human', `the change is ${proposal.addedLines} lines, over agents.maxAutoLines (${loaded.config.agents.maxAutoLines})`, null)
   if (input.dryRun) return record('needs-human', 'dry-run: nothing written', null)
 

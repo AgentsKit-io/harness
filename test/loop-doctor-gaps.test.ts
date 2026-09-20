@@ -207,3 +207,29 @@ describe('review.cli and memory checks', () => {
     expect((await runLoopDoctor({ ...shared, runner: fakeRunner({}, { 'orca automations list': 'orca is down' }), configPath })).checks.find((check) => check.id === 'automations.drift')).toMatchObject({ status: 'warning', detail: expect.stringContaining('orca is down') })
   })
 })
+
+describe('the installed agents a registry points at', () => {
+  const base = (bin: string) => ({ runner: fakeRunner(), env: { PATH: bin, XAI_API_KEY: 'k' }, platform: 'darwin' as const, now: () => new Date('2026-09-11T12:00:00.000Z'), probe: false })
+
+  it('says which instructions file it found, and fails on one that is not there', async () => {
+    const bin = fakeBinDir(['claude', 'codex', 'opencode', 'grok'])
+    const dir = configDir(exampleYaml)
+    const registry = 'schemaVersion: 1\nroles:\n  builder: builder-1\nagents:\n  builder-1:\n    provider: claude\n    path: agents/builder-1\n'
+    writeFileSync(join(dir, 'agents.registry.yaml'), registry)
+
+    // The registry names a directory nobody installed: every run for that role quietly falls back to the provider.
+    const broken = await runLoopDoctor({ ...base(bin), configPath: join(dir, 'loop.config.yaml') })
+    expect(broken.checks.find((check) => check.id === 'agents.registry')).toMatchObject({ status: 'failed', detail: expect.stringContaining('agents/builder-1 is not in the repository') })
+
+    mkdirSync(join(dir, 'agents', 'builder-1'), { recursive: true })
+    writeFileSync(join(dir, 'agents', 'builder-1', 'AGENT.md'), '# Builder\n')
+    const found = await runLoopDoctor({ ...base(bin), configPath: join(dir, 'loop.config.yaml') })
+    expect(found.checks.find((check) => check.id === 'agents.registry')).toMatchObject({ status: 'passed', detail: expect.stringContaining('agents/builder-1/AGENT.md') })
+
+    // An agent that is code is healthy; it only changes who applies an improvement.
+    writeFileSync(join(dir, 'agents', 'builder-1', 'agent.ts'), 'export const agent = {}\n')
+    writeFileSync(join(dir, 'agents.registry.yaml'), `${registry}    instructions: agent.ts\n`)
+    const code = await runLoopDoctor({ ...base(bin), configPath: join(dir, 'loop.config.yaml') })
+    expect(code.checks.find((check) => check.id === 'agents.registry')).toMatchObject({ status: 'passed', detail: expect.stringContaining('code — improvements go to a human') })
+  })
+})
