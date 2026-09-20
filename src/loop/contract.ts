@@ -110,6 +110,8 @@ export const renderContractPrompt = (input: {
   readonly maxIssueChars?: number
   /** Called (once, if `security.pii.enabled`) with the matches found in the issue text, before redaction. */
   readonly onPiiDetected?: (matches: readonly PiiMatch[]) => void
+  /** Ceiling for one orchestrator call. Unset = `contract.timeoutMs`; a flow may shorten it per role. */
+  readonly timeoutMs?: number
 }): string => {
   const { issue, config } = input
   const issueBudget = input.maxIssueChars ?? config.contract.maxIssueChars
@@ -196,6 +198,8 @@ export interface GenerateContractInput {
   readonly onMemoryPlan?: (plan: MemoryContextPlan) => void
   /** Called (once, if `security.pii.enabled`) with the matches found in the issue text, before redaction. */
   readonly onPiiDetected?: (matches: readonly PiiMatch[]) => void
+  /** Ceiling for one orchestrator call. Unset = `contract.timeoutMs`; a flow may shorten it per role. */
+  readonly timeoutMs?: number
 }
 
 const AUTH_PATTERN = /failed to authenticate|not logged in|oauth|unauthori[sz]ed|invalid api key|login required|authentication/i
@@ -292,10 +296,11 @@ export const generateContract = async (input: GenerateContractInput): Promise<St
     const { settings } = providerIdentity(input.config, candidate.provider)
     const argv = renderHeadlessArgv(settings, candidate.model, prompt, candidate.effort)
     if (!argv) { failures.push({ provider: candidate.provider, model: candidate.model, kind: 'other', detail: `no headless argv template (models.providers.${candidate.provider}.headless)` }); continue }
-    const outcome = await input.runner.run(argv, { timeoutMs: input.config.contract.timeoutMs, cwd: input.root })
+    const timeoutMs = input.timeoutMs ?? input.config.contract.timeoutMs
+    const outcome = await input.runner.run(argv, { timeoutMs, cwd: input.root })
     const detail = `${outcome.stderr.trim()}\n${outcome.stdout.trim()}`.trim().slice(0, 600)
     if (outcome.timedOut || outcome.code !== 0) {
-      const failure: ProviderFailure = { provider: candidate.provider, model: candidate.model, kind: classifyProviderFailure(detail, outcome.timedOut), detail: outcome.timedOut ? `timed out after ${input.config.contract.timeoutMs}ms` : `exited ${outcome.code ?? 'null'}: ${detail || 'no output'}` }
+      const failure: ProviderFailure = { provider: candidate.provider, model: candidate.model, kind: classifyProviderFailure(detail, outcome.timedOut), detail: outcome.timedOut ? `timed out after ${timeoutMs}ms` : `exited ${outcome.code ?? 'null'}: ${detail || 'no output'}` }
       failures.push(failure)
       if (failure.kind !== 'other') input.onProviderFailure?.(failure)
       continue

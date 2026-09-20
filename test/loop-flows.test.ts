@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
-import { parseLoopConfigText, resolveFlow, resolveFlowSettings, unknownFlowReferences } from '../src/index.js'
+import { applyRoleSettings, parseLoopConfigText, resolveFlow, resolveFlowSettings, resolveRoleSettings, unknownFlowReferences, workerPhaseEnabled } from '../src/index.js'
 import type { LoopConfig } from '../src/index.js'
 
 const exampleYaml = readFileSync(join(process.cwd(), 'loop.config.example.yaml'), 'utf8').replace('person: my-linear-display-name', 'person: person')
@@ -21,6 +21,10 @@ flows:
     incident:
       review: { votes: 1, minSeverity: blocker }
       merge: { requireChecks: false, requireHumanApproval: false }
+      roles:
+        orchestrator: { provider: codex, model: gpt-5.6-sol, effort: xhigh, timeoutMs: 60000 }
+        review: { effort: low }
+      stages: { review: false, verify: true }
   select:
     - flow: incident
       anyLabels: [sev1]
@@ -78,5 +82,52 @@ describe('effective settings under a flow', () => {
   it('lets a flow tighten the fix-round ceiling', () => {
     expect(resolveFlowSettings(config(), { project: 'Spikes' }).maxFixRounds).toBe(1)
     expect(resolveFlowSettings(config(), {}).maxFixRounds).toBe(2)
+  })
+})
+
+describe('role settings inside a profile', () => {
+  const incident = (): ReturnType<typeof resolveFlow> => resolveFlow(config(), { labels: ['sev1'] })
+
+  it('lets the profile name who runs a role, and falls back to the project otherwise', () => {
+    const pinned = resolveRoleSettings(config(), incident(), 'orchestrator')
+    expect(pinned).toMatchObject({ provider: 'codex', model: 'gpt-5.6-sol', effort: 'xhigh', timeoutMs: 60_000, source: 'flow', list: 'orchestrator' })
+    // A role the profile says nothing about keeps the project's effort and no leash of its own.
+    const untouched = resolveRoleSettings(config(), incident(), 'builder')
+    expect(untouched).toMatchObject({ provider: null, model: null, timeoutMs: null, source: 'config', list: 'builder' })
+    expect(untouched.effort).toBe(parseLoopConfigText(exampleYaml).models.effort.builder)
+    // The finer phases borrow the model list their work resembles.
+    expect(resolveRoleSettings(config(), incident(), 'planner').list).toBe('orchestrator')
+    expect(resolveRoleSettings(config(), incident(), 'vote').list).toBe('reviewer')
+    expect(resolveRoleSettings(config(), null, 'review').source).toBe('config')
+  })
+
+  it('narrows the candidate list to the pin, and falls through when nobody can serve it', () => {
+    const settings = resolveRoleSettings(config(), incident(), 'orchestrator')
+    const candidates = [
+      { provider: 'claude', model: 'opus', effort: 'medium' as const },
+      { provider: 'codex', model: 'gpt-5.6-sol', effort: 'medium' as const },
+    ]
+    expect(applyRoleSettings(candidates, settings)[0]).toMatchObject({ provider: 'codex', model: 'gpt-5.6-sol', effort: 'xhigh' })
+    // The pin is a preference, never an outage: with nobody to serve it the ordinary candidates stand, still
+    // carrying the flow's effort.
+    expect(applyRoleSettings([candidates[0]!], settings)).toEqual([{ provider: 'claude', model: 'opus', effort: 'xhigh' }])
+  })
+})
+
+describe('which phases run for one issue', () => {
+  it('reads the flow toggle first, then worker.roles, then the phase own block', () => {
+    const flow = resolveFlow(config(), { labels: ['sev1'] })
+    expect(workerPhaseEnabled(config(), flow, 'review', true)).toBe(false) // stages: { review: false }
+    expect(workerPhaseEnabled(config(), flow, 'verify', false)).toBe(true) // stages: { verify: true }
+    expect(workerPhaseEnabled(config(), flow, 'dod', true)).toBe(true) // not named: the fallback answers
+    expect(workerPhaseEnabled(config(), flow, 'builder', false)).toBe(true) // the work itself always runs
+
+    // An explicit worker.roles list is the answer for every phase it does not name.
+    const declared = config('\nworker:\n  roles: [builder, review]\n')
+    expect(workerPhaseEnabled(declared, null, 'review', false)).toBe(true)
+    expect(workerPhaseEnabled(declared, null, 'dod', true)).toBe(false)
+    // Undeclared, every phase keeps answering from its own block — nothing changes for a project that never opted in.
+    expect(workerPhaseEnabled(config(), null, 'dod', true)).toBe(true)
+    expect(workerPhaseEnabled(config(), null, 'planner', false)).toBe(false)
   })
 })

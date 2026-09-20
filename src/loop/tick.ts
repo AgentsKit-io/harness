@@ -26,6 +26,7 @@ import { markProviderExhausted } from './cooldown.js'
 import { advanceQueueOwner, countRotationBlockingLeases, queueOwner } from './rotation.js'
 import { createLoopEventBus, loadLoopPlugins, type LoopEventBus, type LoopEventPayload } from './event-bus.js'
 import { attachNotifier } from './notify.js'
+import { applyRoleSettings, resolveFlow, resolveRoleSettings, workerPhaseEnabled } from './flows.js'
 
 export type TickOutcome = 'dispatched' | 'dry-run' | 'skipped' | 'escalated' | 'failed'
 
@@ -395,6 +396,18 @@ export const runTick = async (input: TickInput): Promise<TickReport> => {
     let detail: LinearIssueDetail
     try { detail = await tracker.issue(candidate.identifier) } catch (error) { results.push({ issue: candidate.identifier, outcome: 'failed', reason: `issue fetch failed: ${message(error)}` }); continue }
 
+    // The flow this issue belongs to decides who runs each role and which phases run at all. Resolved once, here,
+    // so the contract, the plan and the vote all answer to the same profile.
+    const flow = resolveFlow(config, { labels: detail.labels, project: detail.project, priorityLabel: detail.priorityLabel })
+    const orchestratorSettings = resolveRoleSettings(config, flow, 'orchestrator')
+    // A flow may name the builder for its own issues. Without an override the tick-wide routing decision stands
+    // for everyone, which is what every project that never drew a flow already has.
+    const builderSettings = resolveRoleSettings(config, flow, 'builder')
+    const worker = builderSettings.source === 'flow'
+      ? applyRoleSettings(rankModels(config, 'builder', state.providers, state.extrasByRole['builder'] ?? []), builderSettings)[0] ?? builder
+      : builder
+    const issueOrchestrators = applyRoleSettings(orchestratorCandidates, orchestratorSettings)
+
     let stored = cachedContract
     // Reused below for the worker brief too (memory content cannot change mid-tick) — computing it once instead of
     // twice per dispatch halves this dispatch's memory-recall I/O (file reads + ranking) when memory.enabled.
@@ -411,15 +424,16 @@ export const runTick = async (input: TickInput): Promise<TickReport> => {
     if (stored && !contractIsFresh(stored, detail, config.contract.reuseHours, now(), memoryPlan?.memoryDigest)) stored = null
     if (!stored) {
       if (input.skipContractGeneration) { results.push({ issue: detail.identifier, outcome: 'skipped', reason: 'no cached contract; generation skipped' }); continue }
-      if (!orchestratorCandidates.length) { results.push({ issue: detail.identifier, outcome: 'skipped', reason: 'no orchestrator provider available to freeze a contract' }); continue }
+      if (!issueOrchestrators.length) { results.push({ issue: detail.identifier, outcome: 'skipped', reason: 'no orchestrator provider available to freeze a contract' }); continue }
       try {
         stored = await generateContract({
           runner: input.runner,
           config,
           root: loaded.root,
           issue: detail,
-          candidates: orchestratorCandidates,
+          candidates: issueOrchestrators,
           orchestrator,
+          ...(orchestratorSettings.timeoutMs === null ? {} : { timeoutMs: orchestratorSettings.timeoutMs }),
           now,
           memory,
           onProviderFailure,
@@ -461,14 +475,22 @@ export const runTick = async (input: TickInput): Promise<TickReport> => {
     // The plan and its votes run here, headless, before any worktree exists: the model writes the plan and the
     // votes, the machine counts them. A worker is only launched once a plan has consensus.
     let approvedPlan: StoredPlan | null = null
-    if (config.worker.plan.enabled) {
+    const planPhase = workerPhaseEnabled(config, flow, 'planner', config.worker.plan.enabled)
+    const votePhase = workerPhaseEnabled(config, flow, 'vote', config.worker.plan.enabled)
+    if (planPhase) {
+      const plannerSettings = resolveRoleSettings(config, flow, 'planner')
+      const voteSettings = resolveRoleSettings(config, flow, 'vote')
       approvedPlan = readStoredPlan(loaded.stateDir, detail.identifier)
       if (!approvedPlan || approvedPlan.contractDigest !== stored.digest || approvedPlan.status !== 'approved') {
         try {
           approvedPlan = await runPlanWithVotes({
             runner: input.runner, config, root: loaded.root, issue: detail.identifier,
             contract: stored.contract, contractDigest: stored.digest,
-            planner: orchestratorCandidates, voters: rankModels(config, 'reviewer', state.providers, state.extrasByRole['reviewer'] ?? []),
+            planner: applyRoleSettings(orchestratorCandidates, plannerSettings),
+            voters: applyRoleSettings(rankModels(config, 'reviewer', state.providers, state.extrasByRole['reviewer'] ?? []), voteSettings),
+            requireVotes: votePhase,
+            ...(plannerSettings.timeoutMs === null ? {} : { plannerTimeoutMs: plannerSettings.timeoutMs }),
+            ...(voteSettings.timeoutMs === null ? {} : { voteTimeoutMs: voteSettings.timeoutMs }),
             now, onProviderFailure,
             onCycle: (cycle, votes) => { if (!dryRun) appendLoopEvent(loaded.stateDir, { at: now().toISOString(), type: 'plan.voted', issue: detail.identifier, cycle, approvals: votes.filter((vote) => vote.vote === 'approve').length, votes: votes.length }, bus) },
           })
@@ -495,15 +517,15 @@ export const runTick = async (input: TickInput): Promise<TickReport> => {
     const worktree = worktreeNameFor(detail)
     const claim = ledger.claim({ tracker: 'linear', repository: config.project.repo, issue: detail.identifier, worktree, branch, owner: input.owner ?? `loop:${state.person}` })
     if (claim.decision === 'already-claimed') { results.push({ issue: detail.identifier, outcome: 'skipped', reason: `lease already held by ${claim.lease.owner} since ${claim.lease.claimedAt}` }); continue }
-    const plan = createOrcaDispatchPlan({ repository: config.orca.repoSelector ?? `path:${loaded.root}`, worktree, branch, baseBranch: config.project.baseBranch, launch: 'worktree-only', linearIssue: detail.url || detail.identifier, comment: `loop · ${detail.identifier} · ${builder.provider}/${builder.model}`, noParent: true, orcaBin: config.orca.bin })
-    const title = `loop ${detail.identifier} · ${builder.provider}`
+    const plan = createOrcaDispatchPlan({ repository: config.orca.repoSelector ?? `path:${loaded.root}`, worktree, branch, baseBranch: config.project.baseBranch, launch: 'worktree-only', linearIssue: detail.url || detail.identifier, comment: `loop · ${detail.identifier} · ${worker.provider}/${worker.model}`, noParent: true, orcaBin: config.orca.bin })
+    const title = `loop ${detail.identifier} · ${worker.provider}`
     if (dryRun) {
       ledger.release(claim.lease, 'dry-run')
-      results.push({ issue: detail.identifier, outcome: 'dry-run', reason: `would create worktree, open terminal "${builder.tui}", send the brief and move issue to In Progress (branch is assigned by Orca: <git user>/${worktree})`, branch, worktree, provider: builder.provider, model: builder.model, argv: plan.argv, contractDigest: stored.digest })
+      results.push({ issue: detail.identifier, outcome: 'dry-run', reason: `would create worktree, open terminal "${worker.tui}", send the brief and move issue to In Progress (branch is assigned by Orca: <git user>/${worktree})`, branch, worktree, provider: worker.provider, model: worker.model, argv: plan.argv, contractDigest: stored.digest })
       dispatched += 1
       continue
     }
-    const beforeDispatch = await bus.runHook('beforeDispatch', { issue: detail.identifier, provider: builder.provider, model: builder.model, branch, worktree })
+    const beforeDispatch = await bus.runHook('beforeDispatch', { issue: detail.identifier, provider: worker.provider, model: worker.model, branch, worktree })
     if (beforeDispatch.block) {
       ledger.release(claim.lease, `blocked by plugin: ${beforeDispatch.reason}`)
       results.push({ issue: detail.identifier, outcome: 'skipped', reason: `blocked by plugin: ${beforeDispatch.reason}` })
@@ -537,8 +559,8 @@ export const runTick = async (input: TickInput): Promise<TickReport> => {
         contract: stored,
         config,
         branch: actualBranch,
-        provider: builder.provider,
-        model: builder.model,
+        provider: worker.provider,
+        model: worker.model,
         maxIssueChars: briefMemory.issueCharBudget,
         memoryBlock: briefMemory.memoryBlock,
         guidanceRefs,
@@ -550,13 +572,13 @@ export const runTick = async (input: TickInput): Promise<TickReport> => {
       })
       const briefDigest = skillDigest(brief)
       writeFileSync(briefPath(loaded.stateDir, detail.identifier), brief, 'utf8')
-      const launched = await launchWorkerTerminal({ runner: input.runner, config, worktreeId: created.id, command: builder.tui, title, brief })
+      const launched = await launchWorkerTerminal({ runner: input.runner, config, worktreeId: created.id, command: worker.tui, title, brief })
       if (!launched.accepted) notes.push(`${detail.identifier}: terminal ${launched.terminal} did not confirm the brief; deliver will nudge it if it stays idle`)
       ledger.recordDispatch({ lease: claim.lease, idempotencyKey: plan.idempotencyKey, commandDigest: plan.commandDigest })
-      const record: DispatchRecordFile = { issue: detail.identifier, worktreeId: created.id, worktree, branch: actualBranch, terminal: launched.terminal, provider: builder.provider, model: builder.model, contractDigest: stored.digest, leaseKey: claim.lease.key, leaseId: claim.lease.leaseId, dispatchedAt: now().toISOString(), url: detail.url, briefDigest, skills: skillRefs(pinnedSkills), setup: setupResult, effort: builder.effort, initialRemainingPercent: builder.remainingPercent, worktreePath: created.path, labels: [...detail.labels], project: detail.project, priorityLabel: detail.priorityLabel }
+      const record: DispatchRecordFile = { issue: detail.identifier, worktreeId: created.id, worktree, branch: actualBranch, terminal: launched.terminal, provider: worker.provider, model: worker.model, contractDigest: stored.digest, leaseKey: claim.lease.key, leaseId: claim.lease.leaseId, dispatchedAt: now().toISOString(), url: detail.url, briefDigest, skills: skillRefs(pinnedSkills), setup: setupResult, effort: worker.effort, initialRemainingPercent: worker.remainingPercent, worktreePath: created.path, labels: [...detail.labels], project: detail.project, priorityLabel: detail.priorityLabel }
       resetDeliveryStateForDispatch(loaded.stateDir, detail.identifier)
       writeJsonAtomic(dispatchRecordPath(loaded.stateDir, detail.identifier), record)
-      appendLoopEvent(loaded.stateDir, { at: record.dispatchedAt, type: 'worker.dispatched', ...record, command: builder.tui, briefAccepted: launched.accepted, tuiIdle: launched.idle }, bus)
+      appendLoopEvent(loaded.stateDir, { at: record.dispatchedAt, type: 'worker.dispatched', ...record, command: worker.tui, briefAccepted: launched.accepted, tuiIdle: launched.idle }, bus)
       await bus.runHook('afterDispatch', { issue: detail.identifier, provider: record.provider, model: record.model, branch: record.branch, worktreeId: record.worktreeId })
       clearIssueFailures(loaded.stateDir, detail.identifier)
       // The claim, under `queueOwnership: 'unassigned'`: written only AFTER the dispatch succeeded, so a
@@ -576,10 +598,10 @@ export const runTick = async (input: TickInput): Promise<TickReport> => {
         }
       }
       try {
-        await tracking.transition({ tracker: 'linear', issue: detail.identifier, from: detail.state, to: config.linear.inProgressState, reason: `loop dispatched ${builder.provider}/${builder.model} in ${created.id}` })
-        await tracker.comment({ issue: detail.identifier, body: `**Loop: dispatched**\n\nWorker \`${builder.provider}/${builder.model}\` started in Orca worktree \`${worktree}\` on branch \`${actualBranch}\` (contract \`${stored.digest.slice(0, 12)}\`). It will open a PR against \`${config.project.baseBranch}\` when the contract's outcomes pass.\n\n<!-- loop:dispatched:${claim.lease.leaseId} -->`, dedupeKey: `dispatched:${detail.identifier}:${claim.lease.leaseId}` })
+        await tracking.transition({ tracker: 'linear', issue: detail.identifier, from: detail.state, to: config.linear.inProgressState, reason: `loop dispatched ${worker.provider}/${worker.model} in ${created.id}` })
+        await tracker.comment({ issue: detail.identifier, body: `**Loop: dispatched**\n\nWorker \`${worker.provider}/${worker.model}\` started in Orca worktree \`${worktree}\` on branch \`${actualBranch}\` (contract \`${stored.digest.slice(0, 12)}\`). It will open a PR against \`${config.project.baseBranch}\` when the contract's outcomes pass.\n\n<!-- loop:dispatched:${claim.lease.leaseId} -->`, dedupeKey: `dispatched:${detail.identifier}:${claim.lease.leaseId}` })
       } catch (error) { notes.push(`Linear update for ${detail.identifier} failed after dispatch: ${message(error)}`) }
-      results.push({ issue: detail.identifier, outcome: 'dispatched', reason: 'worker started', branch: actualBranch, worktree, worktreeId: created.id, terminal: launched.terminal, provider: builder.provider, model: builder.model, argv: plan.argv, contractDigest: stored.digest })
+      results.push({ issue: detail.identifier, outcome: 'dispatched', reason: 'worker started', branch: actualBranch, worktree, worktreeId: created.id, terminal: launched.terminal, provider: worker.provider, model: worker.model, argv: plan.argv, contractDigest: stored.digest })
       dispatched += 1
     } catch (error) {
       ledger.release(claim.lease, `dispatch failed: ${message(error)}`)

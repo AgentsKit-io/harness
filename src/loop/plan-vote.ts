@@ -162,6 +162,15 @@ export interface PlanWithVotesInput {
   readonly now?: () => Date
   readonly onProviderFailure?: (failure: ProviderFailure) => void
   readonly onCycle?: (cycle: number, votes: readonly CastVote[]) => void
+  /** Ceiling for one planner call. Unset = `worker.plan.timeoutMs`; a flow may shorten it per role. */
+  readonly plannerTimeoutMs?: number
+  /** Ceiling for one vote call. Unset = `worker.plan.timeoutMs`. */
+  readonly voteTimeoutMs?: number
+  /**
+   * False when the flow switched the `vote` phase off: the planner's first parseable plan stands, recorded with
+   * zero votes so nothing downstream can mistake it for consensus.
+   */
+  readonly requireVotes?: boolean
 }
 
 /**
@@ -183,12 +192,24 @@ export const runPlanWithVotes = async (input: PlanWithVotesInput): Promise<Store
   for (let cycle = 1; cycle <= settings.maxCycles; cycle += 1) {
     let proposed: { readonly plan: TaskPlan; readonly candidate: RankedModel } | null = null
     for (const candidate of input.planner) {
-      const result = await callHeadless({ runner: input.runner, config: input.config, root: input.root, timeoutMs: settings.timeoutMs, call: { candidate, prompt: renderPlanPrompt({ issue: input.issue, config: input.config, contract: input.contract, objections }) } })
+      const result = await callHeadless({ runner: input.runner, config: input.config, root: input.root, timeoutMs: input.plannerTimeoutMs ?? settings.timeoutMs, call: { candidate, prompt: renderPlanPrompt({ issue: input.issue, config: input.config, contract: input.contract, objections }) } })
       if ('failure' in result) { failures.push(result.failure); if (result.failure.kind !== 'other') input.onProviderFailure?.(result.failure); continue }
       try { proposed = { plan: parsePlanOutput(result.stdout), candidate }; break } catch (error) { failures.push({ provider: candidate.provider, model: candidate.model, kind: 'output', detail: error instanceof Error ? error.message : String(error) }) }
     }
     if (!proposed) return fail(`Planning failed on every candidate: ${failures.map((failure) => `${failure.provider}/${failure.model} [${failure.kind}] ${failure.detail.split('\n')[0]}`).join(' | ')}`, 'HARNESS_ERROR')
     lastPlan = proposed
+
+    // A flow may buy the plan without buying the jury. The plan then stands as written and is stored with an empty
+    // vote list, so `renderPlanForBrief` and every reader downstream say "0/0 approved" instead of implying a
+    // consensus that nobody was asked for.
+    if (input.requireVotes === false) {
+      input.onCycle?.(cycle, [])
+      return {
+        schemaVersion: PLAN_SCHEMA_VERSION, issue: input.issue, generatedAt: now.toISOString(),
+        provider: proposed.candidate.provider, model: proposed.candidate.model, plan: proposed.plan,
+        digest: hashJson(proposed.plan), contractDigest: input.contractDigest, cycles: cycle, votes: [], status: 'approved', unresolved: [],
+      }
+    }
 
     const votes: CastVote[] = []
     // One vote per distinct candidate where possible; with fewer candidates than votes the list wraps, and the
@@ -196,7 +217,7 @@ export const runPlanWithVotes = async (input: PlanWithVotesInput): Promise<Store
     for (let index = 0; index < settings.votes; index += 1) {
       const candidate = input.voters[index % Math.max(1, input.voters.length)]
       if (!candidate) break
-      const result = await callHeadless({ runner: input.runner, config: input.config, root: input.root, timeoutMs: settings.timeoutMs, call: { candidate, prompt: renderVotePrompt({ issue: input.issue, config: input.config, contract: input.contract, plan: proposed.plan }) } })
+      const result = await callHeadless({ runner: input.runner, config: input.config, root: input.root, timeoutMs: input.voteTimeoutMs ?? settings.timeoutMs, call: { candidate, prompt: renderVotePrompt({ issue: input.issue, config: input.config, contract: input.contract, plan: proposed.plan }) } })
       if ('failure' in result) { failures.push(result.failure); if (result.failure.kind !== 'other') input.onProviderFailure?.(result.failure); continue }
       try { votes.push({ ...parseVoteOutput(result.stdout), provider: candidate.provider, model: candidate.model }) } catch (error) { failures.push({ provider: candidate.provider, model: candidate.model, kind: 'output', detail: error instanceof Error ? error.message : String(error) }) }
     }

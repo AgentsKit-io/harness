@@ -22,7 +22,7 @@ import { appendLoopEvent, briefPath, dispatchRecordPath, launchWorkerTerminal, r
 import { intakeIssueId, discoverIntake, listIntake } from './github-intake.js'
 import { createLoopEventBus, loadLoopPlugins, type LoopEventBus } from './event-bus.js'
 import { attachNotifier } from './notify.js'
-import { resolveFlowSettings, type EffectiveFlowSettings } from './flows.js'
+import { applyRoleSettings, resolveFlowSettings, resolveRoleSettings, workerPhaseEnabled, type EffectiveFlowSettings } from './flows.js'
 import { assessDod, readDodEvidence, renderDodMarkdown } from './dod.js'
 import { missingArtifacts, readPhaseArtifacts, readVerifyArtifact, verifyProofs, type PhaseArtifactName } from './artifacts.js'
 
@@ -527,15 +527,25 @@ ${marker}` }); actions.push('secret-file hold commented') } catch (error) { acti
   else if (checks.status !== 'green') return { issue: record.issue, outcome: 'waiting', reason: checks.status === 'missing' ? `required checks not reported yet: ${checks.missingRequired.join(', ')}` : `checks pending: ${checks.pending.join(', ')}`, pr: pr.number, head: pr.headSha, actions }
 
   const prior = state.reviews[pr.headSha]
+  // The phases of this issue, as its flow declared them. Turning the review off is a deliberate, recorded choice —
+  // an incident flow that wants the fix in now — and every other gate (checks, DoD, the human approval) still runs.
+  const reviewPhase = workerPhaseEnabled(config, flow.flow, 'review', true)
+  if (!reviewPhase) actions.push('review phase off for this flow')
   let review: CodeReviewOutcome | null = null
-  if (!prior || prior.status === 'incomplete') {
+  if (reviewPhase && (!prior || prior.status === 'incomplete')) {
     if (!ctx.reviewer) return { issue: record.issue, outcome: 'waiting', reason: 'no reviewer provider available', pr: pr.number, head: pr.headSha, actions }
+    // Who reviews on this flow, before the change's own shape gets a say: a profile that pins the role narrows the
+    // candidate list, and the size heuristic then chooses inside what the flow allowed.
+    const roleSettings = resolveRoleSettings(config, flow.flow, 'review')
+    const candidates = applyRoleSettings(ctx.reviewerCandidates, roleSettings)
+    const reviewer = candidates[0] ?? ctx.reviewer
+    if (roleSettings.source === 'flow' && (reviewer.provider !== ctx.reviewer.provider || reviewer.model !== ctx.reviewer.model)) actions.push(`reviewer ${reviewer.provider}/${reviewer.model} named by flow \`${flow.flow.name ?? 'default'}\``)
     // Cost lever: the model is chosen from the size and the shape of the change, not from the role alone.
     const sized = config.delivery.review.smallChangeLines > 0
-      ? modelForChange({ candidates: ctx.reviewerCandidates, files: pr.files, changedLines: pr.changedLines, smallChangeLines: config.delivery.review.smallChangeLines, criticalPaths: config.delivery.review.criticalPaths })
-      : { model: ctx.reviewer, reason: '' }
-    const chosen = sized.model ?? ctx.reviewer
-    if (sized.reason && (chosen.provider !== ctx.reviewer.provider || chosen.model !== ctx.reviewer.model)) actions.push(`reviewer ${chosen.provider}/${chosen.model} chosen: ${sized.reason}`)
+      ? modelForChange({ candidates, files: pr.files, changedLines: pr.changedLines, smallChangeLines: config.delivery.review.smallChangeLines, criticalPaths: config.delivery.review.criticalPaths })
+      : { model: reviewer, reason: '' }
+    const chosen = sized.model ?? reviewer
+    if (sized.reason && (chosen.provider !== reviewer.provider || chosen.model !== reviewer.model)) actions.push(`reviewer ${chosen.provider}/${chosen.model} chosen: ${sized.reason}`)
     const { settings } = providerIdentity(config, chosen.provider)
     const reviewProvider = settings.reviewProvider ?? `${chosen.provider}-cli`
     // As labels que o item carregava no despacho decidem o rigor da revisão (`reviewOverrides`). Vêm do
@@ -549,7 +559,7 @@ ${marker}` }); actions.push('secret-file hold commented') } catch (error) { acti
     }
     // Cost lever: the cheap verifier runs before the expensive one. A build that does not compile does not
     // deserve a two-vote review, and `delivery.verify.argv` is the project's own check, not a guess.
-    if (config.delivery.verify.argv.length && !ctx.dryRun) {
+    if (config.delivery.verify.argv.length && workerPhaseEnabled(config, flow.flow, 'verify', true) && !ctx.dryRun) {
       const verify = await ctx.runner.run(config.delivery.verify.argv, { timeoutMs: 600_000, cwd: ctx.loaded.root })
       if (verify.code !== 0) {
         actions.push(`local verify failed before review: ${(verify.stderr || verify.stdout).trim().slice(0, 200)}`)
@@ -564,7 +574,7 @@ ${marker}` }); actions.push('secret-file hold commented') } catch (error) { acti
     const resultFile = join(ctx.loaded.stateDir, 'issues', record.issue, `review-${pr.headSha.slice(0, 12)}.json`)
     mkdirSync(dirname(resultFile), { recursive: true })
     if (reviewSettings.overriddenBy) actions.push(`review reinforced by \`${reviewSettings.overriddenBy}\`: ${reviewSettings.votes} vote(s), min severity ${reviewSettings.minSeverity}`)
-    review = await runCodeReview(ctx.runner, { cli: reviewSettings.cli, repo: config.project.repo, number: pr.number, provider: reviewProvider, model: chosen.model, mode: reviewSettings.mode, ...(reviewSettings.transport ? { transport: reviewSettings.transport } : {}), profile: reviewSettings.profile, votes: reviewSettings.votes, concurrency: reviewSettings.concurrency, minSeverity: reviewSettings.minSeverity, deadlineMs: ctx.reviewDeadlineMs, maxCalls: reviewSettings.maxCalls, post: reviewSettings.post, resultFile, cwd: ctx.loaded.root, env: ctx.env })
+    review = await runCodeReview(ctx.runner, { cli: reviewSettings.cli, repo: config.project.repo, number: pr.number, provider: reviewProvider, model: chosen.model, mode: reviewSettings.mode, ...(reviewSettings.transport ? { transport: reviewSettings.transport } : {}), profile: reviewSettings.profile, votes: reviewSettings.votes, concurrency: reviewSettings.concurrency, minSeverity: reviewSettings.minSeverity, deadlineMs: Math.min(ctx.reviewDeadlineMs, roleSettings.timeoutMs ?? ctx.reviewDeadlineMs), maxCalls: reviewSettings.maxCalls, post: reviewSettings.post, resultFile, cwd: ctx.loaded.root, env: ctx.env })
     actions.push(`review ${review.status}: ${review.summary}`)
     const attempts = (prior?.attempts ?? 0) + 1
     state = { ...state, prNumber: pr.number, reviews: { ...state.reviews, [pr.headSha]: { status: review.status, at: ctx.now().toISOString(), provider: review.provider, model: review.model, blocking: review.blocking.length, attempts } } }
@@ -586,7 +596,7 @@ ${marker}` }); actions.push('secret-file hold commented') } catch (error) { acti
       return { issue: record.issue, outcome: 'waiting', reason: review.summary, pr: pr.number, head: pr.headSha, review, actions }
     }
     if (review.status === 'findings') return fixRound(ctx, record, lease, state, pr, 'review', `Loop: the code review of PR #${pr.number} (head ${pr.headSha.slice(0, 7)}) found ${review.blocking.length} issue(s) at or above "${reviewSettings.minSeverity}". Address each one (or explain in the PR why it is not applicable), re-run \`${config.delivery.verifyCommand}\`, commit and push. Findings:\n${renderFindingsForWorker(review.blocking)}\nThe full review is on the PR. Reply here when pushed.`, `review found ${review.blocking.length} blocking finding(s)`, actions)
-  } else if (prior.status === 'findings') return { issue: record.issue, outcome: 'waiting', reason: `review findings pending a new push (head ${pr.headSha.slice(0, 7)})`, pr: pr.number, head: pr.headSha, actions }
+  } else if (reviewPhase && prior?.status === 'findings') return { issue: record.issue, outcome: 'waiting', reason: `review findings pending a new push (head ${pr.headSha.slice(0, 7)})`, pr: pr.number, head: pr.headSha, actions }
 
   // The phase artifacts are the contract between the worker and the harness: the machine advances on files it can
   // check, never on what a terminal said. A missing one comes back as a fix round **naming the file** — "which
@@ -604,7 +614,7 @@ ${marker}` }); actions.push('secret-file hold commented') } catch (error) { acti
 
   // Both DoD lists, proven, before anything merges: the project's (`dod.items`) and the issue's (the frozen
   // contract's outcomes). The evidence goes on the PR either way, so a human reading it sees proof, not a promise.
-  if (config.dod.items.length || readStoredContract(ctx.loaded.stateDir, record.issue)) {
+  if (workerPhaseEnabled(config, flow.flow, 'dod', true) && (config.dod.items.length || readStoredContract(ctx.loaded.stateDir, record.issue))) {
     const stored = readStoredContract(ctx.loaded.stateDir, record.issue)
     // `verify.json` counts as evidence for an outcome the DoD file left unproven — the worker ran the check once;
     // asking it to transcribe the same result into a second file only invents a way to be inconsistent. The

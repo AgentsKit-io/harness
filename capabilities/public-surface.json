@@ -4,7 +4,7 @@
   "package": "@agentskit/harness",
   "packageVersion": "0.14.0",
   "entryPoint": "src/index.ts",
-  "sourceDigest": "a52e72d8dad667e5bbd555100bdd44248a9a5abb95ad6a96b05a72056db00914",
+  "sourceDigest": "c64161a0540c8ec9e1f3761de6af7cc4adaff6af45e341dab3e5490294b90700",
   "capabilities": [
     {
       "id": "public-surface:adapters/agent",
@@ -984,12 +984,16 @@
         "LOOP_CONFIG_FILE",
         "LOOP_CONFIG_SCHEMA_VERSION",
         "LOOP_LOCAL_CONFIG_FILE",
+        "LOOP_ROLES",
         "LoadedLoopConfig",
         "LoopConfig",
         "LoopConfigInput",
         "LoopConfigSchema",
         "LoopProviderConfig",
+        "LoopRole",
         "ModelReference",
+        "WORKER_ROLES",
+        "WorkerRole",
         "composeLoopConfig",
         "globalConfigPath",
         "globalLayerDisabled",
@@ -1175,9 +1179,13 @@
         "FlowProfile",
         "FlowSource",
         "ResolvedFlow",
+        "RoleSettings",
+        "applyRoleSettings",
         "resolveFlow",
         "resolveFlowSettings",
-        "unknownFlowReferences"
+        "resolveRoleSettings",
+        "unknownFlowReferences",
+        "workerPhaseEnabled"
       ]
     },
     {
@@ -1749,5 +1757,5 @@
       ]
     }
   ],
-  "digest": "6245a58e9d854aed8c86df6319e0c259f6f5313b16c03d707c5b155a97458707"
+  "digest": "94e2fbf6eff5a39e1e31c49f8ac380080db46fa10779cf8e4a2e13872c87b804"
 }

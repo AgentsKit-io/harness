@@ -56,6 +56,21 @@ const ProviderSchema = z.object({
 
 const effortLevel = z.enum(['low', 'medium', 'high', 'xhigh'])
 
+/**
+ * The loop's role vocabulary: every place a model is asked to do something, named once.
+ *
+ * `orchestrator`/`builder`/`watcher`/`review` are the four that pick a model list (`models.<role>`); `planner`,
+ * `vote`, `verify` and `dod` are the finer per-issue phases that borrow one of those lists. One vocabulary, so a
+ * profile that pins a role and a phase that runs it are talking about the same thing.
+ */
+export const LOOP_ROLES = ['orchestrator', 'planner', 'vote', 'builder', 'verify', 'review', 'dod', 'watcher'] as const
+export type LoopRole = typeof LOOP_ROLES[number]
+const loopRole = z.enum(LOOP_ROLES)
+
+/** The phases that run per issue. `builder` is the work itself and is never switched off. */
+export const WORKER_ROLES = ['planner', 'vote', 'builder', 'verify', 'review', 'dod'] as const
+export type WorkerRole = typeof WORKER_ROLES[number]
+
 const tiers = z.array(z.array(modelRef).min(1)).min(1)
 
 export const LoopConfigSchema = z.object({
@@ -603,6 +618,15 @@ export const LoopConfigSchema = z.object({
       maxCycles: z.number().int().min(1).max(5).default(3),
       timeoutMs: z.number().int().positive().default(300_000),
     }).prefault({}),
+    /**
+     * The phases that run for one issue, in order.
+     *
+     * Unset (the default) means every phase answers for itself, from its own block — `worker.plan.enabled`,
+     * `delivery.verify.argv`, `delivery.review`, `dod.items` — which in practice is `['builder', 'review']` and is
+     * exactly what a project that never opted in already has. **Declaring the list makes it the answer**: a phase
+     * not named here does not run, however well configured its own block is. That is the point of declaring it.
+     */
+    roles: z.array(z.enum(WORKER_ROLES)).min(1).optional(),
   }).prefault({}),
   /**
    * The slices of the codebase, each with the one thing that decides it: a label the tracker carries, a file
@@ -712,6 +736,29 @@ export const LoopConfigSchema = z.object({
         requireHumanApproval: z.boolean().optional(),
       }).optional(),
       maxFixRounds: z.number().int().min(0).optional(),
+      /**
+       * Who runs a role on this flow, and how hard it thinks.
+       *
+       * Precedence is narrow beats broad: the role inside the profile, then the project's config, then the global
+       * one. A `provider`/`model` here **narrows** the role's candidate list to that pin; it never widens it, so a
+       * pin nobody can serve right now falls through to the role's ordinary candidates instead of dispatching
+       * something nobody asked for.
+       */
+      roles: z.partialRecord(loopRole, z.object({
+        provider: nonEmpty.optional(),
+        model: nonEmpty.optional(),
+        effort: effortLevel.optional(),
+        /** Ceiling for one call of this role on this flow. Unset = the role's own default. */
+        timeoutMs: z.number().int().positive().optional(),
+      })).default({}),
+      /**
+       * Per-issue phases this flow switches off (or explicitly back on), overriding `worker.roles`.
+       *
+       * These are the phases of one issue — not the scheduled automations, which are `schedule.*`. `builder` is
+       * the work itself: listing it as `false` is accepted and ignored, because a flow that builds nothing is not
+       * a flow.
+       */
+      stages: z.partialRecord(z.enum(WORKER_ROLES), z.boolean()).default({}),
       /** Free-form note shown wherever the flow is reported, so a costlier gate can explain itself. */
       reason: nonEmpty.optional(),
     })).default({}),
