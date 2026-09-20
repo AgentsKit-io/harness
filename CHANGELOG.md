@@ -1,10 +1,108 @@
 # Changelog
 
-## [Unreleased]
+## [0.15.0] - 2026-09-20
 
-The automations stop drifting. Step 1 of [docs/ROADMAP-SDLC.md](docs/ROADMAP-SDLC.md): the config file becomes the
-single source of truth for every scheduled automation, and the last piece of the loop that lived outside a
-repository moves into the harness.
+The loop becomes a cycle. The twelve steps of [docs/ROADMAP-SDLC.md](docs/ROADMAP-SDLC.md) close, the phases of one
+issue become files the machine can check instead of claims in a terminal, and the parts of the design that were
+decided in conversation become ADRs 0032–0037.
+
+### The phases of an issue leave evidence behind
+
+- The worker writes three files into `.ak-loop/` in its worktree — `plan.md` (the plan it actually followed),
+  `verify.json` (what it ran, outcome by outcome) and the definition-of-done proofs — and the brief tells it so.
+  **The loop advances on presence plus validation**, never on what a terminal said.
+- `deliver` reads them before the merge gate. A missing file comes back as a fix round **naming the file**; a file
+  that exists but does not match its schema is called out as worse than absent, because it looks like evidence.
+  A dispatch record with no worktree path is left out of the gate: the harness has nowhere to look, and blaming a
+  worker for a file nobody can open is how a loop invents work.
+- `verify.json` counts as evidence for an outcome the definition-of-done file left unproven. The worker ran the
+  check once; asking it to transcribe the result into a second file only invents a way to be inconsistent.
+
+### `layers:` and `documents:` — where the work belongs, and where the decisions live
+
+- **`layers`** declares the slices of the codebase: the tracker label that places an issue, the globs the layer
+  owns, and the one command that closes it. The brief tells the worker which test closes its layer — cheaper than
+  the whole suite — and `deliver` reports every PR that crossed its boundary, holding it only where the project
+  said the boundary is real (`layers[].enforce`). Off by default, because a boundary that blocks before a team has
+  drawn it properly costs more than it protects.
+- **`documents`** decides where the PRD and the technical design live once a human approves them: `file` writes
+  them into the repository, where they are reviewable, diffable and greppable by the workers that come later.
+  Turning one into a numbered ADR stays a human gesture.
+
+### Per-role settings, and which phases run at all
+
+- **`flows.profiles.<name>.roles.<role>`** names who runs a role on this flow, with what effort and what timeout.
+  Narrow beats broad: the role in the profile, then the project, then the global layer. A pin **narrows** the
+  candidate list and never widens it, so a model nobody can serve right now falls through to the ordinary
+  candidates instead of becoming an outage — and the dispatch record always says who actually ran.
+- **`worker.roles`** is the ordered list of phases for one issue (`planner`, `vote`, `builder`, `verify`, `review`,
+  `dod`). Unset, every phase keeps answering from its own block, which is exactly what a project that never opted
+  in already has. Declaring the list makes it the answer. **`flows.profiles.<name>.stages`** overrides it per flow;
+  `builder` is the work and is never switched off.
+- A flow may buy the plan without buying the jury: with the `vote` phase off, the planner's plan stands and is
+  stored with zero votes, so nothing downstream mistakes it for consensus.
+
+### The four cost levers, finished
+
+- **A stable, cacheable prefix.** The worker brief and the contract prompt now open with everything invariant for
+  the repository — role, standing rules, definition of done, artifacts, pinned skills — and close with the issue,
+  its contract and its plan. Two issues share the head of the prompt byte for byte. The test measures that shared
+  prefix and asserts a minimum length; without it the reordering would be decoration that the next edit undoes.
+- **Context pinned by digest.** A handoff points at a pinned skill by path and sha when the file on disk still
+  hashes to what the dispatch record says was delivered, and sends the whole file only when it changed, vanished
+  or was never recorded. Fix rounds carry a one-line anchor — contract, brief, pinned skills — instead of
+  repeating what the terminal already has. The rule is deliberately asymmetric: a worker without its context is
+  worse than a worker that costs more.
+- **`models.providers.<id>.subagents` and `flows.profiles.<name>.lead`.** A flow may ask its builder to lead and
+  delegate one plan item at a time. Whether it can is the provider's answer; the brief says which of the two the
+  worker got, and the dispatch record keeps `delegation: 'subagents' | 'alone'`. Dropping the request silently
+  would leave a human reading "lead" in the config and a worker that never led anything.
+
+### `release.waiting`, once per head
+
+- A batch on the integration branch with nobody's approval behind it now emits `release.waiting` and calls the
+  configured channel — **once per head**, deduplicated in `release.json`, because a cron that repeats it every few
+  minutes is noise and a channel that always shouts stops being read. A promotion clears the mark, so the next
+  batch is news again. The stage now carries the event bus and its notifier, like `tick` and `deliver`.
+
+### The event vocabulary, and the compiler that guards it
+
+- **`LOOP_EVENT_TYPES`** names every event the loop emits and what it carries, and `appendLoopEvent` and
+  `LoopEventPayload['type']` accept only those. An event whose name exists only inside a template string is an
+  event nobody can subscribe to on purpose.
+- Narrowing the type found two events no grep had found (`tuning.applied`, `tuning.reverted`) and two that never
+  existed (`worker.dry-run`, `github-intake.dry-run`): a dry run returns before anything is written, and the type
+  now says so. A test closes the circle both ways — an emission that skipped the vocabulary fails, and so does a
+  name declared here that nothing emits.
+
+### The installed agent is code, not a markdown file to append to
+
+- `npx agentskit add <id>` installs an agent as code. The retro's improvement pass now edits **only a markdown
+  instructions file that already exists**; an agent that is code, or whose instructions file is missing, gets a
+  recorded `needs-human` proposal with its evidence. The previous behaviour appended an HTML comment — to
+  `agent.ts`, if that is what the registry named, and it created an `AGENT.md` out of nothing when none existed.
+- New `loop doctor` check **`agents.registry`**: every `path` in the registry exists, and the check says which
+  instructions file it found. A registry pointing at a directory nobody installed sends every run for that role to
+  the provider alone, and nothing said so.
+
+### Documentation
+
+- **Six ADRs**: [0032](docs/ADR-0032-loop-stages-as-state-machines.md) stages as state machines,
+  [0033](docs/ADR-0033-four-config-layers-and-presets.md) the four configuration layers and the presets,
+  [0034](docs/ADR-0034-connectors-tracker-scm-runner.md) the connectors and the two-implementations rule,
+  [0035](docs/ADR-0035-definition-of-done-two-lists.md) the definition of done in two lists,
+  [0036](docs/ADR-0036-bounded-self-modification.md) bounded self-modification,
+  [0037](docs/ADR-0037-cost-policy-ceilings-and-levers.md) cost — including which levers were not built.
+- The `ak-harness-loop` skill gains the section on driving `loop plan` from inside a conversation: one question
+  per message, with alternatives and a recommendation, and the rule that **the agent never answers in the human's
+  place**. A test asserts every command the skill cites exists in the CLI.
+- The README describes the whole cycle instead of the 0.14 loop, and `docs/GETTING-STARTED.md` gains the happy
+  path: `loop init` → `loop doctor` → `loop install` → the first tick.
+
+### The twelve steps of the roadmap, in the order they landed
+
+The automations stop drifting: the config file becomes the single source of truth for every scheduled automation,
+and the last piece of the loop that lived outside a repository moves into the harness.
 
 ### `loop install` reconciles instead of rewriting
 
@@ -124,8 +222,8 @@ Step 9 of the roadmap.
 - **Cost lever 3, model by size of change**: `delivery.review.smallChangeLines` and `delivery.review.criticalPaths`
   send a small or documentation-only change to the cheapest candidate and anything touching a critical path to
   the strongest. `PullRequestSnapshot` now carries `changedLines`.
-- Levers 1 (stable cache prefix) and 4 (context pinned by digest) are **not implemented**; they are prompt-shape
-  work on the brief and the contract, and saying so is cheaper than pretending.
+- Levers 1 (stable cache prefix) and 4 (context pinned by digest) landed later in this release — see "The four
+  cost levers, finished" below.
 
 ### Connectors: the engine stops naming vendors
 

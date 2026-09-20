@@ -169,7 +169,7 @@ Nuvem (sandbox remoto) fica como terceira, depois.
 | Knob de config ajustado | não, dentro do intervalo; **sim** fora dele |
 | Item travado / pausado | **sim**, pelo canal configurado |
 
-## 6. O que existe no harness 0.14.0 vs. o que é trabalho novo
+## 6. O que existe no harness 0.15.0 vs. o que é trabalho novo
 | Peça | Estado |
 |---|---|
 | `tick`, `deliver`, `retro`, `observe`, `watch`, `doctor`, `debrief` | existe |
@@ -198,7 +198,15 @@ Nuvem (sandbox remoto) fica como terceira, depois.
 | **Presets por tipo de projeto** | **feito** (passo 10): 5 presets + `extends` + `loop init` grelhado |
 | **Melhoria de agente por nota + eval + reversão** | **feito** (passo 11): `agents.autoImprove`, papéis críticos ficam com humano |
 | **`routing.policy` + `budget.perProvider` / `budget.perIssueTokens`** | **feito** (passo 9) |
-| **Quatro alavancas de custo** | **2 de 4** (passo 9): verificador barato e modelo por tamanho feitos; prefixo estável e contexto por digest **não** |
+| **Quatro alavancas de custo** | **4 de 4** (0.15.0): verificador barato, modelo por tamanho, prefixo estável de cache (com teste de tamanho mínimo do prefixo partilhado) e contexto pinado por digest |
+| **Artefatos por fase** (`.ak-loop/plan.md`, `verify.json`, `dod.json`) | **feito** (0.15.0): o `deliver` lê-os antes do merge; ficheiro em falta vira fix round nomeando-o |
+| **`layers:` e `documents:`** | **feito** (0.15.0): a camada que fecha a issue vai ao briefing; PRD e desenho aprovados ficam no repositório |
+| **Override por papel dentro do perfil + `worker.roles`** | **feito** (0.15.0): `flows.profiles.<n>.roles`/`stages`; um pin estreita candidatos, nunca alarga |
+| **Lead com subagentes** | **feito** (0.15.0): `flows.profiles.<n>.lead` + `models.providers.<id>.subagents`; sem subagentes o briefing diz que trabalha sozinho e o registo guarda-o |
+| **`release.waiting`** | **feito** (0.15.0): uma vez por head, com bus e notificador no estágio |
+| **Vocabulário de eventos tipado** | **feito** (0.15.0): `LOOP_EVENT_TYPES` + `appendLoopEvent` estreitado; teste de igualdade de conjunto |
+| **Agente instalado é código** | **feito** (0.15.0): o harness só edita markdown existente; check `agents.registry` no doctor |
+| Site de documentação próprio (`harness.agentskit.io`) | **em construção** — §7e |
 | **`intake`**, **`maintain`**, release notes + rollback em `release` | **feito** (passos 7 e 12) |
 
 ## 7. Ordem de construção (cada passo deixa o loop funcionando) — **todos implementados em 2026-09-20**
@@ -209,18 +217,20 @@ Nuvem (sandbox remoto) fica como terceira, depois.
 3. **[feito]** **Promoção de memória `loop-auto`** (ADR já emendada) e **knobs auto-ajustáveis** — o retro melhora
    o loop sozinho.
 4. **[feito]** **DoD de projeto + prova na PR** — o deliver exige as duas listas.
-5. **[feito, parcial]** **Pipeline de papéis no worker** — planner → votação → verify, opcional por perfil; default
-   `builder → review`. O **lead com subagentes continua dentro da sessão do worker**, como a restrição de 13/09
-   obriga: o harness orquestra as fases, não os subagentes.
-6. **[feito]** **`plan`** com **architect** — requisitos e desenho, driver terminal. O app ainda não.
+5. **[feito]** **Pipeline de papéis no worker** — planner → votação → verify, opcional por perfil; default
+   `builder → review`, agora declarável em `worker.roles` e comutável por `flows.profiles.<n>.stages`. O **lead com
+   subagentes continua dentro da sessão do worker**, como a restrição de 13/09 obriga: o harness pede o lead e diz
+   ao worker se o provedor tem subagentes; quem delega é ele.
+6. **[feito]** **`plan`** com **architect** — requisitos e desenho, driver terminal, e a skill `ak-harness-loop`
+   ensina um agente a conduzi-lo de dentro de uma conversa sem responder no lugar do humano.
 7. **[feito]** **`release`** — promoção + deploy com aprovação.
 8. **[feito]** **`RunnerConnector` + runner local** e **`TrackerConnector`/`ScmConnector`** — extrair as interfaces
    do que existe e provar cada uma com a segunda implementação. `tick` e `deliver` só escrevem pelo tracker;
    o runner `local` (git worktree + tmux + crontab) é a segunda implementação que torna a interface honesta.
-9. **[feito, 2 das 4 alavancas]** **Custo e uso**: `routing.policy` e os dois tetos estão de pé; das alavancas,
-   **verificador barato antes do modelo** e **modelo por tamanho da mudança** foram feitas. **Prefixo estável de
-   cache** e **contexto pinado por digest** não — são trabalho de forma de prompt no briefing e no contrato, e
-   dizer isso é mais barato do que fingir.
+9. **[feito]** **Custo e uso**: `routing.policy` e os dois tetos estão de pé, e as quatro alavancas também.
+   **Prefixo estável de cache** e **contexto pinado por digest** fecharam na 0.15.0 — o primeiro com um teste que
+   mede o prefixo partilhado entre dois briefings e exige um tamanho mínimo, porque sem essa asserção a
+   reordenação é decoração que a próxima edição desfaz.
 10. **[feito]** **Presets por tipo + `loop init` grelhado** — cinco presets, `extends:` como camada mais baixa.
 11. **[feito, com uma diferença]** **Papéis como agentes do registry + melhoria por eval** — o retro propõe **uma
     nota datada** nas instruções do agente pior avaliado, não um diff gerado por modelo; a bateria de eval é o
