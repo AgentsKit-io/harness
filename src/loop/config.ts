@@ -780,7 +780,7 @@ export const LoopConfigSchema = z.object({
    */
   notifications: z.object({
     /** Loop event types that reach the channel. `onEscalate` always does, whatever this list says. */
-    events: z.array(nonEmpty).default(['contract.escalated', 'contract.failed', 'issue.paused', 'stage.paused', 'pr.merge-refused']),
+    events: z.array(nonEmpty).default(['contract.escalated', 'contract.failed', 'issue.paused', 'stage.paused', 'pr.merge-refused', 'release.waiting']),
     webhook: z.object({
       /** Literal URL. Only for the user's global file, which lives outside every repository; in a versioned config use `urlEnv`. */
       url: nonEmpty.optional(),

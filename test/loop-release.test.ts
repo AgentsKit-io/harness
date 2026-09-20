@@ -80,6 +80,28 @@ describe('the human gate', () => {
     expect(moved.status).toBe('waiting')
     expect(moved.detail).toContain('re-approve the current batch')
   })
+
+  it('announces a batch waiting for approval once per head, not once per tick', async () => {
+    const loaded = setup()
+    await runReleaseStage({ loaded, runner: runner(), now: () => NOW })
+    const first = readLoopEvents(loaded.stateDir).filter((event) => event.type === 'release.waiting')
+    expect(first).toHaveLength(1)
+    expect(first[0]).toMatchObject({ head: 'headsha0000', commits: 2, branch: 'production' })
+    expect(readReleaseState(loaded.stateDir).waitingNotifiedFor).toBe('headsha0000')
+
+    // The cron runs again on the same head: still waiting, and still the same one announcement.
+    await runReleaseStage({ loaded, runner: runner(), now: () => NOW })
+    expect(readLoopEvents(loaded.stateDir).filter((event) => event.type === 'release.waiting')).toHaveLength(1)
+
+    // A new merge is genuinely new news.
+    await runReleaseStage({ loaded, runner: runner({ head: ok('newerhead111') }), now: () => NOW })
+    expect(readLoopEvents(loaded.stateDir).filter((event) => event.type === 'release.waiting')).toHaveLength(2)
+
+    // A dry run says what it would do without writing the announcement down.
+    const dry = setup()
+    await runReleaseStage({ loaded: dry, runner: runner(), now: () => NOW, dryRun: true })
+    expect(readLoopEvents(dry.stateDir).filter((event) => event.type === 'release.waiting')).toEqual([])
+  })
 })
 
 describe('promoting and deploying', () => {

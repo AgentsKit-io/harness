@@ -5,6 +5,8 @@ import { fail } from '../kernel/errors.js'
 import type { LoadedLoopConfig } from './config.js'
 import { writeJsonAtomic } from './fs-atomic.js'
 import { appendLoopEvent } from './tick.js'
+import { createLoopEventBus, type LoopEventBus } from './event-bus.js'
+import { attachNotifier } from './notify.js'
 
 /** One merged commit waiting on the integration branch — a line of the batch a human is asked to approve. */
 export interface ReleaseCommit { readonly sha: string; readonly subject: string; readonly issue: string | null }
@@ -24,17 +26,19 @@ export interface ReleaseApproval { readonly head: string; readonly actor: string
 export interface ReleaseState {
   readonly approval: ReleaseApproval | null
   readonly history: readonly { readonly head: string; readonly at: string; readonly status: 'promoted' | 'deployed' | 'rolled-back' | 'failed'; readonly detail: string }[]
+  /** The head whose "waiting for approval" was already announced. The stage runs on a cron; the news does not repeat. */
+  readonly waitingNotifiedFor: string | null
 }
 
 export const releaseStatePath = (stateDir: string): string => join(stateDir, 'release.json')
 
 export const readReleaseState = (stateDir: string): ReleaseState => {
   const path = releaseStatePath(stateDir)
-  if (!existsSync(path)) return { approval: null, history: [] }
+  if (!existsSync(path)) return { approval: null, history: [], waitingNotifiedFor: null }
   try {
     const value = JSON.parse(readFileSync(path, 'utf8')) as Partial<ReleaseState>
-    return { approval: value.approval ?? null, history: Array.isArray(value.history) ? value.history : [] }
-  } catch { return { approval: null, history: [] } }
+    return { approval: value.approval ?? null, history: Array.isArray(value.history) ? value.history : [], waitingNotifiedFor: value.waitingNotifiedFor ?? null }
+  } catch { return { approval: null, history: [], waitingNotifiedFor: null } }
 }
 
 const writeReleaseState = (stateDir: string, state: ReleaseState): void => writeJsonAtomic(releaseStatePath(stateDir), state)
@@ -97,6 +101,14 @@ export interface ReleaseReport {
  * rollback and escalates; a project that declares no rollback is told so plainly rather than left guessing.
  */
 export const runReleaseStage = async (input: { readonly loaded: LoadedLoopConfig; readonly runner: CommandRunner; readonly now?: () => Date; readonly dryRun?: boolean }): Promise<ReleaseReport> => {
+  // The stage's events are worth a human's attention — a batch waiting for approval most of all — so they go out
+  // on the same bus every other stage uses, and the sends in flight are awaited before the stage ends.
+  const bus = createLoopEventBus()
+  const flush = attachNotifier(bus, { config: input.loaded.config, runner: input.runner })
+  try { return await releaseStage(input, bus) } finally { await flush() }
+}
+
+const releaseStage = async (input: { readonly loaded: LoadedLoopConfig; readonly runner: CommandRunner; readonly now?: () => Date; readonly dryRun?: boolean }, bus: LoopEventBus): Promise<ReleaseReport> => {
   const { loaded } = input
   const { config } = loaded
   const now = (input.now ?? (() => new Date()))()
@@ -112,8 +124,17 @@ export const runReleaseStage = async (input: { readonly loaded: LoadedLoopConfig
   if (config.release.branch === config.project.baseBranch) return report('failed', `release.branch and project.baseBranch are both "${config.release.branch}"; promotion would be a no-op`)
   if (batch.error) return report('failed', batch.error)
   if (!batch.commits.length) return report('idle', `${batch.branch} already contains ${batch.base}`)
-  if (!approval) return report('waiting', `${batch.commits.length} commit(s) waiting for "ak-harness loop release approve"`)
-  if (approval.head !== batch.head) return report('waiting', `the approval covers ${approval.head.slice(0, 12)} but ${batch.base} is now at ${batch.head?.slice(0, 12) ?? 'unknown'} — re-approve the current batch`)
+  // A batch nobody approved is a human's cue; a cron that repeats it every few minutes is noise. Said once per
+  // head, because a new merge is genuinely new news and the sha is what an approval is bound to anyway.
+  const waiting = (detail: string): ReleaseReport => {
+    if (!input.dryRun && batch.head && state.waitingNotifiedFor !== batch.head) {
+      writeReleaseState(loaded.stateDir, { ...state, waitingNotifiedFor: batch.head })
+      appendLoopEvent(loaded.stateDir, { at: now.toISOString(), type: 'release.waiting', head: batch.head, branch: batch.branch, commits: batch.commits.length, issues: batch.issues, detail }, bus)
+    }
+    return report('waiting', detail)
+  }
+  if (!approval) return waiting(`${batch.commits.length} commit(s) waiting for "ak-harness loop release approve"`)
+  if (approval.head !== batch.head) return waiting(`the approval covers ${approval.head.slice(0, 12)} but ${batch.base} is now at ${batch.head?.slice(0, 12) ?? 'unknown'} — re-approve the current batch`)
   if (input.dryRun) return report('dry-run', `would promote ${batch.commits.length} commit(s) to ${batch.branch}${config.release.deploy ? ' and deploy' : ''}`)
 
   const run = async (argv: readonly string[], timeoutSec: number): Promise<{ readonly ok: boolean; readonly detail: string }> => {
@@ -123,7 +144,7 @@ export const runReleaseStage = async (input: { readonly loaded: LoadedLoopConfig
     } catch (error) { return { ok: false, detail: error instanceof Error ? error.message : String(error) } }
   }
   const record = (status: ReleaseState['history'][number]['status'], detail: string): void => {
-    writeReleaseState(loaded.stateDir, { approval: status === 'promoted' || status === 'deployed' ? null : approval, history: [...state.history, { head: approval.head, at: now.toISOString(), status, detail }] })
+    writeReleaseState(loaded.stateDir, { approval: status === 'promoted' || status === 'deployed' ? null : approval, history: [...state.history, { head: approval.head, at: now.toISOString(), status, detail }], waitingNotifiedFor: null })
   }
 
   // Notes are written and committed BEFORE the promotion, so the branch that reaches production carries them.
@@ -138,32 +159,32 @@ export const runReleaseStage = async (input: { readonly loaded: LoadedLoopConfig
   }
   const push = await run(['git', '-C', loaded.root, 'push', 'origin', `${head}:refs/heads/${batch.branch}`], 120)
   actions.push(`promote → ${push.detail}`)
-  if (!push.ok) { record('failed', push.detail); appendLoopEvent(loaded.stateDir, { at: now.toISOString(), type: 'release.failed', head: batch.head, phase: 'promote', detail: push.detail }); return report('failed', push.detail) }
-  appendLoopEvent(loaded.stateDir, { at: now.toISOString(), type: 'release.promoted', head: batch.head, branch: batch.branch, commits: batch.commits.length, issues: batch.issues, approvedBy: approval.actor })
+  if (!push.ok) { record('failed', push.detail); appendLoopEvent(loaded.stateDir, { at: now.toISOString(), type: 'release.failed', head: batch.head, phase: 'promote', detail: push.detail }, bus); return report('failed', push.detail) }
+  appendLoopEvent(loaded.stateDir, { at: now.toISOString(), type: 'release.promoted', head: batch.head, branch: batch.branch, commits: batch.commits.length, issues: batch.issues, approvedBy: approval.actor }, bus)
 
   if (!config.release.deploy) { record('promoted', push.detail); return report('ok', `promoted ${batch.commits.length} commit(s) to ${batch.branch}; no deploy declared`, { promoted: true }) }
   const deploy = await run(config.release.deploy, config.release.deployTimeoutSec)
   actions.push(`deploy → ${deploy.detail}`)
   if (!deploy.ok) {
-    appendLoopEvent(loaded.stateDir, { at: now.toISOString(), type: 'release.failed', head: batch.head, phase: 'deploy', detail: deploy.detail })
+    appendLoopEvent(loaded.stateDir, { at: now.toISOString(), type: 'release.failed', head: batch.head, phase: 'deploy', detail: deploy.detail }, bus)
     record('failed', deploy.detail)
     return report('failed', `promoted, but the deploy failed: ${deploy.detail}`, { promoted: true })
   }
-  appendLoopEvent(loaded.stateDir, { at: now.toISOString(), type: 'release.deployed', head: batch.head, branch: batch.branch })
+  appendLoopEvent(loaded.stateDir, { at: now.toISOString(), type: 'release.deployed', head: batch.head, branch: batch.branch }, bus)
 
   if (!config.release.smoke) { record('deployed', deploy.detail); return report('ok', `promoted and deployed ${batch.commits.length} commit(s)`, { promoted: true, deployed: true }) }
   const smoke = await run(config.release.smoke, config.release.smokeTimeoutSec)
   actions.push(`smoke → ${smoke.detail}`)
   if (smoke.ok) { record('deployed', smoke.detail); return report('ok', `promoted, deployed and smoke-tested ${batch.commits.length} commit(s)`, { promoted: true, deployed: true, smoke: 'passed' }) }
 
-  appendLoopEvent(loaded.stateDir, { at: now.toISOString(), type: 'release.smoke-failed', head: batch.head, detail: smoke.detail })
+  appendLoopEvent(loaded.stateDir, { at: now.toISOString(), type: 'release.smoke-failed', head: batch.head, detail: smoke.detail }, bus)
   if (!config.release.rollback) {
     record('failed', smoke.detail)
     return report('failed', `smoke failed after deploy and no release.rollback is declared — a human must decide: ${smoke.detail}`, { promoted: true, deployed: true, smoke: 'failed' })
   }
   const rollback = await run(config.release.rollback, config.release.rollbackTimeoutSec)
   actions.push(`rollback → ${rollback.detail}`)
-  appendLoopEvent(loaded.stateDir, { at: now.toISOString(), type: 'release.rolled-back', head: batch.head, ok: rollback.ok, detail: rollback.detail })
+  appendLoopEvent(loaded.stateDir, { at: now.toISOString(), type: 'release.rolled-back', head: batch.head, ok: rollback.ok, detail: rollback.detail }, bus)
   record('rolled-back', rollback.detail)
   return report('rolled-back', `smoke failed; rollback ${rollback.ok ? 'succeeded' : `FAILED: ${rollback.detail}`}`, { promoted: true, deployed: true, smoke: 'failed' })
 }
