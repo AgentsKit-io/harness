@@ -58,7 +58,8 @@ in the morning, which is the only time anyone reads this table.
 
 ## Reading which flow ran
 
-`deliver` writes the flow into the delivery actions, with what matched and why it cost what it cost:
+`deliver` writes the flow into the delivery actions, with what matched and why it cost what it cost. These two
+blocks are **reconstructed** — the lines are the ones the code emits, the issue is invented:
 
 ```text
 flow `enterprise` (default): billing-adjacent
