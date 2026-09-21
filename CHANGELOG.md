@@ -99,6 +99,45 @@ decided in conversation become ADRs 0032–0037.
 - The README describes the whole cycle instead of the 0.14 loop, and `docs/GETTING-STARTED.md` gains the happy
   path: `loop init` → `loop doctor` → `loop install` → the first tick.
 
+### Windows stops being a second-class platform
+
+The external PR #84 found that provider CLIs installed as `.cmd` shims could not be spawned at all. Auditing
+around it found five more, none of them cosmetic:
+
+- **Every `plan` was refused on Windows.** `git status --porcelain` prints forward slashes and `path.relative()`
+  returns the platform separator, so the comparison that excludes the harness's own contract file never matched
+  and a clean worktree read as dirty. This is the cause of the 16 "pre-existing, unrelated" test failures the PR
+  author reported.
+- **A timeout could hang forever.** A check runs under a shell; killing the shell left the real command holding
+  the inherited pipes, so `close` never fired and the promise never settled. Timeouts now kill the whole tree
+  (process group on POSIX, `taskkill /t` on Windows) and a grace period guarantees the call ends either way. A
+  spawn that failed emitted `error` and never `close`, which hung the same way; it is handled now.
+- **A `:` in an artifact id silently lost the artifact.** On NTFS the id became an alternate data stream: the
+  write succeeded, `readdirSync` never listed it, and `list()` quietly returned less than was written. The id
+  pattern now rejects `:` — **a narrowing of a public contract**, chosen over encoding the filename because a
+  loud `INVALID_INPUT` beats losing data quietly.
+- **`connectors.runner: local`** needs tmux and the system crontab, which Windows has neither of; the failure
+  arrived as a raw `ENOENT` halfway through a dispatch. `loop doctor` now says so up front (`runner.local`).
+- **A fabricated load average.** `os.loadavg()` returns zeros on Windows, so a busy machine reported 0% load and
+  CPU pressure never throttled anything. The sample now says the reading is unavailable, and both the reports
+  and `adaptiveConcurrency` treat it as unknown rather than as calm.
+- Plus: a Windows-absolute path passing the "repository-relative" check, Docker host paths (`C:\…`, UNC)
+  rejected before Docker ran, a child process started without `SystemRoot`, a cross-volume `rename` for the
+  benchmark manifest, and `writeJsonAtomic` promising an atomicity it did not have while a reader held the
+  destination open.
+
+The platform-sensitive tests now run on the Windows leg of CI, and every one of them asserts Windows-shaped
+inputs rather than gating on `process.platform`, so they fail on any machine if the behaviour regresses.
+
+### The licence, and a surface for the numbers
+
+- The harness is **free and open source under MIT**, said where someone looks for it: the home, the first
+  documentation page and the README.
+- **`/api/stats.json`**, in the same envelope the sibling products use, plus a small band on the home. Every
+  number is derived at build time from the repository — commands from the commander tree, events from the
+  vocabulary, config paths from the Zod schema, decision records from the ADR files — so nothing there can drift
+  from what the code actually is. The test suite is never run to produce a count.
+
 ### The harness has a folder of its own
 
 - The contract moves from **`.codex/verification.json` to `.ak-harness/verification.json`**, and the run state
