@@ -8,7 +8,7 @@ import {
 import type { CommandResult, CommandRunner, StoredContract, TaskContract } from '../src/index.js'
 
 const fixture = (name: string): unknown => JSON.parse(readFileSync(join(process.cwd(), 'test/fixtures/loop', `${name}.json`), 'utf8')) as unknown
-const exampleYaml = readFileSync(join(process.cwd(), 'loop.config.example.yaml'), 'utf8').replace(/\r\n/g, '\n').replace('person: my-linear-display-name', 'person: person')
+const exampleYaml = readFileSync(join(process.cwd(), 'loop.config.example.yaml'), 'utf8').replace(/\r\n/g, '\n').replace('person: my-linear-display-name', 'person: person').replace('my-linear-display-name: <linear-user-id>', 'person: user-id-1')
 const ok = (payload: unknown): CommandResult => ({ code: 0, stdout: JSON.stringify(payload), stderr: '', timedOut: false, durationMs: 1 })
 const okResult = (result: unknown): CommandResult => ok({ ok: true, result })
 
@@ -270,7 +270,8 @@ describe('tick', () => {
     const report = await runTick({ ...tickOptions(env), maxDispatch: 1 })
     expect(report.results[0]?.outcome).toBe('dispatched')
     const claim = env.runner.calls.find((argv) => argv[1] === 'linear' && argv[2] === 'assignee' && argv[3] === 'set')
-    expect(claim?.[claim.indexOf('--assignee') + 1]).toBe(loadLoopConfig(env.configPath).config.linear.person)
+    const person = loadLoopConfig(env.configPath).config.linear.person
+    expect(claim?.[claim.indexOf('--to-id') + 1]).toBe(loadLoopConfig(env.configPath).config.linear.people[person])
     const claimAt = env.runner.calls.findIndex((argv) => argv[1] === 'linear' && argv[2] === 'assignee')
     const terminalAt = env.runner.calls.findIndex((argv) => argv[1] === 'terminal' && argv[2] === 'create')
     expect(terminalAt).toBeGreaterThanOrEqual(0)
