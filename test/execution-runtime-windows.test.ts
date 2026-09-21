@@ -5,19 +5,20 @@ import { createDockerToolRuntime, createProcessToolRuntime } from '../src/index.
 import { hostAbsolutePath, spawnEnvironment } from '../src/execution/runtime.js'
 
 // Captures what the runtime hands to `spawn` without starting a real process, so the child environment can be
-// asserted on any host.
+// asserted on any host. The runtime spawns through `cross-spawn` (a `.cmd` shim is not executable by
+// CreateProcess), so that is the module this has to intercept — mocking `node:child_process` alone would let
+// a real process start and the assertion would read an environment nobody set.
 const spawned = vi.hoisted(() => [] as NodeJS.ProcessEnv[])
+const fakeSpawn = vi.hoisted(() => (_command: string, _args: readonly string[], options: { readonly env: NodeJS.ProcessEnv }) => {
+  spawned.push(options.env)
+  const child = Object.assign(new EventEmitter(), { stdout: new PassThrough(), stderr: new PassThrough(), stdin: new PassThrough(), kill: () => true })
+  setTimeout(() => { child.stdout.end(); child.emit('close', 0) }, 0)
+  return child
+})
+vi.mock('cross-spawn', () => ({ default: fakeSpawn }))
 vi.mock('node:child_process', async (importOriginal) => {
   const actual = await importOriginal<typeof import('node:child_process')>()
-  return {
-    ...actual,
-    spawn: ((_command: string, _args: readonly string[], options: { readonly env: NodeJS.ProcessEnv }) => {
-      spawned.push(options.env)
-      const child = Object.assign(new EventEmitter(), { stdout: new PassThrough(), stderr: new PassThrough(), stdin: new PassThrough(), kill: () => true })
-      setTimeout(() => { child.stdout.end(); child.emit('close', 0) }, 0)
-      return child
-    }) as unknown as typeof actual.spawn,
-  }
+  return { ...actual, spawn: fakeSpawn as unknown as typeof actual.spawn }
 })
 
 describe('hostAbsolutePath: host paths on Windows', () => {
