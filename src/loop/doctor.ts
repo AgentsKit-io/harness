@@ -129,7 +129,7 @@ export const runLoopDoctor = async (input: LoopDoctorInput): Promise<LoopDoctorR
   const running = countRunningWorkers(worktrees)
   const orcaMemory = await orcaDiagnosticsMemory(input.runner, orcaOptions)
   const machine = assessSlots({ machine: config.machine, running, platform: input.platform, orcaMemory })
-  push('machine.slots', machine.free > 0 ? 'passed' : 'warning', `${machine.free} free of ${machine.maxAgents} (running ${running}, cpus ${machine.sample.cpus}, load ${machine.sample.load1PerCpuPercent}%, free RAM ${machine.freeRamGb} GB)${machine.reasons.length ? `; ${machine.reasons.join('; ')}` : ''}`)
+  push('machine.slots', machine.free > 0 ? 'passed' : 'warning', `${machine.free} free of ${machine.maxAgents} (running ${running}, cpus ${machine.sample.cpus}, load ${machine.sample.loadAvailable === false ? 'n/a' : `${machine.sample.load1PerCpuPercent}%`}, free RAM ${machine.freeRamGb} GB)${machine.reasons.length ? `; ${machine.reasons.join('; ')}` : ''}`)
 
   let queue: readonly LoopIssue[] = []
   let queueError: string | null = null
@@ -197,6 +197,17 @@ export const runLoopDoctor = async (input: LoopDoctorInput): Promise<LoopDoctorR
         push('mcp.allowlist', 'failed', 'MCP allowlist/policy wiring did not behave as expected')
       }
     }
+  }
+
+  // The local runner is git + tmux + the system crontab. On Windows there is no tmux and no crontab, and the
+  // failure would otherwise arrive as a raw ENOENT from the middle of a dispatch — after the worktree exists.
+  if (config.connectors.runner === 'local') {
+    const platform = input.platform ?? process.platform
+    const env = input.env ?? process.env
+    const missing = ['git', config.connectors.local.tmuxBin, 'crontab'].filter((bin) => !findExecutable(bin, env, platform))
+    if (platform === 'win32') push('runner.local', 'failed', 'connectors.runner is "local", which needs tmux and the system crontab; neither exists on Windows — use the Orca runner, or run the loop under WSL')
+    else if (missing.length) push('runner.local', 'failed', `connectors.runner is "local" but ${missing.join(', ')} ${missing.length === 1 ? 'is' : 'are'} not on PATH`)
+    else push('runner.local', 'passed', `git, ${config.connectors.local.tmuxBin} and crontab present · worktrees under ${config.connectors.local.worktreeRoot}`)
   }
 
   const reviewCli = config.delivery.review.cli

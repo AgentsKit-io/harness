@@ -1,5 +1,5 @@
 import { mkdirSync, writeFileSync } from 'node:fs'
-import { isAbsolute, join, resolve } from 'node:path'
+import { basename, isAbsolute, join, resolve } from 'node:path'
 import type { CommandRunner } from '../adapters/command.js'
 import { createOrcaDispatchPlan } from '../adapters/orca.js'
 import { orcaTerminalCreate, orcaTerminalScreen, orcaTerminalSend, orcaWorktreeCreate, orcaWorktreeRemove } from '../adapters/orca-cli.js'
@@ -82,7 +82,7 @@ export const createLocalRunner = ({ loaded, runner }: RunnerInput): RunnerConnec
     },
     removeWorkspace: async ({ id, force }) => { await git(['worktree', 'remove', ...(force ? ['--force'] : []), id], 120_000) },
     launchAgent: async ({ workspace, command }) => {
-      const session = tmuxSession(workspace.path.split('/').at(-1) ?? 'worker')
+      const session = tmuxSession(basename(workspace.path) || 'worker')
       const result = await runner.run([tmux, 'new-session', '-d', '-s', session, '-c', workspace.path, command], { timeoutMs: 30_000 })
       if (result.code !== 0) fail(`tmux new-session failed: ${result.stderr.trim() || `exit ${result.code ?? 'null'}`}`, 'HARNESS_ERROR')
       return session

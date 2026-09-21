@@ -3,7 +3,7 @@ import { mkdirSync, mkdtempSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { expect, it } from 'vitest'
-import { sourceSnapshot } from '../src/execution/source.js'
+import { sourceSnapshot, statusLineIsPath } from '../src/execution/source.js'
 
 const git = (root: string, args: string[]): void => { execFileSync('git', ['-C', root, ...args], { stdio: 'ignore' }) }
 const repository = (): string => {
@@ -30,4 +30,18 @@ it('changes the Git evidence fingerprint for committed, dirty, and untracked con
 it('blocks current-source evidence outside a committed Git repository', async () => {
   const root = mkdtempSync(join(tmpdir(), 'agentskit-harness-source-non-git-test-'))
   await expect(sourceSnapshot(root, join(root, '.codex', 'verification'))).rejects.toMatchObject({ code: 'GIT_REQUIRED' })
+})
+
+it('matches a git status line against a path written with either separator', () => {
+  // Git always prints forward slashes; `path.relative()` returns the platform's separator. Comparing the two
+  // without normalising made the harness's own config file look like a dirty worktree on Windows, so every
+  // `plan` was refused there — on POSIX the same code passed, which is why it went unnoticed.
+  expect(statusLineIsPath('?? .codex/verification.json', '.codex\\verification.json')).toBe(true)
+  expect(statusLineIsPath('?? .codex/verification.json', '.codex/verification.json')).toBe(true)
+  expect(statusLineIsPath(' M .codex/verification.json', '.codex\\verification.json')).toBe(true)
+  // Git quotes a path with unusual characters; the quoted form names the same file.
+  expect(statusLineIsPath('?? "docs/a b.md"', 'docs\\a b.md')).toBe(true)
+
+  expect(statusLineIsPath('?? src/other.ts', '.codex/verification.json')).toBe(false)
+  expect(statusLineIsPath('?? anything', '')).toBe(false)
 })

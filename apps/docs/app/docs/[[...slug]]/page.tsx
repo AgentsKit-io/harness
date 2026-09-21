@@ -19,7 +19,7 @@ export default async function Page({ params }: Props) {
       toc={page.data.toc}
       editOnGithub={{
         owner: 'AgentsKit-io',
-        repo: 'agentskit-harness',
+        repo: 'harness',
         sha: 'main',
         path: `apps/docs/content/docs/${page.path}`,
       }}

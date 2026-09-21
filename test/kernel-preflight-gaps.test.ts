@@ -13,6 +13,11 @@ describe('planFilePreflight validation', () => {
   it('rejects an absolute path or a path with a directory-traversal segment', () => {
     expect(() => planFilePreflight([{ path: '/etc/passwd' }])).toThrow(/repository-relative/)
     expect(() => planFilePreflight([{ path: 'src/../../etc/passwd' }])).toThrow(/repository-relative/)
+    // A Windows path is absolute too, whichever platform is reading it — the check is about the value, not the host.
+    expect(() => planFilePreflight([{ path: 'C:\\Windows\\System32\\drivers\\etc\\hosts' }])).toThrow(/repository-relative/)
+    expect(() => planFilePreflight([{ path: 'c:/windows/system32' }])).toThrow(/repository-relative/)
+    expect(() => planFilePreflight([{ path: '\\\\server\\share\\secrets' }])).toThrow(/repository-relative/)
+    expect(() => planFilePreflight([{ path: 'src\\..\\..\\etc\\passwd' }])).toThrow(/repository-relative/)
   })
 
   it('rejects a blank testRoots entry', () => {

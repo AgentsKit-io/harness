@@ -40,7 +40,7 @@ jobs:
           node -e "
             const fs = require('node:fs');
             const html = fs.readFileSync('apps/docs/out/docs/index.html', 'utf8');
-            if (html.includes('href=\"/agentskit-harness/')) throw new Error('Pages still embeds the /agentskit-harness base path');
+            if (html.includes('href=\"/harness/')) throw new Error('Pages still embeds the /harness base path');
             if (!html.includes('/docs/')) throw new Error('missing local docs links');
           "
       - name: Ensure CNAME for the custom domain

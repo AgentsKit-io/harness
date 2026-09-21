@@ -26,7 +26,9 @@ const linuxSwap = (): number | undefined => {
 
 export const sampleMachine = (): MachineSample => {
   const cpus = Math.max(1, cpuInfo().length)
-  const load1 = Math.max(0, loadavg()[0] ?? 0)
+  // Windows has no load average: `os.loadavg()` returns [0, 0, 0] there, always.
+  const loadAvailable = process.platform !== 'win32'
+  const load1 = loadAvailable ? Math.max(0, loadavg()[0] ?? 0) : 0
   const memory = Math.max(0, Math.min(100, (1 - freemem() / Math.max(1, totalmem())) * 100))
   const swapUsedPercent = linuxSwap()
   return {
@@ -34,6 +36,7 @@ export const sampleMachine = (): MachineSample => {
     cpus,
     load1: Number(load1.toFixed(4)),
     load1PerCpuPercent: Number(Math.min(100, (load1 / cpus) * 100).toFixed(2)),
+    loadAvailable,
     memoryUsedPercent: Number(memory.toFixed(2)),
     rssBytes: process.memoryUsage().rss,
     ...(swapUsedPercent === undefined ? {} : { swapUsedPercent }),

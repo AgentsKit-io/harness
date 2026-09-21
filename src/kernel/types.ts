@@ -169,6 +169,11 @@ export interface MachineSample {
   readonly cpus: number
   readonly load1: number
   readonly load1PerCpuPercent: number
+  /**
+   * False where the platform has no load average. Windows' `os.loadavg()` always returns zeros, and a reported
+   * 0% load there is a machine that looks idle rather than one nobody measured.
+   */
+  readonly loadAvailable?: boolean
   readonly memoryUsedPercent: number
   readonly rssBytes: number
   readonly swapUsedPercent?: number

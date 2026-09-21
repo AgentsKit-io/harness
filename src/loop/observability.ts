@@ -37,7 +37,7 @@ export interface ObservabilityMetrics {
   readonly reviewIncomplete: number
   readonly medianLeadTimeMin: number | null
   readonly providerRemainingPercent: Readonly<Record<string, number | null>>
-  readonly machine: { readonly cpuCount: number; readonly load1PerCpuPercent: number; readonly memoryUsedPercent: number; readonly freeRamGb: number }
+  readonly machine: { readonly cpuCount: number; readonly load1PerCpuPercent: number; readonly loadAvailable?: boolean; readonly memoryUsedPercent: number; readonly freeRamGb: number }
   readonly memory: { readonly recalls: number; readonly hits: number; readonly approxCharsSaved: number }
   readonly cache: { readonly cachedContracts: number }
   readonly tokens: { readonly input: number; readonly output: number; readonly total: number; readonly cacheRead: number; readonly cacheWrite: number }
@@ -184,7 +184,7 @@ export const runObservability = async (input: { readonly configPath?: string; re
   const cachedContracts = records.filter((record) => existsSync(contractPath(loaded.stateDir, record.issue))).length
   const memoryEvents = events.filter((event) => event.type === 'memory.recalled')
   const tokens = { input: sum(events, 'inputTokens'), output: sum(events, 'outputTokens'), total: sum(events, 'totalTokens'), cacheRead: sum(events, 'cacheReadTokens'), cacheWrite: sum(events, 'cacheWriteTokens') }
-  const machine = { cpuCount: doctor.machine.sample.cpus, load1PerCpuPercent: doctor.machine.sample.load1PerCpuPercent, memoryUsedPercent: doctor.machine.sample.memoryUsedPercent, freeRamGb: doctor.machine.freeRamGb }
+  const machine = { cpuCount: doctor.machine.sample.cpus, load1PerCpuPercent: doctor.machine.sample.load1PerCpuPercent, ...(doctor.machine.sample.loadAvailable === false ? { loadAvailable: false } : {}), memoryUsedPercent: doctor.machine.sample.memoryUsedPercent, freeRamGb: doctor.machine.freeRamGb }
   const snapshot: ObservabilitySnapshot = {
     generatedAt: at.toISOString(), project: doctor.config.project, person: doctor.config.person, windowHours: Math.max(1, Math.round((at.getTime() - since.getTime()) / 3_600_000)), workerIdleTimeoutMin: loaded.config.delivery.workerIdleTimeoutMin,
     queueReady: doctor.queue.count, freeSlots: doctor.machine.free, stageBusy, runningWorkers: doctor.workers.running, maxAgents: doctor.machine.maxAgents, activeClaims: active.length, missingDeliveryIssues,
@@ -200,7 +200,7 @@ export const runObservability = async (input: { readonly configPath?: string; re
 export const renderObservabilityMarkdown = (report: ObservabilityReport): string => {
   const m = report.metrics
   const headroom = Object.entries(m.providerRemainingPercent).map(([provider, remaining]) => `${provider} ${remaining === null ? '?' : `${remaining}%`}`).join(', ')
-  const lines = [`# Loop observability — ${report.project} · ${report.person}`, '', `_${report.status}_ · generated ${report.generatedAt.slice(0, 19)}Z · last ${report.windowHours}h`, '', '## Metrics', '', `- Queue: ${m.queueReady} ready · ${m.freeSlots} free slot(s) · ${m.runningWorkers}/${m.maxAgents} workers`, `- Delivery: ${m.inFlight} in flight · ${m.held} held · ${m.merged} merged · ${m.blocked} blocked · ${m.fixRounds} fix round(s)`, `- Reviews: ${m.reviewFindings} findings · ${m.reviewIncomplete} incomplete`, `- Machine: ${m.machine.cpuCount} CPU · ${m.machine.load1PerCpuPercent}% load · ${m.machine.memoryUsedPercent}% memory · ${m.machine.freeRamGb} GB free`, `- Providers: ${headroom || 'n/a'}`, `- Memory/cache: ${m.memory.recalls} recall(s), ${m.memory.hits} hit(s), ${m.memory.approxCharsSaved} chars saved · ${m.cache.cachedContracts} cached contract(s)`, `- Tokens observed: ${m.tokens.total || (m.tokens.input + m.tokens.output) || 'n/a'}`, '']
+  const lines = [`# Loop observability — ${report.project} · ${report.person}`, '', `_${report.status}_ · generated ${report.generatedAt.slice(0, 19)}Z · last ${report.windowHours}h`, '', '## Metrics', '', `- Queue: ${m.queueReady} ready · ${m.freeSlots} free slot(s) · ${m.runningWorkers}/${m.maxAgents} workers`, `- Delivery: ${m.inFlight} in flight · ${m.held} held · ${m.merged} merged · ${m.blocked} blocked · ${m.fixRounds} fix round(s)`, `- Reviews: ${m.reviewFindings} findings · ${m.reviewIncomplete} incomplete`, `- Machine: ${m.machine.cpuCount} CPU · ${m.machine.loadAvailable === false ? 'load n/a' : `${m.machine.load1PerCpuPercent}% load`} · ${m.machine.memoryUsedPercent}% memory · ${m.machine.freeRamGb} GB free`, `- Providers: ${headroom || 'n/a'}`, `- Memory/cache: ${m.memory.recalls} recall(s), ${m.memory.hits} hit(s), ${m.memory.approxCharsSaved} chars saved · ${m.cache.cachedContracts} cached contract(s)`, `- Tokens observed: ${m.tokens.total || (m.tokens.input + m.tokens.output) || 'n/a'}`, '']
   if (report.anomalies.length) { lines.push('## Anomalies', ''); for (const anomaly of report.anomalies) lines.push(`- **${anomaly.severity}**${anomaly.issue ? ` · ${anomaly.issue}` : ''}: ${anomaly.message}`); lines.push('') } else lines.push('## Anomalies', '', '_None detected._', '')
   if (report.failingChecks.length) { lines.push('## Failing checks', ''); for (const check of report.failingChecks) lines.push(`- **${check.status}** \`${check.id}\`: ${check.detail}`); lines.push('') }
   lines.push('_Read-only. Run `ak-harness loop tick` or `deliver` to act on the queue._')

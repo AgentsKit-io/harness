@@ -312,7 +312,7 @@ export function HarnessHome() {
             </div>
 
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '14px', alignItems: 'center', fontFamily: '\'JetBrains Mono\', monospace', fontSize: '11px', letterSpacing: '0.2em', textTransform: 'uppercase' }}>
-              <a className="hv2" href="https://github.com/AgentsKit-io/agentskit-harness" style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '10px 16px', border: '1px solid #30363D', borderRadius: '0.5rem', background: '#161B22', color: '#E6EDF3', fontFamily: '\'JetBrains Mono\', monospace', fontSize: '11px', letterSpacing: '0.2em', textTransform: 'uppercase', transition: 'border-color 200ms cubic-bezier(0.4,0,0.2,1)' }}><span style={{ color: '#56D364', letterSpacing: '0' }}>★</span>Star on GitHub</a>
+              <a className="hv2" href="https://github.com/AgentsKit-io/harness" style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '10px 16px', border: '1px solid #30363D', borderRadius: '0.5rem', background: '#161B22', color: '#E6EDF3', fontFamily: '\'JetBrains Mono\', monospace', fontSize: '11px', letterSpacing: '0.2em', textTransform: 'uppercase', transition: 'border-color 200ms cubic-bezier(0.4,0,0.2,1)' }}><span style={{ color: '#56D364', letterSpacing: '0' }}>★</span>Star on GitHub</a>
               <a href="/docs">Read the docs →</a>
               <a href="#run" style={{ color: '#8B949E' }}>See a run →</a>
             </div>
@@ -800,7 +800,7 @@ export function HarnessHome() {
             <button className="hv11" onClick={copyInstall} style={{ fontFamily: '\'JetBrains Mono\', monospace', fontSize: '10px', letterSpacing: '0.2em', textTransform: 'uppercase', color: '#8B949E', background: 'transparent', border: '1px solid #30363D', borderRadius: '0.375rem', padding: '6px 9px', cursor: 'pointer' }}>{copyLabel}</button>
           </div>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '14px', alignItems: 'center', fontFamily: '\'JetBrains Mono\', monospace', fontSize: '11px', letterSpacing: '0.2em', textTransform: 'uppercase' }}>
-            <a className="hv12" href="https://github.com/AgentsKit-io/agentskit-harness" style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '10px 16px', border: '1px solid #30363D', borderRadius: '0.5rem', color: '#E6EDF3', fontFamily: '\'JetBrains Mono\', monospace', fontSize: '11px', letterSpacing: '0.2em', textTransform: 'uppercase', transition: 'border-color 200ms cubic-bezier(0.4,0,0.2,1)', background: '#0D1117' }}><span style={{ color: '#56D364', letterSpacing: '0' }}>★</span>Star on GitHub</a>
+            <a className="hv12" href="https://github.com/AgentsKit-io/harness" style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '10px 16px', border: '1px solid #30363D', borderRadius: '0.5rem', color: '#E6EDF3', fontFamily: '\'JetBrains Mono\', monospace', fontSize: '11px', letterSpacing: '0.2em', textTransform: 'uppercase', transition: 'border-color 200ms cubic-bezier(0.4,0,0.2,1)', background: '#0D1117' }}><span style={{ color: '#56D364', letterSpacing: '0' }}>★</span>Star on GitHub</a>
             <a href="/docs">Read the docs →</a>
           </div>
         </div>

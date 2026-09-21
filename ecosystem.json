@@ -277,7 +277,7 @@
       "role": "delivery",
       "promise": "The keep-pushing loop for your SDLC.",
       "maturity": "beta",
-      "repo": "AgentsKit-io/agentskit-harness",
+      "repo": "AgentsKit-io/harness",
       "accent": "#F778BA",
       "showcase": {
         "stage": "Ship",

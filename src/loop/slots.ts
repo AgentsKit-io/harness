@@ -74,7 +74,7 @@ export const assessSlots = (input: SlotInput): SlotAssessment => {
   const reasons: string[] = []
   const ceiling = input.machine.ceiling ?? Math.max(input.machine.floor, Math.floor(sample.cpus / 2))
   const adaptive = adaptiveConcurrency(ceiling, sample, { warningPercent: input.machine.warningPercent, criticalPercent: input.machine.criticalPercent })
-  if (adaptive < ceiling) reasons.push(`machine pressure capped concurrency at ${adaptive} (load ${sample.load1PerCpuPercent}%, memory ${sample.memoryUsedPercent}%)`)
+  if (adaptive < ceiling) reasons.push(`machine pressure capped concurrency at ${adaptive} (load ${sample.loadAvailable === false ? 'n/a' : `${sample.load1PerCpuPercent}%`}, memory ${sample.memoryUsedPercent}%)`)
   const reservedBytes = input.machine.minFreeRamGb * 1024 ** 3
   const measuredAgentBytes = input.orcaMemory?.agentRssSamples.length
     ? input.orcaMemory.agentRssSamples.reduce((total, value) => total + value, 0) / input.orcaMemory.agentRssSamples.length
