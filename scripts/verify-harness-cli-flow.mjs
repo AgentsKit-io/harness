@@ -8,7 +8,7 @@ const packageRoot = resolve(import.meta.dirname, '..')
 const cli = resolve(packageRoot, 'dist/cli.js')
 const fixtureRoot = mkdtempSync(join(tmpdir(), 'agentskit-harness-cli-flow-'))
 const artifactRoot = mkdtempSync(join(tmpdir(), 'agentskit-harness-cli-artifacts-'))
-const configPath = join(fixtureRoot, '.codex', 'verification.json')
+const configPath = join(fixtureRoot, '.ak-harness', 'verification.json')
 const quote = (value) => `'${value.replaceAll("'", "'\"'\"'")}'`
 const evidence = JSON.stringify({ status: 'passed', criteria: ['package'] })
 const checkCommand = `${quote(process.execPath)} -e ${quote(`console.log(${JSON.stringify(evidence)})`)}`
@@ -16,7 +16,7 @@ const config = {
   schemaVersion: 1,
   project: 'cli-flow-fixture',
   root: '..',
-  stateDir: '.codex/verification',
+  stateDir: '.ak-harness/verification',
   profile: 'strict',
   contract: { intent: 'Exercise the public CLI lifecycle.', scope: { inScope: ['fixture'], outOfScope: ['production'] }, ambiguities: [], outcomes: [{ id: 'package', statement: 'The public CLI reaches human approval and preserves cancelled history.', checks: ['fixture-check'] }] },
   surfaces: { logic: true, endpoint: { required: false, reason: 'fixture' }, database: { required: false, reason: 'fixture' }, cli: { required: false, reason: 'fixture' }, mcp: { required: false, reason: 'fixture' }, ui: { required: false, reason: 'fixture' }, docs: { required: false, reason: 'fixture' } },
@@ -36,7 +36,7 @@ const git = (args) => {
 
 try {
   if (!existsSync(cli)) throw new Error(`missing built CLI: ${cli}`)
-  mkdirSync(join(fixtureRoot, '.codex'), { recursive: true })
+  mkdirSync(join(fixtureRoot, '.ak-harness'), { recursive: true })
   writeFileSync(configPath, `${JSON.stringify(config, null, 2)}\n`)
   writeFileSync(join(fixtureRoot, '.fixture'), 'fixture\n')
   git(['init', '-q']); git(['config', 'user.email', 'harness@example.test']); git(['config', 'user.name', 'Harness Test']); git(['add', '.']); git(['commit', '-qm', 'fixture'])

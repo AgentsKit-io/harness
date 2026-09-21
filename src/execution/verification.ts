@@ -55,7 +55,7 @@ const isFresh = async (loaded: LoadedConfig, run: VerificationRun): Promise<bool
   return current.configHash === run.configHash && current.source.revision === run.sourceRevision && current.source.statusHash === run.sourceStatusHash
 }
 
-export const planRun = async ({ configPath, decision, actor = 'human', allowDirty = false, contextSnapshots = [] }: { readonly configPath: string; readonly decision: string; readonly actor?: string; readonly allowDirty?: boolean; readonly contextSnapshots?: readonly ContextSnapshot[] }): Promise<VerificationRun> => {
+export const planRun = async ({ configPath, decision, actor = 'human', allowDirty = false, contextSnapshots = [] }: { readonly configPath?: string; readonly decision: string; readonly actor?: string; readonly allowDirty?: boolean; readonly contextSnapshots?: readonly ContextSnapshot[] }): Promise<VerificationRun> => {
   assertHuman(actor)
   if (!approvedDecision(decision)) fail('Contract was not approved.', 'CLARIFYING')
   const loaded = loadConfig(configPath)
@@ -76,7 +76,7 @@ export const startRun = (loaded: LoadedConfig): VerificationRun => {
   saveRun(loaded.stateDir, next); setLatest(loaded.stateDir, next); return next
 }
 
-export const cancelRun = async ({ configPath, runId, reason = 'Run cancelled by a human.', actor = 'human' }: { readonly configPath: string; readonly runId?: string; readonly reason?: string; readonly actor?: string }): Promise<VerificationRun> => {
+export const cancelRun = async ({ configPath, runId, reason = 'Run cancelled by a human.', actor = 'human' }: { readonly configPath?: string; readonly runId?: string; readonly reason?: string; readonly actor?: string }): Promise<VerificationRun> => {
   assertHuman(actor)
   const loaded = loadConfig(configPath)
   const run = requireRun(runId ? readRun(loaded.stateDir, runId) : loadLatestRun(loaded.stateDir))
@@ -84,7 +84,7 @@ export const cancelRun = async ({ configPath, runId, reason = 'Run cancelled by 
   saveRun(loaded.stateDir, next); setLatest(loaded.stateDir, next); return next
 }
 
-export const verifyRun = async ({ configPath }: { readonly configPath: string }): Promise<VerificationRun> => {
+export const verifyRun = async ({ configPath }: { readonly configPath?: string }): Promise<VerificationRun> => {
   const loaded = loadConfig(configPath)
   const machineMonitor = createMachineMonitor()
   const run = requireRun(loadLatestRun(loaded.stateDir))
@@ -177,7 +177,7 @@ const assertDecisionProjection = (run: VerificationRun, decision: { readonly dec
   if (decision.decision !== 'approved' || decision.resultingState !== expectedState || decision.verificationDigest !== run.verificationDigest || decision.sourceRevision !== run.sourceRevision || decision.contractHash !== run.contractHash) fail('Terminal decision attestation does not match the run projection.', 'HARNESS_ERROR')
 }
 
-export const reconcileRun = async ({ configPath, runId }: { readonly configPath: string; readonly runId?: string }): Promise<import('../kernel/types.js').RunReconciliation> => {
+export const reconcileRun = async ({ configPath, runId }: { readonly configPath?: string; readonly runId?: string }): Promise<import('../kernel/types.js').RunReconciliation> => {
   const loaded = loadConfig(configPath)
   const run = requireRun(runId ? readRun(loaded.stateDir, runId) : loadLatestRun(loaded.stateDir))
   await assertFresh(loaded, run)
@@ -204,7 +204,7 @@ export const reconcileRun = async ({ configPath, runId }: { readonly configPath:
   return { status: 'verified', runId: run.runId, state: run.state, eventCount: eventLog.eventCount, ...(eventLog.headHash ? { headHash: eventLog.headHash } : {}), ...(run.verificationDigest ? { verificationDigest: run.verificationDigest } : {}) }
 }
 
-export const approveRun = async ({ configPath, runId, decision, actor = 'human' }: { readonly configPath: string; readonly runId?: string; readonly decision: string; readonly actor?: string }): Promise<VerificationRun> => {
+export const approveRun = async ({ configPath, runId, decision, actor = 'human' }: { readonly configPath?: string; readonly runId?: string; readonly decision: string; readonly actor?: string }): Promise<VerificationRun> => {
   assertHuman(actor); const loaded = loadConfig(configPath); const run = requireRun(runId ? readRun(loaded.stateDir, runId) : loadLatestRun(loaded.stateDir))
   if (run.state !== 'AWAITING_HUMAN_APPROVAL') fail(`Cannot approve from ${run.state}.`, 'INVALID_STATE')
   await assertFresh(loaded, run); assertVerificationAttestation(loaded, run)
@@ -222,7 +222,7 @@ export const approveRun = async ({ configPath, runId, decision, actor = 'human' 
   setLatest(loaded.stateDir, next); return next
 }
 
-export const authorizeRun = async ({ configPath, runId, decision, actor = 'human' }: { readonly configPath: string; readonly runId?: string; readonly decision: string; readonly actor?: string }): Promise<VerificationRun> => {
+export const authorizeRun = async ({ configPath, runId, decision, actor = 'human' }: { readonly configPath?: string; readonly runId?: string; readonly decision: string; readonly actor?: string }): Promise<VerificationRun> => {
   assertHuman(actor); const loaded = loadConfig(configPath); const run = requireRun(runId ? readRun(loaded.stateDir, runId) : loadLatestRun(loaded.stateDir))
   if (run.state !== 'AWAITING_AUTHORIZATION') fail(`Cannot authorize from ${run.state}.`, 'INVALID_STATE')
   await assertFresh(loaded, run); assertVerificationAttestation(loaded, run)
@@ -232,7 +232,7 @@ export const authorizeRun = async ({ configPath, runId, decision, actor = 'human
   saveRun(loaded.stateDir, next); recordDecision(loaded, run, 'authorization.recorded', { decision: 'approved', resultingState: 'COMPLETE', verificationDigest: run.verificationDigest!, actor: 'human', target: loaded.config.tracking.target, sourceRevision: run.sourceRevision, contractHash: run.contractHash }); setLatest(loaded.stateDir, next); return next
 }
 
-export const retryRun = async ({ configPath }: { readonly configPath: string }): Promise<VerificationRun> => {
+export const retryRun = async ({ configPath }: { readonly configPath?: string }): Promise<VerificationRun> => {
   const loaded = loadConfig(configPath); const previous = loadLatestRun(loaded.stateDir)
   const previousRun = requireRun(previous)
   if (!['BLOCKED', 'STALE', 'CANCELLED'].includes(previousRun.state)) fail(`Cannot retry from ${previousRun.state}.`, 'INVALID_STATE')

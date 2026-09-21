@@ -7,8 +7,8 @@ import { loadConfig } from '../src/index.js'
 it('allows evidence state outside the project root', () => {
   const root = mkdtempSync(join(tmpdir(), 'agentskit-harness-external-state-'))
   const stateDir = mkdtempSync(join(tmpdir(), 'agentskit-harness-state-'))
-  mkdirSync(join(root, '.codex'), { recursive: true })
-  writeFileSync(join(root, '.codex', 'verification.json'), JSON.stringify({
+  mkdirSync(join(root, '.ak-harness'), { recursive: true })
+  writeFileSync(join(root, '.ak-harness', 'verification.json'), JSON.stringify({
     schemaVersion: 1,
     project: 'external-state-fixture',
     root: '..',
@@ -18,8 +18,8 @@ it('allows evidence state outside the project root', () => {
     surfaces: { logic: true, endpoint: { required: false, reason: 'fixture' }, database: { required: false, reason: 'fixture' }, cli: { required: false, reason: 'fixture' }, mcp: { required: false, reason: 'fixture' }, ui: { required: false, reason: 'fixture' }, docs: { required: false, reason: 'fixture' } },
     tracking: { required: false, reason: 'fixture' },
   }))
-  expect(loadConfig(join(root, '.codex', 'verification.json')).stateDir).toBe(stateDir)
-  writeFileSync(join(root, '.codex', 'verification.json'), JSON.stringify({
+  expect(loadConfig(join(root, '.ak-harness', 'verification.json')).stateDir).toBe(stateDir)
+  writeFileSync(join(root, '.ak-harness', 'verification.json'), JSON.stringify({
     schemaVersion: 1,
     project: 'external-state-fixture',
     root: '..',
@@ -29,5 +29,5 @@ it('allows evidence state outside the project root', () => {
     surfaces: { logic: true, endpoint: { required: false, reason: 'fixture' }, database: { required: false, reason: 'fixture' }, cli: { required: false, reason: 'fixture' }, mcp: { required: false, reason: 'fixture' }, ui: { required: false, reason: 'fixture' }, docs: { required: false, reason: 'fixture' } },
     tracking: { required: false, reason: 'fixture' },
   }))
-  expect(() => loadConfig(join(root, '.codex', 'verification.json'))).toThrow(/separate from the project root/)
+  expect(() => loadConfig(join(root, '.ak-harness', 'verification.json'))).toThrow(/separate from the project root/)
 })

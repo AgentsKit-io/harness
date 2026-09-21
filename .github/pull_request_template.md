@@ -11,7 +11,7 @@
 - [ ] `pnpm test`
 - [ ] `pnpm build`
 - [ ] `pnpm pack --pack-destination /tmp/agentskit-harness-pack`
-- [ ] `ak-verify run --config .codex/verification.json --json`
+- [ ] `ak-verify run --config .ak-harness/verification.json --json`
 
 Verification run ID:
 

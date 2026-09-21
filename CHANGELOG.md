@@ -99,6 +99,18 @@ decided in conversation become ADRs 0032–0037.
 - The README describes the whole cycle instead of the 0.14 loop, and `docs/GETTING-STARTED.md` gains the happy
   path: `loop init` → `loop doctor` → `loop install` → the first tick.
 
+### The harness has a folder of its own
+
+- The contract moves from **`.codex/verification.json` to `.ak-harness/verification.json`**, and the run state
+  from `.codex/verification` to `.ak-harness/verification`. A tool that routes work across claude, codex, grok
+  and opencode should not keep its own state in a folder named after one of them.
+- **Nothing breaks for an existing repository**: with no `-c`, the harness reads `.ak-harness/verification.json`
+  when it exists, falls back to a legacy `.codex/verification.json` when it does not, and prefers the new one
+  when both are there. The run state now defaults to a `verification/` folder *beside the contract that declares
+  it*, so a legacy contract keeps its legacy state without either path being hardcoded.
+- `resolveConfigPath`, `DEFAULT_CONFIG_PATH` and `LEGACY_CONFIG_PATH` are exported for callers that need to say
+  which file they read.
+
 ### The documentation site
 
 - **`apps/docs` — a Next.js + fumadocs site, its own package**, so Next and React 19 never reach the harness

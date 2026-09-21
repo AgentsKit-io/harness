@@ -30,7 +30,7 @@ and naming rules.
    pnpm test
    pnpm build
    pnpm pack --pack-destination /tmp/agentskit-harness-pack
-   ak-verify run --config .codex/verification.json --json
+   ak-verify run --config .ak-harness/verification.json --json
    ```
 
 Do not report completion while a required gate is unavailable, blocked, stale,

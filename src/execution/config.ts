@@ -1,4 +1,5 @@
-import { dirname, resolve } from 'node:path'
+import { existsSync } from 'node:fs'
+import { dirname, join, resolve } from 'node:path'
 import { REAL_CATEGORIES } from '../kernel/constants.js'
 import { resolveProfile } from '../profiles/index.js'
 import { fail } from '../kernel/errors.js'
@@ -117,12 +118,34 @@ export const validateConfig = (rawValue: unknown): VerificationConfig => {
   return { schemaVersion: 1, project, ...(typeof raw['root'] === 'string' ? { root: raw['root'] } : {}), ...(typeof raw['stateDir'] === 'string' ? { stateDir: raw['stateDir'] } : {}), profile: typeof raw['profile'] === 'string' ? raw['profile'] : 'strict', runtime, autonomy, contract, surfaces, checks, tracking, ...(verificationRaw ? { verification: { maxConcurrency: verificationRaw['maxConcurrency'] as number | undefined } } : {}), ...(budgetRaw ? { budget: { maxDurationMs: budgetRaw['maxDurationMs'] as number | undefined } } : {}), ...(cleanup ? { cleanup } : {}), ...(benchmark ? { benchmark } : {}) }
 }
 
-export const loadConfig = (configPath = '.codex/verification.json'): LoadedConfig => {
-  const absolute = resolve(configPath)
+/** Where a project's contract lives by default. The harness is not one provider's tool, so its folder is its own. */
+export const DEFAULT_CONFIG_PATH = '.ak-harness/verification.json'
+
+/**
+ * The folder the harness used before it had a name of its own.
+ *
+ * Kept as a fallback, not as an alias: a repository written against `.codex/` keeps working untouched, and one
+ * that has both is told which file was read. New projects get `.ak-harness/`.
+ */
+export const LEGACY_CONFIG_PATH = '.codex/verification.json'
+
+/** The contract path to read when the caller named none: the new folder, else the legacy one, else the new one. */
+export const resolveConfigPath = (configPath?: string, cwd = process.cwd()): string => {
+  if (configPath) return configPath
+  if (existsSync(resolve(cwd, DEFAULT_CONFIG_PATH))) return DEFAULT_CONFIG_PATH
+  if (existsSync(resolve(cwd, LEGACY_CONFIG_PATH))) return LEGACY_CONFIG_PATH
+  return DEFAULT_CONFIG_PATH
+}
+
+export const loadConfig = (configPath?: string): LoadedConfig => {
+  const absolute = resolve(resolveConfigPath(configPath))
   const raw = readJson(absolute)
   const rawRecord = asRecord(raw, 'verification config')
   const root = resolve(dirname(absolute), typeof rawRecord['root'] === 'string' ? rawRecord['root'] : '.')
-  const stateDir = resolve(root, typeof rawRecord['stateDir'] === 'string' ? rawRecord['stateDir'] : '.codex/verification')
+  // The run state sits beside the contract that declares it, so a legacy `.codex/verification.json` keeps its
+  // `.codex/verification` state and a new one gets `.ak-harness/verification` — without either being hardcoded.
+  const defaultStateDir = join(dirname(absolute), 'verification')
+  const stateDir = typeof rawRecord['stateDir'] === 'string' ? resolve(root, rawRecord['stateDir']) : defaultStateDir
   if (stateDir === root) fail('stateDir must be separate from the project root.', 'INVALID_CONFIG')
   const config = validateConfig(raw)
   return { absolute, root, stateDir, config, configHash: hashJson(config) }

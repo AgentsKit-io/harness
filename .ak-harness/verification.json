@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "project": "agentskit-harness",
   "root": "..",
-  "stateDir": ".codex/verification",
+  "stateDir": ".ak-harness/verification",
   "autonomy": "yolo",
   "contract": {
     "intent": "Validate the 0.13.0 modular SDLC engine with explicit capability boundaries, deterministic phase execution, provenance-bound artifacts, replaceable real-execution adapters, and read-only loop observability with measured assurance.",
@@ -67,5 +67,5 @@
   ],
   "tracking": { "required": false, "reason": "Repository bootstrap is local; GitHub and npm publication are separate authorized actions." },
   "budget": { "maxDurationMs": 600000 },
-  "cleanup": { "roots": [".codex/verification/tmp"] }
+  "cleanup": { "roots": [".ak-harness/verification/tmp"] }
 }

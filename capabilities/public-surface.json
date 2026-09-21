@@ -4,7 +4,7 @@
   "package": "@agentskit/harness",
   "packageVersion": "0.15.0",
   "entryPoint": "src/index.ts",
-  "sourceDigest": "a1324850cb5f327b98dc3bca9ecab6513bb019fa279533c68863df2b55df78c2",
+  "sourceDigest": "977ebcaec6353f71922dd63f4384dd308051fe4cd4563706bdefbd044fef9b5a",
   "capabilities": [
     {
       "id": "public-surface:adapters/agent",
@@ -324,7 +324,10 @@
       "kind": "execution",
       "entryPoint": "src/index.ts",
       "exports": [
+        "DEFAULT_CONFIG_PATH",
+        "LEGACY_CONFIG_PATH",
         "loadConfig",
+        "resolveConfigPath",
         "validateConfig"
       ]
     },
@@ -1770,5 +1773,5 @@
       ]
     }
   ],
-  "digest": "cd38fb5410670007a642b958b955aca19c210651d5153777c7b8f8059a44ed20"
+  "digest": "06483b90fed69e98b2bcef50378113f4e731640ead748f0afaa2b67ebb843c13"
 }
