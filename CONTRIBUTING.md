@@ -36,6 +36,11 @@ and naming rules.
 Do not report completion while a required gate is unavailable, blocked, stale,
 or awaiting approval.
 
+The local gate above is verbose by design (typecheck, full suite, build, pack,
+full verification contract). Running an agent session through
+[rtk](https://github.com/rtk-ai/rtk) (`rtk init -g`) compresses that output before
+it reaches your context — same commands, a fraction of the tokens.
+
 ## Angular Conventional Commits
 
 Commit messages follow the Angular Conventional Commits format:
@@ -54,7 +59,9 @@ BREAKING CHANGE: `run` now exits non-zero when evidence is missing.
 ```
 
 Keep commits focused. Never commit secrets, generated `dist/`, verification
-state, or residue from another task.
+state, or residue from another task. Keep the subject and body terse and
+technical — see [caveman](https://github.com/JuliusBrussee/caveman)
+(`caveman-commit`) for the style this project follows.
 
 ## Pull requests
 

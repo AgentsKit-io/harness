@@ -13,6 +13,34 @@ contracts, gates, state transitions, evidence, and recovery.
 3. Keep public API changes explicit in `src/index.ts`.
 4. Add criterion-level tests before declaring behavior complete.
 
+## Coding style — ponytail
+
+Default to the laziest correct solution, in this order: necessity (YAGNI) → reuse
+existing code → stdlib → native platform features → an already-installed
+dependency → a one-liner → minimum new code. No unrequested abstractions
+(interfaces/factories for a single implementation). Deletion beats addition.
+Mark an intentional shortcut with a one-line `ponytail: <fact>; <consequence>.`
+comment instead of building it out "properly" now — see
+[DietrichGebert/ponytail](https://github.com/DietrichGebert/ponytail) for the
+full ladder. This repo already uses the convention (`src/execution/verification.ts`,
+`src/loop/deliver.ts`, `src/loop/doctor.ts`); keep it going.
+
+## Output style — caveman
+
+Commit messages, PR bodies, and review replies are technical and short: state the
+change and the reason, skip the narration. If the explanation is longer than the
+diff it explains, cut the explanation, not the diff. See
+[caveman](https://github.com/JuliusBrussee/caveman) (`caveman-commit`,
+`caveman-review`) for the full style.
+
+## Local tooling — rtk
+
+Install [rtk](https://github.com/rtk-ai/rtk) globally (`rtk init -g`) before
+working in this repo. It rewrites shell commands (test runs, builds, `git`, `gh`)
+through a hook and compresses their output 60-90% before it reaches your context —
+same commands, a fraction of the tokens. Nothing in the repo depends on it; it only
+makes long sessions in a large monorepo cheaper.
+
 ## Boundaries
 
 - `src/index.ts`: supported public API only.
