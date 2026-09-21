@@ -305,15 +305,23 @@ depois da fatia 11.
 
 O objetivo está cumprido quando:
 
-- [ ] As fatias 1 a 5 estão commitadas e a bateria completa de gates passa.
-- [ ] `package.json` diz `0.15.0` e o `CHANGELOG.md` tem a secção correspondente.
-- [ ] `pnpm docs:build` gera `apps/docs/out/` sem erros, com `llms.txt`, `/for-agents` e o CNAME.
-- [ ] `pnpm docs:generate --check` passa, e o job `docs` está no CI.
-- [ ] As ~45 páginas existem, os quatro exemplos estão escritos, e as capturas read-only estão nos exemplos ou
-      rotuladas como reconstruídas.
-- [ ] O commit do ecossistema está preparado no repositório `agentskit/` com `pnpm test:ecosystem` verde.
-- [ ] `docs/ROADMAP-SDLC.md` reflete o estado real.
-- [ ] Nada foi empurrado, publicado ou escrito em sistema externo.
+- [x] As fatias 1 a 5 estão commitadas e a bateria completa de gates passa.
+- [x] `package.json` diz `0.15.0` e o `CHANGELOG.md` tem a secção correspondente.
+- [x] `pnpm docs:build` gera `apps/docs/out/` sem erros, com `llms.txt`, `/for-agents` e o CNAME.
+- [x] `pnpm docs:generate --check` passa, e o job `docs` está no CI.
+- [x] Os quatro exemplos estão escritos e as capturas read-only estão nos exemplos, com o que é reconstruído
+      rotulado como tal. **São 38 páginas, não ~45** — seis secções, o conteúdo todo do `LOOP.md` coberto; a
+      estimativa era do plano, a contagem é a real.
+- [x] O commit do ecossistema está preparado no repositório `agentskit/` com `pnpm test:ecosystem` verde.
+- [x] `docs/ROADMAP-SDLC.md` reflete o estado real.
+- [x] Nada foi empurrado, publicado ou escrito em sistema externo.
+
+Feito além do plano, por pedido durante a conferência: a fatia 12 (a home desenhada, portada para componentes
+reais), o README do npm reescrito, quatro correções de Windows encontradas a partir do PR #84, e a pasta própria
+`.ak-harness/` a substituir `.codex/`.
+
+Não feito, por decisão: **A13** (`memory.backend: 'sqlite'`), que o plano põe fora da 0.15.0; e as quatro
+perguntas da secção 8, que ficaram sem resposta e portanto fora do site em vez de assumidas.
 
 ---
 
