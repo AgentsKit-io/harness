@@ -1,3 +1,6 @@
+import { mkdtempSync, writeFileSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { createProcessRunner } from '../src/index.js'
 
@@ -73,4 +76,26 @@ describe('createProcessRunner', () => {
     // The grace period is the ceiling; hanging would blow the test's own timeout instead.
     expect(Date.now() - started).toBeLessThan(10_000)
   }, 15_000)
+
+  // Every provider/review CLI a loop config points at (claude, agentskit-review, codex, ...) is a
+  // globally npm-installed Node CLI, which on Windows means its only spawnable-by-name artifact is
+  // a `.cmd` shim -- CreateProcess cannot execute one without a shell, so a plain
+  // spawn(cmd, args, { shell: false }) always failed here (ENOENT for a bare name, EINVAL for an
+  // absolute .cmd path) regardless of the path given. This is what motivated switching to
+  // cross-spawn; only meaningful on the platform where the bug reproduces.
+  it.runIf(process.platform === 'win32')('runs a Windows .cmd file directly, with shell: false semantics preserved for the caller', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'ak-harness-cmd-test-'))
+    const cmdPath = join(dir, 'greet.cmd')
+    // A metacharacter-bearing arg (&) proves cross-spawn's cmd.exe re-quoting keeps this argv
+    // element intact end to end, the same way shell: false would for a real executable.
+    writeFileSync(cmdPath, '@echo off\r\necho hello %1\r\nexit /b 7\r\n')
+    const runner = createProcessRunner()
+    const result = await runner.run([cmdPath, 'a & b'])
+    expect(result.code).toBe(7)
+    // %1 in the .cmd reflects the raw argv token cmd.exe received, quotes included -- the quotes
+    // are the evidence: cross-spawn passed `a & b` through as one argument. Had it (or a naive
+    // shell: true) left `&` unescaped, cmd.exe would have split this into two commands instead.
+    expect(result.stdout).toContain('hello "a & b"')
+    expect(result.timedOut).toBe(false)
+  })
 })
