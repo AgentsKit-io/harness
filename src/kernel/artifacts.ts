@@ -54,9 +54,16 @@ const digest = (value: unknown, label: string): string => {
   if (!/^[a-f0-9]{64}$/.test(result)) fail(`${label} must be a lowercase SHA-256 digest.`, 'INVALID_INPUT')
   return result
 }
+/**
+ * The id is used verbatim as a filename (`artifacts/<id>.json`), so `:` cannot be allowed: on NTFS
+ * `plan:1.json` names an alternate data stream of `plan`, so the write succeeds and `existsSync` agrees
+ * while `readdirSync` never lists it — `FileArtifactStore.list()`, and every evidence bundle or
+ * reconciliation built from that listing, would silently lose the artifact. On FAT/exFAT the same write
+ * throws `EINVAL`. Rejecting the character at validation fails loudly instead, on every platform.
+ */
 const artifactId = (value: unknown): string => {
   const result = text(value, 'Artifact artifactId')
-  if (!/^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/.test(result)) fail('Artifact artifactId is invalid.', 'INVALID_INPUT')
+  if (!/^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$/.test(result)) fail('Artifact artifactId is invalid.', 'INVALID_INPUT')
   return result
 }
 const isRecord = (value: unknown): value is Record<string, unknown> => typeof value === 'object' && value !== null && !Array.isArray(value)

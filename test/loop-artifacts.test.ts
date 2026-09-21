@@ -73,4 +73,14 @@ describe('phase artifacts', () => {
     expect(brief).toContain(cfg.dod.evidenceFile)
     expect(brief).toContain('fix round naming it')
   })
+
+  it('strips the .ak-loop prefix from the configured evidence file whether it used "/" or "\\"', () => {
+    const cfg = config()
+    const dir = worktree({ 'dod.json': '{"project":[],"outcomes":[]}' })
+    // A config written on Windows says `.ak-loop\dod.json`; stripping only the "/" form would look for
+    // `<worktree>/.ak-loop/.ak-loop\dod.json` and report the evidence missing while it sits on disk.
+    const windows: LoopConfig = { ...cfg, dod: { ...cfg.dod, evidenceFile: '.ak-loop\\dod.json' } }
+    const dod = readPhaseArtifacts(dir, windows).find((artifact) => artifact.name === 'dod')
+    expect(dod).toMatchObject({ present: true, valid: true, detail: 'present', file: '.ak-loop/dod.json' })
+  })
 })

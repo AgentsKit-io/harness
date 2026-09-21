@@ -64,7 +64,9 @@ export const readVerifyArtifact = (worktreePath: string | null | undefined): Ver
  * places is how the two drift apart.
  */
 export const readPhaseArtifacts = (worktreePath: string | null | undefined, config: LoopConfig): readonly PhaseArtifact[] => {
-  const dodFile = config.dod.evidenceFile.replace(/^\.ak-loop\//, '')
+  // Both separators: a config written on Windows says `.ak-loop\dod.json`, and stripping only the forward-slash
+  // form would look for `<worktree>/.ak-loop/.ak-loop\dod.json` and report the evidence missing forever.
+  const dodFile = config.dod.evidenceFile.replace(/^\.ak-loop[\\/]/, '')
   const plan = readPlanArtifact(worktreePath)
   const verifyPath = worktreePath ? artifactPath(worktreePath, 'verify.json') : ''
   const verifyExists = Boolean(worktreePath) && existsSync(verifyPath)
