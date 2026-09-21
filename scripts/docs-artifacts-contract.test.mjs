@@ -68,7 +68,12 @@ test('the stats surface carries counts read from the repository, not typed into 
   assert.ok(llms.includes('/api/stats.json'), 'llms.txt must point at the stats surface')
 })
 
-test('the custom domain is declared for GitHub Pages', () => {
-  assert.ok(existsSync(resolve(publicRoot, 'CNAME')))
-  assert.equal(readFileSync(resolve(publicRoot, 'CNAME'), 'utf8'), 'harness.agentskit.io\n')
+test('the site is published by the one publisher the siblings use', () => {
+  // A second publisher for the same hostname is a deployment nobody can reason about: DNS points one way, so
+  // whichever job ran last is what the domain served. Vercel builds every sibling; this repository declares
+  // the same contract and emits no CNAME.
+  const vercel = JSON.parse(readFileSync(resolve(publicRoot, '../../../vercel.json'), 'utf8'))
+  assert.equal(vercel.buildCommand, 'pnpm docs:build')
+  assert.equal(vercel.outputDirectory, 'apps/docs/out')
+  assert.ok(!existsSync(resolve(publicRoot, 'CNAME')), 'GitHub Pages is not a publisher for this site')
 })

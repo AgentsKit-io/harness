@@ -2,7 +2,7 @@ import { createMDX } from 'fumadocs-mdx/next'
 
 const withMDX = createMDX()
 // harness.agentskit.io is a custom domain: no base path, ever. The variable exists only so a fork that
-// publishes under a GitHub Pages subpath can set it; the Pages workflow never does.
+// publishes under a subpath can set it; the production build never does — the domain is the site's own.
 const basePath = process.env.DOCS_BASE_PATH ?? ''
 
 /** @type {import('next').NextConfig} */

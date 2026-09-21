@@ -4,7 +4,7 @@
  *
  * Writes `apps/docs/public/`: the raw Markdown of every page, `llms.txt` (an index an agent can read in one
  * request), `llms-full.txt` (the whole corpus), `api/stats.json` (the counts the site is allowed to claim,
- * read from the repository) and the `CNAME` GitHub Pages needs for the custom domain.
+ * read from the repository).
  *
  * This is a fork of Doc Bridge's script with its `@agentskit/chat` half removed — no deterministic knowledge
  * artifact, no site-config. The only thing it reaches for beyond Node is the stats computation, which has to
@@ -23,7 +23,6 @@ const publicRoot = join(root, 'apps/docs/public')
 const ecosystemManifestPath = join(root, 'ecosystem.json')
 const origin = 'https://harness.agentskit.io'
 const currentProductId = 'harness'
-const domain = origin.replace(/^https:\/\//, '')
 
 const walk = async (directory) => {
   const entries = await readdir(directory, { withFileTypes: true })
@@ -124,7 +123,6 @@ const llmsFull = [llms, ...documents.flatMap((doc) => [`\n---\n\n# Source: ${doc
 
 await writeFile(join(publicRoot, 'llms.txt'), llms)
 await writeFile(join(publicRoot, 'llms-full.txt'), llmsFull)
-await writeFile(join(publicRoot, 'CNAME'), `${domain}\n`)
 
 // `output: 'export'` has no route handlers, so the stats surface is a real file under `public/`, written here
 // rather than committed: `public/` is removed at the top of this script on every run.

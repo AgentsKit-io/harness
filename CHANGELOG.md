@@ -154,7 +154,7 @@ inputs rather than gating on `process.platform`, so they fail on any machine if 
 
 - **`apps/docs` — a Next.js + fumadocs site, its own package**, so Next and React 19 never reach the harness
   runtime, which draws its TUI with ink. 38 pages in six sections, the eight stage state machines as diagrams,
-  four examples, and a `/for-agents` route. `harness.agentskit.io`, static export, GitHub Pages.
+  four examples, and a `/for-agents` route. `harness.agentskit.io`, static export, published by Vercel like every sibling site.
 - **The reference is generated from the code** (`pnpm docs:generate`): the configuration from the Zod schema
   joined with the JSDoc by dotted path (neither source is sufficient alone — the schema has no `.describe()` and
   the file has 155 JSDoc blocks), the CLI walked from the commander tree rather than parsed from `--help`, and

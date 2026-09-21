@@ -1,4 +1,4 @@
-/** Canonical public site — custom domain, no GitHub Pages subpath. */
+/** Canonical public site — custom domain, no subpath. */
 export const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://harness.agentskit.io'
 
 /** Only a fork publishing under a subpath sets this; the Pages workflow never does. */
