@@ -61,6 +61,13 @@ describe('automation drift', () => {
     expect(automationDrift(spec, live('loop-tick', rawFor(loaded, 'loop-tick', 'tick')))).toEqual([])
   })
 
+  it('reports no workspace drift against Orca\'s forward-slash-normalized path, even from a backslash root', () => {
+    const loaded = load()
+    const spec = automationSpecs(loaded, 'claude')[0]!
+    const raw = { ...rawFor(loaded, 'loop-tick', 'tick'), workspaceId: `repo-1::${loaded.root.replace(/\\/g, '/')}` }
+    expect(automationDrift(spec, live('loop-tick', raw))).toEqual([])
+  })
+
   it('names every field that drifted, and stays silent about fields Orca did not report', () => {
     const loaded = load()
     const spec = automationSpecs(loaded, 'claude')[0]!

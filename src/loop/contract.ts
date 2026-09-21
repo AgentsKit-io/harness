@@ -22,6 +22,64 @@ export const CONTRACT_CLOSE = 'LOOP_CONTRACT>>>'
 
 const nonEmpty = z.string().trim().min(1)
 
+const isRecord = (value: unknown): value is Record<string, unknown> => typeof value === 'object' && value !== null && !Array.isArray(value)
+
+/**
+ * JSON Schema mirror of `TaskContractSchema`, handed to a provider's `structuredOutputFlag` (e.g. Claude Code's
+ * `--json-schema`) so the contract comes back in the CLI's own `structured_output` field instead of depending on
+ * the model re-typing it between `CONTRACT_OPEN`/`CONTRACT_CLOSE` markers in its free-text reply — see
+ * `structuredOutputFlag`'s doc comment in config.ts for why the marker convention alone stopped being reliable.
+ * Hand-maintained (small, stable shape) rather than generated, to avoid a zod-to-json-schema dependency for one schema.
+ */
+export const CONTRACT_JSON_SCHEMA = {
+  type: 'object',
+  properties: {
+    intent: { type: 'string', minLength: 1 },
+    scope: {
+      type: 'object',
+      properties: {
+        inScope: { type: 'array', items: { type: 'string', minLength: 1 }, minItems: 1 },
+        outOfScope: { type: 'array', items: { type: 'string' } },
+      },
+      required: ['inScope'],
+    },
+    outcomes: {
+      type: 'array',
+      items: {
+        type: 'object',
+        properties: {
+          id: { type: 'string', minLength: 1 },
+          description: { type: 'string', minLength: 1 },
+          check: {
+            type: 'object',
+            properties: {
+              kind: { type: 'string', enum: ['command', 'test', 'manual'] },
+              command: { type: 'string' },
+              note: { type: 'string' },
+            },
+            required: ['kind'],
+          },
+        },
+        required: ['id', 'description', 'check'],
+      },
+    },
+    ambiguities: {
+      type: 'array',
+      items: {
+        type: 'object',
+        properties: {
+          question: { type: 'string', minLength: 1 },
+          blocking: { type: 'boolean' },
+        },
+        required: ['question'],
+      },
+    },
+    touchpoints: { type: 'array', items: { type: 'string' } },
+    risks: { type: 'array', items: { type: 'string' } },
+  },
+  required: ['intent', 'scope'],
+} as const
+
 export const ContractOutcomeSchema = z.object({
   id: nonEmpty,
   description: nonEmpty,
@@ -166,6 +224,25 @@ export const parseContractOutput = (stdout: string): TaskContract => {
   return result.data
 }
 
+/**
+ * Parse a headless run made with `structuredOutputFlag` (the CLI's stdout is the whole `--output-format json`
+ * envelope, not free text). Reads `structured_output` first — the value the CLI itself validated against
+ * `CONTRACT_JSON_SCHEMA` — and only falls back to marker-scanning (`envelope.result`, then raw stdout) when that
+ * field is missing, so a provider that degrades to its old text behavior for one run still gets a chance to parse.
+ */
+export const parseStructuredContractOutput = (stdout: string): TaskContract => {
+  let envelope: unknown
+  try { envelope = JSON.parse(stdout) } catch { return parseContractOutput(stdout) }
+  if (!isRecord(envelope)) return parseContractOutput(stdout)
+  const structured = envelope['structured_output']
+  if (structured !== undefined && structured !== null) {
+    const result = TaskContractSchema.safeParse(structured)
+    if (result.success) return result.data
+    return fail(`Structured contract failed validation: ${result.error.issues.map((issue) => `${issue.path.join('.')}: ${issue.message}`).join('; ')}`, 'INVALID_INPUT')
+  }
+  return parseContractOutput(typeof envelope['result'] === 'string' ? envelope['result'] : stdout)
+}
+
 export const resolveDocContext = async (
   root: string,
   query: string,
@@ -298,7 +375,8 @@ export const generateContract = async (input: GenerateContractInput): Promise<St
   const failures: ProviderFailure[] = []
   for (const candidate of candidates) {
     const { settings } = providerIdentity(input.config, candidate.provider)
-    const argv = renderHeadlessArgv(settings, candidate.model, prompt, candidate.effort)
+    const structured = Boolean(settings.structuredOutputFlag)
+    const argv = renderHeadlessArgv(settings, candidate.model, prompt, candidate.effort, structured ? JSON.stringify(CONTRACT_JSON_SCHEMA) : undefined)
     if (!argv) { failures.push({ provider: candidate.provider, model: candidate.model, kind: 'other', detail: `no headless argv template (models.providers.${candidate.provider}.headless)` }); continue }
     const timeoutMs = input.timeoutMs ?? input.config.contract.timeoutMs
     const outcome = await input.runner.run(argv, { timeoutMs, cwd: input.root })
@@ -310,7 +388,7 @@ export const generateContract = async (input: GenerateContractInput): Promise<St
       continue
     }
     try {
-      const contract = parseContractOutput(outcome.stdout)
+      const contract = structured ? parseStructuredContractOutput(outcome.stdout) : parseContractOutput(outcome.stdout)
       return {
         schemaVersion: CONTRACT_SCHEMA_VERSION,
         issue: input.issue.identifier,
