@@ -63,8 +63,11 @@ export const summarizeMachine = (samples: readonly MachineSample[], sampleInterv
 export const adaptiveConcurrency = (configured: number, sample: MachineSample, limits: Partial<MachineThresholds> = {}): number => {
   if (!Number.isInteger(configured) || configured < 1) throw new Error('configured concurrency must be a positive integer.')
   const limit = thresholds(limits)
-  const critical = sample.load1PerCpuPercent >= limit.criticalPercent || sample.memoryUsedPercent >= limit.criticalPercent || (sample.swapUsedPercent ?? 0) >= limit.criticalPercent || sample.memoryPressure === 'critical'
-  const warning = sample.load1PerCpuPercent >= limit.warningPercent || sample.memoryUsedPercent >= limit.warningPercent || (sample.swapUsedPercent ?? 0) >= limit.warningPercent || sample.memoryPressure === 'warning'
+  // A load average nobody measured is not a load of zero: on a platform without one, the decision rests on the
+  // signals that are real (memory, swap, the sampler's own pressure reading) instead of a fabricated calm.
+  const load = sample.loadAvailable === false ? null : sample.load1PerCpuPercent
+  const critical = (load !== null && load >= limit.criticalPercent) || sample.memoryUsedPercent >= limit.criticalPercent || (sample.swapUsedPercent ?? 0) >= limit.criticalPercent || sample.memoryPressure === 'critical'
+  const warning = (load !== null && load >= limit.warningPercent) || sample.memoryUsedPercent >= limit.warningPercent || (sample.swapUsedPercent ?? 0) >= limit.warningPercent || sample.memoryPressure === 'warning'
   if (critical) return 1
   if (warning) return Math.min(configured, 2)
   return configured

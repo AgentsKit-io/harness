@@ -56,4 +56,21 @@ describe('createProcessRunner', () => {
     const result = await runner.run(node('process.stdout.write(process.env.AK_HARNESS_TEST_VAR || "missing")'), { env: { ...process.env, AK_HARNESS_TEST_VAR: 'present' }, cwd: process.cwd() })
     expect(result.stdout).toBe('present')
   })
+
+  it('ends a timeout even when the command left a grandchild holding the pipes', async () => {
+    // A worker CLI is usually a wrapper: a `.cmd` shim on Windows, a launcher elsewhere. Killing only the direct
+    // child leaves the grandchild alive with the inherited stdout, so `close` never fires and the call used to
+    // hang forever instead of timing out. This spawns exactly that shape: a child that outlives its parent.
+    const script = `
+      const { spawn } = require('node:child_process')
+      spawn(process.execPath, ['-e', 'setTimeout(() => {}, 60000)'], { stdio: ['ignore', 'inherit', 'inherit'] })
+      setTimeout(() => {}, 60000)
+    `
+    const runner = createProcessRunner({ timeoutMs: 150 })
+    const started = Date.now()
+    const result = await runner.run(node(script))
+    expect(result.timedOut).toBe(true)
+    // The grace period is the ceiling; hanging would blow the test's own timeout instead.
+    expect(Date.now() - started).toBeLessThan(10_000)
+  }, 15_000)
 })

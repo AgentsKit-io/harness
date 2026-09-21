@@ -7,6 +7,7 @@ import { fail } from '../kernel/errors.js'
 import { parseStructuredEvidence, validateEvidence } from './evidence.js'
 import { assertHuman, approvedDecision, transition } from '../kernel/state-machine.js'
 import { sourceSnapshot, statusLineIsPath } from './source.js'
+import { KILL_GRACE_MS, detachedForTreeKill, killProcessTree } from '../kernel/process-tree.js'
 import { cleanConfiguredArtifacts, loadLatestRun, readRun } from './files.js'
 import { validateContextSnapshots } from '../context/index.js'
 import { hashJson } from '../kernel/hash.js'
@@ -25,14 +26,31 @@ interface ExecutedCheck { readonly check: CheckResult; readonly stdout: string; 
 
 const runCommand = (check: VerificationCheck, cwd: string): Promise<CommandResult> => new Promise((resolveResult) => {
   const started = Date.now()
-  const child = spawn(check.command, { cwd, shell: true, env: process.env })
+  const child = spawn(check.command, { cwd, shell: true, env: process.env, detached: detachedForTreeKill() })
   let stdout = ''
   let stderr = ''
   let timedOut = false
-  const timer = setTimeout(() => { timedOut = true; child.kill('SIGTERM') }, check.timeoutMs)
+  let settled = false
+  let grace: ReturnType<typeof setTimeout> | undefined
+  // Every exit path lands here exactly once: a check that neither closes nor resolves is a run that hangs
+  // forever, which is how a timeout used to behave on Windows and under any shell that outlives its command.
+  const finish = (exitCode: number, error?: string): void => {
+    if (settled) return
+    settled = true
+    clearTimeout(timer)
+    if (grace) clearTimeout(grace)
+    resolveResult({ exitCode, timedOut, stdout, stderr: error ? `${stderr}${stderr ? '\n' : ''}${error}` : stderr, durationMs: Date.now() - started })
+  }
+  const timer = setTimeout(() => {
+    timedOut = true
+    killProcessTree(child, 'SIGTERM')
+    grace = setTimeout(() => finish(1, `check timed out after ${check.timeoutMs}ms and did not exit when killed`), KILL_GRACE_MS)
+  }, check.timeoutMs)
   child.stdout.on('data', (chunk: Buffer) => { stdout += chunk.toString() })
   child.stderr.on('data', (chunk: Buffer) => { stderr += chunk.toString() })
-  child.on('close', (exitCode) => { clearTimeout(timer); resolveResult({ exitCode: exitCode ?? 1, timedOut, stdout, stderr, durationMs: Date.now() - started }) })
+  // A spawn that fails (no shell, bad cwd) emits `error` and never `close`.
+  child.on('error', (error) => finish(1, error.message))
+  child.on('close', (exitCode) => finish(exitCode ?? 1))
 })
 
 const executeCheck = async (check: VerificationCheck, cwd: string, checkDir: string, outcomes: readonly string[]): Promise<ExecutedCheck> => {
