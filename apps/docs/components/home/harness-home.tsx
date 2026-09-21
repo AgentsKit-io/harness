@@ -2,6 +2,8 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 
+import { EcosystemShowcase } from './ecosystem'
+
 /**
  * The home page, ported from the design canvas.
  *
@@ -160,10 +162,12 @@ export function HarnessHome() {
     const tick = (now: number) => {
       const state = live.current
       if (state.playing) {
-        const elapsed = now - origin.current
+        // `now` can land before the origin — a frame from a previous mount surviving a fast refresh, or a clock
+        // the browser adjusted — and a negative elapsed makes the modulo negative, which indexes nothing.
+        const elapsed = Math.max(0, now - origin.current)
         const sub = 6000
         const within = elapsed % sub
-        const objective = OBJECTIVES[Math.floor(elapsed / sub) % OBJECTIVES.length]!
+        const objective = OBJECTIVES[Math.floor(elapsed / sub) % OBJECTIVES.length] ?? OBJECTIVES[0]!
         const length = objective.length
         const chars = within < 1800
           ? Math.floor((within / 1800) * length)
@@ -171,7 +175,7 @@ export function HarnessHome() {
         setTyped(objective.slice(0, Math.min(length, Math.max(0, chars))))
       }
       if (state.replaying) {
-        const t = now - replayOrigin.current
+        const t = Math.max(0, now - replayOrigin.current)
         const position = positionAt(t)
         const spinner = Math.floor(t / 110) % 8
         if (position.done) {
@@ -277,9 +281,9 @@ export function HarnessHome() {
       <header style={{ position: 'sticky', top: '0', zIndex: '40', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '24px', padding: '14px 28px', borderBottom: '1px solid #30363D', background: 'rgba(13,17,23,0.86)', backdropFilter: 'blur(10px)' }}>
         <a href="/" style={{ display: 'flex', alignItems: 'center', gap: '10px', color: '#E6EDF3' }}>
           <svg viewBox="0 0 24 24" aria-hidden="true" style={{ width: '22px', height: '22px', display: 'block', flex: 'none' }}>
-            <path d="M12 5.5 L5 17 L19 17 Z" fill="none" stroke="#8B949E" strokeWidth="1.2"></path>
-            <circle cx="12" cy="5.5" r="2.7" fill="#E6EDF3"></circle>
-            <circle cx="5" cy="17" r="2.7" fill="#E6EDF3"></circle>
+            <path d="M12 5.5 L5 17 L19 17 Z" fill="none" stroke="#56D364" strokeWidth="1.2"></path>
+            <circle cx="12" cy="5.5" r="2.7" fill="#56D364"></circle>
+            <circle cx="5" cy="17" r="2.7" fill="#56D364"></circle>
             <circle cx="19" cy="17" r="2.7" fill="#56D364"></circle>
           </svg>
           <span style={{ fontFamily: '\'Space Grotesk\', sans-serif', fontWeight: '600', letterSpacing: '-0.02em', fontSize: '15px' }}>agentskit harness</span>
@@ -288,6 +292,7 @@ export function HarnessHome() {
           <a href="/docs" style={{ color: '#8B949E' }}>Docs</a>
           <a href="#gates" style={{ color: '#8B949E' }}>Gates</a>
           <a href="#run" style={{ color: '#8B949E' }}>A run</a>
+          <a href="/llms.txt" style={{ color: '#8B949E' }}>llms.txt</a>
           <a href="https://github.com/AgentsKit-io" style={{ color: '#8B949E' }}>GitHub</a>
         </nav>
       </header>
@@ -801,36 +806,11 @@ export function HarnessHome() {
         </div>
       </section>
 
+      <EcosystemShowcase />
+
       <footer style={{ padding: '56px 28px 72px', borderTop: '1px solid #30363D' }}>
         <div style={{ maxWidth: '1180px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '28px' }}>
-          <span style={{ fontFamily: '\'JetBrains Mono\', monospace', fontSize: '11px', letterSpacing: '0.2em', textTransform: 'uppercase', color: '#8B949E' }}>The AgentsKit ecosystem</span>
-          <nav style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(170px, 100%), 1fr))', gap: '12px' }}>
-            <a className="hv13" href="https://www.agentskit.io" style={{ display: 'flex', flexDirection: 'column', gap: '6px', padding: '16px', border: '1px solid #30363D', borderRadius: '0.5rem', color: '#E6EDF3', transition: 'border-color 200ms cubic-bezier(0.4,0,0.2,1)' }}>
-              <span style={{ fontFamily: '\'JetBrains Mono\', monospace', fontSize: '10px', letterSpacing: '0.2em', textTransform: 'uppercase', color: '#8B949E' }}>Build</span>
-              <span style={{ fontSize: '14px' }}>AgentsKit</span>
-            </a>
-            <a className="hv14" href="https://registry.agentskit.io" style={{ display: 'flex', flexDirection: 'column', gap: '6px', padding: '16px', border: '1px solid #30363D', borderRadius: '0.5rem', color: '#E6EDF3', transition: 'border-color 200ms cubic-bezier(0.4,0,0.2,1)' }}>
-              <span style={{ fontFamily: '\'JetBrains Mono\', monospace', fontSize: '10px', letterSpacing: '0.2em', textTransform: 'uppercase', color: '#8B949E' }}>Discover</span>
-              <span style={{ fontSize: '14px' }}>Registry</span>
-            </a>
-            <a className="hv15" href="https://chat.agentskit.io" style={{ display: 'flex', flexDirection: 'column', gap: '6px', padding: '16px', border: '1px solid #30363D', borderRadius: '0.5rem', color: '#E6EDF3', transition: 'border-color 200ms cubic-bezier(0.4,0,0.2,1)' }}>
-              <span style={{ fontFamily: '\'JetBrains Mono\', monospace', fontSize: '10px', letterSpacing: '0.2em', textTransform: 'uppercase', color: '#8B949E' }}>Deliver</span>
-              <span style={{ fontSize: '14px' }}>Chat</span>
-            </a>
-            <a className="hv16" href="https://playbook.agentskit.io" style={{ display: 'flex', flexDirection: 'column', gap: '6px', padding: '16px', border: '1px solid #30363D', borderRadius: '0.5rem', color: '#E6EDF3', transition: 'border-color 200ms cubic-bezier(0.4,0,0.2,1)' }}>
-              <span style={{ fontFamily: '\'JetBrains Mono\', monospace', fontSize: '10px', letterSpacing: '0.2em', textTransform: 'uppercase', color: '#8B949E' }}>Standardize</span>
-              <span style={{ fontSize: '14px' }}>Playbook</span>
-            </a>
-            <a className="hv17" href="https://doc-bridge.agentskit.io" style={{ display: 'flex', flexDirection: 'column', gap: '6px', padding: '16px', border: '1px solid #30363D', borderRadius: '0.5rem', color: '#E6EDF3', transition: 'border-color 200ms cubic-bezier(0.4,0,0.2,1)' }}>
-              <span style={{ fontFamily: '\'JetBrains Mono\', monospace', fontSize: '10px', letterSpacing: '0.2em', textTransform: 'uppercase', color: '#8B949E' }}>Understand</span>
-              <span style={{ fontSize: '14px' }}>Doc Bridge</span>
-            </a>
-            <a href="/" style={{ display: 'flex', flexDirection: 'column', gap: '6px', padding: '16px', border: '1px solid #56D364', borderRadius: '0.5rem', color: '#E6EDF3' }}>
-              <span style={{ fontFamily: '\'JetBrains Mono\', monospace', fontSize: '10px', letterSpacing: '0.2em', textTransform: 'uppercase', color: '#56D364' }}>Ship</span>
-              <span style={{ fontSize: '14px' }}>Harness</span>
-            </a>
-          </nav>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '20px', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid #30363D', paddingTop: '22px', fontFamily: '\'JetBrains Mono\', monospace', fontSize: '11px', letterSpacing: '0.2em', textTransform: 'uppercase', color: '#8B949E' }}>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '20px', justifyContent: 'space-between', alignItems: 'center', fontFamily: '\'JetBrains Mono\', monospace', fontSize: '11px', letterSpacing: '0.2em', textTransform: 'uppercase', color: '#8B949E' }}>
             <span>Built in the open</span>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '18px' }}>
               <a href="/docs" style={{ color: '#8B949E' }}>Docs</a>
