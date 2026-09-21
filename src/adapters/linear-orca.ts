@@ -180,7 +180,8 @@ export const writeIdFor = (key: string): string => {
   return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-4${hex.slice(13, 16)}-${((Number.parseInt(hex.slice(16, 17), 16) & 0x3) | 0x8).toString(16)}${hex.slice(17, 20)}-${hex.slice(20, 32)}`
 }
 
-export const linearAssigneeSetArgv = (input: { readonly issue: string; readonly assignee: string; readonly workspaceId: string }, bin = 'orca'): readonly string[] => [bin, 'linear', 'assignee', 'set', input.issue, '--assignee', input.assignee, '--workspace', input.workspaceId, '--json']
+/** `--to-id` takes a Linear user id, not a username — resolve `config.linear.people[person]` before calling (see `createLinearTracker`'s `claim`). Orca's CLI dropped `--assignee` for `assignee set` (still accepted by `list-issues`); verified live 2026-09-21 against orca 1.4.205: `Unknown flag --assignee for command: linear assignee set`. */
+export const linearAssigneeSetArgv = (input: { readonly issue: string; readonly toId: string; readonly workspaceId: string }, bin = 'orca'): readonly string[] => [bin, 'linear', 'assignee', 'set', input.issue, '--to-id', input.toId, '--workspace', input.workspaceId, '--json']
 export const linearAssigneeClearArgv = (input: { readonly issue: string; readonly workspaceId: string }, bin = 'orca'): readonly string[] => [bin, 'linear', 'assignee', 'clear', input.issue, '--workspace', input.workspaceId, '--json']
 
 export const linearStatusSetArgv = (input: { readonly issue: string; readonly to: string; readonly workspaceId: string }, bin = 'orca'): readonly string[] => [bin, 'linear', 'status', 'set', input.issue, '--to', input.to, '--workspace', input.workspaceId, '--json']
@@ -212,7 +213,7 @@ export const linearCommentAdd = async (runner: CommandRunner, input: { readonly 
  * OUT of every other machine's queue, so it runs right after the dispatch succeeds — never before, or a
  * failed dispatch would leave the item claimed by nobody's worker.
  */
-export const linearAssigneeSet = async (runner: CommandRunner, input: { readonly issue: string; readonly assignee: string }, options: LinearWriteOptions): Promise<unknown> => orcaJson(runner, linearAssigneeSetArgv({ ...input, workspaceId: options.workspaceId }).slice(1), scoped(options))
+export const linearAssigneeSet = async (runner: CommandRunner, input: { readonly issue: string; readonly toId: string }, options: LinearWriteOptions): Promise<unknown> => orcaJson(runner, linearAssigneeSetArgv({ ...input, workspaceId: options.workspaceId }).slice(1), scoped(options))
 /** Release the claim, putting the issue back in the unassigned queue. Pairs with `linearAssigneeSet`. */
 export const linearAssigneeClear = async (runner: CommandRunner, input: { readonly issue: string }, options: LinearWriteOptions): Promise<unknown> => orcaJson(runner, linearAssigneeClearArgv({ ...input, workspaceId: options.workspaceId }).slice(1), scoped(options))
 
