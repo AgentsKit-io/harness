@@ -263,7 +263,7 @@ Ordem das operações — **parcial quebra o teste de contrato, portanto é um c
 8. `pnpm test:ecosystem` verde. Copiar o `ecosystem.json` final para o repositório do harness.
 
 Dados da entrada: `shortName: "Harness"`, `kind: "tool"`, `promise: "The keep-pushing loop for your SDLC"`,
-`repo: AgentsKit-io/agentskit-harness`, `accent: "#F778BA"`, `surfaces.home: https://harness.agentskit.io`,
+`repo: AgentsKit-io/harness`, `accent: "#F778BA"`, `surfaces.home: https://harness.agentskit.io`,
 `showcase.stage: "Ship"`.
 
 ### Fatia 12 — integrar a home *(quando o desenho existir)*
