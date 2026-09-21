@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { githubComment, githubCommentExists, githubLabelRemove, githubOpenPullRequests, githubPullRequest, parsePullRequest, touchesProtectedPaths } from '../src/index.js'
+import { githubComment, githubCommentExists, githubCompare, githubLabelRemove, githubOpenPullRequests, githubPullRequest, parsePullRequest, touchesProtectedPaths } from '../src/index.js'
 import type { CommandResult, CommandRunner } from '../src/index.js'
 
 const recorder = (respond: (argv: readonly string[]) => CommandResult): CommandRunner & { readonly calls: string[][] } => {
@@ -101,5 +101,19 @@ describe('githubCommentExists', () => {
   it('tolerates a non-array response', async () => {
     const runner = recorder(() => ok('not an array'))
     expect(await githubCommentExists(runner, { repo: 'o/r', number: 1, marker: 'x' })).toBe(false)
+  })
+})
+
+describe('githubCompare', () => {
+  it('calls gh api compare and sums additions/deletions per file', async () => {
+    const runner = recorder(() => ok({ files: [{ filename: 'a.ts', additions: 3, deletions: 1 }, { filename: 'b.md', additions: 5, deletions: 0 }] }))
+    const diff = await githubCompare(runner, { repo: 'o/r', base: 'sha1', head: 'sha2' })
+    expect(runner.calls[0]).toEqual(['gh', 'api', 'repos/o/r/compare/sha1...sha2'])
+    expect(diff).toEqual({ files: ['a.ts', 'b.md'], changedLines: 9 })
+  })
+
+  it('tolerates a response with no files array', async () => {
+    const runner = recorder(() => ok({}))
+    expect(await githubCompare(runner, { repo: 'o/r', base: 'sha1', head: 'sha2' })).toEqual({ files: [], changedLines: 0 })
   })
 })

@@ -2,7 +2,7 @@ import { existsSync, mkdirSync, readdirSync, readFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import type { CommandRunner } from '../adapters/command.js'
 import { atLeast, parseReviewResult, renderFindingsForWorker, runCodeReview, type CodeReviewOutcome } from '../adapters/code-review.js'
-import { assessChecks, githubComment, githubCommentExists, githubLabelRemove, githubMerge, githubOpenPullRequests, githubPullRequest, githubPullRequestsForBranch, touchesProtectedPaths, type PullRequestSnapshot } from '../adapters/github-cli.js'
+import { assessChecks, githubComment, githubCommentExists, githubCompare, githubLabelRemove, githubMerge, githubOpenPullRequests, githubPullRequest, githubPullRequestsForBranch, touchesProtectedPaths, type PullRequestSnapshot } from '../adapters/github-cli.js'
 import { resolveConnectors, type ScmConnector, type TrackerConnector } from './connectors.js'
 import { issueBudget, modelForChange } from './budget.js'
 import { assessBoundary } from './layers.js'
@@ -552,9 +552,14 @@ ${marker}` }); actions.push('secret-file hold commented') } catch (error) { acti
     const candidates = applyRoleSettings(ctx.reviewerCandidates, roleSettings)
     const reviewer = candidates[0] ?? ctx.reviewer
     if (roleSettings.source === 'flow' && (reviewer.provider !== ctx.reviewer.provider || reviewer.model !== ctx.reviewer.model)) actions.push(`reviewer ${reviewer.provider}/${reviewer.model} named by flow \`${flow.flow.name ?? 'default'}\``)
-    // Cost lever: the model is chosen from the size and the shape of the change, not from the role alone.
+    // Cost lever: the model is chosen from the size and the shape of the change, not from the role alone. On a
+    // fix round, that means what changed since the last reviewed head — not the whole PR's cumulative diff —
+    // while criticalPaths still checks every file the PR touches (modelForChange's `allFiles`), so an earlier
+    // round's critical-path change is never forgotten just because this round's diff does not repeat it.
+    const lastReviewedHead = Object.entries(state.reviews).sort(([, a], [, b]) => Date.parse(b.at) - Date.parse(a.at))[0]?.[0] ?? null
+    const roundDiff = lastReviewedHead ? await githubCompare(ctx.runner, { repo: config.project.repo, base: lastReviewedHead, head: pr.headSha }).catch(() => null) : null
     const sized = config.delivery.review.smallChangeLines > 0
-      ? modelForChange({ candidates, files: pr.files, changedLines: pr.changedLines, smallChangeLines: config.delivery.review.smallChangeLines, criticalPaths: config.delivery.review.criticalPaths })
+      ? modelForChange({ candidates, files: roundDiff?.files ?? pr.files, allFiles: pr.files, changedLines: roundDiff?.changedLines ?? pr.changedLines, smallChangeLines: config.delivery.review.smallChangeLines, criticalPaths: config.delivery.review.criticalPaths })
       : { model: reviewer, reason: '' }
     const chosen = sized.model ?? reviewer
     if (sized.reason && (chosen.provider !== reviewer.provider || chosen.model !== reviewer.model)) actions.push(`reviewer ${chosen.provider}/${chosen.model} chosen: ${sized.reason}`)
@@ -591,7 +596,9 @@ ${marker}` }); actions.push('secret-file hold commented') } catch (error) { acti
     const attempts = (prior?.attempts ?? 0) + 1
     state = { ...state, prNumber: pr.number, reviews: { ...state.reviews, [pr.headSha]: { status: review.status, at: ctx.now().toISOString(), provider: review.provider, model: review.model, blocking: review.blocking.length, attempts } } }
     saveState(ctx, state)
-    event(ctx, { type: 'pr.reviewed', issue: record.issue, pr: pr.number, head: pr.headSha, status: review.status, blocking: review.blocking.length, provider: review.provider, model: review.model })
+    // windowed/cost visibility: agentskit-review already tracks provider calls and tokens per invocation
+    // (`review.usage`); recording it here is what lets issueBudget/issueSpend see review spend at all.
+    event(ctx, { type: 'pr.reviewed', issue: record.issue, pr: pr.number, head: pr.headSha, status: review.status, blocking: review.blocking.length, provider: review.provider, model: review.model, calls: review.usage.providerCalls, inputTokens: review.usage.inputTokens, outputTokens: review.usage.outputTokens, totalTokens: review.usage.totalTokens })
     await ctx.bus.runHook('afterReview', { issue: record.issue, pr: pr.number, head: pr.headSha, status: review.status, blocking: review.blocking.length })
     if (review.status === 'incomplete') {
       const failureKind = classifyProviderFailure(review.rawTail)
@@ -753,7 +760,7 @@ const handleIntakePullRequest = async (ctx: Context, identifier: string, pr: Pul
     const attempts = (prior?.attempts ?? 0) + 1
     const next: DeliveryState = { ...state, prNumber: pr.number, reviews: { ...state.reviews, [pr.headSha]: { status: review.status, at: ctx.now().toISOString(), provider: review.provider, model: review.model, blocking: review.blocking.length, attempts } } }
     saveState(ctx, next)
-    event(ctx, { type: 'pr.reviewed', pr: pr.number, head: pr.headSha, status: review.status, blocking: review.blocking.length, provider: review.provider, model: review.model, source: 'github-intake' })
+    event(ctx, { type: 'pr.reviewed', pr: pr.number, head: pr.headSha, status: review.status, blocking: review.blocking.length, provider: review.provider, model: review.model, source: 'github-intake', calls: review.usage.providerCalls, inputTokens: review.usage.inputTokens, outputTokens: review.usage.outputTokens, totalTokens: review.usage.totalTokens })
     await ctx.bus.runHook('afterReview', { issue: identifier, pr: pr.number, head: pr.headSha, status: review.status, blocking: review.blocking.length, source: 'github-intake' })
     if (review.status === 'incomplete') {
       const failureKind = classifyProviderFailure(review.rawTail)
