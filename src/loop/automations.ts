@@ -115,12 +115,19 @@ export const automationFields = (automation: OrcaAutomation): AutomationFields =
  * Orca stores a workspace as `<repoId>::<absolute path>`; the config declares `path:<absolute path>`. Compare on the
  * path alone, and report no drift for any selector shape this harness cannot map — a guess here would rewrite a
  * working automation on every install.
+ *
+ * Orca always normalizes the path it stores to forward slashes, even on Windows, while `loaded.root` (and so the
+ * desired `path:` selector) is built with `node:path`'s native separator. Compare on forward slashes so a Windows
+ * checkout doesn't see permanent drift against its own just-reconciled automation.
  */
+const normalizeSlashes = (value: string): string => value.replace(/\\/g, '/')
+
 const workspaceMatches = (desired: string | undefined, actual: string | null): boolean => {
   if (!desired || !actual) return true
   if (!desired.startsWith('path:')) return true
-  const path = desired.slice('path:'.length)
-  return actual === path || actual.endsWith(`::${path}`)
+  const path = normalizeSlashes(desired.slice('path:'.length))
+  const actualPath = normalizeSlashes(actual)
+  return actualPath === path || actualPath.endsWith(`::${path}`)
 }
 
 /** The named fields where the live automation disagrees with what the config declares. Empty = in sync. */
