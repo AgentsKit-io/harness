@@ -326,7 +326,7 @@ describe('providers, usage, routing, cooldown', () => {
         ...baseConfig().models,
         effort: { orchestrator: 'high', reviewer: 'high', builder: 'xhigh', watcher: 'low' },
         providers: {
-          claude: { bin: 'claude', auth: 'subscription', envKeys: ['ANTHROPIC_API_KEY'], tui: 'claude --model {model} --permission-mode auto', effortFlag: '--effort {effort}' },
+          claude: { bin: 'claude', auth: 'subscription', envKeys: ['ANTHROPIC_API_KEY'], tui: 'claude --model {model} --permission-mode auto', headless: ['claude', '-p', '{prompt}', '--model', '{model}', '--output-format', 'text'], effortFlag: '--effort {effort}', structuredOutputFlag: ['--output-format', 'json', '--json-schema', '{schema}'] },
           codex: { bin: 'codex', auth: 'subscription', tui: 'codex -m {model} --full-auto', headless: ['codex', 'exec', '-m', '{model}', '{prompt}'], effortFlag: '-c model_reasoning_effort={effort}' },
           opencode: { bin: 'opencode', orcaUsageKey: 'opencodeGo', tui: 'opencode -m {model}' },
           grok: { bin: 'grok', auth: 'subscription', tui: 'grok -m {model}' },
@@ -342,6 +342,13 @@ describe('providers, usage, routing, cooldown', () => {
     const codexSettings = config.models.providers['codex']!
     expect(renderHeadlessArgv(codexSettings, 'gpt-5.6-sol', 'do the thing', 'high')).toEqual(['codex', 'exec', '-m', 'gpt-5.6-sol', 'do the thing', '-c', 'model_reasoning_effort=high'])
     expect(renderHeadlessArgv(codexSettings, 'gpt-5.6-sol', 'do the thing')).toEqual(['codex', 'exec', '-m', 'gpt-5.6-sol', 'do the thing'])
+
+    // structuredOutputFlag: appended only when a jsonSchema is supplied, one element per template entry (never
+    // whitespace-split, since a JSON Schema string contains spaces), and ignored by a provider without it.
+    const schema = '{"type":"object"}'
+    expect(renderHeadlessArgv(claudeSettings, 'opus', 'do the thing', undefined, schema)).toEqual(['claude', '-p', 'do the thing', '--model', 'opus', '--output-format', 'text', '--output-format', 'json', '--json-schema', schema])
+    expect(renderHeadlessArgv(claudeSettings, 'opus', 'do the thing')).toEqual(['claude', '-p', 'do the thing', '--model', 'opus', '--output-format', 'text'])
+    expect(renderHeadlessArgv(codexSettings, 'gpt-5.6-sol', 'do the thing', undefined, schema)).toEqual(['codex', 'exec', '-m', 'gpt-5.6-sol', 'do the thing']) // no structuredOutputFlag configured: ignored
 
     const availability: readonly ProviderAvailability[] = ['claude', 'codex', 'opencode', 'grok'].map((id) => ({ id, binary: `/bin/${id}`, hookState: 'unknown', auth: 'ok', usage: { status: 'unknown', error: null, windows: [], exhausted: false, resetsAt: null, hasAuth: null }, probe: 'skipped', coolingDownUntil: null, available: true, reasons: [] }))
     const orchestrator = selectModel(config, 'orchestrator', availability)

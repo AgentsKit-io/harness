@@ -9,7 +9,7 @@ The four layers that produce this configuration — the machine's global file, t
 machine's overlay — are described in [ADR-0033](https://github.com/AgentsKit-io/harness/blob/main/docs/ADR-0033-four-config-layers-and-presets.md).
 `ak-harness loop validate` prints the effective result, which is the only one that decides anything.
 
-211 of 366 paths carry no description yet.
+212 of 367 paths carry no description yet.
 
 ## `schemaVersion`
 
@@ -154,6 +154,7 @@ Stricter review for the slices of the board that deserve it, keyed by label. The
 | `models.providers.headless` | string[] |  |  |
 | `models.providers.reviewProvider` | string |  |  |
 | `models.providers.effortFlag` | string |  |  |
+| `models.providers.structuredOutputFlag` | string[] |  |  |
 | `models.providers.subagents` | boolean | `false` |  |
 | `models.effort` | object | `{}` | Reasoning effort requested per role; only applied for providers whose `effortFlag` is set. |
 | `models.effort.orchestrator` | `low` · `medium` · `high` · `xhigh` | `"high"` |  |

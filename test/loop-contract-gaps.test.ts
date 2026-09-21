@@ -3,7 +3,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import {
-  extractResetsAt, generateContract, parseLinearIssueDetail, readStoredContract, resolveDocContext, validateLoopConfig,
+  extractResetsAt, generateContract, parseLinearIssueDetail, parseStructuredContractOutput, readStoredContract, resolveDocContext, validateLoopConfig,
 } from '../src/index.js'
 import type { CommandResult, CommandRunner, RankedModel } from '../src/index.js'
 
@@ -144,5 +144,45 @@ describe('generateContract', () => {
     const runner: CommandRunner = { run: async (): Promise<CommandResult> => ({ code: 0, stdout: `<<<LOOP_CONTRACT\n${JSON.stringify({ intent: 'x', scope: { inScope: ['a'] }, outcomes: [], ambiguities: [], touchpoints: [], risks: [] })}\nLOOP_CONTRACT>>>`, stderr: '', timedOut: false, durationMs: 1 }) }
     const result = await generateContract({ runner, config, root: '/tmp', issue, orchestrator: { role: 'orchestrator', selected: candidate(), skipped: [] }, references: [] })
     expect(result.provider).toBe('codex')
+  })
+
+  // Regression: a provider whose model finishes plan-mode reasoning with the contract already "frozen" internally
+  // (e.g. via a denied ExitPlanMode call) can reply with only a prose summary and never repeat the JSON between
+  // markers — the run still exits 0 with real output, so it read as "no contract block" even though nothing failed.
+  // `structuredOutputFlag` routes around the model's free-text reply entirely: the contract comes back through the
+  // CLI's own `--json-schema`-validated `structured_output` field.
+  const structuredConfig = validateLoopConfig({
+    ...config,
+    models: {
+      ...config.models,
+      providers: { codex: { ...config.models.providers['codex']!, structuredOutputFlag: ['--output-format', 'json', '--json-schema', '{schema}'] } },
+    },
+  })
+
+  it('reads the contract from structured_output when the provider declares structuredOutputFlag, ignoring a free-text reply that never repeats it', async () => {
+    const envelope = JSON.stringify({ type: 'result', result: 'The contract is frozen above.', structured_output: { intent: 'x', scope: { inScope: ['a'] } } })
+    const runner: CommandRunner = { run: async (): Promise<CommandResult> => ({ code: 0, stdout: envelope, stderr: '', timedOut: false, durationMs: 1 }) }
+    const result = await generateContract({ runner, config: structuredConfig, root: '/tmp', issue, candidates: [candidate()], references: [] })
+    expect(result.contract).toMatchObject({ intent: 'x', scope: { inScope: ['a'] } })
+  })
+
+  it('falls back to marker-scanning envelope.result when structured_output is absent', async () => {
+    const envelope = JSON.stringify({ type: 'result', result: `<<<LOOP_CONTRACT\n${JSON.stringify({ intent: 'y', scope: { inScope: ['b'] }, outcomes: [], ambiguities: [], touchpoints: [], risks: [] })}\nLOOP_CONTRACT>>>` })
+    const runner: CommandRunner = { run: async (): Promise<CommandResult> => ({ code: 0, stdout: envelope, stderr: '', timedOut: false, durationMs: 1 }) }
+    const result = await generateContract({ runner, config: structuredConfig, root: '/tmp', issue, candidates: [candidate()], references: [] })
+    expect(result.contract.intent).toBe('y')
+  })
+
+  it('rejects a structured_output payload that fails contract validation', async () => {
+    const envelope = JSON.stringify({ type: 'result', result: '', structured_output: { intent: '', scope: { inScope: [] } } })
+    const runner: CommandRunner = { run: async (): Promise<CommandResult> => ({ code: 0, stdout: envelope, stderr: '', timedOut: false, durationMs: 1 }) }
+    await expect(generateContract({ runner, config: structuredConfig, root: '/tmp', issue, candidates: [candidate()], references: [] })).rejects.toThrow(/Structured contract failed validation/)
+  })
+})
+
+describe('parseStructuredContractOutput', () => {
+  it('falls back to marker-scanning raw stdout when the envelope is not JSON', () => {
+    const raw = `<<<LOOP_CONTRACT\n${JSON.stringify({ intent: 'z', scope: { inScope: ['c'] }, outcomes: [], ambiguities: [], touchpoints: [], risks: [] })}\nLOOP_CONTRACT>>>`
+    expect(parseStructuredContractOutput(raw).intent).toBe('z')
   })
 })
