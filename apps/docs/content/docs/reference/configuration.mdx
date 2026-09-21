@@ -117,12 +117,12 @@ Stricter review for the slices of the board that deserve it, keyed by label. The
 | `models.routing.pinStrict` | boolean | `false` |  |
 | `models.routing.policy` | `quality-first` · `usage-balanced` · `cost-first` | `"quality-first"` | How to choose among the candidates a role's tiers allow. `quality-first` (default, today's behaviour): the best available, with failover. `usage-balanced`: spread across providers by remaining window. `cost-first`: the cheapest that the role can still use — from `models.cost` when declared, otherwise the last tier, which is where a config already puts its cheap last resort. Policy never widens the candidate set; it only orders it. |
 | `models.cost` | record&lt;number&gt; | `{}` | Relative cost per `provider/model`, any unit you like — only the order matters. Used by `policy: cost-first`. |
-| `models.roles` | object | `{}` | Quality band when `routing.mode: catalog` (and as soft bias in hybrid). |
+| `models.roles` | object | `{}` | cheapest-sufficient: default quality tracks what a role actually does, not tradition. `orchestrator` (freezing a contract from an issue) and `reviewer` (reading a diff) are bounded, structured tasks — neither defaults above `builder`, the role that does the open-ended work of writing and debugging the code itself. |
 | `models.roles.orchestrator` | object | `{}` |  |
-| `models.roles.orchestrator.quality` | `frontier` · `balanced` · `fast` | `"frontier"` |  |
+| `models.roles.orchestrator.quality` | `frontier` · `balanced` · `fast` | `"balanced"` |  |
 | `models.roles.orchestrator.preferCreators` | string[] | `[]` |  |
 | `models.roles.reviewer` | object | `{}` |  |
-| `models.roles.reviewer.quality` | `frontier` · `balanced` · `fast` | `"frontier"` |  |
+| `models.roles.reviewer.quality` | `frontier` · `balanced` · `fast` | `"balanced"` |  |
 | `models.roles.reviewer.preferCreators` | string[] | `[]` |  |
 | `models.roles.builder` | object | `{}` |  |
 | `models.roles.builder.quality` | `frontier` · `balanced` · `fast` | `"balanced"` |  |
