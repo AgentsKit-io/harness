@@ -8,14 +8,14 @@ import { initializeGitRepository } from './git.js'
 const fixture = async (): Promise<{ readonly root: string; readonly run: Awaited<ReturnType<typeof startRun>> }> => {
   const root = mkdtempSync(join(tmpdir(), 'agentskit-harness-agent-test-'))
   initializeGitRepository(root)
-  mkdirSync(join(root, '.codex'), { recursive: true })
-  writeFileSync(join(root, '.codex', 'verification.json'), JSON.stringify({
+  mkdirSync(join(root, '.ak-harness'), { recursive: true })
+  writeFileSync(join(root, '.ak-harness', 'verification.json'), JSON.stringify({
     schemaVersion: 1, project: 'agent-fixture', root: '..', profile: 'strict',
     contract: { intent: 'Capture an agent session.', scope: { inScope: ['fixture'], outOfScope: ['production'] }, ambiguities: [], outcomes: [{ id: 'outcome', statement: 'The fixture is valid.', checks: ['logic'] }] },
     surfaces: { logic: true, endpoint: false, database: false, cli: false, mcp: false, ui: false, docs: false },
     checks: [{ id: 'logic', category: 'logic', command: 'true', evidence: 'structured' }], tracking: { required: false, reason: 'fixture' },
   }, null, 2))
-  const configPath = join(root, '.codex', 'verification.json')
+  const configPath = join(root, '.ak-harness', 'verification.json')
   await planRun({ configPath, decision: 'approved' })
   return { root, run: startRun(loadConfig(configPath)) }
 }
@@ -26,7 +26,7 @@ const runtime = createToolRuntime({ tools: [{ toolId: 'shell', execute: async ({
 
 it('records a privacy-preserving, correlated session and tool lifecycle', async () => {
   const { root, run } = await fixture()
-  const stateDir = join(root, '.codex', 'verification')
+  const stateDir = join(root, '.ak-harness', 'verification')
   const recorder = createSessionRecorder({ stateDir, run, adapter, policy, runtime, sessionId: 'session-1' })
   recorder.startTurn('input-hash', 'turn-1')
   recorder.requestTool({ turnId: 'turn-1', actionId: 'action-1', toolId: 'shell', argumentsHash: 'arguments-hash' })
@@ -43,7 +43,7 @@ it('records a privacy-preserving, correlated session and tool lifecycle', async 
 
 it('rejects invalid ordering, duplicate actions, pending completion, and post-end calls', async () => {
   const { root, run } = await fixture()
-  const recorder = createSessionRecorder({ stateDir: join(root, '.codex', 'verification'), run, adapter, policy, runtime })
+  const recorder = createSessionRecorder({ stateDir: join(root, '.ak-harness', 'verification'), run, adapter, policy, runtime })
   expect(() => recorder.requestTool({ turnId: 'missing', toolId: 'shell', argumentsHash: 'hash' })).toThrow(/Turn does not exist/)
   recorder.startTurn('input', 'turn')
   recorder.requestTool({ turnId: 'turn', actionId: 'action', toolId: 'shell', argumentsHash: 'hash' })
@@ -53,11 +53,11 @@ it('rejects invalid ordering, duplicate actions, pending completion, and post-en
   expect(() => recorder.completeTool({ actionId: 'action', resultHash: 'result', durationMs: 0 })).toThrow(/not pending/)
   recorder.end('completed')
   expect(() => recorder.startTurn('input-2')).toThrow(/already ended/)
-  const blocked = createSessionRecorder({ stateDir: join(root, '.codex', 'verification'), run, adapter, policy: createPolicyGate({ rules: [] }), runtime, sessionId: 'blocked-session' })
+  const blocked = createSessionRecorder({ stateDir: join(root, '.ak-harness', 'verification'), run, adapter, policy: createPolicyGate({ rules: [] }), runtime, sessionId: 'blocked-session' })
   blocked.startTurn('blocked-input', 'blocked-turn')
   expect(() => blocked.requestTool({ turnId: 'blocked-turn', actionId: 'blocked-action', toolId: 'network', argumentsHash: 'hash' })).toThrow(/blocked by policy/)
   blocked.end('failed')
-  const events = new FileEventStore(join(root, '.codex', 'verification')).read(run.runId)
+  const events = new FileEventStore(join(root, '.ak-harness', 'verification')).read(run.runId)
   expect(events.some((event) => event.type === 'policy.evaluated' && event.payload.decision === 'block')).toBe(true)
   expect(events.some((event) => event.type === 'tool.blocked' && event.payload.actionId === 'blocked-action')).toBe(true)
 })
@@ -74,7 +74,7 @@ it('closes a failed execution and requires a fresh policy-approved action for re
   const { root, run } = await fixture()
   let attempts = 0
   const flaky = createToolRuntime({ tools: [{ toolId: 'shell', execute: async () => { attempts += 1; if (attempts === 1) throw new Error('transient'); return 'recovered' } }] })
-  const recorder = createSessionRecorder({ stateDir: join(root, '.codex', 'verification'), run, adapter, policy, runtime: flaky })
+  const recorder = createSessionRecorder({ stateDir: join(root, '.ak-harness', 'verification'), run, adapter, policy, runtime: flaky })
   const turn = recorder.startTurn('recovery-input', 'recovery-turn')
   const first = recorder.requestTool({ turnId: turn.payload.turnId, actionId: 'failed-action', toolId: 'shell', argumentsHash: 'hash-1' })
   await expect(recorder.executeTool({ actionId: first.payload.actionId, arguments: { attempt: 1 } })).resolves.toMatchObject({ status: 'failed', errorCode: 'RUNTIME_ERROR' })
@@ -87,7 +87,7 @@ it('requires human approval before sensitive tools execute and records rejection
   const { root, run } = await fixture()
   let executions = 0
   const recorder = createSessionRecorder({
-    stateDir: join(root, '.codex', 'verification'),
+    stateDir: join(root, '.ak-harness', 'verification'),
     run,
     adapter,
     policy: createPolicyGate({ rules: [{ id: 'approve-sensitive', effect: 'approve', toolIds: ['sensitive'], reason: 'sensitive tool requires review' }] }),
@@ -102,14 +102,14 @@ it('requires human approval before sensitive tools execute and records rejection
   expect(recorder.approveTool({ actionId: 'sensitive-action', decision: 'rejected' }).type).toBe('tool.blocked')
   recorder.end('failed')
   expect(executions).toBe(0)
-  const events = new FileEventStore(join(root, '.codex', 'verification')).read(run.runId)
+  const events = new FileEventStore(join(root, '.ak-harness', 'verification')).read(run.runId)
   expect(events.some((event) => event.type === 'tool.approval.requested' && event.payload.actionId === 'sensitive-action')).toBe(true)
   expect(events.some((event) => event.type === 'tool.approval.recorded' && event.payload.decision === 'rejected' && event.payload.actor === 'human')).toBe(true)
-  expect(readFileSync(join(root, '.codex', 'verification', 'runs', run.runId, 'events.ndjson'), 'utf8')).not.toContain('never persisted')
+  expect(readFileSync(join(root, '.ak-harness', 'verification', 'runs', run.runId, 'events.ndjson'), 'utf8')).not.toContain('never persisted')
 
   const approvedFixture = await fixture()
   const approvedRecorder = createSessionRecorder({
-    stateDir: join(approvedFixture.root, '.codex', 'verification'),
+    stateDir: join(approvedFixture.root, '.ak-harness', 'verification'),
     run: approvedFixture.run,
     adapter,
     policy: createPolicyGate({ rules: [{ id: 'approve-sensitive', effect: 'approve', toolIds: ['sensitive'], reason: 'sensitive tool requires review' }] }),
@@ -130,7 +130,7 @@ it('resumes pending approvals from the event log without replaying completed too
   let executions = 0
   const policy = createPolicyGate({ rules: [{ id: 'approve-sensitive', effect: 'approve', toolIds: ['sensitive'], reason: 'sensitive tool requires review' }] })
   const runtime = createToolRuntime({ tools: [{ toolId: 'sensitive', execute: async () => { executions += 1; return 'resumed' } }] })
-  const stateDir = join(root, '.codex', 'verification')
+  const stateDir = join(root, '.ak-harness', 'verification')
   const interrupted = createSessionRecorder({ stateDir, run, adapter, policy, runtime, sessionId: 'recoverable-session' })
   interrupted.startTurn('input-hash', 'recoverable-turn')
   interrupted.requestTool({ turnId: 'recoverable-turn', actionId: 'recoverable-action', toolId: 'sensitive', argumentsHash: 'recoverable-arguments' })
@@ -149,7 +149,7 @@ it('resumes pending approvals from the event log without replaying completed too
 it('requires an explicit human decision before recovering a possibly started action', async () => {
   const { root, run } = await fixture()
   let executions = 0
-  const stateDir = join(root, '.codex', 'verification')
+  const stateDir = join(root, '.ak-harness', 'verification')
   const runtime = createToolRuntime({ tools: [{ toolId: 'shell', execute: async () => { executions += 1; return 'recovered' } }] })
   const interrupted = createSessionRecorder({ stateDir, run, adapter, policy, runtime, sessionId: 'started-action-session' })
   const turn = interrupted.startTurn('input', 'started-action-turn')
@@ -170,7 +170,7 @@ it('requires an explicit human decision before recovering a possibly started act
 it('can abandon a possibly started action without entering the runtime', async () => {
   const { root, run } = await fixture()
   let executions = 0
-  const stateDir = join(root, '.codex', 'verification')
+  const stateDir = join(root, '.ak-harness', 'verification')
   const runtime = createToolRuntime({ tools: [{ toolId: 'shell', execute: async () => { executions += 1; return 'must-not-run' } }] })
   const interrupted = createSessionRecorder({ stateDir, run, adapter, policy, runtime, sessionId: 'abandoned-action-session' })
   const turn = interrupted.startTurn('input', 'abandoned-action-turn')
@@ -207,11 +207,11 @@ it('persists runtime attestation with the terminal tool event', async () => {
       },
     }),
   }
-  const recorder = createSessionRecorder({ stateDir: join(root, '.codex', 'verification'), run, adapter, policy, runtime: runtimeWithEvidence, sessionId: 'attested-session' })
+  const recorder = createSessionRecorder({ stateDir: join(root, '.ak-harness', 'verification'), run, adapter, policy, runtime: runtimeWithEvidence, sessionId: 'attested-session' })
   recorder.startTurn('attested-input', 'attested-turn')
   const action = recorder.requestTool({ turnId: 'attested-turn', actionId: 'attested-action', toolId: 'shell', argumentsHash: 'attested-arguments' })
   await recorder.executeTool({ actionId: action.payload.actionId, arguments: { fixture: true } })
   recorder.end('completed')
-  const completed = new FileEventStore(join(root, '.codex', 'verification')).read(run.runId).find((event) => event.type === 'tool.completed')
+  const completed = new FileEventStore(join(root, '.ak-harness', 'verification')).read(run.runId).find((event) => event.type === 'tool.completed')
   expect(completed?.payload).toMatchObject({ actionId: 'attested-action', runtimeEvidence: { provider: 'docker', imageDigest: `sha256:${'a'.repeat(64)}` } })
 })

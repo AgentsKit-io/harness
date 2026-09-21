@@ -21,7 +21,9 @@ const SHELL_META = /[;&|`$()<>\n\r]/
 const normalizedPath = (value: string, label: string): string => {
   if (typeof value !== 'string' || !value.trim()) fail(`${label} must be a non-empty path.`, 'INVALID_INPUT')
   const path = value.trim().replaceAll('\\', '/')
-  if (path.startsWith('/') || path.split('/').includes('..')) fail(`${label} must be repository-relative.`, 'INVALID_INPUT')
+  // `C:/x` and `//server/share` are absolute too; only the POSIX form was refused before, so a Windows path
+  // escaped the repository root through a check that was meant to prevent exactly that.
+  if (path.startsWith('/') || /^[A-Za-z]:/.test(path) || path.split('/').includes('..')) fail(`${label} must be repository-relative.`, 'INVALID_INPUT')
   return path
 }
 

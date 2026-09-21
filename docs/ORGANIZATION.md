@@ -21,7 +21,7 @@ the repository stays navigable without speculative layers.
 ├── examples/              # runnable consumer examples
 ├── compatibility/         # pinned ecosystem manifest and migration/rollback procedures
 ├── docs/                 # ADRs and this organization contract
-├── .codex/               # verification contract and local run state
+├── .ak-harness/          # verification contract and local run state
 └── .github/              # CI and release workflows
 ```
 

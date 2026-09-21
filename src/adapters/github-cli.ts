@@ -23,6 +23,8 @@ export interface PullRequestSnapshot {
   readonly reviewDecision: string
   readonly labels: readonly string[]
   readonly files: readonly string[]
+  /** Lines added and removed across the PR's files; 0 when the host did not report them. */
+  readonly changedLines: number
   readonly checks: readonly PullRequestCheck[]
   readonly updatedAt: string | null
 }
@@ -73,6 +75,7 @@ export const parsePullRequest = (value: unknown): PullRequestSnapshot => {
     reviewDecision: str(record['reviewDecision']),
     labels: Array.isArray(record['labels']) ? record['labels'].map((label: unknown) => isRecord(label) ? str(label['name']) : str(label)).filter(Boolean) : [],
     files: Array.isArray(record['files']) ? record['files'].map((file: unknown) => isRecord(file) ? str(file['path']) : str(file)).filter(Boolean) : [],
+    changedLines: Array.isArray(record['files']) ? record['files'].reduce((total: number, file: unknown) => total + (isRecord(file) ? (typeof file['additions'] === 'number' ? file['additions'] : 0) + (typeof file['deletions'] === 'number' ? file['deletions'] : 0) : 0), 0) : 0,
     checks: rollup.map((item) => ({ name: str(item['name'], str(item['context'], 'unnamed')), outcome: outcomeOf(item), kind: item['__typename'] === 'CheckRun' ? 'check-run' : item['__typename'] === 'StatusContext' ? 'status' : 'unknown' })),
     updatedAt: typeof record['updatedAt'] === 'string' ? record['updatedAt'] : null,
   }

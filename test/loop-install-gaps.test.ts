@@ -136,7 +136,7 @@ describe('installLoopAutomations edge cases', () => {
   })
 
   it('falls back to the existing automation id when the create/edit response has no id of its own', async () => {
-    const env1 = setup({ existing: [{ id: 'auto-existing', name: 'loop-tick', enabled: true, trigger: '*/5 * * * *', provider: 'claude' }] })
+    const env1 = setup({ existing: [{ id: 'auto-existing', name: 'loop-tick', enabled: true, trigger: '0 4 * * *', provider: 'claude' }] })
     env1.runner.run = async (argv) => {
       const key = argv.join(' ')
       if (key.startsWith('orca automations list')) return okResult({ automations: env1.automations, items: env1.automations })

@@ -1,0 +1,19 @@
+{
+  "title": "Concepts",
+  "pages": [
+    "stages",
+    "state-machines",
+    "contracts",
+    "plans-and-votes",
+    "artifacts",
+    "definition-of-done",
+    "flows",
+    "layers",
+    "human-gates",
+    "events",
+    "memory",
+    "connectors",
+    "cost",
+    "self-improvement"
+  ]
+}

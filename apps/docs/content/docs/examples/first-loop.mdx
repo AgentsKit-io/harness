@@ -1,0 +1,96 @@
+---
+title: Your first loop in 10 minutes
+description: init, doctor, a dry-run tick and a first dispatch — with the real output of each step.
+---
+
+Ten minutes, four commands, nothing irreversible until the last one.
+
+The `doctor` and dry-run outputs on this page are **real captures**, taken read-only on 2026-09-20 against a
+live pilot repository with the 0.15.0 build, with paths and the operator's name redacted. The `loop init`
+replay is **reconstructed**: the prompts are the ones `init` asks, the answers are invented.
+
+<RunReplay
+  title="ak-harness loop init --preset library"
+  lines={[
+    '$ npx ak-harness loop init --preset library',
+    '? GitHub repository  acme/report',
+    '? Project name       report',
+    '? Linear team key    REP',
+    '? Whose queue does this machine drain?  jordan',
+    '',
+    'wrote loop.config.yaml (preset: library)',
+    '  project.verifyCommand  pnpm lint && pnpm test',
+    '  schedule.tick          */5 * * * *',
+    '  schedule.deliver       */10 * * * *',
+    '',
+    'next: ak-harness loop doctor',
+  ]}
+/>
+
+The file it writes contains what *this* project decided and nothing the preset already says — so the diff a
+reviewer reads is five lines, not five hundred.
+
+## `loop doctor`, for real
+
+Captured read-only against a live pilot on 2026-09-20, trimmed to the checks and with paths and the operator's
+name redacted:
+
+```json
+{
+  "status": "failed",
+  "orca": { "version": "1.4.205", "minVersion": "1.4.200" },
+  "checks": [
+    { "id": "orca.version",        "status": "passed",  "detail": "Orca 1.4.205 ≥ 1.4.200" },
+    { "id": "provider.claude",     "status": "passed",  "detail": "available (session 0%, weekly 74%; remaining~26%)" },
+    { "id": "provider.codex",      "status": "passed",  "detail": "available (weekly 4%; remaining~96%)" },
+    { "id": "provider.opencode",   "status": "warning", "detail": "usage exhausted until 2026-09-22T13:16:45.013Z" },
+    { "id": "routing.orchestrator","status": "passed",  "detail": "codex/gpt-5.6-sol · mode catalog · remaining 96%" },
+    { "id": "routing.builder",     "status": "passed",  "detail": "codex/gpt-5.6-luna · mode catalog · remaining 96%" },
+    { "id": "machine.slots",       "status": "warning", "detail": "0 free of 5 (running 6, cpus 10, load 60.87%, free RAM 8 GB)" },
+    { "id": "linear.queue",        "status": "failed",  "detail": "orca linear list-issues failed: the runtime closed the connection" },
+    { "id": "brief.skills",        "status": "passed",  "detail": "3 pinned skill file(s) present and readable" },
+    { "id": "review.cli",          "status": "passed",  "detail": "found agentskit-review · transport headless · mode trusted-local" },
+    { "id": "memory",              "status": "passed",  "detail": "enabled · backend file · preferOverDocBridge=true" }
+  ]
+}
+```
+
+Two useful things in one screen: one provider is out of quota and the loop already routed around it, and the
+tracker call failed — which is why `status` is `failed` and why nothing should be dispatched until it is fixed.
+
+## The rehearsal
+
+```bash
+npx ak-harness loop tick --dry-run --max 1
+```
+
+Real output, same machine, same moment:
+
+```json
+{
+  "generatedAt": "2026-09-20T21:41:47.994Z",
+  "dryRun": true,
+  "slots": { "maxAgents": 5, "running": 6, "free": 0, "reasons": [] },
+  "routing": { "orchestrator": "codex/gpt-5.6-sol", "builder": "codex/gpt-5.6-luna" },
+  "queue": {
+    "total": 1,
+    "busy": ["AGE-1402", "AGE-1691", "AGE-1692", "AGE-1696", "AGE-1702", "AGE-1719", "AGE-1718"],
+    "candidates": ["AGE-1659"]
+  },
+  "status": "idle",
+  "results": []
+}
+```
+
+One candidate, seven issues already in flight, zero free slots — so `idle`, and nothing dispatched. A dry run
+that reports work it could not have done would be worse than no dry run.
+
+## The first dispatch
+
+```bash
+npx ak-harness loop tick --max 1
+npx ak-harness loop watch --once
+```
+
+From here the schedule takes over: `loop install`, and the tick runs every five minutes whether or not you are
+at the machine. That is the whole point.

@@ -41,7 +41,7 @@ GitHub, Orca, Doc Bridge, or a model provider to the kernel.
 Run the repository contract before reporting completion:
 
 ```bash
-ak-verify run --config .codex/verification.json --json
+ak-verify run --config .ak-harness/verification.json --json
 ```
 
 The run ID and criterion-level evidence belong in the change report. A failed,

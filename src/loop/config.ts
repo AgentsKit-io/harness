@@ -1,15 +1,32 @@
 import { existsSync, readFileSync } from 'node:fs'
+import { homedir } from 'node:os'
 import { dirname, resolve } from 'node:path'
 import { parse as parseYaml } from 'yaml'
 import { z } from 'zod'
 import { fail } from '../kernel/errors.js'
 import { hashJson } from '../kernel/hash.js'
 import { MODEL_ROLES, type ModelRole } from '../kernel/model-policy.js'
+import { PRESET_NAMES, presetFor } from './presets.js'
 
 export const LOOP_CONFIG_FILE = 'loop.config.yaml'
 /** Optional, gitignored per-machine overlay merged over the versioned config (e.g. `linear.person`, `machine.minFreeRamGb`). */
 export const LOOP_LOCAL_CONFIG_FILE = 'loop.config.local.yaml'
+/** The user's own layer, outside every repository: identity, models and providers, effort, machine capacity, notification channels. */
+export const GLOBAL_CONFIG_FILE = 'harness.yaml'
 export const LOOP_CONFIG_SCHEMA_VERSION = 1
+
+/** `loop.config.team.<key>.yaml`: what diverges between teams sharing one repository. */
+export const teamConfigFile = (team: string): string => `loop.config.team.${team}.yaml`
+
+/**
+ * Where the user's global layer lives: `$AK_HARNESS_CONFIG`, else `$AK_HARNESS_HOME/harness.yaml`, else
+ * `~/.agentskit/harness.yaml`. A missing file is not an error — the global layer is optional by design.
+ */
+export const globalConfigPath = (env: NodeJS.ProcessEnv = process.env, home: string = homedir()): string =>
+  env['AK_HARNESS_CONFIG']?.trim() || resolve(env['AK_HARNESS_HOME']?.trim() || resolve(home, '.agentskit'), GLOBAL_CONFIG_FILE)
+
+/** `AK_HARNESS_NO_GLOBAL=1` loads the project without the user's layer — for tests and for reproducing what CI sees. */
+export const globalLayerDisabled = (env: NodeJS.ProcessEnv = process.env): boolean => env['AK_HARNESS_NO_GLOBAL'] === '1'
 
 const nonEmpty = z.string().trim().min(1)
 const cron = z.string().trim().regex(/^(\S+\s+){4}\S+$|^(hourly|daily|weekdays|weekly)$/, 'must be a 5-field cron expression or hourly|daily|weekdays|weekly')
@@ -35,20 +52,55 @@ const ProviderSchema = z.object({
   reviewProvider: nonEmpty.optional(),
   /** Reasoning-effort flag template substituted with `{effort}` into `tui`/`headless` (e.g. codex `-c model_reasoning_effort={effort}`, grok `--reasoning-effort {effort}`). Providers without one ignore `models.effort`. */
   effortFlag: nonEmpty.optional(),
+  /**
+   * Whether this CLI can delegate to subagents of its own.
+   *
+   * Only read when a flow asks its builder to lead (`flows.profiles.<name>.lead`). Off by default: claiming a
+   * provider delegates when it cannot produces a worker that spends its first minutes looking for a tool that
+   * does not exist.
+   */
+  subagents: z.boolean().default(false),
 })
 
 const effortLevel = z.enum(['low', 'medium', 'high', 'xhigh'])
+
+/**
+ * The loop's role vocabulary: every place a model is asked to do something, named once.
+ *
+ * `orchestrator`/`builder`/`watcher`/`review` are the four that pick a model list (`models.<role>`); `planner`,
+ * `vote`, `verify` and `dod` are the finer per-issue phases that borrow one of those lists. One vocabulary, so a
+ * profile that pins a role and a phase that runs it are talking about the same thing.
+ */
+export const LOOP_ROLES = ['orchestrator', 'planner', 'vote', 'builder', 'verify', 'review', 'dod', 'watcher'] as const
+export type LoopRole = typeof LOOP_ROLES[number]
+const loopRole = z.enum(LOOP_ROLES)
+
+/** The phases that run per issue. `builder` is the work itself and is never switched off. */
+export const WORKER_ROLES = ['planner', 'vote', 'builder', 'verify', 'review', 'dod'] as const
+export type WorkerRole = typeof WORKER_ROLES[number]
 
 const tiers = z.array(z.array(modelRef).min(1)).min(1)
 
 export const LoopConfigSchema = z.object({
   schemaVersion: z.literal(LOOP_CONFIG_SCHEMA_VERSION).default(LOOP_CONFIG_SCHEMA_VERSION),
+  /**
+   * Defaults for this kind of project (`web-app`, `library`, `monorepo`, `data-pipeline`, `mobile`), merged
+   * **below** every other layer. Anything this file states wins over the preset; the preset only fills silence.
+   */
+  extends: nonEmpty.optional(),
   project: z.object({
     name: nonEmpty,
     repo: z.string().trim().regex(/^[\w.-]+\/[\w.-]+$/, 'must be owner/name'),
     baseBranch: nonEmpty.default('main'),
     root: nonEmpty.default('.'),
-    stateDir: nonEmpty.default('.codex/loop'),
+    /**
+     * Where the loop keeps everything that is NOT the project's configuration: dispatch ledger, delivery
+     * state, contracts, events, agent memory, plans. Meant to be gitignored — the configuration lives at
+     * the repo root as `loop.config.yaml`, versioned; this directory is runtime state, per machine.
+     */
+    stateDir: nonEmpty.default('.ak-loop'),
+    /** Selects the `loop.config.team.<key>.yaml` layer. `$AK_LOOP_TEAM` overrides it; a declared team whose file is missing fails loudly. */
+    team: nonEmpty.optional(),
     setup: z.object({
       /** Argv (no shell — one element per arg, e.g. `[pnpm, install, --frozen-lockfile]`) run once in a freshly created worktree before the worker terminal opens. Unset/empty = skip. */
       command: z.array(nonEmpty).min(1).optional(),
@@ -179,7 +231,18 @@ export const LoopConfigSchema = z.object({
         watcher: modelRef.optional(),
       }).prefault({}),
       pinStrict: z.boolean().default(false),
+      /**
+       * How to choose among the candidates a role's tiers allow.
+       *
+       * `quality-first` (default, today's behaviour): the best available, with failover. `usage-balanced`: spread
+       * across providers by remaining window. `cost-first`: the cheapest that the role can still use — from
+       * `models.cost` when declared, otherwise the last tier, which is where a config already puts its cheap
+       * last resort. Policy never widens the candidate set; it only orders it.
+       */
+      policy: z.enum(['quality-first', 'usage-balanced', 'cost-first']).default('quality-first'),
     }).prefault({}),
+    /** Relative cost per `provider/model`, any unit you like — only the order matters. Used by `policy: cost-first`. */
+    cost: z.record(modelRef, z.number().nonnegative()).default({}),
     /** Quality band when `routing.mode: catalog` (and as soft bias in hybrid). */
     roles: z.object({
       orchestrator: z.object({ quality: z.enum(['frontier', 'balanced', 'fast']).default('frontier'), preferCreators: z.array(nonEmpty).default([]) }).prefault({}),
@@ -244,6 +307,13 @@ export const LoopConfigSchema = z.object({
       post: z.boolean().default(true),
       /** Doctor probe depth for the review CLI (`help` runs `--help`; `none` only checks PATH). */
       doctorProbe: z.enum(['help', 'none']).default('help'),
+      /**
+       * Cost lever: a change at or below this many lines — or touching only documentation — is reviewed by the
+       * cheapest available candidate instead of the strongest. 0 disables it and every review uses the strongest.
+       */
+      smallChangeLines: z.number().int().min(0).default(0),
+      /** Path prefixes that always get the strongest reviewer, whatever the size (contracts, security, migrations). */
+      criticalPaths: z.array(nonEmpty).default([]),
     }).prefault({}),
     merge: z.object({
       auto: z.boolean().default(true),
@@ -350,21 +420,37 @@ export const LoopConfigSchema = z.object({
      * exact command — so the human act is one keystroke instead of an analysis, and at most `maxPerRun`
      * are offered at a time.
      *
-     * It does NOT promote by itself, and that is deliberate: `promoteLearnings` refuses any actor that is
-     * not human (`HUMAN_APPROVAL_REQUIRED`), which is ADR-0019's attestation rule. Memory is read into
-     * every worker brief, so a wrong lesson promoted without a human is a wrong instruction repeated on
-     * every future task. Removing that gate is an ADR amendment, not a config knob.
+     * With `autoPromote.enabled` the retro promotes them itself as `loop-auto` — under the same three
+     * bounds, and never as `human` (ADR-0019, amendment of 2026-09-19). Off by default: turning it on is
+     * the project's decision, and every automatic promotion stays listable and revocable.
      */
     recurrence: z.object({
       /** How many sightings make a lesson a pattern. Below 2 is "it happened once". */
       minSightings: z.number().int().min(2).max(20).default(2),
       maxPerRun: z.number().int().positive().max(20).default(3),
     }).prefault({}),
+    autoPromote: z.object({
+      /** When true, `loop retro` promotes the recurring lessons itself, attributed to `loop-auto`. */
+      enabled: z.boolean().default(false),
+    }).prefault({}),
   }).prefault({}),
   agents: z.object({
     registryPath: nonEmpty.default('agents.registry.yaml'),
     /** When true, missing registry or role entry fails doctor/routing closed. */
     requireRegistry: z.boolean().default(false),
+    /**
+     * Let the retro propose improvements to the instructions of the agents this project installed under
+     * `agents/<id>/`. Off by default; `architect` and `reviewer` are never auto-changed whatever this says, and
+     * publishing anything back to the registry is always a human's gesture.
+     */
+    autoImprove: z.boolean().default(false),
+    /** Argv that runs the agent eval. Without it nothing is adopted: a change that cannot be measured is a guess. */
+    evalCommand: z.array(nonEmpty).default([]),
+    evalTimeoutSec: z.number().int().positive().default(900),
+    /** More lines than this in one proposal and it waits for a human. */
+    maxAutoLines: z.number().int().positive().default(5),
+    /** Bad outcomes per run above which a role is worth improving at all. */
+    minRatio: z.number().min(0).default(0.5),
   }).prefault({}),
   rag: z.object({
     enabled: z.boolean().default(false),
@@ -430,6 +516,301 @@ export const LoopConfigSchema = z.object({
       action: z.enum(['redact', 'warn', 'block']).default('redact'),
     }).prefault({}),
   }).prefault({}),
+  /**
+   * Ceilings on what the loop may spend. A budget that is reached **escalates; it never insists** — the loop
+   * calling the same model again with less headroom is how a bad hour becomes a bad week.
+   */
+  budget: z.object({
+    /**
+     * Percentage of a provider's window the loop may consume, leaving the rest for the human sharing the plan.
+     * 100 (default) changes nothing; 80 means the loop stops using a provider once 80% of the window is gone.
+     */
+    perProvider: z.number().min(1).max(100).default(100),
+    /** Tokens one issue may consume across every model call the loop makes for it. 0 = no ceiling. */
+    perIssueTokens: z.number().int().min(0).default(0),
+  }).prefault({}),
+  /**
+   * Where work comes from when nobody typed it: an alert, a log error, a piece of user feedback. `intake` reads
+   * the declared sources, deduplicates against what it already filed, and creates the issue with its evidence.
+   * It is what closes the cycle — and the only way the `incident` flow starts without a human at a keyboard.
+   */
+  intake: z.object({
+    enabled: z.boolean().default(false),
+    /** Each source is argv printing a JSON array of alerts: `{ id?, title, body?, severity?, url? }`. */
+    sources: z.array(z.object({
+      id: nonEmpty,
+      command: z.array(nonEmpty).min(1),
+      timeoutSec: z.number().int().positive().default(120),
+      /** Labels every issue from this source carries, on top of `intake.labels`. */
+      labels: z.array(nonEmpty).default([]),
+    })).default([]),
+    labels: z.array(nonEmpty).default([]),
+    /** An alert with the same fingerprint inside this window is not filed again. */
+    dedupeWindowHours: z.number().positive().default(168),
+    /** Severity (as the source reports it, lowercased) → `flow:<name>` label, so a P0 can start the incident flow. */
+    flowBySeverity: z.record(nonEmpty, nonEmpty).default({}),
+    maxPerRun: z.number().int().positive().max(50).default(5),
+  }).prefault({}),
+  /**
+   * Dependencies, security and licences, on a schedule — what a bot does from outside, inside the loop and under
+   * the same Definition of Done. A check that has nothing to decide files nothing.
+   */
+  maintain: z.object({
+    enabled: z.boolean().default(false),
+    checks: z.array(z.object({
+      id: nonEmpty,
+      command: z.array(nonEmpty).min(1),
+      timeoutSec: z.number().int().positive().default(600),
+      /** `output` files an issue when the command prints anything; `exit-code` when it exits non-zero. */
+      fileWhen: z.enum(['output', 'exit-code']).default('exit-code'),
+      title: nonEmpty,
+      labels: z.array(nonEmpty).default([]),
+    })).default([]),
+    /** How often the same unresolved finding may be filed again. */
+    dedupeWindowHours: z.number().positive().default(168),
+  }).prefault({}),
+  /**
+   * Which implementation of each connector this project uses. The engine speaks only to the interfaces
+   * (`TrackerConnector`, `ScmConnector`, `RunnerConnector`); adding Jira, GitLab or a cloud sandbox is a new
+   * implementation and a new value here, never a change in tick, deliver or release.
+   */
+  connectors: z.object({
+    tracker: z.enum(['linear']).default('linear'),
+    scm: z.enum(['github']).default('github'),
+    /** `orca` drives Orca's worktrees and terminals; `local` is git worktree + tmux + the system crontab. */
+    runner: z.enum(['orca', 'local']).default('orca'),
+    local: z.object({
+      /** Where `local` puts its worktrees. Relative paths resolve against `project.root`. */
+      worktreeRoot: nonEmpty.default('../.ak-worktrees'),
+      tmuxBin: nonEmpty.default('tmux'),
+      /** Marker comment the harness owns in the crontab; every line it manages carries it. */
+      cronMarker: nonEmpty.default('# ak-harness'),
+    }).prefault({}),
+  }).prefault({}),
+  /**
+   * Promotion and deploy. The loop closes an issue when it merges into `project.baseBranch` — the integration
+   * branch; `release` moves that batch to `releaseBranch` and runs the project's deploy, and it **never** starts
+   * without a human approving the batch. Everything that acts on the world keeps a human in front of it.
+   */
+  release: z.object({
+    enabled: z.boolean().default(false),
+    /** Where the approved batch is promoted to. Must differ from `project.baseBranch`. */
+    branch: nonEmpty.default('production'),
+    /** Deploy argv (no shell), run in `project.root` after the promotion push succeeds. Unset = promotion only. */
+    deploy: z.array(nonEmpty).min(1).optional(),
+    deployTimeoutSec: z.number().int().positive().default(1_800),
+    /** Post-deploy smoke argv. A non-zero exit runs `rollback` (when declared) and escalates. */
+    smoke: z.array(nonEmpty).min(1).optional(),
+    smokeTimeoutSec: z.number().int().positive().default(300),
+    /** When set, release notes for the batch are written here (newest first) and committed before the promotion. */
+    notesFile: nonEmpty.optional(),
+    /** Rollback argv, declared by the project because only the project knows what undoing its deploy means. */
+    rollback: z.array(nonEmpty).min(1).optional(),
+    rollbackTimeoutSec: z.number().int().positive().default(900),
+  }).prefault({}),
+  /**
+   * The roles that run per issue, and the plan the worker starts from.
+   *
+   * The planner and the vote run **in the harness, headless, before dispatch** — the same shape as freezing the
+   * contract. The model writes the plan and writes the votes; the machine counts them and decides. The worker is
+   * only launched once a plan has consensus, so it starts from an approved plan instead of inventing one.
+   */
+  worker: z.object({
+    plan: z.object({
+      enabled: z.boolean().default(false),
+      /** How many agents vote on the plan. */
+      votes: z.number().int().min(1).max(7).default(3),
+      /** How many of them must approve. Default 2 of 3. */
+      approvals: z.number().int().min(1).max(7).default(2),
+      /** Planner → vote → replan cycles before the item becomes a human's problem. Three models disagreeing three times is an ambiguous requirement. */
+      maxCycles: z.number().int().min(1).max(5).default(3),
+      timeoutMs: z.number().int().positive().default(300_000),
+    }).prefault({}),
+    /**
+     * The phases that run for one issue, in order.
+     *
+     * Unset (the default) means every phase answers for itself, from its own block — `worker.plan.enabled`,
+     * `delivery.verify.argv`, `delivery.review`, `dod.items` — which in practice is `['builder', 'review']` and is
+     * exactly what a project that never opted in already has. **Declaring the list makes it the answer**: a phase
+     * not named here does not run, however well configured its own block is. That is the point of declaring it.
+     */
+    roles: z.array(z.enum(WORKER_ROLES)).min(1).optional(),
+  }).prefault({}),
+  /**
+   * The slices of the codebase, each with the one thing that decides it: a label the tracker carries, a file
+   * boundary, and the test that closes it.
+   *
+   * This is the source; a layer's description in the tracker is a reflection of it, never the other way round.
+   * The decomposer reads these to place an issue, the brief tells the worker which test closes its layer, and
+   * the cheap verifier runs that test instead of the whole suite when the issue belongs to one.
+   */
+  layers: z.array(z.object({
+    id: nonEmpty,
+    /** The tracker label that puts an issue in this layer, e.g. `layer:L2`. */
+    label: nonEmpty,
+    description: z.string().trim().default(''),
+    /** Globs the layer owns. A PR for this layer touching anything else is reported, and held when `enforce`. */
+    paths: z.array(nonEmpty).default([]),
+    /** The command that closes this layer. Used by the brief and by the pre-review verifier. */
+    verify: z.string().trim().default(''),
+    /** Off by default: a boundary that blocks before a team has drawn it properly costs more than it protects. */
+    enforce: z.boolean().default(false),
+  })).default([]),
+  /**
+   * Where the PRD, the technical design and the decisions live once a human approves them.
+   *
+   * `file` writes them into the repository, which is what makes them reviewable, diffable and greppable by the
+   * workers that come later. `none` keeps them only in the loop's state. A tracker-document backend is the seam
+   * this leaves open; Orca's CLI has no document command today, so there is nothing honest to implement against.
+   */
+  documents: z.object({
+    backend: z.enum(['file', 'none']).default('file'),
+    prdPath: nonEmpty.default('docs/prd'),
+    designPath: nonEmpty.default('docs/design'),
+  }).prefault({}),
+  /**
+   * The project's half of the Definition of Done: the same list for every issue, and every item provable.
+   *
+   * The issue's half is the frozen contract's `outcomes`. A PR merges only when both lists are proven, and the
+   * proof — a command's output, a changed file, an absent pattern — is written on the PR. There is deliberately no
+   * `manual` kind: what cannot be proven is not a DoD item, it is a wish.
+   */
+  dod: z.object({
+    /** With items declared, the project list is enforced at merge; with none, only the contract outcomes are. */
+    items: z.array(z.object({
+      id: nonEmpty,
+      description: nonEmpty,
+      /**
+       * `command` — argv the worker runs, exit 0 is the proof (the harness never runs it; the worker does, in its
+       * own worktree). `file-changed` — the PR must touch a path matching `glob`. `pattern-absent` — no changed
+       * file may contain `pattern`.
+       */
+      kind: z.enum(['command', 'file-changed', 'pattern-absent']),
+      command: z.array(nonEmpty).min(1).optional(),
+      glob: nonEmpty.optional(),
+      pattern: nonEmpty.optional(),
+      /** Restrict `pattern-absent` / `file-changed` to these path globs; empty = every changed file. */
+      paths: z.array(nonEmpty).default([]),
+    })).default([]),
+    /** Where the worker writes its proofs, relative to the worktree root. */
+    evidenceFile: nonEmpty.default('.ak-loop/dod.json'),
+  }).prefault({}),
+  /**
+   * Knobs the retro is allowed to move by itself, each inside a declared range and justified by a declared metric.
+   *
+   * A knob with no metric is not auto-adjustable: the metric is what proves the change helped, and it is the same
+   * number that reverts it when the next cycle is worse. Never auto-adjustable, whatever this block says: models,
+   * providers, gates and branches — the things that decide who pays and what reaches production.
+   */
+  tuning: z.object({
+    enabled: z.boolean().default(false),
+    /** At most this many knobs move in one retro, so a bad cycle changes one thing and stays explainable. */
+    maxChangesPerRetro: z.number().int().positive().max(10).default(1),
+    /** Commit the edited `loop.config.yaml` with the reason and the evidence. Off by default: committing is the project's call. */
+    commit: z.boolean().default(false),
+    knobs: z.array(z.object({
+      /** Dotted path into this config, e.g. `delivery.review.minSeverity`. Must resolve to a declared field. */
+      path: nonEmpty,
+      /** The metric that justifies moving it, and that reverts it when the next cycle is worse. */
+      metric: z.enum(['review-findings-ratio', 'stuck-count', 'fix-rounds-per-merge', 'escalation-count']),
+      /** Ordered ladder of allowed values, cheapest first. Use this for enums. */
+      values: z.array(z.union([z.string(), z.number()])).min(2).optional(),
+      /** Numeric range. `step` is how far one retro may move it. */
+      min: z.number().optional(),
+      max: z.number().optional(),
+      step: z.number().positive().optional(),
+    })).default([]),
+  }).prefault({}),
+  /**
+   * Named flow profiles — one motor, several kinds of demand. A profile switches on and off what the loop spends:
+   * review strictness and votes, CI babysitting, the human gates, and (as the stages land) the worker's own roles.
+   * A selection rule picks one per issue; unmatched issues get `flows.default`.
+   */
+  flows: z.object({
+    /** Profile used when no rule matches. Must name a key of `profiles` (or `null` for "change nothing"). */
+    default: nonEmpty.optional(),
+    profiles: z.record(nonEmpty, z.object({
+      /** Replaces the named `delivery.review` fields for issues on this flow. Other fields keep the project value. */
+      review: z.object({
+        votes: z.number().int().positive().optional(),
+        minSeverity: z.enum(['nit', 'med', 'high', 'blocker']).optional(),
+        profile: z.enum(['fast', 'full']).optional(),
+        deadlineMs: z.number().int().positive().optional(),
+      }).optional(),
+      merge: z.object({
+        auto: z.boolean().optional(),
+        /** CI babysitting: with checks required, a red check becomes a fix round; without, the review is the gate. */
+        requireChecks: z.boolean().optional(),
+        requireHumanApproval: z.boolean().optional(),
+      }).optional(),
+      maxFixRounds: z.number().int().min(0).optional(),
+      /**
+       * Who runs a role on this flow, and how hard it thinks.
+       *
+       * Precedence is narrow beats broad: the role inside the profile, then the project's config, then the global
+       * one. A `provider`/`model` here **narrows** the role's candidate list to that pin; it never widens it, so a
+       * pin nobody can serve right now falls through to the role's ordinary candidates instead of dispatching
+       * something nobody asked for.
+       */
+      roles: z.partialRecord(loopRole, z.object({
+        provider: nonEmpty.optional(),
+        model: nonEmpty.optional(),
+        effort: effortLevel.optional(),
+        /** Ceiling for one call of this role on this flow. Unset = the role's own default. */
+        timeoutMs: z.number().int().positive().optional(),
+      })).default({}),
+      /**
+       * Per-issue phases this flow switches off (or explicitly back on), overriding `worker.roles`.
+       *
+       * These are the phases of one issue — not the scheduled automations, which are `schedule.*`. `builder` is
+       * the work itself: listing it as `false` is accepted and ignored, because a flow that builds nothing is not
+       * a flow.
+       */
+      stages: z.partialRecord(z.enum(WORKER_ROLES), z.boolean()).default({}),
+      /**
+       * The builder leads instead of typing: it delegates one plan item at a time and integrates the results.
+       *
+       * Only worth asking for where the provider has subagents (`models.providers.<id>.subagents`). Where it does
+       * not, the brief says so plainly and the dispatch record keeps that fact — silently dropping the request
+       * would leave a human reading "lead" in the config and a worker that never led anything.
+       */
+      lead: z.boolean().optional(),
+      /** Free-form note shown wherever the flow is reported, so a costlier gate can explain itself. */
+      reason: nonEmpty.optional(),
+    })).default({}),
+    /**
+     * Rules are evaluated by kind, never by position: **label, then project, then priority**. A label is an explicit
+     * intention and outranks a signal; within one kind the first matching rule wins.
+     */
+    select: z.array(z.object({
+      flow: nonEmpty,
+      anyLabels: z.array(nonEmpty).default([]),
+      projects: z.array(nonEmpty).default([]),
+      priorities: z.array(nonEmpty).default([]),
+    })).default([]),
+  }).prefault({}),
+  /**
+   * Where the loop calls a human. The tracker comment always happens — it is the record; this is the channel
+   * on top of it. Two generic shapes only: a webhook (Slack, Discord, Telegram bots, n8n) and a local command
+   * (system notification, mail CLI). Zero vendor code, so a new destination is configuration, not a release.
+   */
+  notifications: z.object({
+    /** Loop event types that reach the channel. `onEscalate` always does, whatever this list says. */
+    events: z.array(nonEmpty).default(['contract.escalated', 'contract.failed', 'issue.paused', 'stage.paused', 'pr.merge-refused', 'release.waiting']),
+    webhook: z.object({
+      /** Literal URL. Only for the user's global file, which lives outside every repository; in a versioned config use `urlEnv`. */
+      url: nonEmpty.optional(),
+      /** Name of the environment variable holding the URL — the shape a versioned config uses, since this file never holds secrets. */
+      urlEnv: nonEmpty.optional(),
+      method: z.enum(['POST', 'PUT']).default('POST'),
+      /** Extra headers. Values are literal; put a token in `urlEnv` or a proxy instead of writing it here. */
+      headers: z.record(nonEmpty, z.string()).default({}),
+      timeoutMs: z.number().int().positive().default(10_000),
+    }).optional(),
+    /** Argv (no shell). `{summary}`, `{event}`, `{issue}` and `{json}` are substituted per element. */
+    command: z.array(nonEmpty).min(1).optional(),
+    commandTimeoutMs: z.number().int().positive().default(10_000),
+  }).prefault({}),
   schedule: z.object({
     tick: cron.default('*/5 * * * *'),
     deliver: cron.default('*/10 * * * *'),
@@ -437,12 +818,24 @@ export const LoopConfigSchema = z.object({
     retro: cron.optional(),
     /** Linear issue that receives the weekly retro digest comment. */
     retroIssue: nonEmpty.optional(),
+    /** When set, install also manages `<prefix>-observe`: the health scan whose precheck exits 0 only when a human-facing anomaly is new or overdue for a reminder. */
+    observe: cron.optional(),
+    observer: z.object({
+      /** Event window the scan reads, as accepted by `loop observe --since`. */
+      since: nonEmpty.default('24h'),
+      /** An unresolved problem set already notified is repeated at most this often. */
+      reminderHours: z.number().positive().default(2),
+      /** No automation run in this long means the scheduler itself stopped, not that the loop is idle. */
+      schedulerStallMin: z.number().int().positive().default(20),
+      /** A stage lock older than this is presumed abandoned rather than a long run. */
+      staleLockMin: z.number().int().positive().default(30),
+    }).prefault({}),
     precheckTimeoutSec: z.number().int().positive().default(120),
     /** How the Orca automation invokes the harness inside the workspace; `-f <config>` is appended. */
     harnessCommand: nonEmpty.default('ak-harness'),
     /** Orca agent id that runs the automation prompt; default: the watcher role's first available provider, else claude. */
     provider: nonEmpty.optional(),
-    /** Prefix for automation names (`<prefix>-tick`, `<prefix>-deliver`). */
+    /** Prefix for automation names (`<prefix>-tick`, `<prefix>-deliver`, `<prefix>-retro`, `<prefix>-observe`). */
     namePrefix: nonEmpty.default('loop'),
     /**
      * `precheck` (default): the stage runs inside Orca's `--precheck` command and always exits 1, so Orca records the run
@@ -465,6 +858,11 @@ export interface LoadedLoopConfig {
   readonly path: string
   /** Present when a `loop.config.local.yaml` overlay was merged in. */
   readonly localPath?: string
+  /** Present when the user's `~/.agentskit/harness.yaml` layer exists and was merged in underneath the project. */
+  readonly globalPath?: string
+  /** Present when `project.team` (or `$AK_LOOP_TEAM`) selected a `loop.config.team.<key>.yaml` layer. */
+  readonly teamPath?: string
+  readonly team?: string
   readonly root: string
   readonly stateDir: string
   readonly config: LoopConfig
@@ -515,15 +913,71 @@ const parseYamlMapping = (text: string, label: string): Record<string, unknown> 
 
 export const parseLoopConfigText = (text: string, localText?: string): LoopConfig => validateLoopConfig(localText === undefined ? parseYamlMapping(text, LOOP_CONFIG_FILE) : mergeLoopConfig(parseYamlMapping(text, LOOP_CONFIG_FILE), parseYamlMapping(localText, LOOP_LOCAL_CONFIG_FILE)))
 
-export const loadLoopConfig = (path: string = LOOP_CONFIG_FILE): LoadedLoopConfig => {
+/** The four layers, in the order they are merged. The most specific wins, and each one has exactly one owner. */
+export interface LoopConfigLayers {
+  /** `~/.agentskit/harness.yaml` — the user. */
+  readonly globalText?: string
+  /** `loop.config.yaml` — the project. Weighs more than the global layer, which stays untouched. */
+  readonly text: string
+  /** `loop.config.team.<key>.yaml` — the team, for what diverges inside one repository. */
+  readonly teamText?: string
+  /** `loop.config.local.yaml` — this machine. */
+  readonly localText?: string
+}
+
+/** The team key this machine drains for: `$AK_LOOP_TEAM` first, else `project.team` from the layers merged so far. */
+export const resolveTeamKey = (merged: unknown, env: NodeJS.ProcessEnv = process.env): string | null => {
+  const fromEnv = env['AK_LOOP_TEAM']?.trim()
+  if (fromEnv) return fromEnv
+  if (!isPlainObject(merged)) return null
+  const project = merged['project']
+  if (!isPlainObject(project)) return null
+  const team = project['team']
+  return typeof team === 'string' && team.trim() ? team.trim() : null
+}
+
+/** Merge the layers in order — global, project, team, machine — and validate the result once, as one config. */
+export const composeLoopConfig = (layers: LoopConfigLayers): LoopConfig => {
+  const project = parseYamlMapping(layers.text, LOOP_CONFIG_FILE)
+  // The preset is the lowest layer: it fills what nobody declared and overrides nothing.
+  const extendsName = typeof project['extends'] === 'string' ? project['extends'].trim() : ''
+  const preset = extendsName ? presetFor(extendsName) : null
+  if (extendsName && !preset) fail(`Unknown preset "${extendsName}" in ${LOOP_CONFIG_FILE}. Available: ${PRESET_NAMES.join(', ')}.`, 'INVALID_CONFIG')
+  const merged = [
+    preset,
+    layers.globalText === undefined ? null : parseYamlMapping(layers.globalText, GLOBAL_CONFIG_FILE),
+    project,
+    layers.teamText === undefined ? null : parseYamlMapping(layers.teamText, 'loop.config.team.<key>.yaml'),
+    layers.localText === undefined ? null : parseYamlMapping(layers.localText, LOOP_LOCAL_CONFIG_FILE),
+  ].filter((layer): layer is Record<string, unknown> => layer !== null).reduce<unknown>((base, layer) => mergeLoopConfig(base, layer), {})
+  return validateLoopConfig(merged)
+}
+
+const readIfPresent = (path: string): string | undefined => existsSync(path) ? readFileSync(path, 'utf8') : undefined
+
+export const loadLoopConfig = (path: string = LOOP_CONFIG_FILE, env: NodeJS.ProcessEnv = process.env): LoadedLoopConfig => {
   const absolute = resolve(path)
   let text: string
   try { text = readFileSync(absolute, 'utf8') } catch { return fail(`Loop config not found: ${absolute}`, 'INVALID_CONFIG') }
-  const localPath = resolve(dirname(absolute), LOOP_LOCAL_CONFIG_FILE)
-  const localText = existsSync(localPath) ? readFileSync(localPath, 'utf8') : undefined
-  const config = parseLoopConfigText(text, localText)
-  const root = resolve(dirname(absolute), config.project.root)
-  return { path: absolute, root, stateDir: resolve(root, config.project.stateDir), config, configHash: hashJson(config), ...(localText === undefined ? {} : { localPath }) }
+  const directory = dirname(absolute)
+  const globalPath = globalConfigPath(env)
+  const globalText = globalLayerDisabled(env) ? undefined : readIfPresent(globalPath)
+  const localPath = resolve(directory, LOOP_LOCAL_CONFIG_FILE)
+  const localText = readIfPresent(localPath)
+  // The team key can come from any layer this machine already has, so it is resolved from a first merge and the
+  // team file is then inserted at its own precedence — above the project, below this machine's overlay.
+  const team = resolveTeamKey(composeLoopConfig({ ...(globalText === undefined ? {} : { globalText }), text, ...(localText === undefined ? {} : { localText }) }), env)
+  const teamPath = team === null ? null : resolve(directory, teamConfigFile(team))
+  const teamText = teamPath === null ? undefined : readIfPresent(teamPath)
+  if (teamPath !== null && teamText === undefined) fail(`Team "${team}" is declared but ${teamPath} does not exist.`, 'INVALID_CONFIG')
+  const config = composeLoopConfig({ ...(globalText === undefined ? {} : { globalText }), text, ...(teamText === undefined ? {} : { teamText }), ...(localText === undefined ? {} : { localText }) })
+  const root = resolve(directory, config.project.root)
+  return {
+    path: absolute, root, stateDir: resolve(root, config.project.stateDir), config, configHash: hashJson(config),
+    ...(localText === undefined ? {} : { localPath }),
+    ...(globalText === undefined ? {} : { globalPath }),
+    ...(teamText === undefined || teamPath === null || team === null ? {} : { teamPath, team }),
+  }
 }
 
 /** Effective Orca agent id and usage key for a provider. */

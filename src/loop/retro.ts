@@ -5,14 +5,16 @@ import { linearCommentAdd } from '../adapters/linear-orca.js'
 import { orcaAutomationRuns, orcaAutomationsList } from '../adapters/orca-cli.js'
 import { fail } from '../kernel/errors.js'
 import { hashJson } from '../kernel/hash.js'
-import { parseRetro, type LearningRecord } from '../kernel/learning.js'
+import { LOOP_AUTO_ACTOR, parseRetro, type LearningRecord } from '../kernel/learning.js'
 import { loadLoopConfig, type LoadedLoopConfig, type LoopConfig } from './config.js'
 import { contractPath, readStoredContract } from './contract.js'
 import { readCooldowns } from './cooldown.js'
 import { deliveryStatePath, readDeliveryState } from './deliver.js'
 import { LOOP_STAGES, automationName } from './install.js'
-import { learningsReadyToPromote, openLoopMemory, upsertProposedLearnings, upsertProposedLearningsDryRun } from './memory.js'
-import { dispatchRecordPath, readDispatchRecord } from './tick.js'
+import { learningsReadyToPromote, openLoopMemory, promoteLearningsToMemory, upsertProposedLearnings, upsertProposedLearningsDryRun } from './memory.js'
+import { appendLoopEvent, dispatchRecordPath, readDispatchRecord } from './tick.js'
+import { applyTuning, renderTuningMarkdown } from './tuning.js'
+import { improveAgent, roleSignals } from './agent-improvement.js'
 import { queueOwner } from './rotation.js'
 
 /** Newest mtime across an issue's state files, or `null` if none exist. Every field `buildRetroReport` filters
@@ -277,6 +279,12 @@ export interface RetroStageReport {
   readonly digest: string | null
   readonly posted: boolean
   readonly learningsProposed: number
+  /** Learning ids this run promoted by itself as `loop-auto` (empty unless `memory.autoPromote.enabled`). */
+  readonly autoPromoted: readonly string[]
+  /** Knobs this run moved in `loop.config.yaml` (empty unless `tuning.enabled`), each `<path>: <from> → <to>`. */
+  readonly tuned: readonly string[]
+  /** Agent instruction changes this run proposed, each `<role>: <status>` (empty unless `agents.autoImprove`). */
+  readonly agentChanges: readonly string[]
   readonly detail: string
 }
 
@@ -290,7 +298,7 @@ export const runRetroStage = async (input: {
 }): Promise<RetroStageReport> => {
   const loaded = input.loaded ?? loadLoopConfig(input.configPath)
   const issue = loaded.config.schedule.retroIssue ?? null
-  if (!issue) return { status: 'skipped', issue: null, digest: null, posted: false, learningsProposed: 0, detail: 'schedule.retroIssue is not set' }
+  if (!issue) return { status: 'skipped', issue: null, digest: null, posted: false, learningsProposed: 0, autoPromoted: [], tuned: [], agentChanges: [], detail: 'schedule.retroIssue is not set' }
   const report = await buildRetroReport({ loaded, runner: input.runner, since: input.since ?? '7d' })
   const markdown = renderRetroMarkdown(report)
   const learnings = retroLearnings(report, markdown)
@@ -301,7 +309,21 @@ export const runRetroStage = async (input: {
   // Lição que reapareceu o bastante vira sugestão com o comando pronto: o trabalho humano deixa de ser
   // analisar o ledger e passa a ser uma tecla. A decisão continua humana (ADR-0019).
   const ready = learningsReadyToPromote(ledger, loaded.config)
-  const readyNote = ready.length
+  // With autoPromote on, the recurrence bounds ARE the decision (ADR-0019, amendment of 2026-09-19): at least
+  // `minSightings`, at most `maxPerRun`, only the configured categories, and attributed to `loop-auto` — never to
+  // a human who did not act. Every one of them stays listable and revocable.
+  let autoPromoted: readonly string[] = []
+  if (!input.dryRun && loaded.config.memory.autoPromote.enabled && ready.length) {
+    try {
+      const promotion = await promoteLearningsToMemory({ stateDir: loaded.stateDir, config: loaded.config, adapter: memory, ids: ready.map((record) => record.id), actor: LOOP_AUTO_ACTOR, sourceRevision: report.digest })
+      autoPromoted = ready.map((record) => record.id)
+      appendLoopEvent(loaded.stateDir, { at: new Date().toISOString(), type: 'memory.auto-promoted', ids: [...autoPromoted], remembered: promotion.remembered.length, digest: report.digest })
+    } catch (error) { autoPromoted = []; appendLoopEvent(loaded.stateDir, { at: new Date().toISOString(), type: 'memory.auto-promote-failed', error: error instanceof Error ? error.message : String(error) }) }
+  }
+  const promotedNote = autoPromoted.length
+    ? `\n\nPromovido automaticamente (\`loop-auto\`, ${loaded.config.memory.recurrence.minSightings}× ou mais, máx. ${loaded.config.memory.recurrence.maxPerRun} por retro): ${autoPromoted.map((id) => `\`${id}\``).join(', ')}. Para revogar: \`ak-harness loop learning reject --ids ${autoPromoted.join(',')} --by human\`.`
+    : ''
+  const readyNote = autoPromoted.length ? promotedNote : ready.length
     ? `\n\nPadrão recorrente (visto ${loaded.config.memory.recurrence.minSightings}× ou mais) — pronto para promover:\n${ready
         .map((record) => `- \`${record.id}\` (${record.sightings ?? 1}×, ${record.category}) — ${record.text.slice(0, 160)}`)
         .join('\n')}\n\n\`\`\`\nak-harness loop learning promote --ids ${ready.map((record) => record.id).join(',')} --by human\n\`\`\``
@@ -309,16 +331,34 @@ export const runRetroStage = async (input: {
   const memoryNote = memory && loaded.config.memory.enabled
     ? `\n\n## Memory\nenabled · preferOverDocBridge=${loaded.config.memory.preferOverDocBridge} · maxRecall=${loaded.config.memory.maxRecall} · promote with \`ak-harness loop learning promote --ids … --by human\`${readyNote}`
     : '\n\n## Memory\ndisabled (`memory.enabled: false`)'
-  const body = `${markdown}${memoryNote}\n\n<!-- loop:retro:${report.digest} -->`
-  if (input.dryRun) return { status: 'dry-run', issue, digest: report.digest, posted: false, learningsProposed: learnings.length, detail: 'would comment on Linear' }
+  // The loop adjusts its own declared knobs before it reports, so the comment carries the change and its evidence.
+  const tuning = await applyTuning({ loaded, report, runner: input.runner, dryRun: input.dryRun === true })
+  const tuned = tuning.applied.map((decision) => `${decision.path}: ${decision.from} → ${decision.to}`)
+  for (const decision of tuning.applied) appendLoopEvent(loaded.stateDir, { at: new Date().toISOString(), type: decision.action === 'revert' ? 'tuning.reverted' : 'tuning.applied', path: decision.path, from: decision.from, to: decision.to, metric: decision.metric, reason: decision.reason })
+  // The role with the worst outcome-per-run ratio is the one worth improving; below `minRatio` nobody is.
+  const agentChanges: string[] = []
+  if (loaded.config.agents.autoImprove) {
+    const worst = roleSignals(loaded.stateDir, report.window.since ? Date.parse(report.window.since) : 0).find((signal) => signal.ratio >= loaded.config.agents.minRatio)
+    if (worst) {
+      const outcome = await improveAgent({
+        loaded, runner: input.runner, signal: worst, dryRun: input.dryRun === true,
+        note: `${worst.ratio.toFixed(2)} bad outcome(s) per run over ${worst.runs} run(s) in this window (${worst.reviewFindings} finding(s), ${worst.fixRounds} fix round(s), ${worst.escalations} escalation(s), ${worst.contraryVotes} contrary vote(s)). Prefer the smallest change that removes the most common cause.`,
+      })
+      agentChanges.push(`${worst.role}: ${outcome.status} — ${outcome.detail}`)
+      if (!input.dryRun) appendLoopEvent(loaded.stateDir, { at: new Date().toISOString(), type: `agent.${outcome.status}`, role: worst.role, agent: outcome.proposal?.agentId ?? null, detail: outcome.detail })
+    }
+  }
+  const agentNote = agentChanges.length ? `\n\n## Agents\n${agentChanges.map((change) => `- ${change}`).join('\n')}` : ''
+  const body = `${markdown}${memoryNote}${renderTuningMarkdown(tuning)}${agentNote}\n\n<!-- loop:retro:${report.digest} -->`
+  if (input.dryRun) return { status: 'dry-run', issue, digest: report.digest, posted: false, learningsProposed: learnings.length, autoPromoted: [], tuned: [], agentChanges: [], detail: 'would comment on Linear' }
   try {
     await linearCommentAdd(input.runner, {
       issue,
       body: body.slice(0, 60_000),
       dedupeKey: `retro:${report.window.since.slice(0, 10)}:${report.digest}`,
     }, { bin: loaded.config.orca.bin, workspaceId: loaded.config.linear.workspaceId, orca: { timeoutMs: loaded.config.orca.timeoutMs } })
-    return { status: 'ok', issue, digest: report.digest, posted: true, learningsProposed: learnings.length, detail: `commented on ${issue}` }
+    return { status: 'ok', issue, digest: report.digest, posted: true, learningsProposed: learnings.length, autoPromoted, tuned, agentChanges, detail: `commented on ${issue}${autoPromoted.length ? ` · promoted ${autoPromoted.length} learning(s) as loop-auto` : ''}` }
   } catch (error) {
-    return { status: 'failed', issue, digest: report.digest, posted: false, learningsProposed: learnings.length, detail: error instanceof Error ? error.message : String(error) }
+    return { status: 'failed', issue, digest: report.digest, posted: false, learningsProposed: learnings.length, autoPromoted, tuned, agentChanges, detail: error instanceof Error ? error.message : String(error) }
   }
 }

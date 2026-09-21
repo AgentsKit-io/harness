@@ -21,8 +21,8 @@ const root = mkdtempSync(join(tmpdir(), 'agentskit-harness-watch-sigint-'))
 try {
   const exampleYaml = readFileSync(join(process.cwd(), 'loop.config.example.yaml'), 'utf8').replace('person: my-linear-display-name', 'person: test-person')
   writeFileSync(join(root, 'loop.config.yaml'), exampleYaml)
-  mkdirSync(join(root, '.codex', 'loop', 'issues', 'ENG-1'), { recursive: true })
-  writeFileSync(join(root, '.codex', 'loop', 'issues', 'ENG-1', 'dispatch.json'), JSON.stringify({ issue: 'ENG-1', worktreeId: 'w', worktree: 'w', branch: 'b', terminal: null, provider: 'claude', model: 'opus', contractDigest: 'd', leaseKey: 'k', leaseId: 'l', dispatchedAt: '2026-01-01T00:00:00.000Z', url: 'https://example.com', briefDigest: 'd', skills: [], setup: null, effort: 'medium', initialRemainingPercent: null, worktreePath: root }))
+  mkdirSync(join(root, '.ak-loop', 'issues', 'ENG-1'), { recursive: true })
+  writeFileSync(join(root, '.ak-loop', 'issues', 'ENG-1', 'dispatch.json'), JSON.stringify({ issue: 'ENG-1', worktreeId: 'w', worktree: 'w', branch: 'b', terminal: null, provider: 'claude', model: 'opus', contractDigest: 'd', leaseKey: 'k', leaseId: 'l', dispatchedAt: '2026-01-01T00:00:00.000Z', url: 'https://example.com', briefDigest: 'd', skills: [], setup: null, effort: 'medium', initialRemainingPercent: null, worktreePath: root }))
 
   const cli = join(process.cwd(), 'dist', 'cli.js')
   const child = spawn(process.execPath, [cli, 'loop', 'watch', '--issue', 'ENG-1', '--interval', '1', '--no-live-pr', '-f', join(root, 'loop.config.yaml')], { stdio: 'ignore' })

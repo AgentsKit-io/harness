@@ -1,4 +1,4 @@
-import { compareVersions, orcaAccountList, orcaAgentHooks, orcaDiagnosticsMemory, orcaStatus, orcaVersion, orcaWorktrees, type OrcaStatus, type OrcaWorktree } from '../adapters/orca-cli.js'
+import { compareVersions, orcaAccountList, orcaAgentHooks, orcaAutomationsList, orcaDiagnosticsMemory, orcaStatus, orcaVersion, orcaWorktrees, type OrcaStatus, type OrcaWorktree } from '../adapters/orca-cli.js'
 import { detectProviders, remainingUsagePercent, undeclaredOrcaProviders, type ProviderAvailability, type ProviderSpec } from '../adapters/providers.js'
 import { fetchLinearQueue, type LoopIssue } from '../adapters/linear-orca.js'
 import { findExecutable, type CommandRunner } from '../adapters/command.js'
@@ -7,6 +7,10 @@ import { existsSync, readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { HarnessError } from '../kernel/errors.js'
 import { MODEL_ROLES } from '../kernel/model-policy.js'
+import { automationSpecs, reconcileAutomations } from './automations.js'
+import { loadAgentRegistry } from './agent-registry.js'
+import { unknownFlowReferences } from './flows.js'
+import { notificationsConfigured } from './notify.js'
 import { loadLoopConfig, providerIdentity, type LoadedLoopConfig, type LoopConfig } from './config.js'
 import { activeCooldowns, readCooldowns } from './cooldown.js'
 import { resolveCatalogCandidates } from './model-catalog/index.js'
@@ -125,7 +129,7 @@ export const runLoopDoctor = async (input: LoopDoctorInput): Promise<LoopDoctorR
   const running = countRunningWorkers(worktrees)
   const orcaMemory = await orcaDiagnosticsMemory(input.runner, orcaOptions)
   const machine = assessSlots({ machine: config.machine, running, platform: input.platform, orcaMemory })
-  push('machine.slots', machine.free > 0 ? 'passed' : 'warning', `${machine.free} free of ${machine.maxAgents} (running ${running}, cpus ${machine.sample.cpus}, load ${machine.sample.load1PerCpuPercent}%, free RAM ${machine.freeRamGb} GB)${machine.reasons.length ? `; ${machine.reasons.join('; ')}` : ''}`)
+  push('machine.slots', machine.free > 0 ? 'passed' : 'warning', `${machine.free} free of ${machine.maxAgents} (running ${running}, cpus ${machine.sample.cpus}, load ${machine.sample.loadAvailable === false ? 'n/a' : `${machine.sample.load1PerCpuPercent}%`}, free RAM ${machine.freeRamGb} GB)${machine.reasons.length ? `; ${machine.reasons.join('; ')}` : ''}`)
 
   let queue: readonly LoopIssue[] = []
   let queueError: string | null = null
@@ -195,6 +199,17 @@ export const runLoopDoctor = async (input: LoopDoctorInput): Promise<LoopDoctorR
     }
   }
 
+  // The local runner is git + tmux + the system crontab. On Windows there is no tmux and no crontab, and the
+  // failure would otherwise arrive as a raw ENOENT from the middle of a dispatch — after the worktree exists.
+  if (config.connectors.runner === 'local') {
+    const platform = input.platform ?? process.platform
+    const env = input.env ?? process.env
+    const missing = ['git', config.connectors.local.tmuxBin, 'crontab'].filter((bin) => !findExecutable(bin, env, platform))
+    if (platform === 'win32') push('runner.local', 'failed', 'connectors.runner is "local", which needs tmux and the system crontab; neither exists on Windows — use the Orca runner, or run the loop under WSL')
+    else if (missing.length) push('runner.local', 'failed', `connectors.runner is "local" but ${missing.join(', ')} ${missing.length === 1 ? 'is' : 'are'} not on PATH`)
+    else push('runner.local', 'passed', `git, ${config.connectors.local.tmuxBin} and crontab present · worktrees under ${config.connectors.local.worktreeRoot}`)
+  }
+
   const reviewCli = config.delivery.review.cli
   const reviewBin = findExecutable(reviewCli, input.env ?? process.env, input.platform ?? process.platform)
   // Warning (not failed): tick can still dispatch; deliver waits until the review CLI is available.
@@ -212,6 +227,51 @@ export const runLoopDoctor = async (input: LoopDoctorInput): Promise<LoopDoctorR
   if (config.memory.enabled) {
     push('memory', 'passed', `enabled · backend ${config.memory.backend} · store ${config.project.stateDir}/${config.memory.storePath} · preferOverDocBridge=${config.memory.preferOverDocBridge}`)
   }
+
+  // An installed agent is a directory the project owns. A registry that points at one which is not there sends
+  // every run for that role to the provider alone — and nothing says so until someone reads the outcomes.
+  const registryPath = resolve(loaded.root, config.agents.registryPath)
+  if (existsSync(registryPath)) {
+    try {
+      const registry = loadAgentRegistry(registryPath)
+      const installed = Object.entries(registry.agents).filter(([, entry]) => entry.path)
+      const rows = installed.map(([agentId, entry]) => {
+        const dir = resolve(loaded.root, entry.path ?? '')
+        if (!existsSync(dir)) return { agentId, ok: false, detail: `${entry.path} is not in the repository` }
+        const instructions = resolve(dir, entry.instructions)
+        const markdown = /\.(?:md|markdown)$/i.test(entry.instructions)
+        if (!existsSync(instructions)) return { agentId, ok: false, detail: `${entry.path}/${entry.instructions} is not there` }
+        // Code is a perfectly good agent; it only means the harness proposes improvements instead of applying them.
+        return { agentId, ok: true, detail: `${entry.path}/${entry.instructions}${markdown ? '' : ' (code — improvements go to a human)'}` }
+      })
+      const broken = rows.filter((row) => !row.ok)
+      if (broken.length) push('agents.registry', 'failed', broken.map((row) => `${row.agentId}: ${row.detail}`).join('; '))
+      else if (rows.length) push('agents.registry', 'passed', rows.map((row) => `${row.agentId} → ${row.detail}`).join(' · '))
+    } catch (error) { push('agents.registry', 'failed', `${config.agents.registryPath}: ${message(error)}`) }
+  }
+
+  // A flow named by a rule but never defined changes nothing, silently — the worst shape a config typo can take.
+  const unknownFlows = unknownFlowReferences(config)
+  if (unknownFlows.length) push('flows.profiles', 'failed', `flows reference undefined profile(s): ${unknownFlows.join(', ')} — declare them under flows.profiles or remove the rule`)
+  else if (Object.keys(config.flows.profiles).length) push('flows.profiles', 'passed', `${Object.keys(config.flows.profiles).length} profile(s), ${config.flows.select.length} selection rule(s), default ${config.flows.default ?? 'none'}`)
+
+  if (notificationsConfigured(config)) {
+    const webhook = config.notifications.webhook
+    const missingEnv = webhook?.urlEnv && !(input.env ?? process.env)[webhook.urlEnv]
+    push('notifications', missingEnv ? 'warning' : 'passed', missingEnv
+      ? `webhook is configured through ${webhook?.urlEnv}, which is not set in this environment — escalations would only reach the tracker`
+      : `${[webhook ? 'webhook' : null, config.notifications.command ? 'command' : null].filter(Boolean).join(' + ')} · ${config.notifications.events.length} event type(s)`)
+  }
+
+  // Drift between the config and Orca's live automations is invisible to every other check: the loop looks healthy
+  // while the scheduler runs a command nobody declares any more. Doctor only reports it; `loop install` fixes it.
+  try {
+    const automations = await orcaAutomationsList(input.runner, orcaOptions)
+    const rows = reconcileAutomations(automationSpecs(loaded, config.schedule.provider ?? ''), automations, config)
+    const drifted = rows.filter((row) => row.state !== 'in-sync')
+    if (!drifted.length) push('automations.drift', 'passed', `${rows.length} automation(s) match the config`)
+    else push('automations.drift', 'warning', `${drifted.map((row) => `${row.name}: ${row.state}${row.fields.length ? ` (${row.fields.join(', ')})` : ''}`).join('; ')} — reconcile with "${config.schedule.harnessCommand} loop install -f ${loaded.path}"`)
+  } catch (error) { push('automations.drift', 'warning', `automation list unavailable: ${message(error)}`) }
 
   const failed = checks.some((check) => check.status === 'failed')
   return {

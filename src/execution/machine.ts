@@ -26,7 +26,9 @@ const linuxSwap = (): number | undefined => {
 
 export const sampleMachine = (): MachineSample => {
   const cpus = Math.max(1, cpuInfo().length)
-  const load1 = Math.max(0, loadavg()[0] ?? 0)
+  // Windows has no load average: `os.loadavg()` returns [0, 0, 0] there, always.
+  const loadAvailable = process.platform !== 'win32'
+  const load1 = loadAvailable ? Math.max(0, loadavg()[0] ?? 0) : 0
   const memory = Math.max(0, Math.min(100, (1 - freemem() / Math.max(1, totalmem())) * 100))
   const swapUsedPercent = linuxSwap()
   return {
@@ -34,6 +36,7 @@ export const sampleMachine = (): MachineSample => {
     cpus,
     load1: Number(load1.toFixed(4)),
     load1PerCpuPercent: Number(Math.min(100, (load1 / cpus) * 100).toFixed(2)),
+    loadAvailable,
     memoryUsedPercent: Number(memory.toFixed(2)),
     rssBytes: process.memoryUsage().rss,
     ...(swapUsedPercent === undefined ? {} : { swapUsedPercent }),
@@ -60,8 +63,11 @@ export const summarizeMachine = (samples: readonly MachineSample[], sampleInterv
 export const adaptiveConcurrency = (configured: number, sample: MachineSample, limits: Partial<MachineThresholds> = {}): number => {
   if (!Number.isInteger(configured) || configured < 1) throw new Error('configured concurrency must be a positive integer.')
   const limit = thresholds(limits)
-  const critical = sample.load1PerCpuPercent >= limit.criticalPercent || sample.memoryUsedPercent >= limit.criticalPercent || (sample.swapUsedPercent ?? 0) >= limit.criticalPercent || sample.memoryPressure === 'critical'
-  const warning = sample.load1PerCpuPercent >= limit.warningPercent || sample.memoryUsedPercent >= limit.warningPercent || (sample.swapUsedPercent ?? 0) >= limit.warningPercent || sample.memoryPressure === 'warning'
+  // A load average nobody measured is not a load of zero: on a platform without one, the decision rests on the
+  // signals that are real (memory, swap, the sampler's own pressure reading) instead of a fabricated calm.
+  const load = sample.loadAvailable === false ? null : sample.load1PerCpuPercent
+  const critical = (load !== null && load >= limit.criticalPercent) || sample.memoryUsedPercent >= limit.criticalPercent || (sample.swapUsedPercent ?? 0) >= limit.criticalPercent || sample.memoryPressure === 'critical'
+  const warning = (load !== null && load >= limit.warningPercent) || sample.memoryUsedPercent >= limit.warningPercent || (sample.swapUsedPercent ?? 0) >= limit.warningPercent || sample.memoryPressure === 'warning'
   if (critical) return 1
   if (warning) return Math.min(configured, 2)
   return configured

@@ -2,6 +2,7 @@ import { MODEL_ROLES, type ModelRole } from '../kernel/model-policy.js'
 import type { ProviderAvailability } from '../adapters/providers.js'
 import { remainingUsagePercent, usageRankTuple } from '../adapters/providers.js'
 import { parseModelRef, providerIdentity, renderTuiCommand, tiersFor, type EffortLevel, type LoopConfig, type ModelReference } from './config.js'
+import { applyRoutingPolicy, withinProviderBudget } from './budget.js'
 
 export interface RoutingSkip { readonly tier: number; readonly ref: ModelReference; readonly reasons: readonly string[] }
 
@@ -126,9 +127,12 @@ const applyPin = (
 export const selectModel = (
   config: LoopConfig,
   role: ModelRole,
-  availability: readonly ProviderAvailability[],
+  rawAvailability: readonly ProviderAvailability[],
   extraCandidates: readonly ModelReference[] = [],
 ): RoutingDecision => {
+  // The per-provider budget is applied to availability, not to the result: a provider over its ceiling is
+  // unavailable for the loop, with the reason recorded, exactly like one that is rate-limited.
+  const availability = withinProviderBudget(config, rawAvailability)
   const byId = new Map(availability.map((item) => [item.id, item]))
   const mode = config.models.routing.mode
   const { ranked: fromYaml, skipped } = availableFromTiers(config, role, availability)
@@ -150,8 +154,8 @@ export const selectModel = (
   }
 
   if (mode === 'tiers') {
-    const first = fromYaml[0] ?? extras[0] ?? null
-    return { role, selected: first ?? null, skipped }
+    const ordered = applyRoutingPolicy(config, [...fromYaml, ...extras])
+    return { role, selected: ordered[0] ?? null, skipped }
   }
 
   if (mode === 'hybrid') {
@@ -207,9 +211,10 @@ export const routeAllRoles = (
 export const rankModels = (
   config: LoopConfig,
   role: ModelRole,
-  availability: readonly ProviderAvailability[],
+  rawAvailability: readonly ProviderAvailability[],
   extraCandidates: readonly ModelReference[] = [],
 ): readonly RankedModel[] => {
+  const availability = withinProviderBudget(config, rawAvailability)
   const byId = new Map(availability.map((item) => [item.id, item]))
   const { ranked, skipped } = availableFromTiers(config, role, availability)
   if (config.models.routing.pin[role]) {
@@ -227,7 +232,7 @@ export const rankModels = (
     extraIndex += 1
   }
   const mode = config.models.routing.mode
-  if (mode === 'tiers') return [...ranked, ...extras]
+  if (mode === 'tiers') return applyRoutingPolicy(config, [...ranked, ...extras])
   if (mode === 'hybrid') {
     const byTier = new Map<number, RankedModel[]>()
     for (const item of ranked) {
@@ -242,9 +247,9 @@ export const rankModels = (
       ordered.push(...pool)
     }
     extras.sort((left, right) => compareUsageAware(config, left, right, byId))
-    return [...ordered, ...extras]
+    return applyRoutingPolicy(config, [...ordered, ...extras])
   }
   const pool = [...ranked, ...extras]
   pool.sort((left, right) => compareUsageAware(config, left, right, byId))
-  return pool
+  return applyRoutingPolicy(config, pool)
 }

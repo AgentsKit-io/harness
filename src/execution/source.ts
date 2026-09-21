@@ -11,6 +11,19 @@ const git = async (root: string, args: readonly string[]): Promise<string> => {
   try { return (await execFileAsync('git', ['-C', root, ...args], { encoding: 'utf8' })).stdout.trim() } catch { return '' }
 }
 
+/**
+ * Whether a `git status --porcelain` line refers to exactly this repository-relative path.
+ *
+ * Git always prints forward slashes and quotes a path with unusual characters; `path.relative()` returns the
+ * platform's separator. Comparing the two directly worked on POSIX and never matched on Windows, where it made
+ * the harness's own config file look like a dirty worktree and refused every plan.
+ */
+export const statusLineIsPath = (line: string, relativePath: string): boolean => {
+  const wanted = relativePath.replaceAll('\\', '/')
+  if (!wanted) return false
+  return line.endsWith(` ${wanted}`) || line.endsWith(` "${wanted}"`)
+}
+
 export const sourceSnapshot = async (root: string, stateDir: string): Promise<SourceSnapshot> => {
   const revision = await git(root, ['rev-parse', 'HEAD'])
   if (!revision) fail('Current-source evidence requires a Git repository with a committed HEAD.', 'GIT_REQUIRED')

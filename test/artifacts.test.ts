@@ -108,3 +108,21 @@ it('resumeStateFromArtifacts ignores non-phase artifacts and non-pass phase deci
   expect(resume.completed['implement']).toMatchObject({ outputs: { change: 'v2' } })
   expect(resume.outputs).toEqual({ change: 'v2' })
 })
+
+it('rejects an artifactId containing ":", which NTFS would turn into an alternate data stream', () => {
+  // `artifacts/plan:1.json` writes a stream of `plan` on NTFS: existsSync agrees, readdirSync never lists it,
+  // and FileArtifactStore.list() loses the artifact without a word. Fail at validation instead, everywhere.
+  const valid = createArtifactEnvelope({ ...base, artifactType: 'plan', payload: { detail: 'x' } })
+  expect(() => validateArtifactEnvelope({ ...valid, artifactId: 'plan:1' })).toThrow(/artifactId is invalid/)
+  expect(() => createArtifactEnvelope({ ...base, artifactType: 'plan', payload: { detail: 'x' }, artifactId: 'plan:1' })).toThrow(/artifactId is invalid/)
+  expect(() => new FileArtifactStore(mkdtempSync(join(tmpdir(), 'agentskit-harness-artifact-ads-'))).read('run-1', 'plan:1')).toThrow(/artifactId is invalid/)
+  // The characters a filename can carry unchanged still pass.
+  expect(createArtifactEnvelope({ ...base, artifactType: 'plan', payload: { detail: 'x' }, artifactId: 'plan.1_v2-final' }).artifactId).toBe('plan.1_v2-final')
+})
+
+it('round-trips an explicit artifactId through the filesystem, listing it back unchanged', () => {
+  const stateDir = mkdtempSync(join(tmpdir(), 'agentskit-harness-artifact-roundtrip-'))
+  const store = new FileArtifactStore(stateDir)
+  const artifact = store.write(createArtifactEnvelope({ ...base, artifactType: 'plan', payload: { detail: 'x' }, artifactId: 'plan.1-v2' }))
+  expect(store.list(base.runId).map((item) => item.artifactId)).toEqual([artifact.artifactId])
+})

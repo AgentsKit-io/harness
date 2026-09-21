@@ -1,16 +1,18 @@
 import { appendFileSync, closeSync, existsSync, mkdirSync, openSync, readFileSync, renameSync, statSync, unlinkSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import type { CommandRunner } from '../adapters/command.js'
-import { createLinearTrackingAdapter, fetchLinearIssue, fetchLinearQueue, linearAssigneeSet, linearCommentAdd, linearLabelAdd, linearLabelRemove, type LinearIssueDetail, type LoopIssue } from '../adapters/linear-orca.js'
+import { fetchLinearQueue, linearLabelRemove, type LinearIssueDetail, type LoopIssue } from '../adapters/linear-orca.js'
+import { resolveConnectors, type TrackerConnector } from './connectors.js'
 import { createOrcaDispatchPlan } from '../adapters/orca.js'
 import { orcaAccountList, orcaAgentHooks, orcaDiagnosticsMemory, orcaTerminalCreate, orcaTerminalSend, orcaTerminalWait, orcaWorktreeCreate, orcaWorktreeRemove, orcaWorktrees, type OrcaWorktree } from '../adapters/orca-cli.js'
 import { detectProviders, type ProviderAvailability } from '../adapters/providers.js'
 import { createDispatchLedger, type DispatchLedger, type DispatchLease } from '../execution/coordination.js'
 import { HarnessError } from '../kernel/errors.js'
 import { renderWorkerBrief } from './brief.js'
+import { readStoredPlan, runPlanWithVotes, writeStoredPlan, type StoredPlan } from './plan-vote.js'
 import { writeJsonAtomic } from './fs-atomic.js'
 import { loadPinnedSkills, skillRefs, skillDigest, type PinnedSkillRef } from './skills.js'
-import { loadLoopConfig, type EffortLevel, type LoadedLoopConfig, type LoopConfig, type ModelReference } from './config.js'
+import { loadLoopConfig, providerIdentity, type EffortLevel, type LoadedLoopConfig, type LoopConfig, type ModelReference } from './config.js'
 import { assessContract, contractIsFresh, extractResetsAt, generateContract, readStoredContract, resolveDocContext, writeStoredContract, type StoredContract } from './contract.js'
 import { activeCooldowns, readCooldowns } from './cooldown.js'
 import { countRunningWorkers, providerSpecs } from './doctor.js'
@@ -23,6 +25,8 @@ import { assessSlots, type SlotAssessment, type SlotInput } from './slots.js'
 import { markProviderExhausted } from './cooldown.js'
 import { advanceQueueOwner, countRotationBlockingLeases, queueOwner } from './rotation.js'
 import { createLoopEventBus, loadLoopPlugins, type LoopEventBus, type LoopEventPayload } from './event-bus.js'
+import { attachNotifier } from './notify.js'
+import { applyRoleSettings, resolveFlow, resolveRoleSettings, workerPhaseEnabled } from './flows.js'
 
 export type TickOutcome = 'dispatched' | 'dry-run' | 'skipped' | 'escalated' | 'failed'
 
@@ -66,6 +70,12 @@ export interface DispatchRecordFile {
   readonly url: string
   readonly briefDigest: string
   readonly skills: readonly PinnedSkillRef[]
+  /**
+   * How this worker was told to work when its flow asked it to lead: `subagents` when the provider has them,
+   * `alone` when it does not. Absent when no flow asked. Recorded because a lead that never led is otherwise
+   * invisible to whoever reads the config and expects delegation.
+   */
+  readonly delegation?: 'subagents' | 'alone'
   readonly setup: { readonly command: readonly string[]; readonly exitCode: number | null; readonly durationMs: number; readonly timedOut: boolean } | null
   readonly effort: EffortLevel
   /** Builder provider's remaining Orca usage percent at dispatch time (`resilience.maxUsageDeltaPercent` cost guard); `null` when usage was unknown. */
@@ -78,6 +88,9 @@ export interface DispatchRecordFile {
    * judged by. Absent on records written before this field existed; readers fall back to no override.
    */
   readonly labels?: readonly string[]
+  /** Project and priority at dispatch time, frozen for the same reason as `labels`: they select the flow profile (`flows.select`), and the gate an item is judged by must not move while it runs. */
+  readonly project?: string | null
+  readonly priorityLabel?: string | null
 }
 
 export interface TickInput {
@@ -188,7 +201,7 @@ const acquireEventsLock = (lockFilePath: string): number | null => {
   return null
 }
 
-export const appendLoopEvent = (stateDir: string, event: Record<string, unknown>, bus?: LoopEventBus, now: () => Date = () => new Date()): void => {
+export const appendLoopEvent = (stateDir: string, event: LoopEventPayload, bus?: LoopEventBus, now: () => Date = () => new Date()): void => {
   const path = join(stateDir, 'events.ndjson')
   mkdirSync(dirname(path), { recursive: true })
   const lockFilePath = `${path}.lock`
@@ -269,12 +282,22 @@ export const precheckTick = async (input: Omit<TickInput, 'dryRun' | 'maxDispatc
   return { work: state.slots.free > 0 && Boolean(builder) && state.candidates.length > 0, reason, free: state.slots.free, candidates: state.candidates.length }
 }
 
-const escalate = async (input: { readonly runner: CommandRunner; readonly config: LoopConfig; readonly issue: LinearIssueDetail; readonly stored: StoredContract; readonly dryRun: boolean }): Promise<void> => {
+const escalate = async (input: { readonly tracker: TrackerConnector; readonly config: LoopConfig; readonly issue: LinearIssueDetail; readonly stored: StoredContract; readonly dryRun: boolean }): Promise<void> => {
   if (input.dryRun) return
-  const write = { bin: input.config.orca.bin, workspaceId: input.config.linear.workspaceId, orca: { timeoutMs: input.config.orca.timeoutMs } }
   const body = `**Loop: not dispatched — needs information**\n\nThe orchestrator (${input.stored.provider}/${input.stored.model}) could not freeze a verifiable contract:\n${input.stored.assessment.reasons.map((reason) => `- ${reason}`).join('\n')}\n\nIntent it inferred: ${input.stored.contract.intent}\n\nAnswer in this issue (or edit the description with acceptance criteria) and remove the \`${input.config.linear.needsInfoLabel}\` label; the loop will re-evaluate on the next tick.\n\n<!-- loop:needs-info:${input.stored.digest} -->`
-  await linearCommentAdd(input.runner, { issue: input.issue.identifier, body, dedupeKey: `needs-info:${input.issue.identifier}:${input.stored.digest}` }, write)
-  await linearLabelAdd(input.runner, { issue: input.issue.identifier, labels: [input.config.linear.needsInfoLabel] }, write)
+  await input.tracker.comment({ issue: input.issue.identifier, body, dedupeKey: `needs-info:${input.issue.identifier}:${input.stored.digest}` })
+  await input.tracker.addLabels(input.issue.identifier, [input.config.linear.needsInfoLabel])
+}
+
+/**
+ * The plan the votes could not agree on becomes a human's problem, with the objections still standing attached.
+ * Three models disagreeing three times is an ambiguous requirement, not a retry.
+ */
+const escalatePlan = async (input: { readonly tracker: TrackerConnector; readonly config: LoopConfig; readonly issue: LinearIssueDetail; readonly plan: StoredPlan; readonly dryRun: boolean }): Promise<void> => {
+  if (input.dryRun) return
+  const body = `**Loop: not dispatched — the plan did not reach consensus**\n\n${input.plan.votes.filter((vote) => vote.vote === 'approve').length} of ${input.plan.votes.length} agents approved after ${input.plan.cycles} cycle(s); ${input.config.worker.plan.approvals} are required.\n\nObjections still standing:\n${input.plan.unresolved.map((objection) => `- ${objection}`).join('\n') || '- none recorded'}\n\nProposed plan: ${input.plan.plan.summary}\n\nSettle the ambiguity in this issue and remove the \`${input.config.linear.needsInfoLabel}\` label; the loop will re-plan on the next tick.\n\n<!-- loop:no-consensus:${input.plan.digest} -->`
+  await input.tracker.comment({ issue: input.issue.identifier, body, dedupeKey: `no-consensus:${input.issue.identifier}:${input.plan.digest}` })
+  await input.tracker.addLabels(input.issue.identifier, [input.config.linear.needsInfoLabel])
 }
 
 export const runTick = async (input: TickInput): Promise<TickReport> => {
@@ -290,6 +313,9 @@ export const runTick = async (input: TickInput): Promise<TickReport> => {
     const { errors } = await loadLoopPlugins(loaded.root, config.plugins.modules, bus)
     for (const failure of errors) notes.push(`plugin ${failure.path} failed to load: ${failure.error}`)
   }
+  // The configured escalation channels listen on the same bus as any plugin, and every exit of this function waits
+  // for the sends in flight: a stage that ends before its notification leaves is a human who never hears about it.
+  const flushNotifications = attachNotifier(bus, { config, runner: input.runner, ...(input.env === undefined ? {} : { env: input.env }) })
   const state = await gatherLoopState({ loaded, runner: input.runner, ledger, env: input.env, platform: input.platform, now, onlyIssue: input.onlyIssue, machine: input.machine })
   const orchestrator = state.routing['orchestrator'] ?? { role: 'orchestrator', selected: null, skipped: [] }
   // `gatherLoopState` already resolved catalog candidates for every role (including orchestrator) to compute
@@ -305,12 +331,13 @@ export const runTick = async (input: TickInput): Promise<TickReport> => {
   const builder = state.routing['builder']?.selected ?? null
   const summary = { orchestrator: orchestrator.selected ? `${orchestrator.selected.provider}/${orchestrator.selected.model}` : null, builder: builder ? `${builder.provider}/${builder.model}` : null }
   const base = { generatedAt: now().toISOString(), dryRun, slots: { maxAgents: state.slots.maxAgents, running: state.slots.running, free: state.slots.free, reasons: state.slots.reasons }, routing: summary, queue: { total: state.queue.length, busy: [...state.busy], candidates: state.candidates.map((issue) => issue.identifier) } }
-  if (!builder) { notes.push('no builder provider available; nothing dispatched'); return { ...base, status: 'blocked', results, notes } }
-  if (state.slots.free <= 0) { notes.push(`no free slot (${state.slots.running}/${state.slots.maxAgents})`); return { ...base, status: 'idle', results, notes } }
+  if (!builder) { notes.push('no builder provider available; nothing dispatched'); await flushNotifications(); return { ...base, status: 'blocked', results, notes } }
+  if (state.slots.free <= 0) { notes.push(`no free slot (${state.slots.running}/${state.slots.maxAgents})`); await flushNotifications(); return { ...base, status: 'idle', results, notes } }
   if (!state.candidates.length) {
     const rotation = dryRun ? { owner: state.person, advanced: false } : advanceQueueOwner(loaded, { queueEmpty: state.queue.length === 0, activeLeases: countRotationBlockingLeases(loaded, state.leases), now: now() })
     if (rotation.advanced) notes.push(`queue drained for ${state.person}; switched to ${rotation.owner}`)
     else notes.push('queue has no dispatchable candidate')
+    await flushNotifications()
     return { ...base, status: 'idle', results, notes }
   }
 
@@ -318,8 +345,9 @@ export const runTick = async (input: TickInput): Promise<TickReport> => {
   const startedAt = Date.now()
   const timeBudgetMs = input.budgetMs ?? Number.POSITIVE_INFINITY
   const remainingMs = (): number => timeBudgetMs - (Date.now() - startedAt)
-  const write = { bin: config.orca.bin, workspaceId: config.linear.workspaceId, orca: { timeoutMs: config.orca.timeoutMs } }
-  const tracking = createLinearTrackingAdapter(input.runner, { ...write, dryRun })
+  // Every tracker write in this stage goes through the connector; the engine never names Linear.
+  const { tracker } = resolveConnectors({ runner: input.runner, config, dryRun })
+  const tracking = tracker.transitions
   const memory = openLoopMemory(loaded)
   /**
    * Record a failure for `issue` and, once `resilience.maxConsecutiveFailures` is crossed, pause it: label it in
@@ -335,8 +363,8 @@ export const runTick = async (input: TickInput): Promise<TickReport> => {
     pauseIssue(loaded.stateDir, issue, reason, now())
     const body = `**Loop: paused after ${failureState.consecutive} consecutive failures**\n\nMost recent (\`${kind}\`): ${reason.split('\n')[0]?.slice(0, 300)}\n\nThe loop will not retry this issue until you remove the \`${config.resilience.pausedLabel}\` label (or run \`ak-harness loop resume ${issue}\`).\n\n<!-- loop:paused:${issue}:${failureState.consecutive} -->`
     try {
-      await linearCommentAdd(input.runner, { issue, body, dedupeKey: `paused:${issue}:${failureState.consecutive}` }, write)
-      await linearLabelAdd(input.runner, { issue, labels: [config.resilience.pausedLabel] }, write)
+      await tracker.comment({ issue, body, dedupeKey: `paused:${issue}:${failureState.consecutive}` })
+      await tracker.addLabels(issue, [config.resilience.pausedLabel])
     } catch (error) { notes.push(`pause notification for ${issue} failed: ${message(error)}`) }
     appendLoopEvent(loaded.stateDir, { at: now().toISOString(), type: 'issue.paused', issue, kind, consecutive: failureState.consecutive, reason }, bus)
     await bus.runHook('onPause', { issue, kind, consecutive: failureState.consecutive, reason })
@@ -372,7 +400,19 @@ export const runTick = async (input: TickInput): Promise<TickReport> => {
       notes.push(`${candidate.identifier}: resumed (the "${config.resilience.pausedLabel}" label was removed)`)
     }
     let detail: LinearIssueDetail
-    try { detail = await fetchLinearIssue(input.runner, candidate.identifier, write) } catch (error) { results.push({ issue: candidate.identifier, outcome: 'failed', reason: `issue fetch failed: ${message(error)}` }); continue }
+    try { detail = await tracker.issue(candidate.identifier) } catch (error) { results.push({ issue: candidate.identifier, outcome: 'failed', reason: `issue fetch failed: ${message(error)}` }); continue }
+
+    // The flow this issue belongs to decides who runs each role and which phases run at all. Resolved once, here,
+    // so the contract, the plan and the vote all answer to the same profile.
+    const flow = resolveFlow(config, { labels: detail.labels, project: detail.project, priorityLabel: detail.priorityLabel })
+    const orchestratorSettings = resolveRoleSettings(config, flow, 'orchestrator')
+    // A flow may name the builder for its own issues. Without an override the tick-wide routing decision stands
+    // for everyone, which is what every project that never drew a flow already has.
+    const builderSettings = resolveRoleSettings(config, flow, 'builder')
+    const worker = builderSettings.source === 'flow'
+      ? applyRoleSettings(rankModels(config, 'builder', state.providers, state.extrasByRole['builder'] ?? []), builderSettings)[0] ?? builder
+      : builder
+    const issueOrchestrators = applyRoleSettings(orchestratorCandidates, orchestratorSettings)
 
     let stored = cachedContract
     // Reused below for the worker brief too (memory content cannot change mid-tick) — computing it once instead of
@@ -390,15 +430,16 @@ export const runTick = async (input: TickInput): Promise<TickReport> => {
     if (stored && !contractIsFresh(stored, detail, config.contract.reuseHours, now(), memoryPlan?.memoryDigest)) stored = null
     if (!stored) {
       if (input.skipContractGeneration) { results.push({ issue: detail.identifier, outcome: 'skipped', reason: 'no cached contract; generation skipped' }); continue }
-      if (!orchestratorCandidates.length) { results.push({ issue: detail.identifier, outcome: 'skipped', reason: 'no orchestrator provider available to freeze a contract' }); continue }
+      if (!issueOrchestrators.length) { results.push({ issue: detail.identifier, outcome: 'skipped', reason: 'no orchestrator provider available to freeze a contract' }); continue }
       try {
         stored = await generateContract({
           runner: input.runner,
           config,
           root: loaded.root,
           issue: detail,
-          candidates: orchestratorCandidates,
+          candidates: issueOrchestrators,
           orchestrator,
+          ...(orchestratorSettings.timeoutMs === null ? {} : { timeoutMs: orchestratorSettings.timeoutMs }),
           now,
           memory,
           onProviderFailure,
@@ -428,7 +469,7 @@ export const runTick = async (input: TickInput): Promise<TickReport> => {
     }
     const assessment = assessContract(stored.contract)
     if (!assessment.dispatchable) {
-      try { await escalate({ runner: input.runner, config, issue: detail, stored: { ...stored, assessment }, dryRun }) } catch (error) { notes.push(`escalation for ${detail.identifier} failed: ${message(error)}`) }
+      try { await escalate({ tracker, config, issue: detail, stored: { ...stored, assessment }, dryRun }) } catch (error) { notes.push(`escalation for ${detail.identifier} failed: ${message(error)}`) }
       if (!dryRun) {
         appendLoopEvent(loaded.stateDir, { at: now().toISOString(), type: 'contract.escalated', issue: detail.identifier, reasons: assessment.reasons, digest: stored.digest }, bus)
         await bus.runHook('onEscalate', { issue: detail.identifier, reasons: assessment.reasons, digest: stored.digest })
@@ -437,19 +478,60 @@ export const runTick = async (input: TickInput): Promise<TickReport> => {
       continue
     }
 
+    // The plan and its votes run here, headless, before any worktree exists: the model writes the plan and the
+    // votes, the machine counts them. A worker is only launched once a plan has consensus.
+    let approvedPlan: StoredPlan | null = null
+    const planPhase = workerPhaseEnabled(config, flow, 'planner', config.worker.plan.enabled)
+    const votePhase = workerPhaseEnabled(config, flow, 'vote', config.worker.plan.enabled)
+    if (planPhase) {
+      const plannerSettings = resolveRoleSettings(config, flow, 'planner')
+      const voteSettings = resolveRoleSettings(config, flow, 'vote')
+      approvedPlan = readStoredPlan(loaded.stateDir, detail.identifier)
+      if (!approvedPlan || approvedPlan.contractDigest !== stored.digest || approvedPlan.status !== 'approved') {
+        try {
+          approvedPlan = await runPlanWithVotes({
+            runner: input.runner, config, root: loaded.root, issue: detail.identifier,
+            contract: stored.contract, contractDigest: stored.digest,
+            planner: applyRoleSettings(orchestratorCandidates, plannerSettings),
+            voters: applyRoleSettings(rankModels(config, 'reviewer', state.providers, state.extrasByRole['reviewer'] ?? []), voteSettings),
+            requireVotes: votePhase,
+            ...(plannerSettings.timeoutMs === null ? {} : { plannerTimeoutMs: plannerSettings.timeoutMs }),
+            ...(voteSettings.timeoutMs === null ? {} : { voteTimeoutMs: voteSettings.timeoutMs }),
+            now, onProviderFailure,
+            onCycle: (cycle, votes) => { if (!dryRun) appendLoopEvent(loaded.stateDir, { at: now().toISOString(), type: 'plan.voted', issue: detail.identifier, cycle, approvals: votes.filter((vote) => vote.vote === 'approve').length, votes: votes.length }, bus) },
+          })
+          if (!dryRun) writeStoredPlan(loaded.stateDir, approvedPlan)
+        } catch (error) {
+          const reason = `planning failed: ${message(error)}`
+          if (!dryRun) { appendLoopEvent(loaded.stateDir, { at: now().toISOString(), type: 'plan.failed', issue: detail.identifier, error: message(error) }, bus); await recordFailureAndMaybePause(detail.identifier, 'plan.failed', reason) }
+          results.push({ issue: detail.identifier, outcome: 'failed', reason })
+          continue
+        }
+      }
+      if (approvedPlan.status !== 'approved') {
+        try { await escalatePlan({ tracker, config, issue: detail, plan: approvedPlan, dryRun }) } catch (error) { notes.push(`plan escalation for ${detail.identifier} failed: ${message(error)}`) }
+        if (!dryRun) {
+          appendLoopEvent(loaded.stateDir, { at: now().toISOString(), type: 'plan.escalated', issue: detail.identifier, cycles: approvedPlan.cycles, unresolved: approvedPlan.unresolved }, bus)
+          await bus.runHook('onEscalate', { issue: detail.identifier, reasons: approvedPlan.unresolved, digest: approvedPlan.digest })
+        }
+        results.push({ issue: detail.identifier, outcome: 'escalated', reason: `plan without consensus after ${approvedPlan.cycles} cycle(s): ${approvedPlan.unresolved.join('; ') || 'no objection recorded'}`, contractDigest: stored.digest })
+        continue
+      }
+    }
+
     const branch = branchFor(detail, state.person)
     const worktree = worktreeNameFor(detail)
     const claim = ledger.claim({ tracker: 'linear', repository: config.project.repo, issue: detail.identifier, worktree, branch, owner: input.owner ?? `loop:${state.person}` })
     if (claim.decision === 'already-claimed') { results.push({ issue: detail.identifier, outcome: 'skipped', reason: `lease already held by ${claim.lease.owner} since ${claim.lease.claimedAt}` }); continue }
-    const plan = createOrcaDispatchPlan({ repository: config.orca.repoSelector ?? `path:${loaded.root}`, worktree, branch, baseBranch: config.project.baseBranch, launch: 'worktree-only', linearIssue: detail.url || detail.identifier, comment: `loop · ${detail.identifier} · ${builder.provider}/${builder.model}`, noParent: true, orcaBin: config.orca.bin })
-    const title = `loop ${detail.identifier} · ${builder.provider}`
+    const plan = createOrcaDispatchPlan({ repository: config.orca.repoSelector ?? `path:${loaded.root}`, worktree, branch, baseBranch: config.project.baseBranch, launch: 'worktree-only', linearIssue: detail.url || detail.identifier, comment: `loop · ${detail.identifier} · ${worker.provider}/${worker.model}`, noParent: true, orcaBin: config.orca.bin })
+    const title = `loop ${detail.identifier} · ${worker.provider}`
     if (dryRun) {
       ledger.release(claim.lease, 'dry-run')
-      results.push({ issue: detail.identifier, outcome: 'dry-run', reason: `would create worktree, open terminal "${builder.tui}", send the brief and move issue to In Progress (branch is assigned by Orca: <git user>/${worktree})`, branch, worktree, provider: builder.provider, model: builder.model, argv: plan.argv, contractDigest: stored.digest })
+      results.push({ issue: detail.identifier, outcome: 'dry-run', reason: `would create worktree, open terminal "${worker.tui}", send the brief and move issue to In Progress (branch is assigned by Orca: <git user>/${worktree})`, branch, worktree, provider: worker.provider, model: worker.model, argv: plan.argv, contractDigest: stored.digest })
       dispatched += 1
       continue
     }
-    const beforeDispatch = await bus.runHook('beforeDispatch', { issue: detail.identifier, provider: builder.provider, model: builder.model, branch, worktree })
+    const beforeDispatch = await bus.runHook('beforeDispatch', { issue: detail.identifier, provider: worker.provider, model: worker.model, branch, worktree })
     if (beforeDispatch.block) {
       ledger.release(claim.lease, `blocked by plugin: ${beforeDispatch.reason}`)
       results.push({ issue: detail.identifier, outcome: 'skipped', reason: `blocked by plugin: ${beforeDispatch.reason}` })
@@ -478,30 +560,36 @@ export const runTick = async (input: TickInput): Promise<TickReport> => {
         ? await resolveDocContext(loaded.root, `${detail.identifier} ${detail.title}`, config.contract.maxBriefReferences, config.contract.briefScopes)
         : []
       const pinnedSkills = getPinnedSkills()
+      // A flow may ask its builder to lead. Whether it actually can is the provider's answer, and the brief says
+      // which of the two it got — a worker told nothing about delegation invents its own answer.
+      const delegation = flow.profile?.lead ? (providerIdentity(config, worker.provider).settings.subagents ? 'subagents' as const : 'alone' as const) : null
+      if (delegation === 'alone') notes.push(`${detail.identifier}: flow asked for a lead but ${worker.provider} has no subagents declared; the worker was told to work alone`)
       const brief = renderWorkerBrief({
         issue: detail,
         contract: stored,
         config,
         branch: actualBranch,
-        provider: builder.provider,
-        model: builder.model,
+        provider: worker.provider,
+        model: worker.model,
         maxIssueChars: briefMemory.issueCharBudget,
         memoryBlock: briefMemory.memoryBlock,
         guidanceRefs,
         skills: pinnedSkills,
+        ...(delegation ? { subagents: delegation === 'subagents' } : {}),
+        ...(approvedPlan ? { plan: approvedPlan } : {}),
         onPiiDetected: (matches) => {
           appendLoopEvent(loaded.stateDir, { at: now().toISOString(), type: 'security.pii-detected', issue: detail.identifier, source: 'worker-brief', kinds: [...new Set(matches.map((match) => match.kind))], count: matches.length }, bus)
         },
       })
       const briefDigest = skillDigest(brief)
       writeFileSync(briefPath(loaded.stateDir, detail.identifier), brief, 'utf8')
-      const launched = await launchWorkerTerminal({ runner: input.runner, config, worktreeId: created.id, command: builder.tui, title, brief })
+      const launched = await launchWorkerTerminal({ runner: input.runner, config, worktreeId: created.id, command: worker.tui, title, brief })
       if (!launched.accepted) notes.push(`${detail.identifier}: terminal ${launched.terminal} did not confirm the brief; deliver will nudge it if it stays idle`)
       ledger.recordDispatch({ lease: claim.lease, idempotencyKey: plan.idempotencyKey, commandDigest: plan.commandDigest })
-      const record: DispatchRecordFile = { issue: detail.identifier, worktreeId: created.id, worktree, branch: actualBranch, terminal: launched.terminal, provider: builder.provider, model: builder.model, contractDigest: stored.digest, leaseKey: claim.lease.key, leaseId: claim.lease.leaseId, dispatchedAt: now().toISOString(), url: detail.url, briefDigest, skills: skillRefs(pinnedSkills), setup: setupResult, effort: builder.effort, initialRemainingPercent: builder.remainingPercent, worktreePath: created.path, labels: [...detail.labels] }
+      const record: DispatchRecordFile = { issue: detail.identifier, worktreeId: created.id, worktree, branch: actualBranch, terminal: launched.terminal, provider: worker.provider, model: worker.model, contractDigest: stored.digest, leaseKey: claim.lease.key, leaseId: claim.lease.leaseId, dispatchedAt: now().toISOString(), url: detail.url, briefDigest, skills: skillRefs(pinnedSkills), ...(delegation ? { delegation } : {}), setup: setupResult, effort: worker.effort, initialRemainingPercent: worker.remainingPercent, worktreePath: created.path, labels: [...detail.labels], project: detail.project, priorityLabel: detail.priorityLabel }
       resetDeliveryStateForDispatch(loaded.stateDir, detail.identifier)
       writeJsonAtomic(dispatchRecordPath(loaded.stateDir, detail.identifier), record)
-      appendLoopEvent(loaded.stateDir, { at: record.dispatchedAt, type: 'worker.dispatched', ...record, command: builder.tui, briefAccepted: launched.accepted, tuiIdle: launched.idle }, bus)
+      appendLoopEvent(loaded.stateDir, { at: record.dispatchedAt, type: 'worker.dispatched', ...record, command: worker.tui, briefAccepted: launched.accepted, tuiIdle: launched.idle }, bus)
       await bus.runHook('afterDispatch', { issue: detail.identifier, provider: record.provider, model: record.model, branch: record.branch, worktreeId: record.worktreeId })
       clearIssueFailures(loaded.stateDir, detail.identifier)
       // The claim, under `queueOwnership: 'unassigned'`: written only AFTER the dispatch succeeded, so a
@@ -514,17 +602,17 @@ export const runTick = async (input: TickInput): Promise<TickReport> => {
       // pick up if the states were ever widened.
       if (config.linear.queueOwnership === 'unassigned') {
         try {
-          await linearAssigneeSet(input.runner, { issue: detail.identifier, assignee: state.person }, write)
+          await tracker.claim(detail.identifier, state.person)
         } catch (error) {
           notes.push(`${detail.identifier}: assignee claim failed after dispatch: ${message(error)}`)
           appendLoopEvent(loaded.stateDir, { at: now().toISOString(), type: 'queue.claim-failed', issue: detail.identifier, assignee: state.person, error: message(error) }, bus)
         }
       }
       try {
-        await tracking.transition({ tracker: 'linear', issue: detail.identifier, from: detail.state, to: config.linear.inProgressState, reason: `loop dispatched ${builder.provider}/${builder.model} in ${created.id}` })
-        await linearCommentAdd(input.runner, { issue: detail.identifier, body: `**Loop: dispatched**\n\nWorker \`${builder.provider}/${builder.model}\` started in Orca worktree \`${worktree}\` on branch \`${actualBranch}\` (contract \`${stored.digest.slice(0, 12)}\`). It will open a PR against \`${config.project.baseBranch}\` when the contract's outcomes pass.\n\n<!-- loop:dispatched:${claim.lease.leaseId} -->`, dedupeKey: `dispatched:${detail.identifier}:${claim.lease.leaseId}` }, write)
+        await tracking.transition({ tracker: 'linear', issue: detail.identifier, from: detail.state, to: config.linear.inProgressState, reason: `loop dispatched ${worker.provider}/${worker.model} in ${created.id}` })
+        await tracker.comment({ issue: detail.identifier, body: `**Loop: dispatched**\n\nWorker \`${worker.provider}/${worker.model}\` started in Orca worktree \`${worktree}\` on branch \`${actualBranch}\` (contract \`${stored.digest.slice(0, 12)}\`). It will open a PR against \`${config.project.baseBranch}\` when the contract's outcomes pass.\n\n<!-- loop:dispatched:${claim.lease.leaseId} -->`, dedupeKey: `dispatched:${detail.identifier}:${claim.lease.leaseId}` })
       } catch (error) { notes.push(`Linear update for ${detail.identifier} failed after dispatch: ${message(error)}`) }
-      results.push({ issue: detail.identifier, outcome: 'dispatched', reason: 'worker started', branch: actualBranch, worktree, worktreeId: created.id, terminal: launched.terminal, provider: builder.provider, model: builder.model, argv: plan.argv, contractDigest: stored.digest })
+      results.push({ issue: detail.identifier, outcome: 'dispatched', reason: 'worker started', branch: actualBranch, worktree, worktreeId: created.id, terminal: launched.terminal, provider: worker.provider, model: worker.model, argv: plan.argv, contractDigest: stored.digest })
       dispatched += 1
     } catch (error) {
       ledger.release(claim.lease, `dispatch failed: ${message(error)}`)
@@ -535,5 +623,6 @@ export const runTick = async (input: TickInput): Promise<TickReport> => {
     }
   }
   if (!dispatched && !results.length) notes.push('no candidate reached dispatch')
+  await flushNotifications()
   return { ...base, status: dispatched > 0 || results.some((result) => result.outcome === 'escalated') ? 'ok' : 'idle', results, notes }
 }

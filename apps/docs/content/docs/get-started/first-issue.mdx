@@ -1,0 +1,61 @@
+---
+title: Your first issue
+description: What to put in the first ticket you hand the loop, and how to read what comes back.
+---
+
+The first issue decides what you learn. Pick one that is small, provable and boring — the loop's failure modes
+are much easier to see when the work itself is not interesting.
+
+## What makes an issue dispatchable
+
+The orchestrator freezes a contract before any worker starts, and it refuses to dispatch when:
+
+- **no outcome maps to an executable check** — nothing in the issue can be proven by running something; or
+- **a blocking ambiguity remains** — proceeding under any reasonable assumption could produce the wrong result.
+
+Both come back as an escalation on the ticket, with the reasons listed. That is the loop working, not failing:
+an unverifiable ticket dispatched anyway produces a confident pull request nobody can check.
+
+So the first issue wants:
+
+```markdown
+## What
+Add a `--since` flag to `report build` accepting `7d`, `12h` or an ISO date.
+
+## Acceptance criteria
+- `report build --since 7d` exits 0 and prints only rows newer than seven days.
+- `report build --since nonsense` exits 2 with a message naming the accepted formats.
+- `pnpm test packages/report` passes.
+```
+
+Three sentences, each of which a command can settle.
+
+## Watching it happen
+
+```bash
+ak-harness loop tick --dry-run --max 1   # what it would do
+ak-harness loop tick --max 1             # do it
+ak-harness loop watch --once             # where it is
+ak-harness loop debrief                  # what a human would want to know
+```
+
+`debrief` is the one to read out loud. It says, per issue, the phase, how long it has been there, the worker
+and model, the worktree and branch, the pull request, and the intent the contract froze.
+
+## Reading the first result
+
+| What you see | What it means | What to do |
+|---|---|---|
+| `escalated` before dispatch | The contract could not be frozen: unverifiable, or ambiguous | Answer the question on the ticket and let the next tick retry |
+| `fix-round` | CI red, review findings, a missing artifact, or an unproven DoD item | Nothing — the worker was told exactly what to fix |
+| `held` | Protected paths, a secret-shaped file, a crossed layer boundary, or a gate you configured | Look at the PR; the reason is on it |
+| `blocked` | The fix rounds ran out | Read the pull request comment; the loop kept the worktree for you |
+| `merged` | Both lists proven, checks green, review clean | Read the DoD table on the PR — that is what it merged on |
+
+## After the first one
+
+Two knobs are worth turning early, and both raise the bar rather than the spend:
+
+- `dod.items` — start with one: the command your CI already runs. Every issue then has to prove it.
+- `delivery.review.minSeverity` — `med` by default. `high` on a repository still finding its feet is not
+  cheating; a review that blocks on style teaches a worker to argue rather than to fix.

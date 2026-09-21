@@ -1,0 +1,58 @@
+---
+title: Writing a plugin
+description: Subscribe to events, block a decision, and keep a broken plugin from taking down the loop.
+---
+
+```yaml
+plugins:
+  modules: [plugin.mjs, ./tools/loop-metrics.mjs]
+```
+
+Each module is loaded once per stage run and gets the bus.
+
+```js
+export default function register(bus) {
+  // Every event, or one type.
+  bus.on('*', (event) => metrics.count(event.type))
+  bus.on('worker.dispatched', (event) => {
+    console.log(`${event.issue} → ${event.provider}/${event.model} on ${event.branch}`)
+  })
+
+  // A gate of your own. Returning { block: true, reason } stops the action.
+  bus.hook('beforeMerge', ({ issue, pr, head }) => {
+    if (isChangeFreeze()) return { block: true, reason: `change freeze: ${issue} waits` }
+    return undefined
+  })
+}
+```
+
+## The eight hooks
+
+`beforeDispatch` · `afterDispatch` · `beforeReview` · `afterReview` · `beforeMerge` · `afterMerge` · `onPause` ·
+`onEscalate`
+
+They wrap **loop-orchestration decisions**, not what happens inside a worker's own CLI session — that loop is
+opaque, and a hook that claimed to see it would be lying.
+
+Multiple listeners on one hook all run, and the first `{ block: true }` wins. A listener that throws is treated
+as a non-blocking no-op and its error is collected into the stage report: a broken plugin must not take down
+the loop.
+
+## Events are typed
+
+The names and fields come from `LOOP_EVENT_TYPES` — see the [events reference](/docs/reference/events). An
+event not in that vocabulary cannot be emitted, so `bus.on('some.typo')` is a subscription that will never
+fire, and the reference is the list of what will.
+
+## Two things a plugin should not do
+
+- **Write to the loop's state directory.** The stages own those files and rewrite them atomically; a second
+  writer is a race with no error message.
+- **Block on something slow.** A hook runs inside the stage, and a stage has a scheduler budget (600 seconds
+  for a precheck-run stage). Queue the slow work elsewhere and return.
+
+## Notifications are not plugins
+
+A channel — a webhook or a local command — is configuration, not code: see
+[events and plugins](/docs/concepts/events). Reach for a plugin when you need a *decision* (a gate) or a
+destination the two generic shapes cannot express.

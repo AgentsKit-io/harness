@@ -48,6 +48,14 @@ describe('renderWorkerBrief', () => {
     expect(brief).toContain('docs/x.md — X guide')
   })
 
+  it('says whether this worker delegates, and says nothing at all when no flow asked', () => {
+    const base = { issue: issue(), contract: stored(bareContract), config, branch: 'b', provider: 'claude', model: 'sonnet' }
+    expect(renderWorkerBrief({ ...base, subagents: true })).toContain('delegate one plan item at a time to a subagent')
+    // Asked to lead by a provider that cannot: the worker is told plainly, instead of hunting for a tool it has not got.
+    expect(renderWorkerBrief({ ...base, subagents: false })).toContain('Work this task yourself')
+    expect(renderWorkerBrief(base)).not.toContain('## How to work this task')
+  })
+
   it('drops an empty description, lists non-empty comment bodies, and falls back to "unknown" for an authorless comment', () => {
     const brief = renderWorkerBrief({ issue: issue({ description: '', comments: [{ body: 'please add tests', createdAt: 'x' }] }), contract: stored(bareContract), config, branch: 'b', provider: 'claude', model: 'sonnet' })
     expect(brief).toContain('--- comment by unknown\nplease add tests')

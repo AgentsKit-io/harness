@@ -1,0 +1,5 @@
+{
+  "title": "Harness",
+  "root": true,
+  "pages": ["index", "get-started", "concepts", "guides", "examples", "configuration", "reference"]
+}

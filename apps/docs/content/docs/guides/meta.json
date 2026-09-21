@@ -1,0 +1,13 @@
+{
+  "title": "Guides",
+  "pages": [
+    "operating",
+    "troubleshooting",
+    "driving-plan",
+    "release",
+    "intake-and-maintain",
+    "agents",
+    "plugins",
+    "local-runner"
+  ]
+}

@@ -41,3 +41,36 @@ export const renderPinnedSkills = (skills: readonly PinnedSkill[]): string => {
 
 /** The `{path, digest}` list persisted in `dispatch.json` — the full content lives only in the brief file, not duplicated per issue. */
 export const skillRefs = (skills: readonly PinnedSkill[]): readonly PinnedSkillRef[] => skills.map(({ path, digest }) => ({ path, digest }))
+
+export interface SkillHandoffBlock {
+  readonly text: string
+  /** Skills the next worker is pointed at, because the file on disk still is what the record says it was. */
+  readonly referenced: readonly string[]
+  /** Skills sent whole, because the digest no longer matches — or never did. */
+  readonly resent: readonly string[]
+}
+
+/**
+ * What the worker taking over is told about the skills the previous one was given.
+ *
+ * A file that still hashes to the digest in the dispatch record is a pointer: it is right there in the worktree,
+ * and paying to copy it into the prompt buys nothing. Anything else — edited since, unreadable, or never recorded
+ * — is sent whole. The rule is deliberately asymmetric: a worker without its context is worse than a worker that
+ * costs more.
+ */
+export const renderSkillsForHandoff = (root: string, delivered: readonly PinnedSkillRef[], maxChars: number): SkillHandoffBlock => {
+  if (!delivered.length) return { text: '', referenced: [], resent: [] }
+  const referenced: string[] = []
+  const resent: string[] = []
+  const lines = delivered.map((ref) => {
+    const absolute = resolve(root, ref.path)
+    let raw: string | null = null
+    try { raw = existsSync(absolute) ? readFileSync(absolute, 'utf8') : null } catch { raw = null }
+    if (raw === null) { resent.push(ref.path); return `### ${ref.path} — MISSING\nThe previous worker was given this file (sha256:${ref.digest.slice(0, 12)}) but it is not in the worktree now. Work without it and say so in the PR.` }
+    const content = raw.length > maxChars ? `${raw.slice(0, maxChars)}\n…[truncated ${raw.length - maxChars} chars]` : raw
+    if (skillDigest(content) === ref.digest) { referenced.push(ref.path); return `- \`${ref.path}\` (sha256:${ref.digest.slice(0, 12)}) — unchanged since the first brief; open it in the worktree.` }
+    resent.push(ref.path)
+    return `### ${ref.path} (sha256:${skillDigest(content).slice(0, 12)} — changed since the first brief, so here it is in full)\n${content}`
+  })
+  return { text: `\n## Skills\n${lines.join('\n\n')}\n`, referenced, resent }
+}

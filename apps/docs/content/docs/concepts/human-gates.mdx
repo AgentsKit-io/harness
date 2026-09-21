@@ -1,0 +1,50 @@
+---
+title: Human gates
+description: Every point where the loop stops and waits for a person, and why it stops there and not elsewhere.
+---
+
+The loop runs unattended. It stops in exactly these places, and the rule behind all of them is the same: **a
+human decides where the machine would be acting on the world, or acting on itself.**
+
+| Gate | Where | How it is passed |
+|---|---|---|
+| The PRD | `loop plan` | `loop plan approve <id>` |
+| The technical design | `loop plan`, after the vote | `loop plan approve-design <id>` |
+| The queue entry | `loop plan decompose --create` writes issues in the **entry** state | Moving them to the ready state |
+| Merge approval | `deliver`, when `merge.requireHumanApproval` | Approving the pull request on GitHub |
+| Release | `release` | `loop release approve`, bound to a head sha |
+| A blocked issue | After the fix rounds run out | Reading the PR comment and deciding |
+| An escalation | Unverifiable contract, no plan consensus, stuck worker, budget exceeded | Answering on the ticket |
+| A paused issue or stage | After repeated failures | `loop resume <issue>` or `loop resume --stage <stage>` |
+| Publishing an agent | The retro may propose; it never publishes | A human, to the registry |
+
+## Why the design gate exists even after a vote
+
+Three agents agreeing is evidence, not authority. Everything built afterwards inherits the design, so the cost
+of a wrong one is every issue decomposed from it. Consensus makes the design worth reading; it does not make it
+someone's decision.
+
+## Why the release approval binds to a sha
+
+An approval that outlived its commits is a rubber stamp. The approval records the head it was given for; if
+anything merged after it, the batch is different and needs its own approval. A successful promotion spends the
+approval, so nothing merged later rides on it.
+
+## Escalations are not retries
+
+The loop never answers its own question by trying again more cheaply:
+
+- an issue over `budget.perIssueTokens` escalates, it does not continue with less headroom;
+- a plan without consensus after `maxCycles` escalates, with the objections still standing;
+- a contract with a blocking ambiguity escalates instead of dispatching a worker to guess;
+- an issue that failed `resilience.maxConsecutiveFailures` times is paused and labelled, so the next tick does
+  not pick it up and fail the same way.
+
+Every one of those writes an event and, where a channel is configured, calls it. `notifications.events` lists
+which types reach the channel; `onEscalate` always does, whatever that list says.
+
+## What the loop does without asking
+
+Merging a pull request whose checks are green, whose review is clean and whose two definition-of-done lists are
+proven — when `merge.auto` is on and `requireHumanApproval` is off. That is the one action it takes on the
+world by itself, and it is precisely the one that every other gate above exists to make safe.

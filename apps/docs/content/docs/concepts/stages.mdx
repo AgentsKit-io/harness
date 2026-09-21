@@ -1,0 +1,51 @@
+---
+title: Stages
+description: Six state machines. The model produces content; the machine decides the transition.
+---
+
+A stage is a state machine the harness runs. A model may produce content — a contract, a plan, a vote, a
+review, an alert triage — but the machine reads that content and decides the transition. That is what makes a
+run reproducible: the same state produces the same decision, and the event log says which path it took.
+
+## The six
+
+| Stage | From → to |
+|---|---|
+| `plan` | objective → interview → PRD → design → vote → issues, with two human gates |
+| `tick` | queue → contract → (plan → vote) → dispatch into a worktree |
+| `deliver` | PR → checks → verify → review → definition of done → merge |
+| `observe` | events and state → anomalies → a scheduler exit code |
+| `release` | batch → human approval bound to a head sha → promote → deploy → smoke → rollback |
+| `intake` / `maintain` | alerts and checks → tracked issues, deduplicated by fingerprint |
+
+## How a stage runs
+
+Each stage runs inside its scheduler's precheck command and exits 1, so the run is recorded without launching
+an agent session. `observe` is the exception, and deliberately so: its exit code *is* the decision — 0 means a
+human has to look.
+
+<Mermaid chart={`stateDiagram-v2
+    [*] --> queued
+    queued --> contracted: orchestrator freezes the contract
+    contracted --> escalated: blocking ambiguity
+    contracted --> planned: plan approved (2 of 3)
+    planned --> dispatched: worktree + terminal + brief
+    dispatched --> in_review: PR opened
+    in_review --> fix_round: CI red, review findings, or a missing artifact
+    fix_round --> in_review: the worker pushes again
+    in_review --> merged: both DoD lists proven
+    in_review --> blocked: fix rounds exhausted
+    merged --> [*]
+    escalated --> [*]
+    blocked --> [*]`} />
+
+## Every transition is an event
+
+`LOOP_EVENT_TYPES` names every event the loop emits and the fields it carries, and the compiler accepts
+nothing else. An event whose name exists only inside a template string is an event nobody can subscribe to on
+purpose — so the vocabulary is the contract that plugins, notification channels and this documentation all
+read.
+
+Which phases run at all is the flow's decision: `worker.roles` declares the ordered phases of an issue, and
+`flows.profiles.<name>.stages` switches them per flow. A project that never opted in keeps every phase
+answering from its own block, which is exactly what it already had.

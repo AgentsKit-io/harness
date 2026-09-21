@@ -8,8 +8,8 @@ import { initializeGitRepository } from './git.js'
 const fixture = async (): Promise<{ readonly root: string; readonly run: Awaited<ReturnType<typeof startRun>> }> => {
   const root = mkdtempSync(join(tmpdir(), 'agentskit-harness-agent-gaps-test-'))
   initializeGitRepository(root)
-  mkdirSync(join(root, '.codex'), { recursive: true })
-  const configPath = join(root, '.codex', 'verification.json')
+  mkdirSync(join(root, '.ak-harness'), { recursive: true })
+  const configPath = join(root, '.ak-harness', 'verification.json')
   const fs = await import('node:fs')
   fs.writeFileSync(configPath, JSON.stringify({
     schemaVersion: 1, project: 'agent-gaps-fixture', root: '..', profile: 'strict',
@@ -28,26 +28,26 @@ const runtime = createToolRuntime({ tools: [{ toolId: 'shell', execute: async ({
 describe('createSessionRecorder: constructor guards', () => {
   it('rejects a policy without an evaluate function, and a runtime without an execute function', async () => {
     const { root, run } = await fixture()
-    const stateDir = join(root, '.codex', 'verification')
+    const stateDir = join(root, '.ak-harness', 'verification')
     expect(() => createSessionRecorder({ stateDir, run, adapter, policy: {} as never, runtime })).toThrow(/policy.evaluate is required/)
     expect(() => createSessionRecorder({ stateDir, run, adapter, policy, runtime: {} as never })).toThrow(/runtime.execute is required/)
   })
 
   it('rejects a blank sessionId', async () => {
     const { root, run } = await fixture()
-    expect(() => createSessionRecorder({ stateDir: join(root, '.codex', 'verification'), run, adapter, policy, runtime, sessionId: '  ' })).toThrow(/sessionId is required/)
+    expect(() => createSessionRecorder({ stateDir: join(root, '.ak-harness', 'verification'), run, adapter, policy, runtime, sessionId: '  ' })).toThrow(/sessionId is required/)
   })
 })
 
 describe('createSessionRecorder: resume guards', () => {
   it('rejects resuming a session that never started', async () => {
     const { root, run } = await fixture()
-    expect(() => createSessionRecorder({ stateDir: join(root, '.codex', 'verification'), run, adapter, policy, runtime, sessionId: 'never-started', resume: true })).toThrow(/Session does not exist/)
+    expect(() => createSessionRecorder({ stateDir: join(root, '.ak-harness', 'verification'), run, adapter, policy, runtime, sessionId: 'never-started', resume: true })).toThrow(/Session does not exist/)
   })
 
   it('rejects resuming a session that already ended', async () => {
     const { root, run } = await fixture()
-    const stateDir = join(root, '.codex', 'verification')
+    const stateDir = join(root, '.ak-harness', 'verification')
     const recorder = createSessionRecorder({ stateDir, run, adapter, policy, runtime, sessionId: 'already-ended' })
     recorder.end('completed')
     expect(() => createSessionRecorder({ stateDir, run, adapter, policy, runtime, sessionId: 'already-ended', resume: true })).toThrow(/already ended/)
@@ -55,7 +55,7 @@ describe('createSessionRecorder: resume guards', () => {
 
   it('replays a rejected approval and a completed action out of the pending/approval sets on resume', async () => {
     const { root, run } = await fixture()
-    const stateDir = join(root, '.codex', 'verification')
+    const stateDir = join(root, '.ak-harness', 'verification')
     const mixedPolicy = createPolicyGate({ rules: [{ id: 'allow-shell', effect: 'allow', toolIds: ['shell'], reason: 'fixture allows shell' }, { id: 'approve-sensitive', effect: 'approve', toolIds: ['sensitive'], reason: 'needs review' }] })
     const inProgress = createSessionRecorder({ stateDir, run, adapter, policy: mixedPolicy, runtime, sessionId: 'resume-in-progress' })
     inProgress.startTurn('input', 'turn')
@@ -73,7 +73,7 @@ describe('createSessionRecorder: resume guards', () => {
 
   it('auto-releases an approved action into pending on resume when the tool.requested append never landed', async () => {
     const { root, run } = await fixture()
-    const stateDir = join(root, '.codex', 'verification')
+    const stateDir = join(root, '.ak-harness', 'verification')
     const approvalPolicy = createPolicyGate({ rules: [{ id: 'approve-sensitive', effect: 'approve', toolIds: ['sensitive'], reason: 'needs review' }] })
     const store = new FileEventStore(stateDir)
     const interrupted = createSessionRecorder({ stateDir, run, adapter, policy: approvalPolicy, runtime, sessionId: 'crash-after-approval' })
@@ -92,7 +92,7 @@ describe('createSessionRecorder: resume guards', () => {
 describe('createSessionRecorder: remaining validation branches', () => {
   it('rejects a negative durationMs on completeTool/failTool', async () => {
     const { root, run } = await fixture()
-    const recorder = createSessionRecorder({ stateDir: join(root, '.codex', 'verification'), run, adapter, policy, runtime })
+    const recorder = createSessionRecorder({ stateDir: join(root, '.ak-harness', 'verification'), run, adapter, policy, runtime })
     recorder.startTurn('input', 'turn')
     recorder.requestTool({ turnId: 'turn', actionId: 'action', toolId: 'shell', argumentsHash: 'hash' })
     expect(() => recorder.completeTool({ actionId: 'action', resultHash: 'x', durationMs: -1 })).toThrow(/non-negative number/)
@@ -100,7 +100,7 @@ describe('createSessionRecorder: remaining validation branches', () => {
 
   it('rejects a non-boolean retryable on failTool', async () => {
     const { root, run } = await fixture()
-    const recorder = createSessionRecorder({ stateDir: join(root, '.codex', 'verification'), run, adapter, policy, runtime })
+    const recorder = createSessionRecorder({ stateDir: join(root, '.ak-harness', 'verification'), run, adapter, policy, runtime })
     recorder.startTurn('input', 'turn')
     recorder.requestTool({ turnId: 'turn', actionId: 'action', toolId: 'shell', argumentsHash: 'hash' })
     expect(() => recorder.failTool({ actionId: 'action', errorCode: 'E', retryable: 'yes' as never, durationMs: 0 })).toThrow(/retryable must be boolean/)
@@ -108,7 +108,7 @@ describe('createSessionRecorder: remaining validation branches', () => {
 
   it('rejects starting the same turn id twice', async () => {
     const { root, run } = await fixture()
-    const recorder = createSessionRecorder({ stateDir: join(root, '.codex', 'verification'), run, adapter, policy, runtime })
+    const recorder = createSessionRecorder({ stateDir: join(root, '.ak-harness', 'verification'), run, adapter, policy, runtime })
     recorder.startTurn('input', 'turn')
     expect(() => recorder.startTurn('input-2', 'turn')).toThrow(/Turn already exists/)
   })
@@ -116,7 +116,7 @@ describe('createSessionRecorder: remaining validation branches', () => {
   it('rejects a malformed policy decision shape from requestTool', async () => {
     const { root, run } = await fixture()
     const brokenPolicy = { evaluate: () => ({ decision: 'maybe' } as never) }
-    const recorder = createSessionRecorder({ stateDir: join(root, '.codex', 'verification'), run, adapter, policy: brokenPolicy, runtime })
+    const recorder = createSessionRecorder({ stateDir: join(root, '.ak-harness', 'verification'), run, adapter, policy: brokenPolicy, runtime })
     recorder.startTurn('input', 'turn')
     expect(() => recorder.requestTool({ turnId: 'turn', actionId: 'action', toolId: 'shell', argumentsHash: 'hash' })).toThrow(/Policy decision is invalid/)
   })
@@ -124,7 +124,7 @@ describe('createSessionRecorder: remaining validation branches', () => {
   it('rejects approveTool with a non-human actor or an invalid decision value', async () => {
     const { root, run } = await fixture()
     const approvalPolicy = createPolicyGate({ rules: [{ id: 'approve-sensitive', effect: 'approve', toolIds: ['sensitive'], reason: 'needs review' }] })
-    const recorder = createSessionRecorder({ stateDir: join(root, '.codex', 'verification'), run, adapter, policy: approvalPolicy, runtime })
+    const recorder = createSessionRecorder({ stateDir: join(root, '.ak-harness', 'verification'), run, adapter, policy: approvalPolicy, runtime })
     recorder.startTurn('input', 'turn')
     recorder.requestTool({ turnId: 'turn', actionId: 'action', toolId: 'sensitive', argumentsHash: 'hash' })
     expect(() => recorder.approveTool({ actionId: 'action', decision: 'approved', actor: 'agent' as never })).toThrow(/requires a human actor/)
@@ -133,13 +133,13 @@ describe('createSessionRecorder: remaining validation branches', () => {
 
   it('rejects recoverTool for an action that never started execution, a non-human actor, and an invalid decision', async () => {
     const { root, run } = await fixture()
-    const recorder = createSessionRecorder({ stateDir: join(root, '.codex', 'verification'), run, adapter, policy, runtime })
+    const recorder = createSessionRecorder({ stateDir: join(root, '.ak-harness', 'verification'), run, adapter, policy, runtime })
     recorder.startTurn('input', 'turn')
     recorder.requestTool({ turnId: 'turn', actionId: 'action', toolId: 'shell', argumentsHash: 'hash' })
     expect(() => recorder.recoverTool({ actionId: 'action', decision: 'retry' })).toThrow(/does not require recovery/)
 
     const second = await fixture()
-    const stateDir2 = join(second.root, '.codex', 'verification')
+    const stateDir2 = join(second.root, '.ak-harness', 'verification')
     const run2 = second.run
     const recorder2 = createSessionRecorder({ stateDir: stateDir2, run: run2, adapter, policy, runtime })
     const turn2 = recorder2.startTurn('input', 'turn')
@@ -154,7 +154,7 @@ describe('createSessionRecorder: remaining validation branches', () => {
 
   it('rejects a concurrent call for an action already executing (as a recovery-required state, not a separate concurrency error) and an invalid runtime result shape', async () => {
     const { root, run } = await fixture()
-    const stateDir = join(root, '.codex', 'verification')
+    const stateDir = join(root, '.ak-harness', 'verification')
     let resolveExecution: (() => void) | undefined
     const slowRuntime = createToolRuntime({ tools: [{ toolId: 'shell', execute: () => new Promise((resolve) => { resolveExecution = () => resolve({ status: 'completed', resultHash: 'r', durationMs: 1 }) }) }] })
     const recorder = createSessionRecorder({ stateDir, run, adapter, policy, runtime: slowRuntime })
@@ -179,7 +179,7 @@ describe('createSessionRecorder: remaining validation branches', () => {
 
   it('rejects an invalid end() status', async () => {
     const { root, run } = await fixture()
-    const recorder = createSessionRecorder({ stateDir: join(root, '.codex', 'verification'), run, adapter, policy, runtime })
+    const recorder = createSessionRecorder({ stateDir: join(root, '.ak-harness', 'verification'), run, adapter, policy, runtime })
     expect(() => recorder.end('done' as never)).toThrow(/status is invalid/)
   })
 })

@@ -77,4 +77,12 @@ describe('createMachineMonitor', () => {
     const monitor = createMachineMonitor(5_000, { sample: () => ({ at: 't', cpus: 1, load1: 0, load1PerCpuPercent: 0, memoryUsedPercent: 0, rssBytes: 1 }) })
     expect(monitor.stop().minimumEffectiveConcurrency).toBe(0)
   })
+
+  it('says whether the load average is a real reading', () => {
+    // Windows' `os.loadavg()` returns [0, 0, 0] whatever the machine is doing. Reporting that as 0% would make
+    // a busy machine look idle; the sample says the number is not a measurement instead.
+    const sample = sampleMachine()
+    expect(sample.loadAvailable).toBe(process.platform !== 'win32')
+    if (sample.loadAvailable === false) expect(sample.load1).toBe(0)
+  })
 })

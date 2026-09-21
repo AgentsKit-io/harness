@@ -1,0 +1,52 @@
+---
+title: Definition of done
+description: Two lists, both proven on the pull request, and no item whose proof is "someone looked at it".
+---
+
+"Done" in an unattended loop has to be decided without a human in the room. One checklist cannot do it: some
+things are true of every issue in a repository, and some are true only of this one. So there are two lists,
+and a merge waits for both.
+
+## The project's list
+
+`dod.items` in `loop.config.yaml`. The same for every issue, and every item declares how it is proven:
+
+| Kind | Proof |
+|---|---|
+| `command` | Argv the worker runs in its worktree; exit 0 is the proof. |
+| `file-changed` | The pull request must touch a path matching the glob. |
+| `pattern-absent` | No changed file may contain the pattern. |
+
+The harness decides `file-changed` and `pattern-absent` itself, from the pull request's changed files.
+`command` is never one of those: the harness does not run project commands — the worker does, where the
+change actually is.
+
+## The issue's list
+
+The outcomes of the contract the orchestrator froze before dispatch, each with the check that proves it. They
+are frozen at dispatch, so editing the issue mid-flight cannot move the bar the running work is judged by.
+
+## Missing is not failed
+
+An item the worker did not prove is **missing**. An item it proved and that came back red is **failed**. The
+difference is the instruction that goes back to the worker: *prove it* versus *fix it*. A loop that conflates
+them sends the wrong one, and the worker fixes something that was never broken.
+
+## There is no `manual` kind
+
+On purpose. An item whose proof is "someone looked at it" cannot gate an unattended merge; it is a wish, and
+one wish in the table makes the whole table untrustworthy.
+
+Work that genuinely needs a human eye has a gate with a name:
+`delivery.merge.requireHumanApproval`. That is a decision someone makes on the pull request, not a checkbox
+nobody can check.
+
+## Where the proof lives
+
+The worker writes `.ak-loop/dod.json` (and `.ak-loop/verify.json`, which counts as evidence for an outcome the
+first file left unproven — it ran the check once; transcribing the result twice only invents a way to be
+inconsistent). `deliver` writes the table onto the pull request either way, so a human reading it sees
+evidence rather than a promise.
+
+A project with no `dod.items` still gets the issue's list enforced, so adopting the loop costs nothing up
+front. The bar rises one provable item at a time, which is the only honest way to raise it.

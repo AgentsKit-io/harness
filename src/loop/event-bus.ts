@@ -11,7 +11,9 @@
  * listening" ergonomics, not a copy of the kernel's contract.
  */
 
-export type LoopEventPayload = Readonly<Record<string, unknown>> & { readonly type: string }
+import type { LoopEventType } from './event-vocabulary.js'
+
+export type LoopEventPayload = Readonly<Record<string, unknown>> & { readonly type: LoopEventType }
 export type LoopEventListener = (event: LoopEventPayload) => void
 
 /**

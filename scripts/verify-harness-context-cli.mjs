@@ -7,7 +7,7 @@ const packageRoot = resolve(import.meta.dirname, '..')
 const cli = resolve(packageRoot, 'dist/cli.js')
 const root = mkdtempSync(join(tmpdir(), 'agentskit-harness-context-cli-'))
 const artifactRoot = mkdtempSync(join(tmpdir(), 'agentskit-harness-context-artifacts-'))
-const configPath = join(root, '.codex', 'verification.json')
+const configPath = join(root, '.ak-harness', 'verification.json')
 const indexPath = join(root, '.doc-bridge', 'index.json')
 const snapshotPath = join(artifactRoot, 'context.json')
 const run = (args) => {
@@ -22,7 +22,7 @@ const git = (args) => {
 
 try {
   if (!existsSync(cli)) throw new Error(`missing built CLI: ${cli}`)
-  mkdirSync(join(root, '.codex'), { recursive: true })
+  mkdirSync(join(root, '.ak-harness'), { recursive: true })
   mkdirSync(join(root, '.doc-bridge'), { recursive: true })
   writeFileSync(configPath, JSON.stringify({ schemaVersion: 1, project: 'context-cli-fixture', root: '..', profile: 'strict', contract: { intent: 'Exercise context CLI.', scope: { inScope: ['fixture'], outOfScope: ['production'] }, ambiguities: [], outcomes: [{ id: 'context-cli', statement: 'Context is attached.', checks: ['fixture-check'] }] }, surfaces: { logic: true, endpoint: { required: false, reason: 'fixture' }, database: { required: false, reason: 'fixture' }, cli: { required: false, reason: 'fixture' }, mcp: { required: false, reason: 'fixture' }, ui: { required: false, reason: 'fixture' }, docs: { required: false, reason: 'fixture' } }, checks: [{ id: 'fixture-check', category: 'logic', command: 'true', evidence: 'structured' }], tracking: { required: false, reason: 'fixture' } }, null, 2))
   writeFileSync(indexPath, JSON.stringify({ contentHash: 'b'.repeat(64), knowledge: [{ id: 'playbook-harness', path: 'content/docs/harness.mdx', title: 'Harness', description: 'Portable harness playbook context' }] }))

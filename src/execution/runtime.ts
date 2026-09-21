@@ -1,4 +1,5 @@
-import { execFile, spawn, type ChildProcessWithoutNullStreams } from 'node:child_process'
+import { execFile, type ChildProcessWithoutNullStreams } from 'node:child_process'
+import spawn from 'cross-spawn'
 import { promisify } from 'node:util'
 import { hashJson } from '../kernel/hash.js'
 import { fail } from '../kernel/errors.js'
@@ -93,6 +94,44 @@ const absolutePath = (value: string, label: string): string => {
   return normalized
 }
 
+const WINDOWS_DRIVE_PATH = /^[A-Za-z]:[\\/]/
+const WINDOWS_UNC_PATH = /^\\\\[^\\/]+[\\/][^\\/]+/
+
+/**
+ * Host-side counterpart of {@link absolutePath}: a mount source lives on the machine running Docker, so on
+ * Windows it is `C:\...` or `\\server\share\...` and a POSIX-only check would reject every Windows host before
+ * Docker is ever invoked. Container-side paths (mount target, `--workdir`) keep the stricter POSIX check.
+ * The returned path uses forward slashes — `docker --mount src=` accepts `C:/repo` on Windows, and normalising
+ * here keeps the profile hash identical whichever separator the caller wrote.
+ */
+export const hostAbsolutePath = (value: string, label: string): string => {
+  const normalized = required(value, label)
+  if (normalized.includes(',')) fail(`${label} must be an absolute path without commas.`, 'INVALID_INPUT')
+  if (!normalized.startsWith('/') && !WINDOWS_DRIVE_PATH.test(normalized) && !WINDOWS_UNC_PATH.test(normalized)) fail(`${label} must be an absolute path without commas.`, 'INVALID_INPUT')
+  return normalized.replaceAll('\\', '/')
+}
+
+// A Windows process started without these dies inside the loader — winsock, crypto and DLL resolution all read
+// SystemRoot, and anything that shells out reads COMSPEC — so the tool exits opaquely instead of reporting a
+// diagnosable failure. POSIX keeps the deliberate "explicit env only" contract.
+const WINDOWS_SYSTEM_VARIABLES = new Set(['systemroot', 'systemdrive', 'windir', 'comspec', 'pathext', 'temp', 'tmp'])
+
+export const spawnEnvironment = (
+  explicit: Readonly<Record<string, string>> | undefined,
+  platform: NodeJS.Platform = process.platform,
+  source: NodeJS.ProcessEnv = process.env,
+): NodeJS.ProcessEnv => {
+  const environment: NodeJS.ProcessEnv = explicit ? { ...explicit } : { PATH: source['PATH'] ?? '' }
+  if (platform !== 'win32') return environment
+  const declared = new Set(Object.keys(environment).map((key) => key.toLowerCase()))
+  for (const [key, value] of Object.entries(source)) {
+    const lowered = key.toLowerCase()
+    if (value === undefined || declared.has(lowered) || !WINDOWS_SYSTEM_VARIABLES.has(lowered)) continue
+    environment[key] = value
+  }
+  return environment
+}
+
 const dockerEnvironment = (env: Readonly<Record<string, string>> | undefined, label: string): readonly string[] => {
   if (env === undefined) return []
   if (typeof env !== 'object' || env === null || Array.isArray(env)) fail(`${label} must be an object.`, 'INVALID_INPUT')
@@ -154,7 +193,7 @@ export const createProcessToolRuntime = ({ tools, timeoutMs = 30_000, maxOutputB
     const command = required(tool.command, `tools[${index}].command`)
     if (tool.args !== undefined && (!Array.isArray(tool.args) || tool.args.some((arg) => typeof arg !== 'string'))) fail(`tools[${index}].args must contain strings.`, 'INVALID_INPUT')
     if (tool.env !== undefined && (typeof tool.env !== 'object' || tool.env === null || Array.isArray(tool.env) || Object.values(tool.env).some((value) => typeof value !== 'string'))) fail(`tools[${index}].env must contain string values.`, 'INVALID_INPUT')
-    return { toolId, command, args: tool.args ? [...tool.args] : [], ...(tool.cwd ? { cwd: tool.cwd } : {}), env: (tool.env ? { ...tool.env } : { PATH: process.env['PATH'] ?? '' }) as NodeJS.ProcessEnv }
+    return { toolId, command, args: tool.args ? [...tool.args] : [], ...(tool.cwd ? { cwd: tool.cwd } : {}), env: spawnEnvironment(tool.env) }
   })
   if (new Set(normalized.map((tool) => tool.toolId)).size !== normalized.length) fail('Process runtime tools must have unique ids.', 'INVALID_INPUT')
   return {
@@ -172,6 +211,9 @@ export const createProcessToolRuntime = ({ tools, timeoutMs = 30_000, maxOutputB
       let input: string
       try { input = JSON.stringify({ actionId, turnId, toolId, argumentsHash, arguments: request.arguments }) } catch { return { status: 'failed', errorCode: 'SERIALIZATION_ERROR', retryable: false, durationMs: Date.now() - started } }
       return new Promise((resolve) => {
+        // `cross-spawn` for the same reason the loop runner uses it: a tool configured as a globally
+        // npm-installed Node CLI is a `.cmd` shim on Windows, which CreateProcess cannot execute without
+        // an interpreter. The cast is safe because `stdio` pipes all three streams.
         const child = spawn(tool.command, [...tool.args], { cwd: tool.cwd, env: tool.env, shell: false, stdio: ['pipe', 'pipe', 'pipe'] }) as ChildProcessWithoutNullStreams
         let stdout = ''
         let timedOut = false
@@ -237,7 +279,7 @@ export const createDockerToolRuntime = ({
     if (tool.mounts !== undefined && !Array.isArray(tool.mounts)) fail(`tools[${index}].mounts must be an array.`, 'INVALID_INPUT')
     const mounts = (tool.mounts ?? []).map((mount, mountIndex) => {
       if (typeof mount !== 'object' || mount === null || Array.isArray(mount)) fail(`tools[${index}].mounts[${mountIndex}] must be an object.`, 'INVALID_INPUT')
-      const source = absolutePath(mount.source, `tools[${index}].mounts[${mountIndex}].source`)
+      const source = hostAbsolutePath(mount.source, `tools[${index}].mounts[${mountIndex}].source`)
       const target = absolutePath(mount.target, `tools[${index}].mounts[${mountIndex}].target`)
       if (mount.readOnly !== undefined && typeof mount.readOnly !== 'boolean') fail(`tools[${index}].mounts[${mountIndex}].readOnly must be boolean.`, 'INVALID_INPUT')
       return `type=bind,src=${source},dst=${target}${mount.readOnly === false ? '' : ',readonly'}`
@@ -273,7 +315,7 @@ export const createDockerToolRuntime = ({
       const started = Date.now()
       let imageDigest: string
       try {
-        const inspected = await inspectImage(command, ['image', 'inspect', tool.image, '--format', '{{.Id}}'], { shell: false, encoding: 'utf8', maxBuffer: 64 * 1024, env: { PATH: process.env['PATH'] ?? '' } as unknown as NodeJS.ProcessEnv })
+        const inspected = await inspectImage(command, ['image', 'inspect', tool.image, '--format', '{{.Id}}'], { shell: false, encoding: 'utf8', maxBuffer: 64 * 1024, env: spawnEnvironment(undefined) })
         imageDigest = inspected.stdout.trim()
         if (!/^sha256:[a-f0-9]{64}$/.test(imageDigest)) throw new Error('Docker image inspection did not return a digest.')
       } catch {

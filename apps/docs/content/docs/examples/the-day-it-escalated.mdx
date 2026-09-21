@@ -1,0 +1,84 @@
+---
+title: The day the loop escalated
+description: Four ways the loop stops and asks — unverifiable, no consensus, out of rounds, paused — and what each looks like.
+---
+
+An unattended loop is judged by how it stops. These are the four ways, in the order they happen to a real
+project.
+
+> **Reconstructed, not captured.** Every block below is the *shape* the loop writes — the event names, fields
+> and messages come from the code, and the issue keys and reasons are invented. Capturing them for real would
+> mean letting a loop write to a tracker, and this release was built read-only. The captures that *are* real
+> are labelled as such: [`doctor`, a dry-run tick](/docs/examples/first-loop) and
+> [`observe`](/docs/guides/operating).
+
+## 1. The contract cannot be frozen
+
+The ticket says "improve onboarding". The orchestrator produces zero executable outcomes and one blocking
+ambiguity, and the loop escalates before any worker exists:
+
+```text
+contract.escalated · REP-141
+  reasons:
+    - no outcome maps to an executable check (command or test)
+    - 1 blocking ambiguity: which of the three onboarding surfaces is in scope?
+```
+
+Nothing was spent beyond one orchestrator call. The alternative — dispatching anyway — buys a confident pull
+request against a requirement nobody stated.
+
+## 2. The plan finds no consensus
+
+Three cycles, three rejections, each carrying a concrete objection:
+
+```text
+plan.voted · REP-152 · cycle 1 · 1/3 approved
+plan.voted · REP-152 · cycle 2 · 1/3 approved
+plan.voted · REP-152 · cycle 3 · 0/3 approved
+plan.escalated · REP-152 · cycles 3
+  unresolved:
+    - no step reaches outcome o2 (the migration is never run)
+    - step s3 changes packages/billing, which the contract puts out of scope
+```
+
+Three models disagreeing three times is an ambiguous requirement. The unresolved objections are exactly what
+the human is being asked to settle — and they are more useful than any summary of them would be.
+
+## 3. The fix rounds run out
+
+```text
+worker.review-round · REP-160 · pr 412 · round 1
+worker.ci-round     · REP-160 · pr 412 · round 2
+worker.review-round · REP-160 · pr 412 · round 3
+worker.blocked      · REP-160 · fix rounds exhausted (3/3); a human needs to take over
+```
+
+The pull request carries every round's text, the worktree is kept for inspection, and the slot is released so
+the rest of the queue keeps moving. The loop does not try a fourth round more cheaply.
+
+## 4. The issue is paused
+
+Two consecutive dispatch failures on the same issue — a worktree that could not be created, a setup command
+that failed:
+
+```text
+issue.paused · REP-166 · consecutive 2
+  reason: worktree setup failed: pnpm install --frozen-lockfile exited 1
+```
+
+The configured label goes on the ticket, and the next tick skips it. Removing that label is a resume signal, as
+is `ak-harness loop resume REP-166` — but find out why first:
+
+```bash
+ak-harness loop paused
+ak-harness loop debrief --issue REP-166
+```
+
+## The shape they share
+
+Every one of these writes an event, comments once on the ticket (deduplicated — a stuck issue does not
+accumulate identical comments), and calls the configured channel when the type is listed in
+`notifications.events`. None of them retries more cheaply, and none of them degrades a gate to get through it.
+
+That is the whole contract of an unattended loop: **it stops where a human would want to be asked, and it says
+exactly what it needs.**

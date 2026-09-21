@@ -190,4 +190,72 @@ describe('review.cli and memory checks', () => {
     const report = await runLoopDoctor({ configPath: join(dir, 'loop.config.yaml'), runner, env: { PATH: bin, XAI_API_KEY: 'k' }, platform: 'darwin', now: () => new Date('2026-09-11T12:00:00.000Z'), probe: false })
     expect(report.checks.find((check) => check.id === 'memory')).toMatchObject({ status: 'passed' })
   })
+
+  it('passes automations.drift when Orca matches the config, and names the drifted fields when it does not', async () => {
+    const bin = fakeBinDir(['claude', 'codex', 'opencode', 'grok'])
+    const dir = configDir(exampleYaml)
+    const configPath = join(dir, 'loop.config.yaml')
+    const shared = { runner: fakeRunner(), env: { PATH: bin, XAI_API_KEY: 'k' }, platform: 'darwin' as const, now: () => new Date('2026-09-11T12:00:00.000Z'), probe: false }
+    const automation = (name: string, rrule: string) => ({ id: `id-${name}`, name, enabled: true, rrule, agentId: 'claude', prompt: `This automation does its work inside its precheck command (ak-harness loop stage ${name.slice(5)} -f "${configPath}"), which always exits non-zero so that no agent session is needed. If you are reading this, the precheck unexpectedly exited 0: reply exactly LOOP_PRECHECK_BYPASSED and stop. Do not run any command.`, precheck: { command: `ak-harness loop stage ${name.slice(5)} -f "${configPath}"`, timeoutSeconds: 600 }, workspaceId: `repo-1::${dir}` })
+    const inSync = fakeRunner({ 'orca automations list --json': ok({ ok: true, result: { automations: [automation('loop-tick', '*/5 * * * *'), automation('loop-deliver', '*/10 * * * *')] } }) })
+    expect((await runLoopDoctor({ ...shared, runner: inSync, configPath })).checks.find((check) => check.id === 'automations.drift')).toMatchObject({ status: 'passed' })
+
+    const drifted = fakeRunner({ 'orca automations list --json': ok({ ok: true, result: { automations: [automation('loop-tick', '0 4 * * *')] } }) })
+    expect((await runLoopDoctor({ ...shared, runner: drifted, configPath })).checks.find((check) => check.id === 'automations.drift')).toMatchObject({ status: 'warning', detail: expect.stringContaining('loop-tick: drifted (trigger)') })
+
+    // Orca unreachable is a warning about the check, never a silent pass.
+    expect((await runLoopDoctor({ ...shared, runner: fakeRunner({}, { 'orca automations list': 'orca is down' }), configPath })).checks.find((check) => check.id === 'automations.drift')).toMatchObject({ status: 'warning', detail: expect.stringContaining('orca is down') })
+  })
+})
+
+describe('the local runner', () => {
+  const localYaml = `${exampleYaml}\nconnectors:\n  runner: local\n`
+
+  it('fails on Windows, and names what is missing anywhere else', async () => {
+    const dir = configDir(localYaml)
+    const shared = { runner: fakeRunner(), now: () => new Date('2026-09-11T12:00:00.000Z'), probe: false, configPath: join(dir, 'loop.config.yaml') }
+
+    // tmux and the system crontab do not exist on Windows, and the alternative is worth naming in the check
+    // rather than in a stack trace halfway through a dispatch.
+    const windows = await runLoopDoctor({ ...shared, env: { PATH: fakeBinDir(['claude', 'codex', 'git', 'tmux', 'crontab']) }, platform: 'win32' })
+    expect(windows.checks.find((check) => check.id === 'runner.local')).toMatchObject({ status: 'failed', detail: expect.stringContaining('Windows') })
+
+    const missing = await runLoopDoctor({ ...shared, env: { PATH: fakeBinDir(['claude', 'codex', 'git']) }, platform: 'darwin' })
+    expect(missing.checks.find((check) => check.id === 'runner.local')).toMatchObject({ status: 'failed', detail: expect.stringContaining('tmux') })
+
+    const ready = await runLoopDoctor({ ...shared, env: { PATH: fakeBinDir(['claude', 'codex', 'grok', 'opencode', 'git', 'tmux', 'crontab']) }, platform: 'darwin' })
+    expect(ready.checks.find((check) => check.id === 'runner.local')).toMatchObject({ status: 'passed' })
+  })
+
+  it('says nothing at all when the project uses the Orca runner', async () => {
+    const dir = configDir(exampleYaml)
+    const report = await runLoopDoctor({ runner: fakeRunner(), env: { PATH: fakeBinDir(['claude', 'codex']) }, platform: 'darwin', now: () => new Date('2026-09-11T12:00:00.000Z'), probe: false, configPath: join(dir, 'loop.config.yaml') })
+    expect(report.checks.some((check) => check.id === 'runner.local')).toBe(false)
+  })
+})
+
+describe('the installed agents a registry points at', () => {
+  const base = (bin: string) => ({ runner: fakeRunner(), env: { PATH: bin, XAI_API_KEY: 'k' }, platform: 'darwin' as const, now: () => new Date('2026-09-11T12:00:00.000Z'), probe: false })
+
+  it('says which instructions file it found, and fails on one that is not there', async () => {
+    const bin = fakeBinDir(['claude', 'codex', 'opencode', 'grok'])
+    const dir = configDir(exampleYaml)
+    const registry = 'schemaVersion: 1\nroles:\n  builder: builder-1\nagents:\n  builder-1:\n    provider: claude\n    path: agents/builder-1\n'
+    writeFileSync(join(dir, 'agents.registry.yaml'), registry)
+
+    // The registry names a directory nobody installed: every run for that role quietly falls back to the provider.
+    const broken = await runLoopDoctor({ ...base(bin), configPath: join(dir, 'loop.config.yaml') })
+    expect(broken.checks.find((check) => check.id === 'agents.registry')).toMatchObject({ status: 'failed', detail: expect.stringContaining('agents/builder-1 is not in the repository') })
+
+    mkdirSync(join(dir, 'agents', 'builder-1'), { recursive: true })
+    writeFileSync(join(dir, 'agents', 'builder-1', 'AGENT.md'), '# Builder\n')
+    const found = await runLoopDoctor({ ...base(bin), configPath: join(dir, 'loop.config.yaml') })
+    expect(found.checks.find((check) => check.id === 'agents.registry')).toMatchObject({ status: 'passed', detail: expect.stringContaining('agents/builder-1/AGENT.md') })
+
+    // An agent that is code is healthy; it only changes who applies an improvement.
+    writeFileSync(join(dir, 'agents', 'builder-1', 'agent.ts'), 'export const agent = {}\n')
+    writeFileSync(join(dir, 'agents.registry.yaml'), `${registry}    instructions: agent.ts\n`)
+    const code = await runLoopDoctor({ ...base(bin), configPath: join(dir, 'loop.config.yaml') })
+    expect(code.checks.find((check) => check.id === 'agents.registry')).toMatchObject({ status: 'passed', detail: expect.stringContaining('code — improvements go to a human') })
+  })
 })

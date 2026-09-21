@@ -6,7 +6,8 @@ import { loadConfig } from './config.js'
 import { fail } from '../kernel/errors.js'
 import { parseStructuredEvidence, validateEvidence } from './evidence.js'
 import { assertHuman, approvedDecision, transition } from '../kernel/state-machine.js'
-import { sourceSnapshot } from './source.js'
+import { sourceSnapshot, statusLineIsPath } from './source.js'
+import { KILL_GRACE_MS, detachedForTreeKill, killProcessTree } from '../kernel/process-tree.js'
 import { cleanConfiguredArtifacts, loadLatestRun, readRun } from './files.js'
 import { validateContextSnapshots } from '../context/index.js'
 import { hashJson } from '../kernel/hash.js'
@@ -25,14 +26,31 @@ interface ExecutedCheck { readonly check: CheckResult; readonly stdout: string; 
 
 const runCommand = (check: VerificationCheck, cwd: string): Promise<CommandResult> => new Promise((resolveResult) => {
   const started = Date.now()
-  const child = spawn(check.command, { cwd, shell: true, env: process.env })
+  const child = spawn(check.command, { cwd, shell: true, env: process.env, detached: detachedForTreeKill() })
   let stdout = ''
   let stderr = ''
   let timedOut = false
-  const timer = setTimeout(() => { timedOut = true; child.kill('SIGTERM') }, check.timeoutMs)
+  let settled = false
+  let grace: ReturnType<typeof setTimeout> | undefined
+  // Every exit path lands here exactly once: a check that neither closes nor resolves is a run that hangs
+  // forever, which is how a timeout used to behave on Windows and under any shell that outlives its command.
+  const finish = (exitCode: number, error?: string): void => {
+    if (settled) return
+    settled = true
+    clearTimeout(timer)
+    if (grace) clearTimeout(grace)
+    resolveResult({ exitCode, timedOut, stdout, stderr: error ? `${stderr}${stderr ? '\n' : ''}${error}` : stderr, durationMs: Date.now() - started })
+  }
+  const timer = setTimeout(() => {
+    timedOut = true
+    killProcessTree(child, 'SIGTERM')
+    grace = setTimeout(() => finish(1, `check timed out after ${check.timeoutMs}ms and did not exit when killed`), KILL_GRACE_MS)
+  }, check.timeoutMs)
   child.stdout.on('data', (chunk: Buffer) => { stdout += chunk.toString() })
   child.stderr.on('data', (chunk: Buffer) => { stderr += chunk.toString() })
-  child.on('close', (exitCode) => { clearTimeout(timer); resolveResult({ exitCode: exitCode ?? 1, timedOut, stdout, stderr, durationMs: Date.now() - started }) })
+  // A spawn that fails (no shell, bad cwd) emits `error` and never `close`.
+  child.on('error', (error) => finish(1, error.message))
+  child.on('close', (exitCode) => finish(exitCode ?? 1))
 })
 
 const executeCheck = async (check: VerificationCheck, cwd: string, checkDir: string, outcomes: readonly string[]): Promise<ExecutedCheck> => {
@@ -55,7 +73,7 @@ const isFresh = async (loaded: LoadedConfig, run: VerificationRun): Promise<bool
   return current.configHash === run.configHash && current.source.revision === run.sourceRevision && current.source.statusHash === run.sourceStatusHash
 }
 
-export const planRun = async ({ configPath, decision, actor = 'human', allowDirty = false, contextSnapshots = [] }: { readonly configPath: string; readonly decision: string; readonly actor?: string; readonly allowDirty?: boolean; readonly contextSnapshots?: readonly ContextSnapshot[] }): Promise<VerificationRun> => {
+export const planRun = async ({ configPath, decision, actor = 'human', allowDirty = false, contextSnapshots = [] }: { readonly configPath?: string; readonly decision: string; readonly actor?: string; readonly allowDirty?: boolean; readonly contextSnapshots?: readonly ContextSnapshot[] }): Promise<VerificationRun> => {
   assertHuman(actor)
   if (!approvedDecision(decision)) fail('Contract was not approved.', 'CLARIFYING')
   const loaded = loadConfig(configPath)
@@ -63,7 +81,7 @@ export const planRun = async ({ configPath, decision, actor = 'human', allowDirt
   const validatedContextSnapshots = validateContextSnapshots(contextSnapshots)
   const baseline = await sourceSnapshot(loaded.root, loaded.stateDir)
   const configRelative = relative(loaded.root, loaded.absolute)
-  const meaningful = baseline.status.split('\n').filter(Boolean).filter((line) => !line.endsWith(` ${configRelative}`) && !line.endsWith(` ${configRelative.replaceAll('/', '\\')}`))
+  const meaningful = baseline.status.split('\n').filter(Boolean).filter((line) => !statusLineIsPath(line, configRelative))
   if (meaningful.length && !allowDirty) fail(`Worktree is dirty before planning:\n${meaningful.join('\n')}\nUse --allow-dirty only with explicit human authorization.`, 'WORKTREE_DIRTY')
   const previous = loadLatestRun(loaded.stateDir)
   if (previous && !['STALE', 'SUPERSEDED'].includes(previous.state)) fail(`An active run already exists: ${previous.runId} (${previous.state}).`, 'ACTIVE_RUN')
@@ -76,7 +94,7 @@ export const startRun = (loaded: LoadedConfig): VerificationRun => {
   saveRun(loaded.stateDir, next); setLatest(loaded.stateDir, next); return next
 }
 
-export const cancelRun = async ({ configPath, runId, reason = 'Run cancelled by a human.', actor = 'human' }: { readonly configPath: string; readonly runId?: string; readonly reason?: string; readonly actor?: string }): Promise<VerificationRun> => {
+export const cancelRun = async ({ configPath, runId, reason = 'Run cancelled by a human.', actor = 'human' }: { readonly configPath?: string; readonly runId?: string; readonly reason?: string; readonly actor?: string }): Promise<VerificationRun> => {
   assertHuman(actor)
   const loaded = loadConfig(configPath)
   const run = requireRun(runId ? readRun(loaded.stateDir, runId) : loadLatestRun(loaded.stateDir))
@@ -84,7 +102,7 @@ export const cancelRun = async ({ configPath, runId, reason = 'Run cancelled by 
   saveRun(loaded.stateDir, next); setLatest(loaded.stateDir, next); return next
 }
 
-export const verifyRun = async ({ configPath }: { readonly configPath: string }): Promise<VerificationRun> => {
+export const verifyRun = async ({ configPath }: { readonly configPath?: string }): Promise<VerificationRun> => {
   const loaded = loadConfig(configPath)
   const machineMonitor = createMachineMonitor()
   const run = requireRun(loadLatestRun(loaded.stateDir))
@@ -177,7 +195,7 @@ const assertDecisionProjection = (run: VerificationRun, decision: { readonly dec
   if (decision.decision !== 'approved' || decision.resultingState !== expectedState || decision.verificationDigest !== run.verificationDigest || decision.sourceRevision !== run.sourceRevision || decision.contractHash !== run.contractHash) fail('Terminal decision attestation does not match the run projection.', 'HARNESS_ERROR')
 }
 
-export const reconcileRun = async ({ configPath, runId }: { readonly configPath: string; readonly runId?: string }): Promise<import('../kernel/types.js').RunReconciliation> => {
+export const reconcileRun = async ({ configPath, runId }: { readonly configPath?: string; readonly runId?: string }): Promise<import('../kernel/types.js').RunReconciliation> => {
   const loaded = loadConfig(configPath)
   const run = requireRun(runId ? readRun(loaded.stateDir, runId) : loadLatestRun(loaded.stateDir))
   await assertFresh(loaded, run)
@@ -204,7 +222,7 @@ export const reconcileRun = async ({ configPath, runId }: { readonly configPath:
   return { status: 'verified', runId: run.runId, state: run.state, eventCount: eventLog.eventCount, ...(eventLog.headHash ? { headHash: eventLog.headHash } : {}), ...(run.verificationDigest ? { verificationDigest: run.verificationDigest } : {}) }
 }
 
-export const approveRun = async ({ configPath, runId, decision, actor = 'human' }: { readonly configPath: string; readonly runId?: string; readonly decision: string; readonly actor?: string }): Promise<VerificationRun> => {
+export const approveRun = async ({ configPath, runId, decision, actor = 'human' }: { readonly configPath?: string; readonly runId?: string; readonly decision: string; readonly actor?: string }): Promise<VerificationRun> => {
   assertHuman(actor); const loaded = loadConfig(configPath); const run = requireRun(runId ? readRun(loaded.stateDir, runId) : loadLatestRun(loaded.stateDir))
   if (run.state !== 'AWAITING_HUMAN_APPROVAL') fail(`Cannot approve from ${run.state}.`, 'INVALID_STATE')
   await assertFresh(loaded, run); assertVerificationAttestation(loaded, run)
@@ -222,7 +240,7 @@ export const approveRun = async ({ configPath, runId, decision, actor = 'human' 
   setLatest(loaded.stateDir, next); return next
 }
 
-export const authorizeRun = async ({ configPath, runId, decision, actor = 'human' }: { readonly configPath: string; readonly runId?: string; readonly decision: string; readonly actor?: string }): Promise<VerificationRun> => {
+export const authorizeRun = async ({ configPath, runId, decision, actor = 'human' }: { readonly configPath?: string; readonly runId?: string; readonly decision: string; readonly actor?: string }): Promise<VerificationRun> => {
   assertHuman(actor); const loaded = loadConfig(configPath); const run = requireRun(runId ? readRun(loaded.stateDir, runId) : loadLatestRun(loaded.stateDir))
   if (run.state !== 'AWAITING_AUTHORIZATION') fail(`Cannot authorize from ${run.state}.`, 'INVALID_STATE')
   await assertFresh(loaded, run); assertVerificationAttestation(loaded, run)
@@ -232,7 +250,7 @@ export const authorizeRun = async ({ configPath, runId, decision, actor = 'human
   saveRun(loaded.stateDir, next); recordDecision(loaded, run, 'authorization.recorded', { decision: 'approved', resultingState: 'COMPLETE', verificationDigest: run.verificationDigest!, actor: 'human', target: loaded.config.tracking.target, sourceRevision: run.sourceRevision, contractHash: run.contractHash }); setLatest(loaded.stateDir, next); return next
 }
 
-export const retryRun = async ({ configPath }: { readonly configPath: string }): Promise<VerificationRun> => {
+export const retryRun = async ({ configPath }: { readonly configPath?: string }): Promise<VerificationRun> => {
   const loaded = loadConfig(configPath); const previous = loadLatestRun(loaded.stateDir)
   const previousRun = requireRun(previous)
   if (!['BLOCKED', 'STALE', 'CANCELLED'].includes(previousRun.state)) fail(`Cannot retry from ${previousRun.state}.`, 'INVALID_STATE')

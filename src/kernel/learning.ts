@@ -51,8 +51,17 @@ export const parseRetro = (markdown: string, source: string, recordedAt = new Da
   return records
 }
 
+/**
+ * The automated promoter (ADR-0019, amendment of 2026-09-19). It is a distinct actor on purpose: the attestation
+ * stays truthful about who decided, so every automatically promoted lesson can be listed and revoked.
+ */
+export const LOOP_AUTO_ACTOR = 'loop-auto'
+const PROMOTION_ACTORS = new Set(['human', LOOP_AUTO_ACTOR])
+
 export const promoteLearnings = (records: readonly LearningRecord[], input: { readonly actor: string; readonly ids: readonly string[]; readonly status?: 'promoted' | 'rejected' }): readonly LearningRecord[] => {
-  if (input.actor !== 'human') fail('Learning promotion requires a human actor.', 'HUMAN_APPROVAL_REQUIRED')
+  // The bounds on automated promotion (recurrence, per-run cap, allowed categories) are the caller's, and the
+  // loop applies them in `learningsReadyToPromote`; what belongs here is only who is allowed to decide at all.
+  if (!PROMOTION_ACTORS.has(input.actor)) fail(`Learning promotion requires a human or "${LOOP_AUTO_ACTOR}" actor.`, 'HUMAN_APPROVAL_REQUIRED')
   const ids = new Set(input.ids.map((id) => text(id, 'ids[]')))
   const status = input.status ?? 'promoted'
   const result = records.map((record) => ids.has(record.id) ? { ...record, status } : record)

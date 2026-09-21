@@ -57,7 +57,7 @@ modules, not a provider dependency.
 | `src/kernel/plugins.ts` | Kernel | Generic slots, dependency checks, and lifecycle listeners | `errors`, `events` (type-only) | Plugin implementation supplied by caller |
 | `src/context/index.ts` | Context | Context snapshot contract, hashing, and provider slot | stdlib, `plugins`, `hash`, `errors` | Provider implementation supplied by caller |
 | `src/execution/metrics.ts` | Execution support | Benchmark manifest validation, run projection, and comparison | stdlib, `errors`, `files`, `types` | Reads local state only |
-| `src/execution/config.ts` | Execution support | Contract loading, profile resolution, and config hashing | stdlib, `constants`, `profiles`, `errors`, `hash`, `files`, `types` | Local `.codex/verification.json` |
+| `src/execution/config.ts` | Execution support | Contract loading, profile resolution, and config hashing | stdlib, `constants`, `profiles`, `errors`, `hash`, `files`, `types` | Local `.ak-harness/verification.json` |
 | `src/profiles/index.ts` | Profiles | Profile defaults and overrides | `errors` | None |
 | `src/execution/files.ts` | Execution support | Run/config JSON and task-artifact filesystem helpers | stdlib, `errors`, `types` | Local filesystem |
 | `src/execution/source.ts` | Execution support | Git/source snapshot and dirty-tree detection | stdlib, `hash`, `errors`, `types` | Git CLI |

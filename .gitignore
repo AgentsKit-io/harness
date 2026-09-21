@@ -2,8 +2,8 @@ node_modules/
 dist/
 .cache/
 .turbo/
-.codex/verification/
-.codex/verification/tmp/
+.ak-harness/verification/
+.ak-harness/verification/tmp/
 *.log
 *.tsbuildinfo
 .DS_Store
@@ -13,4 +13,13 @@ dist/
 test-results/
 coverage/
 loop.config.local.yaml
-.codex/loop/
+.ak-loop/
+apps/docs/.next/
+apps/docs/out/
+apps/docs/.source/
+apps/docs/public/
+apps/docs/next-env.d.ts
+# Written by `next dev` (agentRules), not by us.
+apps/docs/AGENTS.md
+apps/docs/CLAUDE.md
+.vercel

@@ -156,8 +156,8 @@ describe('exportEvidenceBundle: guard clauses', () => {
 
   it('rejects exporting when no verification run exists yet', async () => {
     const root = tempDir()
-    mkdirSync(join(root, '.codex'), { recursive: true })
-    const configPath = join(root, '.codex', 'verification.json')
+    mkdirSync(join(root, '.ak-harness'), { recursive: true })
+    const configPath = join(root, '.ak-harness', 'verification.json')
     writeFileSync(configPath, JSON.stringify({ schemaVersion: 1, project: 'fixture', root: '..', profile: 'strict', contract: { intent: 'x', scope: { inScope: ['a'], outOfScope: [] }, ambiguities: [], outcomes: [{ id: 'o', statement: 's', checks: ['logic'] }] }, surfaces: { logic: true, endpoint: false, database: false, cli: false, mcp: false, ui: false, docs: false }, checks: [{ id: 'logic', category: 'logic', command: 'true', evidence: 'structured' }], tracking: { required: false, reason: 'fixture' } }))
     await expect(exportEvidenceBundle({ configPath, outputPath: join(root, 'out.json'), privateKeyPath: join(root, 'key.pem'), keyId: 'fixture-v1' })).rejects.toThrow(/No verification run exists/)
   })

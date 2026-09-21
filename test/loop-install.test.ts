@@ -59,7 +59,7 @@ describe('loop install', () => {
     expect(automationName(loaded.config, 'tick')).toBe('loop-tick')
   })
 
-  it('creates on first install, edits by name on the second, picks the watcher provider, and warns when the harness binary is missing', async () => {
+  it('creates on first install, leaves a matching automation alone on the second, picks the watcher provider, and warns when the harness binary is missing', async () => {
     const env1 = setup()
     const first = await installLoopAutomations({ loaded: env1.loaded, runner: env1.runner, env: env(env1.bin), platform: 'darwin' })
     expect(first.status).toBe('ok')
@@ -69,15 +69,22 @@ describe('loop install', () => {
     expect(first.actions[0]?.argv).toContain('--workspace-mode')
     expect(first.actions[0]?.argv).toContain('--reuse-session')
     expect(first.notes).toEqual([])
+    // Idempotence: a second install over automations that already match the config must not rewrite them.
     const second = await installLoopAutomations({ loaded: env1.loaded, runner: env1.runner, env: env(env1.bin), platform: 'darwin' })
-    expect(second.actions.map((action) => action.action)).toEqual(['edit', 'edit'])
-    expect(second.actions[0]?.argv.slice(0, 4)).toEqual(['orca', 'automations', 'edit', 'auto-1'])
+    expect(second.actions.map((action) => action.action)).toEqual(['skip', 'skip'])
+    expect(second.actions[0]?.detail).toBe('already matches the config')
     expect(env1.automations).toHaveLength(2)
+    // …and an automation edited by hand is put back, naming the field that drifted.
+    env1.automations[0]!['rrule'] = '0 3 * * *'
+    const third = await installLoopAutomations({ loaded: env1.loaded, runner: env1.runner, env: env(env1.bin), platform: 'darwin' })
+    expect(third.actions.map((action) => action.action)).toEqual(['edit', 'skip'])
+    expect(third.actions[0]?.argv.slice(0, 4)).toEqual(['orca', 'automations', 'edit', 'auto-1'])
+    expect(third.actions[0]?.detail).toContain('updated trigger')
     const dry = await installLoopAutomations({ loaded: env1.loaded, runner: env1.runner, env: { PATH: '/nonexistent' }, platform: 'darwin', dryRun: true, provider: 'codex' })
     expect(dry.status).toBe('dry-run')
     expect(dry.provider).toBe('codex')
     expect(dry.notes[0]).toContain('not on PATH')
-    expect(env1.runner.calls.filter((argv) => argv[1] === 'automations' && (argv[2] === 'create' || argv[2] === 'edit'))).toHaveLength(4)
+    expect(env1.runner.calls.filter((argv) => argv[1] === 'automations' && (argv[2] === 'create' || argv[2] === 'edit'))).toHaveLength(3)
   })
 
   it('reports status with latest runs, and uninstall removes only the loop automations', async () => {
@@ -89,7 +96,7 @@ describe('loop install', () => {
     expect(status.summary).toMatch(/^loop: installed \(2\/2, last run 2026-/)
     expect(parseAutomationRuns({ runs: [{ createdAt: '2026-01-01T00:00:00.000Z', outcome: 'ok' }] })).toEqual([{ at: '2026-01-01T00:00:00.000Z', status: 'ok' }])
     const removed = await uninstallLoopAutomations({ loaded: env1.loaded, runner: env1.runner })
-    expect(removed.actions.map((action) => action.action)).toEqual(['remove', 'remove', 'skip'])
+    expect(removed.actions.map((action) => action.action)).toEqual(['remove', 'remove', 'skip', 'skip'])
     expect(env1.automations.map((item) => item['name'])).toEqual(['someone-else'])
     const again = await uninstallLoopAutomations({ loaded: env1.loaded, runner: env1.runner })
     expect(again.actions.every((action) => action.action === 'skip')).toBe(true)

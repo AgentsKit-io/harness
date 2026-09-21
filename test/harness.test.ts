@@ -16,15 +16,15 @@ type FixtureCheck = Omit<VerificationCheck, 'required' | 'timeoutMs'> & Partial<
 const project = (checks: FixtureCheck[], ambiguities: string[] = [], tracking: TrackingConfig = { required: false, reason: 'fixture only' }, autonomy: 'controlled' | 'yolo' = 'controlled'): { root: string; configPath: string; stateDir: string; config: VerificationConfig } => {
   const root = mkdtempSync(join(tmpdir(), 'agentskit-harness-test-'))
   initializeGitRepository(root)
-  mkdirSync(join(root, '.codex'), { recursive: true })
-  const configPath = join(root, '.codex', 'verification.json')
+  mkdirSync(join(root, '.ak-harness'), { recursive: true })
+  const configPath = join(root, '.ak-harness', 'verification.json')
   const normalizedChecks = checks.map((check) => ({ ...check, required: check.required ?? true, timeoutMs: check.timeoutMs ?? 5_000 }))
   const hasLogic = normalizedChecks.some((check) => check.category === 'logic')
   const hasUi = normalizedChecks.some((check) => check.category === 'ui')
   const optionalSurface = { required: false, reason: 'fixture' }
-  const config = { schemaVersion: 1 as const, project: 'fixture', root: '..', profile: 'strict', autonomy, contract: { intent: 'Validate fixture.', scope: { inScope: ['fixture'], outOfScope: ['production'] }, ambiguities, outcomes: normalizedChecks.map((check, index) => ({ id: `outcome-${index}`, statement: `${String(check.id)} passes.`, checks: [check.id] })) }, surfaces: { logic: { required: hasLogic, reason: 'fixture' }, endpoint: optionalSurface, database: optionalSurface, cli: optionalSurface, mcp: optionalSurface, ui: { required: hasUi, reason: 'fixture' }, docs: optionalSurface }, checks: normalizedChecks, tracking, cleanup: { roots: ['.codex/verification/tmp'] } }
+  const config = { schemaVersion: 1 as const, project: 'fixture', root: '..', profile: 'strict', autonomy, contract: { intent: 'Validate fixture.', scope: { inScope: ['fixture'], outOfScope: ['production'] }, ambiguities, outcomes: normalizedChecks.map((check, index) => ({ id: `outcome-${index}`, statement: `${String(check.id)} passes.`, checks: [check.id] })) }, surfaces: { logic: { required: hasLogic, reason: 'fixture' }, endpoint: optionalSurface, database: optionalSurface, cli: optionalSurface, mcp: optionalSurface, ui: { required: hasUi, reason: 'fixture' }, docs: optionalSurface }, checks: normalizedChecks, tracking, cleanup: { roots: ['.ak-harness/verification/tmp'] } }
   writeFileSync(configPath, `${JSON.stringify(config, null, 2)}\n`)
-  return { root, configPath, stateDir: join(root, '.codex', 'verification'), config: config as VerificationConfig }
+  return { root, configPath, stateDir: join(root, '.ak-harness', 'verification'), config: config as VerificationConfig }
 }
 
 const runToVerify = async (fixture: ReturnType<typeof project>) => {

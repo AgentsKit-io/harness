@@ -88,7 +88,7 @@ describe('loop config', () => {
     writeFileSync(join(dir, 'loop.config.yaml'), exampleYaml)
     const loaded = loadLoopConfig(join(dir, 'loop.config.yaml'))
     expect(loaded.root).toBe(dir)
-    expect(loaded.stateDir).toBe(join(dir, '.codex/loop'))
+    expect(loaded.stateDir).toBe(join(dir, '.ak-loop'))
     expect(loaded.configHash).toMatch(/^[a-f0-9]{64}$/)
     expect(() => loadLoopConfig(join(dir, 'missing.yaml'))).toThrow(/not found/)
     writeFileSync(join(dir, 'loop.config.local.yaml'), 'linear:\n  person: someone-else\nmachine:\n  minFreeRamGb: 2\nmodels:\n  builder: [[claude/haiku]]\n')

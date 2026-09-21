@@ -1,0 +1,71 @@
+---
+title: Flows
+description: One motor, several kinds of demand. A profile switches what the loop spends on an issue.
+---
+
+An incident and a refactor of the billing core should not cost the same. A flow profile is how one loop serves
+both without becoming two loops.
+
+```yaml
+flows:
+  default: standard
+  profiles:
+    standard:
+      review: { votes: 1, minSeverity: med }
+    critical:
+      review: { votes: 3, minSeverity: nit }
+      merge: { requireChecks: true, requireHumanApproval: true }
+      roles:
+        review: { provider: codex, model: gpt-5.6-sol, effort: xhigh }
+      reason: touches money
+    incident:
+      review: { votes: 1, minSeverity: blocker }
+      merge: { requireChecks: false, requireHumanApproval: false }
+      maxFixRounds: 1
+      stages: { planner: false, vote: false }
+      lead: true
+  select:
+    - flow: incident
+      anyLabels: [sev1]
+      priorities: [Urgent]
+    - flow: critical
+      anyLabels: [area:billing]
+```
+
+## How one is picked
+
+**By kind, never by position**: an explicit `flow:<name>` label first, then a rule matching a label, then the
+project, then the priority, then `flows.default`. A label is somebody stating an intention; a priority is a
+signal, and a signal must never outrank a statement.
+
+All three inputs — labels, project, priority — come from the dispatch record, frozen when the issue entered. A
+label edited mid-flight cannot change the gate the running work is judged by.
+
+## What a profile can change
+
+| Block | What it decides |
+|---|---|
+| `review` | Votes, severity floor, profile, deadline |
+| `merge` | Auto-merge, CI babysitting (`requireChecks`), the human approval gate |
+| `maxFixRounds` | How many rounds before a human is asked |
+| `roles.<role>` | Who runs a role: provider, model, effort, timeout |
+| `stages.<phase>` | Whether a per-issue phase runs at all |
+| `lead` | Whether the builder delegates to subagents, where its provider has them |
+| `reason` | The sentence every report quotes when this flow costs more |
+
+Only the fields a profile names are replaced. A flow that raises `votes` does not silently reset the deadline,
+the merge method or the review CLI.
+
+## Narrow beats broad
+
+For `roles.<role>`, precedence is the role inside the profile, then the project's configuration, then the
+global layer. A `provider`/`model` pin **narrows** the role's candidate list; it never widens it. If nobody can
+serve the pin right now — the provider is out of quota, the model is not in the catalogue — the role falls back
+to its ordinary candidates rather than becoming an outage, and the dispatch record says who actually ran.
+
+## Switching phases off is a decision, not a shortcut
+
+`stages.review: false` merges without a review. That is a real thing to want for an incident flow at three in
+the morning, and every other gate — checks, the definition of done, `requireHumanApproval` — still runs. It is
+also written into the delivery actions (`review phase off for this flow`), so nobody later mistakes it for a
+review that came back clean.

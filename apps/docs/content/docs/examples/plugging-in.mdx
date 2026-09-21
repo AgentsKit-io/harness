@@ -1,0 +1,82 @@
+---
+title: Plugging it in
+description: An escalation webhook, the local runner, and the smallest tracker connector that is honest.
+---
+
+Three ways to wire the loop into a setup it did not come with. None of them needs a fork.
+
+## 1. An escalation webhook
+
+The tracker comment is the record; the channel is what goes on top of it.
+
+```yaml
+notifications:
+  events: [contract.escalated, plan.escalated, issue.paused, stage.paused, pr.merge-refused, release.waiting]
+  webhook:
+    urlEnv: LOOP_WEBHOOK_URL
+    method: POST
+    timeoutMs: 10000
+```
+
+`urlEnv` and not `url`: a versioned config never holds a secret. `loop doctor` warns when the variable is
+unset in this environment, because an unreachable webhook looks exactly like silence.
+
+The payload is generic — summary, event type, issue, and the full event as JSON — which is why Slack, Discord,
+a Telegram bot and n8n all work without a line of vendor code. For a local machine, the other shape:
+
+```yaml
+notifications:
+  command: [terminal-notifier, -title, 'loop', -message, '{summary}']
+```
+
+## 2. The local runner
+
+```yaml
+connectors:
+  runner: local
+  local: { worktreeRoot: ../.ak-worktrees, tmuxBin: tmux, cronMarker: '# ak-harness' }
+```
+
+git worktree, tmux, crontab. No app, no daemon. See [running without Orca](/docs/guides/local-runner) for what
+changes (chiefly: usage reporting comes from each CLI instead of one aggregated source).
+
+## 3. The smallest honest tracker connector
+
+```ts
+import type { TrackerConnector } from '@agentskit/harness'
+
+export const createFileTracker = (root: string): TrackerConnector => ({
+  id: 'file',
+  // The queue: whatever your system considers ready, newest first.
+  queue: async () => readQueueFile(root),
+  // One issue, in full: title, description, comments, labels, state, updatedAt.
+  issue: async (identifier) => readIssueFile(root, identifier),
+  comment: async ({ issue, body, dedupeKey }) => appendComment(root, issue, body, dedupeKey),
+  transition: async ({ issue, to, reason }) => setState(root, issue, to, reason),
+  // …labels, claim/release, attach, create
+})
+```
+
+Register it in `resolveConnectors` and add its id to the `connectors.tracker` enum. Two things decide whether
+it is honest:
+
+- **`dedupeKey` must actually deduplicate.** The loop calls `comment` on every pass; without deduplication a
+  stuck issue collects the same paragraph forty times, and people stop reading the ticket.
+- **`issue()` must return what the contract needs**: the description *and* the comments, because acceptance
+  criteria are usually in the comments, and `updatedAt`, because that is what invalidates a cached contract.
+
+Everything else — `tick`, `deliver`, `release` — stays untouched. That is the test of the seam: if adding a
+tracker makes you edit a stage, the interface was hiding a vendor rather than describing a role.
+
+## A plugin, when configuration is not enough
+
+```js
+export default function register(bus) {
+  bus.hook('beforeMerge', ({ issue }) => isChangeFreeze()
+    ? { block: true, reason: `change freeze: ${issue} waits` }
+    : undefined)
+}
+```
+
+See [writing a plugin](/docs/guides/plugins) for the eight hooks and the rules that keep a broken one from
+taking the loop down with it.

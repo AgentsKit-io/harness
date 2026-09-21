@@ -1,5 +1,399 @@
 # Changelog
 
+## [0.15.0] - 2026-09-20
+
+The loop becomes a cycle. The twelve steps of [docs/ROADMAP-SDLC.md](docs/ROADMAP-SDLC.md) close, the phases of one
+issue become files the machine can check instead of claims in a terminal, and the parts of the design that were
+decided in conversation become ADRs 0032–0037.
+
+### The phases of an issue leave evidence behind
+
+- The worker writes three files into `.ak-loop/` in its worktree — `plan.md` (the plan it actually followed),
+  `verify.json` (what it ran, outcome by outcome) and the definition-of-done proofs — and the brief tells it so.
+  **The loop advances on presence plus validation**, never on what a terminal said.
+- `deliver` reads them before the merge gate. A missing file comes back as a fix round **naming the file**; a file
+  that exists but does not match its schema is called out as worse than absent, because it looks like evidence.
+  A dispatch record with no worktree path is left out of the gate: the harness has nowhere to look, and blaming a
+  worker for a file nobody can open is how a loop invents work.
+- `verify.json` counts as evidence for an outcome the definition-of-done file left unproven. The worker ran the
+  check once; asking it to transcribe the result into a second file only invents a way to be inconsistent.
+
+### `layers:` and `documents:` — where the work belongs, and where the decisions live
+
+- **`layers`** declares the slices of the codebase: the tracker label that places an issue, the globs the layer
+  owns, and the one command that closes it. The brief tells the worker which test closes its layer — cheaper than
+  the whole suite — and `deliver` reports every PR that crossed its boundary, holding it only where the project
+  said the boundary is real (`layers[].enforce`). Off by default, because a boundary that blocks before a team has
+  drawn it properly costs more than it protects.
+- **`documents`** decides where the PRD and the technical design live once a human approves them: `file` writes
+  them into the repository, where they are reviewable, diffable and greppable by the workers that come later.
+  Turning one into a numbered ADR stays a human gesture.
+
+### Per-role settings, and which phases run at all
+
+- **`flows.profiles.<name>.roles.<role>`** names who runs a role on this flow, with what effort and what timeout.
+  Narrow beats broad: the role in the profile, then the project, then the global layer. A pin **narrows** the
+  candidate list and never widens it, so a model nobody can serve right now falls through to the ordinary
+  candidates instead of becoming an outage — and the dispatch record always says who actually ran.
+- **`worker.roles`** is the ordered list of phases for one issue (`planner`, `vote`, `builder`, `verify`, `review`,
+  `dod`). Unset, every phase keeps answering from its own block, which is exactly what a project that never opted
+  in already has. Declaring the list makes it the answer. **`flows.profiles.<name>.stages`** overrides it per flow;
+  `builder` is the work and is never switched off.
+- A flow may buy the plan without buying the jury: with the `vote` phase off, the planner's plan stands and is
+  stored with zero votes, so nothing downstream mistakes it for consensus.
+
+### The four cost levers, finished
+
+- **A stable, cacheable prefix.** The worker brief and the contract prompt now open with everything invariant for
+  the repository — role, standing rules, definition of done, artifacts, pinned skills — and close with the issue,
+  its contract and its plan. Two issues share the head of the prompt byte for byte. The test measures that shared
+  prefix and asserts a minimum length; without it the reordering would be decoration that the next edit undoes.
+- **Context pinned by digest.** A handoff points at a pinned skill by path and sha when the file on disk still
+  hashes to what the dispatch record says was delivered, and sends the whole file only when it changed, vanished
+  or was never recorded. Fix rounds carry a one-line anchor — contract, brief, pinned skills — instead of
+  repeating what the terminal already has. The rule is deliberately asymmetric: a worker without its context is
+  worse than a worker that costs more.
+- **`models.providers.<id>.subagents` and `flows.profiles.<name>.lead`.** A flow may ask its builder to lead and
+  delegate one plan item at a time. Whether it can is the provider's answer; the brief says which of the two the
+  worker got, and the dispatch record keeps `delegation: 'subagents' | 'alone'`. Dropping the request silently
+  would leave a human reading "lead" in the config and a worker that never led anything.
+
+### `release.waiting`, once per head
+
+- A batch on the integration branch with nobody's approval behind it now emits `release.waiting` and calls the
+  configured channel — **once per head**, deduplicated in `release.json`, because a cron that repeats it every few
+  minutes is noise and a channel that always shouts stops being read. A promotion clears the mark, so the next
+  batch is news again. The stage now carries the event bus and its notifier, like `tick` and `deliver`.
+
+### The event vocabulary, and the compiler that guards it
+
+- **`LOOP_EVENT_TYPES`** names every event the loop emits and what it carries, and `appendLoopEvent` and
+  `LoopEventPayload['type']` accept only those. An event whose name exists only inside a template string is an
+  event nobody can subscribe to on purpose.
+- Narrowing the type found two events no grep had found (`tuning.applied`, `tuning.reverted`) and two that never
+  existed (`worker.dry-run`, `github-intake.dry-run`): a dry run returns before anything is written, and the type
+  now says so. A test closes the circle both ways — an emission that skipped the vocabulary fails, and so does a
+  name declared here that nothing emits.
+
+### The installed agent is code, not a markdown file to append to
+
+- `npx agentskit add <id>` installs an agent as code. The retro's improvement pass now edits **only a markdown
+  instructions file that already exists**; an agent that is code, or whose instructions file is missing, gets a
+  recorded `needs-human` proposal with its evidence. The previous behaviour appended an HTML comment — to
+  `agent.ts`, if that is what the registry named, and it created an `AGENT.md` out of nothing when none existed.
+- New `loop doctor` check **`agents.registry`**: every `path` in the registry exists, and the check says which
+  instructions file it found. A registry pointing at a directory nobody installed sends every run for that role to
+  the provider alone, and nothing said so.
+
+### Documentation
+
+- **Six ADRs**: [0032](docs/ADR-0032-loop-stages-as-state-machines.md) stages as state machines,
+  [0033](docs/ADR-0033-four-config-layers-and-presets.md) the four configuration layers and the presets,
+  [0034](docs/ADR-0034-connectors-tracker-scm-runner.md) the connectors and the two-implementations rule,
+  [0035](docs/ADR-0035-definition-of-done-two-lists.md) the definition of done in two lists,
+  [0036](docs/ADR-0036-bounded-self-modification.md) bounded self-modification,
+  [0037](docs/ADR-0037-cost-policy-ceilings-and-levers.md) cost — including which levers were not built.
+- The `ak-harness-loop` skill gains the section on driving `loop plan` from inside a conversation: one question
+  per message, with alternatives and a recommendation, and the rule that **the agent never answers in the human's
+  place**. A test asserts every command the skill cites exists in the CLI.
+- The README describes the whole cycle instead of the 0.14 loop, and `docs/GETTING-STARTED.md` gains the happy
+  path: `loop init` → `loop doctor` → `loop install` → the first tick.
+
+### Windows stops being a second-class platform
+
+The external PR #84 found that provider CLIs installed as `.cmd` shims could not be spawned at all. Auditing
+around it found five more, none of them cosmetic:
+
+- **Every `plan` was refused on Windows.** `git status --porcelain` prints forward slashes and `path.relative()`
+  returns the platform separator, so the comparison that excludes the harness's own contract file never matched
+  and a clean worktree read as dirty. This is the cause of the 16 "pre-existing, unrelated" test failures the PR
+  author reported.
+- **A timeout could hang forever.** A check runs under a shell; killing the shell left the real command holding
+  the inherited pipes, so `close` never fired and the promise never settled. Timeouts now kill the whole tree
+  (process group on POSIX, `taskkill /t` on Windows) and a grace period guarantees the call ends either way. A
+  spawn that failed emitted `error` and never `close`, which hung the same way; it is handled now.
+- **A `:` in an artifact id silently lost the artifact.** On NTFS the id became an alternate data stream: the
+  write succeeded, `readdirSync` never listed it, and `list()` quietly returned less than was written. The id
+  pattern now rejects `:` — **a narrowing of a public contract**, chosen over encoding the filename because a
+  loud `INVALID_INPUT` beats losing data quietly.
+- **`connectors.runner: local`** needs tmux and the system crontab, which Windows has neither of; the failure
+  arrived as a raw `ENOENT` halfway through a dispatch. `loop doctor` now says so up front (`runner.local`).
+- **A fabricated load average.** `os.loadavg()` returns zeros on Windows, so a busy machine reported 0% load and
+  CPU pressure never throttled anything. The sample now says the reading is unavailable, and both the reports
+  and `adaptiveConcurrency` treat it as unknown rather than as calm.
+- Plus: a Windows-absolute path passing the "repository-relative" check, Docker host paths (`C:\…`, UNC)
+  rejected before Docker ran, a child process started without `SystemRoot`, a cross-volume `rename` for the
+  benchmark manifest, and `writeJsonAtomic` promising an atomicity it did not have while a reader held the
+  destination open.
+
+The platform-sensitive tests now run on the Windows leg of CI, and every one of them asserts Windows-shaped
+inputs rather than gating on `process.platform`, so they fail on any machine if the behaviour regresses.
+
+### The licence, and a surface for the numbers
+
+- The harness is **free and open source under MIT**, said where someone looks for it: the home, the first
+  documentation page and the README.
+- **`/api/stats.json`**, in the same envelope the sibling products use, plus a small band on the home. Every
+  number is derived at build time from the repository — commands from the commander tree, events from the
+  vocabulary, config paths from the Zod schema, decision records from the ADR files — so nothing there can drift
+  from what the code actually is. The test suite is never run to produce a count.
+
+### The harness has a folder of its own
+
+- The contract moves from **`.codex/verification.json` to `.ak-harness/verification.json`**, and the run state
+  from `.codex/verification` to `.ak-harness/verification`. A tool that routes work across claude, codex, grok
+  and opencode should not keep its own state in a folder named after one of them.
+- **Nothing breaks for an existing repository**: with no `-c`, the harness reads `.ak-harness/verification.json`
+  when it exists, falls back to a legacy `.codex/verification.json` when it does not, and prefers the new one
+  when both are there. The run state now defaults to a `verification/` folder *beside the contract that declares
+  it*, so a legacy contract keeps its legacy state without either path being hardcoded.
+- `resolveConfigPath`, `DEFAULT_CONFIG_PATH` and `LEGACY_CONFIG_PATH` are exported for callers that need to say
+  which file they read.
+
+### The documentation site
+
+- **`apps/docs` — a Next.js + fumadocs site, its own package**, so Next and React 19 never reach the harness
+  runtime, which draws its TUI with ink. 38 pages in six sections, the eight stage state machines as diagrams,
+  four examples, and a `/for-agents` route. `harness.agentskit.io`, static export, published by Vercel like every sibling site.
+- **The reference is generated from the code** (`pnpm docs:generate`): the configuration from the Zod schema
+  joined with the JSDoc by dotted path (neither source is sufficient alone — the schema has no `.describe()` and
+  the file has 155 JSDoc blocks), the CLI walked from the commander tree rather than parsed from `--help`, and
+  the events from the vocabulary. A documented path that does not exist in the schema is a hard error. The `docs`
+  job in CI runs `docs:generate --check`, which regenerates nothing and fails on drift.
+- `llms.txt`, `llms-full.txt` and the raw Markdown of every page, with a contract test that requires the corpus
+  to preserve each page byte for byte.
+- The captures in the examples are real, taken read-only against a pilot repository on 2026-09-20; everything
+  reconstructed says so on the page.
+
+### The twelve steps of the roadmap, in the order they landed
+
+The automations stop drifting: the config file becomes the single source of truth for every scheduled automation,
+and the last piece of the loop that lived outside a repository moves into the harness.
+
+### `loop install` reconciles instead of rewriting
+
+- It now compares every live Orca automation with what `schedule:` declares — trigger, prompt, precheck command and
+  timeout, provider, workspace, enabled — and **creates what is missing, edits only the fields that drifted, leaves
+  a matching automation untouched, and switches off (never deletes) an automation whose stage the config stopped
+  declaring**. Each action names the fields it changed.
+- `loop doctor` gained **`automations.drift`**: it reports the same comparison and changes nothing. Drift was
+  invisible to every other check — the loop looks healthy while the scheduler runs a command nobody declares.
+- The motivating defect, measured on 2026-09-19: four automations still pointing at a config file from 2026-09-14,
+  because each had been edited by hand inside Orca and nothing ever compared them to the repository.
+- `loop uninstall` and `loop status` now cover every managed stage, not just `tick` and `deliver`.
+
+### `loop stage observe` — the health scan comes into the repository
+
+- New stage and new `schedule.observe` cron. It runs the observability scan plus the checks only a scheduler cares
+  about: failing doctor checks, automations missing / switched off / stalled (`schedule.observer.schedulerStallMin`),
+  and abandoned stage locks (`schedule.observer.staleLockMin`).
+- Each problem has a stable id; their sorted set is hashed into a signature stored in
+  `<stateDir>/observer-state.json`. The stage exits **0 — the one stage whose exit code is a decision — only when
+  that set is new, or unresolved past `schedule.observer.reminderHours`**. A previous, machine-local version of this
+  scan fired nine investigations in two hours over the same three unchanged facts.
+- This replaces a precheck script that lived on one laptop, outside any repository, with absolute paths baked in.
+  Every automation is now a shim that calls `ak-harness loop stage <x> -f <config>` and nothing else.
+- `runObservability` now reports `failingChecks` (the doctor checks that did not pass) alongside its anomalies.
+
+### Configuration in four layers, and the loop learns to call a human
+
+Step 2 of the roadmap: configurable per user, per project, per team and per kind of demand.
+
+- **`~/.agentskit/harness.yaml`** (the user) and **`loop.config.team.<key>.yaml`** (the team) join the project and
+  machine layers. Deep merge, most specific wins, validated once. The project weighs more than the global and
+  never writes to it; a declared team whose file is missing fails loudly instead of quietly running the defaults.
+  `$AK_HARNESS_CONFIG`, `$AK_LOOP_TEAM` and `$AK_HARNESS_NO_GLOBAL=1` steer it.
+- **`notifications`** — the tracker comment is still the record; this is the channel on top of it. Two generic
+  shapes and zero vendor code: `webhook` (a URL from `urlEnv`, covering Slack, Discord, Telegram bots, n8n) and
+  `command` (local argv with `{summary}`/`{event}`/`{issue}`/`{json}`). Declared event types reach it, and
+  `onEscalate` always does. A failing channel is reported, never fatal. `loop doctor` warns when the URL variable
+  is unset in this environment, because an unreachable webhook looks exactly like silence.
+- **`stage.paused`** is now a real event: a scheduled stage that auto-pauses writes it to the log and calls the
+  channel. Nobody is watching that terminal.
+- **`flows`** — named profiles (`enterprise`, `poc`, `incident`, or your own) that switch review votes and
+  severity, CI babysitting, the human merge gates and the fix-round ceiling, replacing only the fields they name.
+  A rule picks one per issue by **label, then project, then priority** — a label is an intention, a priority is a
+  signal — with `flow:<name>` always winning and `flows.default` as the fallback. All three come from the dispatch
+  record, frozen at entry, so nothing edited mid-flight changes the gate a running item is judged by.
+- **`delivery.merge.requireChecks` finally does something.** It was declared and never read; it is now the CI
+  babysitting switch: off, a red or pending check no longer costs a fix round and the review is the gate.
+- `loop doctor` fails on a flow referenced but never defined, and reports the configured channel.
+
+### The roles become installed agents, and the retro can improve them
+
+Step 11 of the roadmap.
+
+- `agents.registry.yaml` entries gained **`path`** (the agent installed under `agents/<id>/`) and
+  **`instructions`** (the prompt file inside it, `AGENT.md` by default). The code is the project's: the copy in
+  the repository is the version and git is its history.
+- With **`agents.autoImprove`**, the retro correlates outcomes with roles using only events the loop already
+  writes — review findings, fix rounds, escalations, contrary votes — takes the worst role above
+  `agents.minRatio`, and proposes **one dated note** appended to that agent's instructions.
+- **`agents.evalCommand` is the gate.** The change is kept only if the eval still passes; a failure restores the
+  file byte for byte, and with no eval command declared nothing is ever adopted — a change that cannot be
+  measured is a guess.
+- Never done by a machine: touching `architect` or `reviewer` instructions, writing more than
+  `agents.maxAutoLines` lines, or publishing back to the registry. Every proposal is recorded with its evidence
+  in `<stateDir>/agent-improvements.json` and listed in the retro comment.
+- New events: `agent.adopted`, `agent.reverted`, `agent.needs-human`, `agent.rejected`.
+
+### Presets and a grilled `loop init`
+
+Step 10 of the roadmap.
+
+- **`extends: <preset>`** — `web-app`, `library`, `monorepo`, `data-pipeline`, `mobile`. A preset carries what
+  varies by kind of project: the verify command, the Definition of Done items, the layer labels, how strict the
+  default review is, whether a human approves every merge. It is merged **below every other layer**, so it fills
+  silence and overrides nothing, and an unknown name fails loudly instead of being ignored.
+- **`ak-harness loop init`** grills one question per round — kind of project (with each preset described),
+  repository, branch, Linear workspace/team, whose queue this machine drains — and writes a config that states
+  only what the preset cannot know. It refuses to overwrite an existing config without `--force`.
+- It validates the **composition** (preset + the user's layer + the new file) before writing, and `--global`
+  writes `~/.agentskit/harness.yaml` with the models this machine can use and a commented-out channel. Models
+  live in the user's layer on purpose: which CLIs are installed and logged in is a fact about the person and the
+  machine, not about the repository.
+
+### `intake`, `maintain`, and release notes — the cycle closes
+
+Step 12 of the roadmap.
+
+- **`intake`** turns alerts into issues: each source is argv printing a JSON array, the fingerprint covers the
+  alert's *identity* rather than its numbers (an error going from "seen 11 times" to "seen 12 times" files
+  nothing), and `intake.flowBySeverity` maps a severity to a `flow:<name>` label — the only way the incident flow
+  starts without a human at a keyboard. The alert body reaches the issue as data, never as instructions.
+- **`maintain`** runs the project's dependency, security and licence checks on a schedule and files **only a
+  decision** (`fileWhen: exit-code | output`); a clean check files nothing, and the same unresolved finding is not
+  re-filed inside `maintain.dedupeWindowHours`. The command's own output is the evidence.
+- Both are stages: `loop stage intake`, `loop stage maintain`.
+- **Release notes**: with `release.notesFile`, the batch's notes — commits grouped by the issue they carry — are
+  written newest-first and committed **before** the promotion, so the branch that reaches production carries them.
+  Built from the log, not from a summary.
+- New events: `intake.filed`, `maintain.filed`.
+
+### Cost: a routing policy, two ceilings, and two of the four levers
+
+Step 9 of the roadmap.
+
+- **`models.routing.policy`**: `quality-first` (default, unchanged), `usage-balanced` (most remaining window
+  first, unknown usage last) or `cost-first` (declared `models.cost` when the project declared any, otherwise the
+  last tier — and the reason says which decided). Policy orders the candidates a role already allows; it never
+  widens the set.
+- **`budget.perProvider`** — the share of a provider's window the loop may take, leaving the rest for the human
+  on the same plan. Over the ceiling the provider is unavailable *for the loop*, with the reason recorded beside
+  a rate limit.
+- **`budget.perIssueTokens`** — what one issue may cost across every loop call. Reaching it trips the existing
+  cost-guard circuit breaker: it escalates, it does not retry with less headroom.
+- **Cost lever 2, cheap verifier first**: with `delivery.verify.argv` set, deliver runs it before asking for a
+  review. A build that does not pass never spends a two-vote review; it goes straight to a fix round.
+- **Cost lever 3, model by size of change**: `delivery.review.smallChangeLines` and `delivery.review.criticalPaths`
+  send a small or documentation-only change to the cheapest candidate and anything touching a critical path to
+  the strongest. `PullRequestSnapshot` now carries `changedLines`.
+- Levers 1 (stable cache prefix) and 4 (context pinned by digest) landed later in this release — see "The four
+  cost levers, finished" below.
+
+### Connectors: the engine stops naming vendors
+
+Step 8 of the roadmap.
+
+- **`TrackerConnector`** (queue, issue, comment, labels, state, claim/release, attach, create) and
+  **`ScmConnector`** (pull requests, checks, comments, labels, merge), extracted from the Linear and GitHub
+  adapters that already existed. `tick` and `deliver` now write to the tracker **only** through the interface, so
+  a second tracker is a factory in `resolveConnectors` and a value in `connectors.tracker`, not a change in the
+  stages. An unknown value fails with the name of the interface to implement.
+- **`RunnerConnector`** with two implementations, because an interface with one is a guess: `orca`, and the new
+  **`local`** — git worktree + tmux + the system crontab, no Orca and no daemon. `send` types the literal text and
+  only then presses Enter, so a newline inside a brief cannot submit it early; `schedule` reconciles only the
+  crontab lines carrying `connectors.local.cronMarker` and leaves every other line untouched.
+- `connectors.*` selects them, `connectors.local.*` configures the local runner.
+
+### `release` — promotion and deploy, with a human in front
+
+Step 7 of the roadmap. `project.baseBranch` is the integration branch; `release` is what reaches production.
+
+- `loop release status | approve | run`, and `loop stage release` for the scheduler.
+- **The approval binds to a head sha.** Anything merged after it is a different batch and needs its own approval;
+  the approval is spent on a successful promotion. An approval that outlived its commits would be a rubber stamp.
+- Sequence: promote → `release.deploy` → `release.smoke`; a failing smoke runs `release.rollback` and escalates,
+  and a project with no rollback declared is told plainly that a human has to decide.
+- Everything is argv, never a shell string: the harness knows how to sequence a release, not how to deploy your
+  service.
+- New events: `release.promoted`, `release.deployed`, `release.smoke-failed`, `release.rolled-back`,
+  `release.failed`; history in `<stateDir>/release.json`.
+
+### `loop plan` — a vague objective becomes issues
+
+Step 6 of the roadmap: the stage that was missing entirely.
+
+- **interview → review → architect → decompose**, a state machine persisted in `<stateDir>/plans/<id>/state.json`,
+  driven from the terminal: `loop plan start | answer | approve | architect | approve-design | decompose | show`.
+- The **interview asks one question per round**, always with concrete alternatives and a recommendation, and ends
+  when the *machine* says so: every required PRD field filled (`objective`, `users`, `inScope`,
+  `successCriteria`) and no open question. A model declaring itself done with a gap still open is asked again.
+  The human's answers enter the next prompt as data, never as instructions.
+- The **architect** designs the whole PRD — module boundaries, contracts, decisions, sequence, risks — and three
+  agents vote under the same 2-of-3 rule. Consensus is not enough: the design waits for a human too, because
+  everything built afterwards inherits it.
+- **Decompose** produces issues that each carry a layer label, a priority, verifiable acceptance criteria and a
+  `designRef`; `--create` writes them to the tracker in the queue's **entry** state. `Todo → Ready` stays a human
+  gesture — the single gate into the queue.
+- New adapter call: `linearSaveIssue` (Orca `linear save-issue`), with a deterministic write id so a retried
+  decompose cannot create the same issue twice.
+
+### A plan, voted on, before any worker starts
+
+Step 5 of the roadmap, and the fork closed in §7c: the planner and the vote run **in the harness, headless, before
+dispatch** — the same shape as freezing the contract. The model writes the plan and the votes; the machine counts
+them and decides.
+
+- **`worker.plan`** (off by default — nothing changes until a project opts in): `votes`, `approvals` (2 of 3 by
+  default), `maxCycles`, `timeoutMs`.
+- Each cycle: the planner proposes, N agents vote, and a rejection **must** carry a concrete objection — one that
+  cannot be answered is discarded, not counted. The next cycle replans with the standing objections quoted back.
+- Every vote records the provider and model that cast it, so "three votes" never silently means one model voting
+  three times.
+- Running out of cycles is not a retry: the issue gets `needs-info` with the objections still standing. Three
+  models disagreeing three times is an ambiguous requirement.
+- The approved plan lands in `<stateDir>/issues/<id>/plan.json`, keyed to the contract digest, and is quoted into
+  the worker brief — with "if it turns out to be wrong, say so in the PR, do not silently replace it".
+- New events: `plan.voted`, `plan.escalated`, `plan.failed`.
+
+### The Definition of Done becomes two lists, both proven on the PR
+
+Step 4 of the roadmap.
+
+- **`dod.items`** declares the project's list — the same for every issue — and every item declares how it is
+  proven: `command` (argv the worker runs; exit 0), `file-changed` (the PR touches a matching path) or
+  `pattern-absent` (no changed file contains the pattern). There is no `manual` kind on purpose: what cannot be
+  proven is not a Definition of Done item.
+- The **issue's list** stays what it always was: the frozen contract's outcomes, each with its check.
+- The worker's brief now carries both lists and the exact file to write the proofs into (`dod.evidenceFile`,
+  default `.ak-loop/dod.json` at the worktree root).
+- **`deliver` blocks the merge until both lists are proven** and writes them, with the evidence, onto the PR. An
+  item with no proof is *missing* (the fix round asks for the proof); an item proven and failing is *failed* (the
+  fix round asks for the fix). They are different instructions and the loop keeps them apart.
+- The harness decides `file-changed` and `pattern-absent` itself from the PR's changed files; `command` is always
+  the worker's proof, because the harness does not run project commands.
+
+### The retro starts improving the loop, within declared limits
+
+Step 3 of the roadmap. Both mechanisms are off by default, bounded, and reversible.
+
+- **Automated learning promotion** (`memory.autoPromote.enabled`). `promoteLearnings` now accepts a second actor,
+  `loop-auto`, alongside `human` — the ADR-0019 amendment of 2026-09-19. The bounds that replace the human
+  keystroke are the ones already configured: recurrence (`minSightings`), a per-retro cap (`maxPerRun`) and the
+  allowed categories. The actor is recorded truthfully, so every automatic promotion can be listed
+  (`loop learning promoted`) and revoked (`loop learning reject --ids … --by human`); the retro comment carries
+  the revoke command next to what it promoted.
+- **Self-adjusting knobs** (`tuning`). A knob is declared with a range — a value ladder or `min`/`max`/`step` —
+  and the metric that justifies moving it (`review-findings-ratio`, `stuck-count`, `fix-rounds-per-merge`,
+  `escalation-count`; all "lower is better"). At most `maxChangesPerRetro` move per cycle. Each change is written
+  into `loop.config.yaml` **in place with every comment preserved**, validated before it is kept, recorded in
+  `<stateDir>/tuning.json` with the reason and the evidence, and optionally committed (`tuning.commit`).
+- **It undoes itself.** The next retro compares the same metric: worse than before the change means the knob goes
+  back and is frozen until a human clears it. A metric at zero never moves a knob — a loop that keeps tightening a
+  healthy gate eventually stops merging anything. Models, providers, gates and branches are never auto-adjustable.
+- New events: `memory.auto-promoted`, `memory.auto-promote-failed`, `tuning.applied`, `tuning.reverted`.
+
 ## [0.14.0] - 2026-09-19
 
 A queue that several machines can drain, a review whose strictness matches the risk, and four fixes that

@@ -306,6 +306,9 @@ export const orcaAutomationEditArgv = (id: string, spec: OrcaAutomationSpec, bin
   spec.enabled === false ? '--disabled' : '--enabled',
   '--json']
 
+/** Switch an automation off without losing it: a partial edit, so nothing else about the automation is rewritten. */
+export const orcaAutomationDisableArgv = (id: string, bin = 'orca'): readonly string[] => [bin, 'automations', 'edit', id, '--disabled', '--json']
+
 export const orcaAutomationRemove = async (runner: CommandRunner, id: string, options: OrcaCliOptions = {}): Promise<unknown> => orcaJson(runner, ['automations', 'remove', id], options)
 export const orcaAutomationRun = async (runner: CommandRunner, id: string, options: OrcaCliOptions = {}): Promise<unknown> => orcaJson(runner, ['automations', 'run', id], options)
 export const orcaAutomationRuns = async (runner: CommandRunner, id: string, options: OrcaCliOptions = {}): Promise<unknown> => orcaJson(runner, ['automations', 'runs', '--id', id], options)

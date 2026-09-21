@@ -1,15 +1,16 @@
 import type { CommandRunner } from '../adapters/command.js'
 import { findExecutable } from '../adapters/command.js'
-import { orcaAccountList, orcaAgentHooks, orcaAutomationCreateArgv, orcaAutomationEditArgv, orcaAutomationRemove, orcaAutomationRuns, orcaAutomationsList, orcaJson, type OrcaAutomation, type OrcaAutomationSpec } from '../adapters/orca-cli.js'
+import { orcaAccountList, orcaAgentHooks, orcaAutomationCreateArgv, orcaAutomationDisableArgv, orcaAutomationEditArgv, orcaAutomationRemove, orcaAutomationRuns, orcaAutomationsList, orcaJson, type OrcaAutomation } from '../adapters/orca-cli.js'
 import { detectProviders } from '../adapters/providers.js'
 import { fail } from '../kernel/errors.js'
-import { loadLoopConfig, providerIdentity, type LoadedLoopConfig, type LoopConfig } from './config.js'
+import { automationName, automationSpecs, declaredStages, MANAGED_STAGES, reconcileAutomations, shellQuote, type LoopStage } from './automations.js'
+import { loadLoopConfig, providerIdentity, type LoadedLoopConfig } from './config.js'
 import { activeCooldowns, readCooldowns } from './cooldown.js'
 import { providerSpecs } from './doctor.js'
 import { rankModels } from './routing.js'
 
-export type LoopStage = 'tick' | 'deliver' | 'retro'
-export const LOOP_STAGES: readonly LoopStage[] = ['tick', 'deliver']
+export { automationName, automationPrompt, automationSpecs, declaredStages, LOOP_STAGES, MANAGED_STAGES, precheckCommand, shellQuote } from './automations.js'
+export type { AutomationSpec, LoopStage } from './automations.js'
 
 export interface InstallInput {
   readonly configPath?: string
@@ -23,61 +24,8 @@ export interface InstallInput {
   readonly now?: () => Date
 }
 
-export interface InstallAction { readonly name: string; readonly stage: LoopStage; readonly action: 'create' | 'edit' | 'remove' | 'skip'; readonly id: string | null; readonly argv: readonly string[]; readonly detail: string }
+export interface InstallAction { readonly name: string; readonly stage: LoopStage; readonly action: 'create' | 'edit' | 'remove' | 'disable' | 'skip'; readonly id: string | null; readonly argv: readonly string[]; readonly detail: string }
 export interface InstallReport { readonly status: 'ok' | 'dry-run' | 'failed'; readonly provider: string; readonly workspace: string; readonly actions: readonly InstallAction[]; readonly notes: readonly string[] }
-
-export const automationName = (config: LoopConfig, stage: LoopStage): string => `${config.schedule.namePrefix}-${stage}`
-
-/** Quote a path for Orca's precheck shell on every platform: double quotes, no backslash doubling (cmd.exe keeps `\\` literal). */
-export const shellQuote = (value: string): string => `"${value.replace(/"/g, '\\"')}"`
-
-/** The exact command Orca runs before each scheduled run. `agent` runner: exit 0 = work exists. `precheck` runner: runs the whole stage and exits 1 so no agent is launched. */
-export const precheckCommand = (config: LoopConfig, configPath: string, stage: LoopStage): string =>
-  config.schedule.runner === 'precheck'
-    ? `${config.schedule.harnessCommand} loop stage ${stage} -f ${shellQuote(configPath)}`
-    : `${config.schedule.harnessCommand} loop precheck ${stage === 'retro' ? 'deliver' : stage} -f ${shellQuote(configPath)}`
-
-/** Prompt the automation agent receives: run the harness stage, report, do nothing else. */
-export const automationPrompt = (config: LoopConfig, configPath: string, stage: LoopStage): string => config.schedule.runner === 'precheck' ? `This automation does its work inside its precheck command (${precheckCommand(config, configPath, stage)}), which always exits non-zero so that no agent session is needed. If you are reading this, the precheck unexpectedly exited 0: reply exactly LOOP_PRECHECK_BYPASSED and stop. Do not run any command.` : `You are the scheduled runner of the AgentsKit keep-pushing loop for ${config.project.repo}. Run exactly this command in the current workspace and nothing else:
-
-${config.schedule.harnessCommand} loop ${stage === 'retro' ? 'stage retro' : stage} -f ${shellQuote(configPath)} --json
-
-Then reply with a two-line summary of the JSON report (status, and the per-issue outcomes). Do not edit files, do not open pull requests, do not run other commands, do not retry on failure — the next scheduled run will. If the command is not found, reply "HARNESS_MISSING" and stop.`
-
-export const automationSpecs = (loaded: LoadedLoopConfig, provider: string): readonly (OrcaAutomationSpec & { readonly stage: LoopStage })[] => {
-  const { config } = loaded
-  const workspace = config.orca.workspaceSelector ?? `path:${loaded.root}`
-  const stages: LoopStage[] = [...LOOP_STAGES]
-  const specs = stages.map((stage) => ({
-    stage,
-    name: automationName(config, stage),
-    trigger: stage === 'tick' ? config.schedule.tick : config.schedule.deliver,
-    prompt: automationPrompt(config, loaded.path, stage),
-    provider,
-    precheck: precheckCommand(config, loaded.path, stage),
-    precheckTimeoutSec: config.schedule.runner === 'precheck' ? config.schedule.stageTimeoutSec : config.schedule.precheckTimeoutSec,
-    workspace,
-    ...(config.orca.host ? { host: config.orca.host } : {}),
-    reuseSession: true,
-    enabled: true,
-  }))
-  if (config.schedule.retro && config.schedule.retroIssue) {
-    specs.push({
-      stage: 'retro',
-      name: automationName(config, 'retro'),
-      trigger: config.schedule.retro,
-      prompt: automationPrompt(config, loaded.path, 'retro'),
-      provider,
-      precheck: precheckCommand(config, loaded.path, 'retro'),
-      precheckTimeoutSec: config.schedule.runner === 'precheck' ? config.schedule.stageTimeoutSec : config.schedule.precheckTimeoutSec,
-      workspace,
-      ...(config.orca.host ? { host: config.orca.host } : {}),
-      reuseSession: true,
-      enabled: true,
-    })
-  }
-  return specs
-}
 
 const chooseProvider = async (input: InstallInput, loaded: LoadedLoopConfig): Promise<string> => {
   if (input.provider) return input.provider
@@ -90,30 +38,48 @@ const chooseProvider = async (input: InstallInput, loaded: LoadedLoopConfig): Pr
   return watcher ? providerIdentity(loaded.config, watcher.provider).orcaAgent : 'claude'
 }
 
+/**
+ * Reconcile Orca's scheduled automations with what the config declares: create what is missing, edit only what
+ * drifted, switch off what the config no longer declares, and leave an automation that already matches untouched.
+ *
+ * Idempotence is the point. Before this, install rewrote every automation on every run and never noticed one edited
+ * by hand, which is how four automations spent five days pointing at a config file from 2026-09-14.
+ */
 export const installLoopAutomations = async (input: InstallInput): Promise<InstallReport> => {
   const loaded = input.loaded ?? loadLoopConfig(input.configPath)
   const { config } = loaded
-  const notes: string[] = []
   const bin = config.schedule.harnessCommand.split(/\s+/)[0] ?? config.schedule.harnessCommand
-  if (!findExecutable(bin, input.env ?? process.env, input.platform ?? process.platform)) notes.push(`"${bin}" is not on PATH for this shell; Orca runs the precheck/prompt in its own environment — install it globally (npm i -g @agentskit/harness) or set schedule.harnessCommand to an absolute command.`)
-  if (config.schedule.retro && !config.schedule.retroIssue) notes.push('schedule.retro is set but schedule.retroIssue is missing — skipping <prefix>-retro automation')
-  if (!config.schedule.retro && config.schedule.retroIssue) notes.push('schedule.retroIssue is set but schedule.retro cron is missing — skipping <prefix>-retro automation')
+  const notes: string[] = [...declaredStages(config).notes]
+  if (!findExecutable(bin, input.env ?? process.env, input.platform ?? process.platform)) notes.unshift(`"${bin}" is not on PATH for this shell; Orca runs the precheck/prompt in its own environment — install it globally (npm i -g @agentskit/harness) or set schedule.harnessCommand to an absolute command.`)
   const provider = await chooseProvider(input, loaded)
   const orca = { bin: config.orca.bin, timeoutMs: config.orca.timeoutMs }
   const existing = await orcaAutomationsList(input.runner, orca)
+  const specs = automationSpecs(loaded, provider)
+  const rows = reconcileAutomations(specs, existing, config)
   const actions: InstallAction[] = []
   let failed = false
-  for (const spec of automationSpecs(loaded, provider)) {
-    const current = existing.find((item) => item.name === spec.name)
-    const argv = current ? orcaAutomationEditArgv(current.id, spec, config.orca.bin) : orcaAutomationCreateArgv(spec, config.orca.bin)
-    if (input.dryRun) { actions.push({ name: spec.name, stage: spec.stage, action: current ? 'edit' : 'create', id: current?.id ?? null, argv, detail: 'dry-run' }); continue }
+  const apply = async (name: string, stage: LoopStage, action: InstallAction['action'], id: string | null, argv: readonly string[], detail: string): Promise<void> => {
+    if (input.dryRun) { actions.push({ name, stage, action, id, argv, detail: 'dry-run' }); return }
     try {
       const result = await orcaJson(input.runner, argv.slice(1), { ...orca, timeoutMs: Math.max(orca.timeoutMs, 60_000) })
       const record = typeof result === 'object' && result !== null ? result as Record<string, unknown> : {}
       const nested = typeof record['automation'] === 'object' && record['automation'] !== null ? record['automation'] as Record<string, unknown> : record
-      const id = typeof nested['id'] === 'string' ? nested['id'] : current?.id ?? null
-      actions.push({ name: spec.name, stage: spec.stage, action: current ? 'edit' : 'create', id, argv, detail: `${current ? 'updated' : 'created'} · ${spec.trigger} · provider ${provider}` })
-    } catch (error) { failed = true; actions.push({ name: spec.name, stage: spec.stage, action: current ? 'edit' : 'create', id: current?.id ?? null, argv, detail: error instanceof Error ? error.message : String(error) }) }
+      actions.push({ name, stage, action, id: typeof nested['id'] === 'string' ? nested['id'] : id, argv, detail })
+    } catch (error) { failed = true; actions.push({ name, stage, action, id, argv, detail: error instanceof Error ? error.message : String(error) }) }
+  }
+  for (const row of rows) {
+    const spec = specs.find((item) => item.name === row.name)
+    const current = existing.find((item) => item.name === row.name)
+    const stage = row.stage ?? 'tick'
+    if (row.state === 'in-sync') { actions.push({ name: row.name, stage, action: 'skip', id: current?.id ?? null, argv: [], detail: 'already matches the config' }); continue }
+    if (row.state === 'undeclared') {
+      if (!current) continue
+      await apply(row.name, stage, 'disable', current.id, orcaAutomationDisableArgv(current.id, config.orca.bin), 'the config no longer declares this stage — switched off, not removed')
+      continue
+    }
+    if (!spec) continue
+    if (row.state === 'missing') { await apply(spec.name, stage, 'create', null, orcaAutomationCreateArgv(spec, config.orca.bin), `created · ${spec.trigger} · provider ${provider}`); continue }
+    await apply(spec.name, stage, 'edit', current?.id ?? null, orcaAutomationEditArgv(current!.id, spec, config.orca.bin), `updated ${row.fields.join(', ')} · ${spec.trigger} · provider ${provider}`)
   }
   return { status: failed ? 'failed' : input.dryRun ? 'dry-run' : 'ok', provider, workspace: config.orca.workspaceSelector ?? `path:${loaded.root}`, actions, notes }
 }
@@ -125,8 +91,7 @@ export const uninstallLoopAutomations = async (input: InstallInput): Promise<Ins
   const existing = await orcaAutomationsList(input.runner, orca)
   const actions: InstallAction[] = []
   let failed = false
-  const stages: LoopStage[] = [...LOOP_STAGES, 'retro']
-  for (const stage of stages) {
+  for (const stage of MANAGED_STAGES) {
     const name = automationName(config, stage)
     const current = existing.find((item) => item.name === name)
     if (!current) { actions.push({ name, stage, action: 'skip', id: null, argv: [], detail: 'not installed' }); continue }
@@ -162,7 +127,7 @@ export const loopStatus = async (input: Pick<InstallInput, 'configPath' | 'loade
   let existing: readonly OrcaAutomation[] = []
   try { existing = await orcaAutomationsList(input.runner, orca) } catch (error) { return fail(`Orca automations unavailable: ${error instanceof Error ? error.message : String(error)}`, 'HARNESS_ERROR') }
   const automations: AutomationStatus[] = []
-  for (const stage of LOOP_STAGES) {
+  for (const stage of declaredStages(config).stages) {
     const name = automationName(config, stage)
     const current = existing.find((item) => item.name === name)
     if (!current) { automations.push({ stage, name, installed: false, enabled: false, id: null, trigger: null, provider: null, lastRun: null, runs: 0 }); continue }

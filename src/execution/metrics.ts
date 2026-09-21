@@ -1,6 +1,5 @@
-import { existsSync, mkdtempSync, readFileSync, readdirSync, renameSync, rmSync, writeFileSync } from 'node:fs'
-import { join } from 'node:path'
-import { tmpdir } from 'node:os'
+import { existsSync, readFileSync, readdirSync, renameSync, rmSync, writeFileSync } from 'node:fs'
+import { basename, dirname, join } from 'node:path'
 import { fail } from '../kernel/errors.js'
 import { readJson, readRun } from './files.js'
 import { RUN_STATES } from '../kernel/types.js'
@@ -321,14 +320,16 @@ export const recordBenchmarkObservation = (path: string, input: BenchmarkObserva
       ...(input.evidenceDigest === undefined ? {} : { evidenceDigest: input.evidenceDigest }),
     }],
   })
-  const temporaryRoot = mkdtempSync(join(tmpdir(), 'agentskit-harness-baseline-'))
-  const temporaryPath = join(temporaryRoot, 'manifest.json')
+  // The temporary file lives beside the manifest, not in the system temp directory: `rename` cannot cross
+  // volumes, and a repository on another drive than `%TEMP%` (Windows) or a tmpfs `/tmp` (Linux) turns the
+  // swap into EXDEV. Same pattern as `writeJsonAtomic`, kept local to avoid an execution -> loop import.
+  const temporaryPath = join(dirname(path), `.${basename(path)}.${process.pid}.${Date.now()}.tmp`)
   try {
     writeFileSync(temporaryPath, `${JSON.stringify(observation, null, 2)}\n`, 'utf8')
     if (readFileSync(path, 'utf8') !== originalContent) fail('benchmark manifest changed while recording an observation.', 'STALE')
     renameSync(temporaryPath, path)
   } finally {
-    rmSync(temporaryRoot, { recursive: true, force: true })
+    rmSync(temporaryPath, { force: true })
   }
   return observation
 }

@@ -1,0 +1,117 @@
+---
+title: State machines
+description: One diagram per stage — the states, the transitions, and who decides each one.
+---
+
+Every stage is a machine. A model may write the content a transition reads; the machine reads it and decides.
+These are the eight.
+
+## `plan`
+
+<Mermaid chart={`stateDiagram-v2
+    [*] --> interview: loop plan start "<objective>"
+    interview --> interview: answer → next question
+    interview --> prd_ready: no PRD field left empty, no open question
+    prd_ready --> architect: HUMAN · loop plan approve
+    architect --> design_vote
+    design_vote --> architect: objections
+    design_vote --> design_ready: consensus (2 of 3)
+    design_ready --> decompose: HUMAN · loop plan approve-design
+    decompose --> issues: --create writes them in the entry state
+    issues --> [*]: HUMAN moves them into the queue`} />
+
+## `tick`
+
+<Mermaid chart={`stateDiagram-v2
+    [*] --> candidate: queue, minus busy, minus paused
+    candidate --> contracted: orchestrator freezes the contract
+    candidate --> skipped: no slot, no provider, no time budget
+    contracted --> escalated: not dispatchable
+    contracted --> planned: plan approved (or the phase is off)
+    planned --> escalated: no consensus after maxCycles
+    planned --> dispatched: worktree + terminal + brief
+    dispatched --> [*]
+    escalated --> [*]
+    skipped --> [*]`} />
+
+## `deliver`
+
+<Mermaid chart={`stateDiagram-v2
+    [*] --> found: PR for this branch
+    found --> waiting: draft, or checks pending
+    found --> held: protected path, secret-shaped file, enforced layer boundary
+    found --> fix_round: conflicts, CI red
+    found --> verified: checks green
+    verified --> fix_round: the project's own verify failed
+    verified --> reviewed: review ran
+    reviewed --> fix_round: blocking findings
+    reviewed --> artifacts: review clean
+    artifacts --> fix_round: a phase artifact is missing or invalid
+    artifacts --> dod: all present
+    dod --> fix_round: an item missing or failed
+    dod --> merged: both lists proven
+    fix_round --> blocked: maxFixRounds exhausted
+    merged --> [*]
+    blocked --> [*]
+    held --> [*]`} />
+
+## `observe`
+
+<Mermaid chart={`stateDiagram-v2
+    [*] --> scan: read events, state, doctor checks
+    scan --> healthy: no problem
+    scan --> problems: anomalies found
+    problems --> known: same signature, inside reminderHours
+    problems --> notify: new signature, or overdue
+    healthy --> [*]: exit 1
+    known --> [*]: exit 1
+    notify --> [*]: exit 0 — the one exit code that is a decision`} />
+
+## `release`
+
+<Mermaid chart={`stateDiagram-v2
+    [*] --> batch: what is on the integration branch and not on the release branch
+    batch --> idle: nothing to promote
+    batch --> waiting: no approval, or the approval covers an older head
+    waiting --> approved: HUMAN · loop release approve
+    approved --> promoted: push to the release branch
+    promoted --> deployed: release.deploy
+    deployed --> smoked: release.smoke
+    smoked --> rolled_back: smoke failed → release.rollback
+    smoked --> [*]: green
+    rolled_back --> [*]: escalated
+    promoted --> failed: push refused
+    failed --> [*]`} />
+
+## `intake`
+
+<Mermaid chart={`stateDiagram-v2
+    [*] --> alerts: sources read (argv, webhook payloads)
+    alerts --> known: fingerprint already filed
+    alerts --> filed: new fingerprint → issue created with the evidence
+    filed --> flowed: the flow label applied (incident for P0)
+    known --> [*]
+    flowed --> [*]`} />
+
+## `maintain`
+
+<Mermaid chart={`stateDiagram-v2
+    [*] --> checks: the declared maintenance checks run
+    checks --> clean: nothing to decide
+    checks --> filed: a decision is needed → issue with the output attached
+    clean --> [*]
+    filed --> [*]`} />
+
+## `retro`
+
+<Mermaid chart={`stateDiagram-v2
+    [*] --> digest: read the window of events
+    digest --> learnings: recurring lessons proposed
+    learnings --> promoted: autoPromote, within the declared bounds
+    digest --> tuning: a knob's metric moved
+    tuning --> applied: inside the range, at most maxChangesPerRetro
+    applied --> reverted: next cycle is worse
+    digest --> agent: worst outcome-per-run ratio
+    agent --> adopted: eval still passes
+    agent --> needs_human: critical role, too many lines, or the agent is code
+    agent --> reverted_agent: eval failed → the file is put back`} />
