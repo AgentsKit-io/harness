@@ -32,6 +32,8 @@ jobs:
       - uses: actions/configure-pages@983d7736d9b0ae728b81ab479565c72886d7745b # v5
       - run: pnpm install --frozen-lockfile
       # harness.agentskit.io is root-hosted: DOCS_BASE_PATH is never set here.
+      # `docs:build` builds the package first: /api/stats.json counts the commands, events and config paths
+      # out of `dist/`, so the site cannot be built without it.
       - run: pnpm docs:build
         env:
           NEXT_PUBLIC_SITE_URL: https://harness.agentskit.io

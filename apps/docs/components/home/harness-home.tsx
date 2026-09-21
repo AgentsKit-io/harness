@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 
 import { EcosystemShowcase } from './ecosystem'
+import type { HarnessStatCounts } from '@/lib/stats'
 
 /**
  * The home page, ported from the design canvas.
@@ -45,6 +46,14 @@ const TRANSCRIPT: readonly TranscriptLine[] = [
   { tag: 'merge', text: '#482 merged into main', note: 'reconstructed', c: '#A371F7', mark: '✓' },
   { tag: 'release', text: 'batch r-2026-09-19 awaiting approval', note: '', c: '#E3B341', mark: '⏸' },
   { tag: 'human', text: 'loop release approve', note: '', c: '#56D364', mark: '' },
+]
+
+/** The band under "machine surfaces": four of the generated counts, labelled as the reader would ask for them. */
+const STATS: readonly { readonly key: keyof HarnessStatCounts; readonly label: string }[] = [
+  { key: 'cliCommands', label: 'CLI commands' },
+  { key: 'loopEvents', label: 'Loop events' },
+  { key: 'configPaths', label: 'Config settings' },
+  { key: 'decisionRecords', label: 'Decision records' },
 ]
 
 const CHAR = 20
@@ -114,7 +123,12 @@ const row = (line: TranscriptLine, index: number, typing: boolean, chars: number
   }
 }
 
-export function HarnessHome() {
+interface HarnessHomeProps {
+  /** Generated at build time from the repository and served at `/api/stats.json`; never typed into the page. */
+  readonly counts: HarnessStatCounts
+}
+
+export function HarnessHome({ counts }: HarnessHomeProps) {
   const [playing, setPlaying] = useState(true)
   const [typed, setTyped] = useState(OBJECTIVES[0]!)
   const [replaying, setReplaying] = useState(false)
@@ -784,8 +798,21 @@ export function HarnessHome() {
         <span style={{ fontFamily: '\'JetBrains Mono\', monospace', fontSize: '11px', letterSpacing: '0.2em', textTransform: 'uppercase', color: '#56D364' }}>07 · Machine surfaces</span>
         <h2 style={{ margin: '16px 0 12px', fontFamily: '\'Space Grotesk\', sans-serif', letterSpacing: '-0.02em', fontSize: 'clamp(28px, 3.4vw, 40px)', lineHeight: '1.1', fontWeight: '600' }}>Readable by the things that will read it.</h2>
         <p style={{ margin: '0 0 28px', maxWidth: '62ch', fontSize: '16px', lineHeight: '1.65', color: '#8B949E' }}>Every command that reports also reports as JSON, and every page has a raw Markdown twin.</p>
+
+        {/* Counted out of the repository at build time and served verbatim at /api/stats.json — the page and the
+            machine surface can never disagree, because they are the same numbers. */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(160px, 100%), 1fr))', gap: '16px', marginBottom: '28px' }}>
+          {STATS.map((stat) => (
+            <div key={stat.label} style={{ border: '1px solid #30363D', borderRadius: '0.75rem', background: '#161B22', padding: '20px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              <span style={{ fontFamily: '\'Space Grotesk\', sans-serif', letterSpacing: '-0.02em', fontSize: '32px', lineHeight: '1', fontWeight: '600', color: '#E6EDF3' }}>{counts[stat.key]}</span>
+              <span style={{ fontFamily: '\'JetBrains Mono\', monospace', fontSize: '10px', letterSpacing: '0.2em', textTransform: 'uppercase', color: '#8B949E' }}>{stat.label}</span>
+            </div>
+          ))}
+        </div>
+
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px' }}>
           <a href="/llms.txt" style={{ fontFamily: '\'JetBrains Mono\', monospace', fontSize: '12px', padding: '10px 14px', border: '1px solid #30363D', borderRadius: '0.5rem', background: '#161B22' }}>/llms.txt</a>
+          <a href="/api/stats.json" style={{ fontFamily: '\'JetBrains Mono\', monospace', fontSize: '12px', padding: '10px 14px', border: '1px solid #30363D', borderRadius: '0.5rem', background: '#161B22' }}>/api/stats.json</a>
           <a href="/docs" style={{ fontFamily: '\'JetBrains Mono\', monospace', fontSize: '12px', padding: '10px 14px', border: '1px solid #30363D', borderRadius: '0.5rem', background: '#161B22' }}>raw Markdown for every page</a>
           <a href="/docs/reference/cli" style={{ fontFamily: '\'JetBrains Mono\', monospace', fontSize: '12px', padding: '10px 14px', border: '1px solid #30363D', borderRadius: '0.5rem', background: '#161B22' }}>--json on every command</a>
         </div>
@@ -811,8 +838,9 @@ export function HarnessHome() {
       <footer style={{ padding: '56px 28px 72px', borderTop: '1px solid #30363D' }}>
         <div style={{ maxWidth: '1180px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '28px' }}>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '20px', justifyContent: 'space-between', alignItems: 'center', fontFamily: '\'JetBrains Mono\', monospace', fontSize: '11px', letterSpacing: '0.2em', textTransform: 'uppercase', color: '#8B949E' }}>
-            <span>Built in the open</span>
+            <span>Built in the open · free and open source</span>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '18px' }}>
+              <a href="https://github.com/AgentsKit-io/harness/blob/main/LICENSE" style={{ color: '#8B949E' }}>MIT</a>
               <a href="/docs" style={{ color: '#8B949E' }}>Docs</a>
               <a href="/llms.txt" style={{ color: '#8B949E' }}>llms.txt</a>
               <a href="https://github.com/AgentsKit-io" style={{ color: '#8B949E' }}>GitHub</a>

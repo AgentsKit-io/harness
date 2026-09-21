@@ -3,15 +3,19 @@
  * Machine-readable surfaces for the documentation site.
  *
  * Writes `apps/docs/public/`: the raw Markdown of every page, `llms.txt` (an index an agent can read in one
- * request), `llms-full.txt` (the whole corpus) and the `CNAME` GitHub Pages needs for the custom domain.
+ * request), `llms-full.txt` (the whole corpus), `api/stats.json` (the counts the site is allowed to claim,
+ * read from the repository) and the `CNAME` GitHub Pages needs for the custom domain.
  *
  * This is a fork of Doc Bridge's script with its `@agentskit/chat` half removed — no deterministic knowledge
- * artifact, no site-config — so it stays plain Node with no dependency at all.
+ * artifact, no site-config. The only thing it reaches for beyond Node is the stats computation, which has to
+ * read the built `dist/` and the config schema to count anything honestly.
  */
 import { mkdir, readdir, readFile, rm, writeFile } from 'node:fs/promises'
 import { existsSync } from 'node:fs'
 import { dirname, extname, join, relative, resolve, sep } from 'node:path'
 import { fileURLToPath } from 'node:url'
+
+import { computeStats } from './lib/stats.mjs'
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 const contentRoot = join(root, 'apps/docs/content/docs')
@@ -112,6 +116,7 @@ const llms = [
   '',
   `- [Full corpus](${origin}/llms-full.txt)`,
   `- [Raw Markdown](${origin}/raw/)`,
+  `- [Counts](${origin}/api/stats.json)`,
   '',
 ].join('\n')
 
@@ -121,4 +126,10 @@ await writeFile(join(publicRoot, 'llms.txt'), llms)
 await writeFile(join(publicRoot, 'llms-full.txt'), llmsFull)
 await writeFile(join(publicRoot, 'CNAME'), `${domain}\n`)
 
-console.log(JSON.stringify({ status: 'passed', criteria: ['docs-artifacts'], documents: documents.length, ecosystem: ecosystemLines.length > 0 }))
+// `output: 'export'` has no route handlers, so the stats surface is a real file under `public/`, written here
+// rather than committed: `public/` is removed at the top of this script on every run.
+const stats = await computeStats({ documents: documents.length })
+await mkdir(join(publicRoot, 'api'), { recursive: true })
+await writeFile(join(publicRoot, 'api/stats.json'), `${JSON.stringify(stats, null, 2)}\n`)
+
+console.log(JSON.stringify({ status: 'passed', criteria: ['docs-artifacts'], documents: documents.length, ecosystem: ecosystemLines.length > 0, stats: stats.counts }))

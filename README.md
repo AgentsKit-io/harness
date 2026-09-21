@@ -13,9 +13,14 @@ done, a merge — and, behind a human gate, a release.
 No daemon, no dashboard, no database: files in `.ak-loop/` and whatever scheduler the machine already has.
 Docs: **[harness.agentskit.io](https://harness.agentskit.io)**
 
+## Install
+
 ```bash
 pnpm add -D @agentskit/harness     # Node 22+
 ```
+
+Node 22 or newer. Two binaries: `ak-harness` (everything) and `ak-verify` (the same binary under the common
+verification-protocol name).
 
 ## 60 seconds
 
@@ -182,4 +187,10 @@ Runnable example: [`examples/minimum-profile.mjs`](examples/minimum-profile.mjs)
   [ADR-0037](docs/ADR-0037-cost-policy-ceilings-and-levers.md) (cost)
 - [CONTRIBUTING.md](./CONTRIBUTING.md) · [CHANGELOG.md](./CHANGELOG.md) · [MANIFESTO.md](./MANIFESTO.md)
 
-MIT. See [LICENSE](./LICENSE).
+## Release
+
+`.github/workflows/release-harness.yml` publishes on a merge to `main`, through npm Trusted Publishing (GitHub
+OIDC) — no `NPM_TOKEN` anywhere. A version change is the trigger; the candidate checklist and any open blocker
+live in [`release/manifest.json`](release/manifest.json) and [`release/notes.md`](release/notes.md).
+
+Free and open source under MIT. See [LICENSE](./LICENSE).

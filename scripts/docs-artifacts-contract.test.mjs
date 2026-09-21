@@ -48,6 +48,26 @@ test('every documented page is linked from the index, on the product domain', ()
   assert.ok(!/\]\(\/(?!\/)/.test(llms), 'llms.txt carries absolute URLs only — a relative one is unusable off-site')
 })
 
+test('the stats surface carries counts read from the repository, not typed into it', () => {
+  const stats = JSON.parse(readFileSync(resolve(publicRoot, 'api/stats.json'), 'utf8'))
+  assert.equal(stats.schemaVersion, 1)
+  assert.equal(stats.property, 'harness')
+  // The harness is free and open source; the home and the README say so, and this is the machine-readable half.
+  assert.equal(stats.license, 'MIT')
+  assert.match(stats.version, /^\d+\.\d+\.\d+/)
+
+  const expected = ['cliCommands', 'loopEvents', 'configPaths', 'decisionRecords', 'testFiles', 'docPages']
+  assert.deepEqual(Object.keys(stats.counts).sort(), [...expected].sort())
+  for (const key of expected) {
+    // Zero would mean the generator read nothing — a silently empty walk of the commander tree or the schema
+    // is exactly the failure a generated number is supposed to make impossible.
+    assert.equal(typeof stats.counts[key], 'number', `counts.${key} must be a number`)
+    assert.ok(stats.counts[key] > 0, `counts.${key} must be greater than zero, received ${stats.counts[key]}`)
+  }
+  assert.equal(stats.counts.docPages, pages().length, 'docPages must match the pages actually published')
+  assert.ok(llms.includes('/api/stats.json'), 'llms.txt must point at the stats surface')
+})
+
 test('the custom domain is declared for GitHub Pages', () => {
   assert.ok(existsSync(resolve(publicRoot, 'CNAME')))
   assert.equal(readFileSync(resolve(publicRoot, 'CNAME'), 'utf8'), 'harness.agentskit.io\n')

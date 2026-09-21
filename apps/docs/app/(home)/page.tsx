@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import './home.css'
 import { HarnessHome } from '@/components/home/harness-home'
 import { SITE_URL } from '@/lib/site'
+import { readHarnessStats } from '@/lib/stats'
 
 export const metadata: Metadata = {
   title: 'Harness — the keep-pushing loop for your SDLC',
@@ -11,5 +12,5 @@ export const metadata: Metadata = {
 }
 
 export default function HomePage() {
-  return <HarnessHome />
+  return <HarnessHome counts={readHarnessStats().counts} />
 }

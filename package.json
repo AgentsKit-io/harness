@@ -40,7 +40,7 @@
     "docs:dev": "pnpm --filter @agentskit/harness-docs dev",
     "docs:generate": "node scripts/gen-docs-reference.mjs",
     "docs:artifacts": "node scripts/build-docs-artifacts.mjs",
-    "docs:build": "pnpm docs:artifacts && pnpm --filter @agentskit/harness-docs build",
+    "docs:build": "pnpm build && pnpm docs:artifacts && pnpm --filter @agentskit/harness-docs build",
     "test:docs-artifacts": "node --test scripts/docs-artifacts-contract.test.mjs",
     "docs:typecheck": "pnpm --filter @agentskit/harness-docs typecheck",
     "test": "pnpm typecheck && vitest run --config vitest.config.ts test && node -e \"console.log(JSON.stringify({status:'passed',criteria:['package']}))\"",
