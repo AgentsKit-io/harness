@@ -233,7 +233,7 @@ describe('orca and linear parsers', () => {
   })
 
   it('claims and releases an issue through Orca, one flag per argument', () => {
-    expect(linearAssigneeSetArgv({ issue: 'ENG-1', assignee: 'person', workspaceId: 'ws-1' })).toEqual(['orca', 'linear', 'assignee', 'set', 'ENG-1', '--assignee', 'person', '--workspace', 'ws-1', '--json'])
+    expect(linearAssigneeSetArgv({ issue: 'ENG-1', toId: 'user-id-1', workspaceId: 'ws-1' })).toEqual(['orca', 'linear', 'assignee', 'set', 'ENG-1', '--to-id', 'user-id-1', '--workspace', 'ws-1', '--json'])
     expect(linearAssigneeClearArgv({ issue: 'ENG-1', workspaceId: 'ws-1' })).toEqual(['orca', 'linear', 'assignee', 'clear', 'ENG-1', '--workspace', 'ws-1', '--json'])
   })
 

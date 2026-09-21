@@ -5,7 +5,7 @@ import { afterEach, describe, expect, it } from 'vitest'
 import { createLocalRunner, createOrcaRunner, createRunnerConnector, loadLoopConfig, resolveConnectors, scheduledJobs } from '../src/index.js'
 import type { CommandResult, CommandRunner, LoadedLoopConfig } from '../src/index.js'
 
-const exampleYaml = readFileSync(join(process.cwd(), 'loop.config.example.yaml'), 'utf8').replace('person: my-linear-display-name', 'person: person')
+const exampleYaml = readFileSync(join(process.cwd(), 'loop.config.example.yaml'), 'utf8').replace('person: my-linear-display-name', 'person: person').replace('my-linear-display-name: <linear-user-id>', 'person: user-id-1')
 const cleanups: string[] = []
 afterEach(() => { for (const dir of cleanups.splice(0)) rmSync(dir, { recursive: true, force: true }) })
 
@@ -40,9 +40,20 @@ describe('tracker and scm connectors', () => {
     expect(linearCalls.map((argv) => argv.slice(1, 3).join(' '))).toEqual(['linear comment', 'linear label', 'linear assignee', 'linear assignee'])
     // The dedupe key becomes the CLI's idempotency id, which is why it lives in the interface.
     expect(linearCalls[0]).toContain('--write-id')
+    // `claim` takes a `models.linear.people` key ('person'), not a Linear user id: Orca's `assignee set` needs
+    // `--to-id <userId>` (it dropped `--assignee`), so the connector must resolve it via the people map.
+    expect(linearCalls[2]).toEqual(expect.arrayContaining(['--to-id', 'user-id-1']))
+    expect(linearCalls[2]).not.toContain('--assignee')
 
     await scm.comment({ number: 7, body: 'note' })
     expect(runner.calls.at(-1)?.slice(0, 3)).toEqual(['gh', 'pr', 'comment'])
+  })
+
+  it('fails loudly when claiming for a person with no entry in models.linear.people', async () => {
+    const loaded = setup()
+    const runner = recording()
+    const { tracker } = resolveConnectors({ runner, config: loaded.config })
+    await expect(tracker.claim('ENG-1', 'someone-not-in-the-map')).rejects.toThrow(/No Linear user id configured for "someone-not-in-the-map"/)
   })
 
   it('refuses an unknown implementation with the interface to implement', () => {

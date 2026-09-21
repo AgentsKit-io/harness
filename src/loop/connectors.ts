@@ -9,6 +9,7 @@ import {
   githubPullRequestsForBranch, type PullRequestSnapshot,
 } from '../adapters/github-cli.js'
 import type { TrackingAdapter } from '../adapters/tracking.js'
+import { fail } from '../kernel/errors.js'
 import type { LoopConfig } from './config.js'
 
 /**
@@ -70,7 +71,13 @@ export const createLinearTracker = (input: ConnectorInput): TrackerConnector => 
     addLabels: async (issue, labels) => { await linearLabelAdd(runner, { issue, labels }, write) },
     removeLabels: async (issue, labels) => { await linearLabelRemove(runner, { issue, labels }, write) },
     setState: async ({ issue, to }) => { await linearStatusSet(runner, { issue, to }, write) },
-    claim: async (issue, assignee) => { await linearAssigneeSet(runner, { issue, assignee }, write) },
+    // `assignee` is a `models.linear.people` key (a person, e.g. `state.person`), not the Linear user id Orca's
+    // CLI now requires (`--to-id`, see `linearAssigneeSetArgv`) — resolve it here so every caller keeps naming
+    // the person, and fail loudly on a stale/missing map entry instead of silently sending a bad id.
+    claim: async (issue, assignee) => {
+      const toId = config.linear.people[assignee] ?? fail(`No Linear user id configured for "${assignee}" (models.linear.people.${assignee}) — cannot claim ${issue}.`, 'INVALID_CONFIG')
+      await linearAssigneeSet(runner, { issue, toId }, write)
+    },
     release: async (issue) => { await linearAssigneeClear(runner, { issue }, write) },
     attach: async ({ issue, url, title, dedupeKey }) => { await linearAttach(runner, { issue, url, ...(title ? { title } : {}), ...(dedupeKey ? { dedupeKey } : {}) }, write) },
     createIssue: async ({ title, description, state, labels, priority, dedupeKey }) => linearSaveIssue(runner, {
