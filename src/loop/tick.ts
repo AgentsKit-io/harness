@@ -1,4 +1,4 @@
-import { appendFileSync, closeSync, existsSync, mkdirSync, openSync, readFileSync, renameSync, statSync, unlinkSync, writeFileSync } from 'node:fs'
+import { appendFileSync, closeSync, existsSync, mkdirSync, openSync, readdirSync, readFileSync, renameSync, statSync, unlinkSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import type { CommandRunner } from '../adapters/command.js'
 import { fetchLinearQueue, linearLabelRemove, type LinearIssueDetail, type LoopIssue } from '../adapters/linear-orca.js'
@@ -178,6 +178,20 @@ const EVENTS_ROTATE_AT_BYTES = 10 * 1024 * 1024
 const EVENTS_LOCK_STALE_MS = 5_000
 const EVENTS_LOCK_MAX_ATTEMPTS = 100
 const EVENTS_LOCK_RETRY_MS = 10
+/** windowed: rotation never used to delete anything, so archives (each named by rotation time) accumulated for
+ * the life of the project. Pruning here — the one place that already touches the state dir at rotation time —
+ * keeps that bounded without adding a scan to every append. */
+const EVENTS_RETENTION_MS = 30 * 86_400_000
+const eventsArchivePattern = /^events-archive-(\d+)\.ndjson$/
+
+const pruneEventArchives = (stateDir: string, nowMs: number): void => {
+  let names: readonly string[]
+  try { names = readdirSync(stateDir) } catch { return }
+  for (const name of names) {
+    const match = name.match(eventsArchivePattern)
+    if (match && nowMs - Number(match[1]) > EVENTS_RETENTION_MS) { try { unlinkSync(join(stateDir, name)) } catch { /* best-effort */ } }
+  }
+}
 
 /**
  * `tick` and `deliver` are separate scheduled processes that can call `appendLoopEvent` on the same
@@ -212,7 +226,11 @@ export const appendLoopEvent = (stateDir: string, event: LoopEventPayload, bus?:
     // successful attempt rotates it.
     if (lockFd !== null) {
       try {
-        if (statSync(path).size > EVENTS_ROTATE_AT_BYTES) renameSync(path, join(stateDir, `events-archive-${now().getTime()}.ndjson`))
+        if (statSync(path).size > EVENTS_ROTATE_AT_BYTES) {
+          const nowMs = now().getTime()
+          renameSync(path, join(stateDir, `events-archive-${nowMs}.ndjson`))
+          pruneEventArchives(stateDir, nowMs)
+        }
       } catch { /* rotation is best-effort — never let it break event logging itself */ }
     }
     appendFileSync(path, `${JSON.stringify(event)}\n`, 'utf8')
