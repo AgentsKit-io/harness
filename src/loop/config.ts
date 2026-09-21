@@ -53,6 +53,24 @@ const ProviderSchema = z.object({
   /** Reasoning-effort flag template substituted with `{effort}` into `tui`/`headless` (e.g. codex `-c model_reasoning_effort={effort}`, grok `--reasoning-effort {effort}`). Providers without one ignore `models.effort`. */
   effortFlag: nonEmpty.optional(),
   /**
+   * Argv template appended to `headless` when a caller supplies a JSON Schema, one element per array entry (never
+   * whitespace-split, unlike `effortFlag`, because the schema itself contains spaces) with `{schema}` substituted
+   * into whichever element carries it — e.g. claude: `["--output-format", "json", "--json-schema", "{schema}"]`.
+   *
+   * Exists because plan-mode headless runs regressed (Claude Code <2.1.198, see git history) from asking the model
+   * to retype its frozen contract/plan between text markers: a model that had already produced the JSON internally
+   * would sometimes reply with only a prose summary ("the contract is frozen above") and never repeat the markers,
+   * which read as "no contract block" even though the run succeeded. `--json-schema` gets the structured value out
+   * of the API's own structured-output field instead of the model's free-text reply, so the marker convention is no
+   * longer load-bearing for a provider that sets this. `headless`'s own trailing `--output-format` stays as the
+   * text-mode default — this template's own `--output-format json` is appended after it and wins (last flag wins
+   * on every CLI parser checked), so no base template needs editing when a caller opts in.
+   *
+   * Optional and providers without it keep the original marker-parsing path (`parseContractOutput` and friends) —
+   * this is additive, not a replacement, so an unconfigured provider (or one whose CLI has no such flag) is unaffected.
+   */
+  structuredOutputFlag: z.array(nonEmpty).optional(),
+  /**
    * Whether this CLI can delegate to subagents of its own.
    *
    * Only read when a flow asks its builder to lead (`flows.profiles.<name>.lead`). Off by default: claiming a
@@ -1024,10 +1042,17 @@ export const resolveReviewSettings = (config: LoopConfig, labels: readonly strin
   return { ...base, overriddenBy: null }
 }
 
-/** Substitute `{model}` / `{prompt}` inside each headless argv element; the prompt stays one argv element, never shell-joined. */
-export const renderHeadlessArgv = (settings: LoopProviderConfig, model: string, prompt: string, effort?: EffortLevel): readonly string[] | null => {
+/**
+ * Substitute `{model}` / `{prompt}` inside each headless argv element; the prompt stays one argv element, never
+ * shell-joined. `jsonSchema` (a JSON Schema, pre-serialized to a string by the caller) is appended via
+ * `structuredOutputFlag` when the provider declares one; a provider without it ignores `jsonSchema` entirely and
+ * the caller falls back to marker-based text parsing.
+ */
+export const renderHeadlessArgv = (settings: LoopProviderConfig, model: string, prompt: string, effort?: EffortLevel, jsonSchema?: string): readonly string[] | null => {
   if (!settings.headless) return null
   const argv = settings.headless.map((part) => part.replaceAll('{model}', model).replaceAll('{prompt}', prompt))
   const flag = renderEffortFlag(settings, effort)
-  return flag ? [...argv, ...flag.split(/\s+/).filter(Boolean)] : argv
+  const withEffort = flag ? [...argv, ...flag.split(/\s+/).filter(Boolean)] : argv
+  const structured = jsonSchema && settings.structuredOutputFlag ? settings.structuredOutputFlag.map((part) => part.replaceAll('{schema}', jsonSchema)) : []
+  return [...withEffort, ...structured]
 }
