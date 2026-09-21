@@ -175,7 +175,11 @@ export const applyTuning = async (input: {
     ...(decision.action === 'revert' ? { metricAfter: decision.metricNow } : {}),
   }))
   const frozen = [...new Set([...state.frozen, ...applied.filter((decision) => decision.action === 'revert').map((decision) => decision.path)])]
-  writeJsonAtomic(tuningStatePath(loaded.stateDir), { history: [...state.history, ...records], frozen })
+  // windowed: planTuning only ever reads the newest record per knob path (line ~101), so that is all persisting
+  // needs to keep — without this, history grows one entry per retro cycle forever and is fully re-scanned each time.
+  const latestByPath = new Map<string, TuningRecord>()
+  for (const record of [...state.history, ...records]) latestByPath.set(record.path, record)
+  writeJsonAtomic(tuningStatePath(loaded.stateDir), { history: [...latestByPath.values()], frozen })
 
   let committed = false
   if (loaded.config.tuning.commit && input.runner) {

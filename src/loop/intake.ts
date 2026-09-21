@@ -40,6 +40,13 @@ export const fingerprintOf = (source: string, alert: Alert): string => hashJson(
 export const alreadyFiled = (state: IntakeState, fingerprint: string, windowHours: number, now: Date): FiledRecord | null =>
   state.filed.find((record) => record.fingerprint === fingerprint && now.getTime() - Date.parse(record.at) < windowHours * 3_600_000) ?? null
 
+/** windowed: `intake` and `maintain` share this store; a record older than the longer of their two dedupe windows
+ * can never again match in `alreadyFiled`, so it is dead weight `filed` would otherwise carry forever. */
+const prunedFiled = (filed: readonly FiledRecord[], config: LoopConfig, now: Date): readonly FiledRecord[] => {
+  const windowMs = Math.max(config.intake.dedupeWindowHours, config.maintain.dedupeWindowHours) * 3_600_000
+  return filed.filter((record) => now.getTime() - Date.parse(record.at) < windowMs)
+}
+
 export const parseAlerts = (stdout: string): readonly Alert[] => {
   let parsed: unknown
   try { parsed = JSON.parse(stdout.trim() || '[]') } catch { return [] }
@@ -116,7 +123,7 @@ export const runIntakeStage = async (input: { readonly loaded: LoadedLoopConfig;
     }
   }
 
-  if (!input.dryRun && filed.length !== state.filed.length) writeJsonAtomic(intakeStatePath(loaded.stateDir), { filed })
+  if (!input.dryRun && filed.length !== state.filed.length) writeJsonAtomic(intakeStatePath(loaded.stateDir), { filed: prunedFiled(filed, config, now) })
   return { status: results.some((result) => result.outcome === 'failed') ? 'failed' : results.length ? 'ok' : 'idle', results, notes }
 }
 
@@ -169,6 +176,6 @@ export const runMaintainStage = async (input: { readonly loaded: LoadedLoopConfi
     } catch (error) { results.push({ check: check.id, outcome: 'failed', detail: error instanceof Error ? error.message : String(error) }) }
   }
 
-  if (!input.dryRun && filed.length !== state.filed.length) writeJsonAtomic(intakeStatePath(loaded.stateDir), { filed })
+  if (!input.dryRun && filed.length !== state.filed.length) writeJsonAtomic(intakeStatePath(loaded.stateDir), { filed: prunedFiled(filed, config, now) })
   return { status: results.some((result) => result.outcome === 'failed') ? 'failed' : results.some((result) => result.outcome === 'filed') ? 'ok' : 'idle', results }
 }

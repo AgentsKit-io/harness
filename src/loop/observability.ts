@@ -165,7 +165,8 @@ export const runObservability = async (input: { readonly configPath?: string; re
     orcaWorktrees(input.runner, { bin: loaded.config.orca.bin, timeoutMs: loaded.config.orca.timeoutMs }).catch(() => [] as readonly OrcaWorktree[]),
     orcaTerminalList(input.runner, {}, { bin: loaded.config.orca.bin, timeoutMs: loaded.config.orca.timeoutMs }).catch(() => [] as readonly OrcaTerminal[]),
   ])
-  const events = readLoopEvents(loaded.stateDir).filter((event) => Date.parse(event.at) >= since.getTime() && Date.parse(event.at) <= at.getTime())
+  // windowed: bound the scan to `since` instead of rereading every rotated archive on every 15-minute cycle.
+  const events = readLoopEvents(loaded.stateDir, since.getTime()).filter((event) => Date.parse(event.at) >= since.getTime() && Date.parse(event.at) <= at.getTime())
   const ledger = createDispatchLedger(loaded.stateDir)
   const active = ledger.active()
   // A dispatch claim legitimately exists before the first delivery pass writes

@@ -66,11 +66,37 @@ GitHub, Orca, Doc Bridge, or a model provider to the kernel.
 
 ## Verification contract
 
-Run the repository contract before reporting completion:
+**scope:** a task carries an explicit scope; the check it needs, not the full
+gate. Most changes touch one criterion — run its narrow script directly
+(`pnpm test:boundaries`, `pnpm vitest run test/loop-deliver.test.ts`, etc.; see
+`package.json` for the full `test:*` list, one per `.ak-harness/verification.json`
+criterion). Only the PR that closes an issue runs the complete contract:
 
 ```bash
 ak-verify run --config .ak-harness/verification.json --json
 ```
 
 The run ID and criterion-level evidence belong in the change report. A failed,
-stale, blocked, or approval-pending run is not complete.
+stale, blocked, or approval-pending run is not complete. "Before reporting
+completion" above means before the PR is ready to merge, not after every edit —
+running the full 22-check gate on every iteration is the single largest source
+of wasted time and tokens in this repository; do not do it by default.
+
+## House conventions
+
+Five one-line, checkable rules, each named after the waste it stops. Applying
+one is preferred to writing a paragraph explaining the same judgment call:
+
+- **`digest:`** — content repeated across calls (skills, contract, plan, PRD) is
+  referenced by hash, never resent whole unless the hash changed.
+- **`windowed:`** — no function reads an append-only log/history store without a
+  time or count bound (`sinceMs`, `keep: N`). An unbounded read gets slower
+  every week the loop runs; that is a bug, not a style preference.
+- **`scope:`** — see above: a task's verification is the criterion it touches,
+  not the whole contract.
+- **`cheapest-sufficient:`** — a role's default model quality matches the
+  difficulty of what that role actually does, not tradition. The role writing
+  the code is never given a weaker default than the role only reading it.
+- **`one-shot-vote:`** — prefer one call asking for N structured perspectives
+  over N separate full calls, unless the provider genuinely cannot return
+  structured multi-perspective output in one call.

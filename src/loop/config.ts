@@ -244,9 +244,14 @@ export const LoopConfigSchema = z.object({
     /** Relative cost per `provider/model`, any unit you like — only the order matters. Used by `policy: cost-first`. */
     cost: z.record(modelRef, z.number().nonnegative()).default({}),
     /** Quality band when `routing.mode: catalog` (and as soft bias in hybrid). */
+    /**
+     * cheapest-sufficient: default quality tracks what a role actually does, not tradition. `orchestrator`
+     * (freezing a contract from an issue) and `reviewer` (reading a diff) are bounded, structured tasks — neither
+     * defaults above `builder`, the role that does the open-ended work of writing and debugging the code itself.
+     */
     roles: z.object({
-      orchestrator: z.object({ quality: z.enum(['frontier', 'balanced', 'fast']).default('frontier'), preferCreators: z.array(nonEmpty).default([]) }).prefault({}),
-      reviewer: z.object({ quality: z.enum(['frontier', 'balanced', 'fast']).default('frontier'), preferCreators: z.array(nonEmpty).default([]) }).prefault({}),
+      orchestrator: z.object({ quality: z.enum(['frontier', 'balanced', 'fast']).default('balanced'), preferCreators: z.array(nonEmpty).default([]) }).prefault({}),
+      reviewer: z.object({ quality: z.enum(['frontier', 'balanced', 'fast']).default('balanced'), preferCreators: z.array(nonEmpty).default([]) }).prefault({}),
       builder: z.object({ quality: z.enum(['frontier', 'balanced', 'fast']).default('balanced'), preferCreators: z.array(nonEmpty).default([]) }).prefault({}),
       watcher: z.object({ quality: z.enum(['frontier', 'balanced', 'fast']).default('fast'), preferCreators: z.array(nonEmpty).default([]) }).prefault({}),
     }).prefault({}),

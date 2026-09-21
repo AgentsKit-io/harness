@@ -99,7 +99,9 @@ models:
   # cost:                            # relative cost per provider/model, any unit; only the order matters
   #   codex/gpt-5.6-luna: 1
   #   claude/opus: 9
-  # roles: { orchestrator: { quality: frontier }, builder: { quality: balanced }, watcher: { quality: fast } }
+  # roles: { orchestrator: { quality: balanced }, reviewer: { quality: balanced }, builder: { quality: balanced }, watcher: { quality: fast } }
+  # cheapest-sufficient (default): orchestrator/reviewer read and extract, builder writes the code — neither of
+  # the first two should outrank the role doing the open-ended work. Raise one to frontier only where it earns it.
   # catalog: { sources: [cli, builtin], artificialAnalysis: { enabled: false } }
   # Tiers, in order. Inside a tier the first provider with usage available wins.
   # Tier 1 = subscriptions, tier 2 = cheap hosted, tier 3 = last resort.
