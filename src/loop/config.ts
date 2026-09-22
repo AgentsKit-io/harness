@@ -993,9 +993,8 @@ export const unknownConfigKeys = (raw: unknown, parsed: unknown, prefix = ''): r
  * Lists that ARE gates: an overlay adds to them, and removes an entry only by naming it as `!entry`.
  *
  * Replacing them would let an older, more specific layer silently undo a protection added later to a broader one.
- * That is not hypothetical: a machine overlay written on 2026-09-17 to free `.github/pr-intent.yaml` replaced the
- * whole `selfEditPaths`, and so dropped the `packages/**` freeze the project added on 2026-09-22 without anyone
- * noticing.
+ * That is not hypothetical: a machine overlay written to free one file under `.github/` replaced the whole
+ * `selfEditPaths`, and so dropped a `packages/**` freeze the project added days later without anyone noticing.
  */
 const GATE_LISTS: readonly string[] = ['delivery.selfEditPaths', 'delivery.secretFilePatterns', 'delivery.requiredChecks']
 
