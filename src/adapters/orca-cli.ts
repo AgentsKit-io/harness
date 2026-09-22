@@ -253,7 +253,26 @@ export const parseOrcaSendReceipt = (result: unknown): OrcaSendReceipt => {
   return { accepted, requestId: str(receipt['requestId'], str(prompt?.['requestId'], str(record['requestId']))) || null, stages, warnings: warnings.map((warning: unknown) => isRecord(warning) ? str(warning['message'], JSON.stringify(warning)) : str(warning)) }
 }
 
-export const orcaTerminalSend = async (runner: CommandRunner, input: { readonly terminal: string; readonly text: string; readonly enter?: boolean; readonly waitSubmitSeconds?: number }, options: OrcaCliOptions = {}): Promise<OrcaSendReceipt> => parseOrcaSendReceipt(await orcaJson(runner, ['terminal', 'send', '--terminal', input.terminal, '--text', input.text, ...(input.enter === false ? [] : ['--enter']), ...(input.waitSubmitSeconds ? ['--wait-submit', String(input.waitSubmitSeconds)] : [])], { ...options, timeoutMs: options.timeoutMs ?? ((input.waitSubmitSeconds ?? 0) * 1000 + 30_000) }))
+/** The request id Orca hands back when a prompt send failed ambiguously and must be retried by id, never re-sent. */
+export const orcaRetryRequestId = (message: string): string | null => /--retry-request\s+([0-9a-f-]{8,})/i.exec(message)?.[1] ?? null
+
+/**
+ * Send text to a terminal. When Orca answers an agent-prompt send with an ambiguous failure (e.g.
+ * `agent_session_ownership_unknown`) it names a request id and says to re-issue *with that id*: the retry observes the
+ * same prompt instead of typing it twice. That retry happens here, once; anything else still throws.
+ */
+export const orcaTerminalSend = async (runner: CommandRunner, input: { readonly terminal: string; readonly text: string; readonly enter?: boolean; readonly waitSubmitSeconds?: number }, options: OrcaCliOptions = {}): Promise<OrcaSendReceipt> => {
+  const argv = ['terminal', 'send', '--terminal', input.terminal, '--text', input.text, ...(input.enter === false ? [] : ['--enter'])]
+  const timeoutMs = options.timeoutMs ?? ((input.waitSubmitSeconds ?? 0) * 1000 + 30_000)
+  try {
+    return parseOrcaSendReceipt(await orcaJson(runner, [...argv, ...(input.waitSubmitSeconds ? ['--wait-submit', String(input.waitSubmitSeconds)] : [])], { ...options, timeoutMs }))
+  } catch (error) {
+    const requestId = orcaRetryRequestId(error instanceof Error ? error.message : String(error))
+    if (!requestId) throw error
+    const wait = Math.max(input.waitSubmitSeconds ?? 0, 15)
+    return parseOrcaSendReceipt(await orcaJson(runner, [...argv, '--retry-request', requestId, '--wait-submit', String(wait)], { ...options, timeoutMs: Math.max(timeoutMs, wait * 1000 + 30_000) }))
+  }
+}
 
 export const orcaTerminalWait = async (runner: CommandRunner, input: { readonly terminal: string; readonly for: 'exit' | 'tui-idle'; readonly timeoutMs: number }, options: OrcaCliOptions = {}): Promise<{ readonly satisfied: boolean; readonly raw: unknown }> => {
   const result = await orcaJson(runner, ['terminal', 'wait', '--terminal', input.terminal, '--for', input.for, '--timeout-ms', String(input.timeoutMs)], { ...options, timeoutMs: input.timeoutMs + 15_000 })

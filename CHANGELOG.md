@@ -15,6 +15,9 @@ Found by running the loop on a real repository migration with a single, non-defa
   command the agent's own config marked dangerous (`rm -rf`, `git reset --hard`). It now reads Orca's `permission`
   activity (`OrcaWorktree.activity`, from `worktree ps`) or the prompt on screen, reports `held`, emits
   `worker.permission-wait` once per idle window, keeps the lease, and no nudge, handoff or relaunch happens.
+- **An ambiguous prompt send is retried by id, not lost.** When Orca answers a send with a failure that names a
+  `--retry-request <id>` (e.g. `agent_session_ownership_unknown`), the adapter re-issues it once with that id; the
+  dispatch used to fail and remove a freshly created worktree.
 - **Phase artifacts stay out of product commits.** At dispatch the harness adds `/.ak-loop/` to the repository's
   shared `info/exclude`, and the brief says never to commit it — a worker's `git add -A` had put the loop's own
   evidence files into a product pull request.
