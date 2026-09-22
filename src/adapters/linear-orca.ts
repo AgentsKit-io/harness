@@ -189,18 +189,19 @@ export const linearCommentAddArgv = (input: { readonly issue: string; readonly b
 export const linearLabelArgv = (input: { readonly issue: string; readonly labels: readonly string[]; readonly workspaceId: string; readonly action: 'add' | 'remove' }, bin = 'orca'): readonly string[] => [bin, 'linear', 'label', input.action, input.issue, ...input.labels.flatMap((label) => ['--label', label]), '--workspace', input.workspaceId, '--json']
 export const linearAttachArgv = (input: { readonly issue: string; readonly url: string; readonly title?: string; readonly workspaceId: string; readonly writeId?: string }, bin = 'orca'): readonly string[] => [bin, 'linear', 'attach', input.issue, '--url', input.url, ...(input.title ? ['--title', input.title] : []), '--workspace', input.workspaceId, ...(input.writeId ? ['--write-id', input.writeId] : []), '--json']
 
-export const linearSaveIssueArgv = (input: { readonly team: string; readonly title: string; readonly description?: string; readonly state?: string; readonly labels?: readonly string[]; readonly priority?: string; readonly project?: string; readonly workspaceId: string; readonly writeId?: string }, bin = 'orca'): readonly string[] => [bin, 'linear', 'save-issue', '--team', input.team, '--title', input.title,
+export const linearSaveIssueArgv = (input: { readonly team: string; readonly title: string; readonly description?: string; readonly state?: string; readonly labels?: readonly string[]; readonly priority?: string; readonly project?: string; readonly parentId?: string; readonly workspaceId: string; readonly writeId?: string }, bin = 'orca'): readonly string[] => [bin, 'linear', 'save-issue', '--team', input.team, '--title', input.title,
   ...(input.description ? ['--description', input.description] : []),
   ...(input.state ? ['--state', input.state] : []),
   ...(input.priority ? ['--priority', input.priority] : []),
   ...(input.project ? ['--project', input.project] : []),
+  ...(input.parentId ? ['--parent-id', input.parentId] : []),
   ...(input.labels ?? []).flatMap((label) => ['--label', label]),
   '--workspace', input.workspaceId,
   ...(input.writeId ? ['--write-id', input.writeId] : []),
   '--json']
 
 /** Create one issue. `dedupeKey` becomes Orca's `--write-id`, so a retried decompose cannot create the same issue twice. */
-export const linearSaveIssue = async (runner: CommandRunner, input: { readonly team: string; readonly title: string; readonly description?: string; readonly state?: string; readonly labels?: readonly string[]; readonly priority?: string; readonly project?: string; readonly dedupeKey?: string }, options: LinearWriteOptions): Promise<{ readonly identifier: string | null; readonly url: string | null }> => {
+export const linearSaveIssue = async (runner: CommandRunner, input: { readonly team: string; readonly title: string; readonly description?: string; readonly state?: string; readonly labels?: readonly string[]; readonly priority?: string; readonly project?: string; readonly parentId?: string; readonly dedupeKey?: string }, options: LinearWriteOptions): Promise<{ readonly identifier: string | null; readonly url: string | null }> => {
   const result = await orcaJson(runner, linearSaveIssueArgv({ ...input, workspaceId: options.workspaceId, ...(input.dedupeKey ? { writeId: writeIdFor(input.dedupeKey) } : {}) }).slice(1), scoped(options))
   const record = isRecord(result) ? (isRecord(result['issue']) ? result['issue'] : result) : {}
   return { identifier: typeof record['identifier'] === 'string' ? record['identifier'] : null, url: typeof record['url'] === 'string' ? record['url'] : null }

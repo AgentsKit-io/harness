@@ -327,14 +327,14 @@ loopPlan.command('approve-design <id>').description('Human gate: approve the des
   const document = writeDesignDocument(loaded, next)
   print({ id, phase: next.phase, ...(document ? { wrote: document.path } : {}), next: `ak-harness loop plan decompose ${id}` })
 })
-loopPlan.command('decompose <id>').description('Break the approved design into issues. Without --create nothing is written to the tracker.').option('--create', 'create the issues in the tracker, in the queue entry state').action(async function (this: Command, id: string, command: { readonly create?: boolean }) {
+loopPlan.command('decompose <id>').description('Break the approved design into issues. Without --create nothing is written to the tracker.').option('--create', 'create the issues in the tracker, in linear.entryState (outside the queue)').option('--parent <issue>', 'the epic these issues break down (tracker identifier)').option('--project <name>', 'tracker project; default: the one project the queue drains, when there is exactly one').action(async function (this: Command, id: string, command: { readonly create?: boolean; readonly parent?: string; readonly project?: string }) {
   const deps = await planDeps(this)
   const decomposed = await decomposeRound(deps, planOrFail(deps.loaded, id))
   writePlanState(deps.loaded.stateDir, decomposed)
   if (!command.create) return print({ id, issues: decomposed.issues, create: `ak-harness loop plan decompose ${id} --create` })
-  const created = await createPlannedIssues(deps, decomposed)
+  const created = await createPlannedIssues(deps, decomposed, { ...(command.parent ? { parent: command.parent } : {}), ...(command.project ? { project: command.project } : {}) })
   writePlanState(deps.loaded.stateDir, created)
-  print({ id, phase: created.phase, issues: created.issues.map((issue) => ({ identifier: issue.identifier ?? null, title: issue.title, layer: issue.layer, designRef: issue.designRef })), note: `created in "${deps.loaded.config.linear.states[0] ?? 'Todo'}" — moving them to a dispatchable state stays a human gesture` })
+  print({ id, phase: created.phase, issues: created.issues.map((issue) => ({ identifier: issue.identifier ?? null, title: issue.title, layer: issue.layer, designRef: issue.designRef })), note: `created in "${deps.loaded.config.linear.entryState}" — moving them to ${deps.loaded.config.linear.states.map((name) => `"${name}"`).join(' or ')} is the human gate into the queue` })
 })
 const loopRelease = loop.command('release').description('Promote the integration branch to the release branch and run the project deploy — only for a batch a human approved.')
 loopRelease.command('status').description('What is merged on the integration branch and not yet released, and whether it is approved.').action(async function (this: Command) {
