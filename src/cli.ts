@@ -328,10 +328,14 @@ loopPlan.command('approve-design <id>').description('Human gate: approve the des
   const document = writeDesignDocument(loaded, next)
   print({ id, phase: next.phase, ...(document ? { wrote: document.path } : {}), next: `ak-harness loop plan decompose ${id}` })
 })
-loopPlan.command('decompose <id>').description('Break the approved design into issues. Without --create nothing is written to the tracker.').option('--create', 'create the issues in the tracker, in linear.entryState (outside the queue)').option('--parent <issue>', 'the epic these issues break down (tracker identifier)').option('--project <name>', 'tracker project; default: the one project the queue drains, when there is exactly one').action(async function (this: Command, id: string, command: { readonly create?: boolean; readonly parent?: string; readonly project?: string }) {
+loopPlan.command('decompose <id>').description('Break the approved design into issues. Without --create nothing is written to the tracker; --create writes the list already shown, not a new one.').option('--create', 'create the issues already decomposed (and reviewed) in the tracker, in linear.entryState (outside the queue)').option('--refresh', 'decompose again even when a list already exists').option('--parent <issue>', 'the epic these issues break down (tracker identifier)').option('--project <name>', 'tracker project; default: the one project the queue drains, when there is exactly one').action(async function (this: Command, id: string, command: { readonly create?: boolean; readonly refresh?: boolean; readonly parent?: string; readonly project?: string }) {
   const deps = await planDeps(this)
-  const decomposed = await decomposeRound(deps, planOrFail(deps.loaded, id))
-  writePlanState(deps.loaded.stateDir, decomposed)
+  const current = planOrFail(deps.loaded, id)
+  // `--create` files the list a human already read. Decomposing again here would put a list nobody reviewed into
+  // the tracker — the model does not return the same issues twice.
+  const reuse = command.create === true && command.refresh !== true && current.phase === 'decompose' && current.issues.length > 0
+  const decomposed = reuse ? current : await decomposeRound(deps, current)
+  if (!reuse) writePlanState(deps.loaded.stateDir, decomposed)
   if (!command.create) return print({ id, issues: decomposed.issues, create: `ak-harness loop plan decompose ${id} --create` })
   const created = await createPlannedIssues(deps, decomposed, { ...(command.parent ? { parent: command.parent } : {}), ...(command.project ? { project: command.project } : {}) })
   writePlanState(deps.loaded.stateDir, created)
