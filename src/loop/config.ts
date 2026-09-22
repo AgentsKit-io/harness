@@ -630,6 +630,12 @@ export const LoopConfigSchema = z.object({
       /** Planner → vote → replan cycles before the item becomes a human's problem. Three models disagreeing three times is an ambiguous requirement. */
       maxCycles: z.number().int().min(1).max(5).default(3),
       timeoutMs: z.number().int().positive().default(300_000),
+      /**
+       * Per-call budget for `loop plan` (interview, architect, design vote, decompose). Separate from `timeoutMs`
+       * because the architect designs a whole PRD against the whole repository, not one issue — and it runs from a
+       * human's shell, not inside a scheduler stage capped at 600 s. At 300 s `glm-5.3` never finished a design.
+       */
+      stageTimeoutMs: z.number().int().positive().default(900_000),
     }).prefault({}),
     /**
      * The phases that run for one issue, in order.

@@ -16,6 +16,9 @@ Found by running the loop on a real migration (agentskit-os #6238) with opencode
 - **The plan interview reads what a model meant instead of losing the round.** While the PRD is being filled, a
   bare string is a one-item list and an empty list is a gap for `prdGaps` to report — `glm-5.3` answered
   `"users": "…"` and `"successCriteria": []` and the whole round failed validation. The final PRD stays strict.
+- **`loop plan` has its own time budget.** New `worker.plan.stageTimeoutMs` (default 900 s) covers the interview,
+  architect, design vote and decompose; `worker.plan.timeoutMs` stays the per-issue planner's. The architect designs
+  a whole PRD from a human's shell, and at the shared 300 s `glm-5.3` never finished one.
 - **A worker brief is never typed into a pane that is not `tui-idle`.** The launcher waits a second, longer window;
   if the TUI still is not ready the dispatch fails (and the half-created worktree is removed) instead of losing the
   prompt.
