@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   compareVersions, orcaAccountList, orcaAgentHooks, orcaAutomationCreateArgv, orcaAutomationEditArgv, orcaAutomationRemove, orcaAutomationRun, orcaAutomationRuns, orcaJson, orcaStatus, orcaTerminalCreate, orcaTerminalList, orcaTerminalScreen,
-  orcaTerminalWait, orcaVersion, orcaWorktreeRemove, orcaWorktreeSet, orcaWorktrees, parseOrcaAgentHooks, parseOrcaAutomations, parseOrcaSendReceipt, parseOrcaStatus, parseOrcaTerminals, parseOrcaVersion, parseOrcaWorktreeCreate, parseOrcaWorktrees,
+  orcaRetryRequestId, orcaTerminalSend, orcaTerminalWait, orcaVersion, orcaWorktreeRemove, orcaWorktreeSet, orcaWorktrees, parseOrcaAgentHooks, parseOrcaAutomations, parseOrcaSendReceipt, parseOrcaStatus, parseOrcaTerminals, parseOrcaVersion, parseOrcaWorktreeCreate, parseOrcaWorktrees,
 } from '../src/index.js'
 import type { CommandResult, CommandRunner } from '../src/index.js'
 
@@ -272,5 +272,20 @@ describe('orcaAutomationRemove / Run / Runs', () => {
     await orcaAutomationRun(runner, 'auto-1')
     await orcaAutomationRuns(runner, 'auto-1')
     expect(runner.calls.map((c) => c.slice(1, -1))).toEqual([['automations', 'remove', 'auto-1'], ['automations', 'run', 'auto-1'], ['automations', 'runs', '--id', 'auto-1']])
+  })
+})
+
+describe('orcaTerminalSend retry by request id', () => {
+  it('re-issues an ambiguous agent-prompt send once, with the id Orca named, instead of failing or typing twice', async () => {
+    const message = 'agent_session_ownership_unknown Terminal prompt request ID: 80dc20ef-491a-4b54-afd6-31e99a27c533. Re-issue the exact command with --retry-request 80dc20ef-491a-4b54-afd6-31e99a27c533 --wait-submit <seconds>; do not retry it without that ID.'
+    expect(orcaRetryRequestId(message)).toBe('80dc20ef-491a-4b54-afd6-31e99a27c533')
+    let first = true
+    const runner = recorder(() => { if (first) { first = false; return envelopeFail(message) } return ok({ send: { accepted: true } }) })
+    expect((await orcaTerminalSend(runner, { terminal: 't', text: 'brief', enter: true })).accepted).toBe(true)
+    expect(runner.calls).toHaveLength(2)
+    expect(runner.calls[1]).toEqual(expect.arrayContaining(['--retry-request', '80dc20ef-491a-4b54-afd6-31e99a27c533', '--wait-submit']))
+    const plain = recorder(() => envelopeFail('terminal_not_found'))
+    await expect(orcaTerminalSend(plain, { terminal: 't', text: 'x' })).rejects.toThrow(/terminal_not_found/)
+    expect(plain.calls).toHaveLength(1)
   })
 })
