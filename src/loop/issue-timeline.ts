@@ -1,4 +1,4 @@
-import { readLoopEvents, type LoopEvent } from './retro.js'
+import { parseSince, readLoopEvents, type LoopEvent } from './retro.js'
 
 export interface TimelineStep {
   readonly at: string
@@ -63,8 +63,14 @@ const detailOf = (event: LoopEvent): string => {
  * steps — what a study comparing how different LLMs behaved on the same kind of task, or a human tuning the
  * harness, both need: which phase took the time, which one spent the tokens, and where it went wrong.
  */
-export const buildIssueTimeline = (stateDir: string, issue: string): IssueTimelineReport => {
-  const events = [...readLoopEvents(stateDir).filter((event) => event['issue'] === issue)]
+export const buildIssueTimeline = (stateDir: string, issue: string, options: { readonly since?: string; readonly now?: Date } = {}): IssueTimelineReport => {
+  // windowed: this used to call readLoopEvents(stateDir) with no bound, parsing events.ndjson plus every rotated
+  // events-archive-*.ndjson and filtering one issue out in memory — the only unbounded read left in the loop, and
+  // one that got slower every week it ran. An issue's timeline lives inside its own dispatch, so a window that
+  // covers the longest an issue plausibly stays in flight loses nothing and stops the growth.
+  const now = options.now ?? new Date()
+  const since = parseSince(options.since ?? '30d', now)
+  const events = [...readLoopEvents(stateDir, since.getTime()).filter((event) => event['issue'] === issue)]
     .sort((a, b) => Date.parse(a.at) - Date.parse(b.at))
   const steps: TimelineStep[] = []
   let previousAtMs: number | null = null

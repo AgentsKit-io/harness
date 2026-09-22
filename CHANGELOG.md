@@ -2,6 +2,20 @@
 
 ## [Unreleased]
 
+### Token and time economy
+
+- `scope:` — the seven worker-facing fix-round messages and the recovery brief told the worker to run
+  `delivery.verifyCommand`, the whole gate. `verifyCommandFor()` already existed and resolves the layer's own
+  verify from the labels frozen at dispatch; `deliver` never called it. A project with no layers sees no change;
+  one with them stops paying for the monorepo suite on every fix round, twice over (`maxFixRounds` defaults to 2).
+- `cheapest-sufficient:` — `routing.effort` gave `builder` (writing and debugging the code) `medium` while
+  `reviewer` and `orchestrator` (reading a finished diff, turning an issue into a contract) got `high`. That is
+  the inversion the rule exists to stop, and it paid more for the cheaper problem. Now `builder: high`,
+  the readers `medium`.
+- `windowed:` — `buildIssueTimeline` was the last unbounded read: `readLoopEvents(stateDir)` with no window,
+  parsing `events.ndjson` plus every rotated archive and filtering one issue out in memory. It takes a window
+  now (`--since`, default `30d`).
+
 ### Breaking
 
 - `connectors.runner: "local"` is now rejected at config load. It was never wired: `tick`, `deliver` and

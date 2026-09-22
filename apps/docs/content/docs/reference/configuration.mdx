@@ -156,10 +156,10 @@ Stricter review for the slices of the board that deserve it, keyed by label. The
 | `models.providers.effortFlag` | string |  |  |
 | `models.providers.structuredOutputFlag` | string[] |  |  |
 | `models.providers.subagents` | boolean | `false` |  |
-| `models.effort` | object | `{}` | Reasoning effort requested per role; only applied for providers whose `effortFlag` is set. |
-| `models.effort.orchestrator` | `low` · `medium` · `high` · `xhigh` | `"high"` |  |
-| `models.effort.reviewer` | `low` · `medium` · `high` · `xhigh` | `"high"` |  |
-| `models.effort.builder` | `low` · `medium` · `high` · `xhigh` | `"medium"` |  |
+| `models.effort` | object | `{}` | Reasoning effort requested per role; only applied for providers whose `effortFlag` is set. cheapest-sufficient, the same rule `routing.roles.*.quality` already follows: effort tracks the difficulty of what a role does. `builder` writes and debugs the code — open-ended, the hardest thing here — while `reviewer` reads a finished diff against stated criteria and `orchestrator` turns an issue into a contract; both are bounded. Giving the writer `medium` while the readers got `high` was the inversion the rule exists to stop, and it was paying more for the cheaper problem. |
+| `models.effort.orchestrator` | `low` · `medium` · `high` · `xhigh` | `"medium"` |  |
+| `models.effort.reviewer` | `low` · `medium` · `high` · `xhigh` | `"medium"` |  |
+| `models.effort.builder` | `low` · `medium` · `high` · `xhigh` | `"high"` |  |
 | `models.effort.watcher` | `low` · `medium` · `high` · `xhigh` | `"low"` |  |
 
 ## `machine`

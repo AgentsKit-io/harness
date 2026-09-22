@@ -5,7 +5,7 @@ import { atLeast, parseReviewResult, renderFindingsForWorker, runCodeReview, typ
 import { assessChecks, githubComment, githubCommentExists, githubCompare, githubLabelRemove, githubMerge, githubOpenPullRequests, githubPullRequest, githubPullRequestsForBranch, touchesProtectedPaths, type PullRequestSnapshot } from '../adapters/github-cli.js'
 import { resolveConnectors, type ScmConnector, type TrackerConnector } from './connectors.js'
 import { issueBudget, modelForChange } from './budget.js'
-import { assessBoundary } from './layers.js'
+import { assessBoundary, verifyCommandFor } from './layers.js'
 import { installWorkerGuard } from './worker-guard.js'
 import { orcaAccountList, orcaAgentHooks, orcaTerminalList, orcaTerminalScreen, orcaTerminalSend, orcaTerminalWait, orcaWorktreeRemove, orcaWorktreeSet } from '../adapters/orca-cli.js'
 import { detectProviders, remainingUsagePercent, type ProviderAvailability } from '../adapters/providers.js'
@@ -205,7 +205,7 @@ const sendToWorker = async (ctx: Context, record: DispatchRecordFile, text: stri
       const frozen = stored
         ? `\n\n## Frozen contract (inline coordinator copy; digest ${stored.digest.slice(0, 12)})\n${JSON.stringify(stored.contract, null, 2)}\n`
         : ''
-      brief = `Resume ${record.issue} on branch ${record.branch}. The coordinator has already frozen and validated the contract; the coordinator state directory is outside this isolated worktree, so do not block on a missing ${ctx.config.project.stateDir} file. Address the review findings, run \`${ctx.config.delivery.verifyCommand}\`, commit and push, then report LOOP_WORKER_DONE ${record.issue}.${frozen}`
+      brief = `Resume ${record.issue} on branch ${record.branch}. The coordinator has already frozen and validated the contract; the coordinator state directory is outside this isolated worktree, so do not block on a missing ${ctx.config.project.stateDir} file. Address the review findings, run \`${verifyCommandFor(ctx.config, record.labels ?? []).command}\`, commit and push, then report LOOP_WORKER_DONE ${record.issue}.${frozen}`
       actions.push(stored ? 'brief missing; generated recovery brief with inline contract' : 'brief missing; generated recovery brief')
     }
     const relaunched = await launchWorkerTerminal({ runner: ctx.runner, config: ctx.config, worktreeId: record.worktreeId, command: ctx.builder.tui, title: `loop ${record.issue}`, brief, idleTimeoutMs: 10_000 })
@@ -518,6 +518,10 @@ const handlePullRequest = async (ctx: Context, record: DispatchRecordFile, lease
   const actions: string[] = []
   const { config } = ctx
   const flow = flowFor(ctx, record)
+  // scope: what closes THIS task, not the whole contract. `verifyCommandFor` resolves the layer's own verify from
+  // the labels frozen at dispatch, falling back to the project command when no layer claims it — so a project with
+  // no layers configured sees no change, and one with them stops paying for the monorepo suite on every fix round.
+  const closes = verifyCommandFor(config, record.labels ?? []).command
   if (flow.flow.name && flow.flow.source !== 'none') actions.push(`flow \`${flow.flow.name}\` (${flow.flow.source}${flow.flow.matched ? ` ${flow.flow.matched}` : ''})${flow.flow.profile?.reason ? `: ${flow.flow.profile.reason}` : ''}`)
   if (pr.isDraft) return { issue: record.issue, outcome: 'waiting', reason: 'PR is a draft', pr: pr.number, head: pr.headSha, actions }
   const protectedFiles = touchesProtectedPaths(pr.files, config.delivery.selfEditPaths)
@@ -540,7 +544,7 @@ ${marker}` }); actions.push('secret-file hold commented') } catch (error) { acti
     }
     return { issue: record.issue, outcome: 'held', reason: `touches secret-shaped file(s): ${secretShapedFiles.join(', ')}`, pr: pr.number, head: pr.headSha, actions }
   }
-  if (pr.mergeable === 'CONFLICTING' || pr.mergeState === 'DIRTY') return fixRound(ctx, record, lease, state, pr, 'conflict', `Loop: PR #${pr.number} conflicts with ${config.project.baseBranch}. In this worktree run \`git fetch origin ${config.project.baseBranch} && git rebase origin/${config.project.baseBranch}\`, resolve conflicts keeping the contract's behaviour, re-run \`${config.delivery.verifyCommand}\`, then \`git push --force-with-lease\` (the only force allowed, on your own branch). Reply here when pushed.`, `conflicts with ${config.project.baseBranch}`, actions)
+  if (pr.mergeable === 'CONFLICTING' || pr.mergeState === 'DIRTY') return fixRound(ctx, record, lease, state, pr, 'conflict', `Loop: PR #${pr.number} conflicts with ${config.project.baseBranch}. In this worktree run \`git fetch origin ${config.project.baseBranch} && git rebase origin/${config.project.baseBranch}\`, resolve conflicts keeping the contract's behaviour, re-run \`${closes}\`, then \`git push --force-with-lease\` (the only force allowed, on your own branch). Reply here when pushed.`, `conflicts with ${config.project.baseBranch}`, actions)
   // What actually examined this diff. A flow may turn any single gate off — that is the point of flows — but the
   // list being empty at merge time means nothing did, and that is where it stops being an auto-merge.
   const vouchedBy: string[] = []
@@ -549,7 +553,7 @@ ${marker}` }); actions.push('secret-file hold commented') } catch (error) { acti
   // check never costs a fix round — the shape a POC or an incident wants, and the reason a runner bill is optional.
   if (flow.merge.requireChecks && checks.status === 'green') vouchedBy.push('CI')
   if (!flow.merge.requireChecks && checks.status !== 'green') actions.push(`checks ${checks.status}; not gating (merge.requireChecks is off for this flow)`)
-  else if (checks.status === 'red') return fixRound(ctx, record, lease, state, pr, 'ci', `Loop: CI is red on PR #${pr.number} (head ${pr.headSha.slice(0, 7)}). Failing checks: ${checks.failing.join(', ')}. Inspect them with \`gh pr checks ${pr.number} --repo ${config.project.repo}\` and \`gh run view --log-failed\`, fix the root cause (never skip or disable a check), re-run \`${config.delivery.verifyCommand}\`, commit and push. Reply here when pushed.`, `CI red: ${checks.failing.join(', ')}`, actions)
+  else if (checks.status === 'red') return fixRound(ctx, record, lease, state, pr, 'ci', `Loop: CI is red on PR #${pr.number} (head ${pr.headSha.slice(0, 7)}). Failing checks: ${checks.failing.join(', ')}. Inspect them with \`gh pr checks ${pr.number} --repo ${config.project.repo}\` and \`gh run view --log-failed\`, fix the root cause (never skip or disable a check), re-run \`${closes}\`, commit and push. Reply here when pushed.`, `CI red: ${checks.failing.join(', ')}`, actions)
   else if (checks.status !== 'green') return { issue: record.issue, outcome: 'waiting', reason: checks.status === 'missing' ? `required checks not reported yet: ${checks.missingRequired.join(', ')}` : `checks pending: ${checks.pending.join(', ')}`, pr: pr.number, head: pr.headSha, actions }
 
   const prior = state.reviews[pr.headSha]
@@ -587,7 +591,7 @@ ${marker}` }); actions.push('secret-file hold commented') } catch (error) { acti
     const reviewSettings = flow.review
     if (prior && prior.attempts >= 2 && prior.provider === reviewProvider && prior.model === chosen.model) {
       const known = readBlockingReviewFindings(ctx.loaded.stateDir, record.issue, pr.headSha, reviewSettings.minSeverity)
-      if (known.length && !state.nudges.some((nudge) => nudge.kind === 'review' && nudge.head === pr.headSha)) return fixRound(ctx, record, lease, state, pr, 'review', `Loop: the last review was incomplete after ${prior.attempts} attempts, but it recorded ${known.length} blocking issue(s). Address the findings below, re-run \`${config.delivery.verifyCommand}\`, commit and push; a complete review is still required before merge. Findings:\n${renderFindingsForWorker(known)}\nThe full review is on the PR.`, `replaying ${known.length} blocking finding(s) from incomplete review`, actions)
+      if (known.length && !state.nudges.some((nudge) => nudge.kind === 'review' && nudge.head === pr.headSha)) return fixRound(ctx, record, lease, state, pr, 'review', `Loop: the last review was incomplete after ${prior.attempts} attempts, but it recorded ${known.length} blocking issue(s). Address the findings below, re-run \`${closes}\`, commit and push; a complete review is still required before merge. Findings:\n${renderFindingsForWorker(known)}\nThe full review is on the PR.`, `replaying ${known.length} blocking finding(s) from incomplete review`, actions)
       return { issue: record.issue, outcome: 'held', reason: 'review incomplete twice at this head; needs a human look', pr: pr.number, head: pr.headSha, actions }
     }
     // Cost lever: the cheap verifier runs before the expensive one. A build that does not compile does not
@@ -629,10 +633,10 @@ ${marker}` }); actions.push('secret-file hold commented') } catch (error) { acti
         actions.push(`reviewer ${reviewerProviderId} marked cooling down until ${entry.until} (${failureKind})`)
         event(ctx, { type: 'provider.cooldown', provider: reviewerProviderId, kind: failureKind, until: entry.until, source: 'review' })
       }
-      if (review.blocking.length) return fixRound(ctx, record, lease, state, pr, 'review', `Loop: the review of PR #${pr.number} is incomplete, but it found ${review.blocking.length} blocking issue(s). Address the findings below, re-run \`${config.delivery.verifyCommand}\`, commit and push; the loop will require a complete review before merge. Findings:\n${renderFindingsForWorker(review.blocking)}\nThe full (incomplete) review is on the PR.`, `review incomplete with ${review.blocking.length} blocking finding(s)`, actions)
+      if (review.blocking.length) return fixRound(ctx, record, lease, state, pr, 'review', `Loop: the review of PR #${pr.number} is incomplete, but it found ${review.blocking.length} blocking issue(s). Address the findings below, re-run \`${closes}\`, commit and push; the loop will require a complete review before merge. Findings:\n${renderFindingsForWorker(review.blocking)}\nThe full (incomplete) review is on the PR.`, `review incomplete with ${review.blocking.length} blocking finding(s)`, actions)
       return { issue: record.issue, outcome: 'waiting', reason: review.summary, pr: pr.number, head: pr.headSha, review, actions }
     }
-    if (review.status === 'findings') return fixRound(ctx, record, lease, state, pr, 'review', `Loop: the code review of PR #${pr.number} (head ${pr.headSha.slice(0, 7)}) found ${review.blocking.length} issue(s) at or above "${reviewSettings.minSeverity}". Address each one (or explain in the PR why it is not applicable), re-run \`${config.delivery.verifyCommand}\`, commit and push. Findings:\n${renderFindingsForWorker(review.blocking)}\nThe full review is on the PR. Reply here when pushed.`, `review found ${review.blocking.length} blocking finding(s)`, actions)
+    if (review.status === 'findings') return fixRound(ctx, record, lease, state, pr, 'review', `Loop: the code review of PR #${pr.number} (head ${pr.headSha.slice(0, 7)}) found ${review.blocking.length} issue(s) at or above "${reviewSettings.minSeverity}". Address each one (or explain in the PR why it is not applicable), re-run \`${closes}\`, commit and push. Findings:\n${renderFindingsForWorker(review.blocking)}\nThe full review is on the PR. Reply here when pushed.`, `review found ${review.blocking.length} blocking finding(s)`, actions)
   } else if (reviewPhase && prior?.status === 'findings') return { issue: record.issue, outcome: 'waiting', reason: `review findings pending a new push (head ${pr.headSha.slice(0, 7)})`, pr: pr.number, head: pr.headSha, actions }
 
   // The phase artifacts are the contract between the worker and the harness: the machine advances on files it can
@@ -697,7 +701,7 @@ ${marker}` }); actions.push('secret-file hold commented') } catch (error) { acti
       const detail = `${smokeOutcome.stderr}\n${smokeOutcome.stdout}`.trim().slice(0, 400)
       actions.push(`smoke failed: exit ${smokeOutcome.timedOut ? 'timeout' : smokeOutcome.code ?? 'null'}`)
       event(ctx, { type: 'pr.smoke-failed', issue: record.issue, pr: pr.number, head: pr.headSha, detail })
-      return fixRound(ctx, record, lease, state, pr, 'ci', `Loop: optional deliver smoke failed (\`${smoke.argv.join(' ')}\`). Fix the failure, re-run \`${config.delivery.verifyCommand}\`, push, and the loop will retry.\n\n${detail}`, `smoke failed: ${detail.split('\n')[0] ?? 'non-zero exit'}`, actions)
+      return fixRound(ctx, record, lease, state, pr, 'ci', `Loop: optional deliver smoke failed (\`${smoke.argv.join(' ')}\`). Fix the failure, re-run \`${closes}\`, push, and the loop will retry.\n\n${detail}`, `smoke failed: ${detail.split('\n')[0] ?? 'non-zero exit'}`, actions)
     }
     actions.push('smoke passed')
   }

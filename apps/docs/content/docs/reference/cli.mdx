@@ -504,6 +504,10 @@ Every logged step for one issue, oldest first: what ran, how long since the prev
 ak-harness loop issue-timeline [options] <identifier>
 ```
 
+| Flag | What it does | Default |
+|---|---|---|
+| `--since &lt;window&gt;` | how far back to read the event log; an issue older than this window reports nothing | `"30d"` |
+
 ### `ak-harness loop worker-guard`
 
 PreToolUse hook entrypoint (Claude Code / Grok Build CLI-compatible): reads a hook event on stdin and exits 2 to block a Write/Edit that would touch a path matching delivery.selfEditPaths or delivery.secretFilePatterns. Installed automatically into a dispatched worktree; not meant to be run by a human.
