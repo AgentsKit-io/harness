@@ -647,7 +647,10 @@ ${marker}` }); actions.push('secret-file hold commented') } catch (error) { acti
   // A record with no worktree path predates the worktree or lost it: the harness cannot read anything there, and
   // blaming the worker for a file nobody can look for is how a loop invents work.
   const artifacts = record.worktreePath ? readPhaseArtifacts(record.worktreePath, config) : []
-  const requiredArtifacts: readonly PhaseArtifactName[] = config.worker.plan.enabled ? ['plan', 'verify'] : ['verify']
+  // Same source as `tick` used when it decided whether to run the planner at all (`tick.ts:554`). Reading
+  // `worker.plan.enabled` directly here meant a flow that turned the planner off still had deliver demand a
+  // `plan.md` the worker was never asked to write, and send it back a fix round for the omission.
+  const requiredArtifacts: readonly PhaseArtifactName[] = workerPhaseEnabled(config, flow.flow, 'planner', config.worker.plan.enabled) ? ['plan', 'verify'] : ['verify']
   const absentArtifacts = missingArtifacts(artifacts, requiredArtifacts)
   if (absentArtifacts.length) {
     const detail = absentArtifacts.map((artifact) => `\`${artifact.file}\` — ${artifact.detail}`).join('; ')

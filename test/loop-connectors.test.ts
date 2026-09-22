@@ -131,3 +131,20 @@ describe('the runner connector, twice', () => {
     expect(runner.calls).toHaveLength(1)
   })
 })
+
+describe('unknown config keys', () => {
+  it('names a key the schema does not know instead of stripping it in silence', () => {
+    // `maxFixRoundz: 2` used to be accepted with `maxFixRounds` quietly taking its default — a typo that reads
+    // as "I configured this" and behaves as "I did not". Reported, not rejected: a config written for a newer
+    // harness legitimately carries keys this version has never heard of.
+    const dir = mkdtempSync(join(tmpdir(), 'agentskit-unknown-keys-')); cleanups.push(dir)
+    writeFileSync(join(dir, 'loop.config.yaml'), exampleYaml.replace('  maxFixRounds: 2', '  maxFixRoundz: 2'))
+    const loaded = loadLoopConfig(join(dir, 'loop.config.yaml'), { AK_HARNESS_NO_GLOBAL: '1' })
+    expect(loaded.unknownKeys).toEqual(['delivery.maxFixRoundz'])
+    expect(loaded.config.delivery.maxFixRounds).toBe(2) // still the default, but no longer silently
+  })
+
+  it('reports nothing for the example config every project copies', () => {
+    expect(setup().unknownKeys).toEqual([])
+  })
+})

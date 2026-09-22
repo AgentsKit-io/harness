@@ -920,6 +920,12 @@ export interface LoadedLoopConfig {
   readonly stateDir: string
   readonly config: LoopConfig
   readonly configHash: string
+  /**
+   * Key paths the project's YAML declares that this version's schema does not know, so they were stripped.
+   * Almost always a typo (`maxFixRoundz`), occasionally a config written for a newer harness. Reported by
+   * `loop validate` and `loop doctor` rather than rejected — see `unknownConfigKeys`.
+   */
+  readonly unknownKeys: readonly string[]
 }
 
 export const parseModelRef = (value: string): ModelReference => {
@@ -951,6 +957,25 @@ export const validateLoopConfig = (value: unknown): LoopConfig => {
 }
 
 const isPlainObject = (value: unknown): value is Record<string, unknown> => typeof value === 'object' && value !== null && !Array.isArray(value)
+
+/**
+ * Key paths present in the YAML a project wrote but absent from the validated config: fields zod stripped
+ * because nothing declares them. `maxFixRoundz: 9` used to be accepted in silence, with `maxFixRounds` quietly
+ * taking its default — a typo that reads as "I configured this" and behaves as "I did not".
+ *
+ * Reported rather than rejected. A config written for a newer harness legitimately carries keys this version
+ * does not know, and failing that closed would make every upgrade a flag day. Silence was the bug, not leniency.
+ */
+export const unknownConfigKeys = (raw: unknown, parsed: unknown, prefix = ''): readonly string[] => {
+  if (!isPlainObject(raw) || !isPlainObject(parsed)) return []
+  const dropped: string[] = []
+  for (const [key, value] of Object.entries(raw)) {
+    const path = prefix ? `${prefix}.${key}` : key
+    if (!(key in parsed)) { dropped.push(path); continue }
+    dropped.push(...unknownConfigKeys(value, parsed[key], path))
+  }
+  return dropped
+}
 
 /** Recursive merge: objects merge key by key, arrays and scalars from the overlay replace the base. */
 export const mergeLoopConfig = (base: unknown, overlay: unknown): unknown => {
@@ -1031,6 +1056,7 @@ export const loadLoopConfig = (path: string = LOOP_CONFIG_FILE, env: NodeJS.Proc
   const root = resolve(directory, config.project.root)
   return {
     path: absolute, root, stateDir: resolve(root, config.project.stateDir), config, configHash: hashJson(config),
+    unknownKeys: unknownConfigKeys(parseYamlMapping(text, LOOP_CONFIG_FILE), config),
     ...(localText === undefined ? {} : { localPath }),
     ...(globalText === undefined ? {} : { globalPath }),
     ...(teamText === undefined || teamPath === null || team === null ? {} : { teamPath, team }),

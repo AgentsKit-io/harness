@@ -169,8 +169,8 @@ delivery:
     profile: fast                    # one bounded pass over required lenses; `full` needs batching to fit a 600 s stage
     votes: 1
     concurrency: 4
-    minSeverity: med
-    # doctorProbe: help                 # nit < med < high < blocker; findings at/above this block auto-merge
+    minSeverity: med                  # nit < med < high < blocker; findings at/above this block auto-merge
+    # doctorProbe: help                 # help | none — how `loop doctor` probes the review CLI
     deadlineMs: 600000
     # smallChangeLines: 0            # >0: a change at or below this many lines (or docs-only) is reviewed by the
                                      # cheapest candidate instead of the strongest — cost lever 3

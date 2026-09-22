@@ -455,7 +455,12 @@ export const runTick = async (input: TickInput): Promise<TickReport> => {
       ? Number.isFinite(timeBudgetMs) ? Math.min(config.project.setup.timeoutSec * 1000, Math.max(0, timeBudgetMs - config.contract.timeoutMs - 125_000)) : config.project.setup.timeoutSec * 1000
       : 0
     const cachedContract = readStoredContract(loaded.stateDir, candidate.identifier)
-    if (remainingMs() < config.contract.timeoutMs + setupBudgetMs + 120_000 && !cachedContract) { notes.push(`time budget: ${candidate.identifier} left for the next tick (${Math.round(remainingMs() / 1000)}s remaining)`); continue }
+    // A cached contract saves the contract call, not the setup run — so only the contract's share of the budget
+    // is waived. Skipping the whole check when a contract was cached let a candidate through with minutes left,
+    // and the setup timeout below then floored at 1s: a command guaranteed to time out, and with
+    // `setup.required` (default true) a guaranteed dispatch failure that also burned the worktree.
+    const contractBudgetMs = cachedContract ? 0 : config.contract.timeoutMs
+    if (remainingMs() < contractBudgetMs + setupBudgetMs + 120_000) { notes.push(`time budget: ${candidate.identifier} left for the next tick (${Math.round(remainingMs() / 1000)}s remaining)`); continue }
     const failureState = readIssueFailures(loaded.stateDir, candidate.identifier)
     if (failureState.pausedAt !== null) {
       if (candidate.labels.includes(config.resilience.pausedLabel)) { results.push({ issue: candidate.identifier, outcome: 'skipped', reason: `paused after ${failureState.consecutive} consecutive failures; remove the "${config.resilience.pausedLabel}" label or run "ak-harness loop resume ${candidate.identifier}" to retry` }); continue }
@@ -620,7 +625,9 @@ export const runTick = async (input: TickInput): Promise<TickReport> => {
       const workerGuard = installWorkerGuard({ worktreePath: created.path, provider: worker.provider, config })
       let setupResult: { readonly command: readonly string[]; readonly exitCode: number | null; readonly durationMs: number; readonly timedOut: boolean } | null = null
       if (config.project.setup.command?.length) {
-        const setupTimeoutMs = Number.isFinite(timeBudgetMs) ? Math.max(1_000, Math.min(config.project.setup.timeoutSec * 1000, remainingMs() - 120_000)) : config.project.setup.timeoutSec * 1000
+        // Floored at the window the guard above already reserved, not at 1s: if less than that is left, the
+        // candidate never reached here, so there is no case where the floor should hand setup a doomed timeout.
+        const setupTimeoutMs = Number.isFinite(timeBudgetMs) ? Math.max(setupBudgetMs, Math.min(config.project.setup.timeoutSec * 1000, remainingMs() - 120_000)) : config.project.setup.timeoutSec * 1000
         const setupRun = await input.runner.run(config.project.setup.command, { cwd: created.path, timeoutMs: setupTimeoutMs })
         setupResult = { command: config.project.setup.command, exitCode: setupRun.code, durationMs: setupRun.durationMs, timedOut: setupRun.timedOut }
         const setupFailed = setupRun.timedOut || setupRun.code !== 0
