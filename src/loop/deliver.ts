@@ -8,7 +8,7 @@ import { resolveConnectors, type ScmConnector, type TrackerConnector } from './c
 import { issueBudget, modelForChange } from './budget.js'
 import { assessBoundary, verifyCommandFor } from './layers.js'
 import { installWorkerGuard } from './worker-guard.js'
-import { orcaAccountList, orcaAgentHooks, orcaTerminalList, orcaTerminalScreen, orcaTerminalSend, orcaTerminalWait, orcaWorktreeRemove, orcaWorktreeSet } from '../adapters/orca-cli.js'
+import { orcaAccountList, orcaAgentHooks, orcaTerminalList, orcaWorktrees, orcaTerminalScreen, orcaTerminalSend, orcaTerminalWait, orcaWorktreeRemove, orcaWorktreeSet } from '../adapters/orca-cli.js'
 import { detectProviders, remainingUsagePercent, type ProviderAvailability } from '../adapters/providers.js'
 import { createDispatchLedger, type DispatchLease } from '../execution/coordination.js'
 import { HarnessError } from '../kernel/errors.js'
@@ -66,7 +66,7 @@ export interface DeliveryState {
   readonly prNumber: number | null
   readonly reviews: Readonly<Record<string, { readonly status: CodeReviewOutcome['status']; readonly at: string; readonly provider: string; readonly model: string | null; readonly blocking: number; readonly attempts: number }>>
   readonly fixRounds: number
-  readonly nudges: readonly { readonly kind: 'idle' | 'conflict' | 'ci' | 'review' | 'handoff'; readonly at: string; readonly head: string | null }[]
+  readonly nudges: readonly { readonly kind: 'idle' | 'conflict' | 'ci' | 'review' | 'handoff' | 'permission'; readonly at: string; readonly head: string | null }[]
   readonly handoffs: readonly DeliveryHandoff[]
   readonly heldFor: string | null
   readonly finishedAt: string | null
@@ -179,8 +179,34 @@ const readBlockingReviewFindings = (stateDir: string, issue: string, head: strin
   } catch { return [] }
 }
 
+/** What a tool-permission prompt looks like on screen, across the agent CLIs the loop drives. */
+const PERMISSION_PROMPT = /Permission required|Allow once|Allow always|Do you want to (?:proceed|allow|run)|approve this (?:command|action)/i
+
+/**
+ * Whether the worker is stopped at a tool-permission prompt — a question for a human, not idleness.
+ *
+ * Typing into it is not a nudge: the text lands in a dialog whose default is "allow", so the next Enter approves
+ * whatever the agent asked for — typically the one command its own config marks as dangerous (`rm -rf`,
+ * `git reset --hard`). Orca's `worktree ps` reports it as `permission`; the screen is the fallback.
+ */
+export const workerAwaitingPermission = async (ctx: Pick<Context, 'runner' | 'config'>, record: Pick<DispatchRecordFile, 'worktreeId' | 'terminal'>): Promise<string | null> => {
+  try {
+    const own = (await orcaWorktrees(ctx.runner, orcaOptions(ctx.config))).find((item) => item.id === record.worktreeId)
+    if (own?.activity === 'permission') return 'Orca reports the worktree at a permission prompt'
+  } catch { /* fall back to the screen */ }
+  if (!record.terminal) return null
+  try {
+    const screen = (await orcaTerminalScreen(ctx.runner, { terminal: record.terminal }, orcaOptions(ctx.config))).split('\n').slice(-25).join('\n')
+    const match = PERMISSION_PROMPT.exec(screen)
+    if (match) return `the worker screen shows a permission prompt ("${match[0]}")`
+  } catch { /* unknown is not a prompt */ }
+  return null
+}
+
 const sendToWorker = async (ctx: Context, record: DispatchRecordFile, text: string, actions: string[]): Promise<boolean> => {
   if (!record.terminal) { actions.push('no terminal handle recorded; cannot nudge'); return false }
+  const permission = ctx.dryRun ? null : await workerAwaitingPermission(ctx, record)
+  if (permission) { actions.push(`not typing into ${record.terminal}: ${permission} — the text would answer it`); return false }
   if (ctx.dryRun) { actions.push(`would send to ${record.terminal}: ${text.split('\n')[0]?.slice(0, 80)}`); return true }
   const send = async (terminal: string) => orcaTerminalSend(ctx.runner, { terminal, text, enter: true, waitSubmitSeconds: 10 }, orcaOptions(ctx.config))
   let staleShell = false
@@ -425,6 +451,18 @@ const handleNoPullRequest = async (ctx: Context, record: DispatchRecordFile, lea
     await escalateLinear(ctx, record, 'stuck', `**Loop: worker stuck** — the worker terminal for \`${record.worktree}\` is gone and no pull request was opened. The worktree was preserved for inspection; the slot was released.`, actions)
     finish(ctx, record, lease, state, 'stuck', 'terminal gone before PR')
     return { issue: record.issue, outcome: ctx.dryRun ? 'dry-run' : 'stuck', reason: 'worker terminal gone before a PR was opened', actions }
+  }
+
+  // A worker at a permission prompt is waiting for a person, whatever the idle clock says. Hold it — no nudge, no
+  // handoff, no relaunch — and keep the lease: once someone answers, the same worker carries on.
+  const permission = await workerAwaitingPermission(ctx, record)
+  if (permission) {
+    if (!state.nudges.some((nudge) => nudge.kind === 'permission' && minutesBetween(now, nudge.at) < idleTimeout)) {
+      event(ctx, { type: 'worker.permission-wait', issue: record.issue, terminal: record.terminal, reason: permission })
+      if (!ctx.dryRun) saveState(ctx, { ...state, nudges: [...state.nudges, { kind: 'permission', at: now.toISOString(), head: null }] })
+    }
+    actions.push(`${permission}; left for a human to answer in terminal ${record.terminal}`)
+    return { issue: record.issue, outcome: 'held', reason: `worker waiting at a permission prompt (${permission}) — answer it in Orca`, actions }
   }
 
   let idle = ctx.assumeIdle ?? false
