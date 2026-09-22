@@ -2,7 +2,7 @@ import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'nod
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
-import { approveRelease, loadLoopConfig, readLoopEvents, readReleaseBatch, readReleaseState, renderReleaseMarkdown, runReleaseStage } from '../src/index.js'
+import { approveRelease, createLoopEventBus, loadLoopConfig, readLoopEvents, readReleaseBatch, readReleaseState, renderReleaseMarkdown, runReleaseStage } from '../src/index.js'
 import type { CommandResult, CommandRunner, LoadedLoopConfig, ReleaseBatch } from '../src/index.js'
 
 const exampleYaml = readFileSync(join(process.cwd(), 'loop.config.example.yaml'), 'utf8').replace('person: my-linear-display-name', 'person: person')
@@ -121,6 +121,23 @@ describe('promoting and deploying', () => {
     // The approval is spent: the next batch needs its own.
     expect(readReleaseState(loaded.stateDir).approval).toBeNull()
     expect(readLoopEvents(loaded.stateDir).map((event) => event.type)).toContain('release.promoted')
+  })
+
+  it('loads plugins.modules (not just notifications), reaching an externally-owned bus too', async () => {
+    const loaded = setup(`${RELEASE}plugins:\n  modules: [plugin.mjs]\n`)
+    writeFileSync(join(loaded.root, 'plugin.mjs'), `export default { id: 'release-logger', apply(bus) { globalThis.__releaseEvents = []; bus.on('release.promoted', (event) => { globalThis.__releaseEvents.push(event.type) }) } }`, 'utf8')
+    approveRelease({ loaded, batch: await batchOf(loaded), actor: 'emerson', now: () => NOW })
+    await runReleaseStage({ loaded, runner: runner(), now: () => NOW })
+    expect((globalThis as { __releaseEvents?: readonly unknown[] }).__releaseEvents).toEqual(['release.promoted'])
+
+    // An externally-owned bus (as `loop stage` passes) is used as-is: no second plugin/notifier attachment on it.
+    const loaded2 = setup()
+    approveRelease({ loaded: loaded2, batch: await batchOf(loaded2), actor: 'emerson', now: () => NOW })
+    const bus = createLoopEventBus()
+    const seen: string[] = []
+    bus.on('release.promoted', (event) => seen.push(event.type))
+    await runReleaseStage({ loaded: loaded2, runner: runner(), now: () => NOW, bus })
+    expect(seen).toEqual(['release.promoted'])
   })
 
   it('runs the deploy and the smoke, and rolls back when the smoke fails', async () => {

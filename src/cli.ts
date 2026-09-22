@@ -5,7 +5,7 @@ import { Command } from 'commander'
 import { approveRun, ARTIFACT_SCHEMA_VERSION, assessAcceptance, assessBlock, assessDiscovery, assessImprovementCycle, assessIntegration, assessPilot, assessPreflight, assessProduction, assessWip, assessWorktreeCleanup, authorizeRun, benchmarkRuns, cancelRun, cleanTaskArtifacts, composePullRequest, createDispatchLedger, createDocBridgeContextProvider, createStatusSnapshot, exportEvidenceBundle, FileArtifactStore, loadBenchmarkManifest, loadConfig, loadLatestRun, parseRetro, planFilePreflight, planRun, readArtifactFile, readContextSnapshots, readEvidenceTrustStore, reconcileRun, recordBenchmarkObservation, renderArtifactMarkdown, retryRun, selectRuntime, startRun, validateBlockManifest, validateStatusSnapshot, verifyEvidenceBundle, verifyRun } from './index.js'
 import type { BenchmarkObservationEvidence } from './execution/metrics.js'
 import { fail } from './kernel/errors.js'
-import { appendLoopEvent, buildDebriefReport, buildNotification, buildRetroReport, createProcessRunner, createRichIO, fetchLinearIssue, formatWatchEvent, generateContract, installLoopAutomations, linearLabelRemove, loadLoopConfig, openLoopMemory, promoteLearningsToMemory, runGuidedInstall, runLoopInit, loopStatus, renderDebriefMarkdown, renderObservabilityMarkdown, renderRetroMarkdown, retroLearnings, runRetroStage, precheckDeliver, precheckTick, rankModels, promoteLearnings, writePrdDocument, writeDesignDocument, readLearningsLedger, startPlan, interviewRound, answerRound, approvePlan, architectRound, approveDesign, decomposeRound, createPlannedIssues, designApproved, listPlans, prdGaps, readPlanState, writePlanState, renderPlanMarkdown, readStoredContract, writeLearningsLedger, runDeliver, runLoopDoctor, notifyHuman, runIntakeStage, runMaintainStage, readReleaseBatch, readReleaseState, approveRelease, renderReleaseMarkdown, runReleaseStage, runObservability, runObserveStage, runTick, uninstallLoopAutomations, watchDeliveries, writeStoredContract, isStagePaused, recordStageRunResult, resumeIssue, resumeStage, readIssueFailures, stageEntry, listPausedIssues, readLastConfigHash, writeLastConfigHash, buildIssueTimeline, renderIssueTimelineMarkdown, type LoopStageName } from './index.js'
+import { appendLoopEvent, attachNotifier, buildDebriefReport, buildRetroReport, createLoopEventBus, createProcessRunner, createRichIO, fetchLinearIssue, formatWatchEvent, generateContract, installLoopAutomations, linearLabelRemove, loadLoopConfig, loadLoopPlugins, openLoopMemory, promoteLearningsToMemory, runGuidedInstall, runLoopInit, loopStatus, renderDebriefMarkdown, renderObservabilityMarkdown, renderRetroMarkdown, retroLearnings, runRetroStage, precheckDeliver, precheckTick, rankModels, promoteLearnings, writePrdDocument, writeDesignDocument, readLearningsLedger, startPlan, interviewRound, answerRound, approvePlan, architectRound, approveDesign, decomposeRound, createPlannedIssues, designApproved, listPlans, prdGaps, readPlanState, writePlanState, renderPlanMarkdown, readStoredContract, writeLearningsLedger, runDeliver, runLoopDoctor, runIntakeStage, runMaintainStage, readReleaseBatch, readReleaseState, approveRelease, renderReleaseMarkdown, runReleaseStage, runObservability, runObserveStage, runTick, uninstallLoopAutomations, watchDeliveries, writeStoredContract, isStagePaused, recordStageRunResult, resumeIssue, resumeStage, readIssueFailures, stageEntry, listPausedIssues, readLastConfigHash, writeLastConfigHash, buildIssueTimeline, renderIssueTimelineMarkdown, type LoopStageName } from './index.js'
 import { FileEventStore, inspectEventLogLock, recoverEventLogLock } from './kernel/events.js'
 import { acquireStageLock } from './loop/stage-lock.js'
 
@@ -91,67 +91,77 @@ loop.command('stage <stage>').description('Run one stage (tick | deliver | retro
   if (lastConfigHash !== null && lastConfigHash !== loaded.configHash) appendLoopEvent(loaded.stateDir, { at: new Date().toISOString(), type: 'config.changed', from: lastConfigHash, to: loaded.configHash })
   if (lastConfigHash !== loaded.configHash) writeLastConfigHash(loaded.stateDir, loaded.configHash)
   const startedAt = Date.now()
-  const completed = (status: string, count: number): void => appendLoopEvent(loaded.stateDir, { at: new Date().toISOString(), type: 'stage.completed', stage, durationMs: Date.now() - startedAt, status, count })
-  if (stage === 'intake' || stage === 'maintain') {
-    // Both create issues and nothing else; like every scheduled stage they exit 1 so Orca records the run.
-    const report = stage === 'intake' ? await runIntakeStage({ loaded, runner }) : await runMaintainStage({ loaded, runner })
-    completed(report.status, report.results.length)
-    console.log(JSON.stringify(report, null, 2))
-    process.exitCode = 1
-    return
-  }
-  if (stage === 'release') {
-    // Promotion and deploy act on the world, so this stage only ever finishes work a human already approved.
-    const report = await runReleaseStage({ loaded, runner })
-    completed(report.status, report.batch.issues.length)
-    console.log(JSON.stringify(report, null, 2))
-    process.exitCode = 1
-    return
-  }
-  if (stage === 'observe') {
-    // The one stage whose exit code is a decision, not a convention: 0 asks Orca to launch the observer agent.
-    const report = await runObserveStage({ loaded, runner })
-    completed(report.observability.status, report.observability.anomalies.length)
-    console.log(JSON.stringify({ ...report, observability: { status: report.observability.status, anomalies: report.observability.anomalies, metrics: report.observability.metrics } }, null, 2))
-    process.exitCode = report.notify ? 0 : 1
-    return
-  }
-  const trackedStage = stage as LoopStageName
-  // retro has no auto-pause: it is a lower-frequency, best-effort digest, not a stage that can spin every 5-10 min.
-  if (stage !== 'retro' && isStagePaused(loaded.stateDir, trackedStage)) {
-    const entry = stageEntry(loaded.stateDir, trackedStage)
-    console.log(JSON.stringify({ status: 'paused', stage, pausedAt: entry.pausedAt, pausedReason: entry.pausedReason, consecutiveFailures: entry.consecutiveFailures, resume: `ak-harness loop resume --stage ${stage} -f ${JSON.stringify(file)}` }, null, 2))
-    process.exitCode = 1
-    return
-  }
-  const stageLock = acquireStageLock(loaded.stateDir, stage)
-  if (!stageLock) {
-    console.log(JSON.stringify({ status: 'locked', stage, reason: 'another stage run is still active' }, null, 2))
-    process.exitCode = 1
-    return
-  }
-  const budgetMs = Math.max(60_000, loaded.config.schedule.stageTimeoutSec * 1000 - 60_000)
-  const threshold = loaded.config.resilience.stagePauseAfterRuns
+  // One bus for the whole invocation, loaded/attached exactly once here and handed to whichever stage function
+  // runs below: every event this process emits — the stage's own, and the three below (`config.changed`,
+  // `stage.completed`, `stage.paused`) alike — reaches the same plugin/notifier path, unified instead of each
+  // stage (or this handler) wiring its own.
+  const bus = createLoopEventBus()
+  if (loaded.config.plugins.modules.length) await loadLoopPlugins(loaded.root, loaded.config.plugins.modules, bus)
+  const flushNotifications = attachNotifier(bus, { config: loaded.config, runner })
+  const completed = (status: string, count: number): void => appendLoopEvent(loaded.stateDir, { at: new Date().toISOString(), type: 'stage.completed', stage, durationMs: Date.now() - startedAt, status, count }, bus)
   try {
-    const report = stage === 'tick' ? await runTick({ loaded, runner, budgetMs }) : stage === 'deliver' ? await runDeliver({ loaded, runner, budgetMs }) : await runRetroStage({ loaded, runner })
-    if (stage !== 'retro') recordStageRunResult(loaded.stateDir, trackedStage, { succeeded: true }, threshold)
-    completed(report.status, 'results' in report ? report.results.length : 'learningsProposed' in report ? report.learningsProposed : 0)
-    console.log(JSON.stringify(report, null, 2))
-  } catch (error) {
-    const reason = error instanceof Error ? error.message : String(error)
-    const entry = stage !== 'retro' ? recordStageRunResult(loaded.stateDir, trackedStage, { succeeded: false, reason }, threshold) : null
-    completed('error', 0)
-    // A stage that just auto-paused is the loop stopping on its own: it gets an event in the durable log and a
-    // call to whichever channel the user declared, because nobody is watching this terminal.
-    if (entry?.pausedAt) {
-      appendLoopEvent(loaded.stateDir, { at: new Date().toISOString(), type: 'stage.paused', stage, reason, consecutiveFailures: entry.consecutiveFailures })
-      await notifyHuman({ config: loaded.config, runner, notification: buildNotification(loaded.config, 'stage.paused', { stage, reason, consecutiveFailures: entry.consecutiveFailures }) })
+    if (stage === 'intake' || stage === 'maintain') {
+      // Both create issues and nothing else; like every scheduled stage they exit 1 so Orca records the run.
+      const report = stage === 'intake' ? await runIntakeStage({ loaded, runner, bus }) : await runMaintainStage({ loaded, runner, bus })
+      completed(report.status, report.results.length)
+      console.log(JSON.stringify(report, null, 2))
+      process.exitCode = 1
+      return
     }
-    console.log(JSON.stringify({ status: 'error', stage, error: reason, ...(entry ? { consecutiveFailures: entry.consecutiveFailures, paused: entry.pausedAt !== null } : {}) }, null, 2))
+    if (stage === 'release') {
+      // Promotion and deploy act on the world, so this stage only ever finishes work a human already approved.
+      const report = await runReleaseStage({ loaded, runner, bus })
+      completed(report.status, report.batch.issues.length)
+      console.log(JSON.stringify(report, null, 2))
+      process.exitCode = 1
+      return
+    }
+    if (stage === 'observe') {
+      // The one stage whose exit code is a decision, not a convention: 0 asks Orca to launch the observer agent.
+      // Read-only: it emits nothing of its own, so no bus to pass.
+      const report = await runObserveStage({ loaded, runner })
+      completed(report.observability.status, report.observability.anomalies.length)
+      console.log(JSON.stringify({ ...report, observability: { status: report.observability.status, anomalies: report.observability.anomalies, metrics: report.observability.metrics } }, null, 2))
+      process.exitCode = report.notify ? 0 : 1
+      return
+    }
+    const trackedStage = stage as LoopStageName
+    // retro has no auto-pause: it is a lower-frequency, best-effort digest, not a stage that can spin every 5-10 min.
+    if (stage !== 'retro' && isStagePaused(loaded.stateDir, trackedStage)) {
+      const entry = stageEntry(loaded.stateDir, trackedStage)
+      console.log(JSON.stringify({ status: 'paused', stage, pausedAt: entry.pausedAt, pausedReason: entry.pausedReason, consecutiveFailures: entry.consecutiveFailures, resume: `ak-harness loop resume --stage ${stage} -f ${JSON.stringify(file)}` }, null, 2))
+      process.exitCode = 1
+      return
+    }
+    const stageLock = acquireStageLock(loaded.stateDir, stage)
+    if (!stageLock) {
+      console.log(JSON.stringify({ status: 'locked', stage, reason: 'another stage run is still active' }, null, 2))
+      process.exitCode = 1
+      return
+    }
+    const budgetMs = Math.max(60_000, loaded.config.schedule.stageTimeoutSec * 1000 - 60_000)
+    const threshold = loaded.config.resilience.stagePauseAfterRuns
+    try {
+      const report = stage === 'tick' ? await runTick({ loaded, runner, budgetMs, bus }) : stage === 'deliver' ? await runDeliver({ loaded, runner, budgetMs, bus }) : await runRetroStage({ loaded, runner, bus })
+      if (stage !== 'retro') recordStageRunResult(loaded.stateDir, trackedStage, { succeeded: true }, threshold)
+      completed(report.status, 'results' in report ? report.results.length : 'learningsProposed' in report ? report.learningsProposed : 0)
+      console.log(JSON.stringify(report, null, 2))
+    } catch (error) {
+      const reason = error instanceof Error ? error.message : String(error)
+      const entry = stage !== 'retro' ? recordStageRunResult(loaded.stateDir, trackedStage, { succeeded: false, reason }, threshold) : null
+      completed('error', 0)
+      // A stage that just auto-paused is the loop stopping on its own: it gets an event on the same bus as
+      // everything else, and `stage.paused` is in `notifications.events`' default list, so the configured
+      // channel hears about it exactly the way any other notified event does — no more separate direct call.
+      if (entry?.pausedAt) appendLoopEvent(loaded.stateDir, { at: new Date().toISOString(), type: 'stage.paused', stage, reason, consecutiveFailures: entry.consecutiveFailures }, bus)
+      console.log(JSON.stringify({ status: 'error', stage, error: reason, ...(entry ? { consecutiveFailures: entry.consecutiveFailures, paused: entry.pausedAt !== null } : {}) }, null, 2))
+    } finally {
+      stageLock()
+    }
+    process.exitCode = 1
   } finally {
-    stageLock()
+    await flushNotifications()
   }
-  process.exitCode = 1
 })
 loop.command('tick').description('One keep-pushing tick: intake → admit → contract → dispatch workers into Orca worktrees.').option('--dry-run', 'plan only; no worktree, no Linear write, no contract cached').option('--max <n>', 'max dispatches this tick', (value: string) => Number(value)).option('--issue <identifier>', 'restrict to one issue').option('--skip-contract', 'do not call the orchestrator when no contract is cached').action(async function (this: Command, command: { readonly dryRun?: boolean; readonly max?: number; readonly issue?: string; readonly skipContract?: boolean }) { const report = await runTick({ configPath: loopFile(this), runner: createProcessRunner(), dryRun: command.dryRun ?? false, maxDispatch: command.max, onlyIssue: command.issue, skipContractGeneration: command.skipContract ?? false }); print(report); if (report.status === 'blocked') process.exitCode = 1 })
 loop.command('contract <identifier>').description('Freeze (or show) the orchestrator contract for one Linear issue.').option('--refresh', 'regenerate even when a cached contract exists').option('--dry-run', 'generate but do not cache').action(async function (this: Command, identifier: string, command: { readonly refresh?: boolean; readonly dryRun?: boolean }) {

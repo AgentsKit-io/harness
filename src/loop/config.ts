@@ -489,11 +489,13 @@ export const LoopConfigSchema = z.object({
   }).prefault({}),
   plugins: z.object({
     /**
-     * Local `.mjs` files (relative to `project.root`) loaded once at the start of `tick`/`deliver`; each exports
-     * `{ id, apply(bus) }` and gets the loop's in-process event bus to subscribe to (`src/loop/event-bus.ts`) —
-     * events (`contract.failed`, `worker.dispatched`, …) and lifecycle hooks (`beforeDispatch`, `beforeMerge`, …
-     * a `before*` hook can block the action). Same trust level as `agents.registry.yaml`: files already in this
-     * repo, never fetched over the network.
+     * Local `.mjs` files (relative to `project.root`) loaded once per invocation of any stage (`tick`, `deliver`,
+     * `retro`, `release`, `intake`, `maintain` — every one that emits an event); each exports `{ id, apply(bus) }`
+     * and gets the loop's in-process event bus to subscribe to (`src/loop/event-bus.ts`) — events
+     * (`contract.failed`, `worker.dispatched`, …) and lifecycle hooks (`beforeDispatch`, `beforeMerge`, … a
+     * `before*` hook can block the action). Run through `loop stage <name>`, every stage in that one process
+     * shares a single bus, so a plugin sees every event the invocation emits, not just its own stage's. Same
+     * trust level as `agents.registry.yaml`: files already in this repo, never fetched over the network.
      */
     modules: z.array(nonEmpty).default([]),
   }).prefault({}),

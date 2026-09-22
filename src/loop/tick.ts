@@ -112,6 +112,11 @@ export interface TickInput {
   readonly machine?: Pick<SlotInput, 'sample' | 'freeBytes' | 'totalBytes' | 'osRelease'>
   /** Wall-clock budget for this tick; candidates that would not fit are left for the next tick. */
   readonly budgetMs?: number
+  /** An externally-owned event bus (e.g. `loop stage`, unifying every stage's events on one bus for that
+   * invocation). When set, this call neither loads plugins nor attaches the notifier on it — the owner already
+   * did, and the owner is the one who flushes it once the whole invocation is done. Omit to keep this call
+   * self-sufficient, as every direct caller (`loop tick`, tests, library use) needs it to be. */
+  readonly bus?: LoopEventBus
 }
 
 /** Launch the worker in a fresh terminal with the configured TUI command and hand it the brief. Returns the terminal handle. */
@@ -326,14 +331,17 @@ export const runTick = async (input: TickInput): Promise<TickReport> => {
   const ledger = createDispatchLedger(loaded.stateDir)
   const notes: string[] = []
   const results: TickCandidateResult[] = []
-  const bus = createLoopEventBus()
-  if (config.plugins.modules.length) {
+  const ownsBus = !input.bus
+  const bus = input.bus ?? createLoopEventBus()
+  if (ownsBus && config.plugins.modules.length) {
     const { errors } = await loadLoopPlugins(loaded.root, config.plugins.modules, bus)
     for (const failure of errors) notes.push(`plugin ${failure.path} failed to load: ${failure.error}`)
   }
   // The configured escalation channels listen on the same bus as any plugin, and every exit of this function waits
   // for the sends in flight: a stage that ends before its notification leaves is a human who never hears about it.
-  const flushNotifications = attachNotifier(bus, { config, runner: input.runner, ...(input.env === undefined ? {} : { env: input.env }) })
+  // An externally-owned bus (`loop stage`) already has its own notifier attached, and its owner flushes it once
+  // for the whole invocation — attaching a second one here would double-send every notification.
+  const flushNotifications = ownsBus ? attachNotifier(bus, { config, runner: input.runner, ...(input.env === undefined ? {} : { env: input.env }) }) : async () => { /* owner flushes */ }
   const state = await gatherLoopState({ loaded, runner: input.runner, ledger, env: input.env, platform: input.platform, now, onlyIssue: input.onlyIssue, machine: input.machine })
   const orchestrator = state.routing['orchestrator'] ?? { role: 'orchestrator', selected: null, skipped: [] }
   // `gatherLoopState` already resolved catalog candidates for every role (including orchestrator) to compute

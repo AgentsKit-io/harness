@@ -2,7 +2,7 @@ import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'nod
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
-import { alreadyFiled, fingerprintOf, flowLabelFor, loadLoopConfig, parseAlerts, readIntakeState, readLoopEvents, renderAlertIssue, renderReleaseNotes, runIntakeStage, runMaintainStage } from '../src/index.js'
+import { alreadyFiled, createLoopEventBus, fingerprintOf, flowLabelFor, loadLoopConfig, parseAlerts, readIntakeState, readLoopEvents, renderAlertIssue, renderReleaseNotes, runIntakeStage, runMaintainStage } from '../src/index.js'
 import type { Alert, CommandResult, CommandRunner, LoadedLoopConfig, ReleaseBatch, TrackerConnector } from '../src/index.js'
 
 const exampleYaml = readFileSync(join(process.cwd(), 'loop.config.example.yaml'), 'utf8').replace('person: my-linear-display-name', 'person: person')
@@ -86,6 +86,16 @@ describe('turning alerts into issues', () => {
     expect(tracker.created).toHaveLength(1)
   })
 
+  it('reaches a bus passed in from outside, not just the events file', async () => {
+    const loaded = setup(INTAKE)
+    const runner: CommandRunner = { run: async () => ok(alerts([{ title: 'checkout 500s', severity: 'p0', url: '' }])) }
+    const bus = createLoopEventBus()
+    const seen: string[] = []
+    bus.on('intake.filed', (event) => seen.push(event.type))
+    await runIntakeStage({ loaded, runner, tracker: fakeTracker(), now: () => NOW, bus })
+    expect(seen).toEqual(['intake.filed'])
+  })
+
   it('files again once the dedupe window has passed', () => {
     const state = { filed: [{ fingerprint: 'f1', at: NOW.toISOString(), issue: 'ENG-1', source: 'sentry', title: 't' }] }
     expect(alreadyFiled(state, 'f1', 168, new Date(NOW.getTime() + 3_600_000))).not.toBeNull()
@@ -140,11 +150,22 @@ describe('maintenance that files only a decision', () => {
     expect(first.results.map((result) => result.outcome)).toEqual(['filed', 'filed'])
     expect(tracker.created[0]).toMatchObject({ title: 'Security advisories need a decision', labels: ['area:security'] })
     expect(tracker.created[0]?.description).toContain('CVE-2026-1 in left-pad')
+    expect(readLoopEvents(loaded.stateDir).some((event) => event.type === 'maintain.filed')).toBe(true)
 
     const second = await runMaintainStage({ loaded, runner, tracker, now: () => new Date(NOW.getTime() + 24 * 3_600_000) })
     expect(second.results.map((result) => result.outcome)).toEqual(['duplicate', 'duplicate'])
     expect(tracker.created).toHaveLength(2)
     expect(readIntakeState(loaded.stateDir).filed).toHaveLength(2)
+  })
+
+  it('reaches a bus passed in from outside, not just the events file', async () => {
+    const loaded = setup(MAINTAIN)
+    const runner: CommandRunner = { run: async (argv) => argv.includes('audit') ? { code: 1, stdout: 'CVE-2026-1 in left-pad', stderr: '', timedOut: false, durationMs: 1 } : ok('') }
+    const bus = createLoopEventBus()
+    const seen: string[] = []
+    bus.on('maintain.filed', (event) => seen.push(event.type))
+    await runMaintainStage({ loaded, runner, tracker: fakeTracker(), now: () => NOW, bus })
+    expect(seen).toEqual(['maintain.filed'])
   })
 })
 

@@ -83,6 +83,11 @@ export interface DeliverInput {
   readonly assumeIdle?: boolean
   /** Wall-clock budget for this deliver run; the review deadline is capped to fit inside it. */
   readonly budgetMs?: number
+  /** An externally-owned event bus (e.g. `loop stage`, unifying every stage's events on one bus for that
+   * invocation). When set, this call neither loads plugins nor attaches the notifier on it — the owner already
+   * did, and the owner is the one who flushes it once the whole invocation is done. Omit to keep this call
+   * self-sufficient, as every direct caller (`loop deliver`, tests, library use) needs it to be. */
+  readonly bus?: LoopEventBus
 }
 
 const message = (error: unknown): string => error instanceof HarnessError ? `${error.code}: ${error.message}` : error instanceof Error ? error.message : String(error)
@@ -820,12 +825,15 @@ export const runDeliver = async (input: DeliverInput): Promise<DeliverReport> =>
   if (!env['GITHUB_TOKEN'] && !env['GH_TOKEN']) { try { const token = await input.runner.run(['gh', 'auth', 'token'], { timeoutMs: 10_000 }); if (token.code === 0 && token.stdout.trim()) env = { ...env, GITHUB_TOKEN: token.stdout.trim(), GH_TOKEN: token.stdout.trim() } } catch { /* review runs without a token and reports incomplete */ } }
   const reviewDeadlineMs = input.budgetMs ? Math.max(60_000, Math.min(config.delivery.review.deadlineMs, input.budgetMs - 90_000)) : config.delivery.review.deadlineMs
   if (reviewDeadlineMs < config.delivery.review.deadlineMs) notes.push(`review deadline capped to ${Math.round(reviewDeadlineMs / 1000)}s to fit the stage budget`)
-  const bus = createLoopEventBus()
-  if (config.plugins.modules.length) {
+  const ownsBus = !input.bus
+  const bus = input.bus ?? createLoopEventBus()
+  if (ownsBus && config.plugins.modules.length) {
     const { errors } = await loadLoopPlugins(loaded.root, config.plugins.modules, bus)
     for (const failure of errors) notes.push(`plugin ${failure.path} failed to load: ${failure.error}`)
   }
-  const flushNotifications = attachNotifier(bus, { config, runner: input.runner, env })
+  // An externally-owned bus (`loop stage`) already has its own notifier attached, and its owner flushes it once
+  // for the whole invocation — attaching a second one here would double-send every notification.
+  const flushNotifications = ownsBus ? attachNotifier(bus, { config, runner: input.runner, env }) : async () => { /* owner flushes */ }
   const { tracker, scm } = resolveConnectors({ runner: input.runner, config, env, cwd: loaded.root, dryRun })
   const ctx: Context = { loaded, config, runner: input.runner, now, dryRun, reviewer, reviewerCandidates, builder, providers, env, tracker, scm, ...(input.assumeIdle === undefined ? {} : { assumeIdle: input.assumeIdle }), notes, reviewDeadlineMs, bus, builderExtras }
   const ledger = createDispatchLedger(loaded.stateDir)

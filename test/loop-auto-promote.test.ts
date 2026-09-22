@@ -2,7 +2,7 @@ import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'nod
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
-import { loadLoopConfig, readLearningsLedger, readLoopEvents, runRetroStage, upsertProposedLearnings, writeLearningsLedger } from '../src/index.js'
+import { createLoopEventBus, loadLoopConfig, readLearningsLedger, readLoopEvents, runRetroStage, upsertProposedLearnings, writeLearningsLedger } from '../src/index.js'
 import type { CommandResult, CommandRunner, LearningRecord } from '../src/index.js'
 
 const exampleYaml = readFileSync(join(process.cwd(), 'loop.config.example.yaml'), 'utf8').replace('person: my-linear-display-name', 'person: person')
@@ -44,6 +44,15 @@ describe('the retro promoting recurring lessons by itself', () => {
     expect(comment).toContain('loop-auto')
     expect(comment).toContain('loop learning reject --ids L-always run lint before pushing --by human')
     expect(readLoopEvents(loaded.stateDir).some((event) => event.type === 'memory.auto-promoted')).toBe(true)
+  })
+
+  it('reaches a bus passed in from outside, not just the events file', async () => {
+    const loaded = setup(AUTO)
+    const bus = createLoopEventBus()
+    const seen: string[] = []
+    bus.on('memory.auto-promoted', (event) => seen.push(event.type))
+    await runRetroStage({ loaded, runner: runner(), since: '7d', bus })
+    expect(seen).toEqual(['memory.auto-promoted'])
   })
 
   it('leaves everything proposed when the project did not opt in', async () => {
