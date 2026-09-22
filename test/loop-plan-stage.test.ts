@@ -5,7 +5,7 @@ import { afterEach, describe, expect, it } from 'vitest'
 import {
   DESIGN_CLOSE, DESIGN_OPEN, ISSUES_CLOSE, ISSUES_OPEN, QUESTION_CLOSE, QUESTION_OPEN,
   answerRound, approveDesign, approvePlan, architectRound, createPlannedIssues, decomposeRound, designApproved,
-  interviewRound, listPlans, loadLoopConfig, parseIssuesOutput, parseLoopConfigText, parseQuestionOutput, prdGaps, readPlanState,
+  interviewRound, listPlans, plannedIssueLabels, loadLoopConfig, parseIssuesOutput, parseLoopConfigText, parseQuestionOutput, prdGaps, readPlanState,
   renderInterviewPrompt, renderPlanMarkdown, startPlan, writePlanState,
 } from '../src/index.js'
 import type { CommandResult, CommandRunner, LoadedLoopConfig, PlanStageState, Prd, RankedModel } from '../src/index.js'
@@ -133,7 +133,8 @@ describe('decomposition', () => {
   })
 
   it('plans the issues without writing anything, then creates them in the queue ENTRY state', async () => {
-    const loaded = setup()
+    // The layer is a label only because the project declares it.
+    const loaded = setup('linear:\n  anyLabels: [layer:L1]\n')
     const state: PlanStageState = { ...startPlan('x', NOW), phase: 'decompose', prd: FULL_PRD, design: { summary: 's', modules: [{ name: 'api', responsibility: 'r', boundary: '' }], contracts: [], decisions: [], sequence: [], risks: [] } }
     const runner = scripted([issuesOut(), JSON.stringify({ ok: true, result: { issue: { identifier: 'ENG-42', url: 'https://linear.app/ENG-42' } } })])
     const decomposed = await decomposeRound(deps(loaded, runner), state)
@@ -168,6 +169,8 @@ describe('planned issues land where the queue looks', () => {
     const labels = save.flatMap((arg, index) => save[index - 1] === '--label' ? [arg] : [])
     // `layer:L1` already satisfies `anyLabels`, so no second one is invented.
     expect(labels).toEqual(['pilot', 'layer:L1'])
+    // A layer the project never declared is not a label — it is the model echoing the prompt.
+    expect(plannedIssueLabels({ ...config, layers: [], linear: { ...config.linear, anyLabels: [] } }, 'no layers configured')).toEqual(['pilot'])
   })
 
   it('refuses a config whose entry state is already in the queue', () => {
