@@ -615,6 +615,37 @@ describe('deliver', () => {
     expect(report.results[0]).toMatchObject({ outcome: 'merged' })
   })
 
+  it('refuses to auto-merge a flow that turned every gate off — nothing examined the diff', async () => {
+    const env = setup({ review: { code: 0 }, worktreeFiles: { 'verify.json': JSON.stringify({ command: 'pnpm test', exitCode: 0, outcomes: [{ id: 'o1', status: 'passed', evidence: 'green' }] }) } })
+    writeFileSync(join(env.dir, 'loop.config.local.yaml'), [
+      'flows:',
+      '  default: yolo',
+      '  profiles:',
+      '    yolo:',
+      '      merge: { auto: true, requireChecks: false }',
+      '      stages: { review: false, verify: false, dod: false }',
+      '',
+    ].join('\n'))
+    const report = await deliver(env)
+    expect(report.results[0]).toMatchObject({ outcome: 'held', reason: expect.stringContaining('nothing examined this change') })
+    expect(env.runner.calls.some((argv) => argv[0] === 'gh' && argv[1] === 'api' && argv.includes('--method'))).toBe(false)
+  })
+
+  it('still auto-merges a flow that turned the review off but kept another gate', async () => {
+    const env = setup({ pr: basePr(), worktreeFiles: { 'verify.json': JSON.stringify({ command: 'pnpm test', exitCode: 0, outcomes: [{ id: 'o1', status: 'passed', evidence: 'green' }] }) } })
+    writeFileSync(join(env.dir, 'loop.config.local.yaml'), [
+      'flows:',
+      '  default: incident',
+      '  profiles:',
+      '    incident:',
+      '      merge: { auto: true, requireChecks: true }',
+      '      stages: { review: false }',
+      '',
+    ].join('\n'))
+    const report = await deliver(env)
+    expect(report.results[0]).toMatchObject({ outcome: 'merged' })
+  })
+
   it('holds a PR that touches a secret-shaped filename, without reviewing or merging it', async () => {
     const env = setup({ pr: basePr({ files: [{ path: '.env' }] }) })
     const report = await deliver(env)

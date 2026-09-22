@@ -1,5 +1,22 @@
 # Changelog
 
+## [Unreleased]
+
+### Breaking
+
+- `connectors.runner: "local"` is now rejected at config load. It was never wired: `tick`, `deliver` and
+  `install` go straight to Orca, so setting it ran Orca anyway while `doctor` reported `runner.local: passed`.
+  A silently-wrong runner is worse than a loud one. `createLocalRunner` stays tested so wiring it later is a
+  change of caller, not a rewrite.
+
+### Gates
+
+- Auto-merge now has a floor. A flow profile could turn the review, the local verify, the definition of done and
+  CI gating all off and still merge unattended — with `merge.requireHumanApproval` defaulting to `false`, nothing
+  examined the diff and nobody was asked to. Each switch stays (an incident flow skipping the review is the
+  point); all of them off at once holds the PR for a human. The comment in `deliver.ts` claiming the other gates
+  "still run" was false and now describes the floor it actually has.
+
 ## [0.17.0] - 2026-09-22
 
 Real-time enforcement inside the worker's own session, and a release that can no
