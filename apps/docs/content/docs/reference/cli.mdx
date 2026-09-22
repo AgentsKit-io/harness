@@ -322,7 +322,7 @@ ak-harness loop [options] [command]
 
 ### `ak-harness loop validate`
 
-Validate loop.config.yaml and print the effective configuration.
+Validate loop.config.yaml and print the effective configuration. Reports keys the schema does not know — almost always a typo, which zod otherwise strips in silence.
 
 ```bash
 ak-harness loop validate [options]

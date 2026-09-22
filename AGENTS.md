@@ -69,8 +69,13 @@ GitHub, Orca, Doc Bridge, or a model provider to the kernel.
 **scope:** a task carries an explicit scope; the check it needs, not the full
 gate. Most changes touch one criterion — run its narrow script directly
 (`pnpm test:boundaries`, `pnpm vitest run test/loop-deliver.test.ts`, etc.; see
-`package.json` for the full `test:*` list, one per `.ak-harness/verification.json`
-criterion). Only the PR that closes an issue runs the complete contract:
+`package.json` for the full `test:*` list). Those scripts and the contract's
+criteria are **not** one-to-one and this file used to claim they were: there are
+47 `test:*` scripts emitting 82 criteria names against 18 outcomes / 22 checks
+in `.ak-harness/verification.json`, and 12 of those outcomes have no script that
+emits them. Pick the script that covers what you touched; the mapping is a
+judgement call, not a lookup. Only the PR that closes an issue runs the complete
+contract:
 
 ```bash
 ak-verify run --config .ak-harness/verification.json --json

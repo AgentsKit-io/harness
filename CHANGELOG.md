@@ -2,6 +2,22 @@
 
 ## [Unreleased]
 
+### Hygiene
+
+- `loop validate` names config keys the schema does not know instead of stripping them in silence.
+  `maxFixRoundz: 2` used to be accepted with `maxFixRounds` quietly taking its default — a typo that reads as
+  "I configured this" and behaves as "I did not". Reported, not rejected: a config written for a newer harness
+  legitimately carries keys this version has never heard of.
+- `deliver` derives the required phase artifacts from the same source `tick` used to decide whether to run the
+  planner. A flow that turned the planner off still had deliver demand a `plan.md` the worker was never asked
+  to write, and send back a fix round for the omission.
+- A dispatch with a cached contract no longer skips the whole time-budget guard. It waived the setup share too,
+  and the setup timeout then floored at 1s — a command guaranteed to time out, and with `setup.required`
+  (default) a guaranteed dispatch failure that also burned the worktree.
+- `loop.config.example.yaml`: the `minSeverity` explanation was attached to the `doctorProbe` line, so copying
+  it produced a validation error. `AGENTS.md` no longer claims one `test:*` script per contract criterion —
+  there are 47 scripts emitting 82 criteria names against 18 outcomes, and 12 outcomes emit from none.
+
 ### Boundaries
 
 - Every read of a JSON file the harness wrote goes through `readJsonFile(path, schema)` and is validated before
