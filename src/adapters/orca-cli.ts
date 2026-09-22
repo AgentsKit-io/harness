@@ -1,7 +1,13 @@
 import { fail } from '../kernel/errors.js'
 import { parseJsonEnvelope, type CommandRunner } from './command.js'
 
-export interface OrcaCliOptions { readonly bin?: string; readonly timeoutMs?: number; readonly cwd?: string }
+export interface OrcaCliOptions {
+  readonly bin?: string
+  readonly timeoutMs?: number
+  readonly cwd?: string
+  /** Pause before each `--retry-request` attempt of a prompt send; default 5 s × attempt. Tests set 0. */
+  readonly retryDelayMs?: number
+}
 
 export interface OrcaStatus {
   readonly appRunning: boolean
@@ -267,12 +273,28 @@ export const orcaTerminalSend = async (runner: CommandRunner, input: { readonly 
   try {
     return parseOrcaSendReceipt(await orcaJson(runner, [...argv, ...(input.waitSubmitSeconds ? ['--wait-submit', String(input.waitSubmitSeconds)] : [])], { ...options, timeoutMs }))
   } catch (error) {
-    const requestId = orcaRetryRequestId(error instanceof Error ? error.message : String(error))
+    let requestId = orcaRetryRequestId(error instanceof Error ? error.message : String(error))
     if (!requestId) throw error
+    // Observed cause: the TUI reports idle a moment before the agent's session hook tells Orca who owns the pane
+    // (`agent_session_ownership_unknown`). Retrying at once lands in the same race, so give the hook time; the id
+    // makes every attempt the same prompt, never a second one.
     const wait = Math.max(input.waitSubmitSeconds ?? 0, 15)
-    return parseOrcaSendReceipt(await orcaJson(runner, [...argv, '--retry-request', requestId, '--wait-submit', String(wait)], { ...options, timeoutMs: Math.max(timeoutMs, wait * 1000 + 30_000) }))
+    let last: unknown = error
+    for (let attempt = 1; attempt <= RETRY_REQUEST_ATTEMPTS; attempt += 1) {
+      await delay(options.retryDelayMs ?? 5_000 * attempt)
+      try {
+        return parseOrcaSendReceipt(await orcaJson(runner, [...argv, '--retry-request', requestId, '--wait-submit', String(wait)], { ...options, timeoutMs: Math.max(timeoutMs, wait * 1000 + 30_000) }))
+      } catch (retryError) {
+        last = retryError
+        requestId = orcaRetryRequestId(retryError instanceof Error ? retryError.message : String(retryError)) ?? requestId
+      }
+    }
+    throw last
   }
 }
+
+const RETRY_REQUEST_ATTEMPTS = 3
+const delay = (ms: number): Promise<void> => new Promise((resolve) => { setTimeout(resolve, ms) })
 
 export const orcaTerminalWait = async (runner: CommandRunner, input: { readonly terminal: string; readonly for: 'exit' | 'tui-idle'; readonly timeoutMs: number }, options: OrcaCliOptions = {}): Promise<{ readonly satisfied: boolean; readonly raw: unknown }> => {
   const result = await orcaJson(runner, ['terminal', 'wait', '--terminal', input.terminal, '--for', input.for, '--timeout-ms', String(input.timeoutMs)], { ...options, timeoutMs: input.timeoutMs + 15_000 })

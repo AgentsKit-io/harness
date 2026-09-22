@@ -279,13 +279,17 @@ describe('orcaTerminalSend retry by request id', () => {
   it('re-issues an ambiguous agent-prompt send once, with the id Orca named, instead of failing or typing twice', async () => {
     const message = 'agent_session_ownership_unknown Terminal prompt request ID: 80dc20ef-491a-4b54-afd6-31e99a27c533. Re-issue the exact command with --retry-request 80dc20ef-491a-4b54-afd6-31e99a27c533 --wait-submit <seconds>; do not retry it without that ID.'
     expect(orcaRetryRequestId(message)).toBe('80dc20ef-491a-4b54-afd6-31e99a27c533')
-    let first = true
-    const runner = recorder(() => { if (first) { first = false; return envelopeFail(message) } return ok({ send: { accepted: true } }) })
-    expect((await orcaTerminalSend(runner, { terminal: 't', text: 'brief', enter: true })).accepted).toBe(true)
-    expect(runner.calls).toHaveLength(2)
+    // The race lasts a moment: the first retry can still lose it, so it waits and tries again with the same id.
+    let failures = 2
+    const runner = recorder(() => failures-- > 0 ? envelopeFail(message) : ok({ send: { accepted: true } }))
+    expect((await orcaTerminalSend(runner, { terminal: 't', text: 'brief', enter: true }, { retryDelayMs: 0 })).accepted).toBe(true)
+    expect(runner.calls).toHaveLength(3)
     expect(runner.calls[1]).toEqual(expect.arrayContaining(['--retry-request', '80dc20ef-491a-4b54-afd6-31e99a27c533', '--wait-submit']))
     const plain = recorder(() => envelopeFail('terminal_not_found'))
-    await expect(orcaTerminalSend(plain, { terminal: 't', text: 'x' })).rejects.toThrow(/terminal_not_found/)
+    await expect(orcaTerminalSend(plain, { terminal: 't', text: 'x' }, { retryDelayMs: 0 })).rejects.toThrow(/terminal_not_found/)
+    const stuck = recorder(() => envelopeFail(message))
+    await expect(orcaTerminalSend(stuck, { terminal: 't', text: 'x' }, { retryDelayMs: 0 })).rejects.toThrow(/ownership_unknown/)
+    expect(stuck.calls).toHaveLength(4)
     expect(plain.calls).toHaveLength(1)
   })
 })
