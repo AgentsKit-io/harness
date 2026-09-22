@@ -219,7 +219,7 @@ export const parseOrcaTerminals = (result: unknown): readonly OrcaTerminal[] => 
 export const orcaTerminalList = async (runner: CommandRunner, input: { readonly worktree?: string; readonly limit?: number } = {}, options: OrcaCliOptions = {}): Promise<readonly OrcaTerminal[]> => parseOrcaTerminals(await orcaJson(runner, ['terminal', 'list', ...(input.worktree ? ['--worktree', input.worktree] : []), ...(input.limit ? ['--limit', String(input.limit)] : [])], options))
 
 export const orcaTerminalCreate = async (runner: CommandRunner, input: { readonly worktree: string; readonly command: string; readonly title?: string }, options: OrcaCliOptions = {}): Promise<{ readonly handle: string; readonly raw: unknown }> => {
-  const result = await orcaJson(runner, ['terminal', 'create', '--worktree', input.worktree, '--command', input.command, ...(input.title ? ['--title', input.title] : [])], { ...options, timeoutMs: options.timeoutMs ?? 60_000 })
+  const result = await orcaJson(runner, ['terminal', 'create', '--worktree', input.worktree, '--command', input.command, ...(input.title ? ['--title', input.title] : [])], { ...options, timeoutMs: options.timeoutMs ?? 120_000 })
   const record = isRecord(result) ? result : {}
   const terminal = isRecord(record['terminal']) ? record['terminal'] : record
   const handle = str(terminal['handle'], str(record['handle']))
