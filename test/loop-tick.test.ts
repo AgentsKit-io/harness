@@ -547,6 +547,21 @@ describe('tick', () => {
     expect(readIssueFailures(loaded.stateDir, 'ENG-10').consecutive).toBe(1)
   })
 
+  it('still applies the pause label when the pause comment fails (regression: a comment timeout skipped the label entirely, so the next tick read the missing "loop:paused" label as a human resuming it and immediately retried the same broken issue — AGE-1742/AGE-1752, 2026-09-22)', async () => {
+    const env = makeEnv({ failAllContracts: true })
+    const loaded = loadLoopConfig(env.configPath)
+    const originalRun = env.runner.run
+    const runner: CommandRunner = {
+      run: async (argv) => (argv[1] === 'linear' && argv[2] === 'comment' && argv[3] === 'add')
+        ? { code: 1, stdout: '', stderr: 'timed out', timedOut: true, durationMs: 1 }
+        : originalRun(argv),
+    }
+    for (let i = 0; i < 3; i += 1) await runTick({ ...tickOptions(env), runner, onlyIssue: 'ENG-10' })
+    expect(isIssuePaused(loaded.stateDir, 'ENG-10')).toBe(true)
+    const pauseLabel = env.runner.calls.find((argv) => argv[1] === 'linear' && argv[2] === 'label' && argv[3] === 'add')
+    expect(pauseLabel).toContain('loop:paused')
+  })
+
   it('auto-resumes a paused issue once the "loop:paused" label is removed on Linear, without requiring the resume CLI', async () => {
     const env = makeEnv({ failAllContracts: true })
     const loaded = loadLoopConfig(env.configPath)

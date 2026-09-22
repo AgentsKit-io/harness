@@ -388,10 +388,16 @@ export const runTick = async (input: TickInput): Promise<TickReport> => {
     if (failureState.consecutive < config.resilience.maxConsecutiveFailures) return
     pauseIssue(loaded.stateDir, issue, reason, now())
     const body = `**Loop: paused after ${failureState.consecutive} consecutive failures**\n\nMost recent (\`${kind}\`): ${reason.split('\n')[0]?.slice(0, 300)}\n\nThe loop will not retry this issue until you remove the \`${config.resilience.pausedLabel}\` label (or run \`ak-harness loop resume ${issue}\`).\n\n<!-- loop:paused:${issue}:${failureState.consecutive} -->`
-    try {
-      await tracker.comment({ issue, body, dedupeKey: `paused:${issue}:${failureState.consecutive}` })
-      await tracker.addLabels(issue, [config.resilience.pausedLabel])
-    } catch (error) { notes.push(`pause notification for ${issue} failed: ${message(error)}`) }
+    // The label is what actually keeps this issue out of the queue (tick.ts's own resume-on-missing-label
+    // heuristic, and `excludeLabels` at the fetch level) — it must not be skipped just because the comment call
+    // timed out first. Separate try/catches, label before comment: observed live (2026-09-22, AGE-1742 and
+    // AGE-1752) a Linear comment timing out under load left the label never applied, and the next tick then read
+    // the label's absence as a human resuming the issue — undoing the pause and immediately retrying the same
+    // broken candidate. A transiently-failed label add is retried right here (once) for the same reason.
+    try { await tracker.addLabels(issue, [config.resilience.pausedLabel]) } catch {
+      try { await tracker.addLabels(issue, [config.resilience.pausedLabel]) } catch (error) { notes.push(`pause label for ${issue} failed twice: ${message(error)}`) }
+    }
+    try { await tracker.comment({ issue, body, dedupeKey: `paused:${issue}:${failureState.consecutive}` }) } catch (error) { notes.push(`pause comment for ${issue} failed: ${message(error)}`) }
     appendLoopEvent(loaded.stateDir, { at: now().toISOString(), type: 'issue.paused', issue, kind, consecutive: failureState.consecutive, reason }, bus)
     await bus.runHook('onPause', { issue, kind, consecutive: failureState.consecutive, reason })
   }
