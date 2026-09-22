@@ -27,6 +27,7 @@ import { advanceQueueOwner, countRotationBlockingLeases, queueOwner } from './ro
 import { createLoopEventBus, loadLoopPlugins, type LoopEventBus, type LoopEventPayload } from './event-bus.js'
 import { attachNotifier } from './notify.js'
 import { applyRoleSettings, resolveFlow, resolveRoleSettings, workerPhaseEnabled } from './flows.js'
+import { installWorkerGuard } from './worker-guard.js'
 
 export type TickOutcome = 'dispatched' | 'dry-run' | 'skipped' | 'escalated' | 'failed'
 
@@ -91,6 +92,12 @@ export interface DispatchRecordFile {
   /** Project and priority at dispatch time, frozen for the same reason as `labels`: they select the flow profile (`flows.select`), and the gate an item is judged by must not move while it runs. */
   readonly project?: string | null
   readonly priorityLabel?: string | null
+  /**
+   * Whether `worker-guard` (real-time enforcement of `selfEditPaths`/`secretFilePatterns` inside the worker's own
+   * session, see ADR-0038) was actually installed for this dispatch — `false` for a provider it does not cover
+   * yet (`codex`) or when `delivery.workerGuard.enabled` is off. A record without this field predates the feature.
+   */
+  readonly workerGuardInstalled?: boolean
 }
 
 export interface TickInput {
@@ -577,6 +584,9 @@ export const runTick = async (input: TickInput): Promise<TickReport> => {
       created = await orcaWorktreeCreate(input.runner, plan.argv, { timeoutMs: Math.max(config.orca.timeoutMs, 120_000) })
       // Orca names the branch `<git user>/<worktree>`; the Linear branchName is only a hint. Record and brief the real one.
       const actualBranch = created.branch || branch
+      // Real-time enforcement, before the worker's own setup command (let alone the worker itself) ever runs —
+      // see ADR-0038 for which providers this covers and why.
+      const workerGuard = installWorkerGuard({ worktreePath: created.path, provider: worker.provider, config })
       let setupResult: { readonly command: readonly string[]; readonly exitCode: number | null; readonly durationMs: number; readonly timedOut: boolean } | null = null
       if (config.project.setup.command?.length) {
         const setupTimeoutMs = Number.isFinite(timeBudgetMs) ? Math.max(1_000, Math.min(config.project.setup.timeoutSec * 1000, remainingMs() - 120_000)) : config.project.setup.timeoutSec * 1000
@@ -621,7 +631,7 @@ export const runTick = async (input: TickInput): Promise<TickReport> => {
       const launched = await launchWorkerTerminal({ runner: input.runner, config, worktreeId: created.id, command: worker.tui, title, brief })
       if (!launched.accepted) notes.push(`${detail.identifier}: terminal ${launched.terminal} did not confirm the brief; deliver will nudge it if it stays idle`)
       ledger.recordDispatch({ lease: claim.lease, idempotencyKey: plan.idempotencyKey, commandDigest: plan.commandDigest })
-      const record: DispatchRecordFile = { issue: detail.identifier, worktreeId: created.id, worktree, branch: actualBranch, terminal: launched.terminal, provider: worker.provider, model: worker.model, contractDigest: stored.digest, leaseKey: claim.lease.key, leaseId: claim.lease.leaseId, dispatchedAt: now().toISOString(), url: detail.url, briefDigest, skills: skillRefs(pinnedSkills), ...(delegation ? { delegation } : {}), setup: setupResult, effort: worker.effort, initialRemainingPercent: worker.remainingPercent, worktreePath: created.path, labels: [...detail.labels], project: detail.project, priorityLabel: detail.priorityLabel }
+      const record: DispatchRecordFile = { issue: detail.identifier, worktreeId: created.id, worktree, branch: actualBranch, terminal: launched.terminal, provider: worker.provider, model: worker.model, contractDigest: stored.digest, leaseKey: claim.lease.key, leaseId: claim.lease.leaseId, dispatchedAt: now().toISOString(), url: detail.url, briefDigest, skills: skillRefs(pinnedSkills), ...(delegation ? { delegation } : {}), setup: setupResult, effort: worker.effort, initialRemainingPercent: worker.remainingPercent, worktreePath: created.path, labels: [...detail.labels], project: detail.project, priorityLabel: detail.priorityLabel, workerGuardInstalled: workerGuard.installed }
       resetDeliveryStateForDispatch(loaded.stateDir, detail.identifier)
       writeJsonAtomic(dispatchRecordPath(loaded.stateDir, detail.identifier), record)
       appendLoopEvent(loaded.stateDir, { at: record.dispatchedAt, type: 'worker.dispatched', ...record, command: worker.tui, briefAccepted: launched.accepted, tuiIdle: launched.idle }, bus)

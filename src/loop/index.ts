@@ -87,6 +87,8 @@ export { assessDod, dodEvidencePath, readDodEvidence, renderDodForBrief, renderD
 export { ARTIFACT_DIR, VerifyArtifactSchema, artifactPath, missingArtifacts, readPhaseArtifacts, readPlanArtifact, readVerifyArtifact, renderArtifactsForBrief, verifyProofs } from './artifacts.js'
 export type { PhaseArtifact, PhaseArtifactName, VerifyArtifact } from './artifacts.js'
 export { assessBoundary, layerById, layerFor, renderLayersForPrompt, verifyCommandFor } from './layers.js'
+export { assessWorkerGuard, extractFilePath, installWorkerGuard, parsePreToolUseEvent, resolveOwnCliPath, runWorkerGuard } from './worker-guard.js'
+export type { PreToolUseEvent, WorkerGuardInstallOutcome, WorkerGuardVerdict } from './worker-guard.js'
 export type { BoundaryVerdict, Layer } from './layers.js'
 export { designExcerptFor, designPathFor, prdPathFor, renderDesignMarkdown, renderPrdMarkdown, writeDesignDocument, writePrdDocument } from './documents.js'
 export type { WrittenDocument } from './documents.js'

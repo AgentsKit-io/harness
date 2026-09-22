@@ -145,7 +145,10 @@ models:
     grok:
       bin: grok
       auth: subscription             # `grok login` (OAuth) — no API key needed
-      tui: "grok -m {model}"
+      # --trust pre-grants folder trust for this fresh worktree, the same way grok's own PTY e2e tests do
+      # (--yolo --trust); without it the first-run "trust this folder?" dialog blocks with no TTY to answer it.
+      # Deliberately not --yolo: that also relaxes the permission mode this loop's hook (ADR-0038) relies on.
+      tui: "grok -m {model} --trust"
       headless: [grok, -p, "{prompt}", -m, "{model}"]
       # effortFlag: "--reasoning-effort {effort}"
 
@@ -189,6 +192,9 @@ delivery:
   selfEditPaths: [loop.config.yaml, ".github/**"]   # PRs touching these never auto-merge
   # secretFilePatterns: [...]              # default already covers .env, *.pem, *.key, id_rsa, credentials.json, etc.
                                             # PRs touching a matching filename are held, never reviewed or merged
+  # workerGuard: { enabled: true }         # real-time enforcement of the two lists above, inside claude/grok's own
+                                            # session (not just at PR-review time); opencode gets static deny rules
+                                            # instead. codex is not covered yet — see ADR-0038. On by default.
   ignoreChecks: []                   # advisory check names that never block
   requiredChecks: []                 # empty = every reported check must be green
   cleanupWorktree: true              # remove the Orca worktree after merge

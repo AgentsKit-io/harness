@@ -391,6 +391,19 @@ export const LoopConfigSchema = z.object({
      * `selfEditPaths`, with a distinct reason. Defaults cover the most common accidentally-committed secret files.
      */
     secretFilePatterns: z.array(nonEmpty).default(['**/.env', '**/.env.*', '**/*.pem', '**/*.key', '**/id_rsa', '**/id_rsa.*', '**/credentials.json', '**/*.p12', '**/*.pfx']),
+    /**
+     * Real-time enforcement of `selfEditPaths`/`secretFilePatterns` inside the worker's own session, not just at
+     * PR-review time. Where the dispatched provider supports it (`claude`, `grok`; `codex` is deliberately left
+     * out — its `PreToolUse` hooks have open upstream bugs, see ADR-0038 — and `opencode` gets static deny rules
+     * instead of a live hook, also ADR-0038), the loop writes a provider-native permission config into the fresh
+     * worktree before the terminal opens, so a write to a protected or secret-shaped path is refused as it
+     * happens. This is additive: the PR-time gate stays the only enforcement for a provider it does not cover,
+     * and a worker whose hook itself fails (crash/timeout) falls back to that same PR-time gate — see ADR-0038
+     * for the fail-open caveats this cannot close.
+     */
+    workerGuard: z.object({
+      enabled: z.boolean().default(true),
+    }).prefault({}),
     /** Check names ignored when deciding CI is green (e.g. advisory bots). */
     ignoreChecks: z.array(nonEmpty).default([]),
     /** Check names that must be observed and green; empty = every reported check must pass. */

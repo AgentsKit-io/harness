@@ -504,6 +504,14 @@ Every logged step for one issue, oldest first: what ran, how long since the prev
 ak-harness loop issue-timeline [options] <identifier>
 ```
 
+### `ak-harness loop worker-guard`
+
+PreToolUse hook entrypoint (Claude Code / Grok Build CLI-compatible): reads a hook event on stdin and exits 2 to block a Write/Edit that would touch a path matching delivery.selfEditPaths or delivery.secretFilePatterns. Installed automatically into a dispatched worktree; not meant to be run by a human.
+
+```bash
+ak-harness loop worker-guard [options]
+```
+
 ### `ak-harness loop observe`
 
 Read-only anomaly scan and operating metrics for the loop (queue, workers, delivery, machine, memory, cache, tokens).

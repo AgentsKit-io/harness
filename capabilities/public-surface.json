@@ -4,7 +4,7 @@
   "package": "@agentskit/harness",
   "packageVersion": "0.16.0",
   "entryPoint": "src/index.ts",
-  "sourceDigest": "de7e164820a2ca8653ffa8c99e301773ec9c3d243046772ce6f28c1d3b74457c",
+  "sourceDigest": "ab4ab8c3b605d7babb635f00ee114146677b315760bc0f325490ca0e29fbd971",
   "capabilities": [
     {
       "id": "public-surface:adapters/agent",
@@ -1792,7 +1792,24 @@
         "snapshotWatchTargets",
         "watchDeliveries"
       ]
+    },
+    {
+      "id": "public-surface:loop/worker-guard",
+      "version": "0.16.0",
+      "kind": "composition",
+      "entryPoint": "src/index.ts",
+      "exports": [
+        "PreToolUseEvent",
+        "WorkerGuardInstallOutcome",
+        "WorkerGuardVerdict",
+        "assessWorkerGuard",
+        "extractFilePath",
+        "installWorkerGuard",
+        "parsePreToolUseEvent",
+        "resolveOwnCliPath",
+        "runWorkerGuard"
+      ]
     }
   ],
-  "digest": "95320ea9f6944a17df2696834fcd434f41288e9fe59a504211d4f7956cbf61ec"
+  "digest": "38e93f52ec5e196aa675f029ff4cd972bb8cbac02e66ded80bfebefc4b1ff98d"
 }
