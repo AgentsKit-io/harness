@@ -235,7 +235,7 @@ const sendToWorker = async (ctx: Context, record: DispatchRecordFile, text: stri
       brief = `Resume ${record.issue} on branch ${record.branch}. The coordinator has already frozen and validated the contract; the coordinator state directory is outside this isolated worktree, so do not block on a missing ${ctx.config.project.stateDir} file. Address the review findings, run \`${verifyCommandFor(ctx.config, record.labels ?? []).command}\`, commit and push, then report LOOP_WORKER_DONE ${record.issue}.${frozen}`
       actions.push(stored ? 'brief missing; generated recovery brief with inline contract' : 'brief missing; generated recovery brief')
     }
-    const relaunched = await launchWorkerTerminal({ runner: ctx.runner, config: ctx.config, worktreeId: record.worktreeId, command: ctx.builder.tui, title: `loop ${record.issue}`, brief, idleTimeoutMs: 10_000 })
+    const relaunched = await launchWorkerTerminal({ runner: ctx.runner, config: ctx.config, worktreeId: record.worktreeId, ...(record.worktreePath ? { worktreePath: record.worktreePath } : {}), command: ctx.builder.tui, title: `loop ${record.issue}`, brief, idleTimeoutMs: 10_000 })
     if (!relaunched.accepted) { actions.push(`worker reactivation did not accept the brief in ${relaunched.terminal}`); return false }
     const updated = { ...record, terminal: relaunched.terminal }
     writeDispatchRecord(ctx.loaded.stateDir, updated)
@@ -379,6 +379,7 @@ const performHandoff = async (
     runner: ctx.runner,
     config: ctx.config,
     worktreeId: record.worktreeId,
+    ...(record.worktreePath ? { worktreePath: record.worktreePath } : {}),
     command: next.tui,
     title,
     brief,

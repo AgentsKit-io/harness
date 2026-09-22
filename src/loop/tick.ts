@@ -18,7 +18,7 @@ import { assessContract, contractIsFresh, extractResetsAt, generateContract, rea
 import { activeCooldowns, readCooldowns } from './cooldown.js'
 import { countRunningWorkers, providerSpecs } from './doctor.js'
 import { ensureBaseView, type BaseView } from './base-view.js'
-import { excludeArtifactsFromGit } from './artifacts.js'
+import { ARTIFACT_DIR, excludeArtifactsFromGit } from './artifacts.js'
 import { openLoopMemory, planMemoryContext } from './memory.js'
 import { clearIssueFailures, isIssuePaused, pauseIssue, readIssueFailures, recordIssueFailure } from './resilience-state.js'
 import { MODEL_ROLES, type ModelRole } from '../kernel/model-policy.js'
@@ -138,7 +138,25 @@ export interface TickInput {
 }
 
 /** Launch the worker in a fresh terminal with the configured TUI command and hand it the brief. Returns the terminal handle. */
-export const launchWorkerTerminal = async (input: { readonly runner: CommandRunner; readonly config: LoopConfig; readonly worktreeId: string; readonly command: string; readonly title: string; readonly brief: string; readonly idleTimeoutMs?: number }): Promise<{ readonly terminal: string; readonly accepted: boolean; readonly idle: boolean }> => {
+/** What the terminal receives when the brief travels as a file: short, plain, and the same for every task. */
+export const BRIEF_POINTER_PROMPT = `Your full task brief is in ${ARTIFACT_DIR}/brief.md at the root of this worktree. Read the whole file first, then follow it exactly.`
+
+/**
+ * Open the worker's terminal and hand it the brief.
+ *
+ * With `worktreePath`, the brief is written to `.ak-loop/brief.md` in the worktree (excluded from git at dispatch)
+ * and the terminal gets one short line pointing at it. Typing tens of kilobytes into an agent TUI is fragile in ways
+ * no retry fixes: a real 44 KB brief failed every send with `agent_session_ownership_unknown`, deterministically,
+ * while random text of the same size and line count went through — the TUI's paste handling reacts to content.
+ */
+export const launchWorkerTerminal = async (input: { readonly runner: CommandRunner; readonly config: LoopConfig; readonly worktreeId: string; readonly command: string; readonly title: string; readonly brief: string; readonly worktreePath?: string; readonly idleTimeoutMs?: number }): Promise<{ readonly terminal: string; readonly accepted: boolean; readonly idle: boolean }> => {
+  let prompt = input.brief
+  if (input.worktreePath) {
+    const dir = join(input.worktreePath, ARTIFACT_DIR)
+    mkdirSync(dir, { recursive: true })
+    writeFileSync(join(dir, 'brief.md'), input.brief, 'utf8')
+    prompt = BRIEF_POINTER_PROMPT
+  }
   const orca = { bin: input.config.orca.bin, timeoutMs: input.config.orca.timeoutMs }
   const created = await orcaTerminalCreate(input.runner, { worktree: `id:${input.worktreeId}`, command: input.command, title: input.title }, orca)
   const initialIdleTimeoutMs = input.idleTimeoutMs ?? 90_000
@@ -150,7 +168,7 @@ export const launchWorkerTerminal = async (input: { readonly runner: CommandRunn
     try { idle = (await orcaTerminalWait(input.runner, { terminal: created.handle, for: 'tui-idle', timeoutMs: Math.min(initialIdleTimeoutMs * 2, 180_000) }, orca)).satisfied } catch { idle = false }
   }
   if (!idle) throw new Error(`terminal ${created.handle} did not become tui-idle before the worker prompt deadline`)
-  const receipt = await orcaTerminalSend(input.runner, { terminal: created.handle, text: input.brief, enter: true, waitSubmitSeconds: 15 }, orca)
+  const receipt = await orcaTerminalSend(input.runner, { terminal: created.handle, text: prompt, enter: true, waitSubmitSeconds: 15 }, orca)
   return { terminal: created.handle, accepted: receipt.accepted, idle }
 }
 
@@ -680,7 +698,7 @@ export const runTick = async (input: TickInput): Promise<TickReport> => {
       })
       const briefDigest = skillDigest(brief)
       writeFileSync(briefPath(loaded.stateDir, detail.identifier), brief, 'utf8')
-      const launched = await launchWorkerTerminal({ runner: input.runner, config, worktreeId: created.id, command: worker.tui, title, brief })
+      const launched = await launchWorkerTerminal({ runner: input.runner, config, worktreeId: created.id, worktreePath: created.path, command: worker.tui, title, brief })
       if (!launched.accepted) notes.push(`${detail.identifier}: terminal ${launched.terminal} did not confirm the brief; deliver will nudge it if it stays idle`)
       ledger.recordDispatch({ lease: claim.lease, idempotencyKey: plan.idempotencyKey, commandDigest: plan.commandDigest })
       const record: DispatchRecordFile = { issue: detail.identifier, worktreeId: created.id, worktree, branch: actualBranch, terminal: launched.terminal, provider: worker.provider, model: worker.model, contractDigest: stored.digest, leaseKey: claim.lease.key, leaseId: claim.lease.leaseId, dispatchedAt: now().toISOString(), url: detail.url, briefDigest, skills: skillRefs(pinnedSkills), ...(delegation ? { delegation } : {}), setup: setupResult, effort: worker.effort, initialRemainingPercent: worker.remainingPercent, worktreePath: created.path, labels: [...detail.labels], project: detail.project, priorityLabel: detail.priorityLabel, workerGuardInstalled: workerGuard.installed }
