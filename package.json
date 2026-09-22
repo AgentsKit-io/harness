@@ -71,7 +71,7 @@
     "test:source": "pnpm typecheck && vitest run --config vitest.config.ts test/source.test.ts && node -e \"console.log(JSON.stringify({status:'passed',criteria:['source-current']}))\"",
     "test:metrics": "pnpm typecheck && vitest run --config vitest.config.ts test/metrics.test.ts && node -e \"console.log(JSON.stringify({status:'passed',criteria:['metrics']}))\"",
     "test:capabilities": "node scripts/generate-capability-manifest.mjs --check capabilities/public-surface.json",
-    "test:boundaries": "pnpm typecheck && vitest run --config vitest.config.ts test/boundaries.test.ts && node scripts/verify-dependency-directions.mjs",
+    "test:boundaries": "pnpm typecheck && vitest run --config vitest.config.ts test/boundaries.test.ts && node scripts/verify-dependency-directions.mjs && node scripts/verify-json-boundaries.mjs",
     "test:phase-executor": "pnpm typecheck && vitest run --config vitest.config.ts test/phase-executor.test.ts && node -e \"console.log(JSON.stringify({status:'passed',criteria:['phase-executor']}))\"",
     "test:artifacts": "pnpm typecheck && vitest run --config vitest.config.ts test/artifacts.test.ts && node scripts/verify-artifact-cli.mjs",
     "test:loop-watch-sigint": "pnpm typecheck && pnpm build >/dev/null && node scripts/verify-loop-watch-sigint.mjs",

@@ -1,4 +1,5 @@
 import { existsSync, mkdirSync, readdirSync, readFileSync } from 'node:fs'
+import { z } from 'zod'
 import { dirname, join } from 'node:path'
 import type { CommandRunner } from '../adapters/command.js'
 import { atLeast, parseReviewResult, renderFindingsForWorker, runCodeReview, type CodeReviewOutcome } from '../adapters/code-review.js'
@@ -27,6 +28,7 @@ import { attachNotifier } from './notify.js'
 import { applyRoleSettings, resolveFlowSettings, resolveRoleSettings, workerPhaseEnabled, type EffectiveFlowSettings } from './flows.js'
 import { assessDod, readDodEvidence, renderDodMarkdown } from './dod.js'
 import { missingArtifacts, readPhaseArtifacts, readVerifyArtifact, verifyProofs, type PhaseArtifactName } from './artifacts.js'
+import { readJsonFile } from '../kernel/json-file.js'
 
 export type DeliverOutcome = 'waiting' | 'reviewed' | 'fix-round' | 'nudged' | 'handed-off' | 'merged' | 'held' | 'blocked' | 'stuck' | 'abandoned' | 'failed' | 'dry-run'
 
@@ -99,10 +101,9 @@ export const readDeliveryState = (stateDir: string, identifier: string): Deliver
   const path = deliveryStatePath(stateDir, identifier)
   const empty: DeliveryState = { issue: identifier, prNumber: null, reviews: {}, fixRounds: 0, nudges: [], handoffs: [], heldFor: null, finishedAt: null, finalOutcome: null }
   if (!existsSync(path)) return empty
-  try {
-    const parsed = JSON.parse(readFileSync(path, 'utf8')) as Partial<DeliveryState>
-    return { ...empty, ...parsed, handoffs: parsed.handoffs ?? [], nudges: parsed.nudges ?? [] }
-  } catch { return empty }
+  const parsed = readJsonFile(path, z.object({}).loose()) as Partial<DeliveryState> | null
+  if (!parsed) return empty
+  return { ...empty, ...parsed, handoffs: parsed.handoffs ?? [], nudges: parsed.nudges ?? [] }
 }
 
 const resumableOutcomes = new Set<DeliverOutcome>(['blocked', 'stuck', 'abandoned', 'held'])

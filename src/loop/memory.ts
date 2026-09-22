@@ -1,4 +1,5 @@
 import { existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from 'node:fs'
+import { z } from 'zod'
 import { join } from 'node:path'
 import type { ContextReference } from '../context/index.js'
 import type { AgentMemoryAdapter, AgentMemoryHit, AgentMemoryKvStore, AgentMemoryRecord, MemoryScope } from '../kernel/memory.js'
@@ -6,6 +7,7 @@ import { createKvMemoryAdapter, validateMemoryRecord } from '../kernel/memory.js
 import { promoteLearnings, type LearningRecord } from '../kernel/learning.js'
 import { hashJson } from '../kernel/hash.js'
 import type { LoadedLoopConfig, LoopConfig } from './config.js'
+import { readJsonFile } from '../kernel/json-file.js'
 
 export interface MemoryPromptSelection {
   readonly hits: readonly AgentMemoryHit[]
@@ -186,10 +188,8 @@ export const learningsPath = (stateDir: string): string => join(stateDir, 'learn
 export const readLearningsLedger = (stateDir: string): LearningsLedger => {
   const path = learningsPath(stateDir)
   if (!existsSync(path)) return { records: [] }
-  try {
-    const parsed = JSON.parse(readFileSync(path, 'utf8')) as LearningsLedger
-    return { records: Array.isArray(parsed.records) ? parsed.records : [] }
-  } catch { return { records: [] } }
+  const parsed = readJsonFile(path, z.object({ records: z.array(z.unknown()) }).loose()) as LearningsLedger | null
+  return { records: parsed?.records ?? [] }
 }
 
 export const writeLearningsLedger = (stateDir: string, ledger: LearningsLedger): void => {

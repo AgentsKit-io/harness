@@ -1,4 +1,5 @@
 import { existsSync, readFileSync, writeFileSync } from 'node:fs'
+import { z } from 'zod'
 import { join, resolve } from 'node:path'
 import type { CommandRunner } from '../adapters/command.js'
 import { fail } from '../kernel/errors.js'
@@ -7,6 +8,7 @@ import { writeJsonAtomic } from './fs-atomic.js'
 import { appendLoopEvent } from './tick.js'
 import { createLoopEventBus, loadLoopPlugins, type LoopEventBus } from './event-bus.js'
 import { attachNotifier } from './notify.js'
+import { readJsonFile } from '../kernel/json-file.js'
 
 /** One merged commit waiting on the integration branch — a line of the batch a human is asked to approve. */
 export interface ReleaseCommit { readonly sha: string; readonly subject: string; readonly issue: string | null }
@@ -35,10 +37,8 @@ export const releaseStatePath = (stateDir: string): string => join(stateDir, 're
 export const readReleaseState = (stateDir: string): ReleaseState => {
   const path = releaseStatePath(stateDir)
   if (!existsSync(path)) return { approval: null, history: [], waitingNotifiedFor: null }
-  try {
-    const value = JSON.parse(readFileSync(path, 'utf8')) as Partial<ReleaseState>
-    return { approval: value.approval ?? null, history: Array.isArray(value.history) ? value.history : [], waitingNotifiedFor: value.waitingNotifiedFor ?? null }
-  } catch { return { approval: null, history: [], waitingNotifiedFor: null } }
+  const value = readJsonFile(path, z.object({}).loose()) as Partial<ReleaseState> | null
+  return { approval: value?.approval ?? null, history: Array.isArray(value?.history) ? value.history : [], waitingNotifiedFor: value?.waitingNotifiedFor ?? null }
 }
 
 const writeReleaseState = (stateDir: string, state: ReleaseState): void => writeJsonAtomic(releaseStatePath(stateDir), state)

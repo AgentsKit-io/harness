@@ -1,7 +1,9 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
+import { z } from 'zod'
 import { dirname, join } from 'node:path'
 import type { LoadedLoopConfig } from './config.js'
 import type { DispatchLease } from '../execution/coordination.js'
+import { readJsonFile } from '../kernel/json-file.js'
 
 interface RotationState { readonly owner: string; readonly advancedAt: string }
 
@@ -28,10 +30,8 @@ export const queueOwner = (loaded: LoadedLoopConfig): string => {
   if (!rotation.enabled || !rotation.owners.length) return loaded.config.linear.person
   const path = rotationStatePath(loaded.stateDir)
   if (!existsSync(path)) return loaded.config.linear.person
-  try {
-    const state = JSON.parse(readFileSync(path, 'utf8')) as Partial<RotationState>
-    return typeof state.owner === 'string' && rotation.owners.includes(state.owner) ? state.owner : loaded.config.linear.person
-  } catch { return loaded.config.linear.person }
+  const state = readJsonFile(path, z.object({ owner: z.string() }).loose())
+  return state && rotation.owners.includes(state.owner) ? state.owner : loaded.config.linear.person
 }
 
 /** Advance once, only after the current owner has no dispatchable work and no active implementation lease. */

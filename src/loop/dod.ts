@@ -1,8 +1,10 @@
 import { existsSync, readFileSync } from 'node:fs'
+import { z } from 'zod'
 import { join } from 'node:path'
 import { touchesProtectedPaths } from '../adapters/github-cli.js'
 import type { LoopConfig } from './config.js'
 import type { TaskContract } from './contract.js'
+import { readJsonFile } from '../kernel/json-file.js'
 
 export type DodItem = LoopConfig['dod']['items'][number]
 
@@ -40,7 +42,7 @@ export const readDodEvidence = (worktreePath: string | null | undefined, config:
   const path = dodEvidencePath(worktreePath, config)
   if (!existsSync(path)) return empty
   try {
-    const parsed = JSON.parse(readFileSync(path, 'utf8')) as Partial<DodEvidenceFile>
+    const parsed = (readJsonFile(path, z.object({}).loose()) ?? {}) as Partial<DodEvidenceFile>
     const proofs = (value: unknown): readonly DodProof[] => Array.isArray(value)
       ? value.filter((entry): entry is DodProof => typeof entry === 'object' && entry !== null && typeof (entry as DodProof).id === 'string' && ((entry as DodProof).status === 'passed' || (entry as DodProof).status === 'failed'))
         .map((entry) => ({ id: entry.id, status: entry.status, evidence: typeof entry.evidence === 'string' ? entry.evidence : '', ...(typeof entry.at === 'string' ? { at: entry.at } : {}) }))
