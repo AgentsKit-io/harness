@@ -15,6 +15,9 @@ Found by running the loop on a real repository migration with a single, non-defa
   command the agent's own config marked dangerous (`rm -rf`, `git reset --hard`). It now reads Orca's `permission`
   activity (`OrcaWorktree.activity`, from `worktree ps`) or the prompt on screen, reports `held`, emits
   `worker.permission-wait` once per idle window, keeps the lease, and no nudge, handoff or relaunch happens.
+- **A merged issue sheds the flags the loop put on it, and the record says who merged.** Completion removes
+  `blocked`/`needs-info`, and a PR merged outside the loop is recorded as merged by a person — the comment used to
+  claim "a clean review and green checks" for a PR whose review had blocked and whose CI never ran.
 - **A worker starts from the remote base, not the operator's local branch.** The tick fetches
   `origin/<baseBranch>` and creates the worktree from it; `--base-branch main` made Orca resolve the operator's local
   `main`, which nobody fast-forwards — a worker started two merges behind and measured code that no longer existed.

@@ -344,6 +344,11 @@ describe('deliver', () => {
     expect(refused.ledger.active()).toHaveLength(1)
     const merged = setup({ pr: null, mergedPr: basePr({ state: 'MERGED' }) })
     expect((await deliver(merged)).results[0]).toMatchObject({ outcome: 'merged' })
+    // Merged by a person: the comment says so, and the flags the loop set on the way (blocked, needs-info) are cleared.
+    const mergedComment = merged.runner.calls.find((argv) => argv[1] === 'linear' && argv[2] === 'comment' && argv.join(' ').includes('Loop: merged'))
+    expect(mergedComment?.join(' ')).toContain('outside the loop')
+    const cleared = merged.runner.calls.find((argv) => argv[1] === 'linear' && argv[2] === 'label' && argv[3] === 'remove')
+    expect(cleared).toEqual(expect.arrayContaining(['blocked', 'needs-info']))
     const closed = setup({ pr: null, closedPr: basePr({ state: 'CLOSED' }) })
     expect((await deliver(closed)).results[0]).toMatchObject({ outcome: 'abandoned' })
     expect(closed.runner.calls.find((argv) => argv[1] === 'linear' && argv[2] === 'status')).toContain('Todo')
