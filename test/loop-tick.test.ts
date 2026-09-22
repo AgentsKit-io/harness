@@ -252,6 +252,12 @@ describe('tick', () => {
     expect(termCreate?.[termCreate.indexOf('--command') + 1]).toBe('claude --model sonnet --permission-mode auto')
     expect(termCreate?.[termCreate.indexOf('--worktree') + 1]).toMatch(/^id:repo-1::/)
     const send = env.runner.calls.find((argv) => argv[1] === 'terminal' && argv[2] === 'send')
+    // The worktree starts from the remote base, fetched right before — never the operator's stale local branch.
+    const create = env.runner.calls.find((argv) => argv[1] === 'worktree' && argv[2] === 'create') ?? []
+    expect(create[create.indexOf('--base-branch') + 1]).toBe('origin/main')
+    const fetchAt = env.runner.calls.findIndex((argv) => argv[0] === 'git' && argv[1] === 'fetch')
+    expect(fetchAt).toBeGreaterThanOrEqual(0)
+    expect(fetchAt).toBeLessThan(env.runner.calls.findIndex((argv) => argv[1] === 'worktree' && argv[2] === 'create'))
     // The brief travels as a file in the worktree; the terminal only gets the pointer to it.
     expect(send?.[send.indexOf('--text') + 1]).toBe(BRIEF_POINTER_PROMPT)
     const handedOver = readFileSync(join(env.dir, 'w', '.ak-loop', 'brief.md'), 'utf8')

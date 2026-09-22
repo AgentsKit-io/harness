@@ -554,7 +554,10 @@ export const runTick = async (input: TickInput): Promise<TickReport> => {
     const worktree = worktreeNameFor(detail)
     const claim = ledger.claim({ tracker: 'linear', repository: config.project.repo, issue: detail.identifier, worktree, branch, owner: input.owner ?? `loop:${state.person}` })
     if (claim.decision === 'already-claimed') { results.push({ issue: detail.identifier, outcome: 'skipped', reason: `lease already held by ${claim.lease.owner} since ${claim.lease.claimedAt}` }); continue }
-    const plan = createOrcaDispatchPlan({ repository: config.orca.repoSelector ?? `path:${loaded.root}`, worktree, branch, baseBranch: config.project.baseBranch, launch: 'worktree-only', linearIssue: detail.url || detail.identifier, comment: `loop · ${detail.identifier} · ${worker.provider}/${worker.model}`, noParent: true, orcaBin: config.orca.bin })
+    const plan = createOrcaDispatchPlan({ repository: config.orca.repoSelector ?? `path:${loaded.root}`, worktree, branch,
+      // The remote base, fetched just before: Orca resolves a bare branch name against the operator's local ref, which
+      // nobody fast-forwards — observed, a worker started 2 merges behind main and measured code that no longer existed.
+      baseBranch: `origin/${config.project.baseBranch}`, launch: 'worktree-only', linearIssue: detail.url || detail.identifier, comment: `loop · ${detail.identifier} · ${worker.provider}/${worker.model}`, noParent: true, orcaBin: config.orca.bin })
     const title = `loop ${detail.identifier} · ${worker.provider}`
     if (dryRun) {
       ledger.release(claim.lease, 'dry-run')
@@ -570,6 +573,8 @@ export const runTick = async (input: TickInput): Promise<TickReport> => {
     }
     let created: Awaited<ReturnType<typeof orcaWorktreeCreate>> | null = null
     try {
+      const fetched = await input.runner.run(['git', 'fetch', '--quiet', 'origin', config.project.baseBranch], { cwd: loaded.root, timeoutMs: 120_000 })
+      if (fetched.timedOut || fetched.code !== 0) throw new Error(`git fetch origin ${config.project.baseBranch} failed before creating the worktree; a worker must not start from a stale base: ${`${fetched.stderr}${fetched.stdout}`.trim().slice(0, 200)}`)
       created = await orcaWorktreeCreate(input.runner, plan.argv, { timeoutMs: Math.max(config.orca.timeoutMs, 120_000) })
       // Orca names the branch `<git user>/<worktree>`; the Linear branchName is only a hint. Record and brief the real one.
       const actualBranch = created.branch || branch

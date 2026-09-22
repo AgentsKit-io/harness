@@ -15,6 +15,10 @@ Found by running the loop on a real repository migration with a single, non-defa
   command the agent's own config marked dangerous (`rm -rf`, `git reset --hard`). It now reads Orca's `permission`
   activity (`OrcaWorktree.activity`, from `worktree ps`) or the prompt on screen, reports `held`, emits
   `worker.permission-wait` once per idle window, keeps the lease, and no nudge, handoff or relaunch happens.
+- **A worker starts from the remote base, not the operator's local branch.** The tick fetches
+  `origin/<baseBranch>` and creates the worktree from it; `--base-branch main` made Orca resolve the operator's local
+  `main`, which nobody fast-forwards — a worker started two merges behind and measured code that no longer existed.
+  A failed fetch fails the dispatch.
 - **The worker brief travels as a file, not as keystrokes.** The brief is written to `.ak-loop/brief.md` in the
   worktree (already excluded from git) and the terminal receives one short line pointing at it. A real 44 KB brief
   failed every send with `agent_session_ownership_unknown` — deterministically, even with retries — while random
