@@ -30,6 +30,10 @@ jobs:
       - run: pnpm test
       - run: pnpm build
       - run: pnpm pack --pack-destination /tmp/agentskit-harness-pack
+      # `--by human` on a machine. This is the repository's own contract being exercised as a fixture — the
+      # approval a human actually made is the one in `.ak-harness/verification.json`, in the tree, reviewed. CI
+      # re-enacts it to test the CLI end to end. It is left this way on purpose: the alternative is a non-human
+      # actor accepted by `assertHuman`, and a bypass in a human-approval gate is worse than a loud comment.
       - run: node dist/cli.js plan approved --by human --config .ak-harness/verification.json --json
       - run: node dist/cli.js start --config .ak-harness/verification.json --json
       - run: node dist/cli.js run --config .ak-harness/verification.json --json

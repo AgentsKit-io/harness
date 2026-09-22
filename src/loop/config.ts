@@ -935,6 +935,10 @@ export const validateLoopConfig = (value: unknown): LoopConfig => {
   if (config.machine.warningPercent > config.machine.criticalPercent) fail('machine.warningPercent must not exceed machine.criticalPercent.', 'INVALID_CONFIG')
   if (config.models.cooldown.initialMin > config.models.cooldown.maxMin) fail('models.cooldown.initialMin must not exceed maxMin.', 'INVALID_CONFIG')
   if (config.machine.ceiling !== undefined && config.machine.ceiling < config.machine.floor) fail('machine.ceiling must be at least machine.floor.', 'INVALID_CONFIG')
+  // `RunnerConnector` has a `local` implementation and no production caller: `tick`/`deliver`/`install` still go
+  // straight to Orca. Accepting this silently gave a project Orca behaviour while its config said otherwise —
+  // and `doctor` reported `runner.local: passed` on top of it. Fail closed until it is actually wired.
+  if (config.connectors.runner === 'local') fail('connectors.runner: "local" is not wired into dispatch yet — tick, deliver and install still use Orca, so setting it would silently run Orca anyway. Use "orca"; follow the local runner in docs/ADR-0039.', 'INVALID_CONFIG')
   return config
 }
 

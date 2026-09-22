@@ -199,16 +199,8 @@ export const runLoopDoctor = async (input: LoopDoctorInput): Promise<LoopDoctorR
     }
   }
 
-  // The local runner is git + tmux + the system crontab. On Windows there is no tmux and no crontab, and the
-  // failure would otherwise arrive as a raw ENOENT from the middle of a dispatch — after the worktree exists.
-  if (config.connectors.runner === 'local') {
-    const platform = input.platform ?? process.platform
-    const env = input.env ?? process.env
-    const missing = ['git', config.connectors.local.tmuxBin, 'crontab'].filter((bin) => !findExecutable(bin, env, platform))
-    if (platform === 'win32') push('runner.local', 'failed', 'connectors.runner is "local", which needs tmux and the system crontab; neither exists on Windows — use the Orca runner, or run the loop under WSL')
-    else if (missing.length) push('runner.local', 'failed', `connectors.runner is "local" but ${missing.join(', ')} ${missing.length === 1 ? 'is' : 'are'} not on PATH`)
-    else push('runner.local', 'passed', `git, ${config.connectors.local.tmuxBin} and crontab present · worktrees under ${config.connectors.local.worktreeRoot}`)
-  }
+  // No `runner.local` probe: `connectors.runner: "local"` is rejected at config load (see config.ts), so a config
+  // reaching doctor is always the Orca runner. Probing for tmux and crontab here only implied otherwise.
 
   const reviewCli = config.delivery.review.cli
   const reviewBin = findExecutable(reviewCli, input.env ?? process.env, input.platform ?? process.platform)

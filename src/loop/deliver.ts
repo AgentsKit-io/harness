@@ -541,16 +541,22 @@ ${marker}` }); actions.push('secret-file hold commented') } catch (error) { acti
     return { issue: record.issue, outcome: 'held', reason: `touches secret-shaped file(s): ${secretShapedFiles.join(', ')}`, pr: pr.number, head: pr.headSha, actions }
   }
   if (pr.mergeable === 'CONFLICTING' || pr.mergeState === 'DIRTY') return fixRound(ctx, record, lease, state, pr, 'conflict', `Loop: PR #${pr.number} conflicts with ${config.project.baseBranch}. In this worktree run \`git fetch origin ${config.project.baseBranch} && git rebase origin/${config.project.baseBranch}\`, resolve conflicts keeping the contract's behaviour, re-run \`${config.delivery.verifyCommand}\`, then \`git push --force-with-lease\` (the only force allowed, on your own branch). Reply here when pushed.`, `conflicts with ${config.project.baseBranch}`, actions)
+  // What actually examined this diff. A flow may turn any single gate off — that is the point of flows — but the
+  // list being empty at merge time means nothing did, and that is where it stops being an auto-merge.
+  const vouchedBy: string[] = []
   const checks = assessChecks(pr.checks, config.delivery.requiredChecks, config.delivery.ignoreChecks)
   // CI babysitting is a flow switch. With `merge.requireChecks` off, the review is the gate and a red or pending
   // check never costs a fix round — the shape a POC or an incident wants, and the reason a runner bill is optional.
+  if (flow.merge.requireChecks && checks.status === 'green') vouchedBy.push('CI')
   if (!flow.merge.requireChecks && checks.status !== 'green') actions.push(`checks ${checks.status}; not gating (merge.requireChecks is off for this flow)`)
   else if (checks.status === 'red') return fixRound(ctx, record, lease, state, pr, 'ci', `Loop: CI is red on PR #${pr.number} (head ${pr.headSha.slice(0, 7)}). Failing checks: ${checks.failing.join(', ')}. Inspect them with \`gh pr checks ${pr.number} --repo ${config.project.repo}\` and \`gh run view --log-failed\`, fix the root cause (never skip or disable a check), re-run \`${config.delivery.verifyCommand}\`, commit and push. Reply here when pushed.`, `CI red: ${checks.failing.join(', ')}`, actions)
   else if (checks.status !== 'green') return { issue: record.issue, outcome: 'waiting', reason: checks.status === 'missing' ? `required checks not reported yet: ${checks.missingRequired.join(', ')}` : `checks pending: ${checks.pending.join(', ')}`, pr: pr.number, head: pr.headSha, actions }
 
   const prior = state.reviews[pr.headSha]
   // The phases of this issue, as its flow declared them. Turning the review off is a deliberate, recorded choice —
-  // an incident flow that wants the fix in now — and every other gate (checks, DoD, the human approval) still runs.
+  // an incident flow that wants the fix in now. The other gates are switches too (CI via `merge.requireChecks`,
+  // verify and DoD via `stages`, and `requireHumanApproval` is off by default), so this does not claim they still
+  // run: what it guarantees is the floor at merge time — at least one of them examined the diff, or nothing merges.
   const reviewPhase = workerPhaseEnabled(config, flow.flow, 'review', true)
   if (!reviewPhase) actions.push('review phase off for this flow')
   let review: CodeReviewOutcome | null = null
@@ -593,6 +599,7 @@ ${marker}` }); actions.push('secret-file hold commented') } catch (error) { acti
         return fixRound(ctx, record, lease, state, pr, 'ci', `Loop: the project verification failed on PR #${pr.number} before the review was even requested: \`${config.delivery.verify.argv.join(' ')}\`. Fix it, re-run it locally, commit and push. No review is spent on a build that does not pass.`, 'local verify failed before review', actions)
       }
       actions.push('local verify passed before review')
+      vouchedBy.push('the project verify')
       event(ctx, { type: 'verify.passed', issue: record.issue, pr: pr.number, head: pr.headSha })
     }
     if (prior && prior.attempts >= 2) actions.push(`retrying incomplete review with ${reviewProvider}/${chosen.model}`)
@@ -661,6 +668,7 @@ ${marker}` }); actions.push('secret-file hold commented') } catch (error) { acti
         return fixRound(ctx, record, lease, state, pr, 'review', `Loop: the definition of done is not proven for PR #${pr.number}. ${dod.missing.length ? `No proof recorded for: ${dod.missing.join(', ')}.` : ''} ${dod.failed.length ? `Failing: ${dod.failed.join(', ')}.` : ''} Run each item, record the result in \`${config.dod.evidenceFile}\` at the root of this worktree (\`{"project": [{"id":"…","status":"passed","evidence":"…"}], "outcomes": [...]}\`), commit and push. The loop writes the table onto the PR.`, why, actions)
       }
       actions.push(`definition of done proven (${dod.lines.length} item(s))`)
+      vouchedBy.push('the definition of done')
     }
   }
   // A layer is a boundary, not a suggestion: crossing it is always reported, and held only where the project said
@@ -670,6 +678,13 @@ ${marker}` }); actions.push('secret-file hold commented') } catch (error) { acti
     actions.push(`layer boundary: ${boundary.detail}`)
     if (boundary.enforced) return { issue: record.issue, outcome: 'held', reason: `outside its layer boundary — ${boundary.detail}`, pr: pr.number, head: pr.headSha, ...(review ? { review } : {}), actions }
   }
+  if (review) vouchedBy.push('the review')
+  // The floor under auto-merge. Each of CI gating, the review, the project verify and the definition of done is a
+  // deliberate per-flow switch — an incident flow turning the review off to get a fix in is the feature. All of
+  // them off at once is not a faster flow, it is an unattended push: nothing read this diff, and no human was
+  // asked to. A flow that wants exactly that says so with `merge.auto: false` and merges by hand.
+  if (!vouchedBy.length) return { issue: record.issue, outcome: 'held', reason: 'nothing examined this change — CI gating, review, verify and the definition of done are all off for this flow; auto-merge needs at least one', pr: pr.number, head: pr.headSha, ...(review ? { review } : {}), actions }
+  actions.push(`vouched for by: ${vouchedBy.join(', ')}`)
   if (!flow.merge.auto) return { issue: record.issue, outcome: 'held', reason: 'review clean; auto-merge disabled', pr: pr.number, head: pr.headSha, ...(review ? { review } : {}), actions }
   if (flow.merge.requireHumanApproval && pr.reviewDecision !== 'APPROVED') return { issue: record.issue, outcome: 'held', reason: `review clean and checks green, but delivery.merge.requireHumanApproval is set and no human has approved PR #${pr.number} on GitHub yet`, pr: pr.number, head: pr.headSha, ...(review ? { review } : {}), actions }
 
