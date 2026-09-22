@@ -34,7 +34,11 @@ describe('tracker and scm connectors', () => {
 
     await tracker.comment({ issue: 'ENG-1', body: 'hello', dedupeKey: 'k' })
     await tracker.addLabels('ENG-1', ['blocked'])
-    await tracker.claim('ENG-1', 'person')
+    // Claimed by display name, assigned by id — `linear.people` maps one to the other.
+    await tracker.claim('ENG-1', 'my-linear-display-name')
+    const claim = runner.calls.find((argv) => argv[2] === 'assignee' && argv[3] === 'set')
+    expect(claim?.[claim.indexOf('--to-id') + 1]).toBe(loaded.config.linear.people['my-linear-display-name'])
+    await expect(tracker.claim('ENG-1', 'stranger')).rejects.toThrow(/linear.people/)
     await tracker.release('ENG-1')
     const linearCalls = runner.calls.filter((argv) => argv[0] === 'orca')
     expect(linearCalls.map((argv) => argv.slice(1, 3).join(' '))).toEqual(['linear comment', 'linear label', 'linear assignee', 'linear assignee'])

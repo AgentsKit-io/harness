@@ -9,6 +9,7 @@ import {
   githubPullRequestsForBranch, type PullRequestSnapshot,
 } from '../adapters/github-cli.js'
 import type { TrackingAdapter } from '../adapters/tracking.js'
+import { fail } from '../kernel/errors.js'
 import type { LoopConfig } from './config.js'
 
 /**
@@ -70,7 +71,11 @@ export const createLinearTracker = (input: ConnectorInput): TrackerConnector => 
     addLabels: async (issue, labels) => { await linearLabelAdd(runner, { issue, labels }, write) },
     removeLabels: async (issue, labels) => { await linearLabelRemove(runner, { issue, labels }, write) },
     setState: async ({ issue, to }) => { await linearStatusSet(runner, { issue, to }, write) },
-    claim: async (issue, assignee) => { await linearAssigneeSet(runner, { issue, assignee }, write) },
+    claim: async (issue, assignee) => {
+      // The queue filters by display name, but Orca assigns by user id — `linear.people` is the map between them.
+      const assigneeId = config.linear.people[assignee] ?? fail(`Cannot claim ${issue} for "${assignee}": add "${assignee}: <linear user id>" to linear.people.`, 'INVALID_CONFIG')
+      await linearAssigneeSet(runner, { issue, assigneeId }, write)
+    },
     release: async (issue) => { await linearAssigneeClear(runner, { issue }, write) },
     attach: async ({ issue, url, title, dedupeKey }) => { await linearAttach(runner, { issue, url, ...(title ? { title } : {}), ...(dedupeKey ? { dedupeKey } : {}) }, write) },
     createIssue: async ({ title, description, state, labels, priority, dedupeKey }) => linearSaveIssue(runner, {

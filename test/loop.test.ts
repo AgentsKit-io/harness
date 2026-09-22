@@ -246,7 +246,8 @@ describe('orca and linear parsers', () => {
   })
 
   it('claims and releases an issue through Orca, one flag per argument', () => {
-    expect(linearAssigneeSetArgv({ issue: 'ENG-1', assignee: 'person', workspaceId: 'ws-1' })).toEqual(['orca', 'linear', 'assignee', 'set', 'ENG-1', '--assignee', 'person', '--workspace', 'ws-1', '--json'])
+    // Orca assigns by user id (`--to-id`); a display name is rejected as an unknown flag value.
+    expect(linearAssigneeSetArgv({ issue: 'ENG-1', assigneeId: 'u-1', workspaceId: 'ws-1' })).toEqual(['orca', 'linear', 'assignee', 'set', 'ENG-1', '--to-id', 'u-1', '--workspace', 'ws-1', '--json'])
     expect(linearAssigneeClearArgv({ issue: 'ENG-1', workspaceId: 'ws-1' })).toEqual(['orca', 'linear', 'assignee', 'clear', 'ENG-1', '--workspace', 'ws-1', '--json'])
   })
 
