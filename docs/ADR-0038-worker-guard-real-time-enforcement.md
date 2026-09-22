@@ -60,10 +60,18 @@ handoff, since a handoff changes which format — or none — applies):
   under no attached terminal, is reported across multiple open upstream issues as
   either hanging indefinitely or aborting the session, depending on version — never
   settled, and never reported as silently auto-approving either. Rather than depend
-  on an unresolved tier, `worker-guard` writes static `"deny"` rules straight into
-  `opencode.json`'s `permission.edit` for every `selfEditPaths`/`secretFilePatterns`
-  pattern (confirmed against `packages/core/src/v1/config/permission.ts` directly,
-  not inferred) — no subprocess, no hang, nothing to crash.
+  on an unresolved tier, `worker-guard` writes static `"deny"` rules into
+  `permission.edit` for every `selfEditPaths`/`secretFilePatterns` pattern — no
+  subprocess, no hang, nothing to crash. They go in **`.opencode/opencode.json`**,
+  not the worktree's root `opencode.json`: opencode's own docs call the root file a
+  shared project config that is safe to commit, so writing there put our rules in
+  the project's repository for the worker to commit. Read against opencode's loader
+  rather than its docs (`config/paths.ts`, `config/config.ts`): the `.opencode`
+  directories are loaded *after* the root files, so this also takes precedence over
+  a project's own config instead of merging underneath it. When that directory did
+  not already exist, it is created with a `.gitignore` of `*`, which covers itself —
+  nothing the harness wrote is visible to `git add -A`. A `.opencode` the project
+  already had is left with its own ignores untouched.
 - **`codex` — deliberately not covered.** Two open upstream issues make a hook-based
   deny unsafe to depend on today: `PreToolUse` is not emitted at all for several tool
   handlers (`openai/codex#20204`), and — more directly disqualifying — a report that
@@ -105,11 +113,7 @@ path (`echo secret > .env`) is not caught here, for the same reason it is not ca
 by the PR-time gate this backs up (that gate only ever sees the PR's changed-file
 list, never how a file got that way). `workerGuardInstalled: true` on a dispatch
 record therefore means "the hook file was written", not "every write was checked" —
-it is provenance, not proof.
-
-For `opencode` specifically, the deny rules land in `opencode.json` at the worktree
-root, which is an ordinary untracked file in the project's own repository: a worker
-that runs `git add -A` can commit it. Nothing here prevents that today. And the non-`-p` interactive TUI session Orca
+it is provenance, not proof. And the non-`-p` interactive TUI session Orca
 actually drives (as opposed to the `-p` session this ADR's live test used) was not
 verified end-to-end for the first-run trust dialog specifically — that risk, if it is
 one, predates this ADR and is independent of it; a project that already dispatches

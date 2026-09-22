@@ -1,5 +1,40 @@
 # Changelog
 
+## [0.17.0] - 2026-09-22
+
+Real-time enforcement inside the worker's own session, and a release that can no
+longer outrun its own gate.
+
+### Worker guard
+
+- `ak-harness loop worker-guard`: a `PreToolUse` hook entrypoint that blocks a
+  `Write`/`Edit`/`MultiEdit`/`NotebookEdit` touching `delivery.selfEditPaths` or
+  `delivery.secretFilePatterns` as it happens — the same `touchesProtectedPaths`
+  check the PR-time gate already made, just early enough to prevent the write
+  instead of reporting it. Installed into the fresh worktree at dispatch and again
+  on a provider handoff, before the worker's terminal opens.
+- `claude` and `grok` get the hook (they share the event shape by design); `opencode`
+  gets static `deny` rules in `.opencode/opencode.json`, a directory created with a
+  self-covering `.gitignore` so nothing the harness writes is visible to `git add`;
+  `codex` is deliberately uncovered while its `PreToolUse` upstream bugs stand. See
+  `docs/ADR-0038`.
+- `delivery.workerGuard.enabled` (default `true`) is the escape hatch.
+- Known limits, stated rather than implied: a `Bash`-mediated write is not caught
+  (neither is it by the gate this backs up), a crashed or timed-out hook fails open
+  in every one of these CLIs, and upgrading the harness with workers in flight can
+  leave their hook pointing at a build that no longer exists — drain first.
+
+### Release can no longer publish past a red gate
+
+- Publishing moved into `ci.yml` as a job that `needs` verify, docs and the
+  macOS/Windows matrix. As its own workflow it ran *in parallel* with CI, re-running
+  only typecheck/test/build itself — so a commit could fail `ak-verify`, the docs
+  check or the Windows matrix and ship anyway.
+- Whether a version is new is now the registry's answer, not a `git diff` against
+  `github.event.before`, which is absent after a force-push and was read as "changed".
+- `scripts/verify-release-workflow.mjs` asserts the dependency itself, so the gap
+  cannot reopen silently.
+
 ## [0.16.0] - 2026-09-22
 
 Cheaper and more visible at the same time: the loop's own token/time waste gets cut, and what it spends becomes

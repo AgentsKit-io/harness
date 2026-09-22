@@ -1,4 +1,4 @@
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
@@ -116,8 +116,7 @@ describe('installWorkerGuard', () => {
 
   it('writes static deny rules for opencode instead of a hook, and never overwrites a rule the project already declared', () => {
     const worktreePath = tempDir()
-    const path = join(worktreePath, 'opencode.json')
-    writeFileSync(path, JSON.stringify({}), 'utf8')
+    const path = join(worktreePath, '.opencode', 'opencode.json')
     const outcome = installWorkerGuard({ worktreePath, provider: 'opencode', config: config(), cliPath: '/bin/ak-harness' })
     expect(outcome).toEqual({ installed: true, path })
     const written = JSON.parse(readFileSync(path, 'utf8'))
@@ -156,9 +155,24 @@ describe('installWorkerGuard', () => {
     expect(installWorkerGuard({ worktreePath: '', provider: 'claude', config: config(), cliPath: '/bin/ak-harness' })).toEqual({ installed: false })
   })
 
+  it('hides the .opencode directory it created, so the worker cannot commit our rules into the project', () => {
+    const worktreePath = tempDir()
+    installWorkerGuard({ worktreePath, provider: 'opencode', config: config(), cliPath: '/bin/ak-harness' })
+    // `*` covers the .gitignore itself, so the whole directory is invisible to git — not just its config file.
+    expect(readFileSync(join(worktreePath, '.opencode', '.gitignore'), 'utf8')).toBe('*\n')
+  })
+
+  it('does not touch the ignores of a .opencode directory the project already had', () => {
+    const worktreePath = tempDir()
+    mkdirSync(join(worktreePath, '.opencode'), { recursive: true })
+    installWorkerGuard({ worktreePath, provider: 'opencode', config: config(), cliPath: '/bin/ak-harness' })
+    expect(existsSync(join(worktreePath, '.opencode', '.gitignore'))).toBe(false)
+  })
+
   it('leaves an unparseable existing config alone rather than destroying it', () => {
     const worktreePath = tempDir()
-    const path = join(worktreePath, 'opencode.json')
+    const path = join(worktreePath, '.opencode', 'opencode.json')
+    mkdirSync(join(worktreePath, '.opencode'), { recursive: true })
     const theirs = '{ "permission": { "edit": {} }, } // trailing comma + comment'
     writeFileSync(path, theirs, 'utf8')
     expect(installWorkerGuard({ worktreePath, provider: 'opencode', config: config(), cliPath: '/bin/ak-harness' })).toEqual({ installed: false })

@@ -154,7 +154,18 @@ export const installWorkerGuard = (input: { readonly worktreePath: string; reado
   if (input.provider === 'grok') return write(join(input.worktreePath, '.grok', 'hooks', 'config.json'), (existing) => mergePreToolUseHook(existing, command))
   if (input.provider === 'opencode') {
     const patterns = [...input.config.delivery.selfEditPaths, ...input.config.delivery.secretFilePatterns]
-    return write(join(input.worktreePath, 'opencode.json'), (existing) => mergeOpencodeDenyRules(existing, patterns))
+    const dir = join(input.worktreePath, '.opencode')
+    // `.opencode/` rather than the worktree root: opencode's own docs call a root `opencode.json` shared project
+    // config that is meant to be committed, so writing our rules there put them in the project's repository and
+    // let the worker commit them. Verified against opencode's loader (`config/paths.ts`, `config/config.ts`): the
+    // `.opencode` directories are read *after* the root files, so this also wins over a project's own config
+    // rather than merging under it.
+    const ours = !existsSync(dir)
+    const outcome = write(join(dir, 'opencode.json'), (existing) => mergeOpencodeDenyRules(existing, patterns))
+    // A directory we created is entirely ours, and a `.gitignore` of `*` covers itself — so nothing we wrote is
+    // even visible to `git add -A`. A directory the project already had is theirs; we do not touch its ignores.
+    if (ours && outcome.installed) writeFileSync(join(dir, '.gitignore'), '*\n', 'utf8')
+    return outcome
   }
   return { installed: false } // codex (open upstream hook-enforcement bugs) and anything else: PR-time gate only, see ADR-0038
 }
