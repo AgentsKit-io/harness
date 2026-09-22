@@ -139,8 +139,15 @@ export interface TickInput {
 export const launchWorkerTerminal = async (input: { readonly runner: CommandRunner; readonly config: LoopConfig; readonly worktreeId: string; readonly command: string; readonly title: string; readonly brief: string; readonly idleTimeoutMs?: number }): Promise<{ readonly terminal: string; readonly accepted: boolean; readonly idle: boolean }> => {
   const orca = { bin: input.config.orca.bin, timeoutMs: input.config.orca.timeoutMs }
   const created = await orcaTerminalCreate(input.runner, { worktree: `id:${input.worktreeId}`, command: input.command, title: input.title }, orca)
+  const initialIdleTimeoutMs = input.idleTimeoutMs ?? 90_000
   let idle = false
-  try { idle = (await orcaTerminalWait(input.runner, { terminal: created.handle, for: 'tui-idle', timeoutMs: input.idleTimeoutMs ?? 90_000 }, orca)).satisfied } catch { idle = false }
+  try { idle = (await orcaTerminalWait(input.runner, { terminal: created.handle, for: 'tui-idle', timeoutMs: initialIdleTimeoutMs }, orca)).satisfied } catch { idle = false }
+  // Orca can finish creating a TUI after the first readiness window. Never send into a
+  // non-ready pane: that loses the prompt and produces `agent_prompt_blocked`.
+  if (!idle) {
+    try { idle = (await orcaTerminalWait(input.runner, { terminal: created.handle, for: 'tui-idle', timeoutMs: Math.min(initialIdleTimeoutMs * 2, 180_000) }, orca)).satisfied } catch { idle = false }
+  }
+  if (!idle) throw new Error(`terminal ${created.handle} did not become tui-idle before the worker prompt deadline`)
   const receipt = await orcaTerminalSend(input.runner, { terminal: created.handle, text: input.brief, enter: true, waitSubmitSeconds: 15 }, orca)
   return { terminal: created.handle, accepted: receipt.accepted, idle }
 }
