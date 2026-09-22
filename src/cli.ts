@@ -5,7 +5,7 @@ import { Command } from 'commander'
 import { approveRun, ARTIFACT_SCHEMA_VERSION, assessAcceptance, assessBlock, assessDiscovery, assessImprovementCycle, assessIntegration, assessPilot, assessPreflight, assessProduction, assessWip, assessWorktreeCleanup, authorizeRun, benchmarkRuns, cancelRun, cleanTaskArtifacts, composePullRequest, createDispatchLedger, createDocBridgeContextProvider, createStatusSnapshot, exportEvidenceBundle, FileArtifactStore, loadBenchmarkManifest, loadConfig, loadLatestRun, parseRetro, planFilePreflight, planRun, readArtifactFile, readContextSnapshots, readEvidenceTrustStore, reconcileRun, recordBenchmarkObservation, renderArtifactMarkdown, retryRun, selectRuntime, startRun, validateBlockManifest, validateStatusSnapshot, verifyEvidenceBundle, verifyRun } from './index.js'
 import type { BenchmarkObservationEvidence } from './execution/metrics.js'
 import { fail } from './kernel/errors.js'
-import { appendLoopEvent, attachNotifier, buildDebriefReport, buildRetroReport, createLoopEventBus, createProcessRunner, createRichIO, fetchLinearIssue, formatWatchEvent, generateContract, installLoopAutomations, linearLabelRemove, loadLoopConfig, loadLoopPlugins, openLoopMemory, promoteLearningsToMemory, runGuidedInstall, runLoopInit, loopStatus, renderDebriefMarkdown, renderObservabilityMarkdown, renderRetroMarkdown, retroLearnings, runRetroStage, precheckDeliver, precheckTick, rankModels, promoteLearnings, writePrdDocument, writeDesignDocument, readLearningsLedger, startPlan, interviewRound, answerRound, approvePlan, architectRound, approveDesign, decomposeRound, createPlannedIssues, designApproved, listPlans, prdGaps, readPlanState, writePlanState, renderPlanMarkdown, readStoredContract, writeLearningsLedger, runDeliver, runLoopDoctor, runIntakeStage, runMaintainStage, readReleaseBatch, readReleaseState, approveRelease, renderReleaseMarkdown, runReleaseStage, runObservability, runObserveStage, runTick, uninstallLoopAutomations, watchDeliveries, writeStoredContract, isStagePaused, recordStageRunResult, resumeIssue, resumeStage, readIssueFailures, stageEntry, listPausedIssues, readLastConfigHash, writeLastConfigHash, buildIssueTimeline, renderIssueTimelineMarkdown, runWorkerGuard, type LoopStageName } from './index.js'
+import { appendLoopEvent, ensureBaseView, attachNotifier, buildDebriefReport, buildRetroReport, createLoopEventBus, createProcessRunner, createRichIO, fetchLinearIssue, formatWatchEvent, generateContract, installLoopAutomations, linearLabelRemove, loadLoopConfig, loadLoopPlugins, openLoopMemory, promoteLearningsToMemory, runGuidedInstall, runLoopInit, loopStatus, renderDebriefMarkdown, renderObservabilityMarkdown, renderRetroMarkdown, retroLearnings, runRetroStage, precheckDeliver, precheckTick, rankModels, promoteLearnings, writePrdDocument, writeDesignDocument, readLearningsLedger, startPlan, interviewRound, answerRound, approvePlan, architectRound, approveDesign, decomposeRound, createPlannedIssues, designApproved, listPlans, prdGaps, readPlanState, writePlanState, renderPlanMarkdown, readStoredContract, writeLearningsLedger, runDeliver, runLoopDoctor, runIntakeStage, runMaintainStage, readReleaseBatch, readReleaseState, approveRelease, renderReleaseMarkdown, runReleaseStage, runObservability, runObserveStage, runTick, uninstallLoopAutomations, watchDeliveries, writeStoredContract, isStagePaused, recordStageRunResult, resumeIssue, resumeStage, readIssueFailures, stageEntry, listPausedIssues, readLastConfigHash, writeLastConfigHash, buildIssueTimeline, renderIssueTimelineMarkdown, runWorkerGuard, type LoopStageName } from './index.js'
 import { FileEventStore, inspectEventLogLock, recoverEventLogLock } from './kernel/events.js'
 import { acquireStageLock } from './loop/stage-lock.js'
 
@@ -173,7 +173,7 @@ loop.command('contract <identifier>').description('Freeze (or show) the orchestr
   if (cached) return print(cached)
   const doctor = await runLoopDoctor({ loaded, runner, probe: false }); const candidates = rankModels(loaded.config, 'orchestrator', doctor.providers)
   const issue = await fetchLinearIssue(runner, identifier, { bin: loaded.config.orca.bin, workspaceId: loaded.config.linear.workspaceId })
-  const stored = await generateContract({ runner, config: loaded.config, root: loaded.root, issue, candidates })
+  const stored = await generateContract({ runner, config: loaded.config, root: (await ensureBaseView(runner, loaded)).path, issue, candidates })
   if (!command.dryRun) writeStoredContract(loaded.stateDir, stored)
   print(stored)
 })
@@ -279,7 +279,8 @@ const planDeps = async (command: Command) => {
   const loaded = loadLoopConfig(loopFile(command))
   const runner = createProcessRunner()
   const doctor = await runLoopDoctor({ loaded, runner, probe: false })
-  return { loaded, runner, candidates: rankModels(loaded.config, 'orchestrator', doctor.providers), voters: rankModels(loaded.config, 'reviewer', doctor.providers) }
+  const view = await ensureBaseView(runner, loaded)
+  return { loaded, runner, readRoot: view.path, candidates: rankModels(loaded.config, 'orchestrator', doctor.providers), voters: rankModels(loaded.config, 'reviewer', doctor.providers) }
 }
 const planOrFail = (loaded: ReturnType<typeof loadLoopConfig>, id: string) => readPlanState(loaded.stateDir, id) ?? fail(`No plan "${id}" under ${loaded.stateDir}/plans.`, 'INVALID_INPUT')
 

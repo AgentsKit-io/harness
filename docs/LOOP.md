@@ -271,6 +271,13 @@ use, plus a commented-out notification channel. Models live there on purpose —
 logged in is a fact about you and this machine, not about the repository. A project file alone is therefore not a
 complete config, and that is by design.
 
+## What the orchestrator reads
+
+Contract generation, the plan interview, the architect, the design votes and decompose all run a model that reads
+the repository. They run in `<stateDir>/base-view`, a detached worktree of `origin/<baseBranch>` the harness owns,
+fetches and resets before each use — never in `project.root`, which is the operator's checkout and can be on any
+branch, at any age. A failed fetch fails the stage. `project.orchestratorView: root` opts back into the checkout.
+
 ## Configuration in four layers
 
 | # | File | Owner | Typically holds |

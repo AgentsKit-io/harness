@@ -92,6 +92,8 @@ const makeEnv = (options: { readonly contract?: TaskContract | 'garbage'; readon
       if (key.startsWith('orca terminal wait')) return okResult({ satisfied: true })
       if (key.startsWith('orca terminal send')) return okResult({ accepted: true, requestId: 'r' })
       if (key.startsWith('orca worktree rm')) return okResult({ removed: true })
+      // The orchestrator's base view (`ensureBaseView`): fetch / worktree add / rev-parse.
+      if (argv[0] === 'git') return { code: 0, stdout: argv[1] === 'rev-parse' ? 'basesha\n' : '', stderr: '', timedOut: false, durationMs: 1 }
       if (argv[0] === 'setup-check') return { code: options.setup?.exitCode ?? 0, stdout: 'installed', stderr: options.setup?.exitCode ? 'boom' : '', timedOut: options.setup?.timedOut ?? false, durationMs: 5 }
       if (key.startsWith('orca worktree create')) return options.failCreate ? { code: 1, stdout: JSON.stringify({ ok: false, error: { message: 'repo busy' } }), stderr: '', timedOut: false, durationMs: 1 } : okResult({ worktreeId: `repo-1::${dir}/w/${argv[argv.indexOf('--name') + 1]}`, path: `${dir}/w`, branch: `refs/heads/gituser/${argv[argv.indexOf('--name') + 1]}`, agentTerminalHandle: 'term_new' })
       if (key.startsWith('orca linear status set') || key.startsWith('orca linear comment add') || key.startsWith('orca linear label add') || key.startsWith('orca linear assignee set') || key.startsWith('orca linear assignee clear')) return okResult({ ok: true })
