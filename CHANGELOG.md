@@ -1,5 +1,55 @@
 # Changelog
 
+## [0.16.0] - 2026-09-22
+
+Cheaper and more visible at the same time: the loop's own token/time waste gets cut, and what it spends becomes
+something a human — or a study comparing how different models behave on the same task — can actually read back.
+
+### Verification and token waste
+
+- `.ak-harness/verification.json` deduped its checks against `dependsOn` instead of re-running `pnpm typecheck`/
+  `pnpm build` up to 11x/7x per `ak-verify run`; `tsconfig.json` gained `incremental`. `AGENTS.md`'s verification
+  contract is now scoped per task by default — the full 22-check gate only runs at PR-closing time.
+- `issueSpend`, `observability.ts`, `metrics.ts:readRuns`, `tuning.ts:history`, `intake.ts:filed`, and
+  `events-archive-*.ndjson` retention (30 days) all read a bounded window now instead of the loop's whole history
+  on every call.
+- `roles.orchestrator/reviewer.quality` no longer default to `frontier` while `builder` defaults to `balanced` —
+  the role writing the code is never given a weaker default than the role only reading it.
+- A fix round sizes its reviewer off the incremental diff since the last reviewed head (`githubCompare`), not the
+  PR's whole cumulative diff.
+- Review usage (`agentskit-review`'s own `providerCalls`/token tracking) surfaces into `pr.reviewed`, so
+  `issueBudget`/`issueSpend` see review spend for the first time.
+
+### Observability: every deterministic phase, timestamped and attributed
+
+- `provider.call` now covers every harness-direct model call — contract generation, planner, voters, not just the
+  orchestrator — each carrying `provider`/`model`/`effort`/duration/exit code/output size.
+- Contract generation success (`contract.generated`), Definition-of-Done assessment (`dod.assessed`), and a
+  passing local verify (`verify.passed`) are logged either way, not just on failure.
+- `config.changed` and `stage.completed` cover `loop.config.yaml` changes and every `loop stage` run's own
+  duration and outcome.
+- `plan.voted` lists who voted what, not just the count; `pr.reviewed` carries the review's own configuration
+  (`profile`/`votes`/`minSeverity`).
+- `resilience.maxUsageDeltaPercent` (the cost circuit breaker) is on by default (40); `provider.usage-observed`
+  logs the usage delta on every `deliver` pass, trip or not.
+- New: `ak-harness loop issue-timeline <id>` — one issue's events in order, with time/tokens since the previous
+  step and a separate list of friction (fix rounds, cooldowns, circuit breakers).
+
+### Event bus, unified
+
+- Every stage (`tick`, `deliver`, `retro`, `release`, `intake`, `maintain`) now reaches the same in-process event
+  bus — previously only `tick`/`deliver` did, and `release` loaded no plugins at all. `loop stage <name>` creates
+  one bus per invocation and hands it to whichever stage runs, so a plugin or a `notifications.webhook`/`command`
+  channel sees every event of that process, not a subset.
+- `stage.paused` now goes through that same notifier path as everything else (it was already in
+  `notifications.events`'s default list, so nothing changes for anyone using the default).
+
+### House conventions
+
+- Adopted `ponytail` (coding style), `caveman` (output style), and `rtk` (local tooling) as documented
+  conventions in `AGENTS.md`/`CONTRIBUTING.md`; added `digest:`/`windowed:`/`scope:`/`cheapest-sufficient:`/
+  `one-shot-vote:` as named, checkable house rules.
+
 ## [0.15.0] - 2026-09-20
 
 The loop becomes a cycle. The twelve steps of [docs/ROADMAP-SDLC.md](docs/ROADMAP-SDLC.md) close, the phases of one
