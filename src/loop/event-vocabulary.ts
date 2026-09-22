@@ -13,6 +13,9 @@ export const LOOP_EVENT_TYPES = {
   'contract.escalated': ['issue', 'reasons', 'digest'],
   /** Contract generation failed on every candidate provider. */
   'contract.failed': ['issue', 'error'],
+  /** A contract was frozen successfully. `provider`/`model` are what actually produced it — the join key for
+   * comparing how different LLMs did on the same kind of issue. */
+  'contract.generated': ['issue', 'provider', 'model', 'digest'],
 
   /** One planning cycle finished: how many agents approved the plan, out of how many voted. */
   'plan.voted': ['issue', 'cycle', 'approvals', 'votes'],
@@ -136,6 +139,11 @@ export const LOOP_EVENT_TYPES = {
   'issue.paused': ['issue', 'kind', 'consecutive', 'reason'],
   /** A whole stage was paused after consecutive failures. */
   'stage.paused': ['stage', 'reason', 'consecutiveFailures'],
+  /** One scheduled stage run finished — the entrypoint every scheduler (cron, Orca) calls, so this is the one
+   * event that always exists regardless of what the stage itself did. */
+  'stage.completed': ['stage', 'durationMs', 'status', 'count'],
+  /** `loop.config.yaml` changed since the last stage run; `from`/`to` are its digest before and after. */
+  'config.changed': ['from', 'to'],
 
   /** The retro's agent-improvement pass adopted a dated note into the agent's instructions; the eval passed. */
   'agent.adopted': ['role', 'agent', 'detail'],
@@ -166,6 +174,11 @@ export const LOOP_EVENT_TYPES = {
    * `deliver` pass regardless of whether it crosses `resilience.maxUsageDeltaPercent`, so the trend is visible
    * before it ever trips the breaker. */
   'provider.usage-observed': ['issue', 'provider', 'initialRemainingPercent', 'currentRemainingPercent', 'deltaPercent'],
+
+  /** The definition of done was judged for a PR: how many of its lines were proven, missing, or failing. */
+  'dod.assessed': ['issue', 'pr', 'head', 'complete', 'proven', 'missing', 'failed'],
+  /** The project's own `delivery.verify.argv` passed before a review was even requested. */
+  'verify.passed': ['issue', 'pr', 'head'],
 } as const satisfies Readonly<Record<string, readonly string[]>>
 
 export type LoopEventType = keyof typeof LOOP_EVENT_TYPES

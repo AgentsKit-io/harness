@@ -1,10 +1,11 @@
-import { mkdtempSync, rmSync } from 'node:fs'
+import { mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
 import {
   clearIssueFailures, isIssuePaused, isStagePaused, listPausedIssues, pauseIssue, readIssueFailures,
-  readStagePause, recordIssueFailure, recordStageRunResult, resumeIssue, resumeStage,
+  readLastConfigHash, readStagePause, recordIssueFailure, recordStageRunResult, resumeIssue, resumeStage,
+  writeLastConfigHash,
 } from '../src/index.js'
 
 const cleanups: string[] = []
@@ -91,5 +92,23 @@ describe('stage-level pause', () => {
     expect(readStagePause(stateDir)).toEqual({})
     resumeStage(stateDir, 'tick') // no-op, must not throw
     expect(isStagePaused(stateDir, 'tick')).toBe(false)
+  })
+})
+
+describe('last-seen config digest', () => {
+  it('reads null before anything was written, then round-trips whatever was written last', () => {
+    const stateDir = tempStateDir()
+    expect(readLastConfigHash(stateDir)).toBeNull()
+    writeLastConfigHash(stateDir, 'abc123')
+    expect(readLastConfigHash(stateDir)).toBe('abc123')
+    writeLastConfigHash(stateDir, 'def456')
+    expect(readLastConfigHash(stateDir)).toBe('def456')
+  })
+
+  it('tolerates a corrupt config-hash.json', () => {
+    const stateDir = tempStateDir()
+    writeLastConfigHash(stateDir, 'abc123')
+    writeFileSync(join(stateDir, 'config-hash.json'), 'not json', 'utf8')
+    expect(readLastConfigHash(stateDir)).toBeNull()
   })
 })

@@ -578,6 +578,7 @@ ${marker}` }); actions.push('secret-file hold commented') } catch (error) { acti
         return fixRound(ctx, record, lease, state, pr, 'ci', `Loop: the project verification failed on PR #${pr.number} before the review was even requested: \`${config.delivery.verify.argv.join(' ')}\`. Fix it, re-run it locally, commit and push. No review is spent on a build that does not pass.`, 'local verify failed before review', actions)
       }
       actions.push('local verify passed before review')
+      event(ctx, { type: 'verify.passed', issue: record.issue, pr: pr.number, head: pr.headSha })
     }
     if (prior && prior.attempts >= 2) actions.push(`retrying incomplete review with ${reviewProvider}/${chosen.model}`)
     if (ctx.dryRun) { actions.push(`would review with ${chosen.provider}/${chosen.model}`); return { issue: record.issue, outcome: 'dry-run', reason: 'review pending', pr: pr.number, head: pr.headSha, actions } }
@@ -636,6 +637,7 @@ ${marker}` }); actions.push('secret-file hold commented') } catch (error) { acti
     const dod = assessDod({ config, contract: stored?.contract ?? null, evidence: { ...evidence, outcomes: [...evidence.outcomes, ...fromVerify] }, prFiles: pr.files })
     if (fromVerify.length) actions.push(`verify.json supplied ${fromVerify.length} outcome proof(s)`)
     if (dod.lines.length) {
+      event(ctx, { type: 'dod.assessed', issue: record.issue, pr: pr.number, head: pr.headSha, complete: dod.complete, proven: dod.lines.filter((line) => line.status === 'proven').length, missing: dod.missing.length, failed: dod.failed.length })
       if (!ctx.dryRun) { try { const marker = `<!-- loop:dod:${pr.headSha}:${dod.complete ? 'complete' : `${dod.missing.length}-${dod.failed.length}`} -->`; if (!(await githubCommentExists(ctx.runner, { repo: config.project.repo, number: pr.number, marker }))) await githubComment(ctx.runner, { repo: config.project.repo, number: pr.number, body: `${renderDodMarkdown(dod)}\n\n${marker}` }) } catch (error) { actions.push(`DoD comment failed: ${message(error)}`) } }
       if (!dod.complete) {
         const why = `definition of done not proven — missing: ${dod.missing.join(', ') || 'none'}; failing: ${dod.failed.join(', ') || 'none'}`

@@ -5,7 +5,7 @@ import { Command } from 'commander'
 import { approveRun, ARTIFACT_SCHEMA_VERSION, assessAcceptance, assessBlock, assessDiscovery, assessImprovementCycle, assessIntegration, assessPilot, assessPreflight, assessProduction, assessWip, assessWorktreeCleanup, authorizeRun, benchmarkRuns, cancelRun, cleanTaskArtifacts, composePullRequest, createDispatchLedger, createDocBridgeContextProvider, createStatusSnapshot, exportEvidenceBundle, FileArtifactStore, loadBenchmarkManifest, loadConfig, loadLatestRun, parseRetro, planFilePreflight, planRun, readArtifactFile, readContextSnapshots, readEvidenceTrustStore, reconcileRun, recordBenchmarkObservation, renderArtifactMarkdown, retryRun, selectRuntime, startRun, validateBlockManifest, validateStatusSnapshot, verifyEvidenceBundle, verifyRun } from './index.js'
 import type { BenchmarkObservationEvidence } from './execution/metrics.js'
 import { fail } from './kernel/errors.js'
-import { appendLoopEvent, buildDebriefReport, buildNotification, buildRetroReport, createProcessRunner, createRichIO, fetchLinearIssue, formatWatchEvent, generateContract, installLoopAutomations, linearLabelRemove, loadLoopConfig, openLoopMemory, promoteLearningsToMemory, runGuidedInstall, runLoopInit, loopStatus, renderDebriefMarkdown, renderObservabilityMarkdown, renderRetroMarkdown, retroLearnings, runRetroStage, precheckDeliver, precheckTick, rankModels, promoteLearnings, writePrdDocument, writeDesignDocument, readLearningsLedger, startPlan, interviewRound, answerRound, approvePlan, architectRound, approveDesign, decomposeRound, createPlannedIssues, designApproved, listPlans, prdGaps, readPlanState, writePlanState, renderPlanMarkdown, readStoredContract, writeLearningsLedger, runDeliver, runLoopDoctor, notifyHuman, runIntakeStage, runMaintainStage, readReleaseBatch, readReleaseState, approveRelease, renderReleaseMarkdown, runReleaseStage, runObservability, runObserveStage, runTick, uninstallLoopAutomations, watchDeliveries, writeStoredContract, isStagePaused, recordStageRunResult, resumeIssue, resumeStage, readIssueFailures, stageEntry, listPausedIssues, type LoopStageName } from './index.js'
+import { appendLoopEvent, buildDebriefReport, buildNotification, buildRetroReport, createProcessRunner, createRichIO, fetchLinearIssue, formatWatchEvent, generateContract, installLoopAutomations, linearLabelRemove, loadLoopConfig, openLoopMemory, promoteLearningsToMemory, runGuidedInstall, runLoopInit, loopStatus, renderDebriefMarkdown, renderObservabilityMarkdown, renderRetroMarkdown, retroLearnings, runRetroStage, precheckDeliver, precheckTick, rankModels, promoteLearnings, writePrdDocument, writeDesignDocument, readLearningsLedger, startPlan, interviewRound, answerRound, approvePlan, architectRound, approveDesign, decomposeRound, createPlannedIssues, designApproved, listPlans, prdGaps, readPlanState, writePlanState, renderPlanMarkdown, readStoredContract, writeLearningsLedger, runDeliver, runLoopDoctor, notifyHuman, runIntakeStage, runMaintainStage, readReleaseBatch, readReleaseState, approveRelease, renderReleaseMarkdown, runReleaseStage, runObservability, runObserveStage, runTick, uninstallLoopAutomations, watchDeliveries, writeStoredContract, isStagePaused, recordStageRunResult, resumeIssue, resumeStage, readIssueFailures, stageEntry, listPausedIssues, readLastConfigHash, writeLastConfigHash, buildIssueTimeline, renderIssueTimelineMarkdown, type LoopStageName } from './index.js'
 import { FileEventStore, inspectEventLogLock, recoverEventLogLock } from './kernel/events.js'
 import { acquireStageLock } from './loop/stage-lock.js'
 
@@ -83,9 +83,19 @@ loop.command('stage <stage>').description('Run one stage (tick | deliver | retro
   if (stage !== 'tick' && stage !== 'deliver' && stage !== 'retro' && stage !== 'observe' && stage !== 'release' && stage !== 'intake' && stage !== 'maintain') fail(`Unknown stage: ${stage}`, 'INVALID_INPUT')
   const runner = createProcessRunner(); const file = loopFile(this)
   const loaded = loadLoopConfig(file)
+  // `loop stage` is the one entrypoint every scheduler (cron, Orca) calls, so it is the one place that can notice
+  // the config changed since the last scheduled run without diffing YAML — the digest is already computed once
+  // per load, this only remembers it — and the one place that can log a stage's wall-clock cost regardless of
+  // what the stage itself did or how it ended.
+  const lastConfigHash = readLastConfigHash(loaded.stateDir)
+  if (lastConfigHash !== null && lastConfigHash !== loaded.configHash) appendLoopEvent(loaded.stateDir, { at: new Date().toISOString(), type: 'config.changed', from: lastConfigHash, to: loaded.configHash })
+  if (lastConfigHash !== loaded.configHash) writeLastConfigHash(loaded.stateDir, loaded.configHash)
+  const startedAt = Date.now()
+  const completed = (status: string, count: number): void => appendLoopEvent(loaded.stateDir, { at: new Date().toISOString(), type: 'stage.completed', stage, durationMs: Date.now() - startedAt, status, count })
   if (stage === 'intake' || stage === 'maintain') {
     // Both create issues and nothing else; like every scheduled stage they exit 1 so Orca records the run.
     const report = stage === 'intake' ? await runIntakeStage({ loaded, runner }) : await runMaintainStage({ loaded, runner })
+    completed(report.status, report.results.length)
     console.log(JSON.stringify(report, null, 2))
     process.exitCode = 1
     return
@@ -93,6 +103,7 @@ loop.command('stage <stage>').description('Run one stage (tick | deliver | retro
   if (stage === 'release') {
     // Promotion and deploy act on the world, so this stage only ever finishes work a human already approved.
     const report = await runReleaseStage({ loaded, runner })
+    completed(report.status, report.batch.issues.length)
     console.log(JSON.stringify(report, null, 2))
     process.exitCode = 1
     return
@@ -100,6 +111,7 @@ loop.command('stage <stage>').description('Run one stage (tick | deliver | retro
   if (stage === 'observe') {
     // The one stage whose exit code is a decision, not a convention: 0 asks Orca to launch the observer agent.
     const report = await runObserveStage({ loaded, runner })
+    completed(report.observability.status, report.observability.anomalies.length)
     console.log(JSON.stringify({ ...report, observability: { status: report.observability.status, anomalies: report.observability.anomalies, metrics: report.observability.metrics } }, null, 2))
     process.exitCode = report.notify ? 0 : 1
     return
@@ -123,10 +135,12 @@ loop.command('stage <stage>').description('Run one stage (tick | deliver | retro
   try {
     const report = stage === 'tick' ? await runTick({ loaded, runner, budgetMs }) : stage === 'deliver' ? await runDeliver({ loaded, runner, budgetMs }) : await runRetroStage({ loaded, runner })
     if (stage !== 'retro') recordStageRunResult(loaded.stateDir, trackedStage, { succeeded: true }, threshold)
+    completed(report.status, 'results' in report ? report.results.length : 'learningsProposed' in report ? report.learningsProposed : 0)
     console.log(JSON.stringify(report, null, 2))
   } catch (error) {
     const reason = error instanceof Error ? error.message : String(error)
     const entry = stage !== 'retro' ? recordStageRunResult(loaded.stateDir, trackedStage, { succeeded: false, reason }, threshold) : null
+    completed('error', 0)
     // A stage that just auto-paused is the loop stopping on its own: it gets an event in the durable log and a
     // call to whichever channel the user declared, because nobody is watching this terminal.
     if (entry?.pausedAt) {
@@ -194,6 +208,12 @@ loop.command('debrief').description('Human-facing explanation of what the loop i
   const report = buildDebriefReport({ configPath: loopFile(this), issue: command.issue, since: command.since })
   if (options().json) return print(report)
   console.log(renderDebriefMarkdown(report))
+})
+loop.command('issue-timeline <identifier>').description('Every logged step for one issue, oldest first: what ran, how long since the previous step, how many tokens, and which steps were friction (fix rounds, cooldowns, circuit breakers). Read-only.').action(function (this: Command, identifier: string) {
+  const loaded = loadLoopConfig(loopFile(this))
+  const report = buildIssueTimeline(loaded.stateDir, identifier)
+  if (options().json) return print(report)
+  console.log(renderIssueTimelineMarkdown(report))
 })
 loop.command('observe').description('Read-only anomaly scan and operating metrics for the loop (queue, workers, delivery, machine, memory, cache, tokens).').option('--since <window>', 'window such as 24h, 7d or an ISO date', '24h').option('--precheck', 'exit 0 when an action is required, 1 when healthy (for schedulers)').action(async function (this: Command, command: { readonly since: string; readonly precheck?: boolean }) {
   const report = await runObservability({ configPath: loopFile(this), runner: createProcessRunner(), since: command.since })

@@ -45,6 +45,8 @@ interface Scenario {
   readonly queueOwnership?: 'person' | 'unassigned'
   /** Give the dispatch record a real worktree holding these `.ak-loop/` files, so the phase-artifact gate has something to read. */
   readonly worktreeFiles?: Readonly<Record<string, string>>
+  /** Exit code the fake `delivery.verify.argv` command (`agentskit-verify-fixture`) returns; 0 by default. */
+  readonly verifyExitCode?: number
 }
 
 const basePr = (over: Record<string, unknown> = {}): Record<string, unknown> => ({ ...(fixture('gh-pr-view') as Record<string, unknown>), headRefName: 'person/eng-10-demo', files: [{ path: 'packages/demo/src/index.ts' }], statusCheckRollup: [{ __typename: 'CheckRun', name: 'ci', conclusion: 'SUCCESS', status: 'COMPLETED' }], mergeable: 'MERGEABLE', mergeStateStatus: 'CLEAN', state: 'OPEN', number: 42, url: 'https://github.com/o/r/pull/42', ...over })
@@ -135,6 +137,7 @@ const setup = (initial: Scenario = {}) => {
       if (argv[0] === 'gh' && argv[1] === 'api' && argv.includes('--method')) return scenario.mergeRefused ? { code: 1, stdout: JSON.stringify({ message: 'Head branch was modified.' }), stderr: '', timedOut: false, durationMs: 1 } : ok({ merged: true, sha: 'deadbeef', message: 'merged' })
       if (argv[0] === 'gh' && argv[1] === 'api') return ok([])
       if (argv[0] === 'gh' && argv[1] === 'pr' && argv[2] === 'comment') return { code: 0, stdout: '', stderr: '', timedOut: false, durationMs: 1 }
+      if (key === 'agentskit-verify-fixture') return { code: scenario.verifyExitCode ?? 0, stdout: 'verify output', stderr: '', timedOut: false, durationMs: 1 }
       return { code: 127, stdout: '', stderr: `no fixture for ${key} ${options?.cwd ?? ''}`, timedOut: false, durationMs: 1 }
     },
   }
@@ -567,6 +570,26 @@ describe('deliver', () => {
     const events = readFileSync(join(env.loaded.stateDir, 'events.ndjson'), 'utf8').split('\n').filter(Boolean).map((line) => JSON.parse(line) as Record<string, unknown>)
     const observed = events.find((event) => event['type'] === 'provider.usage-observed')
     expect(observed).toMatchObject({ issue: 'ENG-10', provider: 'claude', initialRemainingPercent: 90, currentRemainingPercent: 80, deltaPercent: 10 })
+  })
+
+  it('logs verify.passed and merges normally when delivery.verify.argv passes before the review', async () => {
+    const env = setup({ review: { code: 0 } })
+    writeFileSync(join(env.dir, 'loop.config.local.yaml'), 'delivery:\n  verify:\n    argv: [agentskit-verify-fixture]\n')
+    const report = await deliver(env)
+    expect(report.results[0]).toMatchObject({ outcome: 'merged', pr: 42 })
+    const events = readFileSync(join(env.loaded.stateDir, 'events.ndjson'), 'utf8').split('\n').filter(Boolean).map((line) => JSON.parse(line) as Record<string, unknown>)
+    const passed = events.find((event) => event['type'] === 'verify.passed')
+    expect(passed).toMatchObject({ issue: 'ENG-10', pr: 42 })
+  })
+
+  it('logs dod.assessed with how many lines were proven when the definition of done is judged', async () => {
+    const env = setup({ review: { code: 0 } })
+    writeFileSync(join(env.dir, 'loop.config.local.yaml'), 'dod:\n  items:\n    - id: touches-demo\n      description: touches the demo package\n      kind: file-changed\n      paths: ["packages/demo/**"]\n')
+    const report = await deliver(env)
+    expect(report.results[0]).toMatchObject({ outcome: 'merged', pr: 42 })
+    const events = readFileSync(join(env.loaded.stateDir, 'events.ndjson'), 'utf8').split('\n').filter(Boolean).map((line) => JSON.parse(line) as Record<string, unknown>)
+    const assessed = events.find((event) => event['type'] === 'dod.assessed')
+    expect(assessed).toMatchObject({ issue: 'ENG-10', pr: 42, complete: true, proven: 1, missing: 0, failed: 0 })
   })
 
   it('holds a clean, green-checks PR when delivery.merge.requireHumanApproval is set and no one approved it on GitHub', async () => {

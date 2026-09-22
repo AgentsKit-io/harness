@@ -372,6 +372,16 @@ describe('tick', () => {
     expect(piiEvents[0]).toMatchObject({ kinds: ['email'], count: 1 })
   })
 
+  it('logs a contract.generated event with the frozen contract\'s provider/model/digest on a real dispatch', async () => {
+    const env = makeEnv()
+    const report = await runTick({ ...tickOptions(env), maxDispatch: 1 })
+    expect(report.results[0]).toMatchObject({ outcome: 'dispatched' })
+    const loaded = loadLoopConfig(env.configPath)
+    const events = readFileSync(join(loaded.stateDir, 'events.ndjson'), 'utf8').split('\n').filter(Boolean).map((line) => JSON.parse(line) as Record<string, unknown>)
+    const generated = events.find((event) => event['type'] === 'contract.generated')
+    expect(generated).toMatchObject({ issue: report.results[0]?.issue, provider: expect.any(String), model: expect.any(String), digest: expect.any(String) })
+  })
+
   it('fails the dispatch when security.pii.action is block and PII is found', async () => {
     const env = makeEnv({ securityPii: { action: 'block' }, issueDescription: 'Contact ops@example.com about this.' })
     const report = await runTick({ ...tickOptions(env), maxDispatch: 1 })

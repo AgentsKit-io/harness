@@ -462,7 +462,10 @@ export const runTick = async (input: TickInput): Promise<TickReport> => {
             if (!dryRun) appendLoopEvent(loaded.stateDir, { at: now().toISOString(), type: 'provider.call', role: 'orchestrator', issue: detail.identifier, ...event }, bus)
           },
         })
-        if (!dryRun) writeStoredContract(loaded.stateDir, stored)
+        if (!dryRun) {
+          writeStoredContract(loaded.stateDir, stored)
+          appendLoopEvent(loaded.stateDir, { at: now().toISOString(), type: 'contract.generated', issue: detail.identifier, provider: stored.provider, model: stored.model, digest: stored.digest }, bus)
+        }
       } catch (error) {
         const reason = `contract generation failed: ${message(error)}`
         if (!dryRun) { appendLoopEvent(loaded.stateDir, { at: now().toISOString(), type: 'contract.failed', issue: detail.identifier, error: message(error) }, bus); await recordFailureAndMaybePause(detail.identifier, 'contract.failed', reason) }

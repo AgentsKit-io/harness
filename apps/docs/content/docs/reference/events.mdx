@@ -13,7 +13,7 @@ timestamp) and `type` on top of the fields below. A plugin subscribes with
 The vocabulary is enforced by the compiler: `appendLoopEvent` accepts only these names, so an event that is not
 here cannot be emitted — and a name here that nothing emits fails the test suite.
 
-65 loop events.
+70 loop events.
 
 ## `contract.*`
 
@@ -21,6 +21,7 @@ here cannot be emitted — and a name here that nothing emits fails the test sui
 |---|---|---|
 | `contract.escalated` | `issue`, `reasons`, `digest` | A contract was frozen but is not dispatchable; a human was asked to settle it. |
 | `contract.failed` | `issue`, `error` | Contract generation failed on every candidate provider. |
+| `contract.generated` | `issue`, `provider`, `model`, `digest` | A contract was frozen successfully. `provider`/`model` are what actually produced it — the join key for comparing how different LLMs did on the same kind of issue. |
 
 ## `plan.*`
 
@@ -141,6 +142,13 @@ here cannot be emitted — and a name here that nothing emits fails the test sui
 | Event | Carries | What it means |
 |---|---|---|
 | `stage.paused` | `stage`, `reason`, `consecutiveFailures` | A whole stage was paused after consecutive failures. |
+| `stage.completed` | `stage`, `durationMs`, `status`, `count` | One scheduled stage run finished — the entrypoint every scheduler (cron, Orca) calls, so this is the one event that always exists regardless of what the stage itself did. |
+
+## `config.*`
+
+| Event | Carries | What it means |
+|---|---|---|
+| `config.changed` | `from`, `to` | `loop.config.yaml` changed since the last stage run; `from`/`to` are its digest before and after. |
 
 ## `agent.*`
 
@@ -169,6 +177,18 @@ here cannot be emitted — and a name here that nothing emits fails the test sui
 | Event | Carries | What it means |
 |---|---|---|
 | `max-duration.tripped` | `issue`, `reason` | The time circuit breaker stopped a dispatch older than `delivery.maxDispatchMinutes`. |
+
+## `dod.*`
+
+| Event | Carries | What it means |
+|---|---|---|
+| `dod.assessed` | `issue`, `pr`, `head`, `complete`, `proven`, `missing`, `failed` | The definition of done was judged for a PR: how many of its lines were proven, missing, or failing. |
+
+## `verify.*`
+
+| Event | Carries | What it means |
+|---|---|---|
+| `verify.passed` | `issue`, `pr`, `head` | The project's own `delivery.verify.argv` passed before a review was even requested. |
 
 ## Harness run events
 

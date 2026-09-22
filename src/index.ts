@@ -159,6 +159,8 @@ export { buildDebriefReport, renderDebriefMarkdown } from './loop/debrief.js'
 export { readOutcomeProgress } from './loop/progress.js'
 export type { OutcomeProgress, OutcomeProgressStatus } from './loop/progress.js'
 export type { DebriefInput, DebriefIssueRow, DebriefReport } from './loop/debrief.js'
+export { buildIssueTimeline, renderIssueTimelineMarkdown } from './loop/issue-timeline.js'
+export type { IssueTimelineProblem, IssueTimelineReport, TimelineStep } from './loop/issue-timeline.js'
 export { assessObservability, renderObservabilityMarkdown, runObservability } from './loop/observability.js'
 export type { ObservabilityAnomaly, ObservabilityMetrics, ObservabilityReport, ObservabilitySeverity, ObservabilitySnapshot, ObservabilityTerminal } from './loop/observability.js'
 export { assessObserveStage, observerStatePath, readObserverState, renderObserveMarkdown, runObserveStage, staleStageLocks } from './loop/observe-stage.js'
@@ -176,7 +178,8 @@ export type { LearningsLedger, MemoryContextPlan, MemoryPromptSelection } from '
 
 export {
   clearIssueFailures, isIssuePaused, isStagePaused, issueFailurePath, listPausedIssues, pauseIssue, readIssueFailures,
-  readStagePause, recordIssueFailure, recordStageRunResult, resumeIssue, resumeStage, stageEntry, stagePausePath,
+  readLastConfigHash, readStagePause, recordIssueFailure, recordStageRunResult, resumeIssue, resumeStage, stageEntry,
+  stagePausePath, writeLastConfigHash,
 } from './loop/resilience-state.js'
 export type { IssueFailureRecord, IssueFailureState, LoopStageName, StagePauseEntry, StagePauseState } from './loop/resilience-state.js'
 
