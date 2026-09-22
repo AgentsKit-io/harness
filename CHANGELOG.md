@@ -15,6 +15,11 @@ Found by running the loop on a real repository migration with a single, non-defa
   command the agent's own config marked dangerous (`rm -rf`, `git reset --hard`). It now reads Orca's `permission`
   activity (`OrcaWorktree.activity`, from `worktree ps`) or the prompt on screen, reports `held`, emits
   `worker.permission-wait` once per idle window, keeps the lease, and no nudge, handoff or relaunch happens.
+- **The worker brief travels as a file, not as keystrokes.** The brief is written to `.ak-loop/brief.md` in the
+  worktree (already excluded from git) and the terminal receives one short line pointing at it. A real 44 KB brief
+  failed every send with `agent_session_ownership_unknown` — deterministically, even with retries — while random
+  text of the same size and line count went through: the TUI's paste handling reacts to content, and no retry fixes
+  that. Relaunches and handoffs use the same path when the worktree path is known.
 - **An ambiguous prompt send is retried by id, not lost.** When Orca answers a send with a failure that names a
   `--retry-request <id>` (e.g. `agent_session_ownership_unknown`), the adapter re-issues it with that id — up to three
   times, 5 s × attempt apart, because the cause is a race: a TUI reports idle a moment before its session hook tells

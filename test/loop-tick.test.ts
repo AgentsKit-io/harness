@@ -3,7 +3,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
 import {
-  CONTRACT_CLOSE, CONTRACT_OPEN, assessContract, busyIssues, contractIsFresh, createDispatchLedger, deliveryStatePath, isIssuePaused, linearLabelRemove, loadLoopConfig, parseContractOutput, parseLinearIssueDetail, precheckTick, readCliModelsCache, readDispatchRecord, readDeliveryState, readIssueFailures, readStoredContract, recordIssueFailure, renderContractPrompt, renderWorkerBrief, resumeIssue, runTick, untrusted, worktreeNameFor, writeStoredContract,
+  BRIEF_POINTER_PROMPT, CONTRACT_CLOSE, CONTRACT_OPEN, assessContract, busyIssues, contractIsFresh, createDispatchLedger, deliveryStatePath, isIssuePaused, linearLabelRemove, loadLoopConfig, parseContractOutput, parseLinearIssueDetail, precheckTick, readCliModelsCache, readDispatchRecord, readDeliveryState, readIssueFailures, readStoredContract, recordIssueFailure, renderContractPrompt, renderWorkerBrief, resumeIssue, runTick, untrusted, worktreeNameFor, writeStoredContract,
 } from '../src/index.js'
 import type { CommandResult, CommandRunner, StoredContract, TaskContract } from '../src/index.js'
 
@@ -252,8 +252,11 @@ describe('tick', () => {
     expect(termCreate?.[termCreate.indexOf('--command') + 1]).toBe('claude --model sonnet --permission-mode auto')
     expect(termCreate?.[termCreate.indexOf('--worktree') + 1]).toMatch(/^id:repo-1::/)
     const send = env.runner.calls.find((argv) => argv[1] === 'terminal' && argv[2] === 'send')
-    expect(send?.[send.indexOf('--text') + 1]).toContain('Loop-Contract:')
-    expect(send?.[send.indexOf('--text') + 1]).toContain(`git push -u origin ${result?.branch}`)
+    // The brief travels as a file in the worktree; the terminal only gets the pointer to it.
+    expect(send?.[send.indexOf('--text') + 1]).toBe(BRIEF_POINTER_PROMPT)
+    const handedOver = readFileSync(join(env.dir, 'w', '.ak-loop', 'brief.md'), 'utf8')
+    expect(handedOver).toContain('Loop-Contract:')
+    expect(handedOver).toContain(`git push -u origin ${result?.branch}`)
     expect(send).toContain('--enter')
     expect(env.runner.calls.findIndex((argv) => argv[1] === 'terminal' && argv[2] === 'wait')).toBeLessThan(env.runner.calls.findIndex((argv) => argv[1] === 'terminal' && argv[2] === 'send'))
 
@@ -355,7 +358,8 @@ describe('tick', () => {
     expect(briefText).toContain('# Conventions')
     expect(briefText).toContain('Use named exports only.')
     const send = env.runner.calls.find((argv) => argv[1] === 'terminal' && argv[2] === 'send')
-    expect(send?.[send.indexOf('--text') + 1]).toContain('Use named exports only.')
+    expect(send?.[send.indexOf('--text') + 1]).toBe(BRIEF_POINTER_PROMPT)
+    expect(readFileSync(join(env.dir, 'w', '.ak-loop', 'brief.md'), 'utf8')).toContain('Use named exports only.')
   })
 
   it('redacts PII in the orchestrator prompt and records a security.pii-detected event during a real dispatch', async () => {
