@@ -18,6 +18,7 @@ import { assessContract, contractIsFresh, extractResetsAt, generateContract, rea
 import { activeCooldowns, readCooldowns } from './cooldown.js'
 import { countRunningWorkers, providerSpecs } from './doctor.js'
 import { ensureBaseView, type BaseView } from './base-view.js'
+import { excludeArtifactsFromGit } from './artifacts.js'
 import { openLoopMemory, planMemoryContext } from './memory.js'
 import { clearIssueFailures, isIssuePaused, pauseIssue, readIssueFailures, recordIssueFailure } from './resilience-state.js'
 import { MODEL_ROLES, type ModelRole } from '../kernel/model-policy.js'
@@ -635,6 +636,7 @@ export const runTick = async (input: TickInput): Promise<TickReport> => {
       // Real-time enforcement, before the worker's own setup command (let alone the worker itself) ever runs —
       // see ADR-0038 for which providers this covers and why.
       const workerGuard = installWorkerGuard({ worktreePath: created.path, provider: worker.provider, config })
+      try { if (!(await excludeArtifactsFromGit(input.runner, created.path))) notes.push(`${detail.identifier}: could not exclude .ak-loop/ from git in ${created.path}`) } catch (error) { notes.push(`${detail.identifier}: excluding .ak-loop/ failed: ${message(error)}`) }
       let setupResult: { readonly command: readonly string[]; readonly exitCode: number | null; readonly durationMs: number; readonly timedOut: boolean } | null = null
       if (config.project.setup.command?.length) {
         // Floored at the window the guard above already reserved, not at 1s: if less than that is left, the
