@@ -424,6 +424,22 @@ describe('deliver', () => {
     expect(plainBody).not.toContain("Worker's last terminal output")
   })
 
+  it('holds a worker stopped at a permission prompt — never types into it, never hands it off', async () => {
+    // The nudge would land in a dialog whose default is "Allow once": typing into it approves the dangerous command.
+    const screen = '△ Permission required\n  # Shell command\n  $ git reset --hard origin/main\n Allow once   Allow always   Reject'
+    const env = setup({ pr: null, dispatchedAt: '2026-09-11T09:00:00.000Z', terminalScreen: screen, exhaustClaude: true })
+    const report = await deliver(env, { assumeIdle: true, now: () => new Date('2026-09-11T13:00:00.000Z') })
+    expect(report.results[0]).toMatchObject({ outcome: 'held', reason: expect.stringContaining('permission prompt') })
+    expect(env.runner.calls.some((argv) => argv[1] === 'terminal' && argv[2] === 'send')).toBe(false)
+    expect(env.runner.calls.some((argv) => argv[1] === 'terminal' && argv[2] === 'create')).toBe(false)
+    expect(env.ledger.active()).toHaveLength(1)
+    const events = readFileSync(join(env.loaded.stateDir, 'events.ndjson'), 'utf8').split('\n').filter(Boolean).map((line) => JSON.parse(line) as Record<string, unknown>)
+    expect(events.filter((event) => event['type'] === 'worker.permission-wait')).toHaveLength(1)
+    await deliver(env, { assumeIdle: true, now: () => new Date('2026-09-11T13:05:00.000Z') })
+    const again = readFileSync(join(env.loaded.stateDir, 'events.ndjson'), 'utf8').split('\n').filter((line) => line.includes('worker.permission-wait'))
+    expect(again).toHaveLength(1)
+  })
+
   it('reactivates a connected terminal with no agent output before nudging', async () => {
     const env = setup({ pr: null, terminals: [{ handle: 'term_w', connected: true, orphaned: false, lastOutputAt: null, preview: '', worktreeId: 'repo-1::/w/eng-10-demo' }] })
     const report = await deliver(env, { assumeIdle: true })

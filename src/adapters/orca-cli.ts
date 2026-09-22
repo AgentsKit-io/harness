@@ -25,6 +25,11 @@ export interface OrcaWorktree {
   readonly lastActivityAt: number | null
   readonly linkedLinearIssue: string | null
   readonly comment: string
+  /**
+   * Orca's live activity for the worktree (`worktree ps`): `working`, `active`, `inactive`, … and `permission` when
+   * an agent in it is stopped at a tool-permission prompt. Only `worktree ps` reports it; `unknown` otherwise.
+   */
+  readonly activity: string
 }
 
 export type OrcaAgentHookState = 'installed' | 'not_installed' | 'unknown'
@@ -80,6 +85,7 @@ export const parseOrcaWorktrees = (result: unknown): readonly OrcaWorktree[] => 
     lastActivityAt: num(item['lastActivityAt']),
     linkedLinearIssue: linkedLinear(item['linkedLinearIssue']),
     comment: str(item['comment']),
+    activity: str(item['status'], 'unknown'),
   })).filter((item) => item.id)
 }
 

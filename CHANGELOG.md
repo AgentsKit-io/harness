@@ -4,6 +4,11 @@
 
 Found by running the loop on a real migration (agentskit-os #6238) with opencode as the only provider.
 
+- **A worker at a tool-permission prompt is held for a person, never typed into.** `deliver` used to see it as
+  idle and send a check-in: text plus Enter into a dialog whose default is "Allow once", approving exactly the
+  command the agent's own config marked dangerous (`rm -rf`, `git reset --hard`). It now reads Orca's `permission`
+  activity (`OrcaWorktree.activity`, from `worktree ps`) or the prompt on screen, reports `held`, emits
+  `worker.permission-wait` once per idle window, keeps the lease, and no nudge, handoff or relaunch happens.
 - **Gate lists accumulate across config layers.** `delivery.selfEditPaths`, `delivery.secretFilePatterns` and
   `delivery.requiredChecks` are no longer replaced by a later layer; an entry leaves only when named as `"!entry"`.
   A machine overlay written to free one path had silently dropped the `packages/**` freeze added to the project

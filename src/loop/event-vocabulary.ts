@@ -32,6 +32,8 @@ export const LOOP_EVENT_TYPES = {
    * pass on the same issue. Two emissions, one name: `kind` is present on the first, `reason` on the second.
    */
   'worker.nudged': ['issue', 'kind', 'reason', 'worktreeId'],
+  /** The worker stopped at a tool-permission prompt: held for a person, never typed into. Once per idle window. */
+  'worker.permission-wait': ['issue', 'terminal', 'reason'],
   /** A stale terminal was relaunched for a worker that was still supposed to be working. */
   'worker.reactivated': ['issue', 'terminal', 'previousTerminal'],
   /** A finished issue came back: a new head on a PR the loop had already closed out. */
