@@ -101,6 +101,12 @@ export const LoopConfigSchema = z.object({
     stateDir: nonEmpty.default('.ak-loop'),
     /** Selects the `loop.config.team.<key>.yaml` layer. `$AK_LOOP_TEAM` overrides it; a declared team whose file is missing fails loudly. */
     team: nonEmpty.optional(),
+    /**
+     * The tree the orchestrator's headless calls (contract, plan interview, architect, votes, decompose) read.
+     * `base` (default): a harness-owned detached worktree of `origin/<baseBranch>`, fetched before each use.
+     * `root`: `project.root` as it is — whatever branch and age the operator's checkout has.
+     */
+    orchestratorView: z.enum(['base', 'root']).default('base'),
     setup: z.object({
       /** Argv (no shell — one element per arg, e.g. `[pnpm, install, --frozen-lockfile]`) run once in a freshly created worktree before the worker terminal opens. Unset/empty = skip. */
       command: z.array(nonEmpty).min(1).optional(),

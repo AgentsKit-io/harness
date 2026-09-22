@@ -16,6 +16,7 @@ import { loadLoopConfig, providerIdentity, type EffortLevel, type LoadedLoopConf
 import { assessContract, contractIsFresh, extractResetsAt, generateContract, readStoredContract, resolveDocContext, writeStoredContract, type StoredContract } from './contract.js'
 import { activeCooldowns, readCooldowns } from './cooldown.js'
 import { countRunningWorkers, providerSpecs } from './doctor.js'
+import { ensureBaseView, type BaseView } from './base-view.js'
 import { openLoopMemory, planMemoryContext } from './memory.js'
 import { clearIssueFailures, isIssuePaused, pauseIssue, readIssueFailures, recordIssueFailure } from './resilience-state.js'
 import { MODEL_ROLES, type ModelRole } from '../kernel/model-policy.js'
@@ -314,6 +315,10 @@ export const runTick = async (input: TickInput): Promise<TickReport> => {
   const dryRun = input.dryRun === true
   const ledger = createDispatchLedger(loaded.stateDir)
   const notes: string[] = []
+  // The orchestrator reads the base branch as fetched now, not the operator's checkout — resolved once per tick,
+  // and only when a model is actually about to be asked something.
+  let baseView: Promise<BaseView> | null = null
+  const readRoot = async (): Promise<string> => (await (baseView ??= ensureBaseView(input.runner, loaded))).path
   const results: TickCandidateResult[] = []
   const bus = createLoopEventBus()
   if (config.plugins.modules.length) {
@@ -442,7 +447,7 @@ export const runTick = async (input: TickInput): Promise<TickReport> => {
         stored = await generateContract({
           runner: input.runner,
           config,
-          root: loaded.root,
+          root: await readRoot(),
           issue: detail,
           candidates: issueOrchestrators,
           orchestrator,
@@ -497,7 +502,7 @@ export const runTick = async (input: TickInput): Promise<TickReport> => {
       if (!approvedPlan || approvedPlan.contractDigest !== stored.digest || approvedPlan.status !== 'approved') {
         try {
           approvedPlan = await runPlanWithVotes({
-            runner: input.runner, config, root: loaded.root, issue: detail.identifier,
+            runner: input.runner, config, root: await readRoot(), issue: detail.identifier,
             contract: stored.contract, contractDigest: stored.digest,
             planner: applyRoleSettings(orchestratorCandidates, plannerSettings),
             voters: applyRoleSettings(rankModels(config, 'reviewer', state.providers, state.extrasByRole['reviewer'] ?? []), voteSettings),

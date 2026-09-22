@@ -134,6 +134,8 @@ export type { ContractAssessment, GenerateContractInput, ProviderFailure, Stored
 export { renderHandoffBrief, renderWorkerBrief } from './loop/brief.js'
 export type { HandoffBriefInput } from './loop/brief.js'
 export type { WorkerBriefInput } from './loop/brief.js'
+export { baseViewPath, ensureBaseView } from './loop/base-view.js'
+export type { BaseView } from './loop/base-view.js'
 export { appendLoopEvent, branchFor, briefPath, busyIssues, dispatchRecordPath, gatherLoopState, launchWorkerTerminal, precheckTick, readDispatchRecord, writeDispatchRecord, runTick, worktreeNameFor } from './loop/tick.js'
 export type { DispatchRecordFile, LoopState, TickCandidateResult, TickInput, TickOutcome, TickReport } from './loop/tick.js'
 export { REVIEW_SEVERITIES, atLeast, buildReviewArgv, parseReviewResult, renderFindingsForWorker, runCodeReview, severityRank } from './adapters/code-review.js'

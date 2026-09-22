@@ -4,6 +4,12 @@
 
 Found by running the loop on a real repository migration with a single, non-default provider.
 
+- **The orchestrator reads the base branch, not the operator's checkout.** Contract generation, the plan
+  interview, the architect, the votes and decompose ran their model in `project.root` — an operator's checkout
+  can sit on another branch, hundreds of commits behind, and an architect run from one designed work that had
+  already been merged. They now run in a harness-owned detached worktree of `origin/<baseBranch>` under the state
+  directory, fetched and reset before use; a failed fetch fails the stage instead of falling back to the stale
+  tree. `project.orchestratorView: root` keeps the old behaviour.
 - **A worker at a tool-permission prompt is held for a person, never typed into.** `deliver` used to see it as
   idle and send a check-in: text plus Enter into a dialog whose default is "Allow once", approving exactly the
   command the agent's own config marked dangerous (`rm -rf`, `git reset --hard`). It now reads Orca's `permission`

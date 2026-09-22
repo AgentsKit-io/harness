@@ -42,6 +42,7 @@ const setup = (options: { readonly ghAuth?: boolean; readonly harnessOnPath?: bo
       if (key.startsWith('orca automations create')) { const created = { id: `auto-${automations.length + 1}`, name: argv[argv.indexOf('--name') + 1], enabled: true, trigger: argv[argv.indexOf('--trigger') + 1], provider: argv[argv.indexOf('--provider') + 1] }; automations.push(created); return okResult({ automation: created }) }
       if (key.startsWith('orca automations runs')) return okResult({ runs: [] })
       if (key.startsWith('orca linear team members')) return okResult({ members: [{ id: 'u1', displayName: 'person' }, { id: 'u2', displayName: 'teammate' }] })
+      if (argv[0] === 'git') return { code: 0, stdout: argv[1] === 'rev-parse' ? 'basesha\n' : '', stderr: '', timedOut: false, durationMs: 1 }
       return { code: 127, stdout: '', stderr: `no fixture for ${key}`, timedOut: false, durationMs: 1 }
     },
   }

@@ -106,3 +106,4 @@ export type { MetricReading, TuningDecision, TuningKnob, TuningMetric, TuningRec
 export type { EffectiveFlowSettings, FlowIssue, FlowProfile, FlowSource, ResolvedFlow, RoleSettings } from './flows.js'
 export type { Notification, NotifyInput, NotifyOutcome } from './notify.js'
 export type { LoopEventBus, LoopEventListener, LoopEventPayload, LoopHookListener, LoopHookName, LoopHookPayload, LoopHookResult, LoopPluginModule } from './event-bus.js'
+export { baseViewPath, ensureBaseView, type BaseView } from './base-view.js'
