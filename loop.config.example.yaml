@@ -71,6 +71,7 @@ linear:
     owners: [my-linear-display-name] # ordered display names; the first entry is the initial owner
     advanceWhenEmpty: true           # never switch while an implementation lease remains
   states: [Todo, Ready]              # dispatchable states; anything already started is left alone
+  entryState: Backlog                # where `loop plan decompose --create` files new issues; must not be in states
   excludeLabels: [blocked, needs-info]
   requireLabels: []                  # ALL of these (AND); empty = no constraint
   anyLabels: []                      # at least ONE of these (OR) — how a machine declares the slices it

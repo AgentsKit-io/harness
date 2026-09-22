@@ -1,5 +1,22 @@
 # Changelog
 
+## [Unreleased]
+
+Found by running the loop on a real migration (agentskit-os #6238) with opencode as the only provider.
+
+- **Gate lists accumulate across config layers.** `delivery.selfEditPaths`, `delivery.secretFilePatterns` and
+  `delivery.requiredChecks` are no longer replaced by a later layer; an entry leaves only when named as `"!entry"`.
+  A machine overlay written to free one path had silently dropped the `packages/**` freeze added to the project
+  five days later.
+- **`loop plan decompose --create` files issues outside the queue and where the queue will find them.** New
+  `linear.entryState` (default `Backlog`) must not be one of `linear.states` — the config is refused otherwise;
+  before, issues were created in `states[0]`, which *is* the queue, so the human gate did not exist. The issues now
+  carry the queue's `requireLabels`/`anyLabels`, land in the project the queue drains (or `--project`), and hang
+  under `--parent <epic>`.
+- **A worker brief is never typed into a pane that is not `tui-idle`.** The launcher waits a second, longer window;
+  if the TUI still is not ready the dispatch fails (and the half-created worktree is removed) instead of losing the
+  prompt.
+
 ## [0.15.0] - 2026-09-20
 
 The loop becomes a cycle. The twelve steps of [docs/ROADMAP-SDLC.md](docs/ROADMAP-SDLC.md) close, the phases of one

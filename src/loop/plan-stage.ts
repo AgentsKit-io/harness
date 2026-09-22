@@ -330,15 +330,36 @@ export const decomposeRound = async (deps: PlanStageDeps, state: PlanStageState)
 
 const priorityFor = (issue: PlannedIssue): string => issue.priority
 
+/** Where the planned issues land, beyond the team: the epic they break down, and the project the queue drains. */
+export interface PlannedIssueTarget {
+  readonly parent?: string
+  readonly project?: string
+}
+
 /**
- * Create the decomposed issues in the tracker, in the queue's **entry** state — never in a dispatchable one.
- * `Todo → Ready` stays a human gesture; that is the single gate into the queue.
+ * The labels an issue needs so that, once a human moves it into the queue, the queue actually sees it: every
+ * `requireLabels`, one of `anyLabels` (the first) when none is already there, and the issue's own layer.
  */
-export const createPlannedIssues = async (deps: PlanStageDeps, state: PlanStageState): Promise<PlanStageState> => {
+export const plannedIssueLabels = (config: LoopConfig, layer?: string): readonly string[] => {
+  const labels = [...config.linear.requireLabels, ...(layer ? [layer] : [])]
+  if (config.linear.anyLabels.length && !labels.some((label) => config.linear.anyLabels.includes(label))) labels.push(config.linear.anyLabels[0] as string)
+  return [...new Set(labels)]
+}
+
+/**
+ * Create the decomposed issues in the tracker, in `linear.entryState` — never in one of `linear.states`, which ARE
+ * the queue. Moving them into the queue stays a human gesture; that is the single gate.
+ *
+ * They are created where the queue will look for them — the project it drains (when it drains exactly one, or
+ * the one given), carrying its labels — and under the epic they came from. An issue the planner creates and the
+ * queue cannot see is work that silently never happens.
+ */
+export const createPlannedIssues = async (deps: PlanStageDeps, state: PlanStageState, target: PlannedIssueTarget = {}): Promise<PlanStageState> => {
   const config = deps.loaded.config
   const now = (deps.now ?? (() => new Date()))()
   const write = { bin: config.orca.bin, workspaceId: config.linear.workspaceId, orca: { timeoutMs: config.orca.timeoutMs } }
-  const entryState = config.linear.states[0] ?? 'Todo'
+  const entryState = config.linear.entryState
+  const project = target.project ?? (config.linear.projects.length === 1 ? config.linear.projects[0] : undefined)
   const created: (PlannedIssue & { identifier?: string; url?: string })[] = []
   for (const issue of state.issues) {
     if (issue.identifier) { created.push(issue); continue }
@@ -348,7 +369,8 @@ export const createPlannedIssues = async (deps: PlanStageDeps, state: PlanStageS
     const description = `${issue.description}\n\n**Acceptance**\n${issue.acceptance.map((item) => `- [ ] ${item}`).join('\n')}\n\n**Design — ${issue.designRef}**\n\n${excerpt || '_not found in the approved design_'}\n\n<!-- loop:plan:${state.id} -->`
     const result = await linearSaveIssue(deps.runner, {
       team: config.linear.teamKey, title: issue.title, description, state: entryState,
-      priority: priorityFor(issue), ...(issue.layer ? { labels: [issue.layer] } : {}),
+      priority: priorityFor(issue), labels: plannedIssueLabels(config, issue.layer),
+      ...(project ? { project } : {}), ...(target.parent ? { parentId: target.parent } : {}),
       dedupeKey: `plan:${state.id}:${issue.title}`,
     }, write)
     created.push({ ...issue, ...(result.identifier ? { identifier: result.identifier } : {}), ...(result.url ? { url: result.url } : {}) })

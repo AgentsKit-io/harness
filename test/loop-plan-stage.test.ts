@@ -5,7 +5,7 @@ import { afterEach, describe, expect, it } from 'vitest'
 import {
   DESIGN_CLOSE, DESIGN_OPEN, ISSUES_CLOSE, ISSUES_OPEN, QUESTION_CLOSE, QUESTION_OPEN,
   answerRound, approveDesign, approvePlan, architectRound, createPlannedIssues, decomposeRound, designApproved,
-  interviewRound, listPlans, loadLoopConfig, parseIssuesOutput, parseQuestionOutput, prdGaps, readPlanState,
+  interviewRound, listPlans, loadLoopConfig, parseIssuesOutput, parseLoopConfigText, parseQuestionOutput, prdGaps, readPlanState,
   renderInterviewPrompt, renderPlanMarkdown, startPlan, writePlanState,
 } from '../src/index.js'
 import type { CommandResult, CommandRunner, LoadedLoopConfig, PlanStageState, Prd, RankedModel } from '../src/index.js'
@@ -144,13 +144,34 @@ describe('decomposition', () => {
     expect(created.phase).toBe('done')
     expect(created.issues[0]?.identifier).toBe('ENG-42')
     const save = runner.calls.find((argv) => argv.includes('save-issue')) ?? []
-    // `Todo` is the first configured state: created there, never in a dispatchable one.
-    expect(save).toContain('--state')
-    expect(save[save.indexOf('--state') + 1]).toBe('Todo')
+    // Created in `linear.entryState`, OUTSIDE `linear.states` — `Todo` is the queue, and nobody approved these yet.
+    expect(save[save.indexOf('--state') + 1]).toBe('Backlog')
+    expect(loaded.config.linear.states).not.toContain('Backlog')
     expect(save[save.indexOf('--label') + 1]).toBe('layer:L1')
     // The design travels as content, not as a pointer: the module's own responsibility is in the issue body.
     expect(save.join(' ')).toContain('**Design — api**')
     expect(save.join(' ')).toContain('**api** — r')
+  })
+})
+
+describe('planned issues land where the queue looks', () => {
+  it('files them under the epic, in the project the queue drains, with the labels the queue filters on', async () => {
+    const loaded = setup()
+    const config = { ...loaded.config, linear: { ...loaded.config.linear, projects: ['Platform Decoupling'], requireLabels: ['pilot'], anyLabels: ['layer:L9', 'layer:L1'] } }
+    const state: PlanStageState = { ...startPlan('x', NOW), phase: 'decompose', prd: FULL_PRD, design: { summary: 's', modules: [{ name: 'api', responsibility: 'r', boundary: '' }], contracts: [], decisions: [], sequence: [], risks: [] } }
+    const runner = scripted([issuesOut(), JSON.stringify({ ok: true, result: { issue: { identifier: 'ENG-42' } } })])
+    const decomposed = await decomposeRound(deps({ ...loaded, config }, runner), state)
+    await createPlannedIssues(deps({ ...loaded, config }, runner), decomposed, { parent: 'ENG-1' })
+    const save = runner.calls.find((argv) => argv.includes('save-issue')) ?? []
+    expect(save[save.indexOf('--project') + 1]).toBe('Platform Decoupling')
+    expect(save[save.indexOf('--parent-id') + 1]).toBe('ENG-1')
+    const labels = save.flatMap((arg, index) => save[index - 1] === '--label' ? [arg] : [])
+    // `layer:L1` already satisfies `anyLabels`, so no second one is invented.
+    expect(labels).toEqual(['pilot', 'layer:L1'])
+  })
+
+  it('refuses a config whose entry state is already in the queue', () => {
+    expect(() => parseLoopConfigText(readFileSync(join(process.cwd(), 'loop.config.example.yaml'), 'utf8').replace('person: my-linear-display-name', 'person: person').replace('  entryState: Backlog ', '  entryState: Todo '))).toThrow(/entryState "Todo" is one of linear.states/)
   })
 })
 
