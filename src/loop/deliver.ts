@@ -499,13 +499,17 @@ const handleNoPullRequest = async (ctx: Context, record: DispatchRecordFile, lea
   return { issue: record.issue, outcome: ctx.dryRun ? 'dry-run' : 'stuck', reason: 'idle after nudge without PR', actions }
 }
 
-const complete = async (ctx: Context, record: DispatchRecordFile, lease: DispatchLease | undefined, state: DeliveryState, pr: PullRequestSnapshot, mergeSha: string | null, actions: string[]): Promise<DeliverResult> => {
+const complete = async (ctx: Context, record: DispatchRecordFile, lease: DispatchLease | undefined, state: DeliveryState, pr: PullRequestSnapshot, mergeSha: string | null, actions: string[], mergedBy: 'loop' | 'outside' = 'loop'): Promise<DeliverResult> => {
   if (!ctx.dryRun) {
     try {
       await ctx.tracker.attach({ issue: record.issue, url: pr.url, title: `PR #${pr.number}`, dedupeKey: `attach:${record.issue}:${pr.number}` })
-      await ctx.tracker.comment({ issue: record.issue, body: `**Loop: merged** — ${pr.url}${mergeSha ? ` as \`${mergeSha.slice(0, 12)}\`` : ''} after a clean review and green checks. Worker: \`${record.provider}/${record.model}\`.\n\n<!-- loop:merged:${pr.number} -->`, dedupeKey: `merged:${record.issue}:${pr.number}` })
+      // Say who merged: "after a clean review and green checks" is only true when the loop made the call.
+      const how = mergedBy === 'loop' ? 'after a clean review and green checks' : 'by a person, outside the loop — the loop\'s own review and checks did not decide it'
+      await ctx.tracker.comment({ issue: record.issue, body: `**Loop: merged** — ${pr.url}${mergeSha ? ` as \`${mergeSha.slice(0, 12)}\`` : ''} ${how}. Worker: \`${record.provider}/${record.model}\`.\n\n<!-- loop:merged:${pr.number} -->`, dedupeKey: `merged:${record.issue}:${pr.number}` })
       await ctx.tracker.transitions.transition({ tracker: ctx.tracker.id, issue: record.issue, to: ctx.config.linear.doneState, reason: `PR #${pr.number} merged` })
       actions.push(`Linear: attached PR, commented, → ${ctx.config.linear.doneState}`)
+      // A merged issue is no longer blocked or waiting for information — clear the flags the loop itself set on the way.
+      try { await ctx.tracker.removeLabels(record.issue, [ctx.config.linear.blockedLabel, ctx.config.linear.needsInfoLabel]) } catch (error) { actions.push(`clearing blocked/needs-info labels failed: ${message(error)}`) }
     } catch (error) { actions.push(`Linear completion failed: ${message(error)}`) }
     try { await orcaWorktreeSet(ctx.runner, { worktree: `id:${record.worktreeId}`, comment: `LOOP MERGED: PR #${pr.number}` }, orcaOptions(ctx.config)) } catch (error) {
       if (isMissingOrcaWorktree(error)) actions.push('Orca worktree already absent; comment skipped')
@@ -970,7 +974,7 @@ export const runDeliver = async (input: DeliverInput): Promise<DeliverReport> =>
       }
       const closed = await githubPullRequestsForBranch(input.runner, { repo: config.project.repo, head: record.branch, state: 'all' })
       const merged = closed.find((item) => item.state === 'MERGED')
-      if (merged) { const actions: string[] = ['PR merged outside the loop']; results.push(await complete(ctx, record, lease, state, merged, null, actions)); continue }
+      if (merged) { const actions: string[] = ['PR merged outside the loop']; results.push(await complete(ctx, record, lease, state, merged, null, actions, 'outside')); continue }
       const abandoned = closed.find((item) => item.state === 'CLOSED')
       if (abandoned) {
         const actions: string[] = []
