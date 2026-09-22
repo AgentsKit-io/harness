@@ -76,11 +76,18 @@ handoff, since a handoff changes which format — or none — applies):
   a `codex` hook today would look like enforcement and might not be — the PR-time gate
   stays `codex`'s only real gate until `#27833` is confirmed fixed on a pinned version.
 
-**Version pinning.** The hook file records an absolute path
-(`resolveOwnCliPath`, `realpathSync(process.argv[1])`), not `ak-harness` resolved
-fresh off `PATH` at the moment the hook fires. A worker dispatched before an upgrade
-keeps calling the exact build that was running at dispatch time — consistent with
-everything else frozen at dispatch (`contractDigest`, `briefDigest`, labels).
+**Which build the hook calls.** The hook file records an absolute, shell-quoted path
+(`realpathSync(process.argv[1])`), not `ak-harness` resolved fresh off `PATH` at the
+moment the hook fires — so a `PATH` that changes, or a second harness installed
+elsewhere, cannot redirect it. What this does **not** buy is a true version pin
+across an upgrade, and the earlier draft of this ADR overstated it: under `npm -g`
+that absolute path is reused by the next version, so an in-flight worker silently
+starts calling the newer build; under `pnpm -g` it points into the version-keyed
+store, which an upgrade removes, leaving the hook command a missing file. The second
+case matters, because every CLI here treats a non-`2` exit as *allow*: a dangling
+hook fails open. Upgrading the harness while workers are in flight is therefore a
+real (if narrow) window in which those workers fall back to the PR-time gate alone —
+drain the loop before upgrading if that matters to you.
 `delivery.workerGuard.enabled` (default `true`) is the one escape hatch, for a
 project that already has its own conflicting hooks or does not want this yet.
 
@@ -96,7 +103,13 @@ What this ADR does not claim: `worker-guard` only ever sees `Write`/`Edit`/
 `MultiEdit`/`NotebookEdit` calls — a `Bash` command that writes the same protected
 path (`echo secret > .env`) is not caught here, for the same reason it is not caught
 by the PR-time gate this backs up (that gate only ever sees the PR's changed-file
-list, never how a file got that way). And the non-`-p` interactive TUI session Orca
+list, never how a file got that way). `workerGuardInstalled: true` on a dispatch
+record therefore means "the hook file was written", not "every write was checked" —
+it is provenance, not proof.
+
+For `opencode` specifically, the deny rules land in `opencode.json` at the worktree
+root, which is an ordinary untracked file in the project's own repository: a worker
+that runs `git add -A` can commit it. Nothing here prevents that today. And the non-`-p` interactive TUI session Orca
 actually drives (as opposed to the `-p` session this ADR's live test used) was not
 verified end-to-end for the first-run trust dialog specifically — that risk, if it is
 one, predates this ADR and is independent of it; a project that already dispatches

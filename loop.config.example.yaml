@@ -375,7 +375,8 @@ resilience:
   pausedLabel: loop:paused           # applied to the issue in Linear; remove it (or `loop resume <id>`) to retry
   stagePauseAfterRuns: 3             # pause `loop stage tick|deliver` itself after this many consecutive thrown runs
   # maxUsageDeltaPercent: 40          # stop a dispatch if its provider's remaining usage drops by this many
-                                      # points while the issue is in flight; unset = disabled (cost circuit breaker)
+                                      # points while the issue is in flight (cost circuit breaker). Defaults to 40
+                                      # even when unset — raise it to 100 to make it effectively never trip.
 
 brief:
   skills: []                         # e.g. [AGENTS.md, CLAUDE.md, docs/for-agents/INDEX.md] — paths relative to project.root,

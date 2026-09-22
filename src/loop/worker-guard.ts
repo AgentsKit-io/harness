@@ -1,6 +1,7 @@
 import { existsSync, mkdirSync, readFileSync, realpathSync, writeFileSync } from 'node:fs'
 import { dirname, isAbsolute, join, relative } from 'node:path'
 import { touchesProtectedPaths } from '../adapters/github-cli.js'
+import { shellQuote } from './automations.js'
 import type { LoopConfig } from './config.js'
 
 /**
@@ -29,10 +30,15 @@ export const parsePreToolUseEvent = (raw: string): PreToolUseEvent | null => {
   } catch { return null }
 }
 
-/** The file a guarded tool call is about to touch, or `null` for a tool this check has no opinion on. */
+/**
+ * The file a guarded tool call is about to touch, or `null` for a tool this check has no opinion on.
+ *
+ * `NotebookEdit` names its target `notebook_path`, not `file_path`: reading only the latter made the notebook
+ * matcher enforce nothing at all, which is worse than not matching it, because the hook still reported success.
+ */
 export const extractFilePath = (event: PreToolUseEvent): string | null => {
   if (!event.tool_name || !GUARDED_TOOLS.has(event.tool_name)) return null
-  const path = event.tool_input?.['file_path']
+  const path = event.tool_input?.['file_path'] ?? event.tool_input?.['notebook_path']
   return typeof path === 'string' && path.trim() ? path : null
 }
 
@@ -79,12 +85,18 @@ export const runWorkerGuard = (stdin: string, config: LoopConfig, fallbackCwd: s
 // other provider are left alone: the PR-time gate is their only enforcement for now.
 // ---------------------------------------------------------------------------------------------------------------
 
-const readJsonObject = (path: string): Record<string, unknown> => {
+/**
+ * The existing config to merge into, or `null` when there is a file here that cannot be parsed. `null` means
+ * "leave it alone": rewriting a file whose contents we could not read would silently destroy a project's own
+ * `opencode.json` over a trailing comma. The dispatch then runs without this guard and says so — the PR-time
+ * gate is still there, and a guard that ate the project's config would be a worse trade than one that is absent.
+ */
+const readJsonObject = (path: string): Record<string, unknown> | null => {
   if (!existsSync(path)) return {}
   try {
     const parsed = JSON.parse(readFileSync(path, 'utf8')) as unknown
-    return typeof parsed === 'object' && parsed !== null && !Array.isArray(parsed) ? parsed as Record<string, unknown> : {}
-  } catch { return {} }
+    return typeof parsed === 'object' && parsed !== null && !Array.isArray(parsed) ? parsed as Record<string, unknown> : null
+  } catch { return null }
 }
 
 const writeJsonObject = (path: string, value: Record<string, unknown>): void => {
@@ -119,28 +131,30 @@ const mergeOpencodeDenyRules = (existing: Record<string, unknown>, patterns: rea
  * package manager (pnpm's content-addressable store, in particular) pins this to the exact version that was
  * running at dispatch time, not "whatever `ak-harness` resolves to right now".
  */
-export const resolveOwnCliPath = (): string => realpathSync(process.argv[1] ?? 'ak-harness')
+const resolveOwnCliPath = (): string => realpathSync(process.argv[1] ?? 'ak-harness')
 
 export type WorkerGuardInstallOutcome = { readonly installed: false } | { readonly installed: true; readonly path: string }
 
 export const installWorkerGuard = (input: { readonly worktreePath: string; readonly provider: string; readonly config: LoopConfig; readonly cliPath?: string }): WorkerGuardInstallOutcome => {
   if (!input.config.delivery.workerGuard.enabled) return { installed: false }
-  const command = `${input.cliPath ?? resolveOwnCliPath()} loop worker-guard`
-  if (input.provider === 'claude') {
-    const path = join(input.worktreePath, '.claude', 'settings.local.json')
-    writeJsonObject(path, mergePreToolUseHook(readJsonObject(path), command))
+  // A dispatch record that lost its worktree path (deliver.ts handles exactly that case when it reads phase
+  // artifacts) would otherwise throw here and fail the whole handoff, which is how a guard becomes an outage.
+  if (!input.worktreePath) return { installed: false }
+  // Quoted: an install prefix with a space (`C:\Users\First Last\...`, `Application Support`) would otherwise
+  // split into two shell words, the hook would exit 127, and every CLI here treats a non-2 exit as "allow" —
+  // enforcement that reports itself installed and blocks nothing.
+  const command = `${shellQuote(input.cliPath ?? resolveOwnCliPath())} loop worker-guard`
+  const write = (path: string, merge: (existing: Record<string, unknown>) => Record<string, unknown>): WorkerGuardInstallOutcome => {
+    const existing = readJsonObject(path)
+    if (!existing) return { installed: false }
+    writeJsonObject(path, merge(existing))
     return { installed: true, path }
   }
-  if (input.provider === 'grok') {
-    const path = join(input.worktreePath, '.grok', 'hooks', 'config.json')
-    writeJsonObject(path, mergePreToolUseHook(readJsonObject(path), command))
-    return { installed: true, path }
-  }
+  if (input.provider === 'claude') return write(join(input.worktreePath, '.claude', 'settings.local.json'), (existing) => mergePreToolUseHook(existing, command))
+  if (input.provider === 'grok') return write(join(input.worktreePath, '.grok', 'hooks', 'config.json'), (existing) => mergePreToolUseHook(existing, command))
   if (input.provider === 'opencode') {
-    const path = join(input.worktreePath, 'opencode.json')
     const patterns = [...input.config.delivery.selfEditPaths, ...input.config.delivery.secretFilePatterns]
-    writeJsonObject(path, mergeOpencodeDenyRules(readJsonObject(path), patterns))
-    return { installed: true, path }
+    return write(join(input.worktreePath, 'opencode.json'), (existing) => mergeOpencodeDenyRules(existing, patterns))
   }
   return { installed: false } // codex (open upstream hook-enforcement bugs) and anything else: PR-time gate only, see ADR-0038
 }

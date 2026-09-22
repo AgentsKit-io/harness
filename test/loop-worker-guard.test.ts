@@ -2,7 +2,8 @@ import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'nod
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
-import { assessWorkerGuard, extractFilePath, installWorkerGuard, parseLoopConfigText, parsePreToolUseEvent, runWorkerGuard } from '../src/index.js'
+import { assessWorkerGuard, installWorkerGuard, parseLoopConfigText, runWorkerGuard } from '../src/index.js'
+import { extractFilePath, parsePreToolUseEvent } from '../src/loop/worker-guard.js'
 import type { LoopConfig } from '../src/index.js'
 
 const exampleYaml = readFileSync(join(process.cwd(), 'loop.config.example.yaml'), 'utf8').replace('person: my-linear-display-name', 'person: person')
@@ -86,7 +87,7 @@ describe('installWorkerGuard', () => {
     const first = installWorkerGuard({ worktreePath, provider: 'claude', config: config(), cliPath: '/bin/ak-harness' })
     expect(first).toEqual({ installed: true, path: join(worktreePath, '.claude', 'settings.local.json') })
     const written = JSON.parse(readFileSync(first.installed ? first.path : '', 'utf8'))
-    expect(written).toMatchObject({ hooks: { PreToolUse: [{ matcher: 'Write|Edit|MultiEdit|NotebookEdit', hooks: [{ type: 'command', command: '/bin/ak-harness loop worker-guard' }] }] } })
+    expect(written).toMatchObject({ hooks: { PreToolUse: [{ matcher: 'Write|Edit|MultiEdit|NotebookEdit', hooks: [{ type: 'command', command: '"/bin/ak-harness" loop worker-guard' }] }] } })
 
     installWorkerGuard({ worktreePath, provider: 'claude', config: config(), cliPath: '/bin/ak-harness' })
     const rewritten = JSON.parse(readFileSync(join(worktreePath, '.claude', 'settings.local.json'), 'utf8'))
@@ -110,7 +111,7 @@ describe('installWorkerGuard', () => {
     const outcome = installWorkerGuard({ worktreePath, provider: 'grok', config: config(), cliPath: '/bin/ak-harness' })
     expect(outcome).toEqual({ installed: true, path: join(worktreePath, '.grok', 'hooks', 'config.json') })
     const written = JSON.parse(readFileSync(outcome.installed ? outcome.path : '', 'utf8'))
-    expect(written.hooks.PreToolUse[0].hooks[0].command).toBe('/bin/ak-harness loop worker-guard')
+    expect(written.hooks.PreToolUse[0].hooks[0].command).toBe('"/bin/ak-harness" loop worker-guard')
   })
 
   it('writes static deny rules for opencode instead of a hook, and never overwrites a rule the project already declared', () => {
@@ -142,5 +143,41 @@ describe('installWorkerGuard', () => {
     const worktreePath = tempDir()
     const disabled = parseLoopConfigText(exampleYaml.replace('cleanupWorktree: true', 'cleanupWorktree: true\n  workerGuard: { enabled: false }'))
     expect(installWorkerGuard({ worktreePath, provider: 'claude', config: disabled, cliPath: '/bin/ak-harness' })).toEqual({ installed: false })
+  })
+
+  it('quotes the CLI path, so an install prefix with a space does not split into two shell words', () => {
+    const worktreePath = tempDir()
+    installWorkerGuard({ worktreePath, provider: 'claude', config: config(), cliPath: '/opt/Application Support/ak-harness' })
+    const written = JSON.parse(readFileSync(join(worktreePath, '.claude', 'settings.local.json'), 'utf8'))
+    expect(written.hooks.PreToolUse[0].hooks[0].command).toBe('"/opt/Application Support/ak-harness" loop worker-guard')
+  })
+
+  it('returns installed:false instead of throwing when the dispatch record lost its worktree path', () => {
+    expect(installWorkerGuard({ worktreePath: '', provider: 'claude', config: config(), cliPath: '/bin/ak-harness' })).toEqual({ installed: false })
+  })
+
+  it('leaves an unparseable existing config alone rather than destroying it', () => {
+    const worktreePath = tempDir()
+    const path = join(worktreePath, 'opencode.json')
+    const theirs = '{ "permission": { "edit": {} }, } // trailing comma + comment'
+    writeFileSync(path, theirs, 'utf8')
+    expect(installWorkerGuard({ worktreePath, provider: 'opencode', config: config(), cliPath: '/bin/ak-harness' })).toEqual({ installed: false })
+    expect(readFileSync(path, 'utf8')).toBe(theirs)
+  })
+})
+
+describe('extractFilePath — NotebookEdit', () => {
+  it('reads notebook_path, which is what NotebookEdit actually names its target', () => {
+    expect(extractFilePath({ tool_name: 'NotebookEdit', tool_input: { notebook_path: 'loop.config.yaml' } })).toBe('loop.config.yaml')
+  })
+
+  it('blocks a protected path written through NotebookEdit', () => {
+    const verdict = assessWorkerGuard({
+      filePath: extractFilePath({ tool_name: 'NotebookEdit', tool_input: { notebook_path: 'loop.config.yaml' } }),
+      cwd: '/work',
+      selfEditPaths: ['loop.config.yaml'],
+      secretFilePatterns: [],
+    })
+    expect(verdict.blocked).toBe(true)
   })
 })
