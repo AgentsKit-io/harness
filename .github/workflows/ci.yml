@@ -55,6 +55,10 @@ jobs:
       # regenerates nothing: it fails when what is committed no longer matches the code.
       - run: pnpm build
       - run: pnpm docs:generate --check
+      # `test:capabilities` existed as a script that nothing ran: not in ci.yml, and referenced by none of the
+      # 22 checks in .ak-harness/verification.json. A stale public-surface manifest reached main unnoticed.
+      - run: pnpm test:capabilities
+      - run: node scripts/verify-release-evidence.mjs
       - run: pnpm docs:build
       - run: pnpm test:docs-artifacts
 

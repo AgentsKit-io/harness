@@ -1,5 +1,6 @@
 import { appendFileSync, closeSync, existsSync, mkdirSync, openSync, readdirSync, readFileSync, renameSync, statSync, unlinkSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
+import { z } from 'zod'
 import type { CommandRunner } from '../adapters/command.js'
 import { fetchLinearQueue, linearLabelRemove, type LinearIssueDetail, type LoopIssue } from '../adapters/linear-orca.js'
 import { resolveConnectors, type TrackerConnector } from './connectors.js'
@@ -81,8 +82,16 @@ export interface DispatchRecordFile {
   readonly effort: EffortLevel
   /** Builder provider's remaining Orca usage percent at dispatch time (`resilience.maxUsageDeltaPercent` cost guard); `null` when usage was unknown. */
   readonly initialRemainingPercent: number | null
-  /** Absolute path to the Orca worktree, so `loop status`/`debrief`/`watch` can best-effort read `progress.json` from it. */
-  readonly worktreePath: string
+  /**
+   * Absolute path to the Orca worktree, so `loop status`/`debrief`/`watch` can best-effort read `progress.json`
+   * from it.
+   *
+   * Optional because it genuinely is: a record written before this field existed, or one whose worktree was
+   * removed, has none — `deliver` has always branched on that when reading phase artifacts. Declaring it
+   * required made the type a claim the disk does not keep, and `installWorkerGuard` trusted the claim and threw
+   * on a handoff. The compiler is the right place to catch that, not a stack trace three stages later.
+   */
+  readonly worktreePath?: string
   /**
    * The issue's labels at dispatch time, frozen here so `deliver` can resolve `reviewOverrides` without
    * a second Linear read — and so a label edited mid-flight cannot change the gate a running item is
@@ -161,10 +170,32 @@ export const busyIssues = (queue: readonly LoopIssue[], leases: readonly Dispatc
 
 export const dispatchRecordPath = (stateDir: string, identifier: string): string => join(stateDir, 'issues', identifier, 'dispatch.json')
 export const briefPath = (stateDir: string, identifier: string): string => join(stateDir, 'issues', identifier, 'brief.md')
+/**
+ * The fields every reader of a dispatch record dereferences without checking. Anything beyond these is read
+ * defensively already (`labels ?? []`, `worktreePath` guarded, `dispatchedAt` absent yields a null age in
+ * `debrief`), so the schema deliberately does not restate the whole interface — it asserts the load-bearing
+ * core and lets the rest through. Requiring more would turn a record the loop handles today into an absent one.
+ *
+ * `JSON.parse(...) as DispatchRecordFile` was a claim about a file on disk that nothing had checked: a record
+ * missing a required field passed the cast and failed much later, somewhere that looked unrelated. Parsing keeps
+ * the failure at the boundary, where the file name is still in hand.
+ */
+const DispatchRecordCore = z.object({
+  issue: z.string().min(1),
+  worktreeId: z.string().min(1),
+  branch: z.string().min(1),
+  provider: z.string().min(1),
+  model: z.string().min(1),
+})
+
 export const readDispatchRecord = (stateDir: string, identifier: string): DispatchRecordFile | null => {
   const path = dispatchRecordPath(stateDir, identifier)
   if (!existsSync(path)) return null
-  try { return JSON.parse(readFileSync(path, 'utf8')) as DispatchRecordFile } catch { return null }
+  let raw: unknown
+  try { raw = JSON.parse(readFileSync(path, 'utf8')) } catch { return null }
+  // Same answer as an unreadable file — every caller already handles `null` — but now a structurally invalid
+  // record is caught here rather than three stages later, as a missing property on something typed as present.
+  return DispatchRecordCore.safeParse(raw).success ? raw as DispatchRecordFile : null
 }
 export const writeDispatchRecord = (stateDir: string, record: DispatchRecordFile): string => {
   const path = dispatchRecordPath(stateDir, record.issue)
