@@ -3,7 +3,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
 import {
-  CONTRACT_CLOSE, CONTRACT_OPEN, assessContract, busyIssues, contractIsFresh, createDispatchLedger, deliveryStatePath, isIssuePaused, linearLabelRemove, loadLoopConfig, parseContractOutput, parseLinearIssueDetail, precheckTick, readCliModelsCache, readDispatchRecord, readDeliveryState, readIssueFailures, readStoredContract, recordIssueFailure, renderContractPrompt, renderWorkerBrief, resumeIssue, runTick, untrusted, worktreeNameFor, writeStoredContract,
+  CONTRACT_CLOSE, CONTRACT_OPEN, assessContract, busyIssues, contractIsFresh, createDispatchLedger, deliveryStatePath, dispatchRecordPath, isIssuePaused, linearLabelRemove, loadLoopConfig, parseContractOutput, parseLinearIssueDetail, precheckTick, readCliModelsCache, readDispatchRecord, readDeliveryState, readIssueFailures, readStoredContract, recordIssueFailure, renderContractPrompt, renderWorkerBrief, resumeIssue, runTick, untrusted, worktreeNameFor, writeStoredContract,
 } from '../src/index.js'
 import type { CommandResult, CommandRunner, StoredContract, TaskContract } from '../src/index.js'
 
@@ -236,6 +236,17 @@ describe('tick', () => {
     expect(ledger.active()).toHaveLength(1)
     expect(ledger.active()[0]?.issue).toBe(result?.issue)
     expect(readDispatchRecord(loaded.stateDir, result?.issue ?? '')).toMatchObject({ worktreeId: expect.stringContaining('repo-1::'), provider: 'claude', model: 'sonnet', branch: expect.stringMatching(/^gituser\//) })
+
+    // A record that is valid JSON but missing a load-bearing field used to pass the cast and fail much later, as
+    // a missing property on something typed as present. It is now caught at the boundary and reads as absent —
+    // the same answer every caller already handles for an unreadable file.
+    const recordPath = dispatchRecordPath(loaded.stateDir, result?.issue ?? '')
+    const intact = readFileSync(recordPath, 'utf8')
+    writeFileSync(recordPath, JSON.stringify({ ...JSON.parse(intact), worktreeId: undefined }), 'utf8')
+    expect(readDispatchRecord(loaded.stateDir, result?.issue ?? '')).toBeNull()
+    writeFileSync(recordPath, '{ not json', 'utf8')
+    expect(readDispatchRecord(loaded.stateDir, result?.issue ?? '')).toBeNull()
+    writeFileSync(recordPath, intact, 'utf8')
     expect(readDeliveryState(loaded.stateDir, 'ENG-10')).toMatchObject({ issue: 'ENG-10', prNumber: null, reviews: {}, fixRounds: 0, nudges: [], finishedAt: null, finalOutcome: null })
     expect(result?.branch).toMatch(/^gituser\//)
     expect(readStoredContract(loaded.stateDir, result?.issue ?? '')?.assessment.dispatchable).toBe(true)

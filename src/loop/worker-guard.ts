@@ -135,7 +135,7 @@ const resolveOwnCliPath = (): string => realpathSync(process.argv[1] ?? 'ak-harn
 
 export type WorkerGuardInstallOutcome = { readonly installed: false } | { readonly installed: true; readonly path: string }
 
-export const installWorkerGuard = (input: { readonly worktreePath: string; readonly provider: string; readonly config: LoopConfig; readonly cliPath?: string }): WorkerGuardInstallOutcome => {
+export const installWorkerGuard = (input: { readonly worktreePath: string | null | undefined; readonly provider: string; readonly config: LoopConfig; readonly cliPath?: string }): WorkerGuardInstallOutcome => {
   if (!input.config.delivery.workerGuard.enabled) return { installed: false }
   // A dispatch record that lost its worktree path (deliver.ts handles exactly that case when it reads phase
   // artifacts) would otherwise throw here and fail the whole handoff, which is how a guard becomes an outage.
