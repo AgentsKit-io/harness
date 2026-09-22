@@ -272,7 +272,7 @@ export interface PlanStageDeps {
  */
 export const interviewRound = async (deps: PlanStageDeps, state: PlanStageState): Promise<PlanStageState> => {
   const now = (deps.now ?? (() => new Date()))()
-  const { value } = await firstUsable({ runner: deps.runner, config: deps.loaded.config, root: deps.loaded.root, timeoutMs: deps.loaded.config.worker.plan.timeoutMs, candidates: deps.candidates, prompt: renderInterviewPrompt(state, deps.loaded.config), parse: parseQuestionOutput, label: 'Interview' })
+  const { value } = await firstUsable({ runner: deps.runner, config: deps.loaded.config, root: deps.loaded.root, timeoutMs: deps.loaded.config.worker.plan.stageTimeoutMs, candidates: deps.candidates, prompt: renderInterviewPrompt(state, deps.loaded.config), parse: parseQuestionOutput, label: 'Interview' })
   // An absent field in this round keeps what earlier rounds established; the parser turns "nothing yet" into absent.
   const prd = { ...state.prd, ...Object.fromEntries(Object.entries(value.prd).filter(([, field]) => field !== undefined)) }
   const gaps = prdGaps(prd)
@@ -309,13 +309,13 @@ export const architectRound = async (deps: PlanStageDeps, state: PlanStageState)
   let design: Design | null = null
   let votes: readonly CastVote[] = []
   for (let cycle = 1; cycle <= config.worker.plan.maxCycles; cycle += 1) {
-    const proposal = await firstUsable({ runner: deps.runner, config, root: deps.loaded.root, timeoutMs: config.worker.plan.timeoutMs, candidates: deps.candidates, prompt: renderArchitectPrompt(state, config, objections), parse: parseDesignOutput, label: 'Design' })
+    const proposal = await firstUsable({ runner: deps.runner, config, root: deps.loaded.root, timeoutMs: config.worker.plan.stageTimeoutMs, candidates: deps.candidates, prompt: renderArchitectPrompt(state, config, objections), parse: parseDesignOutput, label: 'Design' })
     design = proposal.value
     const cast: CastVote[] = []
     for (let index = 0; index < config.worker.plan.votes; index += 1) {
       const candidate = voters[index % Math.max(1, voters.length)]
       if (!candidate) break
-      const outcome = await callHeadless({ runner: deps.runner, config, root: deps.loaded.root, timeoutMs: config.worker.plan.timeoutMs, candidate, prompt: renderDesignVotePrompt(state, config, design) })
+      const outcome = await callHeadless({ runner: deps.runner, config, root: deps.loaded.root, timeoutMs: config.worker.plan.stageTimeoutMs, candidate, prompt: renderDesignVotePrompt(state, config, design) })
       if ('failure' in outcome) continue
       try {
         const parsed = JSON.parse(between(outcome.stdout, '<<<LOOP_VOTE', 'LOOP_VOTE>>>', 'vote')) as { vote?: unknown; objections?: unknown }
@@ -345,7 +345,7 @@ export const approveDesign = (state: PlanStageState, actor: string, now: Date, c
 export const decomposeRound = async (deps: PlanStageDeps, state: PlanStageState): Promise<PlanStageState> => {
   if (state.phase !== 'decompose') return fail(`The plan is in phase "${state.phase}"; decomposition runs after the design is approved.`, 'INVALID_STATE')
   const now = (deps.now ?? (() => new Date()))()
-  const { value } = await firstUsable({ runner: deps.runner, config: deps.loaded.config, root: deps.loaded.root, timeoutMs: deps.loaded.config.worker.plan.timeoutMs, candidates: deps.candidates, prompt: renderDecomposePrompt(state, deps.loaded.config), parse: parseIssuesOutput, label: 'Decomposition' })
+  const { value } = await firstUsable({ runner: deps.runner, config: deps.loaded.config, root: deps.loaded.root, timeoutMs: deps.loaded.config.worker.plan.stageTimeoutMs, candidates: deps.candidates, prompt: renderDecomposePrompt(state, deps.loaded.config), parse: parseIssuesOutput, label: 'Decomposition' })
   return { ...state, issues: value.map((issue) => ({ ...issue })), updatedAt: now.toISOString() }
 }
 
