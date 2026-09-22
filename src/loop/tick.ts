@@ -17,6 +17,7 @@ import { assessContract, contractIsFresh, extractResetsAt, generateContract, rea
 import { activeCooldowns, readCooldowns } from './cooldown.js'
 import { countRunningWorkers, providerSpecs } from './doctor.js'
 import { ensureBaseView, type BaseView } from './base-view.js'
+import { excludeArtifactsFromGit } from './artifacts.js'
 import { openLoopMemory, planMemoryContext } from './memory.js'
 import { clearIssueFailures, isIssuePaused, pauseIssue, readIssueFailures, recordIssueFailure } from './resilience-state.js'
 import { MODEL_ROLES, type ModelRole } from '../kernel/model-policy.js'
@@ -554,6 +555,7 @@ export const runTick = async (input: TickInput): Promise<TickReport> => {
       created = await orcaWorktreeCreate(input.runner, plan.argv, { timeoutMs: Math.max(config.orca.timeoutMs, 120_000) })
       // Orca names the branch `<git user>/<worktree>`; the Linear branchName is only a hint. Record and brief the real one.
       const actualBranch = created.branch || branch
+      try { if (!(await excludeArtifactsFromGit(input.runner, created.path))) notes.push(`${detail.identifier}: could not exclude .ak-loop/ from git in ${created.path}`) } catch (error) { notes.push(`${detail.identifier}: excluding .ak-loop/ failed: ${message(error)}`) }
       let setupResult: { readonly command: readonly string[]; readonly exitCode: number | null; readonly durationMs: number; readonly timedOut: boolean } | null = null
       if (config.project.setup.command?.length) {
         const setupTimeoutMs = Number.isFinite(timeBudgetMs) ? Math.max(1_000, Math.min(config.project.setup.timeoutSec * 1000, remainingMs() - 120_000)) : config.project.setup.timeoutSec * 1000
