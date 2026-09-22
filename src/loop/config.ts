@@ -292,11 +292,19 @@ export const LoopConfigSchema = z.object({
       exhaustedPercent: z.number().min(1).max(100).default(100),
     }).prefault({}),
     providers: z.record(z.string().trim().regex(/^[a-z0-9][a-z0-9_-]*$/i), ProviderSchema),
-    /** Reasoning effort requested per role; only applied for providers whose `effortFlag` is set. */
+    /**
+     * Reasoning effort requested per role; only applied for providers whose `effortFlag` is set.
+     *
+     * cheapest-sufficient, the same rule `routing.roles.*.quality` already follows: effort tracks the difficulty
+     * of what a role does. `builder` writes and debugs the code — open-ended, the hardest thing here — while
+     * `reviewer` reads a finished diff against stated criteria and `orchestrator` turns an issue into a contract;
+     * both are bounded. Giving the writer `medium` while the readers got `high` was the inversion the rule
+     * exists to stop, and it was paying more for the cheaper problem.
+     */
     effort: z.object({
-      orchestrator: effortLevel.default('high'),
-      reviewer: effortLevel.default('high'),
-      builder: effortLevel.default('medium'),
+      orchestrator: effortLevel.default('medium'),
+      reviewer: effortLevel.default('medium'),
+      builder: effortLevel.default('high'),
       watcher: effortLevel.default('low'),
     }).prefault({}),
   }),

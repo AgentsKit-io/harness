@@ -219,9 +219,9 @@ loop.command('debrief').description('Human-facing explanation of what the loop i
   if (options().json) return print(report)
   console.log(renderDebriefMarkdown(report))
 })
-loop.command('issue-timeline <identifier>').description('Every logged step for one issue, oldest first: what ran, how long since the previous step, how many tokens, and which steps were friction (fix rounds, cooldowns, circuit breakers). Read-only.').action(function (this: Command, identifier: string) {
+loop.command('issue-timeline <identifier>').description('Every logged step for one issue, oldest first: what ran, how long since the previous step, how many tokens, and which steps were friction (fix rounds, cooldowns, circuit breakers). Read-only.').option('--since <window>', 'how far back to read the event log; an issue older than this window reports nothing', '30d').action(function (this: Command, identifier: string, command: { readonly since: string }) {
   const loaded = loadLoopConfig(loopFile(this))
-  const report = buildIssueTimeline(loaded.stateDir, identifier)
+  const report = buildIssueTimeline(loaded.stateDir, identifier, { since: command.since })
   if (options().json) return print(report)
   console.log(renderIssueTimelineMarkdown(report))
 })

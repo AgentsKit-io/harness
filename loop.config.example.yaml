@@ -116,9 +116,9 @@ models:
     exhaustedPercent: 100
   # Reasoning effort requested per role. Only applied for providers below that declare `effortFlag`; others ignore it.
   effort:
-    orchestrator: high
-    reviewer: high                  # currently unused: agentskit-review has no reasoning-effort flag (see reviewProvider below)
-    builder: medium
+    orchestrator: medium            # cheapest-sufficient: turning an issue into a contract is bounded work
+    reviewer: medium                # currently unused: agentskit-review has no reasoning-effort flag (see reviewProvider below)
+    builder: high                   # the role that writes and debugs the code is the hardest problem here
     watcher: low
   providers:
     claude:
