@@ -554,6 +554,21 @@ describe('deliver', () => {
     expect(report.results[0]).not.toMatchObject({ outcome: 'blocked' })
   })
 
+  it('trips resilience.maxUsageDeltaPercent at its new default (40) with no config override', async () => {
+    const env = setup({ pr: null, initialRemainingPercent: 90, claudeUsedPercent: 55 }) // remaining now 45%, dropped 45 points
+    const report = await deliver(env)
+    expect(report.results[0]).toMatchObject({ outcome: 'blocked', reason: expect.stringContaining('resilience.maxUsageDeltaPercent') })
+  })
+
+  it('logs provider.usage-observed on every pass a usage delta is known, whether or not it trips', async () => {
+    const env = setup({ pr: null, initialRemainingPercent: 90, claudeUsedPercent: 20 }) // remaining now 80%, dropped 10 points
+    writeFileSync(join(env.dir, 'loop.config.local.yaml'), 'resilience:\n  maxUsageDeltaPercent: 50\n')
+    await deliver(env, { assumeIdle: false })
+    const events = readFileSync(join(env.loaded.stateDir, 'events.ndjson'), 'utf8').split('\n').filter(Boolean).map((line) => JSON.parse(line) as Record<string, unknown>)
+    const observed = events.find((event) => event['type'] === 'provider.usage-observed')
+    expect(observed).toMatchObject({ issue: 'ENG-10', provider: 'claude', initialRemainingPercent: 90, currentRemainingPercent: 80, deltaPercent: 10 })
+  })
+
   it('holds a clean, green-checks PR when delivery.merge.requireHumanApproval is set and no one approved it on GitHub', async () => {
     const env = setup({ review: { code: 0 } })
     writeFileSync(join(env.dir, 'loop.config.local.yaml'), 'delivery:\n  merge:\n    requireHumanApproval: true\n')

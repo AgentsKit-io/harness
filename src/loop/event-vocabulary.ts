@@ -155,6 +155,17 @@ export const LOOP_EVENT_TYPES = {
   'cost-guard.tripped': ['issue', 'reason'],
   /** The time circuit breaker stopped a dispatch older than `delivery.maxDispatchMinutes`. */
   'max-duration.tripped': ['issue', 'reason'],
+
+  /**
+   * One call the harness itself made to a provider CLI (contract, review, plan vote — never the worker's own
+   * dispatched session, which stays opaque). Always carries timing/size; `providerCalls`/token fields are present
+   * only when the caller could parse them out of that call's own structured result.
+   */
+  'provider.call': ['role', 'provider', 'issue', 'durationMs', 'exitCode', 'timedOut', 'stdoutBytes', 'stderrBytes'],
+  /** How much of a provider's usage window moved for one in-flight issue since its dispatch — logged on every
+   * `deliver` pass regardless of whether it crosses `resilience.maxUsageDeltaPercent`, so the trend is visible
+   * before it ever trips the breaker. */
+  'provider.usage-observed': ['issue', 'provider', 'initialRemainingPercent', 'currentRemainingPercent', 'deltaPercent'],
 } as const satisfies Readonly<Record<string, readonly string[]>>
 
 export type LoopEventType = keyof typeof LOOP_EVENT_TYPES

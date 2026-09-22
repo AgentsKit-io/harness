@@ -102,6 +102,13 @@ describe('generateContract', () => {
     await expect(generateContract({ runner, config, root: '/tmp', issue, candidates: [], references: [] })).rejects.toThrow(/No orchestrator provider/)
   })
 
+  it('calls onProviderCall once per attempt, success or failure, with timing/size — never a token or provider secret', async () => {
+    const calls: Array<{ provider: string; model: string; exitCode: number | null; timedOut: boolean }> = []
+    const runner: CommandRunner = { run: async (): Promise<CommandResult> => ({ code: 0, stdout: `<<<LOOP_CONTRACT\n${JSON.stringify({ intent: 'x', scope: { inScope: ['a'] }, outcomes: [], ambiguities: [], touchpoints: [], risks: [] })}\nLOOP_CONTRACT>>>`, stderr: '', timedOut: false, durationMs: 42 }) }
+    await generateContract({ runner, config, root: '/tmp', issue, candidates: [candidate()], references: [], onProviderCall: (event) => { calls.push(event) } })
+    expect(calls).toEqual([{ provider: 'codex', model: candidate().model, durationMs: 42, exitCode: 0, timedOut: false, stdoutBytes: expect.any(Number) }])
+  })
+
   it('reports a missing headless argv template as a failure and exhausts all candidates', async () => {
     const noHeadlessConfig = validateLoopConfig({ ...config, models: { ...config.models, providers: { codex: { bin: 'codex', auth: 'subscription', tui: 'codex -m {model}' } } } })
     const runner: CommandRunner = { run: async (): Promise<CommandResult> => ({ code: 0, stdout: '', stderr: '', timedOut: false, durationMs: 1 }) }

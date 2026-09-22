@@ -275,6 +275,9 @@ export interface GenerateContractInput {
   readonly memory?: AgentMemoryAdapter | null
   /** Called when a candidate fails for a provider-level reason (auth/quota/timeout) before the next one is tried. */
   readonly onProviderFailure?: (failure: ProviderFailure) => void
+  /** Called once per orchestrator call attempted (success or failure) — visibility into what this specific
+   * harness-direct call cost, distinct from `onProviderFailure` (which only fires on a provider-level failure). */
+  readonly onProviderCall?: (event: { readonly provider: string; readonly model: string; readonly durationMs: number; readonly exitCode: number | null; readonly timedOut: boolean; readonly stdoutBytes: number }) => void
   /** Observability for memory/doc-bridge char budgets. */
   readonly onMemoryPlan?: (plan: MemoryContextPlan) => void
   /** Called (once, if `security.pii.enabled`) with the matches found in the issue text, before redaction. */
@@ -380,6 +383,7 @@ export const generateContract = async (input: GenerateContractInput): Promise<St
     if (!argv) { failures.push({ provider: candidate.provider, model: candidate.model, kind: 'other', detail: `no headless argv template (models.providers.${candidate.provider}.headless)` }); continue }
     const timeoutMs = input.timeoutMs ?? input.config.contract.timeoutMs
     const outcome = await input.runner.run(argv, { timeoutMs, cwd: input.root })
+    input.onProviderCall?.({ provider: candidate.provider, model: candidate.model, durationMs: outcome.durationMs, exitCode: outcome.code, timedOut: outcome.timedOut, stdoutBytes: outcome.stdout.length })
     const detail = `${outcome.stderr.trim()}\n${outcome.stdout.trim()}`.trim().slice(0, 600)
     if (outcome.timedOut || outcome.code !== 0) {
       const failure: ProviderFailure = { provider: candidate.provider, model: candidate.model, kind: classifyProviderFailure(detail, outcome.timedOut), detail: outcome.timedOut ? `timed out after ${timeoutMs}ms` : `exited ${outcome.code ?? 'null'}: ${detail || 'no output'}` }

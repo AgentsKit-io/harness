@@ -844,12 +844,15 @@ export const runDeliver = async (input: DeliverInput): Promise<DeliverReport> =>
         continue
       }
       const initialRemaining = record.initialRemainingPercent
-      if (config.resilience.maxUsageDeltaPercent && initialRemaining !== null && initialRemaining !== undefined) {
+      if (initialRemaining !== null && initialRemaining !== undefined) {
         const currentProvider = ctx.providers.find((provider) => provider.id === record.provider)
         const currentRemaining = currentProvider ? remainingUsagePercent(currentProvider.usage, config.models.routing.usageMetric) : null
         if (currentRemaining !== null) {
           const delta = initialRemaining - currentRemaining
-          if (delta >= config.resilience.maxUsageDeltaPercent) {
+          // windowed visibility: logged every pass regardless of the breaker below, so the trend is visible
+          // before it ever trips — this is the same delta the incident that started this work never had.
+          event(ctx, { type: 'provider.usage-observed', issue: record.issue, provider: record.provider, initialRemainingPercent: initialRemaining, currentRemainingPercent: currentRemaining, deltaPercent: delta })
+          if (config.resilience.maxUsageDeltaPercent && delta >= config.resilience.maxUsageDeltaPercent) {
             results.push(await tripCircuitBreaker(ctx, record, lease, state, 'cost-guard', `provider ${record.provider} remaining usage dropped ${delta.toFixed(1)} points since dispatch (${initialRemaining}% → ${currentRemaining}%), at or past resilience.maxUsageDeltaPercent (${config.resilience.maxUsageDeltaPercent})`))
             continue
           }

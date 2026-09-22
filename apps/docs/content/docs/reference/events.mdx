@@ -13,7 +13,7 @@ timestamp) and `type` on top of the fields below. A plugin subscribes with
 The vocabulary is enforced by the compiler: `appendLoopEvent` accepts only these names, so an event that is not
 here cannot be emitted — and a name here that nothing emits fails the test suite.
 
-63 loop events.
+65 loop events.
 
 ## `contract.*`
 
@@ -115,6 +115,8 @@ here cannot be emitted — and a name here that nothing emits fails the test sui
 | Event | Carries | What it means |
 |---|---|---|
 | `provider.cooldown` | `provider`, `kind`, `until`, `source` | A provider was put on cooldown after a quota/auth/timeout failure. `source` names the caller when not a dispatch. |
+| `provider.call` | `role`, `provider`, `issue`, `durationMs`, `exitCode`, `timedOut`, `stdoutBytes`, `stderrBytes` | One call the harness itself made to a provider CLI (contract, review, plan vote — never the worker's own dispatched session, which stays opaque). Always carries timing/size; `providerCalls`/token fields are present only when the caller could parse them out of that call's own structured result. |
+| `provider.usage-observed` | `issue`, `provider`, `initialRemainingPercent`, `currentRemainingPercent`, `deltaPercent` | How much of a provider's usage window moved for one in-flight issue since its dispatch — logged on every `deliver` pass regardless of whether it crosses `resilience.maxUsageDeltaPercent`, so the trend is visible before it ever trips the breaker. |
 
 ## `queue.*`
 

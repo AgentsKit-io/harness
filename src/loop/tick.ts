@@ -458,6 +458,9 @@ export const runTick = async (input: TickInput): Promise<TickReport> => {
           onPiiDetected: (matches) => {
             if (!dryRun) appendLoopEvent(loaded.stateDir, { at: now().toISOString(), type: 'security.pii-detected', issue: detail.identifier, source: 'issue-text', kinds: [...new Set(matches.map((match) => match.kind))], count: matches.length }, bus)
           },
+          onProviderCall: (event) => {
+            if (!dryRun) appendLoopEvent(loaded.stateDir, { at: now().toISOString(), type: 'provider.call', role: 'orchestrator', issue: detail.identifier, ...event }, bus)
+          },
         })
         if (!dryRun) writeStoredContract(loaded.stateDir, stored)
       } catch (error) {
