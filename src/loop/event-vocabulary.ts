@@ -13,19 +13,19 @@ export const LOOP_EVENT_TYPES = {
   'contract.escalated': ['issue', 'reasons', 'digest'],
   /** Contract generation failed on every candidate provider. */
   'contract.failed': ['issue', 'error'],
-  /** A contract was frozen successfully. `provider`/`model` are what actually produced it — the join key for
-   * comparing how different LLMs did on the same kind of issue. */
-  'contract.generated': ['issue', 'provider', 'model', 'digest'],
+  /** A contract was frozen successfully. `provider`/`model`/`effort` are what actually produced it — the join key
+   * for comparing how different LLMs (at what reasoning effort) did on the same kind of issue. */
+  'contract.generated': ['issue', 'provider', 'model', 'effort', 'digest'],
 
-  /** One planning cycle finished: how many agents approved the plan, out of how many voted. */
-  'plan.voted': ['issue', 'cycle', 'approvals', 'votes'],
+  /** One planning cycle finished: how many agents approved the plan, out of how many voted, and who each one was. */
+  'plan.voted': ['issue', 'cycle', 'approvals', 'votes', 'voters'],
   /** Planning failed on every candidate provider. */
   'plan.failed': ['issue', 'error'],
   /** The cycles ran out without consensus; the unresolved objections are a human's to settle. */
   'plan.escalated': ['issue', 'cycles', 'unresolved'],
 
   /** A worker was launched in its own worktree. Carries the whole dispatch record plus the command that ran. */
-  'worker.dispatched': ['issue', 'worktree', 'worktreeId', 'branch', 'terminal', 'provider', 'model', 'contractDigest', 'briefDigest', 'command', 'briefAccepted', 'tuiIdle'],
+  'worker.dispatched': ['issue', 'worktree', 'worktreeId', 'branch', 'terminal', 'provider', 'model', 'effort', 'contractDigest', 'briefDigest', 'command', 'briefAccepted', 'tuiIdle'],
   /** The dispatch itself failed — worktree, terminal or brief — before any work started. */
   'worker.dispatch-failed': ['issue', 'error'],
   /** `project.setup.command` ran in the fresh worktree. */
@@ -71,8 +71,10 @@ export const LOOP_EVENT_TYPES = {
   /** The pass ended by sending the worker back to work. */
   'worker.fix-round': ['issue', 'reason', 'worktreeId'],
 
-  /** A review ran against a PR, with the verdict and who gave it. `source` marks a PR that came from GitHub intake. */
-  'pr.reviewed': ['issue', 'pr', 'head', 'status', 'blocking', 'provider', 'model', 'source'],
+  /** A review ran against a PR, with the verdict, who gave it, and how it was configured (profile/votes/severity
+   * floor) — what a study comparing review thoroughness across models needs. `source` marks a PR that came from
+   * GitHub intake. */
+  'pr.reviewed': ['issue', 'pr', 'head', 'status', 'blocking', 'provider', 'model', 'profile', 'votes', 'minSeverity', 'source'],
   /** The PR was squash-merged by the loop. */
   'pr.merged': ['issue', 'pr', 'head', 'sha'],
   /** GitHub refused the merge — branch protection, a required check, a race with another merge. */
@@ -169,7 +171,7 @@ export const LOOP_EVENT_TYPES = {
    * dispatched session, which stays opaque). Always carries timing/size; `providerCalls`/token fields are present
    * only when the caller could parse them out of that call's own structured result.
    */
-  'provider.call': ['role', 'provider', 'issue', 'durationMs', 'exitCode', 'timedOut', 'stdoutBytes', 'stderrBytes'],
+  'provider.call': ['role', 'provider', 'model', 'effort', 'issue', 'durationMs', 'exitCode', 'timedOut', 'stdoutBytes', 'stderrBytes'],
   /** How much of a provider's usage window moved for one in-flight issue since its dispatch — logged on every
    * `deliver` pass regardless of whether it crosses `resilience.maxUsageDeltaPercent`, so the trend is visible
    * before it ever trips the breaker. */

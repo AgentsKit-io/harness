@@ -106,7 +106,7 @@ describe('generateContract', () => {
     const calls: Array<{ provider: string; model: string; exitCode: number | null; timedOut: boolean }> = []
     const runner: CommandRunner = { run: async (): Promise<CommandResult> => ({ code: 0, stdout: `<<<LOOP_CONTRACT\n${JSON.stringify({ intent: 'x', scope: { inScope: ['a'] }, outcomes: [], ambiguities: [], touchpoints: [], risks: [] })}\nLOOP_CONTRACT>>>`, stderr: '', timedOut: false, durationMs: 42 }) }
     await generateContract({ runner, config, root: '/tmp', issue, candidates: [candidate()], references: [], onProviderCall: (event) => { calls.push(event) } })
-    expect(calls).toEqual([{ provider: 'codex', model: candidate().model, durationMs: 42, exitCode: 0, timedOut: false, stdoutBytes: expect.any(Number) }])
+    expect(calls).toEqual([{ provider: 'codex', model: candidate().model, effort: candidate().effort, durationMs: 42, exitCode: 0, timedOut: false, stdoutBytes: expect.any(Number), stderrBytes: expect.any(Number) }])
   })
 
   it('reports a missing headless argv template as a failure and exhausts all candidates', async () => {

@@ -379,7 +379,9 @@ describe('tick', () => {
     const loaded = loadLoopConfig(env.configPath)
     const events = readFileSync(join(loaded.stateDir, 'events.ndjson'), 'utf8').split('\n').filter(Boolean).map((line) => JSON.parse(line) as Record<string, unknown>)
     const generated = events.find((event) => event['type'] === 'contract.generated')
-    expect(generated).toMatchObject({ issue: report.results[0]?.issue, provider: expect.any(String), model: expect.any(String), digest: expect.any(String) })
+    expect(generated).toMatchObject({ issue: report.results[0]?.issue, provider: expect.any(String), model: expect.any(String), effort: expect.stringMatching(/^(low|medium|high|xhigh)$/), digest: expect.any(String) })
+    const providerCall = events.find((event) => event['type'] === 'provider.call' && event['role'] === 'orchestrator')
+    expect(providerCall).toMatchObject({ provider: expect.any(String), model: expect.any(String), effort: expect.stringMatching(/^(low|medium|high|xhigh)$/) })
   })
 
   it('fails the dispatch when security.pii.action is block and PII is found', async () => {

@@ -138,6 +138,18 @@ describe('planner → vote → replan', () => {
     await expect(runPlanWithVotes({ runner: broken, config: loaded.config, root: loaded.root, issue: 'ENG-1', contract, contractDigest: 'c1', planner: planners, voters })).rejects.toThrow(/Planning failed on every candidate/)
     await expect(runPlanWithVotes({ runner: scripted([]), config: loaded.config, root: loaded.root, issue: 'ENG-1', contract, contractDigest: 'c1', planner: [], voters })).rejects.toThrow(/No planner provider/)
   })
+
+  it('records the winning planner\'s reasoning effort on the stored plan, and calls onProviderCall once per planner/voter attempt', async () => {
+    const loaded = setup()
+    const runner = scripted([[voteOut('approve'), voteOut('approve'), voteOut('reject', ['naming'])]])
+    const calls: Record<string, unknown>[] = []
+    const stored = await runPlanWithVotes({ runner, config: loaded.config, root: loaded.root, issue: 'ENG-1', contract, contractDigest: 'c1', planner: planners, voters, onProviderCall: (event) => calls.push({ ...event }) })
+    expect(stored.effort).toBe('medium')
+    expect(calls).toHaveLength(4) // 1 planner call + 3 voter calls
+    expect(calls[0]).toMatchObject({ role: 'planner', provider: 'claude', model: 'opus', effort: 'medium', exitCode: 0, timedOut: false })
+    expect(calls.slice(1).every((call) => call['role'] === 'voter')).toBe(true)
+    expect(calls.every((call) => typeof call['durationMs'] === 'number' && typeof call['stdoutBytes'] === 'number' && typeof call['stderrBytes'] === 'number')).toBe(true)
+  })
 })
 
 describe('the approved plan on disk and in the brief', () => {

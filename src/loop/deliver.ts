@@ -592,7 +592,7 @@ ${marker}` }); actions.push('secret-file hold commented') } catch (error) { acti
     const attempts = (prior?.attempts ?? 0) + 1
     state = { ...state, prNumber: pr.number, reviews: { ...state.reviews, [pr.headSha]: { status: review.status, at: ctx.now().toISOString(), provider: review.provider, model: review.model, blocking: review.blocking.length, attempts } } }
     saveState(ctx, state)
-    event(ctx, { type: 'pr.reviewed', issue: record.issue, pr: pr.number, head: pr.headSha, status: review.status, blocking: review.blocking.length, provider: review.provider, model: review.model })
+    event(ctx, { type: 'pr.reviewed', issue: record.issue, pr: pr.number, head: pr.headSha, status: review.status, blocking: review.blocking.length, provider: review.provider, model: review.model, profile: reviewSettings.profile, votes: reviewSettings.votes, minSeverity: reviewSettings.minSeverity })
     await ctx.bus.runHook('afterReview', { issue: record.issue, pr: pr.number, head: pr.headSha, status: review.status, blocking: review.blocking.length })
     if (review.status === 'incomplete') {
       const failureKind = classifyProviderFailure(review.rawTail)
@@ -755,7 +755,7 @@ const handleIntakePullRequest = async (ctx: Context, identifier: string, pr: Pul
     const attempts = (prior?.attempts ?? 0) + 1
     const next: DeliveryState = { ...state, prNumber: pr.number, reviews: { ...state.reviews, [pr.headSha]: { status: review.status, at: ctx.now().toISOString(), provider: review.provider, model: review.model, blocking: review.blocking.length, attempts } } }
     saveState(ctx, next)
-    event(ctx, { type: 'pr.reviewed', pr: pr.number, head: pr.headSha, status: review.status, blocking: review.blocking.length, provider: review.provider, model: review.model, source: 'github-intake' })
+    event(ctx, { type: 'pr.reviewed', pr: pr.number, head: pr.headSha, status: review.status, blocking: review.blocking.length, provider: review.provider, model: review.model, profile: config.delivery.review.profile, votes: config.delivery.review.votes, minSeverity: config.delivery.review.minSeverity, source: 'github-intake' })
     await ctx.bus.runHook('afterReview', { issue: identifier, pr: pr.number, head: pr.headSha, status: review.status, blocking: review.blocking.length, source: 'github-intake' })
     if (review.status === 'incomplete') {
       const failureKind = classifyProviderFailure(review.rawTail)

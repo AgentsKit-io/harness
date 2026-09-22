@@ -193,6 +193,14 @@ describe('deliver', () => {
     expect(again.results).toEqual([])
   })
 
+  it('logs pr.reviewed with the review\'s own configuration (profile/votes/minSeverity), not just the verdict', async () => {
+    const env = setup({ review: { code: 0 } })
+    await deliver(env)
+    const events = readFileSync(join(env.loaded.stateDir, 'events.ndjson'), 'utf8').split('\n').filter(Boolean).map((line) => JSON.parse(line) as Record<string, unknown>)
+    const reviewed = events.find((event) => event['type'] === 'pr.reviewed')
+    expect(reviewed).toMatchObject({ issue: 'ENG-10', pr: 42, status: 'clean', provider: 'codex-cli', profile: 'fast', votes: expect.any(Number), minSeverity: expect.any(String) })
+  })
+
   it('skips a merged issue on a later deliver run without any GitHub call at all', async () => {
     const env = setup({ review: { code: 0 } })
     await deliver(env) // merges ENG-10
