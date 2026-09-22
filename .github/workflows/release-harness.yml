@@ -1,5 +1,12 @@
 name: Verify harness
 
+# The filename is load-bearing and the contents are not what it suggests: this is the whole CI workflow, checks
+# and publish together. npm Trusted Publishing authorises a publish by repository *and workflow filename*, and
+# this package's trusted publisher is registered against `release-harness.yml`. Publishing from `ci.yml` was
+# rejected with a 404 on the PUT — npm's way of saying "not authorised" — even though provenance signed fine.
+# Renaming this file breaks releases until the npm setting is changed to match. `name:` above is what the
+# Actions UI shows, so the display is unaffected.
+
 on:
   pull_request:
   push:

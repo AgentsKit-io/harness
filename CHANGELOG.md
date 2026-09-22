@@ -1,6 +1,22 @@
 # Changelog
 
-## [Unreleased]
+## [0.18.0] - 2026-09-22
+
+What a pre-publish review found when it went looking for the gap between what this package claims and what it
+does. Six changes, every one of them a place the harness was wrong about itself.
+
+### Release
+
+- Publishing lives in `release-harness.yml` alongside the checks, as a job that `needs` all three. It used to be
+  a separate workflow running *in parallel* with CI, re-running only typecheck/test/build, so a commit could fail
+  `ak-verify`, the docs check or the Windows matrix and ship anyway. The filename is load-bearing: npm Trusted
+  Publishing authorises by repository **and workflow filename**, and moving the publish to `ci.yml` had it
+  rejected with a 404 on the PUT.
+- Whether a version is new is the registry's answer now, not a `git diff` against `github.event.before`, which is
+  absent after a force-push and was read as "changed".
+- `test:capabilities` and release evidence had nothing running them: the first was in no CI job and no contract
+  check, the second unchecked entirely while `qualification.json` said `0.4.0` inside the shipped tarball.
+
 
 ### Hygiene
 

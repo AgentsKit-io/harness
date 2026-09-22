@@ -2,8 +2,8 @@
   "type": "agentskit-harness-release-qualification",
   "schemaVersion": 1,
   "package": "@agentskit/harness",
-  "version": "0.17.0",
-  "sourceRevision": "43ded667ff6778c8ba4f8384cc98c59eee623c21",
+  "version": "0.18.0",
+  "sourceRevision": "3cc3aafa9c0657d3f10cd99f3abf7864e860b266",
   "status": "blocked",
   "harnessVerification": {
     "runId": null,

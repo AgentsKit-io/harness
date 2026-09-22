@@ -189,10 +189,12 @@ Runnable example: [`examples/minimum-profile.mjs`](examples/minimum-profile.mjs)
 
 ## Release
 
-The `publish` job in [`.github/workflows/ci.yml`](.github/workflows/ci.yml) publishes on a merge to `main`,
+The `publish` job in [`.github/workflows/release-harness.yml`](.github/workflows/release-harness.yml) publishes on a merge to `main`,
 through npm Trusted Publishing (GitHub OIDC) — no `NPM_TOKEN` anywhere. It lives in the same workflow as the
 checks and `needs` every one of them, so a commit cannot publish past a red gate; a version not yet on the
-registry is the trigger. The candidate checklist and any open blocker live in
+registry is the trigger. That file holds the checks as well as the publish: npm Trusted Publishing authorises
+by repository and workflow **filename**, so renaming it breaks releases until the npm setting matches. The
+candidate checklist and any open blocker live in
 [`release/manifest.json`](release/manifest.json) and [`release/notes.md`](release/notes.md).
 
 Free and open source under MIT. See [LICENSE](./LICENSE).

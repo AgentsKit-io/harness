@@ -2,7 +2,7 @@
 import { readFileSync } from 'node:fs'
 import { parse } from 'yaml'
 
-const path = '.github/workflows/ci.yml'
+const path = '.github/workflows/release-harness.yml'
 const text = readFileSync(path, 'utf8')
 const workflow = parse(text)
 const failures = []
