@@ -4,6 +4,12 @@
 
 ### Token and time economy
 
+- `one-shot-vote:` — `plan-vote` made one full call per vote, so a pool with fewer distinct voters than `votes`
+  called the same model repeatedly with a byte-identical prompt, re-sending the contract and the whole plan each
+  time. It now makes one call per **distinct** voter and asks for the surplus votes inside that call. With enough
+  distinct models nothing changes — N models disagreeing is the point of a jury, and no prompt substitutes for it.
+  The tally still sees the same number of votes, so `approvals` keeps its meaning.
+
 - `scope:` — the seven worker-facing fix-round messages and the recovery brief told the worker to run
   `delivery.verifyCommand`, the whole gate. `verifyCommandFor()` already existed and resolves the layer's own
   verify from the labels frozen at dispatch; `deliver` never called it. A project with no layers sees no change;
