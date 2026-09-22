@@ -10,6 +10,7 @@ import { writeJsonAtomic } from './fs-atomic.js'
 import { appendLoopEvent } from './tick.js'
 import { createLoopEventBus, loadLoopPlugins, type LoopEventBus } from './event-bus.js'
 import { attachNotifier } from './notify.js'
+import { readJsonFile } from '../kernel/json-file.js'
 
 export const AlertSchema = z.object({
   /** The source's own id, when it has one. Without it the fingerprint comes from the title. */
@@ -30,10 +31,8 @@ export const intakeStatePath = (stateDir: string): string => join(stateDir, 'int
 export const readIntakeState = (stateDir: string): IntakeState => {
   const path = intakeStatePath(stateDir)
   if (!existsSync(path)) return { filed: [] }
-  try {
-    const value = JSON.parse(readFileSync(path, 'utf8')) as Partial<IntakeState>
-    return { filed: Array.isArray(value.filed) ? value.filed : [] }
-  } catch { return { filed: [] } }
+  const value = readJsonFile(path, z.object({ filed: z.array(z.unknown()) }).loose()) as Partial<IntakeState> | null
+  return { filed: value?.filed ?? [] }
 }
 
 /** Same source, same alert identity — not the same numbers. A count going from 11 to 12 is not a new incident. */

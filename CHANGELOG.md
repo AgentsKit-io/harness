@@ -2,6 +2,13 @@
 
 ## [Unreleased]
 
+### Boundaries
+
+- Every read of a JSON file the harness wrote goes through `readJsonFile(path, schema)` and is validated before
+  the caller sees it. `JSON.parse(readFileSync(path)) as SomeType` was a claim about a file on disk that nothing
+  checked; a record missing a field or holding the wrong type passed the cast and failed somewhere unrelated.
+  `scripts/verify-json-boundaries.mjs` keeps new ones out, with a short reviewed allowlist.
+
 ### Token and time economy
 
 - `one-shot-vote:` — `plan-vote` made one full call per vote, so a pool with fewer distinct voters than `votes`

@@ -1,7 +1,9 @@
 import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
+import { z } from 'zod'
 import type { CommandRunner } from '../adapters/command.js'
 import { githubOpenPullRequests, type GitHubCliOptions } from '../adapters/github-cli.js'
+import { readJsonFile } from '../kernel/json-file.js'
 
 /** A GitHub PR the loop never dispatched, picked up only because it carries `github.intakeLabel`. */
 export interface IntakeRecord {
@@ -19,7 +21,7 @@ export const intakePath = (stateDir: string, pr: number): string => join(stateDi
 export const readIntake = (stateDir: string, pr: number): IntakeRecord | null => {
   const path = intakePath(stateDir, pr)
   if (!existsSync(path)) return null
-  try { return JSON.parse(readFileSync(path, 'utf8')) as IntakeRecord } catch { return null }
+  return readJsonFile(path, z.object({ pr: z.number(), headRef: z.string() }).loose()) as IntakeRecord | null
 }
 
 const writeIntake = (stateDir: string, record: IntakeRecord): void => {

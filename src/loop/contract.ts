@@ -15,6 +15,7 @@ import { scanForPii, type PiiMatch } from '../kernel/pii.js'
 import type { AgentMemoryAdapter } from '../kernel/memory.js'
 import { planMemoryContext, type MemoryContextPlan } from './memory.js'
 import type { RankedModel, RoutingDecision } from './routing.js'
+import { readJsonFile } from '../kernel/json-file.js'
 
 export const CONTRACT_SCHEMA_VERSION = 1
 export const CONTRACT_OPEN = '<<<LOOP_CONTRACT'
@@ -133,10 +134,8 @@ export const contractPath = (stateDir: string, identifier: string): string => jo
 export const readStoredContract = (stateDir: string, identifier: string): StoredContract | null => {
   const path = contractPath(stateDir, identifier)
   if (!existsSync(path)) return null
-  try {
-    const parsed = JSON.parse(readFileSync(path, 'utf8')) as StoredContract
-    return parsed.schemaVersion === CONTRACT_SCHEMA_VERSION && parsed.issue === identifier ? parsed : null
-  } catch { return null }
+  const parsed = readJsonFile(path, z.object({ schemaVersion: z.number(), issue: z.string().min(1), contract: z.object({ outcomes: z.array(z.unknown()) }).loose() }).loose()) as StoredContract | null
+  return parsed && parsed.schemaVersion === CONTRACT_SCHEMA_VERSION && parsed.issue === identifier ? parsed : null
 }
 
 export const writeStoredContract = (stateDir: string, stored: StoredContract): string => {

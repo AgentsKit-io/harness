@@ -12,6 +12,7 @@ import { designExcerptFor } from './documents.js'
 import { renderLayersForPrompt } from './layers.js'
 import { tallyVotes, type CastVote } from './plan-vote.js'
 import type { RankedModel } from './routing.js'
+import { readJsonFile } from '../kernel/json-file.js'
 
 export const PRD_OPEN = '<<<LOOP_PRD'
 export const PRD_CLOSE = 'LOOP_PRD>>>'
@@ -105,7 +106,7 @@ export const planStatePath = (stateDir: string, id: string): string => join(plan
 export const readPlanState = (stateDir: string, id: string): PlanStageState | null => {
   const path = planStatePath(stateDir, id)
   if (!existsSync(path)) return null
-  try { return JSON.parse(readFileSync(path, 'utf8')) as PlanStageState } catch { return null }
+  return readJsonFile(path, z.object({ id: z.string().min(1), phase: z.string().min(1) }).loose()) as PlanStageState | null
 }
 
 export const writePlanState = (stateDir: string, state: PlanStageState): void => {

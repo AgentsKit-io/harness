@@ -8,6 +8,7 @@ import { providerIdentity, renderHeadlessArgv, type EffortLevel, type LoopConfig
 import { classifyProviderFailure, untrusted, type ProviderFailure, type TaskContract } from './contract.js'
 import { writeJsonAtomic } from './fs-atomic.js'
 import type { RankedModel } from './routing.js'
+import { readJsonFile } from '../kernel/json-file.js'
 
 export const PLAN_OPEN = '<<<LOOP_PLAN'
 export const PLAN_CLOSE = 'LOOP_PLAN>>>'
@@ -60,7 +61,9 @@ export const planPath = (stateDir: string, issue: string): string => join(stateD
 export const readStoredPlan = (stateDir: string, issue: string): StoredPlan | null => {
   const path = planPath(stateDir, issue)
   if (!existsSync(path)) return null
-  try { return JSON.parse(readFileSync(path, 'utf8')) as StoredPlan } catch { return null }
+  // The plan is read back to brief a worker and to judge a replan; a truncated one used to reach both as a
+  // fully-typed object. `issue` and `plan.steps` are what every reader dereferences without asking.
+  return readJsonFile(path, z.object({ issue: z.string().min(1), plan: z.object({ steps: z.array(z.unknown()) }).loose() }).loose()) as StoredPlan | null
 }
 
 export const writeStoredPlan = (stateDir: string, plan: StoredPlan): void => {

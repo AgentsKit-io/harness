@@ -59,6 +59,7 @@ jobs:
       # 22 checks in .ak-harness/verification.json. A stale public-surface manifest reached main unnoticed.
       - run: pnpm test:capabilities
       - run: node scripts/verify-release-evidence.mjs
+      - run: node scripts/verify-json-boundaries.mjs
       - run: pnpm docs:build
       - run: pnpm test:docs-artifacts
 
