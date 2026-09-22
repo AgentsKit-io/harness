@@ -2,7 +2,7 @@
 
 ## [Unreleased]
 
-Found by running the loop on a real migration (agentskit-os #6238) with opencode as the only provider.
+Found by running the loop on a real repository migration with a single, non-default provider.
 
 - **A worker at a tool-permission prompt is held for a person, never typed into.** `deliver` used to see it as
   idle and send a check-in: text plus Enter into a dialog whose default is "Allow once", approving exactly the

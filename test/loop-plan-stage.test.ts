@@ -157,13 +157,13 @@ describe('decomposition', () => {
 describe('planned issues land where the queue looks', () => {
   it('files them under the epic, in the project the queue drains, with the labels the queue filters on', async () => {
     const loaded = setup()
-    const config = { ...loaded.config, linear: { ...loaded.config.linear, projects: ['Platform Decoupling'], requireLabels: ['pilot'], anyLabels: ['layer:L9', 'layer:L1'] } }
+    const config = { ...loaded.config, linear: { ...loaded.config.linear, projects: ['Pilot Project'], requireLabels: ['pilot'], anyLabels: ['layer:L9', 'layer:L1'] } }
     const state: PlanStageState = { ...startPlan('x', NOW), phase: 'decompose', prd: FULL_PRD, design: { summary: 's', modules: [{ name: 'api', responsibility: 'r', boundary: '' }], contracts: [], decisions: [], sequence: [], risks: [] } }
     const runner = scripted([issuesOut(), JSON.stringify({ ok: true, result: { issue: { identifier: 'ENG-42' } } })])
     const decomposed = await decomposeRound(deps({ ...loaded, config }, runner), state)
     await createPlannedIssues(deps({ ...loaded, config }, runner), decomposed, { parent: 'ENG-1' })
     const save = runner.calls.find((argv) => argv.includes('save-issue')) ?? []
-    expect(save[save.indexOf('--project') + 1]).toBe('Platform Decoupling')
+    expect(save[save.indexOf('--project') + 1]).toBe('Pilot Project')
     expect(save[save.indexOf('--parent-id') + 1]).toBe('ENG-1')
     const labels = save.flatMap((arg, index) => save[index - 1] === '--label' ? [arg] : [])
     // `layer:L1` already satisfies `anyLabels`, so no second one is invented.
