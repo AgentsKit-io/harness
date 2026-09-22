@@ -71,6 +71,14 @@ describe('loop config', () => {
     expect(parseModelRef('opencode/opencode-go/glm-5.3')).toEqual({ provider: 'opencode', model: 'opencode-go/glm-5.3' })
   })
 
+  // stageTimeoutSec has no schema-level ceiling: only an Orca precheck automation is hard-capped at 600s (Orca's
+  // own limit, confirmed live), and `stage tick` is also reachable outside a precheck (e.g. a plain OS scheduler
+  // invoking it directly), where a real contract-generation attempt needs well over 600s of budget.
+  it('accepts a schedule.stageTimeoutSec above the Orca precheck ceiling, for callers outside a precheck', () => {
+    const config = parseLoopConfigText(exampleYaml.replace('stageTimeoutSec: 600', 'stageTimeoutSec: 2700'))
+    expect(config.schedule.stageTimeoutSec).toBe(2700)
+  })
+
   it('fails closed on missing sections, unknown providers, and bad values', () => {
     const attempt = (value: unknown): HarnessError => { try { validateLoopConfig(value); throw new Error('expected failure') } catch (error) { return error as HarnessError } }
     expect(attempt({})).toMatchObject({ code: 'INVALID_CONFIG' })
