@@ -65,6 +65,25 @@ export const PlannedIssueSchema = z.object({
 })
 export type PlannedIssue = z.infer<typeof PlannedIssueSchema>
 
+/**
+ * A list the interviewer reports while the PRD is still being filled. Two shapes a model produces for "one item"
+ * or "nothing yet" are read for what they mean instead of failing the round: a bare string is a one-item list, and
+ * an empty list (or blank string) is a gap, which `prdGaps` — not the parser — decides about. Observed with
+ * `glm-5.3`, which answered `"users": "..."` and `"successCriteria": []` and lost the whole round to the schema.
+ */
+const interviewList = z.preprocess((value) => {
+  if (typeof value === 'string') return value.trim() ? [value] : undefined
+  if (Array.isArray(value)) { const items = value.filter((item) => !(typeof item === 'string' && !item.trim())); return items.length ? items : undefined }
+  return value
+}, z.array(nonEmpty).min(1).optional())
+
+/** The PRD as the interview reports it: every field optional, lists tolerant of the shapes above. */
+const InterviewPrdSchema = z.object({
+  objective: z.preprocess((value) => typeof value === 'string' && !value.trim() ? undefined : value, nonEmpty.optional()),
+  users: interviewList, inScope: interviewList, outOfScope: interviewList, nonGoals: interviewList,
+  constraints: interviewList, successCriteria: interviewList, risks: interviewList,
+})
+
 export const QuestionSchema = z.object({
   /** Empty when the interviewer has no gap left to close. */
   question: z.string().trim().default(''),
@@ -72,7 +91,7 @@ export const QuestionSchema = z.object({
   options: z.array(nonEmpty).default([]),
   recommendation: z.string().trim().default(''),
   complete: z.boolean().default(false),
-  prd: PrdSchema.partial().default({}),
+  prd: InterviewPrdSchema.default({}),
 })
 export type InterviewQuestion = z.infer<typeof QuestionSchema>
 
@@ -253,7 +272,8 @@ export interface PlanStageDeps {
 export const interviewRound = async (deps: PlanStageDeps, state: PlanStageState): Promise<PlanStageState> => {
   const now = (deps.now ?? (() => new Date()))()
   const { value } = await firstUsable({ runner: deps.runner, config: deps.loaded.config, root: deps.loaded.root, timeoutMs: deps.loaded.config.worker.plan.timeoutMs, candidates: deps.candidates, prompt: renderInterviewPrompt(state, deps.loaded.config), parse: parseQuestionOutput, label: 'Interview' })
-  const prd = { ...state.prd, ...value.prd }
+  // An absent field in this round keeps what earlier rounds established; the parser turns "nothing yet" into absent.
+  const prd = { ...state.prd, ...Object.fromEntries(Object.entries(value.prd).filter(([, field]) => field !== undefined)) }
   const gaps = prdGaps(prd)
   const done = value.complete && gaps.length === 0 && !value.question
   return { ...state, prd, pending: done ? null : value, phase: done ? 'review' : 'interview', updatedAt: now.toISOString() }

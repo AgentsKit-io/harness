@@ -201,5 +201,10 @@ describe('persistence and reporting', () => {
   it('reads a question block back, markers and fences included', () => {
     expect(parseQuestionOutput(`noise\n${QUESTION_OPEN}\n\`\`\`json\n${JSON.stringify({ question: 'q', field: 'users' })}\n\`\`\`\n${QUESTION_CLOSE}`)).toMatchObject({ question: 'q', field: 'users', complete: false })
     expect(() => parseQuestionOutput('nothing here')).toThrow(/no question block/i)
+    // glm-5.3 reports "one user" as a string and "no criteria yet" as []: both are meaning, not a malformed round.
+    const loose = parseQuestionOutput(`${QUESTION_OPEN}${JSON.stringify({ question: 'q', prd: { users: 'platform team', successCriteria: [], risks: [''] } })}${QUESTION_CLOSE}`)
+    expect(loose.prd.users).toEqual(['platform team'])
+    expect(loose.prd.successCriteria).toBeUndefined()
+    expect(prdGaps(loose.prd)).toContain('successCriteria')
   })
 })

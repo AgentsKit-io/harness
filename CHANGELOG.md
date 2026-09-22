@@ -13,6 +13,9 @@ Found by running the loop on a real migration (agentskit-os #6238) with opencode
   before, issues were created in `states[0]`, which *is* the queue, so the human gate did not exist. The issues now
   carry the queue's `requireLabels`/`anyLabels`, land in the project the queue drains (or `--project`), and hang
   under `--parent <epic>`.
+- **The plan interview reads what a model meant instead of losing the round.** While the PRD is being filled, a
+  bare string is a one-item list and an empty list is a gap for `prdGaps` to report — `glm-5.3` answered
+  `"users": "…"` and `"successCriteria": []` and the whole round failed validation. The final PRD stays strict.
 - **A worker brief is never typed into a pane that is not `tui-idle`.** The launcher waits a second, longer window;
   if the TUI still is not ready the dispatch fails (and the half-created worktree is removed) instead of losing the
   prompt.
