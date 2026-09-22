@@ -476,8 +476,14 @@ export const runTick = async (input: TickInput): Promise<TickReport> => {
           onPiiDetected: (matches) => {
             if (!dryRun) appendLoopEvent(loaded.stateDir, { at: now().toISOString(), type: 'security.pii-detected', issue: detail.identifier, source: 'issue-text', kinds: [...new Set(matches.map((match) => match.kind))], count: matches.length }, bus)
           },
+          onProviderCall: (event) => {
+            if (!dryRun) appendLoopEvent(loaded.stateDir, { at: now().toISOString(), type: 'provider.call', role: 'orchestrator', issue: detail.identifier, ...event }, bus)
+          },
         })
-        if (!dryRun) writeStoredContract(loaded.stateDir, stored)
+        if (!dryRun) {
+          writeStoredContract(loaded.stateDir, stored)
+          appendLoopEvent(loaded.stateDir, { at: now().toISOString(), type: 'contract.generated', issue: detail.identifier, provider: stored.provider, model: stored.model, effort: stored.effort, digest: stored.digest }, bus)
+        }
       } catch (error) {
         const reason = `contract generation failed: ${message(error)}`
         if (!dryRun) { appendLoopEvent(loaded.stateDir, { at: now().toISOString(), type: 'contract.failed', issue: detail.identifier, error: message(error) }, bus); await recordFailureAndMaybePause(detail.identifier, 'contract.failed', reason) }
@@ -516,7 +522,10 @@ export const runTick = async (input: TickInput): Promise<TickReport> => {
             ...(plannerSettings.timeoutMs === null ? {} : { plannerTimeoutMs: plannerSettings.timeoutMs }),
             ...(voteSettings.timeoutMs === null ? {} : { voteTimeoutMs: voteSettings.timeoutMs }),
             now, onProviderFailure,
-            onCycle: (cycle, votes) => { if (!dryRun) appendLoopEvent(loaded.stateDir, { at: now().toISOString(), type: 'plan.voted', issue: detail.identifier, cycle, approvals: votes.filter((vote) => vote.vote === 'approve').length, votes: votes.length }, bus) },
+            onCycle: (cycle, votes) => { if (!dryRun) appendLoopEvent(loaded.stateDir, { at: now().toISOString(), type: 'plan.voted', issue: detail.identifier, cycle, approvals: votes.filter((vote) => vote.vote === 'approve').length, votes: votes.length, voters: votes.map((vote) => ({ provider: vote.provider, model: vote.model, vote: vote.vote })) }, bus) },
+            onProviderCall: (event) => {
+              if (!dryRun) appendLoopEvent(loaded.stateDir, { at: now().toISOString(), type: 'provider.call', issue: detail.identifier, ...event }, bus)
+            },
           })
           if (!dryRun) writeStoredPlan(loaded.stateDir, approvedPlan)
         } catch (error) {

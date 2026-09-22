@@ -159,3 +159,26 @@ export const resumeStage = (stateDir: string, stage: LoopStageName): void => {
   const { [stage]: _removed, ...rest } = state
   writeStagePause(stateDir, rest)
 }
+
+// ---------------------------------------------------------------------------------------------------------------
+// Last-seen config digest: lets `loop stage` notice that `loop.config.yaml` changed between two scheduled runs and
+// log it (`config.changed`), without diffing the YAML itself — the digest is already computed once per load
+// (`loadLoopConfig`'s `configHash`), so this only remembers it.
+// ---------------------------------------------------------------------------------------------------------------
+
+const configHashPath = (stateDir: string): string => join(stateDir, 'config-hash.json')
+
+export const readLastConfigHash = (stateDir: string): string | null => {
+  const path = configHashPath(stateDir)
+  if (!existsSync(path)) return null
+  try {
+    const parsed = JSON.parse(readFileSync(path, 'utf8')) as { hash?: unknown }
+    return typeof parsed.hash === 'string' ? parsed.hash : null
+  } catch { return null }
+}
+
+export const writeLastConfigHash = (stateDir: string, hash: string): void => {
+  const path = configHashPath(stateDir)
+  mkdirSync(dirname(path), { recursive: true })
+  writeFileSync(path, `${JSON.stringify({ hash })}\n`, 'utf8')
+}

@@ -520,10 +520,17 @@ export const LoopConfigSchema = z.object({
      * Cost circuit breaker: the loop cannot count a worker CLI's internal model/tool calls (it is an opaque
      * process), so instead it watches the builder provider's remaining Orca usage from dispatch time. If that
      * provider's remaining usage drops by at least this many percentage points *while this one issue is in
-     * flight*, deliver stops nudging/reviewing/merging it and escalates like a stuck worker. Unset (default) =
-     * disabled — a config typo elsewhere must not silently start blocking normal-cost dispatches.
+     * flight*, deliver stops nudging/reviewing/merging it and escalates like a stuck worker.
+     *
+     * Default 40 (previously unset/disabled): the incident that motivated this default was a single dispatch
+     * burning 25% of a weekly window with nobody told until long after. The number is deliberately generous —
+     * this signal is noisy on a provider shared by concurrent dispatches, so it is set high enough that a
+     * normal-cost dispatch should not trip it — because tripping only escalates (worktree and PR kept, lease
+     * released, a human looks) rather than discarding anything; the delta is logged on every pass regardless
+     * (`provider.usage-observed`) so the trend is visible long before this ceiling would ever matter. Set to 100
+     * to make it effectively never trip, for a project that wants the log without the breaker.
      */
-    maxUsageDeltaPercent: z.number().min(1).max(100).optional(),
+    maxUsageDeltaPercent: z.number().min(1).max(100).default(40),
   }).prefault({}),
   brief: z.object({
     /** Markdown files (paths relative to `project.root`) pinned verbatim into every worker brief, sha256-digested for traceability. Missing file = dispatch fails closed. */

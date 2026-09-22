@@ -52,6 +52,8 @@ export {
 export type { LearningsLedger, MemoryContextPlan, MemoryPromptSelection } from './memory.js'
 
 export { buildDebriefReport, renderDebriefMarkdown } from './debrief.js'
+export { buildIssueTimeline, renderIssueTimelineMarkdown } from './issue-timeline.js'
+export type { IssueTimelineProblem, IssueTimelineReport, TimelineStep } from './issue-timeline.js'
 export { readOutcomeProgress } from './progress.js'
 export type { OutcomeProgress, OutcomeProgressStatus } from './progress.js'
 export type { DebriefInput, DebriefIssueRow, DebriefReport } from './debrief.js'
@@ -64,7 +66,8 @@ export type { WatchEvent, WatchEventKind, WatchInput, WatchReport, WatchTargetSn
 
 export {
   clearIssueFailures, isIssuePaused, isStagePaused, issueFailurePath, listPausedIssues, pauseIssue, readIssueFailures,
-  readStagePause, recordIssueFailure, recordStageRunResult, resumeIssue, resumeStage, stageEntry, stagePausePath,
+  readLastConfigHash, readStagePause, recordIssueFailure, recordStageRunResult, resumeIssue, resumeStage, stageEntry,
+  stagePausePath, writeLastConfigHash,
 } from './resilience-state.js'
 export type { IssueFailureRecord, IssueFailureState, LoopStageName, StagePauseEntry, StagePauseState } from './resilience-state.js'
 

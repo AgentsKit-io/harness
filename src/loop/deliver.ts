@@ -583,6 +583,7 @@ ${marker}` }); actions.push('secret-file hold commented') } catch (error) { acti
         return fixRound(ctx, record, lease, state, pr, 'ci', `Loop: the project verification failed on PR #${pr.number} before the review was even requested: \`${config.delivery.verify.argv.join(' ')}\`. Fix it, re-run it locally, commit and push. No review is spent on a build that does not pass.`, 'local verify failed before review', actions)
       }
       actions.push('local verify passed before review')
+      event(ctx, { type: 'verify.passed', issue: record.issue, pr: pr.number, head: pr.headSha })
     }
     if (prior && prior.attempts >= 2) actions.push(`retrying incomplete review with ${reviewProvider}/${chosen.model}`)
     if (ctx.dryRun) { actions.push(`would review with ${chosen.provider}/${chosen.model}`); return { issue: record.issue, outcome: 'dry-run', reason: 'review pending', pr: pr.number, head: pr.headSha, actions } }
@@ -598,7 +599,7 @@ ${marker}` }); actions.push('secret-file hold commented') } catch (error) { acti
     saveState(ctx, state)
     // windowed/cost visibility: agentskit-review already tracks provider calls and tokens per invocation
     // (`review.usage`); recording it here is what lets issueBudget/issueSpend see review spend at all.
-    event(ctx, { type: 'pr.reviewed', issue: record.issue, pr: pr.number, head: pr.headSha, status: review.status, blocking: review.blocking.length, provider: review.provider, model: review.model, calls: review.usage.providerCalls, inputTokens: review.usage.inputTokens, outputTokens: review.usage.outputTokens, totalTokens: review.usage.totalTokens })
+    event(ctx, { type: 'pr.reviewed', issue: record.issue, pr: pr.number, head: pr.headSha, status: review.status, blocking: review.blocking.length, provider: review.provider, model: review.model, profile: reviewSettings.profile, votes: reviewSettings.votes, minSeverity: reviewSettings.minSeverity, calls: review.usage.providerCalls, inputTokens: review.usage.inputTokens, outputTokens: review.usage.outputTokens, totalTokens: review.usage.totalTokens })
     await ctx.bus.runHook('afterReview', { issue: record.issue, pr: pr.number, head: pr.headSha, status: review.status, blocking: review.blocking.length })
     if (review.status === 'incomplete') {
       const failureKind = classifyProviderFailure(review.rawTail)
@@ -643,6 +644,7 @@ ${marker}` }); actions.push('secret-file hold commented') } catch (error) { acti
     const dod = assessDod({ config, contract: stored?.contract ?? null, evidence: { ...evidence, outcomes: [...evidence.outcomes, ...fromVerify] }, prFiles: pr.files })
     if (fromVerify.length) actions.push(`verify.json supplied ${fromVerify.length} outcome proof(s)`)
     if (dod.lines.length) {
+      event(ctx, { type: 'dod.assessed', issue: record.issue, pr: pr.number, head: pr.headSha, complete: dod.complete, proven: dod.lines.filter((line) => line.status === 'proven').length, missing: dod.missing.length, failed: dod.failed.length })
       if (!ctx.dryRun) { try { const marker = `<!-- loop:dod:${pr.headSha}:${dod.complete ? 'complete' : `${dod.missing.length}-${dod.failed.length}`} -->`; if (!(await githubCommentExists(ctx.runner, { repo: config.project.repo, number: pr.number, marker }))) await githubComment(ctx.runner, { repo: config.project.repo, number: pr.number, body: `${renderDodMarkdown(dod)}\n\n${marker}` }) } catch (error) { actions.push(`DoD comment failed: ${message(error)}`) } }
       if (!dod.complete) {
         const why = `definition of done not proven — missing: ${dod.missing.join(', ') || 'none'}; failing: ${dod.failed.join(', ') || 'none'}`
@@ -760,7 +762,7 @@ const handleIntakePullRequest = async (ctx: Context, identifier: string, pr: Pul
     const attempts = (prior?.attempts ?? 0) + 1
     const next: DeliveryState = { ...state, prNumber: pr.number, reviews: { ...state.reviews, [pr.headSha]: { status: review.status, at: ctx.now().toISOString(), provider: review.provider, model: review.model, blocking: review.blocking.length, attempts } } }
     saveState(ctx, next)
-    event(ctx, { type: 'pr.reviewed', pr: pr.number, head: pr.headSha, status: review.status, blocking: review.blocking.length, provider: review.provider, model: review.model, source: 'github-intake', calls: review.usage.providerCalls, inputTokens: review.usage.inputTokens, outputTokens: review.usage.outputTokens, totalTokens: review.usage.totalTokens })
+    event(ctx, { type: 'pr.reviewed', pr: pr.number, head: pr.headSha, status: review.status, blocking: review.blocking.length, provider: review.provider, model: review.model, profile: config.delivery.review.profile, votes: config.delivery.review.votes, minSeverity: config.delivery.review.minSeverity, source: 'github-intake', calls: review.usage.providerCalls, inputTokens: review.usage.inputTokens, outputTokens: review.usage.outputTokens, totalTokens: review.usage.totalTokens })
     await ctx.bus.runHook('afterReview', { issue: identifier, pr: pr.number, head: pr.headSha, status: review.status, blocking: review.blocking.length, source: 'github-intake' })
     if (review.status === 'incomplete') {
       const failureKind = classifyProviderFailure(review.rawTail)
@@ -851,12 +853,15 @@ export const runDeliver = async (input: DeliverInput): Promise<DeliverReport> =>
         continue
       }
       const initialRemaining = record.initialRemainingPercent
-      if (config.resilience.maxUsageDeltaPercent && initialRemaining !== null && initialRemaining !== undefined) {
+      if (initialRemaining !== null && initialRemaining !== undefined) {
         const currentProvider = ctx.providers.find((provider) => provider.id === record.provider)
         const currentRemaining = currentProvider ? remainingUsagePercent(currentProvider.usage, config.models.routing.usageMetric) : null
         if (currentRemaining !== null) {
           const delta = initialRemaining - currentRemaining
-          if (delta >= config.resilience.maxUsageDeltaPercent) {
+          // windowed visibility: logged every pass regardless of the breaker below, so the trend is visible
+          // before it ever trips — this is the same delta the incident that started this work never had.
+          event(ctx, { type: 'provider.usage-observed', issue: record.issue, provider: record.provider, initialRemainingPercent: initialRemaining, currentRemainingPercent: currentRemaining, deltaPercent: delta })
+          if (config.resilience.maxUsageDeltaPercent && delta >= config.resilience.maxUsageDeltaPercent) {
             results.push(await tripCircuitBreaker(ctx, record, lease, state, 'cost-guard', `provider ${record.provider} remaining usage dropped ${delta.toFixed(1)} points since dispatch (${initialRemaining}% → ${currentRemaining}%), at or past resilience.maxUsageDeltaPercent (${config.resilience.maxUsageDeltaPercent})`))
             continue
           }
