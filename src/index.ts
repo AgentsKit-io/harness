@@ -126,8 +126,8 @@ export { orcaAutomationCreateArgv, orcaAutomationEditArgv, orcaAutomationRemove,
 export type { OrcaAutomation, OrcaAutomationSpec, OrcaCreatedWorktree, OrcaSendReceipt, OrcaTerminal } from './adapters/orca-cli.js'
 export { createLinearTrackingAdapter, fetchLinearIssue, linearAssigneeClear, linearAssigneeClearArgv, linearAssigneeSet, linearAssigneeSetArgv, linearAttach, linearAttachArgv, linearCommentAdd, linearCommentAddArgv, linearLabelAdd, linearLabelArgv, linearLabelRemove, linearStatusSet, linearStatusSetArgv, parseLinearIssueDetail, queueAssigneeFilter, writeIdFor } from './adapters/linear-orca.js'
 export type { LinearIssueDetail, LinearWriteOptions } from './adapters/linear-orca.js'
-export { PR_FIELDS, assessChecks, githubComment, githubCommentArgv, githubCommentExists, githubLabelRemove, githubMerge, githubMergeArgv, githubOpenPullRequests, githubPullRequest, githubPullRequestsForBranch, parsePullRequest, touchesProtectedPaths } from './adapters/github-cli.js'
-export type { CheckOutcome, ChecksAssessment, GitHubCliOptions, PullRequestCheck, PullRequestSnapshot } from './adapters/github-cli.js'
+export { PR_FIELDS, assessChecks, githubComment, githubCommentArgv, githubCommentExists, githubCompare, githubLabelRemove, githubMerge, githubMergeArgv, githubOpenPullRequests, githubPullRequest, githubPullRequestsForBranch, parsePullRequest, touchesProtectedPaths } from './adapters/github-cli.js'
+export type { CheckOutcome, ChecksAssessment, DiffStat, GitHubCliOptions, PullRequestCheck, PullRequestSnapshot } from './adapters/github-cli.js'
 export { CONTRACT_CLOSE, CONTRACT_JSON_SCHEMA, CONTRACT_OPEN, CONTRACT_SCHEMA_VERSION, ContractOutcomeSchema, TaskContractSchema, assessContract, contractIsFresh, contractPath, generateContract, parseContractOutput, parseStructuredContractOutput, readStoredContract, renderContractPrompt, resolveDocContext, untrusted, writeStoredContract } from './loop/contract.js'
 export { classifyProviderFailure, extractResetsAt } from './loop/contract.js'
 export type { ContractAssessment, GenerateContractInput, ProviderFailure, StoredContract, TaskContract } from './loop/contract.js'
@@ -136,8 +136,8 @@ export type { HandoffBriefInput } from './loop/brief.js'
 export type { WorkerBriefInput } from './loop/brief.js'
 export { appendLoopEvent, branchFor, briefPath, busyIssues, dispatchRecordPath, gatherLoopState, launchWorkerTerminal, precheckTick, readDispatchRecord, writeDispatchRecord, runTick, worktreeNameFor } from './loop/tick.js'
 export type { DispatchRecordFile, LoopState, TickCandidateResult, TickInput, TickOutcome, TickReport } from './loop/tick.js'
-export { REVIEW_SEVERITIES, atLeast, buildReviewArgv, parseReviewResult, renderFindingsForWorker, runCodeReview, severityRank } from './adapters/code-review.js'
-export type { CodeReviewInput, CodeReviewOutcome, ReviewFinding, ReviewSeverity } from './adapters/code-review.js'
+export { REVIEW_SEVERITIES, atLeast, buildReviewArgv, parseReviewEvidence, parseReviewResult, renderFindingsForWorker, runCodeReview, severityRank } from './adapters/code-review.js'
+export type { CodeReviewInput, CodeReviewOutcome, ReviewFinding, ReviewSeverity, ReviewUsage } from './adapters/code-review.js'
 export { deliveryStatePath, listDispatched, precheckDeliver, readDeliveryState, runDeliver } from './loop/deliver.js'
 export type { DeliverInput, DeliverOutcome, DeliverReport, DeliverResult, DeliveryState } from './loop/deliver.js'
 export { LOOP_STAGES, MANAGED_STAGES, automationName, automationPrompt, automationSpecs, declaredStages, installLoopAutomations, loopStatus, parseAutomationRuns, precheckCommand, shellQuote, uninstallLoopAutomations } from './loop/install.js'
@@ -159,6 +159,8 @@ export { buildDebriefReport, renderDebriefMarkdown } from './loop/debrief.js'
 export { readOutcomeProgress } from './loop/progress.js'
 export type { OutcomeProgress, OutcomeProgressStatus } from './loop/progress.js'
 export type { DebriefInput, DebriefIssueRow, DebriefReport } from './loop/debrief.js'
+export { buildIssueTimeline, renderIssueTimelineMarkdown } from './loop/issue-timeline.js'
+export type { IssueTimelineProblem, IssueTimelineReport, TimelineStep } from './loop/issue-timeline.js'
 export { assessObservability, renderObservabilityMarkdown, runObservability } from './loop/observability.js'
 export type { ObservabilityAnomaly, ObservabilityMetrics, ObservabilityReport, ObservabilitySeverity, ObservabilitySnapshot, ObservabilityTerminal } from './loop/observability.js'
 export { assessObserveStage, observerStatePath, readObserverState, renderObserveMarkdown, runObserveStage, staleStageLocks } from './loop/observe-stage.js'
@@ -176,7 +178,8 @@ export type { LearningsLedger, MemoryContextPlan, MemoryPromptSelection } from '
 
 export {
   clearIssueFailures, isIssuePaused, isStagePaused, issueFailurePath, listPausedIssues, pauseIssue, readIssueFailures,
-  readStagePause, recordIssueFailure, recordStageRunResult, resumeIssue, resumeStage, stageEntry, stagePausePath,
+  readLastConfigHash, readStagePause, recordIssueFailure, recordStageRunResult, resumeIssue, resumeStage, stageEntry,
+  stagePausePath, writeLastConfigHash,
 } from './loop/resilience-state.js'
 export type { IssueFailureRecord, IssueFailureState, LoopStageName, StagePauseEntry, StagePauseState } from './loop/resilience-state.js'
 

@@ -496,6 +496,14 @@ ak-harness loop debrief [options]
 | `--issue &lt;identifier&gt;` | restrict to one issue |  |
 | `--since &lt;window&gt;` | how far back to look for escalations/events | `"24h"` |
 
+### `ak-harness loop issue-timeline`
+
+Every logged step for one issue, oldest first: what ran, how long since the previous step, how many tokens, and which steps were friction (fix rounds, cooldowns, circuit breakers). Read-only.
+
+```bash
+ak-harness loop issue-timeline [options] <identifier>
+```
+
 ### `ak-harness loop observe`
 
 Read-only anomaly scan and operating metrics for the loop (queue, workers, delivery, machine, memory, cache, tokens).

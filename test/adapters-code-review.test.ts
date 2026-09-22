@@ -2,7 +2,7 @@ import { mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
-import { atLeast, buildReviewArgv, parseReviewResult, renderFindingsForWorker, runCodeReview, severityRank } from '../src/index.js'
+import { atLeast, buildReviewArgv, parseReviewEvidence, parseReviewResult, renderFindingsForWorker, runCodeReview, severityRank } from '../src/index.js'
 import type { CodeReviewInput, CommandResult, CommandRunner, ReviewFinding } from '../src/index.js'
 
 const cleanups: string[] = []
@@ -77,6 +77,29 @@ const baseInput: CodeReviewInput = {
   minSeverity: 'med', deadlineMs: 60_000, maxCalls: 10, post: false, resultFile: '/tmp/does-not-matter.json',
 }
 
+describe('parseReviewEvidence', () => {
+  it('reads providerCalls and input/output tokens from evidence.usage', () => {
+    const usage = parseReviewEvidence({ evidence: { providerCalls: 5, usage: { inputTokens: 1000, outputTokens: 200 } } })
+    expect(usage).toEqual({ providerCalls: 5, inputTokens: 1000, outputTokens: 200, totalTokens: 1200 })
+  })
+
+  it('falls back to evidence.tokensUsed when usage does not break input/output apart', () => {
+    const usage = parseReviewEvidence({ evidence: { providerCalls: 3, tokensUsed: 900 } })
+    expect(usage).toEqual({ providerCalls: 3, inputTokens: null, outputTokens: null, totalTokens: 900 })
+  })
+
+  it('reads through a wrapping "review" key, same as parseReviewResult', () => {
+    const usage = parseReviewEvidence({ review: { evidence: { providerCalls: 2 } } })
+    expect(usage.providerCalls).toBe(2)
+  })
+
+  it('is all-null when there is no evidence at all, never throwing', () => {
+    expect(parseReviewEvidence({})).toEqual({ providerCalls: null, inputTokens: null, outputTokens: null, totalTokens: null })
+    expect(parseReviewEvidence(null)).toEqual({ providerCalls: null, inputTokens: null, outputTokens: null, totalTokens: null })
+    expect(parseReviewEvidence('nope')).toEqual({ providerCalls: null, inputTokens: null, outputTokens: null, totalTokens: null })
+  })
+})
+
 describe('buildReviewArgv', () => {
   it('includes optional flags only when provided', () => {
     const argv = buildReviewArgv(baseInput)
@@ -146,6 +169,16 @@ describe('runCodeReview', () => {
   it('truncates rawTail to the last 800 characters of combined stderr+stdout', async () => {
     const outcome = await runCodeReview(runner(cmd({ code: 0, stdout: 'x'.repeat(1000) })), { ...baseInput, resultFile: tempResultFile() })
     expect(outcome.rawTail.length).toBeLessThanOrEqual(800)
+  })
+
+  it('carries provider-call/token usage from the result file, defaulting to all-null when absent', async () => {
+    const resultFile = tempResultFile()
+    writeFileSync(resultFile, JSON.stringify({ findings: [], evidence: { providerCalls: 4, usage: { inputTokens: 500, outputTokens: 100 } } }))
+    const withUsage = await runCodeReview(runner(cmd({ code: 0 })), { ...baseInput, resultFile })
+    expect(withUsage.usage).toEqual({ providerCalls: 4, inputTokens: 500, outputTokens: 100, totalTokens: 600 })
+
+    const withoutResultFile = await runCodeReview(runner(cmd({ code: 1 })), { ...baseInput, resultFile: tempResultFile() })
+    expect(withoutResultFile.usage).toEqual({ providerCalls: null, inputTokens: null, outputTokens: null, totalTokens: null })
   })
 
   it('passes cwd/env through to the runner when provided', async () => {

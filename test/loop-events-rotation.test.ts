@@ -68,6 +68,21 @@ describe('events.ndjson rotation', () => {
     expect(events.map((event) => event.issue)).toEqual(['OLD-1', 'OLD-2', 'NEW-1'])
   })
 
+  it('prunes archives older than 30 days when rotation runs, keeping recent ones', () => {
+    const stateDir = tempStateDir()
+    const rotateAtMs = 1789257600000 // 2026-09-13T00:00:00.000Z, matches the rotation test above
+    const oldArchive = join(stateDir, 'events-archive-1700000000000.ndjson') // ~34 days before rotateAtMs
+    const recentArchive = join(stateDir, 'events-archive-1788000000000.ndjson') // ~14.5 days before rotateAtMs
+    writeFileSync(oldArchive, `${JSON.stringify({ at: '2023-11-14T00:00:00.000Z', type: 'worker.dispatched', issue: 'OLD-1' })}\n`, 'utf8')
+    writeFileSync(recentArchive, `${JSON.stringify({ at: '2026-08-29T00:00:00.000Z', type: 'worker.dispatched', issue: 'RECENT-1' })}\n`, 'utf8')
+    writeFileSync(join(stateDir, 'events.ndjson'), `${'x'.repeat(11 * 1024 * 1024)}\n`, 'utf8')
+    appendLoopEvent(stateDir, { at: '2026-09-13T00:00:00.000Z', type: 'worker.dispatched', issue: 'ENG-1' }, undefined, () => new Date(rotateAtMs))
+    const entries = readdirSync(stateDir)
+    expect(entries).not.toContain('events-archive-1700000000000.ndjson')
+    expect(entries).toContain('events-archive-1788000000000.ndjson')
+    expect(entries).toContain('events-archive-1789257600000.ndjson') // the one rotation just created
+  })
+
   it('readLoopEvents skips an archive whose rotation time predates sinceMs, without reading it', () => {
     const stateDir = tempStateDir()
     const staleArchive = join(stateDir, 'events-archive-1000.ndjson')

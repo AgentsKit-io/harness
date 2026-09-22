@@ -4,7 +4,7 @@ import { z } from 'zod'
 import type { CommandRunner } from '../adapters/command.js'
 import { fail } from '../kernel/errors.js'
 import { hashJson } from '../kernel/hash.js'
-import { providerIdentity, renderHeadlessArgv, type LoopConfig } from './config.js'
+import { providerIdentity, renderHeadlessArgv, type EffortLevel, type LoopConfig } from './config.js'
 import { classifyProviderFailure, untrusted, type ProviderFailure, type TaskContract } from './contract.js'
 import { writeJsonAtomic } from './fs-atomic.js'
 import type { RankedModel } from './routing.js'
@@ -41,6 +41,8 @@ export interface StoredPlan {
   readonly generatedAt: string
   readonly provider: string
   readonly model: string
+  /** Reasoning effort the winning planner candidate ran at (`models.effort.planner`, or a flow's override). */
+  readonly effort?: EffortLevel
   readonly plan: TaskPlan
   readonly digest: string
   readonly contractDigest: string
@@ -130,14 +132,15 @@ Vote as JSON between the exact markers ${VOTE_OPEN} and ${VOTE_CLOSE}, nothing e
 
 Reject only for something a planner can act on: an outcome no step reaches, a step that leaves the contract's scope, a missing test for new behaviour, a risk with no containment, or a step whose files contradict the contract's touchpoints. Style preferences are not objections. A rejection without at least one concrete objection is discarded.`
 
-interface HeadlessCall { readonly candidate: RankedModel; readonly prompt: string }
+interface HeadlessCall { readonly candidate: RankedModel; readonly prompt: string; readonly role: 'planner' | 'voter' }
 
-const callHeadless = async (input: { readonly runner: CommandRunner; readonly config: LoopConfig; readonly root: string; readonly timeoutMs: number; readonly call: HeadlessCall }): Promise<{ readonly stdout: string } | { readonly failure: ProviderFailure }> => {
+const callHeadless = async (input: { readonly runner: CommandRunner; readonly config: LoopConfig; readonly root: string; readonly timeoutMs: number; readonly call: HeadlessCall; readonly onProviderCall?: PlanWithVotesInput['onProviderCall'] }): Promise<{ readonly stdout: string } | { readonly failure: ProviderFailure }> => {
   const { candidate } = input.call
   const { settings } = providerIdentity(input.config, candidate.provider)
   const argv = renderHeadlessArgv(settings, candidate.model, input.call.prompt, candidate.effort)
   if (!argv) return { failure: { provider: candidate.provider, model: candidate.model, kind: 'other', detail: `no headless argv template (models.providers.${candidate.provider}.headless)` } }
   const outcome = await input.runner.run(argv, { timeoutMs: input.timeoutMs, cwd: input.root })
+  input.onProviderCall?.({ role: input.call.role, provider: candidate.provider, model: candidate.model, effort: candidate.effort, durationMs: outcome.durationMs, exitCode: outcome.code, timedOut: outcome.timedOut, stdoutBytes: outcome.stdout.length, stderrBytes: outcome.stderr.length })
   const detail = `${outcome.stderr.trim()}\n${outcome.stdout.trim()}`.trim().slice(0, 600)
   if (outcome.timedOut || outcome.code !== 0) return { failure: { provider: candidate.provider, model: candidate.model, kind: classifyProviderFailure(detail, outcome.timedOut), detail: outcome.timedOut ? `timed out after ${input.timeoutMs}ms` : `exited ${outcome.code ?? 'null'}: ${detail || 'no output'}` } }
   return { stdout: outcome.stdout }
@@ -162,6 +165,9 @@ export interface PlanWithVotesInput {
   readonly now?: () => Date
   readonly onProviderFailure?: (failure: ProviderFailure) => void
   readonly onCycle?: (cycle: number, votes: readonly CastVote[]) => void
+  /** Called once per planner/voter call attempted (success or failure) — the same per-call visibility contract
+   * generation gets, so planning costs the same as any other harness-direct call, not just its failures. */
+  readonly onProviderCall?: (event: { readonly role: 'planner' | 'voter'; readonly provider: string; readonly model: string; readonly effort: EffortLevel; readonly durationMs: number; readonly exitCode: number | null; readonly timedOut: boolean; readonly stdoutBytes: number; readonly stderrBytes: number }) => void
   /** Ceiling for one planner call. Unset = `worker.plan.timeoutMs`; a flow may shorten it per role. */
   readonly plannerTimeoutMs?: number
   /** Ceiling for one vote call. Unset = `worker.plan.timeoutMs`. */
@@ -192,7 +198,7 @@ export const runPlanWithVotes = async (input: PlanWithVotesInput): Promise<Store
   for (let cycle = 1; cycle <= settings.maxCycles; cycle += 1) {
     let proposed: { readonly plan: TaskPlan; readonly candidate: RankedModel } | null = null
     for (const candidate of input.planner) {
-      const result = await callHeadless({ runner: input.runner, config: input.config, root: input.root, timeoutMs: input.plannerTimeoutMs ?? settings.timeoutMs, call: { candidate, prompt: renderPlanPrompt({ issue: input.issue, config: input.config, contract: input.contract, objections }) } })
+      const result = await callHeadless({ runner: input.runner, config: input.config, root: input.root, timeoutMs: input.plannerTimeoutMs ?? settings.timeoutMs, call: { candidate, role: 'planner', prompt: renderPlanPrompt({ issue: input.issue, config: input.config, contract: input.contract, objections }) }, onProviderCall: input.onProviderCall })
       if ('failure' in result) { failures.push(result.failure); if (result.failure.kind !== 'other') input.onProviderFailure?.(result.failure); continue }
       try { proposed = { plan: parsePlanOutput(result.stdout), candidate }; break } catch (error) { failures.push({ provider: candidate.provider, model: candidate.model, kind: 'output', detail: error instanceof Error ? error.message : String(error) }) }
     }
@@ -206,7 +212,7 @@ export const runPlanWithVotes = async (input: PlanWithVotesInput): Promise<Store
       input.onCycle?.(cycle, [])
       return {
         schemaVersion: PLAN_SCHEMA_VERSION, issue: input.issue, generatedAt: now.toISOString(),
-        provider: proposed.candidate.provider, model: proposed.candidate.model, plan: proposed.plan,
+        provider: proposed.candidate.provider, model: proposed.candidate.model, effort: proposed.candidate.effort, plan: proposed.plan,
         digest: hashJson(proposed.plan), contractDigest: input.contractDigest, cycles: cycle, votes: [], status: 'approved', unresolved: [],
       }
     }
@@ -217,7 +223,7 @@ export const runPlanWithVotes = async (input: PlanWithVotesInput): Promise<Store
     for (let index = 0; index < settings.votes; index += 1) {
       const candidate = input.voters[index % Math.max(1, input.voters.length)]
       if (!candidate) break
-      const result = await callHeadless({ runner: input.runner, config: input.config, root: input.root, timeoutMs: input.voteTimeoutMs ?? settings.timeoutMs, call: { candidate, prompt: renderVotePrompt({ issue: input.issue, config: input.config, contract: input.contract, plan: proposed.plan }) } })
+      const result = await callHeadless({ runner: input.runner, config: input.config, root: input.root, timeoutMs: input.voteTimeoutMs ?? settings.timeoutMs, call: { candidate, role: 'voter', prompt: renderVotePrompt({ issue: input.issue, config: input.config, contract: input.contract, plan: proposed.plan }) }, onProviderCall: input.onProviderCall })
       if ('failure' in result) { failures.push(result.failure); if (result.failure.kind !== 'other') input.onProviderFailure?.(result.failure); continue }
       try { votes.push({ ...parseVoteOutput(result.stdout), provider: candidate.provider, model: candidate.model }) } catch (error) { failures.push({ provider: candidate.provider, model: candidate.model, kind: 'output', detail: error instanceof Error ? error.message : String(error) }) }
     }
@@ -227,7 +233,7 @@ export const runPlanWithVotes = async (input: PlanWithVotesInput): Promise<Store
     if (tally.approved) {
       return {
         schemaVersion: PLAN_SCHEMA_VERSION, issue: input.issue, generatedAt: now.toISOString(),
-        provider: proposed.candidate.provider, model: proposed.candidate.model, plan: proposed.plan,
+        provider: proposed.candidate.provider, model: proposed.candidate.model, effort: proposed.candidate.effort, plan: proposed.plan,
         digest: hashJson(proposed.plan), contractDigest: input.contractDigest, cycles: cycle, votes, status: 'approved', unresolved: [],
       }
     }
@@ -236,7 +242,7 @@ export const runPlanWithVotes = async (input: PlanWithVotesInput): Promise<Store
 
   return {
     schemaVersion: PLAN_SCHEMA_VERSION, issue: input.issue, generatedAt: now.toISOString(),
-    provider: lastPlan?.candidate.provider ?? 'unknown', model: lastPlan?.candidate.model ?? 'unknown',
+    provider: lastPlan?.candidate.provider ?? 'unknown', model: lastPlan?.candidate.model ?? 'unknown', effort: lastPlan?.candidate.effort,
     plan: lastPlan?.plan ?? { summary: 'no plan reached consensus', steps: [{ id: 's0', description: 'none', files: [] }], tests: [], risks: [] },
     digest: lastPlan ? hashJson(lastPlan.plan) : '', contractDigest: input.contractDigest,
     cycles: settings.maxCycles, votes: lastVotes, status: 'no-consensus', unresolved: objections,

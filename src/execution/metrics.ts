@@ -1,4 +1,4 @@
-import { existsSync, readFileSync, readdirSync, renameSync, rmSync, writeFileSync } from 'node:fs'
+import { existsSync, readFileSync, readdirSync, renameSync, rmSync, statSync, writeFileSync } from 'node:fs'
 import { basename, dirname, join } from 'node:path'
 import { fail } from '../kernel/errors.js'
 import { readJson, readRun } from './files.js'
@@ -199,15 +199,25 @@ const summarize = (runs: readonly BenchmarkRun[]): BenchmarkSummary => {
   }
 }
 
+/** windowed: the benchmark command shows recent trend, not full history — capping to the most recently modified
+ * run directories keeps it from re-parsing every run.json the project has ever produced (that directory only
+ * grows; nothing here ever prunes it). */
+const MAX_BENCHMARK_RUNS = 200
+
 const readRuns = (stateDir: string): VerificationRun[] => {
   const runsDir = join(stateDir, 'runs')
   if (!existsSync(runsDir)) return []
-  return readdirSync(runsDir, { withFileTypes: true }).filter((entry) => entry.isDirectory()).map((entry) => {
-    try {
-      const candidate = readJson(join(runsDir, entry.name, 'run.json')) as { readonly type?: unknown }
-      return candidate.type === 'agentskit-harness-run' ? readRun(stateDir, entry.name) : undefined
-    } catch (error) { return fail(`Benchmark could not read run ${entry.name}: ${error instanceof Error ? error.message : String(error)}`, 'HARNESS_ERROR') }
-  }).filter((run): run is VerificationRun => run !== undefined)
+  return readdirSync(runsDir, { withFileTypes: true })
+    .filter((entry) => entry.isDirectory())
+    .map((entry) => ({ entry, mtimeMs: statSync(join(runsDir, entry.name)).mtimeMs }))
+    .sort((left, right) => right.mtimeMs - left.mtimeMs)
+    .slice(0, MAX_BENCHMARK_RUNS)
+    .map(({ entry }) => {
+      try {
+        const candidate = readJson(join(runsDir, entry.name, 'run.json')) as { readonly type?: unknown }
+        return candidate.type === 'agentskit-harness-run' ? readRun(stateDir, entry.name) : undefined
+      } catch (error) { return fail(`Benchmark could not read run ${entry.name}: ${error instanceof Error ? error.message : String(error)}`, 'HARNESS_ERROR') }
+    }).filter((run): run is VerificationRun => run !== undefined)
 }
 
 const nonEmptyString = (value: unknown, label: string): string => {

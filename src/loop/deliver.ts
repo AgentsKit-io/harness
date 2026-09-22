@@ -2,7 +2,7 @@ import { existsSync, mkdirSync, readdirSync, readFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import type { CommandRunner } from '../adapters/command.js'
 import { atLeast, parseReviewResult, renderFindingsForWorker, runCodeReview, type CodeReviewOutcome } from '../adapters/code-review.js'
-import { assessChecks, githubComment, githubCommentExists, githubLabelRemove, githubMerge, githubOpenPullRequests, githubPullRequest, githubPullRequestsForBranch, touchesProtectedPaths, type PullRequestSnapshot } from '../adapters/github-cli.js'
+import { assessChecks, githubComment, githubCommentExists, githubCompare, githubLabelRemove, githubMerge, githubOpenPullRequests, githubPullRequest, githubPullRequestsForBranch, touchesProtectedPaths, type PullRequestSnapshot } from '../adapters/github-cli.js'
 import { resolveConnectors, type ScmConnector, type TrackerConnector } from './connectors.js'
 import { issueBudget, modelForChange } from './budget.js'
 import { assessBoundary } from './layers.js'
@@ -83,6 +83,11 @@ export interface DeliverInput {
   readonly assumeIdle?: boolean
   /** Wall-clock budget for this deliver run; the review deadline is capped to fit inside it. */
   readonly budgetMs?: number
+  /** An externally-owned event bus (e.g. `loop stage`, unifying every stage's events on one bus for that
+   * invocation). When set, this call neither loads plugins nor attaches the notifier on it — the owner already
+   * did, and the owner is the one who flushes it once the whole invocation is done. Omit to keep this call
+   * self-sufficient, as every direct caller (`loop deliver`, tests, library use) needs it to be. */
+  readonly bus?: LoopEventBus
 }
 
 const message = (error: unknown): string => error instanceof HarnessError ? `${error.code}: ${error.message}` : error instanceof Error ? error.message : String(error)
@@ -552,9 +557,14 @@ ${marker}` }); actions.push('secret-file hold commented') } catch (error) { acti
     const candidates = applyRoleSettings(ctx.reviewerCandidates, roleSettings)
     const reviewer = candidates[0] ?? ctx.reviewer
     if (roleSettings.source === 'flow' && (reviewer.provider !== ctx.reviewer.provider || reviewer.model !== ctx.reviewer.model)) actions.push(`reviewer ${reviewer.provider}/${reviewer.model} named by flow \`${flow.flow.name ?? 'default'}\``)
-    // Cost lever: the model is chosen from the size and the shape of the change, not from the role alone.
+    // Cost lever: the model is chosen from the size and the shape of the change, not from the role alone. On a
+    // fix round, that means what changed since the last reviewed head — not the whole PR's cumulative diff —
+    // while criticalPaths still checks every file the PR touches (modelForChange's `allFiles`), so an earlier
+    // round's critical-path change is never forgotten just because this round's diff does not repeat it.
+    const lastReviewedHead = Object.entries(state.reviews).sort(([, a], [, b]) => Date.parse(b.at) - Date.parse(a.at))[0]?.[0] ?? null
+    const roundDiff = lastReviewedHead ? await githubCompare(ctx.runner, { repo: config.project.repo, base: lastReviewedHead, head: pr.headSha }).catch(() => null) : null
     const sized = config.delivery.review.smallChangeLines > 0
-      ? modelForChange({ candidates, files: pr.files, changedLines: pr.changedLines, smallChangeLines: config.delivery.review.smallChangeLines, criticalPaths: config.delivery.review.criticalPaths })
+      ? modelForChange({ candidates, files: roundDiff?.files ?? pr.files, allFiles: pr.files, changedLines: roundDiff?.changedLines ?? pr.changedLines, smallChangeLines: config.delivery.review.smallChangeLines, criticalPaths: config.delivery.review.criticalPaths })
       : { model: reviewer, reason: '' }
     const chosen = sized.model ?? reviewer
     if (sized.reason && (chosen.provider !== reviewer.provider || chosen.model !== reviewer.model)) actions.push(`reviewer ${chosen.provider}/${chosen.model} chosen: ${sized.reason}`)
@@ -578,6 +588,7 @@ ${marker}` }); actions.push('secret-file hold commented') } catch (error) { acti
         return fixRound(ctx, record, lease, state, pr, 'ci', `Loop: the project verification failed on PR #${pr.number} before the review was even requested: \`${config.delivery.verify.argv.join(' ')}\`. Fix it, re-run it locally, commit and push. No review is spent on a build that does not pass.`, 'local verify failed before review', actions)
       }
       actions.push('local verify passed before review')
+      event(ctx, { type: 'verify.passed', issue: record.issue, pr: pr.number, head: pr.headSha })
     }
     if (prior && prior.attempts >= 2) actions.push(`retrying incomplete review with ${reviewProvider}/${chosen.model}`)
     if (ctx.dryRun) { actions.push(`would review with ${chosen.provider}/${chosen.model}`); return { issue: record.issue, outcome: 'dry-run', reason: 'review pending', pr: pr.number, head: pr.headSha, actions } }
@@ -591,7 +602,9 @@ ${marker}` }); actions.push('secret-file hold commented') } catch (error) { acti
     const attempts = (prior?.attempts ?? 0) + 1
     state = { ...state, prNumber: pr.number, reviews: { ...state.reviews, [pr.headSha]: { status: review.status, at: ctx.now().toISOString(), provider: review.provider, model: review.model, blocking: review.blocking.length, attempts } } }
     saveState(ctx, state)
-    event(ctx, { type: 'pr.reviewed', issue: record.issue, pr: pr.number, head: pr.headSha, status: review.status, blocking: review.blocking.length, provider: review.provider, model: review.model })
+    // windowed/cost visibility: agentskit-review already tracks provider calls and tokens per invocation
+    // (`review.usage`); recording it here is what lets issueBudget/issueSpend see review spend at all.
+    event(ctx, { type: 'pr.reviewed', issue: record.issue, pr: pr.number, head: pr.headSha, status: review.status, blocking: review.blocking.length, provider: review.provider, model: review.model, profile: reviewSettings.profile, votes: reviewSettings.votes, minSeverity: reviewSettings.minSeverity, calls: review.usage.providerCalls, inputTokens: review.usage.inputTokens, outputTokens: review.usage.outputTokens, totalTokens: review.usage.totalTokens })
     await ctx.bus.runHook('afterReview', { issue: record.issue, pr: pr.number, head: pr.headSha, status: review.status, blocking: review.blocking.length })
     if (review.status === 'incomplete') {
       const failureKind = classifyProviderFailure(review.rawTail)
@@ -636,6 +649,7 @@ ${marker}` }); actions.push('secret-file hold commented') } catch (error) { acti
     const dod = assessDod({ config, contract: stored?.contract ?? null, evidence: { ...evidence, outcomes: [...evidence.outcomes, ...fromVerify] }, prFiles: pr.files })
     if (fromVerify.length) actions.push(`verify.json supplied ${fromVerify.length} outcome proof(s)`)
     if (dod.lines.length) {
+      event(ctx, { type: 'dod.assessed', issue: record.issue, pr: pr.number, head: pr.headSha, complete: dod.complete, proven: dod.lines.filter((line) => line.status === 'proven').length, missing: dod.missing.length, failed: dod.failed.length })
       if (!ctx.dryRun) { try { const marker = `<!-- loop:dod:${pr.headSha}:${dod.complete ? 'complete' : `${dod.missing.length}-${dod.failed.length}`} -->`; if (!(await githubCommentExists(ctx.runner, { repo: config.project.repo, number: pr.number, marker }))) await githubComment(ctx.runner, { repo: config.project.repo, number: pr.number, body: `${renderDodMarkdown(dod)}\n\n${marker}` }) } catch (error) { actions.push(`DoD comment failed: ${message(error)}`) } }
       if (!dod.complete) {
         const why = `definition of done not proven — missing: ${dod.missing.join(', ') || 'none'}; failing: ${dod.failed.join(', ') || 'none'}`
@@ -753,7 +767,7 @@ const handleIntakePullRequest = async (ctx: Context, identifier: string, pr: Pul
     const attempts = (prior?.attempts ?? 0) + 1
     const next: DeliveryState = { ...state, prNumber: pr.number, reviews: { ...state.reviews, [pr.headSha]: { status: review.status, at: ctx.now().toISOString(), provider: review.provider, model: review.model, blocking: review.blocking.length, attempts } } }
     saveState(ctx, next)
-    event(ctx, { type: 'pr.reviewed', pr: pr.number, head: pr.headSha, status: review.status, blocking: review.blocking.length, provider: review.provider, model: review.model, source: 'github-intake' })
+    event(ctx, { type: 'pr.reviewed', pr: pr.number, head: pr.headSha, status: review.status, blocking: review.blocking.length, provider: review.provider, model: review.model, profile: config.delivery.review.profile, votes: config.delivery.review.votes, minSeverity: config.delivery.review.minSeverity, source: 'github-intake', calls: review.usage.providerCalls, inputTokens: review.usage.inputTokens, outputTokens: review.usage.outputTokens, totalTokens: review.usage.totalTokens })
     await ctx.bus.runHook('afterReview', { issue: identifier, pr: pr.number, head: pr.headSha, status: review.status, blocking: review.blocking.length, source: 'github-intake' })
     if (review.status === 'incomplete') {
       const failureKind = classifyProviderFailure(review.rawTail)
@@ -811,12 +825,15 @@ export const runDeliver = async (input: DeliverInput): Promise<DeliverReport> =>
   if (!env['GITHUB_TOKEN'] && !env['GH_TOKEN']) { try { const token = await input.runner.run(['gh', 'auth', 'token'], { timeoutMs: 10_000 }); if (token.code === 0 && token.stdout.trim()) env = { ...env, GITHUB_TOKEN: token.stdout.trim(), GH_TOKEN: token.stdout.trim() } } catch { /* review runs without a token and reports incomplete */ } }
   const reviewDeadlineMs = input.budgetMs ? Math.max(60_000, Math.min(config.delivery.review.deadlineMs, input.budgetMs - 90_000)) : config.delivery.review.deadlineMs
   if (reviewDeadlineMs < config.delivery.review.deadlineMs) notes.push(`review deadline capped to ${Math.round(reviewDeadlineMs / 1000)}s to fit the stage budget`)
-  const bus = createLoopEventBus()
-  if (config.plugins.modules.length) {
+  const ownsBus = !input.bus
+  const bus = input.bus ?? createLoopEventBus()
+  if (ownsBus && config.plugins.modules.length) {
     const { errors } = await loadLoopPlugins(loaded.root, config.plugins.modules, bus)
     for (const failure of errors) notes.push(`plugin ${failure.path} failed to load: ${failure.error}`)
   }
-  const flushNotifications = attachNotifier(bus, { config, runner: input.runner, env })
+  // An externally-owned bus (`loop stage`) already has its own notifier attached, and its owner flushes it once
+  // for the whole invocation — attaching a second one here would double-send every notification.
+  const flushNotifications = ownsBus ? attachNotifier(bus, { config, runner: input.runner, env }) : async () => { /* owner flushes */ }
   const { tracker, scm } = resolveConnectors({ runner: input.runner, config, env, cwd: loaded.root, dryRun })
   const ctx: Context = { loaded, config, runner: input.runner, now, dryRun, reviewer, reviewerCandidates, builder, providers, env, tracker, scm, ...(input.assumeIdle === undefined ? {} : { assumeIdle: input.assumeIdle }), notes, reviewDeadlineMs, bus, builderExtras }
   const ledger = createDispatchLedger(loaded.stateDir)
@@ -844,12 +861,15 @@ export const runDeliver = async (input: DeliverInput): Promise<DeliverReport> =>
         continue
       }
       const initialRemaining = record.initialRemainingPercent
-      if (config.resilience.maxUsageDeltaPercent && initialRemaining !== null && initialRemaining !== undefined) {
+      if (initialRemaining !== null && initialRemaining !== undefined) {
         const currentProvider = ctx.providers.find((provider) => provider.id === record.provider)
         const currentRemaining = currentProvider ? remainingUsagePercent(currentProvider.usage, config.models.routing.usageMetric) : null
         if (currentRemaining !== null) {
           const delta = initialRemaining - currentRemaining
-          if (delta >= config.resilience.maxUsageDeltaPercent) {
+          // windowed visibility: logged every pass regardless of the breaker below, so the trend is visible
+          // before it ever trips — this is the same delta the incident that started this work never had.
+          event(ctx, { type: 'provider.usage-observed', issue: record.issue, provider: record.provider, initialRemainingPercent: initialRemaining, currentRemainingPercent: currentRemaining, deltaPercent: delta })
+          if (config.resilience.maxUsageDeltaPercent && delta >= config.resilience.maxUsageDeltaPercent) {
             results.push(await tripCircuitBreaker(ctx, record, lease, state, 'cost-guard', `provider ${record.provider} remaining usage dropped ${delta.toFixed(1)} points since dispatch (${initialRemaining}% → ${currentRemaining}%), at or past resilience.maxUsageDeltaPercent (${config.resilience.maxUsageDeltaPercent})`))
             continue
           }

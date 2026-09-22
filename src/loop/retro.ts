@@ -13,6 +13,8 @@ import { deliveryStatePath, readDeliveryState } from './deliver.js'
 import { LOOP_STAGES, automationName } from './install.js'
 import { learningsReadyToPromote, openLoopMemory, promoteLearningsToMemory, upsertProposedLearnings, upsertProposedLearningsDryRun } from './memory.js'
 import { appendLoopEvent, dispatchRecordPath, readDispatchRecord } from './tick.js'
+import { createLoopEventBus, loadLoopPlugins, type LoopEventBus } from './event-bus.js'
+import { attachNotifier } from './notify.js'
 import { applyTuning, renderTuningMarkdown } from './tuning.js'
 import { improveAgent, roleSignals } from './agent-improvement.js'
 import { queueOwner } from './rotation.js'
@@ -295,10 +297,18 @@ export const runRetroStage = async (input: {
   readonly runner: CommandRunner
   readonly since?: string
   readonly dryRun?: boolean
+  readonly bus?: LoopEventBus
 }): Promise<RetroStageReport> => {
   const loaded = input.loaded ?? loadLoopConfig(input.configPath)
   const issue = loaded.config.schedule.retroIssue ?? null
   if (!issue) return { status: 'skipped', issue: null, digest: null, posted: false, learningsProposed: 0, autoPromoted: [], tuned: [], agentChanges: [], detail: 'schedule.retroIssue is not set' }
+  // An externally-owned bus (`loop stage`) already has plugins/notifier attached, flushed once by its owner for
+  // the whole invocation; a call with no bus of its own (`loop retro`, tests) stays self-sufficient.
+  const ownsBus = !input.bus
+  const bus = input.bus ?? createLoopEventBus()
+  if (ownsBus && loaded.config.plugins.modules.length) await loadLoopPlugins(loaded.root, loaded.config.plugins.modules, bus)
+  const flushNotifications = ownsBus ? attachNotifier(bus, { config: loaded.config, runner: input.runner }) : async () => { /* owner flushes */ }
+  try {
   const report = await buildRetroReport({ loaded, runner: input.runner, since: input.since ?? '7d' })
   const markdown = renderRetroMarkdown(report)
   const learnings = retroLearnings(report, markdown)
@@ -317,8 +327,8 @@ export const runRetroStage = async (input: {
     try {
       const promotion = await promoteLearningsToMemory({ stateDir: loaded.stateDir, config: loaded.config, adapter: memory, ids: ready.map((record) => record.id), actor: LOOP_AUTO_ACTOR, sourceRevision: report.digest })
       autoPromoted = ready.map((record) => record.id)
-      appendLoopEvent(loaded.stateDir, { at: new Date().toISOString(), type: 'memory.auto-promoted', ids: [...autoPromoted], remembered: promotion.remembered.length, digest: report.digest })
-    } catch (error) { autoPromoted = []; appendLoopEvent(loaded.stateDir, { at: new Date().toISOString(), type: 'memory.auto-promote-failed', error: error instanceof Error ? error.message : String(error) }) }
+      appendLoopEvent(loaded.stateDir, { at: new Date().toISOString(), type: 'memory.auto-promoted', ids: [...autoPromoted], remembered: promotion.remembered.length, digest: report.digest }, bus)
+    } catch (error) { autoPromoted = []; appendLoopEvent(loaded.stateDir, { at: new Date().toISOString(), type: 'memory.auto-promote-failed', error: error instanceof Error ? error.message : String(error) }, bus) }
   }
   const promotedNote = autoPromoted.length
     ? `\n\nPromovido automaticamente (\`loop-auto\`, ${loaded.config.memory.recurrence.minSightings}× ou mais, máx. ${loaded.config.memory.recurrence.maxPerRun} por retro): ${autoPromoted.map((id) => `\`${id}\``).join(', ')}. Para revogar: \`ak-harness loop learning reject --ids ${autoPromoted.join(',')} --by human\`.`
@@ -334,7 +344,7 @@ export const runRetroStage = async (input: {
   // The loop adjusts its own declared knobs before it reports, so the comment carries the change and its evidence.
   const tuning = await applyTuning({ loaded, report, runner: input.runner, dryRun: input.dryRun === true })
   const tuned = tuning.applied.map((decision) => `${decision.path}: ${decision.from} → ${decision.to}`)
-  for (const decision of tuning.applied) appendLoopEvent(loaded.stateDir, { at: new Date().toISOString(), type: decision.action === 'revert' ? 'tuning.reverted' : 'tuning.applied', path: decision.path, from: decision.from, to: decision.to, metric: decision.metric, reason: decision.reason })
+  for (const decision of tuning.applied) appendLoopEvent(loaded.stateDir, { at: new Date().toISOString(), type: decision.action === 'revert' ? 'tuning.reverted' : 'tuning.applied', path: decision.path, from: decision.from, to: decision.to, metric: decision.metric, reason: decision.reason }, bus)
   // The role with the worst outcome-per-run ratio is the one worth improving; below `minRatio` nobody is.
   const agentChanges: string[] = []
   if (loaded.config.agents.autoImprove) {
@@ -345,7 +355,7 @@ export const runRetroStage = async (input: {
         note: `${worst.ratio.toFixed(2)} bad outcome(s) per run over ${worst.runs} run(s) in this window (${worst.reviewFindings} finding(s), ${worst.fixRounds} fix round(s), ${worst.escalations} escalation(s), ${worst.contraryVotes} contrary vote(s)). Prefer the smallest change that removes the most common cause.`,
       })
       agentChanges.push(`${worst.role}: ${outcome.status} — ${outcome.detail}`)
-      if (!input.dryRun) appendLoopEvent(loaded.stateDir, { at: new Date().toISOString(), type: `agent.${outcome.status}`, role: worst.role, agent: outcome.proposal?.agentId ?? null, detail: outcome.detail })
+      if (!input.dryRun) appendLoopEvent(loaded.stateDir, { at: new Date().toISOString(), type: `agent.${outcome.status}`, role: worst.role, agent: outcome.proposal?.agentId ?? null, detail: outcome.detail }, bus)
     }
   }
   const agentNote = agentChanges.length ? `\n\n## Agents\n${agentChanges.map((change) => `- ${change}`).join('\n')}` : ''
@@ -360,5 +370,8 @@ export const runRetroStage = async (input: {
     return { status: 'ok', issue, digest: report.digest, posted: true, learningsProposed: learnings.length, autoPromoted, tuned, agentChanges, detail: `commented on ${issue}${autoPromoted.length ? ` · promoted ${autoPromoted.length} learning(s) as loop-auto` : ''}` }
   } catch (error) {
     return { status: 'failed', issue, digest: report.digest, posted: false, learningsProposed: learnings.length, autoPromoted, tuned, agentChanges, detail: error instanceof Error ? error.message : String(error) }
+  }
+  } finally {
+    await flushNotifications()
   }
 }

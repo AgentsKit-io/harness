@@ -1,4 +1,4 @@
-import { appendFileSync, closeSync, existsSync, mkdirSync, openSync, readFileSync, renameSync, statSync, unlinkSync, writeFileSync } from 'node:fs'
+import { appendFileSync, closeSync, existsSync, mkdirSync, openSync, readdirSync, readFileSync, renameSync, statSync, unlinkSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import type { CommandRunner } from '../adapters/command.js'
 import { fetchLinearQueue, linearLabelRemove, type LinearIssueDetail, type LoopIssue } from '../adapters/linear-orca.js'
@@ -112,6 +112,11 @@ export interface TickInput {
   readonly machine?: Pick<SlotInput, 'sample' | 'freeBytes' | 'totalBytes' | 'osRelease'>
   /** Wall-clock budget for this tick; candidates that would not fit are left for the next tick. */
   readonly budgetMs?: number
+  /** An externally-owned event bus (e.g. `loop stage`, unifying every stage's events on one bus for that
+   * invocation). When set, this call neither loads plugins nor attaches the notifier on it — the owner already
+   * did, and the owner is the one who flushes it once the whole invocation is done. Omit to keep this call
+   * self-sufficient, as every direct caller (`loop tick`, tests, library use) needs it to be. */
+  readonly bus?: LoopEventBus
 }
 
 /** Launch the worker in a fresh terminal with the configured TUI command and hand it the brief. Returns the terminal handle. */
@@ -178,6 +183,20 @@ const EVENTS_ROTATE_AT_BYTES = 10 * 1024 * 1024
 const EVENTS_LOCK_STALE_MS = 5_000
 const EVENTS_LOCK_MAX_ATTEMPTS = 100
 const EVENTS_LOCK_RETRY_MS = 10
+/** windowed: rotation never used to delete anything, so archives (each named by rotation time) accumulated for
+ * the life of the project. Pruning here — the one place that already touches the state dir at rotation time —
+ * keeps that bounded without adding a scan to every append. */
+const EVENTS_RETENTION_MS = 30 * 86_400_000
+const eventsArchivePattern = /^events-archive-(\d+)\.ndjson$/
+
+const pruneEventArchives = (stateDir: string, nowMs: number): void => {
+  let names: readonly string[]
+  try { names = readdirSync(stateDir) } catch { return }
+  for (const name of names) {
+    const match = name.match(eventsArchivePattern)
+    if (match && nowMs - Number(match[1]) > EVENTS_RETENTION_MS) { try { unlinkSync(join(stateDir, name)) } catch { /* best-effort */ } }
+  }
+}
 
 /**
  * `tick` and `deliver` are separate scheduled processes that can call `appendLoopEvent` on the same
@@ -212,7 +231,11 @@ export const appendLoopEvent = (stateDir: string, event: LoopEventPayload, bus?:
     // successful attempt rotates it.
     if (lockFd !== null) {
       try {
-        if (statSync(path).size > EVENTS_ROTATE_AT_BYTES) renameSync(path, join(stateDir, `events-archive-${now().getTime()}.ndjson`))
+        if (statSync(path).size > EVENTS_ROTATE_AT_BYTES) {
+          const nowMs = now().getTime()
+          renameSync(path, join(stateDir, `events-archive-${nowMs}.ndjson`))
+          pruneEventArchives(stateDir, nowMs)
+        }
       } catch { /* rotation is best-effort — never let it break event logging itself */ }
     }
     appendFileSync(path, `${JSON.stringify(event)}\n`, 'utf8')
@@ -308,14 +331,17 @@ export const runTick = async (input: TickInput): Promise<TickReport> => {
   const ledger = createDispatchLedger(loaded.stateDir)
   const notes: string[] = []
   const results: TickCandidateResult[] = []
-  const bus = createLoopEventBus()
-  if (config.plugins.modules.length) {
+  const ownsBus = !input.bus
+  const bus = input.bus ?? createLoopEventBus()
+  if (ownsBus && config.plugins.modules.length) {
     const { errors } = await loadLoopPlugins(loaded.root, config.plugins.modules, bus)
     for (const failure of errors) notes.push(`plugin ${failure.path} failed to load: ${failure.error}`)
   }
   // The configured escalation channels listen on the same bus as any plugin, and every exit of this function waits
   // for the sends in flight: a stage that ends before its notification leaves is a human who never hears about it.
-  const flushNotifications = attachNotifier(bus, { config, runner: input.runner, ...(input.env === undefined ? {} : { env: input.env }) })
+  // An externally-owned bus (`loop stage`) already has its own notifier attached, and its owner flushes it once
+  // for the whole invocation — attaching a second one here would double-send every notification.
+  const flushNotifications = ownsBus ? attachNotifier(bus, { config, runner: input.runner, ...(input.env === undefined ? {} : { env: input.env }) }) : async () => { /* owner flushes */ }
   const state = await gatherLoopState({ loaded, runner: input.runner, ledger, env: input.env, platform: input.platform, now, onlyIssue: input.onlyIssue, machine: input.machine })
   const orchestrator = state.routing['orchestrator'] ?? { role: 'orchestrator', selected: null, skipped: [] }
   // `gatherLoopState` already resolved catalog candidates for every role (including orchestrator) to compute
@@ -458,8 +484,14 @@ export const runTick = async (input: TickInput): Promise<TickReport> => {
           onPiiDetected: (matches) => {
             if (!dryRun) appendLoopEvent(loaded.stateDir, { at: now().toISOString(), type: 'security.pii-detected', issue: detail.identifier, source: 'issue-text', kinds: [...new Set(matches.map((match) => match.kind))], count: matches.length }, bus)
           },
+          onProviderCall: (event) => {
+            if (!dryRun) appendLoopEvent(loaded.stateDir, { at: now().toISOString(), type: 'provider.call', role: 'orchestrator', issue: detail.identifier, ...event }, bus)
+          },
         })
-        if (!dryRun) writeStoredContract(loaded.stateDir, stored)
+        if (!dryRun) {
+          writeStoredContract(loaded.stateDir, stored)
+          appendLoopEvent(loaded.stateDir, { at: now().toISOString(), type: 'contract.generated', issue: detail.identifier, provider: stored.provider, model: stored.model, effort: stored.effort, digest: stored.digest }, bus)
+        }
       } catch (error) {
         const reason = `contract generation failed: ${message(error)}`
         if (!dryRun) { appendLoopEvent(loaded.stateDir, { at: now().toISOString(), type: 'contract.failed', issue: detail.identifier, error: message(error) }, bus); await recordFailureAndMaybePause(detail.identifier, 'contract.failed', reason) }
@@ -498,7 +530,10 @@ export const runTick = async (input: TickInput): Promise<TickReport> => {
             ...(plannerSettings.timeoutMs === null ? {} : { plannerTimeoutMs: plannerSettings.timeoutMs }),
             ...(voteSettings.timeoutMs === null ? {} : { voteTimeoutMs: voteSettings.timeoutMs }),
             now, onProviderFailure,
-            onCycle: (cycle, votes) => { if (!dryRun) appendLoopEvent(loaded.stateDir, { at: now().toISOString(), type: 'plan.voted', issue: detail.identifier, cycle, approvals: votes.filter((vote) => vote.vote === 'approve').length, votes: votes.length }, bus) },
+            onCycle: (cycle, votes) => { if (!dryRun) appendLoopEvent(loaded.stateDir, { at: now().toISOString(), type: 'plan.voted', issue: detail.identifier, cycle, approvals: votes.filter((vote) => vote.vote === 'approve').length, votes: votes.length, voters: votes.map((vote) => ({ provider: vote.provider, model: vote.model, vote: vote.vote })) }, bus) },
+            onProviderCall: (event) => {
+              if (!dryRun) appendLoopEvent(loaded.stateDir, { at: now().toISOString(), type: 'provider.call', issue: detail.identifier, ...event }, bus)
+            },
           })
           if (!dryRun) writeStoredPlan(loaded.stateDir, approvedPlan)
         } catch (error) {

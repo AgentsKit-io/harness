@@ -262,9 +262,14 @@ export const LoopConfigSchema = z.object({
     /** Relative cost per `provider/model`, any unit you like — only the order matters. Used by `policy: cost-first`. */
     cost: z.record(modelRef, z.number().nonnegative()).default({}),
     /** Quality band when `routing.mode: catalog` (and as soft bias in hybrid). */
+    /**
+     * cheapest-sufficient: default quality tracks what a role actually does, not tradition. `orchestrator`
+     * (freezing a contract from an issue) and `reviewer` (reading a diff) are bounded, structured tasks — neither
+     * defaults above `builder`, the role that does the open-ended work of writing and debugging the code itself.
+     */
     roles: z.object({
-      orchestrator: z.object({ quality: z.enum(['frontier', 'balanced', 'fast']).default('frontier'), preferCreators: z.array(nonEmpty).default([]) }).prefault({}),
-      reviewer: z.object({ quality: z.enum(['frontier', 'balanced', 'fast']).default('frontier'), preferCreators: z.array(nonEmpty).default([]) }).prefault({}),
+      orchestrator: z.object({ quality: z.enum(['frontier', 'balanced', 'fast']).default('balanced'), preferCreators: z.array(nonEmpty).default([]) }).prefault({}),
+      reviewer: z.object({ quality: z.enum(['frontier', 'balanced', 'fast']).default('balanced'), preferCreators: z.array(nonEmpty).default([]) }).prefault({}),
       builder: z.object({ quality: z.enum(['frontier', 'balanced', 'fast']).default('balanced'), preferCreators: z.array(nonEmpty).default([]) }).prefault({}),
       watcher: z.object({ quality: z.enum(['frontier', 'balanced', 'fast']).default('fast'), preferCreators: z.array(nonEmpty).default([]) }).prefault({}),
     }).prefault({}),
@@ -484,11 +489,13 @@ export const LoopConfigSchema = z.object({
   }).prefault({}),
   plugins: z.object({
     /**
-     * Local `.mjs` files (relative to `project.root`) loaded once at the start of `tick`/`deliver`; each exports
-     * `{ id, apply(bus) }` and gets the loop's in-process event bus to subscribe to (`src/loop/event-bus.ts`) —
-     * events (`contract.failed`, `worker.dispatched`, …) and lifecycle hooks (`beforeDispatch`, `beforeMerge`, …
-     * a `before*` hook can block the action). Same trust level as `agents.registry.yaml`: files already in this
-     * repo, never fetched over the network.
+     * Local `.mjs` files (relative to `project.root`) loaded once per invocation of any stage (`tick`, `deliver`,
+     * `retro`, `release`, `intake`, `maintain` — every one that emits an event); each exports `{ id, apply(bus) }`
+     * and gets the loop's in-process event bus to subscribe to (`src/loop/event-bus.ts`) — events
+     * (`contract.failed`, `worker.dispatched`, …) and lifecycle hooks (`beforeDispatch`, `beforeMerge`, … a
+     * `before*` hook can block the action). Run through `loop stage <name>`, every stage in that one process
+     * shares a single bus, so a plugin sees every event the invocation emits, not just its own stage's. Same
+     * trust level as `agents.registry.yaml`: files already in this repo, never fetched over the network.
      */
     modules: z.array(nonEmpty).default([]),
   }).prefault({}),
@@ -515,10 +522,17 @@ export const LoopConfigSchema = z.object({
      * Cost circuit breaker: the loop cannot count a worker CLI's internal model/tool calls (it is an opaque
      * process), so instead it watches the builder provider's remaining Orca usage from dispatch time. If that
      * provider's remaining usage drops by at least this many percentage points *while this one issue is in
-     * flight*, deliver stops nudging/reviewing/merging it and escalates like a stuck worker. Unset (default) =
-     * disabled — a config typo elsewhere must not silently start blocking normal-cost dispatches.
+     * flight*, deliver stops nudging/reviewing/merging it and escalates like a stuck worker.
+     *
+     * Default 40 (previously unset/disabled): the incident that motivated this default was a single dispatch
+     * burning 25% of a weekly window with nobody told until long after. The number is deliberately generous —
+     * this signal is noisy on a provider shared by concurrent dispatches, so it is set high enough that a
+     * normal-cost dispatch should not trip it — because tripping only escalates (worktree and PR kept, lease
+     * released, a human looks) rather than discarding anything; the delta is logged on every pass regardless
+     * (`provider.usage-observed`) so the trend is visible long before this ceiling would ever matter. Set to 100
+     * to make it effectively never trip, for a project that wants the log without the breaker.
      */
-    maxUsageDeltaPercent: z.number().min(1).max(100).optional(),
+    maxUsageDeltaPercent: z.number().min(1).max(100).default(40),
   }).prefault({}),
   brief: z.object({
     /** Markdown files (paths relative to `project.root`) pinned verbatim into every worker brief, sha256-digested for traceability. Missing file = dispatch fails closed. */

@@ -5,7 +5,7 @@ import { fail } from '../kernel/errors.js'
 import type { LoadedLoopConfig } from './config.js'
 import { writeJsonAtomic } from './fs-atomic.js'
 import { appendLoopEvent } from './tick.js'
-import { createLoopEventBus, type LoopEventBus } from './event-bus.js'
+import { createLoopEventBus, loadLoopPlugins, type LoopEventBus } from './event-bus.js'
 import { attachNotifier } from './notify.js'
 
 /** One merged commit waiting on the integration branch — a line of the batch a human is asked to approve. */
@@ -100,10 +100,15 @@ export interface ReleaseReport {
  * Nothing here happens without a human's approval bound to this exact head. A failed smoke runs the declared
  * rollback and escalates; a project that declares no rollback is told so plainly rather than left guessing.
  */
-export const runReleaseStage = async (input: { readonly loaded: LoadedLoopConfig; readonly runner: CommandRunner; readonly now?: () => Date; readonly dryRun?: boolean }): Promise<ReleaseReport> => {
+export const runReleaseStage = async (input: { readonly loaded: LoadedLoopConfig; readonly runner: CommandRunner; readonly now?: () => Date; readonly dryRun?: boolean; readonly bus?: LoopEventBus }): Promise<ReleaseReport> => {
   // The stage's events are worth a human's attention — a batch waiting for approval most of all — so they go out
-  // on the same bus every other stage uses, and the sends in flight are awaited before the stage ends.
-  const bus = createLoopEventBus()
+  // on the same bus every other stage uses, and the sends in flight are awaited before the stage ends. An
+  // externally-owned bus (`loop stage`) already has plugins/notifier attached; its owner flushes it once for the
+  // whole invocation, so attaching a second notifier here would double-send every notification.
+  const ownsBus = !input.bus
+  const bus = input.bus ?? createLoopEventBus()
+  if (!ownsBus) return releaseStage(input, bus)
+  if (input.loaded.config.plugins.modules.length) await loadLoopPlugins(input.loaded.root, input.loaded.config.plugins.modules, bus)
   const flush = attachNotifier(bus, { config: input.loaded.config, runner: input.runner })
   try { return await releaseStage(input, bus) } finally { await flush() }
 }

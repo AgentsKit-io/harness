@@ -110,4 +110,17 @@ describe('choosing the model from the change', () => {
   it('returns nothing to choose when there is nothing available', () => {
     expect(modelForChange({ candidates: [], files: [], changedLines: 0, smallChangeLines: 50, criticalPaths: [] })).toEqual({ model: null, reason: 'no candidate available' })
   })
+
+  it('sizes a fix round off the incremental diff, but still checks criticalPaths against every file the PR touches', () => {
+    // This round's own diff is a tiny, non-critical doc tweak...
+    const sized = modelForChange({ candidates, files: ['README.md'], allFiles: ['README.md', 'src/security/token.ts'], changedLines: 2, smallChangeLines: 50, criticalPaths: ['src/security/'] })
+    // ...but an earlier round touched a critical path, and allFiles (the whole PR) still carries it.
+    expect(sized.model?.model).toBe('opus')
+    expect(sized.reason).toContain('critical path')
+  })
+
+  it('without allFiles, criticalPaths falls back to checking files (unchanged pre-existing behaviour)', () => {
+    const sized = modelForChange({ candidates, files: ['README.md'], changedLines: 2, smallChangeLines: 50, criticalPaths: ['src/security/'] })
+    expect(sized.model?.model).toBe('fast')
+  })
 })

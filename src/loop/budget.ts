@@ -3,6 +3,7 @@ import { remainingUsagePercent } from '../adapters/providers.js'
 import type { LoopConfig } from './config.js'
 import { readLoopEvents } from './retro.js'
 import type { RankedModel } from './routing.js'
+import { readDispatchRecord } from './tick.js'
 
 /**
  * Providers the loop may still use under `budget.perProvider`.
@@ -58,9 +59,12 @@ export const applyRoutingPolicy = (config: LoopConfig, candidates: readonly Rank
 
 export interface IssueSpend { readonly issue: string; readonly totalTokens: number; readonly calls: number }
 
-/** What the loop has already spent on one issue, from the durable event log. */
+/** windowed: spend on an issue can only postdate its own dispatch, so that timestamp bounds the scan instead of
+ * rereading the whole project's event history (including every rotated archive) on every dispatch decision. */
 export const issueSpend = (stateDir: string, issue: string): IssueSpend => {
-  const events = readLoopEvents(stateDir).filter((event) => event['issue'] === issue)
+  const dispatchedAt = readDispatchRecord(stateDir, issue)?.dispatchedAt
+  const sinceMs = dispatchedAt ? new Date(dispatchedAt).getTime() : undefined
+  const events = readLoopEvents(stateDir, sinceMs).filter((event) => event['issue'] === issue)
   let totalTokens = 0
   let calls = 0
   for (const event of events) {
@@ -93,17 +97,23 @@ export const issueBudget = (config: LoopConfig, stateDir: string, issue: string)
  *
  * A docs-only or tiny diff does not need the frontier model; a large one, or one touching a path the project
  * called critical, does. Returns the candidate to use, never an empty result — a cheap model is still a model.
+ *
+ * `files`/`changedLines` are what this round needs re-verified — the whole PR on a first review, or the diff
+ * since the last reviewed head on a fix round. `allFiles` (default: `files`) is checked against `criticalPaths`
+ * regardless: a fix round is still part of a PR that touched a critical path in an earlier round, even when this
+ * round's own diff does not.
  */
 export const modelForChange = (input: {
   readonly candidates: readonly RankedModel[]
   readonly files: readonly string[]
+  readonly allFiles?: readonly string[]
   readonly changedLines: number
   readonly smallChangeLines: number
   readonly criticalPaths: readonly string[]
 }): { readonly model: RankedModel | null; readonly reason: string } => {
   const [strongest] = input.candidates
   if (!strongest) return { model: null, reason: 'no candidate available' }
-  const critical = input.files.some((file) => input.criticalPaths.some((pattern) => file.startsWith(pattern.replace(/\*+$/, ''))))
+  const critical = (input.allFiles ?? input.files).some((file) => input.criticalPaths.some((pattern) => file.startsWith(pattern.replace(/\*+$/, ''))))
   if (critical) return { model: strongest, reason: `critical path touched (${input.criticalPaths.join(', ')})` }
   const docsOnly = input.files.length > 0 && input.files.every((file) => /\.(md|mdx|txt)$/i.test(file))
   const small = input.changedLines > 0 && input.changedLines <= input.smallChangeLines

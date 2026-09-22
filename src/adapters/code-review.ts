@@ -14,6 +14,16 @@ export interface ReviewFinding {
   readonly category: string | null
 }
 
+/** What one review invocation cost — agentskit-review already tracks this (`ReviewResult.evidence`); the harness
+ * only needs to read it and pass it on, instead of discarding it the way `parseReviewResult` used to. */
+export interface ReviewUsage {
+  readonly providerCalls: number | null
+  readonly inputTokens: number | null
+  readonly outputTokens: number | null
+  /** `evidence.tokensUsed` when the provider only reports one combined figure, otherwise input+output. */
+  readonly totalTokens: number | null
+}
+
 export interface CodeReviewOutcome {
   /** `clean` = no finding at/above the floor; `findings` = blocking findings; `incomplete` = coverage/provider/tool failure. */
   readonly status: 'clean' | 'findings' | 'incomplete'
@@ -26,6 +36,7 @@ export interface CodeReviewOutcome {
   readonly resultParsed: boolean
   /** Last 800 chars of combined stderr+stdout, for callers that need to classify *why* a review was incomplete (auth/quota/timeout) beyond the truncated `summary`. */
   readonly rawTail: string
+  readonly usage: ReviewUsage
 }
 
 export interface CodeReviewInput {
@@ -78,6 +89,27 @@ export const parseReviewResult = (value: unknown): { readonly findings: readonly
   return { findings, blocking: typeof record['blocking'] === 'boolean' ? record['blocking'] : null, incomplete: typeof record['incomplete'] === 'boolean' ? record['incomplete'] : null }
 }
 
+const num = (value: unknown): number | null => typeof value === 'number' && Number.isFinite(value) ? value : null
+
+/** Read `ReviewResult.evidence`/`evidence.usage` out of the same `--result` JSON — agentskit-review already
+ * accounts for provider calls and tokens per invocation; this only stops the harness from discarding it. Kept
+ * separate from `parseReviewResult` (rather than added to its return value) so that function's exact-shape tests
+ * stay meaningful. */
+export const parseReviewEvidence = (value: unknown): ReviewUsage => {
+  const record = isRecord(value) ? (isRecord(value['review']) ? value['review'] : value) : {}
+  const evidence = isRecord(record['evidence']) ? record['evidence'] : {}
+  const usage = isRecord(evidence['usage']) ? evidence['usage'] : {}
+  const inputTokens = num(usage['inputTokens'])
+  const outputTokens = num(usage['outputTokens'])
+  const tokensUsed = num(evidence['tokensUsed'])
+  return {
+    providerCalls: num(evidence['providerCalls']),
+    inputTokens,
+    outputTokens,
+    totalTokens: tokensUsed ?? (inputTokens !== null || outputTokens !== null ? (inputTokens ?? 0) + (outputTokens ?? 0) : null),
+  }
+}
+
 export const buildReviewArgv = (input: CodeReviewInput): readonly string[] => [input.cli, '--pr', `${input.repo}#${input.number}`, '--provider', input.provider, ...(input.model ? ['--model', input.model] : []), ...(input.mode && input.mode !== 'isolated' ? ['--mode', input.mode] : []), ...(input.transport ? ['--transport', input.transport] : []), '--profile', input.profile, '--votes', String(input.votes), ...(input.concurrency ? ['--concurrency', String(input.concurrency)] : []), '--min-severity', 'nit', '--block', input.minSeverity, '--max-calls', String(input.maxCalls), '--deadline-ms', String(input.deadlineMs), '--result', input.resultFile, ...(input.sarifFile ? ['--sarif', input.sarifFile] : []), ...(input.post ? ['--post'] : [])]
 
 /** Run one review. Exit 0 = clean, 1 = findings at/above the floor, 2 = incomplete; the `--result` file refines the verdict. */
@@ -85,13 +117,20 @@ export const runCodeReview = async (runner: CommandRunner, input: CodeReviewInpu
   const argv = buildReviewArgv(input)
   const outcome = await runner.run(argv, { timeoutMs: input.deadlineMs + 120_000, ...(input.cwd ? { cwd: input.cwd } : {}), ...(input.env ? { env: input.env } : {}) })
   let parsed: ReturnType<typeof parseReviewResult> | null = null
-  if (existsSync(input.resultFile)) { try { parsed = parseReviewResult(JSON.parse(readFileSync(input.resultFile, 'utf8'))) } catch { parsed = null } }
+  let usage: ReviewUsage = { providerCalls: null, inputTokens: null, outputTokens: null, totalTokens: null }
+  if (existsSync(input.resultFile)) {
+    try {
+      const resultJson = JSON.parse(readFileSync(input.resultFile, 'utf8'))
+      parsed = parseReviewResult(resultJson)
+      usage = parseReviewEvidence(resultJson)
+    } catch { parsed = null }
+  }
   const findings = parsed?.findings ?? []
   const blocking = findings.filter((finding) => atLeast(finding.severity, input.minSeverity))
   const tail = `${outcome.stderr.trim()}\n${outcome.stdout.trim()}`.trim().slice(-800)
   const status: CodeReviewOutcome['status'] = outcome.timedOut || outcome.code === 2 || outcome.code === null || (outcome.code !== 0 && outcome.code !== 1) || parsed?.incomplete === true ? 'incomplete' : blocking.length || outcome.code === 1 || parsed?.blocking === true ? 'findings' : 'clean'
   const summary = status === 'incomplete' ? `review incomplete (exit ${outcome.timedOut ? 'timeout' : outcome.code ?? 'null'}): ${tail.split('\n').slice(-3).join(' ').slice(0, 300)}` : status === 'findings' ? `${blocking.length || 'unknown number of'} finding(s) at/above ${input.minSeverity}` : `clean at/above ${input.minSeverity} (${findings.length} lower-severity note(s))`
-  return { status, exitCode: outcome.timedOut ? null : outcome.code, findings, blocking, summary, provider: input.provider, model: input.model ?? null, resultParsed: parsed !== null, rawTail: tail }
+  return { status, exitCode: outcome.timedOut ? null : outcome.code, findings, blocking, summary, provider: input.provider, model: input.model ?? null, resultParsed: parsed !== null, rawTail: tail, usage }
 }
 
 /** Compact, worker-facing rendering of blocking findings for a fix round. */

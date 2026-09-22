@@ -130,6 +130,19 @@ export const githubOpenPullRequests = async (runner: CommandRunner, input: { rea
   return (Array.isArray(list) ? list : []).map(parsePullRequest)
 }
 
+export interface DiffStat { readonly files: readonly string[]; readonly changedLines: number }
+
+/** Files and changed-line count between two commits — used to size a fix-round review off what actually changed
+ * since the last reviewed head, instead of the whole PR's cumulative diff from its base. */
+export const githubCompare = async (runner: CommandRunner, input: { readonly repo: string; readonly base: string; readonly head: string }, options: GitHubCliOptions = {}): Promise<DiffStat> => {
+  const value = await ghJson(runner, ['api', `repos/${input.repo}/compare/${input.base}...${input.head}`], options)
+  const files = isRecord(value) && Array.isArray(value['files']) ? value['files'].filter(isRecord) : []
+  return {
+    files: files.map((file) => str(file['filename'])).filter(Boolean),
+    changedLines: files.reduce((total, file) => total + (typeof file['additions'] === 'number' ? file['additions'] : 0) + (typeof file['deletions'] === 'number' ? file['deletions'] : 0), 0),
+  }
+}
+
 /** Remove a label from a PR (best-effort — `gh` succeeds even if the label was already gone). */
 export const githubLabelRemove = async (runner: CommandRunner, input: { readonly repo: string; readonly number: number; readonly label: string }, options: GitHubCliOptions = {}): Promise<void> => {
   const argv = [options.bin ?? 'gh', 'pr', 'edit', String(input.number), '--repo', input.repo, '--remove-label', input.label]
