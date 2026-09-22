@@ -267,8 +267,14 @@ export const orcaRetryRequestId = (message: string): string | null => /--retry-r
  * `agent_session_ownership_unknown`) it names a request id and says to re-issue *with that id*: the retry observes the
  * same prompt instead of typing it twice. That retry happens here, once; anything else still throws.
  */
-export const orcaTerminalSend = async (runner: CommandRunner, input: { readonly terminal: string; readonly text: string; readonly enter?: boolean; readonly waitSubmitSeconds?: number }, options: OrcaCliOptions = {}): Promise<OrcaSendReceipt> => {
-  const argv = ['terminal', 'send', '--terminal', input.terminal, '--text', input.text, ...(input.enter === false ? [] : ['--enter'])]
+/** Whether Orca observed the agent actually start a turn for a prompt — `input_accepted` alone means typed, not submitted. */
+export const orcaTurnStarted = (receipt: OrcaSendReceipt): boolean => receipt.stages.some((stage) => stage.toLowerCase() === 'turn_started')
+
+/** Press Enter alone in a terminal — submits input that was typed but never submitted; a no-op for a busy agent. */
+export const orcaTerminalEnter = async (runner: CommandRunner, input: { readonly terminal: string }, options: OrcaCliOptions = {}): Promise<unknown> => orcaJson(runner, ['terminal', 'send', '--terminal', input.terminal, '--enter'], options)
+
+export const orcaTerminalSend = async (runner: CommandRunner, input: { readonly terminal: string; readonly text: string; readonly enter?: boolean; readonly waitSubmitSeconds?: number; readonly retryRequest?: string }, options: OrcaCliOptions = {}): Promise<OrcaSendReceipt> => {
+  const argv = ['terminal', 'send', '--terminal', input.terminal, '--text', input.text, ...(input.enter === false ? [] : ['--enter']), ...(input.retryRequest ? ['--retry-request', input.retryRequest] : [])]
   const timeoutMs = options.timeoutMs ?? ((input.waitSubmitSeconds ?? 0) * 1000 + 30_000)
   try {
     return parseOrcaSendReceipt(await orcaJson(runner, [...argv, ...(input.waitSubmitSeconds ? ['--wait-submit', String(input.waitSubmitSeconds)] : [])], { ...options, timeoutMs }))

@@ -4,7 +4,7 @@ import type { CommandRunner } from '../adapters/command.js'
 import { fetchLinearQueue, linearLabelRemove, type LinearIssueDetail, type LoopIssue } from '../adapters/linear-orca.js'
 import { resolveConnectors, type TrackerConnector } from './connectors.js'
 import { createOrcaDispatchPlan } from '../adapters/orca.js'
-import { orcaAccountList, orcaAgentHooks, orcaDiagnosticsMemory, orcaTerminalCreate, orcaTerminalSend, orcaTerminalWait, orcaWorktreeCreate, orcaWorktreeRemove, orcaWorktrees, type OrcaWorktree } from '../adapters/orca-cli.js'
+import { orcaTerminalEnter, orcaTurnStarted, orcaAccountList, orcaAgentHooks, orcaDiagnosticsMemory, orcaTerminalCreate, orcaTerminalSend, orcaTerminalWait, orcaWorktreeCreate, orcaWorktreeRemove, orcaWorktrees, type OrcaWorktree } from '../adapters/orca-cli.js'
 import { detectProviders, type ProviderAvailability } from '../adapters/providers.js'
 import { createDispatchLedger, type DispatchLedger, type DispatchLease } from '../execution/coordination.js'
 import { HarnessError } from '../kernel/errors.js'
@@ -147,8 +147,19 @@ export const launchWorkerTerminal = async (input: { readonly runner: CommandRunn
     try { idle = (await orcaTerminalWait(input.runner, { terminal: created.handle, for: 'tui-idle', timeoutMs: Math.min(initialIdleTimeoutMs * 2, 180_000) }, orca)).satisfied } catch { idle = false }
   }
   if (!idle) throw new Error(`terminal ${created.handle} did not become tui-idle before the worker prompt deadline`)
-  const receipt = await orcaTerminalSend(input.runner, { terminal: created.handle, text: prompt, enter: true, waitSubmitSeconds: 15 }, orca)
-  return { terminal: created.handle, accepted: receipt.accepted, idle }
+  let receipt = await orcaTerminalSend(input.runner, { terminal: created.handle, text: prompt, enter: true, waitSubmitSeconds: 15 }, orca)
+  // `input_accepted` is "typed", not "submitted": observed, a pointer prompt sat in the input box for 21 minutes and
+  // the worker only started when an idle nudge's Enter submitted it. Observe the same request again; if the turn still
+  // has not started, press Enter alone (a no-op for a busy agent) and observe once more.
+  if (receipt.requestId && receipt.stages.length && !orcaTurnStarted(receipt)) {
+    const observe = async () => orcaTerminalSend(input.runner, { terminal: created.handle, text: prompt, enter: true, waitSubmitSeconds: 20, retryRequest: receipt.requestId as string }, orca).catch(() => receipt)
+    receipt = await observe()
+    if (!orcaTurnStarted(receipt)) {
+      try { await orcaTerminalEnter(input.runner, { terminal: created.handle }, orca) } catch { /* the observation below decides */ }
+      receipt = await observe()
+    }
+  }
+  return { terminal: created.handle, accepted: receipt.accepted && (!receipt.stages.length || orcaTurnStarted(receipt)), idle }
 }
 
 const message = (error: unknown): string => error instanceof HarnessError ? `${error.code}: ${error.message}` : error instanceof Error ? error.message : String(error)

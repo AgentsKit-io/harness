@@ -62,4 +62,28 @@ describe('launchWorkerTerminal', () => {
     expect(typed[typed.indexOf('--text') + 1]).toBe('short')
     expect(existsSync(join(tmpdir(), '.ak-loop', 'brief.md'))).toBe(false)
   })
+
+  it('does not count a typed-but-unsubmitted brief as delivered: it observes, presses Enter, and observes again', async () => {
+    const calls: string[][] = []
+    const sendReplies = [
+      { send: { accepted: true, prompt: { requestId: 'r-1', stages: ['input_accepted'] } } },
+      { send: { accepted: true, prompt: { requestId: 'r-1', stages: ['input_accepted'] } } },
+      { send: { accepted: true } },
+      { send: { accepted: true, prompt: { requestId: 'r-1', stages: ['input_accepted', 'turn_started'] } } },
+    ]
+    const runner = { run: async (argv: readonly string[]) => {
+      calls.push([...argv])
+      if (argv.includes('create')) return ok({ terminal: { handle: 'term-1' } })
+      if (argv.includes('wait')) return ok({ wait: { satisfied: true } })
+      return ok(sendReplies.shift() ?? {})
+    } }
+    const launched = await launchWorkerTerminal({ runner, config: config(), worktreeId: 'repo::/wt', command: 'claude', title: 't', brief: 'short' })
+    expect(launched.accepted).toBe(true)
+    const sends = calls.filter((argv) => argv.includes('send'))
+    expect(sends).toHaveLength(4)
+    expect(sends[1]).toEqual(expect.arrayContaining(['--retry-request', 'r-1']))
+    // The bare Enter carries no text: it submits what is already typed, or does nothing.
+    expect(sends[2]).not.toContain('--text')
+    expect(sends[3]).toEqual(expect.arrayContaining(['--retry-request', 'r-1']))
+  })
 })

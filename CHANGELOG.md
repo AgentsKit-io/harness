@@ -15,6 +15,10 @@ Found by running the loop on a real repository migration with a single, non-defa
   command the agent's own config marked dangerous (`rm -rf`, `git reset --hard`). It now reads Orca's `permission`
   activity (`OrcaWorktree.activity`, from `worktree ps`) or the prompt on screen, reports `held`, emits
   `worker.permission-wait` once per idle window, keeps the lease, and no nudge, handoff or relaunch happens.
+- **A brief counts as delivered only when the agent's turn starts.** Orca's `input_accepted` means typed, not
+  submitted; a pointer prompt sat unsubmitted for 21 minutes and the worker only began when an idle nudge's Enter
+  submitted it. The launcher now observes the request again, presses Enter alone if the turn still has not started
+  (a no-op for a busy agent), and reports the brief unconfirmed otherwise.
 - **A merged issue sheds the flags the loop put on it, and the record says who merged.** Completion removes
   `blocked`/`needs-info`, and a PR merged outside the loop is recorded as merged by a person — the comment used to
   claim "a clean review and green checks" for a PR whose review had blocked and whose CI never ran.
