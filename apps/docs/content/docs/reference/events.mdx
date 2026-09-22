@@ -35,7 +35,7 @@ here cannot be emitted — and a name here that nothing emits fails the test sui
 
 | Event | Carries | What it means |
 |---|---|---|
-| `worker.dispatched` | `issue`, `worktree`, `worktreeId`, `branch`, `terminal`, `provider`, `model`, `effort`, `contractDigest`, `briefDigest`, `command`, `briefAccepted`, `tuiIdle` | A worker was launched in its own worktree. Carries the whole dispatch record plus the command that ran. |
+| `worker.dispatched` | `issue`, `worktree`, `worktreeId`, `branch`, `terminal`, `provider`, `model`, `effort`, `contractDigest`, `briefDigest`, `command`, `briefAccepted`, `tuiIdle`, `workerGuardInstalled` | A worker was launched in its own worktree. Carries the whole dispatch record plus the command that ran. |
 | `worker.dispatch-failed` | `issue`, `error` | The dispatch itself failed — worktree, terminal or brief — before any work started. |
 | `worker.setup` | `issue`, `worktreeId`, `ok` | `project.setup.command` ran in the fresh worktree. |
 | `worker.nudged` | `issue`, `kind`, `reason`, `worktreeId` | An idle worker was nudged in its own terminal — and also the terminal outcome `nudged`, which ends a delivery pass on the same issue. Two emissions, one name: `kind` is present on the first, `reason` on the second. |

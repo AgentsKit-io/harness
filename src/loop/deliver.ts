@@ -6,6 +6,7 @@ import { assessChecks, githubComment, githubCommentExists, githubCompare, github
 import { resolveConnectors, type ScmConnector, type TrackerConnector } from './connectors.js'
 import { issueBudget, modelForChange } from './budget.js'
 import { assessBoundary } from './layers.js'
+import { installWorkerGuard } from './worker-guard.js'
 import { orcaAccountList, orcaAgentHooks, orcaTerminalList, orcaTerminalScreen, orcaTerminalSend, orcaTerminalWait, orcaWorktreeRemove, orcaWorktreeSet } from '../adapters/orca-cli.js'
 import { detectProviders, remainingUsagePercent, type ProviderAvailability } from '../adapters/providers.js'
 import { createDispatchLedger, type DispatchLease } from '../execution/coordination.js'
@@ -344,6 +345,9 @@ const performHandoff = async (
     return { issue: record.issue, outcome: 'dry-run', reason: `handoff ready: ${reason}`, actions }
   }
   const title = `loop-handoff ${record.issue} ${next.provider}`
+  // The new provider gets its own real-time enforcement installed before its terminal opens — a handoff changes
+  // which hook format (or none, for codex) applies, so this cannot just carry over from the previous provider.
+  const workerGuard = installWorkerGuard({ worktreePath: record.worktreePath, provider: next.provider, config: ctx.config })
   const launched = await launchWorkerTerminal({
     runner: ctx.runner,
     config: ctx.config,
@@ -358,6 +362,7 @@ const performHandoff = async (
     terminal: launched.terminal,
     provider: next.provider,
     model: next.model,
+    workerGuardInstalled: workerGuard.installed,
   }
   writeDispatchRecord(ctx.loaded.stateDir, updated)
   const handoff: DeliveryHandoff = {

@@ -75,3 +75,46 @@ jobs:
       - run: pnpm exec vitest run --config vitest.config.ts test/loop.test.ts test/loop-adapters.test.ts test/loop-tick.test.ts test/loop-deliver.test.ts test/loop-install.test.ts test/loop-guided-install.test.ts test/loop-retro.test.ts test/loop-debrief.test.ts test/loop-watch.test.ts test/loop-agent-registry.test.ts test/loop-memory.test.ts test/loop-contract-failure.test.ts test/loop-resilience-state.test.ts test/loop-skills.test.ts test/loop-github-intake.test.ts test/loop-event-bus.test.ts test/loop-progress.test.ts test/loop-process.test.ts test/source.test.ts test/kernel-preflight-gaps.test.ts test/execution-machine.test.ts test/loop-doctor-gaps.test.ts test/config-path.test.ts
       - run: pnpm build
       - run: node dist/cli.js loop validate -f loop.config.example.yaml --json
+
+  # The gate the release actually depends on. It lives here, needing every job above, because as a separate
+  # workflow it ran in parallel with this one: a commit could fail `ak-verify`, the docs check or the Windows
+  # matrix and still publish, since the release workflow only re-ran typecheck/test/build on its own.
+  publish:
+    name: Publish to npm
+    if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' && github.repository == 'AgentsKit-io/harness' }}
+    needs: [verify, docs, loop-cross-platform]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    # Serialize releases across concurrent pushes to main; never cancel one midway.
+    concurrency:
+      group: release-harness
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: pnpm/action-setup@0ebf47130e4866e96fce0953f49152a61190b271 # v6.0.9
+      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.2.0
+        with:
+          node-version: 22
+          registry-url: https://registry.npmjs.org
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm build
+      # The registry itself decides whether this is a new version — no `git diff` against `github.event.before`,
+      # which is absent after a force-push or a first push and read as "changed" when it errors.
+      - name: Publish new version through npm Trusted Publishing
+        shell: bash
+        run: |
+          set -euo pipefail
+          package='@agentskit/harness'
+          version=$(node -p "require('./package.json').version")
+          if npm view "$package@$version" version >/dev/null 2>&1; then
+            echo "$package@$version already published; nothing to do"
+            exit 0
+          fi
+          npm ping --registry=https://registry.npmjs.org
+          npm install --global npm@11.5.1
+          npm publish --provenance --access public --ignore-scripts

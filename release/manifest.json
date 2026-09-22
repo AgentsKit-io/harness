@@ -2,9 +2,9 @@
   "type": "agentskit-harness-release-manifest",
   "schemaVersion": 1,
   "package": "@agentskit/harness",
-  "version": "0.16.0",
+  "version": "0.17.0",
   "channel": "latest",
-  "sourceRevision": "74702503f6af340345802fac013f01206e43965c",
+  "sourceRevision": "e81398a680861f6411a1f407876234943b260863",
   "requiredChecks": [
     "typecheck",
     "test",
@@ -18,7 +18,7 @@
     "registry-smoke"
   ],
   "publication": {
-    "workflow": ".github/workflows/release-harness.yml",
+    "workflow": ".github/workflows/ci.yml",
     "branch": "main",
     "trustedPublishing": true,
     "usesNpmToken": false
@@ -32,5 +32,5 @@
     "pilot-benchmark"
   ],
   "nextBaseline": "benchmarks/harness-0.4.0-baseline.json",
-  "digest": "17c87582036a400be3c330d048a968a447849978716cd20d38c1bc934f17b989"
+  "digest": "679edee22b14626cba6cc33249d690516b58435305a2e60cc7d5380e8e5a31ae"
 }

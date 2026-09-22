@@ -25,7 +25,7 @@ export const LOOP_EVENT_TYPES = {
   'plan.escalated': ['issue', 'cycles', 'unresolved'],
 
   /** A worker was launched in its own worktree. Carries the whole dispatch record plus the command that ran. */
-  'worker.dispatched': ['issue', 'worktree', 'worktreeId', 'branch', 'terminal', 'provider', 'model', 'effort', 'contractDigest', 'briefDigest', 'command', 'briefAccepted', 'tuiIdle'],
+  'worker.dispatched': ['issue', 'worktree', 'worktreeId', 'branch', 'terminal', 'provider', 'model', 'effort', 'contractDigest', 'briefDigest', 'command', 'briefAccepted', 'tuiIdle', 'workerGuardInstalled'],
   /** The dispatch itself failed — worktree, terminal or brief — before any work started. */
   'worker.dispatch-failed': ['issue', 'error'],
   /** `project.setup.command` ran in the fresh worktree. */

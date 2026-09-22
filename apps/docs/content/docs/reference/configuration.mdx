@@ -9,7 +9,7 @@ The four layers that produce this configuration — the machine's global file, t
 machine's overlay — are described in [ADR-0033](https://github.com/AgentsKit-io/harness/blob/main/docs/ADR-0033-four-config-layers-and-presets.md).
 `ak-harness loop validate` prints the effective result, which is the only one that decides anything.
 
-212 of 367 paths carry no description yet.
+213 of 369 paths carry no description yet.
 
 ## `schemaVersion`
 
@@ -218,6 +218,8 @@ Stricter review for the slices of the board that deserve it, keyed by label. The
 | `delivery.handoff.onlyWhenProviderUnavailable` | boolean | `true` | Only hand off when the current provider is unavailable (exhausted/cooldown/missing). |
 | `delivery.selfEditPaths` | string[] | `["loop.config.yaml",".github/**"]` |  |
 | `delivery.secretFilePatterns` | string[] | `["**/.env","**/.env.*","**/*.pem","**/*.key","**/id_rsa","**/id_rsa.*","**/credentials.json","**/*.p12","**/*.pfx"]` | Glob patterns (same matcher as `selfEditPaths`) for filenames that should never enter a PR the loop reviews or merges, regardless of the diff content — the loop cannot fetch a PR's actual diff content today, so this is a filename-shaped guardrail, not a secret-content scan. A PR touching one of these is held exactly like `selfEditPaths`, with a distinct reason. Defaults cover the most common accidentally-committed secret files. |
+| `delivery.workerGuard` | object | `{}` | Real-time enforcement of `selfEditPaths`/`secretFilePatterns` inside the worker's own session, not just at PR-review time. Where the dispatched provider supports it (`claude`, `grok`; `codex` is deliberately left out — its `PreToolUse` hooks have open upstream bugs, see ADR-0038 — and `opencode` gets static deny rules instead of a live hook, also ADR-0038), the loop writes a provider-native permission config into the fresh worktree before the terminal opens, so a write to a protected or secret-shaped path is refused as it happens. This is additive: the PR-time gate stays the only enforcement for a provider it does not cover, and a worker whose hook itself fails (crash/timeout) falls back to that same PR-time gate — see ADR-0038 for the fail-open caveats this cannot close. |
+| `delivery.workerGuard.enabled` | boolean | `true` |  |
 | `delivery.ignoreChecks` | string[] | `[]` | Check names ignored when deciding CI is green (e.g. advisory bots). |
 | `delivery.requiredChecks` | string[] | `[]` | Check names that must be observed and green; empty = every reported check must pass. |
 | `delivery.cleanupWorktree` | boolean | `true` | Remove the Orca worktree after a successful merge. |
