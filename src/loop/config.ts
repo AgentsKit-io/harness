@@ -162,6 +162,11 @@ export const LoopConfigSchema = z.object({
      */
     queueOwnership: z.enum(['person', 'unassigned']).default('person'),
     states: z.array(nonEmpty).min(1).default(['Todo', 'Ready']),
+    /**
+     * Where `loop plan decompose --create` puts new issues. It must NOT be one of `states`: those are the queue, and
+     * an issue the planner just wrote is not work anyone approved yet. Moving it into `states` is the human gate.
+     */
+    entryState: nonEmpty.default('Backlog'),
     excludeLabels: z.array(nonEmpty).default(['blocked', 'needs-info']),
     /** ALL of these must be on the issue (AND). */
     requireLabels: z.array(nonEmpty).default([]),
@@ -946,6 +951,7 @@ export const validateLoopConfig = (value: unknown): LoopConfig => {
     const { provider } = parseModelRef(ref)
     if (!config.models.providers[provider]) fail(`models.${role}[${tierIndex}] references unknown provider "${provider}"; declare it under models.providers.`, 'INVALID_CONFIG')
   }
+  if (config.linear.states.includes(config.linear.entryState)) fail(`linear.entryState "${config.linear.entryState}" is one of linear.states — planned issues would be dispatched before a human approved them.`, 'INVALID_CONFIG')
   if (config.machine.warningPercent > config.machine.criticalPercent) fail('machine.warningPercent must not exceed machine.criticalPercent.', 'INVALID_CONFIG')
   if (config.models.cooldown.initialMin > config.models.cooldown.maxMin) fail('models.cooldown.initialMin must not exceed maxMin.', 'INVALID_CONFIG')
   if (config.machine.ceiling !== undefined && config.machine.ceiling < config.machine.floor) fail('machine.ceiling must be at least machine.floor.', 'INVALID_CONFIG')
@@ -977,11 +983,36 @@ export const unknownConfigKeys = (raw: unknown, parsed: unknown, prefix = ''): r
   return dropped
 }
 
-/** Recursive merge: objects merge key by key, arrays and scalars from the overlay replace the base. */
-export const mergeLoopConfig = (base: unknown, overlay: unknown): unknown => {
+/**
+ * Lists that ARE gates: an overlay adds to them, and removes an entry only by naming it as `!entry`.
+ *
+ * Replacing them would let an older, more specific layer silently undo a protection added later to a broader one.
+ * That is not hypothetical: a machine overlay written on 2026-09-17 to free `.github/pr-intent.yaml` replaced the
+ * whole `selfEditPaths`, and so dropped the `packages/**` freeze the project added on 2026-09-22 without anyone
+ * noticing.
+ */
+const GATE_LISTS: readonly string[] = ['delivery.selfEditPaths', 'delivery.secretFilePatterns', 'delivery.requiredChecks']
+
+const mergeGateList = (base: unknown, overlay: readonly unknown[]): unknown[] => {
+  const removed = new Set(overlay.filter((item): item is string => typeof item === 'string' && item.startsWith('!')).map((item) => item.slice(1)))
+  const kept = (Array.isArray(base) ? base : []).filter((item) => !removed.has(String(item)))
+  const added = overlay.filter((item) => !(typeof item === 'string' && item.startsWith('!')) && !kept.includes(item))
+  return [...kept, ...added]
+}
+
+/**
+ * Recursive merge: objects merge key by key, arrays and scalars from the overlay replace the base — except the
+ * gate lists in {@link GATE_LISTS}, which accumulate across layers and shrink only through an explicit `!entry`.
+ */
+export const mergeLoopConfig = (base: unknown, overlay: unknown, path = ''): unknown => {
+  if (Array.isArray(overlay) && GATE_LISTS.includes(path)) return mergeGateList(base, overlay)
   if (!isPlainObject(base) || !isPlainObject(overlay)) return overlay === undefined ? base : overlay
   const result: Record<string, unknown> = { ...base }
-  for (const [key, value] of Object.entries(overlay)) result[key] = key in base ? mergeLoopConfig(base[key], value) : value
+  for (const [key, value] of Object.entries(overlay)) {
+    const child = path ? `${path}.${key}` : key
+    // A section the base never declared still goes through the merge, so a gate list nested in it is normalised too.
+    result[key] = key in base ? mergeLoopConfig(base[key], value, child) : isPlainObject(value) || Array.isArray(value) ? mergeLoopConfig(isPlainObject(value) ? {} : undefined, value, child) : value
+  }
   return result
 }
 

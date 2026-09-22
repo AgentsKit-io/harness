@@ -286,6 +286,10 @@ the global file is never written to by a project.** The team key comes from `pro
 defaults. `$AK_HARNESS_CONFIG` moves the global file, and `$AK_HARNESS_NO_GLOBAL=1` loads a project without the
 user layer — what CI sees.
 
+Lists replace, with one exception: the gate lists `delivery.selfEditPaths`, `delivery.secretFilePatterns` and
+`delivery.requiredChecks` **accumulate** across layers. A later layer removes an entry only by naming it,
+`"!.github/**"`, so a machine overlay written last week cannot silently undo a freeze the project added today.
+
 ## Flow profiles: one motor, several kinds of demand
 
 `flows.profiles` names what a kind of work costs — review votes and severity floor, CI babysitting
