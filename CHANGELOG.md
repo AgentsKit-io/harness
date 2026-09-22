@@ -24,7 +24,9 @@ Found by running the loop on a real repository migration with a single, non-defa
   before, issues were created in `states[0]`, which *is* the queue, so the human gate did not exist. The issues now
   carry the queue's `requireLabels`/`anyLabels`, land in the project the queue drains (or `--project`), and hang
   under `--parent <epic>`. `--create` now files the list already decomposed and shown instead of asking the model
-  for a new one — the reviewed list and the created list used to differ; `--refresh` decomposes again.
+  for a new one — the reviewed list and the created list used to differ; `--refresh` decomposes again. A layer
+  becomes a label only when the project declares it: with none configured the prompt used to offer "no layers
+  configured" as the choice, the model echoed it, and the tracker refused every issue.
 - **The plan interview reads what a model meant instead of losing the round.** While the PRD is being filled, a
   bare string is a one-item list and an empty list is a gap for `prdGaps` to report — `glm-5.3` answered
   `"users": "…"` and `"successCriteria": []` and the whole round failed validation. The final PRD stays strict.

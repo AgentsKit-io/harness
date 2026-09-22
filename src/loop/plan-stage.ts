@@ -229,7 +229,7 @@ Approved design:
 ${JSON.stringify(state.design, null, 2)}
 ${renderLayersForPrompt(config)}
 Answer as JSON between the exact markers ${ISSUES_OPEN} and ${ISSUES_CLOSE}: an array of issues, each one
-{ "title": "…", "description": "what to do and why, referencing the design", "layer": "<one of: ${config.layers.length ? config.layers.map((layer) => layer.label).join(', ') : config.linear.anyLabels.join(', ') || 'no layers configured'}>", "priority": "urgent|high|medium|low", "acceptance": ["verifiable criterion a machine can check"], "designRef": "the module, contract or decision id this issue implements" }
+{ "title": "…", "description": "what to do and why, referencing the design", "layer": "${layerChoices(config).length ? `<one of: ${layerChoices(config).join(', ')}>` : ''}", "priority": "urgent|high|medium|low", "acceptance": ["verifiable criterion a machine can check"], "designRef": "the module, contract or decision id this issue implements" }
 
 Rules: every issue points at a part of the design — a ticket that points at nothing invents its own architecture. Every acceptance criterion must be checkable without a human's judgement. Order matters: follow the design's sequence. Split anything that cannot be delivered in one pull request.`
 
@@ -362,8 +362,14 @@ export interface PlannedIssueTarget {
  * The labels an issue needs so that, once a human moves it into the queue, the queue actually sees it: every
  * `requireLabels`, one of `anyLabels` (the first) when none is already there, and the issue's own layer.
  */
+/** The labels a planned issue may carry as its layer: the configured layers, else the queue's `anyLabels`. */
+const layerChoices = (config: LoopConfig): readonly string[] => config.layers.length ? config.layers.map((layer) => layer.label) : config.linear.anyLabels
+
 export const plannedIssueLabels = (config: LoopConfig, layer?: string): readonly string[] => {
-  const labels = [...config.linear.requireLabels, ...(layer ? [layer] : [])]
+  // Only a label the project declared becomes a label: a model asked to pick from an empty list writes the prompt's
+  // own wording back ("no layers configured"), and the tracker refuses the whole issue for it.
+  const known = layer && layerChoices(config).includes(layer) ? layer : undefined
+  const labels = [...config.linear.requireLabels, ...(known ? [known] : [])]
   if (config.linear.anyLabels.length && !labels.some((label) => config.linear.anyLabels.includes(label))) labels.push(config.linear.anyLabels[0] as string)
   return [...new Set(labels)]
 }
