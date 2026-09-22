@@ -15,6 +15,12 @@ Found by running the loop on a real repository migration with a single, non-defa
   command the agent's own config marked dangerous (`rm -rf`, `git reset --hard`). It now reads Orca's `permission`
   activity (`OrcaWorktree.activity`, from `worktree ps`) or the prompt on screen, reports `held`, emits
   `worker.permission-wait` once per idle window, keeps the lease, and no nudge, handoff or relaunch happens.
+- **The worker brief no longer forbids what the contract asks for.** Standing rule 5 listed `delivery.selfEditPaths`
+  as paths to *never edit* — but that list is a review gate (a PR touching it is held for a human), so a task whose
+  whole job lives under a gated path got a brief that contradicted its contract. The rule now says the paths are
+  gated, to edit them only when the contract requires it, and to say so in the PR. A new rule forbids `git stash`:
+  the stash is shared by every worktree of a repository, and a worker dropping `stash@{0}` by index can destroy
+  another worktree's entry.
 - **The queue claim works on current Orca.** `orca linear assignee set` takes `--to-id <userId>`, not a display
   name; the claim failed on every dispatch (non-fatally, so the issue stayed unowned). The tracker now maps the
   display name through `linear.people` and fails with the missing entry named.

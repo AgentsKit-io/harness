@@ -155,12 +155,13 @@ You are a worker in an unattended delivery loop for ${config.project.repo}. You 
 2. Stay inside the contract. Anything out of scope becomes a bullet in the PR body under "Follow-ups", not code.
 3. Before opening the PR run the project verification and make it pass: \`${config.delivery.verifyCommand}\`. Then run every outcome check listed for your task. Do not open a PR with a failing check${config.knownFailures.length ? ', except the suites listed under "Já vermelho na base"' : ''}.
 4. Commit in small steps with conventional messages referencing your task's issue id. Push with \`git push -u origin <your branch>\`. Never force-push, never rebase a shared branch, never merge, never push to \`${config.project.baseBranch}\`.
-5. Never edit these protected paths: ${protectedPaths}. If the task requires it, stop and report in the PR body why.
+5. These paths are gated: ${protectedPaths}. A pull request that touches any of them is held for a human before review and merge. Edit them only when your contract requires it, and say which ones and why in the PR body; never touch them for anything outside the contract.
 6. Open exactly one pull request against \`${config.project.baseBranch}\` with \`gh pr create --base ${config.project.baseBranch} --title "<issue id>: <short title>" --body-file <file>\`. The body must contain: a summary, the outcome list with how each was verified, the issue's Linear URL, and the line \`Loop-Contract: <the contract digest below>\`.
 7. After the PR exists run \`orca worktree set --worktree active --workspace-status in-review --json\` and \`orca linear attach --current --url <pr-url> --title "PR" --json\`. Do not change the Linear status; the loop does.
 8. If you are blocked (missing credentials, contradictory requirements, an outcome that cannot be met) do not guess: write the blocker into the PR body if a PR exists, otherwise run \`orca worktree set --worktree active --comment "BLOCKED: <reason>" --json\`, and stop.
 9. When the PR is open and step 7 is done, print exactly \`LOOP_WORKER_DONE <issue id>\` and stop working.
-10. Optional but helpful: as you finish each outcome, write \`progress.json\` at the root of this worktree, e.g. \`{"o1": "done", "o2": "in-progress"}\` (ids match the outcome list). Nothing enforces this; it only makes \`loop status\`/\`loop debrief\` show real progress instead of "in flight".
+10. Never use \`git stash\`: the stash is shared by every worktree of this repository, so another worker's entry can sit at \`stash@{0}\` and a drop by index destroys it. Keep work in progress as commits on your own branch.
+11. Optional but helpful: as you finish each outcome, write \`progress.json\` at the root of this worktree, e.g. \`{"o1": "done", "o2": "in-progress"}\` (ids match the outcome list). Nothing enforces this; it only makes \`loop status\`/\`loop debrief\` show real progress instead of "in flight".
 ${renderDodForBrief(config)}${renderArtifactsForBrief(config)}${knownFailures}${skills}
 ---
 
