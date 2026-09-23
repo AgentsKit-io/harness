@@ -141,7 +141,7 @@ export { appendLoopEvent, branchFor, briefPath, busyIssues, dispatchRecordPath, 
 export type { DispatchRecordFile, LoopState, TickCandidateResult, TickInput, TickOutcome, TickReport } from './loop/tick.js'
 export { REVIEW_SEVERITIES, atLeast, buildReviewArgv, parseReviewEvidence, parseReviewResult, renderFindingsForWorker, runCodeReview, severityRank } from './adapters/code-review.js'
 export type { CodeReviewInput, CodeReviewOutcome, ReviewFinding, ReviewSeverity, ReviewUsage } from './adapters/code-review.js'
-export { deliveryStatePath, listDispatched, precheckDeliver, readDeliveryState, runDeliver } from './loop/deliver.js'
+export { approveHeldDelivery, deliveryStatePath, listDispatched, precheckDeliver, readDeliveryState, runDeliver } from './loop/deliver.js'
 export type { DeliverInput, DeliverOutcome, DeliverReport, DeliverResult, DeliveryState } from './loop/deliver.js'
 export { LOOP_STAGES, MANAGED_STAGES, automationName, automationPrompt, automationSpecs, declaredStages, installLoopAutomations, loopStatus, parseAutomationRuns, precheckCommand, shellQuote, uninstallLoopAutomations } from './loop/install.js'
 export type { AutomationStatus, InstallAction, InstallInput, InstallReport, LoopStage, LoopStatusReport } from './loop/install.js'

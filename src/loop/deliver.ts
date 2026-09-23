@@ -11,7 +11,7 @@ import { installWorkerGuard } from './worker-guard.js'
 import { orcaAccountList, orcaAgentHooks, orcaTerminalClose, orcaTerminalList, orcaWorktrees, orcaTerminalScreen, orcaTerminalSend, orcaTerminalWait, orcaWorktreeRemove, orcaWorktreeSet } from '../adapters/orca-cli.js'
 import { detectProviders, remainingUsagePercent, type ProviderAvailability } from '../adapters/providers.js'
 import { createDispatchLedger, type DispatchLease } from '../execution/coordination.js'
-import { HarnessError } from '../kernel/errors.js'
+import { HarnessError, fail } from '../kernel/errors.js'
 import { renderHandoffBrief } from './brief.js'
 import { renderSkillsForHandoff } from './skills.js'
 import { writeJsonAtomic } from './fs-atomic.js'
@@ -69,6 +69,8 @@ export interface DeliveryState {
   readonly nudges: readonly { readonly kind: 'idle' | 'conflict' | 'ci' | 'review' | 'handoff' | 'permission'; readonly at: string; readonly head: string | null }[]
   readonly handoffs: readonly DeliveryHandoff[]
   readonly heldFor: string | null
+  /** A person's attested approval of a PR held for protected paths — valid only for this exact head. */
+  readonly humanApproval?: { readonly head: string; readonly by: string; readonly at: string } | null
   readonly finishedAt: string | null
   readonly finalOutcome: DeliverOutcome | null
 }
@@ -104,6 +106,27 @@ export const readDeliveryState = (stateDir: string, identifier: string): Deliver
   const parsed = readJsonFile(path, z.object({}).loose()) as Partial<DeliveryState> | null
   if (!parsed) return empty
   return { ...empty, ...parsed, handoffs: parsed.handoffs ?? [], nudges: parsed.nudges ?? [] }
+}
+
+/**
+ * Record that a person reviewed a PR the loop held for protected paths, bound to the head they reviewed.
+ *
+ * The loop's own review and merge gates then run as for any PR; a new push changes the head and the approval no
+ * longer applies. It is an attestation in the audit trail, not a secret: anything with a shell on this machine can
+ * run it, so `by` is recorded in the event log and the approval says who vouched for which commit — never
+ * a label on the PR, which a worker holding the same credentials could add to its own pull request.
+ */
+export const approveHeldDelivery = (loaded: LoadedLoopConfig, issue: string, input: { readonly head: string; readonly by: string; readonly now?: Date }): DeliveryState => {
+  const state = readDeliveryState(loaded.stateDir, issue)
+  const by = input.by.trim()
+  if (!by) return fail('An approval names who approves (--by).', 'INVALID_INPUT')
+  if (!state.heldFor) return fail(`${issue} is not held for a human; nothing to approve.`, 'INVALID_STATE')
+  if (!state.heldFor.startsWith(input.head) || input.head.length < 7) return fail(`${issue} is held at ${state.heldFor.slice(0, 12)}, not ${input.head}; review that head (or wait for the loop to see the new one) and approve it by its SHA.`, 'STALE')
+  const at = (input.now ?? new Date()).toISOString()
+  const next: DeliveryState = { ...state, humanApproval: { head: state.heldFor, by, at } }
+  writeJsonAtomic(deliveryStatePath(loaded.stateDir, issue), next)
+  appendLoopEvent(loaded.stateDir, { at, type: 'pr.human-approved', issue, head: state.heldFor, by, pr: state.prNumber })
+  return next
 }
 
 const resumableOutcomes = new Set<DeliverOutcome>(['blocked', 'stuck', 'abandoned', 'held'])
@@ -609,10 +632,12 @@ const handlePullRequest = async (ctx: Context, record: DispatchRecordFile, lease
   if (flow.flow.name && flow.flow.source !== 'none') actions.push(`flow \`${flow.flow.name}\` (${flow.flow.source}${flow.flow.matched ? ` ${flow.flow.matched}` : ''})${flow.flow.profile?.reason ? `: ${flow.flow.profile.reason}` : ''}`)
   if (pr.isDraft) return { issue: record.issue, outcome: 'waiting', reason: 'PR is a draft', pr: pr.number, head: pr.headSha, actions }
   const protectedFiles = touchesProtectedPaths(pr.files, config.delivery.selfEditPaths)
-  if (protectedFiles.length) {
+  const approvedHere = state.humanApproval?.head === pr.headSha
+  if (protectedFiles.length && approvedHere) actions.push(`protected paths approved by ${state.humanApproval?.by} for ${pr.headSha.slice(0, 12)}; reviewing and merging as usual`)
+  if (protectedFiles.length && !approvedHere) {
     if (!ctx.dryRun && state.heldFor !== pr.headSha) {
       const marker = `<!-- loop:self-edit:${pr.headSha} -->`
-      try { if (!(await githubCommentExists(ctx.runner, { repo: config.project.repo, number: pr.number, marker }))) await githubComment(ctx.runner, { repo: config.project.repo, number: pr.number, body: `**Loop: held for a human** — this PR touches protected paths (${protectedFiles.join(', ')}), so the loop will not review or merge it automatically.\n\n${marker}` }); actions.push('self-edit hold commented') } catch (error) { actions.push(`PR comment failed: ${message(error)}`) }
+      try { if (!(await githubCommentExists(ctx.runner, { repo: config.project.repo, number: pr.number, marker }))) await githubComment(ctx.runner, { repo: config.project.repo, number: pr.number, body: `**Loop: held for a human** — this PR touches protected paths (${protectedFiles.join(', ')}), so the loop will not review or merge it until a person approves this head: \`ak-harness loop approve ${record.issue} --head ${pr.headSha.slice(0, 12)} --by <you>\`. A new push needs a new approval.\n\n${marker}` }); actions.push('self-edit hold commented') } catch (error) { actions.push(`PR comment failed: ${message(error)}`) }
       saveState(ctx, { ...state, prNumber: pr.number, heldFor: pr.headSha })
     }
     return { issue: record.issue, outcome: 'held', reason: `touches protected paths: ${protectedFiles.join(', ')}`, pr: pr.number, head: pr.headSha, actions }

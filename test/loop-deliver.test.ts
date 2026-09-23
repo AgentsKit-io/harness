@@ -2,7 +2,7 @@ import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
-import { atLeast, buildReviewArgv, createDispatchLedger, dispatchRecordPath, listDispatched, loadLoopConfig, parseReviewResult, precheckDeliver, readDeliveryState, renderFindingsForWorker, runCodeReview, runDeliver } from '../src/index.js'
+import { approveHeldDelivery, atLeast, buildReviewArgv, createDispatchLedger, dispatchRecordPath, listDispatched, loadLoopConfig, parseReviewResult, precheckDeliver, readDeliveryState, renderFindingsForWorker, runCodeReview, runDeliver } from '../src/index.js'
 import type { CommandResult, CommandRunner, DispatchRecordFile } from '../src/index.js'
 
 const fixture = (name: string): unknown => JSON.parse(readFileSync(join(process.cwd(), 'test/fixtures/loop', `${name}.json`), 'utf8')) as unknown
@@ -323,6 +323,22 @@ describe('deliver', () => {
     expect(report.results[0]).toMatchObject({ outcome: 'fix-round' })
     expect(report.results[0]?.actions).toContain('sent to reactivated worker terminal term_handoff')
     expect(JSON.parse(readFileSync(dispatchRecordPath(env.loaded.stateDir, 'ENG-10'), 'utf8')).terminal).toBe('term_handoff')
+  })
+
+  it('releases a held PR only for the head a person approved — never by a label, never for a later push', async () => {
+    const held = setup({ pr: basePr({ files: [{ path: '.github/workflows/ci.yml' }] }) })
+    expect((await deliver(held)).results[0]).toMatchObject({ outcome: 'held' })
+    const head = readDeliveryState(held.loaded.stateDir, 'ENG-10').heldFor as string
+    // The hold comment tells the person how to approve, with the exact head.
+    const holdComment = held.runner.calls.find((argv) => argv[1] === 'pr' && argv[2] === 'comment')?.join(' ') ?? ''
+    expect(holdComment).toContain(`ak-harness loop approve ENG-10 --head ${head.slice(0, 12)}`)
+    expect(() => approveHeldDelivery(held.loaded, 'ENG-10', { head: 'deadbeef00', by: 'reviewer' })).toThrow(/held at/)
+    approveHeldDelivery(held.loaded, 'ENG-10', { head: head.slice(0, 12), by: 'reviewer' })
+    const after = (await deliver(held)).results[0]
+    expect(after?.outcome).not.toBe('held')
+    expect(after?.actions.join(' ')).toContain('approved by reviewer')
+    const events = readFileSync(join(held.loaded.stateDir, 'events.ndjson'), 'utf8')
+    expect(events).toContain('"type":"pr.human-approved"')
   })
 
   it('holds PRs touching protected paths, waits on pending checks, and asks the worker to fix red CI', async () => {

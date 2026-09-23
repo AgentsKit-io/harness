@@ -30,6 +30,11 @@ Found by running the loop on a real repository migration with a single, non-defa
   still carries an objection, even at consensus, and lists them; `--accept-objections` carries them into decompose,
   which is told to settle each one as a decision inside the issue it affects. A 2-of-3 design had been approved while
   two votes named the same missing decision, and it came back as two blocking contract escalations.
+- **A PR held for protected paths can be released inside the loop, by an attested approval.** `ak-harness loop
+  approve <issue> --head <sha> --by <you>` records who vouched for which commit (in the delivery state and the event
+  log as `pr.human-approved`); the loop then reviews and merges that PR as usual, and a new push needs a new approval.
+  The hold comment prints the exact command. Deliberately not a PR label: a worker holding the same credentials could
+  put one on its own pull request.
 - **An agent whose turns Orca cannot observe is confirmed by its screen.** For such an agent (opencode reports
   `observation: unsupported`) the stages never pass `input_accepted`, so the launcher checks that the prompt's first
   words appear on screen and sends again, up to twice, when they do not — an opencode TUI reported idle while still on

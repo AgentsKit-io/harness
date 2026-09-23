@@ -81,6 +81,8 @@ export const LOOP_EVENT_TYPES = {
   'pr.merged': ['issue', 'pr', 'head', 'sha'],
   /** GitHub refused the merge — branch protection, a required check, a race with another merge. */
   'pr.merge-refused': ['issue', 'pr', 'head', 'message'],
+  /** A person attested a PR held for protected paths, for exactly this head. */
+  'pr.human-approved': ['issue', 'head', 'by', 'pr'],
   /** The optional post-merge smoke failed. */
   'pr.smoke-failed': ['issue', 'pr', 'head', 'detail'],
 
