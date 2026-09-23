@@ -8,10 +8,10 @@ import { resolveConnectors, type ScmConnector, type TrackerConnector } from './c
 import { issueBudget, modelForChange } from './budget.js'
 import { assessBoundary, verifyCommandFor } from './layers.js'
 import { installWorkerGuard } from './worker-guard.js'
-import { orcaAccountList, orcaAgentHooks, orcaTerminalList, orcaTerminalScreen, orcaTerminalSend, orcaTerminalWait, orcaWorktreeRemove, orcaWorktreeSet } from '../adapters/orca-cli.js'
+import { orcaAccountList, orcaAgentHooks, orcaTerminalClose, orcaTerminalList, orcaWorktrees, orcaTerminalScreen, orcaTerminalSend, orcaTerminalWait, orcaWorktreeRemove, orcaWorktreeSet } from '../adapters/orca-cli.js'
 import { detectProviders, remainingUsagePercent, type ProviderAvailability } from '../adapters/providers.js'
 import { createDispatchLedger, type DispatchLease } from '../execution/coordination.js'
-import { HarnessError } from '../kernel/errors.js'
+import { HarnessError, fail } from '../kernel/errors.js'
 import { renderHandoffBrief } from './brief.js'
 import { renderSkillsForHandoff } from './skills.js'
 import { writeJsonAtomic } from './fs-atomic.js'
@@ -66,9 +66,11 @@ export interface DeliveryState {
   readonly prNumber: number | null
   readonly reviews: Readonly<Record<string, { readonly status: CodeReviewOutcome['status']; readonly at: string; readonly provider: string; readonly model: string | null; readonly blocking: number; readonly attempts: number }>>
   readonly fixRounds: number
-  readonly nudges: readonly { readonly kind: 'idle' | 'conflict' | 'ci' | 'review' | 'handoff'; readonly at: string; readonly head: string | null }[]
+  readonly nudges: readonly { readonly kind: 'idle' | 'conflict' | 'ci' | 'review' | 'handoff' | 'permission'; readonly at: string; readonly head: string | null }[]
   readonly handoffs: readonly DeliveryHandoff[]
   readonly heldFor: string | null
+  /** A person's attested approval of a PR held for protected paths — valid only for this exact head. */
+  readonly humanApproval?: { readonly head: string; readonly by: string; readonly at: string } | null
   readonly finishedAt: string | null
   readonly finalOutcome: DeliverOutcome | null
 }
@@ -104,6 +106,27 @@ export const readDeliveryState = (stateDir: string, identifier: string): Deliver
   const parsed = readJsonFile(path, z.object({}).loose()) as Partial<DeliveryState> | null
   if (!parsed) return empty
   return { ...empty, ...parsed, handoffs: parsed.handoffs ?? [], nudges: parsed.nudges ?? [] }
+}
+
+/**
+ * Record that a person reviewed a PR the loop held for protected paths, bound to the head they reviewed.
+ *
+ * The loop's own review and merge gates then run as for any PR; a new push changes the head and the approval no
+ * longer applies. It is an attestation in the audit trail, not a secret: anything with a shell on this machine can
+ * run it, so `by` is recorded in the event log and the approval says who vouched for which commit — never
+ * a label on the PR, which a worker holding the same credentials could add to its own pull request.
+ */
+export const approveHeldDelivery = (loaded: LoadedLoopConfig, issue: string, input: { readonly head: string; readonly by: string; readonly now?: Date }): DeliveryState => {
+  const state = readDeliveryState(loaded.stateDir, issue)
+  const by = input.by.trim()
+  if (!by) return fail('An approval names who approves (--by).', 'INVALID_INPUT')
+  if (!state.heldFor) return fail(`${issue} is not held for a human; nothing to approve.`, 'INVALID_STATE')
+  if (!state.heldFor.startsWith(input.head) || input.head.length < 7) return fail(`${issue} is held at ${state.heldFor.slice(0, 12)}, not ${input.head}; review that head (or wait for the loop to see the new one) and approve it by its SHA.`, 'STALE')
+  const at = (input.now ?? new Date()).toISOString()
+  const next: DeliveryState = { ...state, humanApproval: { head: state.heldFor, by, at } }
+  writeJsonAtomic(deliveryStatePath(loaded.stateDir, issue), next)
+  appendLoopEvent(loaded.stateDir, { at, type: 'pr.human-approved', issue, head: state.heldFor, by, pr: state.prNumber })
+  return next
 }
 
 const resumableOutcomes = new Set<DeliverOutcome>(['blocked', 'stuck', 'abandoned', 'held'])
@@ -179,8 +202,52 @@ const readBlockingReviewFindings = (stateDir: string, issue: string, head: strin
   } catch { return [] }
 }
 
+/** What a tool-permission prompt looks like on screen, across the agent CLIs the loop drives. */
+const PERMISSION_PROMPT = /Permission required|Allow once|Allow always|Do you want to (?:proceed|allow|run)|approve this (?:command|action)/i
+
+/**
+ * Whether the worker is stopped at a tool-permission prompt — a question for a human, not idleness.
+ *
+ * Typing into it is not a nudge: the text lands in a dialog whose default is "allow", so the next Enter approves
+ * whatever the agent asked for — typically the one command its own config marks as dangerous (`rm -rf`,
+ * `git reset --hard`). Orca's `worktree ps` reports it as `permission`; the screen is the fallback.
+ */
+export const workerAwaitingPermission = async (ctx: Pick<Context, 'runner' | 'config'>, record: Pick<DispatchRecordFile, 'worktreeId' | 'terminal'>): Promise<string | null> => {
+  try {
+    const own = (await orcaWorktrees(ctx.runner, orcaOptions(ctx.config))).find((item) => item.id === record.worktreeId)
+    if (own?.activity === 'permission') return 'Orca reports the worktree at a permission prompt'
+  } catch { /* fall back to the screen */ }
+  if (!record.terminal) return null
+  try {
+    const screen = (await orcaTerminalScreen(ctx.runner, { terminal: record.terminal }, orcaOptions(ctx.config))).split('\n').slice(-25).join('\n')
+    const match = PERMISSION_PROMPT.exec(screen)
+    if (match) return `the worker screen shows a permission prompt ("${match[0]}")`
+  } catch { /* unknown is not a prompt */ }
+  return null
+}
+
+/** How a coding-agent CLI says it ran out of usage on its own screen (opencode: "5 hour usage limit reached. It will reset in …"). */
+const USAGE_LIMIT_ON_SCREEN = /usage limit reached|hit your (?:session|weekly|monthly|usage)?\s?limit|rate limit(?:ed| reached| exceeded)|quota exceeded|out of (?:credits|quota)/i
+
+/**
+ * The line on the worker's screen saying its provider is out of usage, or null.
+ *
+ * A worker in that state is not idle — its TUI keeps redrawing "retrying in 3h 45m" — so the idle path never saw
+ * it, and a provider whose usage Orca does not report (opencode) was never marked exhausted: the issue sat until
+ * the provider came back. The screen is the only place the CLI says it.
+ */
+export const workerAtUsageLimit = async (ctx: Pick<Context, 'runner' | 'config'>, record: Pick<DispatchRecordFile, 'terminal'>): Promise<string | null> => {
+  if (!record.terminal) return null
+  try {
+    const screen = (await orcaTerminalScreen(ctx.runner, { terminal: record.terminal }, orcaOptions(ctx.config))).split('\n').slice(-12)
+    return screen.find((line) => USAGE_LIMIT_ON_SCREEN.test(line))?.trim() ?? null
+  } catch { return null }
+}
+
 const sendToWorker = async (ctx: Context, record: DispatchRecordFile, text: string, actions: string[]): Promise<boolean> => {
   if (!record.terminal) { actions.push('no terminal handle recorded; cannot nudge'); return false }
+  const permission = ctx.dryRun ? null : await workerAwaitingPermission(ctx, record)
+  if (permission) { actions.push(`not typing into ${record.terminal}: ${permission} — the text would answer it`); return false }
   if (ctx.dryRun) { actions.push(`would send to ${record.terminal}: ${text.split('\n')[0]?.slice(0, 80)}`); return true }
   const send = async (terminal: string) => orcaTerminalSend(ctx.runner, { terminal, text, enter: true, waitSubmitSeconds: 10 }, orcaOptions(ctx.config))
   let staleShell = false
@@ -209,7 +276,7 @@ const sendToWorker = async (ctx: Context, record: DispatchRecordFile, text: stri
       brief = `Resume ${record.issue} on branch ${record.branch}. The coordinator has already frozen and validated the contract; the coordinator state directory is outside this isolated worktree, so do not block on a missing ${ctx.config.project.stateDir} file. Address the review findings, run \`${verifyCommandFor(ctx.config, record.labels ?? []).command}\`, commit and push, then report LOOP_WORKER_DONE ${record.issue}.${frozen}`
       actions.push(stored ? 'brief missing; generated recovery brief with inline contract' : 'brief missing; generated recovery brief')
     }
-    const relaunched = await launchWorkerTerminal({ runner: ctx.runner, config: ctx.config, worktreeId: record.worktreeId, command: ctx.builder.tui, title: `loop ${record.issue}`, brief, idleTimeoutMs: 10_000 })
+    const relaunched = await launchWorkerTerminal({ runner: ctx.runner, config: ctx.config, worktreeId: record.worktreeId, ...(record.worktreePath ? { worktreePath: record.worktreePath } : {}), command: ctx.builder.tui, title: `loop ${record.issue}`, brief, idleTimeoutMs: 10_000 })
     if (!relaunched.accepted) { actions.push(`worker reactivation did not accept the brief in ${relaunched.terminal}`); return false }
     const updated = { ...record, terminal: relaunched.terminal }
     writeDispatchRecord(ctx.loaded.stateDir, updated)
@@ -353,6 +420,7 @@ const performHandoff = async (
     runner: ctx.runner,
     config: ctx.config,
     worktreeId: record.worktreeId,
+    ...(record.worktreePath ? { worktreePath: record.worktreePath } : {}),
     command: next.tui,
     title,
     brief,
@@ -427,6 +495,40 @@ const handleNoPullRequest = async (ctx: Context, record: DispatchRecordFile, lea
     return { issue: record.issue, outcome: ctx.dryRun ? 'dry-run' : 'stuck', reason: 'worker terminal gone before a PR was opened', actions }
   }
 
+  // A worker at a permission prompt is waiting for a person, whatever the idle clock says. Hold it — no nudge, no
+  // handoff, no relaunch — and keep the lease: once someone answers, the same worker carries on.
+  const permission = await workerAwaitingPermission(ctx, record)
+  if (permission) {
+    if (!state.nudges.some((nudge) => nudge.kind === 'permission' && minutesBetween(now, nudge.at) < idleTimeout)) {
+      event(ctx, { type: 'worker.permission-wait', issue: record.issue, terminal: record.terminal, reason: permission })
+      if (!ctx.dryRun) saveState(ctx, { ...state, nudges: [...state.nudges, { kind: 'permission', at: now.toISOString(), head: null }] })
+    }
+    actions.push(`${permission}; left for a human to answer in terminal ${record.terminal}`)
+    return { issue: record.issue, outcome: 'held', reason: `worker waiting at a permission prompt (${permission}) — answer it in Orca`, actions }
+  }
+
+  // Out of usage: mark the provider exhausted (its reset time when the CLI printed one) and hand the task to a
+  // builder from ANOTHER provider in the same worktree. The exhausted TUI is closed first — left alone it resumes at
+  // the reset and two agents would share one worktree; if it cannot be closed, nothing is handed off.
+  const limitLine = await workerAtUsageLimit(ctx, record)
+  if (limitLine) {
+    const resetsAt = extractResetsAt(limitLine, now)
+    if (!ctx.dryRun) {
+      const entry = markProviderExhausted(ctx.loaded.stateDir, record.provider, { initialMin: ctx.config.models.cooldown.initialMin, maxMin: ctx.config.models.cooldown.maxMin, reason: `quota: ${limitLine.slice(0, 200)}`, resetsAt, now })
+      event(ctx, { type: 'provider.cooldown', provider: record.provider, kind: 'quota', until: entry.until, source: 'worker-screen' })
+      actions.push(`${record.provider} marked cooling down until ${entry.until} (worker screen: ${limitLine.slice(0, 80)})`)
+    }
+    const other = rankModels(ctx.config, 'builder', ctx.providers, ctx.builderExtras).find((candidate) => candidate.provider !== record.provider) ?? null
+    const cfg = ctx.config.delivery.handoff
+    if (!cfg.enabled || !other || state.handoffs.length >= cfg.maxHandoffs) return { issue: record.issue, outcome: 'waiting', reason: `${record.provider} is out of usage and no other builder can take over`, actions }
+    if (!ctx.dryRun) {
+      try { await orcaTerminalClose(ctx.runner, { terminal: record.terminal as string }, orcaOptions(ctx.config)) } catch (error) {
+        return { issue: record.issue, outcome: 'held', reason: `${record.provider} is out of usage, but its terminal could not be closed (${message(error)}); not handing off into a shared worktree`, actions }
+      }
+    }
+    return performHandoff(ctx, record, state, other, `${record.provider} out of usage (${limitLine.slice(0, 80)})`, actions)
+  }
+
   let idle = ctx.assumeIdle ?? false
   if (ctx.assumeIdle === undefined && record.terminal) {
     try { idle = (await orcaTerminalWait(ctx.runner, { terminal: record.terminal, for: 'tui-idle', timeoutMs: 1_500 }, orcaOptions(ctx.config))).satisfied } catch { idle = false }
@@ -460,13 +562,17 @@ const handleNoPullRequest = async (ctx: Context, record: DispatchRecordFile, lea
   return { issue: record.issue, outcome: ctx.dryRun ? 'dry-run' : 'stuck', reason: 'idle after nudge without PR', actions }
 }
 
-const complete = async (ctx: Context, record: DispatchRecordFile, lease: DispatchLease | undefined, state: DeliveryState, pr: PullRequestSnapshot, mergeSha: string | null, actions: string[]): Promise<DeliverResult> => {
+const complete = async (ctx: Context, record: DispatchRecordFile, lease: DispatchLease | undefined, state: DeliveryState, pr: PullRequestSnapshot, mergeSha: string | null, actions: string[], mergedBy: 'loop' | 'outside' = 'loop'): Promise<DeliverResult> => {
   if (!ctx.dryRun) {
     try {
       await ctx.tracker.attach({ issue: record.issue, url: pr.url, title: `PR #${pr.number}`, dedupeKey: `attach:${record.issue}:${pr.number}` })
-      await ctx.tracker.comment({ issue: record.issue, body: `**Loop: merged** — ${pr.url}${mergeSha ? ` as \`${mergeSha.slice(0, 12)}\`` : ''} after a clean review and green checks. Worker: \`${record.provider}/${record.model}\`.\n\n<!-- loop:merged:${pr.number} -->`, dedupeKey: `merged:${record.issue}:${pr.number}` })
+      // Say who merged: "after a clean review and green checks" is only true when the loop made the call.
+      const how = mergedBy === 'loop' ? 'after a clean review and green checks' : 'by a person, outside the loop — the loop\'s own review and checks did not decide it'
+      await ctx.tracker.comment({ issue: record.issue, body: `**Loop: merged** — ${pr.url}${mergeSha ? ` as \`${mergeSha.slice(0, 12)}\`` : ''} ${how}. Worker: \`${record.provider}/${record.model}\`.\n\n<!-- loop:merged:${pr.number} -->`, dedupeKey: `merged:${record.issue}:${pr.number}` })
       await ctx.tracker.transitions.transition({ tracker: ctx.tracker.id, issue: record.issue, to: ctx.config.linear.doneState, reason: `PR #${pr.number} merged` })
       actions.push(`Linear: attached PR, commented, → ${ctx.config.linear.doneState}`)
+      // A merged issue is no longer blocked or waiting for information — clear the flags the loop itself set on the way.
+      try { await ctx.tracker.removeLabels(record.issue, [ctx.config.linear.blockedLabel, ctx.config.linear.needsInfoLabel]) } catch (error) { actions.push(`clearing blocked/needs-info labels failed: ${message(error)}`) }
     } catch (error) { actions.push(`Linear completion failed: ${message(error)}`) }
     try { await orcaWorktreeSet(ctx.runner, { worktree: `id:${record.worktreeId}`, comment: `LOOP MERGED: PR #${pr.number}` }, orcaOptions(ctx.config)) } catch (error) {
       if (isMissingOrcaWorktree(error)) actions.push('Orca worktree already absent; comment skipped')
@@ -490,11 +596,35 @@ const blockAfterRounds = async (ctx: Context, record: DispatchRecordFile, lease:
   return { issue: record.issue, outcome: ctx.dryRun ? 'dry-run' : 'blocked', reason: why, pr: pr.number, head: pr.headSha, actions }
 }
 
-const fixRound = async (ctx: Context, record: DispatchRecordFile, lease: DispatchLease | undefined, state: DeliveryState, pr: PullRequestSnapshot, kind: 'ci' | 'review' | 'conflict', text: string, why: string, actions: string[]): Promise<DeliverResult> => {
+/** What makes two review findings the same finding across heads: the file and the title, not the line (code moves). */
+const findingKey = (finding: Pick<CodeReviewOutcome['blocking'][number], 'file' | 'title'>): string => `${finding.file ?? ''}::${finding.title.trim().toLowerCase()}`
+
+/**
+ * Whether this review round only DISCOVERED problems — none of its findings was raised at an earlier head.
+ *
+ * A review re-reads the whole change at every head, so a worker that fixes everything it was told can still get a
+ * fresh finding each round. Observed: three rounds, three different findings, all fixed, and the issue blocked at
+ * `maxFixRounds` — the limit was spent on the reviewer's discovery, not on a worker failing to fix. Such rounds do
+ * not count against `maxFixRounds`; a finding that persists across heads still does, and a hard ceiling of twice
+ * the limit in total review rounds keeps the cost bounded.
+ */
+const discoveryOnly = (ctx: Context, record: DispatchRecordFile, state: DeliveryState, findings: readonly CodeReviewOutcome['blocking'][number][]): boolean => {
+  const earlierHeads = [...new Set(state.nudges.filter((nudge) => nudge.kind === 'review' && nudge.head).map((nudge) => nudge.head as string))]
+  if (!earlierHeads.length || !findings.length) return false
+  const earlier = new Set(earlierHeads.flatMap((head) => readBlockingReviewFindings(ctx.loaded.stateDir, record.issue, head, 'nit').map(findingKey)))
+  return findings.every((finding) => !earlier.has(findingKey(finding)))
+}
+
+const fixRound = async (ctx: Context, record: DispatchRecordFile, lease: DispatchLease | undefined, state: DeliveryState, pr: PullRequestSnapshot, kind: 'ci' | 'review' | 'conflict', text: string, why: string, actions: string[], findings: readonly CodeReviewOutcome['blocking'][number][] = []): Promise<DeliverResult> => {
   const already = state.nudges.some((nudge) => nudge.kind === kind && nudge.head === pr.headSha)
   if (already) return { issue: record.issue, outcome: 'waiting', reason: `${kind} nudge already sent for head ${pr.headSha.slice(0, 7)}; waiting for a new push`, pr: pr.number, head: pr.headSha, actions }
-  const counts = kind !== 'conflict'
-  if (counts && state.fixRounds >= flowFor(ctx, record).maxFixRounds) return blockAfterRounds(ctx, record, lease, state, pr, why, actions)
+  const limit = flowFor(ctx, record).maxFixRounds
+  const reviewRounds = state.nudges.filter((nudge) => nudge.kind === 'review').length
+  const discovery = kind === 'review' && reviewRounds < limit * 2 && discoveryOnly(ctx, record, state, findings)
+  if (discovery) actions.push(`review round ${reviewRounds + 1}: every finding is new at this head (discovery), not counted against maxFixRounds (${state.fixRounds}/${limit})`)
+  const counts = kind !== 'conflict' && !discovery
+  if (kind === 'review' && reviewRounds >= limit * 2) return blockAfterRounds(ctx, record, lease, state, pr, `${why} — ${reviewRounds} review rounds, the ceiling of twice maxFixRounds`, actions)
+  if (counts && state.fixRounds >= limit) return blockAfterRounds(ctx, record, lease, state, pr, why, actions)
   // The worker already has its brief; the round points back at it by digest instead of re-sending what it holds.
   // Delta, not repetition — and the anchor is what lets a worker that lost the thread find it again.
   const anchor = record.briefDigest ? `\n\nContext: contract \`${record.contractDigest.slice(0, 12)}\` · brief \`${record.briefDigest.slice(0, 12)}\`${record.skills?.length ? ` · pinned skills: ${record.skills.map((skill) => `\`${skill.path}\``).join(', ')} — re-read them in the worktree, they are unchanged for this run` : ''}.` : ''
@@ -526,10 +656,12 @@ const handlePullRequest = async (ctx: Context, record: DispatchRecordFile, lease
   if (flow.flow.name && flow.flow.source !== 'none') actions.push(`flow \`${flow.flow.name}\` (${flow.flow.source}${flow.flow.matched ? ` ${flow.flow.matched}` : ''})${flow.flow.profile?.reason ? `: ${flow.flow.profile.reason}` : ''}`)
   if (pr.isDraft) return { issue: record.issue, outcome: 'waiting', reason: 'PR is a draft', pr: pr.number, head: pr.headSha, actions }
   const protectedFiles = touchesProtectedPaths(pr.files, config.delivery.selfEditPaths)
-  if (protectedFiles.length) {
+  const approvedHere = state.humanApproval?.head === pr.headSha
+  if (protectedFiles.length && approvedHere) actions.push(`protected paths approved by ${state.humanApproval?.by} for ${pr.headSha.slice(0, 12)}; reviewing and merging as usual`)
+  if (protectedFiles.length && !approvedHere) {
     if (!ctx.dryRun && state.heldFor !== pr.headSha) {
       const marker = `<!-- loop:self-edit:${pr.headSha} -->`
-      try { if (!(await githubCommentExists(ctx.runner, { repo: config.project.repo, number: pr.number, marker }))) await githubComment(ctx.runner, { repo: config.project.repo, number: pr.number, body: `**Loop: held for a human** — this PR touches protected paths (${protectedFiles.join(', ')}), so the loop will not review or merge it automatically.\n\n${marker}` }); actions.push('self-edit hold commented') } catch (error) { actions.push(`PR comment failed: ${message(error)}`) }
+      try { if (!(await githubCommentExists(ctx.runner, { repo: config.project.repo, number: pr.number, marker }))) await githubComment(ctx.runner, { repo: config.project.repo, number: pr.number, body: `**Loop: held for a human** — this PR touches protected paths (${protectedFiles.join(', ')}), so the loop will not review or merge it until a person approves this head: \`ak-harness loop approve ${record.issue} --head ${pr.headSha.slice(0, 12)} --by <you>\`. A new push needs a new approval.\n\n${marker}` }); actions.push('self-edit hold commented') } catch (error) { actions.push(`PR comment failed: ${message(error)}`) }
       saveState(ctx, { ...state, prNumber: pr.number, heldFor: pr.headSha })
     }
     return { issue: record.issue, outcome: 'held', reason: `touches protected paths: ${protectedFiles.join(', ')}`, pr: pr.number, head: pr.headSha, actions }
@@ -634,10 +766,10 @@ ${marker}` }); actions.push('secret-file hold commented') } catch (error) { acti
         actions.push(`reviewer ${reviewerProviderId} marked cooling down until ${entry.until} (${failureKind})`)
         event(ctx, { type: 'provider.cooldown', provider: reviewerProviderId, kind: failureKind, until: entry.until, source: 'review' })
       }
-      if (review.blocking.length) return fixRound(ctx, record, lease, state, pr, 'review', `Loop: the review of PR #${pr.number} is incomplete, but it found ${review.blocking.length} blocking issue(s). Address the findings below, re-run \`${closes}\`, commit and push; the loop will require a complete review before merge. Findings:\n${renderFindingsForWorker(review.blocking)}\nThe full (incomplete) review is on the PR.`, `review incomplete with ${review.blocking.length} blocking finding(s)`, actions)
+      if (review.blocking.length) return fixRound(ctx, record, lease, state, pr, 'review', `Loop: the review of PR #${pr.number} is incomplete, but it found ${review.blocking.length} blocking issue(s). Address the findings below, re-run \`${closes}\`, commit and push; the loop will require a complete review before merge. Findings:\n${renderFindingsForWorker(review.blocking)}\nThe full (incomplete) review is on the PR.`, `review incomplete with ${review.blocking.length} blocking finding(s)`, actions, review.blocking)
       return { issue: record.issue, outcome: 'waiting', reason: review.summary, pr: pr.number, head: pr.headSha, review, actions }
     }
-    if (review.status === 'findings') return fixRound(ctx, record, lease, state, pr, 'review', `Loop: the code review of PR #${pr.number} (head ${pr.headSha.slice(0, 7)}) found ${review.blocking.length} issue(s) at or above "${reviewSettings.minSeverity}". Address each one (or explain in the PR why it is not applicable), re-run \`${closes}\`, commit and push. Findings:\n${renderFindingsForWorker(review.blocking)}\nThe full review is on the PR. Reply here when pushed.`, `review found ${review.blocking.length} blocking finding(s)`, actions)
+    if (review.status === 'findings') return fixRound(ctx, record, lease, state, pr, 'review', `Loop: the code review of PR #${pr.number} (head ${pr.headSha.slice(0, 7)}) found ${review.blocking.length} issue(s) at or above "${reviewSettings.minSeverity}". Address each one (or explain in the PR why it is not applicable), re-run \`${closes}\`, commit and push. Findings:\n${renderFindingsForWorker(review.blocking)}\nThe full review is on the PR. Reply here when pushed.`, `review found ${review.blocking.length} blocking finding(s)`, actions, review.blocking)
   } else if (reviewPhase && prior?.status === 'findings') return { issue: record.issue, outcome: 'waiting', reason: `review findings pending a new push (head ${pr.headSha.slice(0, 7)})`, pr: pr.number, head: pr.headSha, actions }
 
   // The phase artifacts are the contract between the worker and the harness: the machine advances on files it can
@@ -931,9 +1063,12 @@ export const runDeliver = async (input: DeliverInput): Promise<DeliverReport> =>
       }
       const closed = await githubPullRequestsForBranch(input.runner, { repo: config.project.repo, head: record.branch, state: 'all' })
       const merged = closed.find((item) => item.state === 'MERGED')
-      if (merged) { const actions: string[] = ['PR merged outside the loop']; results.push(await complete(ctx, record, lease, state, merged, null, actions)); continue }
+      if (merged) { const actions: string[] = ['PR merged outside the loop']; results.push(await complete(ctx, record, lease, state, merged, null, actions, 'outside')); continue }
       const abandoned = closed.find((item) => item.state === 'CLOSED')
       if (abandoned) {
+        // Already escalated for this very PR: repeating it every pass re-labels the issue and moves it back to
+        // `returnState` again, undoing whatever a person did with it since.
+        if (state.finishedAt && state.finalOutcome === 'abandoned' && state.prNumber === abandoned.number) continue
         const actions: string[] = []
         await escalateLinear(ctx, record, 'abandoned', `**Loop: PR closed without merge** — ${abandoned.url}. The issue returned to ${config.delivery.returnState}; the worktree was preserved.`, actions)
         finish(ctx, record, lease, { ...state, prNumber: abandoned.number }, 'abandoned', `PR #${abandoned.number} closed`)

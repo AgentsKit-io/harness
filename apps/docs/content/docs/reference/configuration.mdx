@@ -9,7 +9,7 @@ The four layers that produce this configuration — the machine's global file, t
 machine's overlay — are described in [ADR-0033](https://github.com/AgentsKit-io/harness/blob/main/docs/ADR-0033-four-config-layers-and-presets.md).
 `ak-harness loop validate` prints the effective result, which is the only one that decides anything.
 
-213 of 369 paths carry no description yet.
+213 of 373 paths carry no description yet.
 
 ## `schemaVersion`
 
@@ -31,6 +31,7 @@ Type: string
 | `project.root` | string | `"."` |  |
 | `project.stateDir` | string | `".ak-loop"` | Where the loop keeps everything that is NOT the project's configuration: dispatch ledger, delivery state, contracts, events, agent memory, plans. Meant to be gitignored — the configuration lives at the repo root as `loop.config.yaml`, versioned; this directory is runtime state, per machine. |
 | `project.team` | string |  | Selects the `loop.config.team.&lt;key&gt;.yaml` layer. `$AK_LOOP_TEAM` overrides it; a declared team whose file is missing fails loudly. |
+| `project.orchestratorView` | `base` · `root` | `"base"` | The tree the orchestrator's headless calls (contract, plan interview, architect, votes, decompose) read. `base` (default): a harness-owned detached worktree of `origin/&lt;baseBranch&gt;`, fetched before each use. `root`: `project.root` as it is — whatever branch and age the operator's checkout has. |
 | `project.setup` | object | `{}` |  |
 | `project.setup.command` | string[] |  | Argv (no shell — one element per arg, e.g. `[pnpm, install, --frozen-lockfile]`) run once in a freshly created worktree before the worker terminal opens. Unset/empty = skip. |
 | `project.setup.timeoutSec` | integer | `600` |  |
@@ -61,6 +62,7 @@ Type: string
 | `linear.rotation.advanceWhenEmpty` | boolean | `true` |  |
 | `linear.queueOwnership` | `person` · `unassigned` | `"person"` | Whose queue this machine drains. `person` (default) keeps the historical behaviour: the issues assigned to `linear.person`. `unassigned` drains the issues with NO assignee and turns the assignee into a transient claim — written on dispatch, cleared when the item returns — so several machines can share one priority-ordered queue without colliding. Note when switching to `unassigned`: clearing the assignees is then REQUIRED, not cosmetic. With `person` and an emptied backlog the queue comes back empty and the loop looks healthy while doing nothing. |
 | `linear.states` | string[] | `["Todo","Ready"]` |  |
+| `linear.entryState` | string | `"Backlog"` | Where `loop plan decompose --create` puts new issues. It must NOT be one of `states`: those are the queue, and an issue the planner just wrote is not work anyone approved yet. Moving it into `states` is the human gate. |
 | `linear.excludeLabels` | string[] | `["blocked","needs-info"]` |  |
 | `linear.requireLabels` | string[] | `[]` | ALL of these must be on the issue (AND). |
 | `linear.anyLabels` | string[] | `[]` | At least ONE of these must be on the issue (OR) — how a machine declares the slices of the board it drains, e.g. `[layer:L2, layer:L3]`. `requireLabels` cannot say this: it demands every label on the same issue, so two layers there match nothing and the queue comes back silently empty. |
@@ -72,6 +74,7 @@ Type: string
 | `linear.doneState` | string | `"Done"` |  |
 | `linear.blockedLabel` | string | `"blocked"` |  |
 | `linear.needsInfoLabel` | string | `"needs-info"` |  |
+| `linear.outsideLabel` | string | `"outside-loop"` | Marks work the loop cannot deliver as a pull request to `project.repo` — another repository, a deploy, a setting in an external service. Decompose puts it on such issues and the queue never dispatches them, whatever state they are moved to: a worker given one opens a PR here that does not do the work, or none. |
 
 ## `knownFailures`
 
@@ -412,6 +415,7 @@ The roles that run per issue, and the plan the worker starts from. The planner a
 | `worker.plan.approvals` | integer | `2` | How many of them must approve. Default 2 of 3. |
 | `worker.plan.maxCycles` | integer | `3` | Planner → vote → replan cycles before the item becomes a human's problem. Three models disagreeing three times is an ambiguous requirement. |
 | `worker.plan.timeoutMs` | integer | `300000` |  |
+| `worker.plan.stageTimeoutMs` | integer | `900000` | Per-call budget for `loop plan` (interview, architect, design vote, decompose). Separate from `timeoutMs` because the architect designs a whole PRD against the whole repository, not one issue — and it runs from a human's shell, not inside a scheduler stage capped at 600 s. At 300 s `glm-5.3` never finished a design. |
 | `worker.roles` | `planner` · `vote` · `builder` · `verify` · `review` · `dod`[] |  | The phases that run for one issue, in order. Unset (the default) means every phase answers for itself, from its own block — `worker.plan.enabled`, `delivery.verify.argv`, `delivery.review`, `dod.items` — which in practice is `['builder', 'review']` and is exactly what a project that never opted in already has. **Declaring the list makes it the answer**: a phase not named here does not run, however well configured its own block is. That is the point of declaring it. |
 
 ## `layers`

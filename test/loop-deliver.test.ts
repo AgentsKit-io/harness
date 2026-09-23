@@ -2,7 +2,7 @@ import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
-import { atLeast, buildReviewArgv, createDispatchLedger, dispatchRecordPath, listDispatched, loadLoopConfig, parseReviewResult, precheckDeliver, readDeliveryState, renderFindingsForWorker, runCodeReview, runDeliver } from '../src/index.js'
+import { approveHeldDelivery, atLeast, buildReviewArgv, createDispatchLedger, dispatchRecordPath, listDispatched, loadLoopConfig, parseReviewResult, precheckDeliver, readDeliveryState, renderFindingsForWorker, runCodeReview, runDeliver } from '../src/index.js'
 import type { CommandResult, CommandRunner, DispatchRecordFile } from '../src/index.js'
 
 const fixture = (name: string): unknown => JSON.parse(readFileSync(join(process.cwd(), 'test/fixtures/loop', `${name}.json`), 'utf8')) as unknown
@@ -122,6 +122,7 @@ const setup = (initial: Scenario = {}) => {
       if (key.startsWith('orca terminal list')) return okResult({ terminals: scenario.terminals ?? [{ handle: 'term_w', connected: true, orphaned: false, lastOutputAt: Date.parse('2026-09-11T10:30:00.000Z'), worktreeId: 'repo-1::/w/eng-10-demo' }] })
       if (key.startsWith('orca terminal read')) return scenario.terminalScreen === undefined ? { code: 127, stdout: '', stderr: 'no fixture for terminal read', timedOut: false, durationMs: 1 } : okResult({ tail: scenario.terminalScreen })
       if (key.startsWith('orca terminal create')) return okResult({ handle: 'term_handoff', terminal: { handle: 'term_handoff' } })
+      if (key.startsWith('orca terminal close')) return okResult({ closed: true })
       if (key.startsWith('orca terminal wait')) return okResult({ satisfied: true })
       if (key.startsWith('orca terminal send')) {
         if ((scenario.sendRejects ?? 0) > 0) { scenario.sendRejects = (scenario.sendRejects ?? 1) - 1; return okResult({ accepted: false, requestId: 'r' }) }
@@ -211,6 +212,26 @@ describe('deliver', () => {
     const prListCalls = env.runner.calls.filter((argv) => argv[0] === 'gh' && argv[1] === 'pr' && argv[2] === 'list')
     expect(prListCalls.some((argv) => argv.includes('--head'))).toBe(false) // exact-branch search for ENG-10
     expect(prListCalls.some((argv) => argv.includes('100') && !argv.includes('--label'))).toBe(false) // orca-branch fallback search
+  })
+
+  it('does not spend the fix-round budget on discovery: a new finding each head is not a worker failing to fix', async () => {
+    const finding = (title: string) => ({ review: { code: 1, findings: [{ severity: 'high', title, file: 'a.ts', line: 2, rationale: 'r' }] } })
+    const env = setup(finding('Flush'))
+    expect((await deliver(env)).results[0]).toMatchObject({ outcome: 'fix-round' })
+    const heads = ['1111111111111111111111111111111111111111', '2222222222222222222222222222222222222222', '3333333333333333333333333333333333333333']
+    const titles = ['Path traversal', 'Missing guard tests', 'Flush']
+    const outcomes: string[] = []
+    for (const [index, head] of heads.entries()) {
+      env.scenario.review = finding(titles[index] as string).review
+      env.scenario.pr = basePr({ headRefOid: head })
+      outcomes.push((await deliver(env)).results[0]?.outcome ?? '')
+    }
+    // Rounds 2 and 3 only discovered new findings → not counted; round 4 repeats "Flush" from round 1 → counted (2/2).
+    expect(outcomes).toEqual(['fix-round', 'fix-round', 'fix-round'])
+    expect(readDeliveryState(env.loaded.stateDir, 'ENG-10').fixRounds).toBe(2)
+    // The budget is now spent by a finding that persisted, so the next head with findings blocks.
+    env.scenario.pr = basePr({ headRefOid: '4444444444444444444444444444444444444444' })
+    expect((await deliver(env)).results[0]).toMatchObject({ outcome: 'blocked' })
   })
 
   it('sends review findings to the worker as a fix round, never re-reviews the same head, and blocks after the budget', async () => {
@@ -324,6 +345,22 @@ describe('deliver', () => {
     expect(JSON.parse(readFileSync(dispatchRecordPath(env.loaded.stateDir, 'ENG-10'), 'utf8')).terminal).toBe('term_handoff')
   })
 
+  it('releases a held PR only for the head a person approved — never by a label, never for a later push', async () => {
+    const held = setup({ pr: basePr({ files: [{ path: '.github/workflows/ci.yml' }] }) })
+    expect((await deliver(held)).results[0]).toMatchObject({ outcome: 'held' })
+    const head = readDeliveryState(held.loaded.stateDir, 'ENG-10').heldFor as string
+    // The hold comment tells the person how to approve, with the exact head.
+    const holdComment = held.runner.calls.find((argv) => argv[1] === 'pr' && argv[2] === 'comment')?.join(' ') ?? ''
+    expect(holdComment).toContain(`ak-harness loop approve ENG-10 --head ${head.slice(0, 12)}`)
+    expect(() => approveHeldDelivery(held.loaded, 'ENG-10', { head: 'deadbeef00', by: 'reviewer' })).toThrow(/held at/)
+    approveHeldDelivery(held.loaded, 'ENG-10', { head: head.slice(0, 12), by: 'reviewer' })
+    const after = (await deliver(held)).results[0]
+    expect(after?.outcome).not.toBe('held')
+    expect(after?.actions.join(' ')).toContain('approved by reviewer')
+    const events = readFileSync(join(held.loaded.stateDir, 'events.ndjson'), 'utf8')
+    expect(events).toContain('"type":"pr.human-approved"')
+  })
+
   it('holds PRs touching protected paths, waits on pending checks, and asks the worker to fix red CI', async () => {
     const held = setup({ pr: basePr({ files: [{ path: '.github/workflows/ci.yml' }] }) })
     expect((await deliver(held)).results[0]).toMatchObject({ outcome: 'held' })
@@ -355,6 +392,11 @@ describe('deliver', () => {
     expect(refused.ledger.active()).toHaveLength(1)
     const merged = setup({ pr: null, mergedPr: basePr({ state: 'MERGED' }) })
     expect((await deliver(merged)).results[0]).toMatchObject({ outcome: 'merged' })
+    // Merged by a person: the comment says so, and the flags the loop set on the way (blocked, needs-info) are cleared.
+    const mergedComment = merged.runner.calls.find((argv) => argv[1] === 'linear' && argv[2] === 'comment' && argv.join(' ').includes('Loop: merged'))
+    expect(mergedComment?.join(' ')).toContain('outside the loop')
+    const cleared = merged.runner.calls.find((argv) => argv[1] === 'linear' && argv[2] === 'label' && argv[3] === 'remove')
+    expect(cleared).toEqual(expect.arrayContaining(['blocked', 'needs-info']))
     const closed = setup({ pr: null, closedPr: basePr({ state: 'CLOSED' }) })
     expect((await deliver(closed)).results[0]).toMatchObject({ outcome: 'abandoned' })
     expect(closed.runner.calls.find((argv) => argv[1] === 'linear' && argv[2] === 'status')).toContain('Todo')
@@ -378,6 +420,18 @@ describe('deliver', () => {
     expect(second.results).toEqual([])
     const mergedEvents = readFileSync(join(env.loaded.stateDir, 'events.ndjson'), 'utf8').split('\n').filter(Boolean).map((line) => JSON.parse(line) as Record<string, unknown>).filter((event) => event['type'] === 'worker.merged')
     expect(mergedEvents).toHaveLength(1)
+  })
+
+  it('escalates a PR closed without merge once, not on every pass', async () => {
+    const env = setup({ pr: null, closedPr: basePr({ state: 'CLOSED' }) })
+    expect((await deliver(env)).results[0]).toMatchObject({ outcome: 'abandoned' })
+    const callsAfterFirst = env.runner.calls.length
+    const second = await deliver(env)
+    expect(second.results).toEqual([])
+    const linearWrites = env.runner.calls.slice(callsAfterFirst).filter((argv) => argv[1] === 'linear' || (argv[1] === 'worktree' && argv[2] === 'set'))
+    expect(linearWrites).toEqual([])
+    const abandonedEvents = readFileSync(join(env.loaded.stateDir, 'events.ndjson'), 'utf8').split('\n').filter(Boolean).map((line) => JSON.parse(line) as Record<string, unknown>).filter((event) => event['type'] === 'worker.abandoned')
+    expect(abandonedEvents).toHaveLength(1)
   })
 
   it('nudges an idle worker without a PR once, then marks it stuck and frees the slot while keeping the worktree', async () => {
@@ -433,6 +487,40 @@ describe('deliver', () => {
     const plainComment = noOutput.runner.calls.find((argv) => argv[1] === 'linear' && argv[2] === 'comment')
     const plainBody = plainComment?.[plainComment.indexOf('--body') + 1] ?? ''
     expect(plainBody).not.toContain("Worker's last terminal output")
+  })
+
+  it('hands a worker whose provider ran out of usage to another provider, closing the exhausted terminal first', async () => {
+    // The TUI keeps redrawing "retrying…", so the worker never looks idle; the screen is where the CLI says it.
+    const screen = 'Build · model\n 5 hour usage limit reached. It will reset in 4 hours 38 minutes. [retrying in 3h 45m]'
+    const env = setup({ pr: null, terminalScreen: screen })
+    const report = await deliver(env, { assumeIdle: false })
+    expect(report.results[0]).toMatchObject({ outcome: 'handed-off', reason: expect.stringContaining('out of usage') })
+    const closeAt = env.runner.calls.findIndex((argv) => argv[1] === 'terminal' && argv[2] === 'close')
+    const createAt = env.runner.calls.findIndex((argv) => argv[1] === 'terminal' && argv[2] === 'create')
+    expect(closeAt).toBeGreaterThanOrEqual(0)
+    expect(closeAt).toBeLessThan(createAt)
+    const cooldowns = JSON.parse(readFileSync(join(env.loaded.stateDir, 'provider-cooldowns.json'), 'utf8')) as Record<string, { until: string }>
+    const [provider] = Object.keys(cooldowns)
+    expect(provider).toBeDefined()
+    // The reset the CLI printed (4 h), not the default back-off.
+    // Test clock: 2026-09-11T12:00Z, so the CLI's "reset in 4 hours" lands at 16:00Z.
+    expect(cooldowns[provider as string]?.until).toBe('2026-09-11T16:00:00.000Z')
+  })
+
+  it('holds a worker stopped at a permission prompt — never types into it, never hands it off', async () => {
+    // The nudge would land in a dialog whose default is "Allow once": typing into it approves the dangerous command.
+    const screen = '△ Permission required\n  # Shell command\n  $ git reset --hard origin/main\n Allow once   Allow always   Reject'
+    const env = setup({ pr: null, dispatchedAt: '2026-09-11T09:00:00.000Z', terminalScreen: screen, exhaustClaude: true })
+    const report = await deliver(env, { assumeIdle: true, now: () => new Date('2026-09-11T13:00:00.000Z') })
+    expect(report.results[0]).toMatchObject({ outcome: 'held', reason: expect.stringContaining('permission prompt') })
+    expect(env.runner.calls.some((argv) => argv[1] === 'terminal' && argv[2] === 'send')).toBe(false)
+    expect(env.runner.calls.some((argv) => argv[1] === 'terminal' && argv[2] === 'create')).toBe(false)
+    expect(env.ledger.active()).toHaveLength(1)
+    const events = readFileSync(join(env.loaded.stateDir, 'events.ndjson'), 'utf8').split('\n').filter(Boolean).map((line) => JSON.parse(line) as Record<string, unknown>)
+    expect(events.filter((event) => event['type'] === 'worker.permission-wait')).toHaveLength(1)
+    await deliver(env, { assumeIdle: true, now: () => new Date('2026-09-11T13:05:00.000Z') })
+    const again = readFileSync(join(env.loaded.stateDir, 'events.ndjson'), 'utf8').split('\n').filter((line) => line.includes('worker.permission-wait'))
+    expect(again).toHaveLength(1)
   })
 
   it('reactivates a connected terminal with no agent output before nudging', async () => {

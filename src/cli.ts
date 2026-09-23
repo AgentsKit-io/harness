@@ -5,7 +5,7 @@ import { Command } from 'commander'
 import { approveRun, ARTIFACT_SCHEMA_VERSION, assessAcceptance, assessBlock, assessDiscovery, assessImprovementCycle, assessIntegration, assessPilot, assessPreflight, assessProduction, assessWip, assessWorktreeCleanup, authorizeRun, benchmarkRuns, cancelRun, cleanTaskArtifacts, composePullRequest, createDispatchLedger, createDocBridgeContextProvider, createStatusSnapshot, exportEvidenceBundle, FileArtifactStore, loadBenchmarkManifest, loadConfig, loadLatestRun, parseRetro, planFilePreflight, planRun, readArtifactFile, readContextSnapshots, readEvidenceTrustStore, reconcileRun, recordBenchmarkObservation, renderArtifactMarkdown, retryRun, selectRuntime, startRun, validateBlockManifest, validateStatusSnapshot, verifyEvidenceBundle, verifyRun } from './index.js'
 import type { BenchmarkObservationEvidence } from './execution/metrics.js'
 import { fail } from './kernel/errors.js'
-import { appendLoopEvent, attachNotifier, buildDebriefReport, buildRetroReport, createLoopEventBus, createProcessRunner, createRichIO, fetchLinearIssue, formatWatchEvent, generateContract, installLoopAutomations, linearLabelRemove, loadLoopConfig, loadLoopPlugins, openLoopMemory, promoteLearningsToMemory, runGuidedInstall, runLoopInit, loopStatus, renderDebriefMarkdown, renderObservabilityMarkdown, renderRetroMarkdown, retroLearnings, runRetroStage, precheckDeliver, precheckTick, rankModels, promoteLearnings, writePrdDocument, writeDesignDocument, readLearningsLedger, startPlan, interviewRound, answerRound, approvePlan, architectRound, approveDesign, decomposeRound, createPlannedIssues, designApproved, listPlans, prdGaps, readPlanState, writePlanState, renderPlanMarkdown, readStoredContract, writeLearningsLedger, runDeliver, runLoopDoctor, runIntakeStage, runMaintainStage, readReleaseBatch, readReleaseState, approveRelease, renderReleaseMarkdown, runReleaseStage, runObservability, runObserveStage, runTick, uninstallLoopAutomations, watchDeliveries, writeStoredContract, isStagePaused, recordStageRunResult, resumeIssue, resumeStage, readIssueFailures, stageEntry, listPausedIssues, readLastConfigHash, writeLastConfigHash, buildIssueTimeline, renderIssueTimelineMarkdown, runWorkerGuard, type LoopStageName } from './index.js'
+import { appendLoopEvent, approveHeldDelivery, ensureBaseView, attachNotifier, buildDebriefReport, buildRetroReport, createLoopEventBus, createProcessRunner, createRichIO, fetchLinearIssue, formatWatchEvent, generateContract, installLoopAutomations, linearLabelRemove, loadLoopConfig, loadLoopPlugins, openLoopMemory, promoteLearningsToMemory, runGuidedInstall, runLoopInit, loopStatus, renderDebriefMarkdown, renderObservabilityMarkdown, renderRetroMarkdown, retroLearnings, runRetroStage, precheckDeliver, precheckTick, rankModels, promoteLearnings, writePrdDocument, writeDesignDocument, documentRoot, readCheckoutState, readLearningsLedger, startPlan, interviewRound, answerRound, approvePlan, architectRound, approveDesign, decomposeRound, createPlannedIssues, designApproved, listPlans, prdGaps, readPlanState, writePlanState, renderPlanMarkdown, readStoredContract, writeLearningsLedger, runDeliver, runLoopDoctor, runIntakeStage, runMaintainStage, readReleaseBatch, readReleaseState, approveRelease, renderReleaseMarkdown, runReleaseStage, runObservability, runObserveStage, runTick, uninstallLoopAutomations, watchDeliveries, writeStoredContract, isStagePaused, recordStageRunResult, resumeIssue, resumeStage, readIssueFailures, stageEntry, listPausedIssues, readLastConfigHash, writeLastConfigHash, buildIssueTimeline, renderIssueTimelineMarkdown, runWorkerGuard, type LoopStageName } from './index.js'
 import { FileEventStore, inspectEventLogLock, recoverEventLogLock } from './kernel/events.js'
 import { acquireStageLock } from './loop/stage-lock.js'
 
@@ -173,7 +173,7 @@ loop.command('contract <identifier>').description('Freeze (or show) the orchestr
   if (cached) return print(cached)
   const doctor = await runLoopDoctor({ loaded, runner, probe: false }); const candidates = rankModels(loaded.config, 'orchestrator', doctor.providers)
   const issue = await fetchLinearIssue(runner, identifier, { bin: loaded.config.orca.bin, workspaceId: loaded.config.linear.workspaceId })
-  const stored = await generateContract({ runner, config: loaded.config, root: loaded.root, issue, candidates })
+  const stored = await generateContract({ runner, config: loaded.config, root: (await ensureBaseView(runner, loaded)).path, issue, candidates })
   if (!command.dryRun) writeStoredContract(loaded.stateDir, stored)
   print(stored)
 })
@@ -201,6 +201,11 @@ loop.command('install').description('Guided install: doctor + environment checks
 })
 loop.command('uninstall').description('Remove the loop automations from Orca.').option('--dry-run', 'print what would be removed').action(async function (this: Command, command: { readonly dryRun?: boolean }) { const report = await uninstallLoopAutomations({ configPath: loopFile(this), runner: createProcessRunner(), dryRun: command.dryRun ?? false }); print(report); if (report.status === 'failed') process.exitCode = 1 })
 loop.command('status').description('Show the loop automations Orca knows about and their latest runs.').action(async function (this: Command) { print(await loopStatus({ configPath: loopFile(this), runner: createProcessRunner() })) })
+loop.command('approve <issue>').description('Attest that you reviewed a PR the loop held for protected paths, for one exact head; the loop then reviews and merges it as usual. A new push needs a new approval.').requiredOption('--head <sha>', 'the head commit you reviewed (at least 7 characters)').requiredOption('--by <actor>', 'who approves — recorded in the event log').action(function (this: Command, issue: string, command: { readonly head: string; readonly by: string }) {
+  const loaded = loadLoopConfig(loopFile(this))
+  const state = approveHeldDelivery(loaded, issue, { head: command.head, by: command.by })
+  print({ status: 'approved', issue, head: state.humanApproval?.head, by: state.humanApproval?.by, next: `ak-harness loop deliver --issue ${issue}` })
+})
 loop.command('resume [issue]').description('Resume a paused issue (clears its failure counter and removes the pause label) or, with --stage, a paused tick/deliver stage.').option('--stage <stage>', 'resume a paused stage (tick | deliver) instead of an issue').action(async function (this: Command, issue: string | undefined, command: { readonly stage?: string }) {
   const loaded = loadLoopConfig(loopFile(this))
   if (command.stage) {
@@ -279,7 +284,8 @@ const planDeps = async (command: Command) => {
   const loaded = loadLoopConfig(loopFile(command))
   const runner = createProcessRunner()
   const doctor = await runLoopDoctor({ loaded, runner, probe: false })
-  return { loaded, runner, candidates: rankModels(loaded.config, 'orchestrator', doctor.providers), voters: rankModels(loaded.config, 'reviewer', doctor.providers) }
+  const view = await ensureBaseView(runner, loaded)
+  return { loaded, runner, readRoot: view.path, candidates: rankModels(loaded.config, 'orchestrator', doctor.providers), voters: rankModels(loaded.config, 'reviewer', doctor.providers) }
 }
 const planOrFail = (loaded: ReturnType<typeof loadLoopConfig>, id: string) => readPlanState(loaded.stateDir, id) ?? fail(`No plan "${id}" under ${loaded.stateDir}/plans.`, 'INVALID_INPUT')
 
@@ -304,13 +310,14 @@ loopPlan.command('show [id]').description('Show a plan (Markdown by default), or
   if (options().json) return print(state)
   console.log(renderPlanMarkdown(state))
 })
-loopPlan.command('approve <id>').description('Human gate: approve the PRD, which starts the architect.').option('--by <actor>', 'who approves', 'human').action(function (this: Command, id: string, command: { readonly by: string }) {
+loopPlan.command('approve <id>').description('Human gate: approve the PRD, which starts the architect.').option('--by <actor>', 'who approves', 'human').action(async function (this: Command, id: string, command: { readonly by: string }) {
   const loaded = loadLoopConfig(loopFile(this))
   const next = approvePlan(planOrFail(loaded, id), command.by, new Date())
   writePlanState(loaded.stateDir, next)
-  // Approval is what makes the PRD a document people read, so it lands in the repository here and not before.
-  const document = writePrdDocument(loaded, next)
-  print({ id, phase: next.phase, ...(document ? { wrote: document.path } : {}), next: `ak-harness loop plan architect ${id}` })
+  // Approval is what makes the PRD a document people read, so it lands in the repository here and not before —
+  // unless the checkout is not the clean base branch, where it would ride along with someone else's work.
+  const document = writePrdDocument(loaded, next, documentRoot(loaded, await readCheckoutState(createProcessRunner(), loaded.root)))
+  print({ id, phase: next.phase, ...(document ? { wrote: document.path, ...(document.note ? { note: document.note } : {}) } : {}), next: `ak-harness loop plan architect ${id}` })
 })
 loopPlan.command('architect <id>').description('Produce the technical design for the whole PRD and put it to a vote (2 of 3 by default).').action(async function (this: Command, id: string) {
   const deps = await planDeps(this)
@@ -320,21 +327,25 @@ loopPlan.command('architect <id>').description('Produce the technical design for
   print({ id, consensus, cycles: next.designCycles, votes: next.designVotes, ...(consensus ? { next: `ak-harness loop plan approve-design ${id}` } : { objections: next.designVotes.flatMap((vote) => vote.objections) }) })
   if (!consensus) process.exitCode = 1
 })
-loopPlan.command('approve-design <id>').description('Human gate: approve the design after it reached consensus. Everything built afterwards inherits it.').option('--by <actor>', 'who approves', 'human').action(function (this: Command, id: string, command: { readonly by: string }) {
+loopPlan.command('approve-design <id>').description('Human gate: approve the design after it reached consensus. Everything built afterwards inherits it.').option('--by <actor>', 'who approves', 'human').option('--accept-objections', 'approve although votes still carry objections; decompose must settle each one in an issue').action(async function (this: Command, id: string, command: { readonly by: string; readonly acceptObjections?: boolean }) {
   const loaded = loadLoopConfig(loopFile(this))
-  const next = approveDesign(planOrFail(loaded, id), command.by, new Date(), loaded.config)
+  const next = approveDesign(planOrFail(loaded, id), command.by, new Date(), loaded.config, { acceptObjections: command.acceptObjections === true })
   writePlanState(loaded.stateDir, next)
-  const document = writeDesignDocument(loaded, next)
-  print({ id, phase: next.phase, ...(document ? { wrote: document.path } : {}), next: `ak-harness loop plan decompose ${id}` })
+  const document = writeDesignDocument(loaded, next, documentRoot(loaded, await readCheckoutState(createProcessRunner(), loaded.root)))
+  print({ id, phase: next.phase, ...(document ? { wrote: document.path, ...(document.note ? { note: document.note } : {}) } : {}), next: `ak-harness loop plan decompose ${id}` })
 })
-loopPlan.command('decompose <id>').description('Break the approved design into issues. Without --create nothing is written to the tracker.').option('--create', 'create the issues in the tracker, in the queue entry state').action(async function (this: Command, id: string, command: { readonly create?: boolean }) {
+loopPlan.command('decompose <id>').description('Break the approved design into issues. Without --create nothing is written to the tracker; --create writes the list already shown, not a new one.').option('--create', 'create the issues already decomposed (and reviewed) in the tracker, in linear.entryState (outside the queue)').option('--refresh', 'decompose again even when a list already exists').option('--parent <issue>', 'the epic these issues break down (tracker identifier)').option('--project <name>', 'tracker project; default: the one project the queue drains, when there is exactly one').action(async function (this: Command, id: string, command: { readonly create?: boolean; readonly refresh?: boolean; readonly parent?: string; readonly project?: string }) {
   const deps = await planDeps(this)
-  const decomposed = await decomposeRound(deps, planOrFail(deps.loaded, id))
-  writePlanState(deps.loaded.stateDir, decomposed)
+  const current = planOrFail(deps.loaded, id)
+  // `--create` files the list a human already read. Decomposing again here would put a list nobody reviewed into
+  // the tracker — the model does not return the same issues twice.
+  const reuse = command.create === true && command.refresh !== true && current.phase === 'decompose' && current.issues.length > 0
+  const decomposed = reuse ? current : await decomposeRound(deps, current)
+  if (!reuse) writePlanState(deps.loaded.stateDir, decomposed)
   if (!command.create) return print({ id, issues: decomposed.issues, create: `ak-harness loop plan decompose ${id} --create` })
-  const created = await createPlannedIssues(deps, decomposed)
+  const created = await createPlannedIssues(deps, decomposed, { ...(command.parent ? { parent: command.parent } : {}), ...(command.project ? { project: command.project } : {}) })
   writePlanState(deps.loaded.stateDir, created)
-  print({ id, phase: created.phase, issues: created.issues.map((issue) => ({ identifier: issue.identifier ?? null, title: issue.title, layer: issue.layer, designRef: issue.designRef })), note: `created in "${deps.loaded.config.linear.states[0] ?? 'Todo'}" — moving them to a dispatchable state stays a human gesture` })
+  print({ id, phase: created.phase, issues: created.issues.map((issue) => ({ identifier: issue.identifier ?? null, title: issue.title, layer: issue.layer, designRef: issue.designRef })), note: `created in "${deps.loaded.config.linear.entryState}" — moving them to ${deps.loaded.config.linear.states.map((name) => `"${name}"`).join(' or ')} is the human gate into the queue` })
 })
 const loopRelease = loop.command('release').description('Promote the integration branch to the release branch and run the project deploy — only for a batch a human approved.')
 loopRelease.command('status').description('What is merged on the integration branch and not yet released, and whether it is approved.').action(async function (this: Command) {

@@ -5,8 +5,8 @@ import { afterEach, describe, expect, it } from 'vitest'
 import {
   DESIGN_CLOSE, DESIGN_OPEN, ISSUES_CLOSE, ISSUES_OPEN, QUESTION_CLOSE, QUESTION_OPEN,
   answerRound, approveDesign, approvePlan, architectRound, createPlannedIssues, decomposeRound, designApproved,
-  interviewRound, listPlans, loadLoopConfig, parseIssuesOutput, parseQuestionOutput, prdGaps, readPlanState,
-  renderInterviewPrompt, renderPlanMarkdown, startPlan, writePlanState,
+  interviewRound, listPlans, plannedIssueLabels, loadLoopConfig, parseIssuesOutput, parseLoopConfigText, parseQuestionOutput, prdGaps, readPlanState,
+  renderDecomposePrompt, renderInterviewPrompt, renderPlanMarkdown, startPlan, writePlanState,
 } from '../src/index.js'
 import type { CommandResult, CommandRunner, LoadedLoopConfig, PlanStageState, Prd, RankedModel } from '../src/index.js'
 
@@ -109,9 +109,14 @@ describe('the two human gates', () => {
     const designed = await architectRound(deps(loaded, runner), state)
     expect(designed.design?.modules[0]?.name).toBe('api')
     expect(designApproved(designed, loaded.config)).toBe(true)
-    const approved = approveDesign(designed, 'emerson', NOW, loaded.config)
+    // Consensus with an objection still open is not enough: the human must carry it past the gate on purpose.
+    expect(() => approveDesign(designed, 'emerson', NOW, loaded.config)).toThrow(/1 objection\(s\) are still open:\n- naming/)
+    const approved = approveDesign(designed, 'emerson', NOW, loaded.config, { acceptObjections: true })
     expect(approved.phase).toBe('decompose')
     expect(approved.approvals.design).toContain('emerson@')
+    expect(approved.acceptedObjections).toEqual(['naming'])
+    // ...and decompose is told to settle it inside an issue, not to leave it for the worker.
+    expect(renderDecomposePrompt(approved, loaded.config)).toContain('carried past the design gate')
   })
 
   it('comes back without consensus when the votes keep rejecting', async () => {
@@ -133,7 +138,8 @@ describe('decomposition', () => {
   })
 
   it('plans the issues without writing anything, then creates them in the queue ENTRY state', async () => {
-    const loaded = setup()
+    // The layer is a label only because the project declares it.
+    const loaded = setup('linear:\n  anyLabels: [layer:L1]\n')
     const state: PlanStageState = { ...startPlan('x', NOW), phase: 'decompose', prd: FULL_PRD, design: { summary: 's', modules: [{ name: 'api', responsibility: 'r', boundary: '' }], contracts: [], decisions: [], sequence: [], risks: [] } }
     const runner = scripted([issuesOut(), JSON.stringify({ ok: true, result: { issue: { identifier: 'ENG-42', url: 'https://linear.app/ENG-42' } } })])
     const decomposed = await decomposeRound(deps(loaded, runner), state)
@@ -144,13 +150,58 @@ describe('decomposition', () => {
     expect(created.phase).toBe('done')
     expect(created.issues[0]?.identifier).toBe('ENG-42')
     const save = runner.calls.find((argv) => argv.includes('save-issue')) ?? []
-    // `Todo` is the first configured state: created there, never in a dispatchable one.
-    expect(save).toContain('--state')
-    expect(save[save.indexOf('--state') + 1]).toBe('Todo')
+    // Created in `linear.entryState`, OUTSIDE `linear.states` — `Todo` is the queue, and nobody approved these yet.
+    expect(save[save.indexOf('--state') + 1]).toBe('Backlog')
+    expect(loaded.config.linear.states).not.toContain('Backlog')
     expect(save[save.indexOf('--label') + 1]).toBe('layer:L1')
     // The design travels as content, not as a pointer: the module's own responsibility is in the issue body.
     expect(save.join(' ')).toContain('**Design — api**')
     expect(save.join(' ')).toContain('**api** — r')
+  })
+})
+
+describe('planned issues land where the queue looks', () => {
+  it('files them under the epic, in the project the queue drains, with the labels the queue filters on', async () => {
+    const loaded = setup()
+    const config = { ...loaded.config, linear: { ...loaded.config.linear, projects: ['Pilot Project'], requireLabels: ['pilot'], anyLabels: ['layer:L9', 'layer:L1'] } }
+    const state: PlanStageState = { ...startPlan('x', NOW), phase: 'decompose', prd: FULL_PRD, design: { summary: 's', modules: [{ name: 'api', responsibility: 'r', boundary: '' }], contracts: [], decisions: [], sequence: [], risks: [] } }
+    const runner = scripted([issuesOut(), JSON.stringify({ ok: true, result: { issue: { identifier: 'ENG-42' } } })])
+    const decomposed = await decomposeRound(deps({ ...loaded, config }, runner), state)
+    await createPlannedIssues(deps({ ...loaded, config }, runner), decomposed, { parent: 'ENG-1' })
+    const save = runner.calls.find((argv) => argv.includes('save-issue')) ?? []
+    expect(save[save.indexOf('--project') + 1]).toBe('Pilot Project')
+    expect(save[save.indexOf('--parent-id') + 1]).toBe('ENG-1')
+    const labels = save.flatMap((arg, index) => save[index - 1] === '--label' ? [arg] : [])
+    // `layer:L1` already satisfies `anyLabels`, so no second one is invented.
+    expect(labels).toEqual(['pilot', 'layer:L1'])
+    // A layer the project never declared is not a label — it is the model echoing the prompt.
+    expect(plannedIssueLabels({ ...config, layers: [], linear: { ...config.linear, anyLabels: [] } }, 'no layers configured')).toEqual(['pilot'])
+  })
+
+  it('files work that is not a PR to this repository outside the queue, and says so in the issue', async () => {
+    const loaded = setup()
+    const config = { ...loaded.config, linear: { ...loaded.config.linear, requireLabels: ['pilot'], anyLabels: ['layer:L1'] } }
+    const state: PlanStageState = { ...startPlan('x', NOW), phase: 'decompose', prd: FULL_PRD, design: { summary: 's', modules: [{ name: 'api', responsibility: 'r', boundary: '' }], contracts: [], decisions: [], sequence: [], risks: [] } }
+    const planned = [
+      { title: 'wire CI in the product repo', description: 'd', layer: 'layer:L1', priority: 'high', acceptance: ['CI green'], designRef: 'api', outside: 'repository acme/product' },
+      { title: 'add /health', description: 'd', layer: 'layer:L1', priority: 'high', acceptance: ['200'], designRef: 'api' },
+    ]
+    const runner = scripted([`${ISSUES_OPEN}${JSON.stringify(planned)}${ISSUES_CLOSE}`, JSON.stringify({ ok: true, result: { issue: { identifier: 'ENG-7' } } }), JSON.stringify({ ok: true, result: { issue: { identifier: 'ENG-8' } } })])
+    expect(renderDecomposePrompt(state, config)).toContain(`pull request to ${config.project.repo} — nothing else`)
+    const decomposed = await decomposeRound(deps({ ...loaded, config }, runner), state)
+    expect(decomposed.issues.map((issue) => issue.outside)).toEqual(['repository acme/product', ''])
+    await createPlannedIssues(deps({ ...loaded, config }, runner), decomposed)
+    const saves = runner.calls.filter((argv) => argv.includes('save-issue'))
+    const labelsOf = (argv: readonly string[]): string[] => argv.flatMap((arg, index) => argv[index - 1] === '--label' ? [arg] : [])
+    // Not the queue's labels: the queue would otherwise dispatch it the moment a person moves it to Todo.
+    expect(labelsOf(saves[0]!)).toEqual(['outside-loop'])
+    expect(saves[0]!.join(' ')).toContain('Outside this loop — repository acme/product.')
+    expect(labelsOf(saves[1]!)).toEqual(['pilot', 'layer:L1'])
+    expect(renderPlanMarkdown({ ...decomposed, issues: decomposed.issues })).toContain('outside: repository acme/product')
+  })
+
+  it('refuses a config whose entry state is already in the queue', () => {
+    expect(() => parseLoopConfigText(readFileSync(join(process.cwd(), 'loop.config.example.yaml'), 'utf8').replace('person: my-linear-display-name', 'person: person').replace('  entryState: Backlog ', '  entryState: Todo '))).toThrow(/entryState "Todo" is one of linear.states/)
   })
 })
 
@@ -180,5 +231,10 @@ describe('persistence and reporting', () => {
   it('reads a question block back, markers and fences included', () => {
     expect(parseQuestionOutput(`noise\n${QUESTION_OPEN}\n\`\`\`json\n${JSON.stringify({ question: 'q', field: 'users' })}\n\`\`\`\n${QUESTION_CLOSE}`)).toMatchObject({ question: 'q', field: 'users', complete: false })
     expect(() => parseQuestionOutput('nothing here')).toThrow(/no question block/i)
+    // glm-5.3 reports "one user" as a string and "no criteria yet" as []: both are meaning, not a malformed round.
+    const loose = parseQuestionOutput(`${QUESTION_OPEN}${JSON.stringify({ question: 'q', prd: { users: 'platform team', successCriteria: [], risks: [''] } })}${QUESTION_CLOSE}`)
+    expect(loose.prd.users).toEqual(['platform team'])
+    expect(loose.prd.successCriteria).toBeUndefined()
+    expect(prdGaps(loose.prd)).toContain('successCriteria')
   })
 })

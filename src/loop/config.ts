@@ -119,6 +119,12 @@ export const LoopConfigSchema = z.object({
     stateDir: nonEmpty.default('.ak-loop'),
     /** Selects the `loop.config.team.<key>.yaml` layer. `$AK_LOOP_TEAM` overrides it; a declared team whose file is missing fails loudly. */
     team: nonEmpty.optional(),
+    /**
+     * The tree the orchestrator's headless calls (contract, plan interview, architect, votes, decompose) read.
+     * `base` (default): a harness-owned detached worktree of `origin/<baseBranch>`, fetched before each use.
+     * `root`: `project.root` as it is — whatever branch and age the operator's checkout has.
+     */
+    orchestratorView: z.enum(['base', 'root']).default('base'),
     setup: z.object({
       /** Argv (no shell — one element per arg, e.g. `[pnpm, install, --frozen-lockfile]`) run once in a freshly created worktree before the worker terminal opens. Unset/empty = skip. */
       command: z.array(nonEmpty).min(1).optional(),
@@ -162,6 +168,11 @@ export const LoopConfigSchema = z.object({
      */
     queueOwnership: z.enum(['person', 'unassigned']).default('person'),
     states: z.array(nonEmpty).min(1).default(['Todo', 'Ready']),
+    /**
+     * Where `loop plan decompose --create` puts new issues. It must NOT be one of `states`: those are the queue, and
+     * an issue the planner just wrote is not work anyone approved yet. Moving it into `states` is the human gate.
+     */
+    entryState: nonEmpty.default('Backlog'),
     excludeLabels: z.array(nonEmpty).default(['blocked', 'needs-info']),
     /** ALL of these must be on the issue (AND). */
     requireLabels: z.array(nonEmpty).default([]),
@@ -179,6 +190,12 @@ export const LoopConfigSchema = z.object({
     doneState: nonEmpty.default('Done'),
     blockedLabel: nonEmpty.default('blocked'),
     needsInfoLabel: nonEmpty.default('needs-info'),
+    /**
+     * Marks work the loop cannot deliver as a pull request to `project.repo` — another repository, a deploy, a
+     * setting in an external service. Decompose puts it on such issues and the queue never dispatches them,
+     * whatever state they are moved to: a worker given one opens a PR here that does not do the work, or none.
+     */
+    outsideLabel: nonEmpty.default('outside-loop'),
   }),
   /**
    * Suites already red on the base branch, declared so a worker is not asked to pass a verification that
@@ -678,6 +695,12 @@ export const LoopConfigSchema = z.object({
       /** Planner → vote → replan cycles before the item becomes a human's problem. Three models disagreeing three times is an ambiguous requirement. */
       maxCycles: z.number().int().min(1).max(5).default(3),
       timeoutMs: z.number().int().positive().default(300_000),
+      /**
+       * Per-call budget for `loop plan` (interview, architect, design vote, decompose). Separate from `timeoutMs`
+       * because the architect designs a whole PRD against the whole repository, not one issue — and it runs from a
+       * human's shell, not inside a scheduler stage capped at 600 s. At 300 s `glm-5.3` never finished a design.
+       */
+      stageTimeoutMs: z.number().int().positive().default(900_000),
     }).prefault({}),
     /**
      * The phases that run for one issue, in order.
@@ -946,6 +969,7 @@ export const validateLoopConfig = (value: unknown): LoopConfig => {
     const { provider } = parseModelRef(ref)
     if (!config.models.providers[provider]) fail(`models.${role}[${tierIndex}] references unknown provider "${provider}"; declare it under models.providers.`, 'INVALID_CONFIG')
   }
+  if (config.linear.states.includes(config.linear.entryState)) fail(`linear.entryState "${config.linear.entryState}" is one of linear.states — planned issues would be dispatched before a human approved them.`, 'INVALID_CONFIG')
   if (config.machine.warningPercent > config.machine.criticalPercent) fail('machine.warningPercent must not exceed machine.criticalPercent.', 'INVALID_CONFIG')
   if (config.models.cooldown.initialMin > config.models.cooldown.maxMin) fail('models.cooldown.initialMin must not exceed maxMin.', 'INVALID_CONFIG')
   if (config.machine.ceiling !== undefined && config.machine.ceiling < config.machine.floor) fail('machine.ceiling must be at least machine.floor.', 'INVALID_CONFIG')
@@ -977,11 +1001,35 @@ export const unknownConfigKeys = (raw: unknown, parsed: unknown, prefix = ''): r
   return dropped
 }
 
-/** Recursive merge: objects merge key by key, arrays and scalars from the overlay replace the base. */
-export const mergeLoopConfig = (base: unknown, overlay: unknown): unknown => {
+/**
+ * Lists that ARE gates: an overlay adds to them, and removes an entry only by naming it as `!entry`.
+ *
+ * Replacing them would let an older, more specific layer silently undo a protection added later to a broader one.
+ * That is not hypothetical: a machine overlay written to free one file under `.github/` replaced the whole
+ * `selfEditPaths`, and so dropped a `packages/**` freeze the project added days later without anyone noticing.
+ */
+const GATE_LISTS: readonly string[] = ['delivery.selfEditPaths', 'delivery.secretFilePatterns', 'delivery.requiredChecks']
+
+const mergeGateList = (base: unknown, overlay: readonly unknown[]): unknown[] => {
+  const removed = new Set(overlay.filter((item): item is string => typeof item === 'string' && item.startsWith('!')).map((item) => item.slice(1)))
+  const kept = (Array.isArray(base) ? base : []).filter((item) => !removed.has(String(item)))
+  const added = overlay.filter((item) => !(typeof item === 'string' && item.startsWith('!')) && !kept.includes(item))
+  return [...kept, ...added]
+}
+
+/**
+ * Recursive merge: objects merge key by key, arrays and scalars from the overlay replace the base — except the
+ * gate lists in {@link GATE_LISTS}, which accumulate across layers and shrink only through an explicit `!entry`.
+ */
+export const mergeLoopConfig = (base: unknown, overlay: unknown, path = ''): unknown => {
+  if (Array.isArray(overlay) && GATE_LISTS.includes(path)) return mergeGateList(base, overlay)
   if (!isPlainObject(base) || !isPlainObject(overlay)) return overlay === undefined ? base : overlay
   const result: Record<string, unknown> = { ...base }
-  for (const [key, value] of Object.entries(overlay)) result[key] = key in base ? mergeLoopConfig(base[key], value) : value
+  for (const [key, value] of Object.entries(overlay)) {
+    const child = path ? `${path}.${key}` : key
+    // A section the base never declared still goes through the merge, so a gate list nested in it is normalised too.
+    result[key] = key in base ? mergeLoopConfig(base[key], value, child) : isPlainObject(value) || Array.isArray(value) ? mergeLoopConfig(isPlainObject(value) ? {} : undefined, value, child) : value
+  }
   return result
 }
 

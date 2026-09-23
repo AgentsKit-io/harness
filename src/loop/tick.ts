@@ -5,7 +5,7 @@ import type { CommandRunner } from '../adapters/command.js'
 import { fetchLinearQueue, linearLabelRemove, type LinearIssueDetail, type LoopIssue } from '../adapters/linear-orca.js'
 import { resolveConnectors, type TrackerConnector } from './connectors.js'
 import { createOrcaDispatchPlan } from '../adapters/orca.js'
-import { orcaAccountList, orcaAgentHooks, orcaDiagnosticsMemory, orcaTerminalCreate, orcaTerminalSend, orcaTerminalWait, orcaWorktreeCreate, orcaWorktreeRemove, orcaWorktrees, type OrcaWorktree } from '../adapters/orca-cli.js'
+import { orcaTerminalScreen, orcaTerminalEnter, orcaTurnStarted, orcaAccountList, orcaAgentHooks, orcaDiagnosticsMemory, orcaTerminalCreate, orcaTerminalSend, orcaTerminalWait, orcaWorktreeCreate, orcaWorktreeRemove, orcaWorktrees, type OrcaWorktree } from '../adapters/orca-cli.js'
 import { detectProviders, type ProviderAvailability } from '../adapters/providers.js'
 import { createDispatchLedger, type DispatchLedger, type DispatchLease } from '../execution/coordination.js'
 import { HarnessError } from '../kernel/errors.js'
@@ -17,6 +17,8 @@ import { loadLoopConfig, providerIdentity, type EffortLevel, type LoadedLoopConf
 import { assessContract, contractIsFresh, extractResetsAt, generateContract, readStoredContract, resolveDocContext, writeStoredContract, type StoredContract } from './contract.js'
 import { activeCooldowns, readCooldowns } from './cooldown.js'
 import { countRunningWorkers, providerSpecs } from './doctor.js'
+import { ensureBaseView, type BaseView } from './base-view.js'
+import { ARTIFACT_DIR, excludeArtifactsFromGit } from './artifacts.js'
 import { openLoopMemory, planMemoryContext } from './memory.js'
 import { clearIssueFailures, isIssuePaused, pauseIssue, readIssueFailures, recordIssueFailure } from './resilience-state.js'
 import { MODEL_ROLES, type ModelRole } from '../kernel/model-policy.js'
@@ -136,13 +138,64 @@ export interface TickInput {
 }
 
 /** Launch the worker in a fresh terminal with the configured TUI command and hand it the brief. Returns the terminal handle. */
-export const launchWorkerTerminal = async (input: { readonly runner: CommandRunner; readonly config: LoopConfig; readonly worktreeId: string; readonly command: string; readonly title: string; readonly brief: string; readonly idleTimeoutMs?: number }): Promise<{ readonly terminal: string; readonly accepted: boolean; readonly idle: boolean }> => {
+/** What the terminal receives when the brief travels as a file: short, plain, and the same for every task. */
+export const BRIEF_POINTER_PROMPT = `Your full task brief is in ${ARTIFACT_DIR}/brief.md at the root of this worktree. Read the whole file first, then follow it exactly.`
+
+/**
+ * Open the worker's terminal and hand it the brief.
+ *
+ * With `worktreePath`, the brief is written to `.ak-loop/brief.md` in the worktree (excluded from git at dispatch)
+ * and the terminal gets one short line pointing at it. Typing tens of kilobytes into an agent TUI is fragile in ways
+ * no retry fixes: a real 44 KB brief failed every send with `agent_session_ownership_unknown`, deterministically,
+ * while random text of the same size and line count went through — the TUI's paste handling reacts to content.
+ */
+export const launchWorkerTerminal = async (input: { readonly runner: CommandRunner; readonly config: LoopConfig; readonly worktreeId: string; readonly command: string; readonly title: string; readonly brief: string; readonly worktreePath?: string; readonly idleTimeoutMs?: number; readonly screenCheckDelayMs?: number }): Promise<{ readonly terminal: string; readonly accepted: boolean; readonly idle: boolean }> => {
+  let prompt = input.brief
+  if (input.worktreePath) {
+    const dir = join(input.worktreePath, ARTIFACT_DIR)
+    mkdirSync(dir, { recursive: true })
+    writeFileSync(join(dir, 'brief.md'), input.brief, 'utf8')
+    prompt = BRIEF_POINTER_PROMPT
+  }
   const orca = { bin: input.config.orca.bin, timeoutMs: input.config.orca.timeoutMs }
   const created = await orcaTerminalCreate(input.runner, { worktree: `id:${input.worktreeId}`, command: input.command, title: input.title }, orca)
+  const initialIdleTimeoutMs = input.idleTimeoutMs ?? 90_000
   let idle = false
-  try { idle = (await orcaTerminalWait(input.runner, { terminal: created.handle, for: 'tui-idle', timeoutMs: input.idleTimeoutMs ?? 90_000 }, orca)).satisfied } catch { idle = false }
-  const receipt = await orcaTerminalSend(input.runner, { terminal: created.handle, text: input.brief, enter: true, waitSubmitSeconds: 15 }, orca)
-  return { terminal: created.handle, accepted: receipt.accepted, idle }
+  try { idle = (await orcaTerminalWait(input.runner, { terminal: created.handle, for: 'tui-idle', timeoutMs: initialIdleTimeoutMs }, orca)).satisfied } catch { idle = false }
+  // Orca can finish creating a TUI after the first readiness window. Never send into a
+  // non-ready pane: that loses the prompt and produces `agent_prompt_blocked`.
+  if (!idle) {
+    try { idle = (await orcaTerminalWait(input.runner, { terminal: created.handle, for: 'tui-idle', timeoutMs: Math.min(initialIdleTimeoutMs * 2, 180_000) }, orca)).satisfied } catch { idle = false }
+  }
+  if (!idle) throw new Error(`terminal ${created.handle} did not become tui-idle before the worker prompt deadline`)
+  let receipt = await orcaTerminalSend(input.runner, { terminal: created.handle, text: prompt, enter: true, waitSubmitSeconds: 15 }, orca)
+  // `input_accepted` is "typed", not "submitted": observed, a pointer prompt sat in the input box for 21 minutes and
+  // the worker only started when an idle nudge's Enter submitted it. Observe the same request again; if the turn still
+  // has not started, press Enter alone (a no-op for a busy agent) and observe once more.
+  // Orca cannot observe every agent's turns (opencode reports `observation: unsupported`, so its stages stop at
+  // `input_accepted` forever). There the screen is the proof: the prompt's first words must show up; if they never
+  // do, the keystrokes were dropped — observed, an opencode TUI reported idle while still on its splash screen and
+  // swallowed the brief — and the prompt is sent again, up to twice.
+  if (receipt.observation === 'unsupported') {
+    const probe = prompt.split('\n').find((line) => line.trim())?.trim().slice(0, 40) ?? ''
+    let visible = false
+    for (let attempt = 0; attempt < 3 && probe; attempt += 1) {
+      await new Promise((resolve) => { setTimeout(resolve, input.screenCheckDelayMs ?? 4_000) })
+      try { visible = (await orcaTerminalScreen(input.runner, { terminal: created.handle }, orca)).replace(/\s+/g, ' ').includes(probe.replace(/\s+/g, ' ')) } catch { visible = false }
+      if (visible || attempt === 2) break
+      receipt = await orcaTerminalSend(input.runner, { terminal: created.handle, text: prompt, enter: true, waitSubmitSeconds: 5 }, orca)
+    }
+    return { terminal: created.handle, accepted: receipt.accepted && visible, idle }
+  }
+  if (receipt.requestId && receipt.stages.length && !orcaTurnStarted(receipt)) {
+    const observe = async () => orcaTerminalSend(input.runner, { terminal: created.handle, text: prompt, enter: true, waitSubmitSeconds: 20, retryRequest: receipt.requestId as string }, orca).catch(() => receipt)
+    receipt = await observe()
+    if (!orcaTurnStarted(receipt)) {
+      try { await orcaTerminalEnter(input.runner, { terminal: created.handle }, orca) } catch { /* the observation below decides */ }
+      receipt = await observe()
+    }
+  }
+  return { terminal: created.handle, accepted: receipt.accepted && (!receipt.stages.length || orcaTurnStarted(receipt)), idle }
 }
 
 const message = (error: unknown): string => error instanceof HarnessError ? `${error.code}: ${error.message}` : error instanceof Error ? error.message : String(error)
@@ -368,6 +421,10 @@ export const runTick = async (input: TickInput): Promise<TickReport> => {
   const dryRun = input.dryRun === true
   const ledger = createDispatchLedger(loaded.stateDir)
   const notes: string[] = []
+  // The orchestrator reads the base branch as fetched now, not the operator's checkout — resolved once per tick,
+  // and only when a model is actually about to be asked something.
+  let baseView: Promise<BaseView> | null = null
+  const readRoot = async (): Promise<string> => (await (baseView ??= ensureBaseView(input.runner, loaded))).path
   const results: TickCandidateResult[] = []
   const ownsBus = !input.bus
   const bus = input.bus ?? createLoopEventBus()
@@ -504,7 +561,7 @@ export const runTick = async (input: TickInput): Promise<TickReport> => {
         stored = await generateContract({
           runner: input.runner,
           config,
-          root: loaded.root,
+          root: await readRoot(),
           issue: detail,
           candidates: issueOrchestrators,
           orchestrator,
@@ -565,7 +622,7 @@ export const runTick = async (input: TickInput): Promise<TickReport> => {
       if (!approvedPlan || approvedPlan.contractDigest !== stored.digest || approvedPlan.status !== 'approved') {
         try {
           approvedPlan = await runPlanWithVotes({
-            runner: input.runner, config, root: loaded.root, issue: detail.identifier,
+            runner: input.runner, config, root: await readRoot(), issue: detail.identifier,
             contract: stored.contract, contractDigest: stored.digest,
             planner: applyRoleSettings(orchestratorCandidates, plannerSettings),
             voters: applyRoleSettings(rankModels(config, 'reviewer', state.providers, state.extrasByRole['reviewer'] ?? []), voteSettings),
@@ -601,7 +658,10 @@ export const runTick = async (input: TickInput): Promise<TickReport> => {
     const worktree = worktreeNameFor(detail)
     const claim = ledger.claim({ tracker: 'linear', repository: config.project.repo, issue: detail.identifier, worktree, branch, owner: input.owner ?? `loop:${state.person}` })
     if (claim.decision === 'already-claimed') { results.push({ issue: detail.identifier, outcome: 'skipped', reason: `lease already held by ${claim.lease.owner} since ${claim.lease.claimedAt}` }); continue }
-    const plan = createOrcaDispatchPlan({ repository: config.orca.repoSelector ?? `path:${loaded.root}`, worktree, branch, baseBranch: config.project.baseBranch, launch: 'worktree-only', linearIssue: detail.url || detail.identifier, comment: `loop · ${detail.identifier} · ${worker.provider}/${worker.model}`, noParent: true, orcaBin: config.orca.bin })
+    const plan = createOrcaDispatchPlan({ repository: config.orca.repoSelector ?? `path:${loaded.root}`, worktree, branch,
+      // The remote base, fetched just before: Orca resolves a bare branch name against the operator's local ref, which
+      // nobody fast-forwards — observed, a worker started 2 merges behind main and measured code that no longer existed.
+      baseBranch: `origin/${config.project.baseBranch}`, launch: 'worktree-only', linearIssue: detail.url || detail.identifier, comment: `loop · ${detail.identifier} · ${worker.provider}/${worker.model}`, noParent: true, orcaBin: config.orca.bin })
     const title = `loop ${detail.identifier} · ${worker.provider}`
     if (dryRun) {
       ledger.release(claim.lease, 'dry-run')
@@ -617,12 +677,15 @@ export const runTick = async (input: TickInput): Promise<TickReport> => {
     }
     let created: Awaited<ReturnType<typeof orcaWorktreeCreate>> | null = null
     try {
+      const fetched = await input.runner.run(['git', 'fetch', '--quiet', 'origin', config.project.baseBranch], { cwd: loaded.root, timeoutMs: 120_000 })
+      if (fetched.timedOut || fetched.code !== 0) throw new Error(`git fetch origin ${config.project.baseBranch} failed before creating the worktree; a worker must not start from a stale base: ${`${fetched.stderr}${fetched.stdout}`.trim().slice(0, 200)}`)
       created = await orcaWorktreeCreate(input.runner, plan.argv, { timeoutMs: Math.max(config.orca.timeoutMs, 120_000) })
       // Orca names the branch `<git user>/<worktree>`; the Linear branchName is only a hint. Record and brief the real one.
       const actualBranch = created.branch || branch
       // Real-time enforcement, before the worker's own setup command (let alone the worker itself) ever runs —
       // see ADR-0038 for which providers this covers and why.
       const workerGuard = installWorkerGuard({ worktreePath: created.path, provider: worker.provider, config })
+      try { if (!(await excludeArtifactsFromGit(input.runner, created.path))) notes.push(`${detail.identifier}: could not exclude .ak-loop/ from git in ${created.path}`) } catch (error) { notes.push(`${detail.identifier}: excluding .ak-loop/ failed: ${message(error)}`) }
       let setupResult: { readonly command: readonly string[]; readonly exitCode: number | null; readonly durationMs: number; readonly timedOut: boolean } | null = null
       if (config.project.setup.command?.length) {
         // Floored at the window the guard above already reserved, not at 1s: if less than that is left, the
@@ -666,7 +729,7 @@ export const runTick = async (input: TickInput): Promise<TickReport> => {
       })
       const briefDigest = skillDigest(brief)
       writeFileSync(briefPath(loaded.stateDir, detail.identifier), brief, 'utf8')
-      const launched = await launchWorkerTerminal({ runner: input.runner, config, worktreeId: created.id, command: worker.tui, title, brief })
+      const launched = await launchWorkerTerminal({ runner: input.runner, config, worktreeId: created.id, worktreePath: created.path, command: worker.tui, title, brief })
       if (!launched.accepted) notes.push(`${detail.identifier}: terminal ${launched.terminal} did not confirm the brief; deliver will nudge it if it stays idle`)
       ledger.recordDispatch({ lease: claim.lease, idempotencyKey: plan.idempotencyKey, commandDigest: plan.commandDigest })
       const record: DispatchRecordFile = { issue: detail.identifier, worktreeId: created.id, worktree, branch: actualBranch, terminal: launched.terminal, provider: worker.provider, model: worker.model, contractDigest: stored.digest, leaseKey: claim.lease.key, leaseId: claim.lease.leaseId, dispatchedAt: now().toISOString(), url: detail.url, briefDigest, skills: skillRefs(pinnedSkills), ...(delegation ? { delegation } : {}), setup: setupResult, effort: worker.effort, initialRemainingPercent: worker.remainingPercent, worktreePath: created.path, labels: [...detail.labels], project: detail.project, priorityLabel: detail.priorityLabel, workerGuardInstalled: workerGuard.installed }

@@ -1,7 +1,13 @@
 import { fail } from '../kernel/errors.js'
 import { parseJsonEnvelope, type CommandRunner } from './command.js'
 
-export interface OrcaCliOptions { readonly bin?: string; readonly timeoutMs?: number; readonly cwd?: string }
+export interface OrcaCliOptions {
+  readonly bin?: string
+  readonly timeoutMs?: number
+  readonly cwd?: string
+  /** Pause before each `--retry-request` attempt of a prompt send; default 5 s × attempt. Tests set 0. */
+  readonly retryDelayMs?: number
+}
 
 export interface OrcaStatus {
   readonly appRunning: boolean
@@ -25,6 +31,11 @@ export interface OrcaWorktree {
   readonly lastActivityAt: number | null
   readonly linkedLinearIssue: string | null
   readonly comment: string
+  /**
+   * Orca's live activity for the worktree (`worktree ps`): `working`, `active`, `inactive`, … and `permission` when
+   * an agent in it is stopped at a tool-permission prompt. Only `worktree ps` reports it; `unknown` otherwise.
+   */
+  readonly activity: string
 }
 
 export type OrcaAgentHookState = 'installed' | 'not_installed' | 'unknown'
@@ -80,6 +91,7 @@ export const parseOrcaWorktrees = (result: unknown): readonly OrcaWorktree[] => 
     lastActivityAt: num(item['lastActivityAt']),
     linkedLinearIssue: linkedLinear(item['linkedLinearIssue']),
     comment: str(item['comment']),
+    activity: str(item['status'], 'unknown'),
   })).filter((item) => item.id)
 }
 
@@ -219,7 +231,7 @@ export const parseOrcaTerminals = (result: unknown): readonly OrcaTerminal[] => 
 export const orcaTerminalList = async (runner: CommandRunner, input: { readonly worktree?: string; readonly limit?: number } = {}, options: OrcaCliOptions = {}): Promise<readonly OrcaTerminal[]> => parseOrcaTerminals(await orcaJson(runner, ['terminal', 'list', ...(input.worktree ? ['--worktree', input.worktree] : []), ...(input.limit ? ['--limit', String(input.limit)] : [])], options))
 
 export const orcaTerminalCreate = async (runner: CommandRunner, input: { readonly worktree: string; readonly command: string; readonly title?: string }, options: OrcaCliOptions = {}): Promise<{ readonly handle: string; readonly raw: unknown }> => {
-  const result = await orcaJson(runner, ['terminal', 'create', '--worktree', input.worktree, '--command', input.command, ...(input.title ? ['--title', input.title] : [])], { ...options, timeoutMs: options.timeoutMs ?? 60_000 })
+  const result = await orcaJson(runner, ['terminal', 'create', '--worktree', input.worktree, '--command', input.command, ...(input.title ? ['--title', input.title] : [])], { ...options, timeoutMs: options.timeoutMs ?? 120_000 })
   const record = isRecord(result) ? result : {}
   const terminal = isRecord(record['terminal']) ? record['terminal'] : record
   const handle = str(terminal['handle'], str(record['handle']))
@@ -227,7 +239,14 @@ export const orcaTerminalCreate = async (runner: CommandRunner, input: { readonl
   return { handle, raw: result }
 }
 
-export interface OrcaSendReceipt { readonly accepted: boolean; readonly requestId: string | null; readonly stages: readonly string[]; readonly warnings: readonly string[] }
+export interface OrcaSendReceipt {
+  readonly accepted: boolean
+  readonly requestId: string | null
+  readonly stages: readonly string[]
+  readonly warnings: readonly string[]
+  /** Whether Orca can observe this agent's turns at all (`supported`); `unsupported` means `stages` stop at `input_accepted`. */
+  readonly observation: string | null
+}
 
 export const parseOrcaSendReceipt = (result: unknown): OrcaSendReceipt => {
   const record = isRecord(result) ? result : {}
@@ -244,10 +263,55 @@ export const parseOrcaSendReceipt = (result: unknown): OrcaSendReceipt => {
   const acceptedValue = receipt['accepted'] ?? send?.['accepted']
   const accepted = inputAccepted || acceptedValue === true || (acceptedValue !== false && (result === null || result === undefined || Object.keys(record).length === 0))
   const warnings = Array.isArray(record['warnings']) ? record['warnings'] : send && Array.isArray(send['warnings']) ? send['warnings'] : []
-  return { accepted, requestId: str(receipt['requestId'], str(prompt?.['requestId'], str(record['requestId']))) || null, stages, warnings: warnings.map((warning: unknown) => isRecord(warning) ? str(warning['message'], JSON.stringify(warning)) : str(warning)) }
+  const observation = str(prompt?.['observation'], str(receipt['observation'])) || null
+  return { accepted, requestId: str(receipt['requestId'], str(prompt?.['requestId'], str(record['requestId']))) || null, stages, warnings: warnings.map((warning: unknown) => isRecord(warning) ? str(warning['message'], JSON.stringify(warning)) : str(warning)), observation }
 }
 
-export const orcaTerminalSend = async (runner: CommandRunner, input: { readonly terminal: string; readonly text: string; readonly enter?: boolean; readonly waitSubmitSeconds?: number }, options: OrcaCliOptions = {}): Promise<OrcaSendReceipt> => parseOrcaSendReceipt(await orcaJson(runner, ['terminal', 'send', '--terminal', input.terminal, '--text', input.text, ...(input.enter === false ? [] : ['--enter']), ...(input.waitSubmitSeconds ? ['--wait-submit', String(input.waitSubmitSeconds)] : [])], { ...options, timeoutMs: options.timeoutMs ?? ((input.waitSubmitSeconds ?? 0) * 1000 + 30_000) }))
+/** The request id Orca hands back when a prompt send failed ambiguously and must be retried by id, never re-sent. */
+export const orcaRetryRequestId = (message: string): string | null => /--retry-request\s+([0-9a-f-]{8,})/i.exec(message)?.[1] ?? null
+
+/**
+ * Send text to a terminal. When Orca answers an agent-prompt send with an ambiguous failure (e.g.
+ * `agent_session_ownership_unknown`) it names a request id and says to re-issue *with that id*: the retry observes the
+ * same prompt instead of typing it twice. That retry happens here, once; anything else still throws.
+ */
+/** Whether Orca observed the agent actually start a turn for a prompt — `input_accepted` alone means typed, not submitted. */
+export const orcaTurnStarted = (receipt: OrcaSendReceipt): boolean => receipt.stages.some((stage) => stage.toLowerCase() === 'turn_started')
+
+/** Close one terminal (its process ends). */
+export const orcaTerminalClose = async (runner: CommandRunner, input: { readonly terminal: string }, options: OrcaCliOptions = {}): Promise<unknown> => orcaJson(runner, ['terminal', 'close', '--terminal', input.terminal], options)
+
+/** Press Enter alone in a terminal — submits input that was typed but never submitted; a no-op for a busy agent. */
+export const orcaTerminalEnter = async (runner: CommandRunner, input: { readonly terminal: string }, options: OrcaCliOptions = {}): Promise<unknown> => orcaJson(runner, ['terminal', 'send', '--terminal', input.terminal, '--enter'], options)
+
+export const orcaTerminalSend = async (runner: CommandRunner, input: { readonly terminal: string; readonly text: string; readonly enter?: boolean; readonly waitSubmitSeconds?: number; readonly retryRequest?: string }, options: OrcaCliOptions = {}): Promise<OrcaSendReceipt> => {
+  const argv = ['terminal', 'send', '--terminal', input.terminal, '--text', input.text, ...(input.enter === false ? [] : ['--enter']), ...(input.retryRequest ? ['--retry-request', input.retryRequest] : [])]
+  const timeoutMs = options.timeoutMs ?? ((input.waitSubmitSeconds ?? 0) * 1000 + 30_000)
+  try {
+    return parseOrcaSendReceipt(await orcaJson(runner, [...argv, ...(input.waitSubmitSeconds ? ['--wait-submit', String(input.waitSubmitSeconds)] : [])], { ...options, timeoutMs }))
+  } catch (error) {
+    let requestId = orcaRetryRequestId(error instanceof Error ? error.message : String(error))
+    if (!requestId) throw error
+    // Observed cause: the TUI reports idle a moment before the agent's session hook tells Orca who owns the pane
+    // (`agent_session_ownership_unknown`). Retrying at once lands in the same race, so give the hook time; the id
+    // makes every attempt the same prompt, never a second one.
+    const wait = Math.max(input.waitSubmitSeconds ?? 0, 15)
+    let last: unknown = error
+    for (let attempt = 1; attempt <= RETRY_REQUEST_ATTEMPTS; attempt += 1) {
+      await delay(options.retryDelayMs ?? 5_000 * attempt)
+      try {
+        return parseOrcaSendReceipt(await orcaJson(runner, [...argv, '--retry-request', requestId, '--wait-submit', String(wait)], { ...options, timeoutMs: Math.max(timeoutMs, wait * 1000 + 30_000) }))
+      } catch (retryError) {
+        last = retryError
+        requestId = orcaRetryRequestId(retryError instanceof Error ? retryError.message : String(retryError)) ?? requestId
+      }
+    }
+    throw last
+  }
+}
+
+const RETRY_REQUEST_ATTEMPTS = 3
+const delay = (ms: number): Promise<void> => new Promise((resolve) => { setTimeout(resolve, ms) })
 
 export const orcaTerminalWait = async (runner: CommandRunner, input: { readonly terminal: string; readonly for: 'exit' | 'tui-idle'; readonly timeoutMs: number }, options: OrcaCliOptions = {}): Promise<{ readonly satisfied: boolean; readonly raw: unknown }> => {
   const result = await orcaJson(runner, ['terminal', 'wait', '--terminal', input.terminal, '--for', input.for, '--timeout-ms', String(input.timeoutMs)], { ...options, timeoutMs: input.timeoutMs + 15_000 })

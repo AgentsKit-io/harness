@@ -20,6 +20,7 @@ project:
   baseBranch: main
   root: .                            # relative to this file
   # team: platform                   # selects loop.config.team.platform.yaml; a declared team without a file fails loudly
+  orchestratorView: base            # base = the orchestrator reads a fresh worktree of origin/<baseBranch>; root = this checkout as-is
   stateDir: .ak-loop                 # runtime state: ledger, cooldowns, contracts, events, agent memory, plans.
                                      # Per machine — add it to .gitignore. The config (this file) stays at the
                                      # repo root and IS versioned.
@@ -71,6 +72,7 @@ linear:
     owners: [my-linear-display-name] # ordered display names; the first entry is the initial owner
     advanceWhenEmpty: true           # never switch while an implementation lease remains
   states: [Todo, Ready]              # dispatchable states; anything already started is left alone
+  entryState: Backlog                # where `loop plan decompose --create` files new issues; must not be in states
   excludeLabels: [blocked, needs-info]
   requireLabels: []                  # ALL of these (AND); empty = no constraint
   anyLabels: []                      # at least ONE of these (OR) — how a machine declares the slices it

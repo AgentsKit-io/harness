@@ -3,7 +3,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
 import {
-  CONTRACT_CLOSE, CONTRACT_OPEN, assessContract, busyIssues, contractIsFresh, createDispatchLedger, deliveryStatePath, dispatchRecordPath, isIssuePaused, linearLabelRemove, loadLoopConfig, parseContractOutput, parseLinearIssueDetail, precheckTick, readCliModelsCache, readDispatchRecord, readDeliveryState, readIssueFailures, readStoredContract, recordIssueFailure, renderContractPrompt, renderWorkerBrief, resumeIssue, runTick, untrusted, worktreeNameFor, writeStoredContract,
+  BRIEF_POINTER_PROMPT, CONTRACT_CLOSE, CONTRACT_OPEN, assessContract, busyIssues, contractIsFresh, createDispatchLedger, deliveryStatePath, dispatchRecordPath, isIssuePaused, linearLabelRemove, loadLoopConfig, parseContractOutput, parseLinearIssueDetail, precheckTick, readCliModelsCache, readDispatchRecord, readDeliveryState, readIssueFailures, readStoredContract, recordIssueFailure, renderContractPrompt, renderWorkerBrief, resumeIssue, runTick, untrusted, worktreeNameFor, writeStoredContract,
 } from '../src/index.js'
 import type { CommandResult, CommandRunner, StoredContract, TaskContract } from '../src/index.js'
 
@@ -92,6 +92,8 @@ const makeEnv = (options: { readonly contract?: TaskContract | 'garbage'; readon
       if (key.startsWith('orca terminal wait')) return okResult({ satisfied: true })
       if (key.startsWith('orca terminal send')) return okResult({ accepted: true, requestId: 'r' })
       if (key.startsWith('orca worktree rm')) return okResult({ removed: true })
+      // The orchestrator's base view (`ensureBaseView`): fetch / worktree add / rev-parse.
+      if (argv[0] === 'git') return { code: 0, stdout: argv[1] === 'rev-parse' ? 'basesha\n' : '', stderr: '', timedOut: false, durationMs: 1 }
       if (argv[0] === 'setup-check') return { code: options.setup?.exitCode ?? 0, stdout: 'installed', stderr: options.setup?.exitCode ? 'boom' : '', timedOut: options.setup?.timedOut ?? false, durationMs: 5 }
       if (key.startsWith('orca worktree create')) return options.failCreate ? { code: 1, stdout: JSON.stringify({ ok: false, error: { message: 'repo busy' } }), stderr: '', timedOut: false, durationMs: 1 } : okResult({ worktreeId: `repo-1::${dir}/w/${argv[argv.indexOf('--name') + 1]}`, path: `${dir}/w`, branch: `refs/heads/gituser/${argv[argv.indexOf('--name') + 1]}`, agentTerminalHandle: 'term_new' })
       if (key.startsWith('orca linear status set') || key.startsWith('orca linear comment add') || key.startsWith('orca linear label add') || key.startsWith('orca linear assignee set') || key.startsWith('orca linear assignee clear')) return okResult({ ok: true })
@@ -261,8 +263,17 @@ describe('tick', () => {
     expect(termCreate?.[termCreate.indexOf('--command') + 1]).toBe('claude --model sonnet --permission-mode auto')
     expect(termCreate?.[termCreate.indexOf('--worktree') + 1]).toMatch(/^id:repo-1::/)
     const send = env.runner.calls.find((argv) => argv[1] === 'terminal' && argv[2] === 'send')
-    expect(send?.[send.indexOf('--text') + 1]).toContain('Loop-Contract:')
-    expect(send?.[send.indexOf('--text') + 1]).toContain(`git push -u origin ${result?.branch}`)
+    // The worktree starts from the remote base, fetched right before — never the operator's stale local branch.
+    const create = env.runner.calls.find((argv) => argv[1] === 'worktree' && argv[2] === 'create') ?? []
+    expect(create[create.indexOf('--base-branch') + 1]).toBe('origin/main')
+    const fetchAt = env.runner.calls.findIndex((argv) => argv[0] === 'git' && argv[1] === 'fetch')
+    expect(fetchAt).toBeGreaterThanOrEqual(0)
+    expect(fetchAt).toBeLessThan(env.runner.calls.findIndex((argv) => argv[1] === 'worktree' && argv[2] === 'create'))
+    // The brief travels as a file in the worktree; the terminal only gets the pointer to it.
+    expect(send?.[send.indexOf('--text') + 1]).toBe(BRIEF_POINTER_PROMPT)
+    const handedOver = readFileSync(join(env.dir, 'w', '.ak-loop', 'brief.md'), 'utf8')
+    expect(handedOver).toContain('Loop-Contract:')
+    expect(handedOver).toContain(`git push -u origin ${result?.branch}`)
     expect(send).toContain('--enter')
     expect(env.runner.calls.findIndex((argv) => argv[1] === 'terminal' && argv[2] === 'wait')).toBeLessThan(env.runner.calls.findIndex((argv) => argv[1] === 'terminal' && argv[2] === 'send'))
 
@@ -365,7 +376,8 @@ describe('tick', () => {
     expect(briefText).toContain('# Conventions')
     expect(briefText).toContain('Use named exports only.')
     const send = env.runner.calls.find((argv) => argv[1] === 'terminal' && argv[2] === 'send')
-    expect(send?.[send.indexOf('--text') + 1]).toContain('Use named exports only.')
+    expect(send?.[send.indexOf('--text') + 1]).toBe(BRIEF_POINTER_PROMPT)
+    expect(readFileSync(join(env.dir, 'w', '.ak-loop', 'brief.md'), 'utf8')).toContain('Use named exports only.')
   })
 
   it('redacts PII in the orchestrator prompt and records a security.pii-detected event during a real dispatch', async () => {
