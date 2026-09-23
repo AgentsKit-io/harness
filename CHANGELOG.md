@@ -1,5 +1,87 @@
 # Changelog
 
+## [Unreleased]
+
+Found by running the loop on a real repository migration with a single, non-default provider.
+
+- **The orchestrator reads the base branch, not the operator's checkout.** Contract generation, the plan
+  interview, the architect, the votes and decompose ran their model in `project.root` — an operator's checkout
+  can sit on another branch, hundreds of commits behind, and an architect run from one designed work that had
+  already been merged. They now run in a harness-owned detached worktree of `origin/<baseBranch>` under the state
+  directory, fetched and reset before use; a failed fetch fails the stage instead of falling back to the stale
+  tree. `project.orchestratorView: root` keeps the old behaviour.
+- **A worker at a tool-permission prompt is held for a person, never typed into.** `deliver` used to see it as
+  idle and send a check-in: text plus Enter into a dialog whose default is "Allow once", approving exactly the
+  command the agent's own config marked dangerous (`rm -rf`, `git reset --hard`). It now reads Orca's `permission`
+  activity (`OrcaWorktree.activity`, from `worktree ps`) or the prompt on screen, reports `held`, emits
+  `worker.permission-wait` once per idle window, keeps the lease, and no nudge, handoff or relaunch happens.
+- **A worker out of usage is handed to another provider.** `deliver` reads the worker's screen for the CLI's own
+  usage-limit line (opencode: "5 hour usage limit reached. It will reset in …"), marks that provider exhausted until the
+  printed reset, closes the exhausted terminal and hands the task to a builder from a different provider in the same
+  worktree. Such a worker is never idle — its TUI keeps redrawing "retrying" — and Orca reports no usage for some
+  providers, so it used to sit until the provider came back. If the old terminal cannot be closed the issue is held:
+  two agents never share a worktree.
+- **Model output is found where models actually put it.** The plan stages, votes and contract share one extractor:
+  the exact markers when their content parses, else the last fenced JSON block, else the last balanced JSON value that
+  parses — the schema still validates whatever is found. Measured on the interview prompt across five models: kimi-k2.6
+  dropped the markers for a ```json fence, minimax-m3 mangled them (`<<…` / `<<<…>>>`); with the lenient list shapes
+  above, 5/5 now parse, against 2/5 with the strict markers-and-shapes parser.
+- **The design gate does not approve open objections by default.** `loop plan approve-design` refuses when any vote
+  still carries an objection, even at consensus, and lists them; `--accept-objections` carries them into decompose,
+  which is told to settle each one as a decision inside the issue it affects. A 2-of-3 design had been approved while
+  two votes named the same missing decision, and it came back as two blocking contract escalations.
+- **A brief counts as delivered only when the agent's turn starts.** Orca's `input_accepted` means typed, not
+  submitted; a pointer prompt sat unsubmitted for 21 minutes and the worker only began when an idle nudge's Enter
+  submitted it. The launcher now observes the request again, presses Enter alone if the turn still has not started
+  (a no-op for a busy agent), and reports the brief unconfirmed otherwise.
+- **A merged issue sheds the flags the loop put on it, and the record says who merged.** Completion removes
+  `blocked`/`needs-info`, and a PR merged outside the loop is recorded as merged by a person — the comment used to
+  claim "a clean review and green checks" for a PR whose review had blocked and whose CI never ran.
+- **A worker starts from the remote base, not the operator's local branch.** The tick fetches
+  `origin/<baseBranch>` and creates the worktree from it; `--base-branch main` made Orca resolve the operator's local
+  `main`, which nobody fast-forwards — a worker started two merges behind and measured code that no longer existed.
+  A failed fetch fails the dispatch.
+- **The worker brief travels as a file, not as keystrokes.** The brief is written to `.ak-loop/brief.md` in the
+  worktree (already excluded from git) and the terminal receives one short line pointing at it. A real 44 KB brief
+  failed every send with `agent_session_ownership_unknown` — deterministically, even with retries — while random
+  text of the same size and line count went through: the TUI's paste handling reacts to content, and no retry fixes
+  that. Relaunches and handoffs use the same path when the worktree path is known.
+- **An ambiguous prompt send is retried by id, not lost.** When Orca answers a send with a failure that names a
+  `--retry-request <id>` (e.g. `agent_session_ownership_unknown`), the adapter re-issues it with that id — up to three
+  times, 5 s × attempt apart, because the cause is a race: a TUI reports idle a moment before its session hook tells
+  Orca who owns the pane. The dispatch used to fail and remove a freshly created worktree.
+- **Phase artifacts stay out of product commits.** At dispatch the harness adds `/.ak-loop/` to the repository's
+  shared `info/exclude`, and the brief says never to commit it — a worker's `git add -A` had put the loop's own
+  evidence files into a product pull request.
+- **The worker brief no longer forbids what the contract asks for.** Standing rule 5 listed `delivery.selfEditPaths`
+  as paths to *never edit* — but that list is a review gate (a PR touching it is held for a human), so a task whose
+  whole job lives under a gated path got a brief that contradicted its contract. The rule now says the paths are
+  gated, to edit them only when the contract requires it, and to say so in the PR. A new rule forbids `git stash`:
+  the stash is shared by every worktree of a repository, and a worker dropping `stash@{0}` by index can destroy
+  another worktree's entry.
+
+- **Gate lists accumulate across config layers.** `delivery.selfEditPaths`, `delivery.secretFilePatterns` and
+  `delivery.requiredChecks` are no longer replaced by a later layer; an entry leaves only when named as `"!entry"`.
+  A machine overlay written to free one path had silently dropped the `packages/**` freeze added to the project
+  five days later.
+- **`loop plan decompose --create` files issues outside the queue and where the queue will find them.** New
+  `linear.entryState` (default `Backlog`) must not be one of `linear.states` — the config is refused otherwise;
+  before, issues were created in `states[0]`, which *is* the queue, so the human gate did not exist. The issues now
+  carry the queue's `requireLabels`/`anyLabels`, land in the project the queue drains (or `--project`), and hang
+  under `--parent <epic>`. `--create` now files the list already decomposed and shown instead of asking the model
+  for a new one — the reviewed list and the created list used to differ; `--refresh` decomposes again. A layer
+  becomes a label only when the project declares it: with none configured the prompt used to offer "no layers
+  configured" as the choice, the model echoed it, and the tracker refused every issue.
+- **The plan interview reads what a model meant instead of losing the round.** While the PRD is being filled, a
+  bare string is a one-item list and an empty list is a gap for `prdGaps` to report — `glm-5.3` answered
+  `"users": "…"` and `"successCriteria": []` and the whole round failed validation. The final PRD stays strict.
+- **`loop plan` has its own time budget.** New `worker.plan.stageTimeoutMs` (default 900 s) covers the interview,
+  architect, design vote and decompose; `worker.plan.timeoutMs` stays the per-issue planner's. The architect designs
+  a whole PRD from a human's shell, and at the shared 300 s `glm-5.3` never finished one.
+- **A worker brief is never typed into a pane that is not `tui-idle`.** The launcher waits a second, longer window;
+  if the TUI still is not ready the dispatch fails (and the half-created worktree is removed) instead of losing the
+  prompt.
+
 ## [0.18.0] - 2026-09-22
 
 What a pre-publish review found when it went looking for the gap between what this package claims and what it
