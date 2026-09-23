@@ -4,6 +4,9 @@
 
 Found by running the loop on a real repository migration with a single, non-default provider.
 
+- **A PR closed without merge is escalated once.** Every later deliver pass repeated the escalation for the
+  same closed PR — blocked label, transition back to `delivery.returnState`, claim release, Orca comment and a
+  `worker.abandoned` event — so an issue a person had since moved was moved back every few minutes.
 - **The orchestrator reads the base branch, not the operator's checkout.** Contract generation, the plan
   interview, the architect, the votes and decompose ran their model in `project.root` — an operator's checkout
   can sit on another branch, hundreds of commits behind, and an architect run from one designed work that had

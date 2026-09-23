@@ -422,6 +422,18 @@ describe('deliver', () => {
     expect(mergedEvents).toHaveLength(1)
   })
 
+  it('escalates a PR closed without merge once, not on every pass', async () => {
+    const env = setup({ pr: null, closedPr: basePr({ state: 'CLOSED' }) })
+    expect((await deliver(env)).results[0]).toMatchObject({ outcome: 'abandoned' })
+    const callsAfterFirst = env.runner.calls.length
+    const second = await deliver(env)
+    expect(second.results).toEqual([])
+    const linearWrites = env.runner.calls.slice(callsAfterFirst).filter((argv) => argv[1] === 'linear' || (argv[1] === 'worktree' && argv[2] === 'set'))
+    expect(linearWrites).toEqual([])
+    const abandonedEvents = readFileSync(join(env.loaded.stateDir, 'events.ndjson'), 'utf8').split('\n').filter(Boolean).map((line) => JSON.parse(line) as Record<string, unknown>).filter((event) => event['type'] === 'worker.abandoned')
+    expect(abandonedEvents).toHaveLength(1)
+  })
+
   it('nudges an idle worker without a PR once, then marks it stuck and frees the slot while keeping the worktree', async () => {
     const env = setup({ pr: null, dispatchedAt: '2026-09-11T09:00:00.000Z' })
     const first = await deliver(env, { assumeIdle: true })

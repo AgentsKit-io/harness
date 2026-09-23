@@ -1066,6 +1066,9 @@ export const runDeliver = async (input: DeliverInput): Promise<DeliverReport> =>
       if (merged) { const actions: string[] = ['PR merged outside the loop']; results.push(await complete(ctx, record, lease, state, merged, null, actions, 'outside')); continue }
       const abandoned = closed.find((item) => item.state === 'CLOSED')
       if (abandoned) {
+        // Already escalated for this very PR: repeating it every pass re-labels the issue and moves it back to
+        // `returnState` again, undoing whatever a person did with it since.
+        if (state.finishedAt && state.finalOutcome === 'abandoned' && state.prNumber === abandoned.number) continue
         const actions: string[] = []
         await escalateLinear(ctx, record, 'abandoned', `**Loop: PR closed without merge** — ${abandoned.url}. The issue returned to ${config.delivery.returnState}; the worktree was preserved.`, actions)
         finish(ctx, record, lease, { ...state, prNumber: abandoned.number }, 'abandoned', `PR #${abandoned.number} closed`)
