@@ -292,6 +292,20 @@ describe('deliver', () => {
     expect(events).toContain('"source":"review"')
   })
 
+  it('keeps why a review was incomplete, and says it when holding the PR for a human', async () => {
+    const env = setup({ review: { code: 2, failureMessage: 'Review execution failed: 9 of 10 lens executions succeeded (1 failed); 1 reviewable file had zero successful lenses: scripts/check-quality-gates.mjs' } })
+    await deliver(env)
+    await deliver(env)
+    const review = Object.values(readDeliveryState(env.loaded.stateDir, 'ENG-10').reviews)[0]
+    expect(review).toMatchObject({ status: 'incomplete', attempts: 2 })
+    expect(review?.reason).toContain('zero successful lenses: scripts/check-quality-gates.mjs')
+    const held = (await deliver(env)).results[0]
+    expect(held).toMatchObject({ outcome: 'held' })
+    expect(held?.reason).toContain('zero successful lenses')
+    const reviewed = readFileSync(join(env.loaded.stateDir, 'events.ndjson'), 'utf8').split('\n').filter(Boolean).map((line) => JSON.parse(line) as Record<string, unknown>).filter((event) => event['type'] === 'pr.reviewed')
+    expect(reviewed.every((event) => String(event['reason']).includes('lens executions'))).toBe(true)
+  })
+
   it('sends known blocking findings even when the review is incomplete, without approving the PR', async () => {
     const env = setup({ review: { code: 2, incomplete: true, findings: [{ severity: 'high', title: 'Unsafe path', file: 'a.ts', line: 4, rationale: 'escape' }] } })
     const report = await deliver(env)

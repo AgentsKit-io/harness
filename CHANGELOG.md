@@ -4,6 +4,11 @@
 
 Found by running the loop on a real repository migration with a single, non-default provider.
 
+- **An incomplete review says why.** The reviewer's own explanation (exit code and the tail of its output) was
+  dropped, so "review incomplete twice; needs a human look" sent a person to re-run the review by hand to find out
+  that one lens had returned invalid structured output. It is now kept on the review record, on the
+  `pr.reviewed` event, in the held reason and in `loop watch`.
+
 - **`loop watch --issue` waits for an issue that is not dispatched yet.** It returned `done` at once, silently,
   when the named issue had no dispatch record — the usual case right after moving it into the queue.
 

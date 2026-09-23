@@ -27,6 +27,7 @@ describe('loop watch', () => {
     expect(classifyWatchPhase(delivery({ reviews: { a: { status: 'incomplete', at: 't', provider: 'x', model: 'm', blocking: 0, attempts: 2 } } }), null)).toBe('held-incomplete-review')
     const event = classifyWatchEvent('held-incomplete-review', delivery({ reviews: { a: { status: 'incomplete', at: 't', provider: 'x', model: 'm', blocking: 0, attempts: 2 } } }), null, '2026-09-12T12:00:00.000Z', 'ENG-1')
     expect(event.kind).toBe('ACTION_REQUIRED')
+    expect(classifyWatchEvent('held-incomplete-review', delivery({ reviews: { a: { status: 'incomplete', at: 't', provider: 'x', model: 'm', blocking: 0, attempts: 2, reason: 'review incomplete (exit 2): one lens returned invalid structured output' } } }), null, '2026-09-12T12:00:00.000Z', 'ENG-1').message).toContain('invalid structured output')
     expect(formatWatchEvent(event)).toContain('ACTION_REQUIRED: ENG-1')
   })
 
