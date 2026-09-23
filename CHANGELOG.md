@@ -2,6 +2,9 @@
 
 ## [Unreleased]
 
+- **`loop watch --issue` waits for an issue that is not dispatched yet.** It returned `done` at once, silently,
+  when the named issue had no dispatch record — the usual case right after moving it into the queue.
+
 Found by running the loop on a real repository migration with a single, non-default provider.
 
 - **Decompose files work outside this repository outside the queue.** The loop delivers pull requests to

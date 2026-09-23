@@ -162,7 +162,8 @@ export const watchDeliveries = async (input: WatchInput): Promise<WatchReport> =
       if (event.kind === 'FAILED') anyFailed = true
       if (event.kind !== 'DONE' && event.kind !== 'FAILED') allTerminal = false
     }
-    if (targets.length === 0) return 'done'
+    // Nothing to watch is done — unless one issue was named: then it is not dispatched yet, and waiting for it is the point.
+    if (targets.length === 0) return input.issue ? 'continue' : 'done'
     if (allTerminal) return anyFailed ? 'failed' : 'done'
     if (anyFailed) return 'failed'
     if (anyAction) return 'action-required'
