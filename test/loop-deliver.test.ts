@@ -120,6 +120,7 @@ const setup = (initial: Scenario = {}) => {
       if (key.startsWith('orca terminal list')) return okResult({ terminals: scenario.terminals ?? [{ handle: 'term_w', connected: true, orphaned: false, lastOutputAt: Date.parse('2026-09-11T10:30:00.000Z'), worktreeId: 'repo-1::/w/eng-10-demo' }] })
       if (key.startsWith('orca terminal read')) return scenario.terminalScreen === undefined ? { code: 127, stdout: '', stderr: 'no fixture for terminal read', timedOut: false, durationMs: 1 } : okResult({ tail: scenario.terminalScreen })
       if (key.startsWith('orca terminal create')) return okResult({ handle: 'term_handoff', terminal: { handle: 'term_handoff' } })
+      if (key.startsWith('orca terminal close')) return okResult({ closed: true })
       if (key.startsWith('orca terminal wait')) return okResult({ satisfied: true })
       if (key.startsWith('orca terminal send')) {
         if ((scenario.sendRejects ?? 0) > 0) { scenario.sendRejects = (scenario.sendRejects ?? 1) - 1; return okResult({ accepted: false, requestId: 'r' }) }
@@ -427,6 +428,24 @@ describe('deliver', () => {
     const plainComment = noOutput.runner.calls.find((argv) => argv[1] === 'linear' && argv[2] === 'comment')
     const plainBody = plainComment?.[plainComment.indexOf('--body') + 1] ?? ''
     expect(plainBody).not.toContain("Worker's last terminal output")
+  })
+
+  it('hands a worker whose provider ran out of usage to another provider, closing the exhausted terminal first', async () => {
+    // The TUI keeps redrawing "retrying…", so the worker never looks idle; the screen is where the CLI says it.
+    const screen = 'Build · model\n 5 hour usage limit reached. It will reset in 4 hours 38 minutes. [retrying in 3h 45m]'
+    const env = setup({ pr: null, terminalScreen: screen })
+    const report = await deliver(env, { assumeIdle: false })
+    expect(report.results[0]).toMatchObject({ outcome: 'handed-off', reason: expect.stringContaining('out of usage') })
+    const closeAt = env.runner.calls.findIndex((argv) => argv[1] === 'terminal' && argv[2] === 'close')
+    const createAt = env.runner.calls.findIndex((argv) => argv[1] === 'terminal' && argv[2] === 'create')
+    expect(closeAt).toBeGreaterThanOrEqual(0)
+    expect(closeAt).toBeLessThan(createAt)
+    const cooldowns = JSON.parse(readFileSync(join(env.loaded.stateDir, 'provider-cooldowns.json'), 'utf8')) as Record<string, { until: string }>
+    const [provider] = Object.keys(cooldowns)
+    expect(provider).toBeDefined()
+    // The reset the CLI printed (4 h), not the default back-off.
+    // Test clock: 2026-09-11T12:00Z, so the CLI's "reset in 4 hours" lands at 16:00Z.
+    expect(cooldowns[provider as string]?.until).toBe('2026-09-11T16:00:00.000Z')
   })
 
   it('holds a worker stopped at a permission prompt — never types into it, never hands it off', async () => {

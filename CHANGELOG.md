@@ -15,6 +15,12 @@ Found by running the loop on a real repository migration with a single, non-defa
   command the agent's own config marked dangerous (`rm -rf`, `git reset --hard`). It now reads Orca's `permission`
   activity (`OrcaWorktree.activity`, from `worktree ps`) or the prompt on screen, reports `held`, emits
   `worker.permission-wait` once per idle window, keeps the lease, and no nudge, handoff or relaunch happens.
+- **A worker out of usage is handed to another provider.** `deliver` reads the worker's screen for the CLI's own
+  usage-limit line (opencode: "5 hour usage limit reached. It will reset in …"), marks that provider exhausted until the
+  printed reset, closes the exhausted terminal and hands the task to a builder from a different provider in the same
+  worktree. Such a worker is never idle — its TUI keeps redrawing "retrying" — and Orca reports no usage for some
+  providers, so it used to sit until the provider came back. If the old terminal cannot be closed the issue is held:
+  two agents never share a worktree.
 - **Model output is found where models actually put it.** The plan stages, votes and contract share one extractor:
   the exact markers when their content parses, else the last fenced JSON block, else the last balanced JSON value that
   parses — the schema still validates whatever is found. Measured on the interview prompt across five models: kimi-k2.6

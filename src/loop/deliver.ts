@@ -6,7 +6,7 @@ import { assessChecks, githubComment, githubCommentExists, githubLabelRemove, gi
 import { resolveConnectors, type ScmConnector, type TrackerConnector } from './connectors.js'
 import { issueBudget, modelForChange } from './budget.js'
 import { assessBoundary } from './layers.js'
-import { orcaAccountList, orcaAgentHooks, orcaTerminalList, orcaWorktrees, orcaTerminalScreen, orcaTerminalSend, orcaTerminalWait, orcaWorktreeRemove, orcaWorktreeSet } from '../adapters/orca-cli.js'
+import { orcaAccountList, orcaAgentHooks, orcaTerminalClose, orcaTerminalList, orcaWorktrees, orcaTerminalScreen, orcaTerminalSend, orcaTerminalWait, orcaWorktreeRemove, orcaWorktreeSet } from '../adapters/orca-cli.js'
 import { detectProviders, remainingUsagePercent, type ProviderAvailability } from '../adapters/providers.js'
 import { createDispatchLedger, type DispatchLease } from '../execution/coordination.js'
 import { HarnessError } from '../kernel/errors.js'
@@ -194,6 +194,24 @@ export const workerAwaitingPermission = async (ctx: Pick<Context, 'runner' | 'co
     if (match) return `the worker screen shows a permission prompt ("${match[0]}")`
   } catch { /* unknown is not a prompt */ }
   return null
+}
+
+/** How a coding-agent CLI says it ran out of usage on its own screen (opencode: "5 hour usage limit reached. It will reset in …"). */
+const USAGE_LIMIT_ON_SCREEN = /usage limit reached|hit your (?:session|weekly|monthly|usage)?\s?limit|rate limit(?:ed| reached| exceeded)|quota exceeded|out of (?:credits|quota)/i
+
+/**
+ * The line on the worker's screen saying its provider is out of usage, or null.
+ *
+ * A worker in that state is not idle — its TUI keeps redrawing "retrying in 3h 45m" — so the idle path never saw
+ * it, and a provider whose usage Orca does not report (opencode) was never marked exhausted: the issue sat until
+ * the provider came back. The screen is the only place the CLI says it.
+ */
+export const workerAtUsageLimit = async (ctx: Pick<Context, 'runner' | 'config'>, record: Pick<DispatchRecordFile, 'terminal'>): Promise<string | null> => {
+  if (!record.terminal) return null
+  try {
+    const screen = (await orcaTerminalScreen(ctx.runner, { terminal: record.terminal }, orcaOptions(ctx.config))).split('\n').slice(-12)
+    return screen.find((line) => USAGE_LIMIT_ON_SCREEN.test(line))?.trim() ?? null
+  } catch { return null }
 }
 
 const sendToWorker = async (ctx: Context, record: DispatchRecordFile, text: string, actions: string[]): Promise<boolean> => {
@@ -453,6 +471,28 @@ const handleNoPullRequest = async (ctx: Context, record: DispatchRecordFile, lea
     }
     actions.push(`${permission}; left for a human to answer in terminal ${record.terminal}`)
     return { issue: record.issue, outcome: 'held', reason: `worker waiting at a permission prompt (${permission}) — answer it in Orca`, actions }
+  }
+
+  // Out of usage: mark the provider exhausted (its reset time when the CLI printed one) and hand the task to a
+  // builder from ANOTHER provider in the same worktree. The exhausted TUI is closed first — left alone it resumes at
+  // the reset and two agents would share one worktree; if it cannot be closed, nothing is handed off.
+  const limitLine = await workerAtUsageLimit(ctx, record)
+  if (limitLine) {
+    const resetsAt = extractResetsAt(limitLine, now)
+    if (!ctx.dryRun) {
+      const entry = markProviderExhausted(ctx.loaded.stateDir, record.provider, { initialMin: ctx.config.models.cooldown.initialMin, maxMin: ctx.config.models.cooldown.maxMin, reason: `quota: ${limitLine.slice(0, 200)}`, resetsAt, now })
+      event(ctx, { type: 'provider.cooldown', provider: record.provider, kind: 'quota', until: entry.until, source: 'worker-screen' })
+      actions.push(`${record.provider} marked cooling down until ${entry.until} (worker screen: ${limitLine.slice(0, 80)})`)
+    }
+    const other = rankModels(ctx.config, 'builder', ctx.providers, ctx.builderExtras).find((candidate) => candidate.provider !== record.provider) ?? null
+    const cfg = ctx.config.delivery.handoff
+    if (!cfg.enabled || !other || state.handoffs.length >= cfg.maxHandoffs) return { issue: record.issue, outcome: 'waiting', reason: `${record.provider} is out of usage and no other builder can take over`, actions }
+    if (!ctx.dryRun) {
+      try { await orcaTerminalClose(ctx.runner, { terminal: record.terminal as string }, orcaOptions(ctx.config)) } catch (error) {
+        return { issue: record.issue, outcome: 'held', reason: `${record.provider} is out of usage, but its terminal could not be closed (${message(error)}); not handing off into a shared worktree`, actions }
+      }
+    }
+    return performHandoff(ctx, record, state, other, `${record.provider} out of usage (${limitLine.slice(0, 80)})`, actions)
   }
 
   let idle = ctx.assumeIdle ?? false
