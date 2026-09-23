@@ -54,6 +54,8 @@ export interface CodeReviewInput {
   readonly concurrency?: number
   readonly minSeverity: ReviewSeverity
   readonly deadlineMs: number
+  /** Forwarded as `AGENTSKIT_REVIEW_SUBPROCESS_TIMEOUT_MS` — see that config field's own doc comment for why this exists separately from `deadlineMs`. */
+  readonly subprocessTimeoutMs?: number
   readonly maxCalls: number
   readonly post: boolean
   readonly resultFile: string
@@ -115,7 +117,8 @@ export const buildReviewArgv = (input: CodeReviewInput): readonly string[] => [i
 /** Run one review. Exit 0 = clean, 1 = findings at/above the floor, 2 = incomplete; the `--result` file refines the verdict. */
 export const runCodeReview = async (runner: CommandRunner, input: CodeReviewInput): Promise<CodeReviewOutcome> => {
   const argv = buildReviewArgv(input)
-  const outcome = await runner.run(argv, { timeoutMs: input.deadlineMs + 120_000, ...(input.cwd ? { cwd: input.cwd } : {}), ...(input.env ? { env: input.env } : {}) })
+  const env = input.subprocessTimeoutMs ? { ...input.env, AGENTSKIT_REVIEW_SUBPROCESS_TIMEOUT_MS: String(input.subprocessTimeoutMs) } : input.env
+  const outcome = await runner.run(argv, { timeoutMs: input.deadlineMs + 120_000, ...(input.cwd ? { cwd: input.cwd } : {}), ...(env ? { env } : {}) })
   let parsed: ReturnType<typeof parseReviewResult> | null = null
   let usage: ReviewUsage = { providerCalls: null, inputTokens: null, outputTokens: null, totalTokens: null }
   if (existsSync(input.resultFile)) {

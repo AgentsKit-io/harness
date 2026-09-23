@@ -187,6 +187,25 @@ describe('runCodeReview', () => {
     await runCodeReview(trackingRunner, { ...baseInput, resultFile: tempResultFile(), cwd: '/work', env: { FOO: 'bar' } })
     expect(calls[0]).toMatchObject({ cwd: '/work', env: { FOO: 'bar' } })
   })
+
+  // `agentskit-review` spawns each lens's own `claude -p`/`codex exec` call with a 120s inner timeout,
+  // read only from this env var — separate from `deadlineMs` (the CLI's own `--deadline-ms`, an outer
+  // per-review budget that never reaches that inner call). Nothing set this before, so ordinary source
+  // files (not just large ones) routinely exceeded 120s and came back `status: incomplete` — observed
+  // live, twice, on the same PR — until a human looked. This is the fix.
+  it('forwards subprocessTimeoutMs as AGENTSKIT_REVIEW_SUBPROCESS_TIMEOUT_MS, merged with any existing env', async () => {
+    const calls: unknown[] = []
+    const trackingRunner: CommandRunner = { run: async (argv, options) => { calls.push(options); return cmd({ code: 0 }) } }
+    await runCodeReview(trackingRunner, { ...baseInput, resultFile: tempResultFile(), env: { FOO: 'bar' }, subprocessTimeoutMs: 300_000 })
+    expect(calls[0]).toMatchObject({ env: { FOO: 'bar', AGENTSKIT_REVIEW_SUBPROCESS_TIMEOUT_MS: '300000' } })
+  })
+
+  it('leaves env untouched when subprocessTimeoutMs is omitted', async () => {
+    const calls: unknown[] = []
+    const trackingRunner: CommandRunner = { run: async (argv, options) => { calls.push(options); return cmd({ code: 0 }) } }
+    await runCodeReview(trackingRunner, { ...baseInput, resultFile: tempResultFile(), env: { FOO: 'bar' } })
+    expect(calls[0]).toMatchObject({ env: { FOO: 'bar' } })
+  })
 })
 
 describe('renderFindingsForWorker', () => {

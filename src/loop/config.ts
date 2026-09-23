@@ -350,6 +350,17 @@ export const LoopConfigSchema = z.object({
       /** agentskit-review severity floor that blocks auto-merge: nit < med < high < blocker. */
       minSeverity: z.enum(['nit', 'med', 'high', 'blocker']).default('med'),
       deadlineMs: z.number().int().positive().default(600_000),
+      /**
+       * `agentskit-review` spawns each lens's `claude -p`/`codex exec`/etc. call with its own inner
+       * timeout, separate from `deadlineMs` above (the outer per-review budget) and from `--deadline-ms`
+       * on the CLI — neither reaches this inner call. It defaults to 120s (`DEFAULT_LOCAL_CLI_TIMEOUT_MS`
+       * in `@agentskit/code-review`), read only from the `AGENTSKIT_REVIEW_SUBPROCESS_TIMEOUT_MS` env var,
+       * which nothing here ever set. Observed live 2026-09-22/23: real reviews of ordinary source files
+       * (not just large ones) routinely exceeded 120s and came back `status: incomplete`, and after two
+       * such attempts at the same head `deliver` gives up and marks the PR "held" for a human — with no
+       * error, just a review that quietly never got a fair budget. 300s cleared every case observed.
+       */
+      subprocessTimeoutMs: z.number().int().positive().default(300_000),
       maxCalls: z.number().int().positive().max(1000).default(400),
       /** Post the review to the PR (inline + summary). */
       post: z.boolean().default(true),
