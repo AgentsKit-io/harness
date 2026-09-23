@@ -239,7 +239,14 @@ export const orcaTerminalCreate = async (runner: CommandRunner, input: { readonl
   return { handle, raw: result }
 }
 
-export interface OrcaSendReceipt { readonly accepted: boolean; readonly requestId: string | null; readonly stages: readonly string[]; readonly warnings: readonly string[] }
+export interface OrcaSendReceipt {
+  readonly accepted: boolean
+  readonly requestId: string | null
+  readonly stages: readonly string[]
+  readonly warnings: readonly string[]
+  /** Whether Orca can observe this agent's turns at all (`supported`); `unsupported` means `stages` stop at `input_accepted`. */
+  readonly observation: string | null
+}
 
 export const parseOrcaSendReceipt = (result: unknown): OrcaSendReceipt => {
   const record = isRecord(result) ? result : {}
@@ -256,7 +263,8 @@ export const parseOrcaSendReceipt = (result: unknown): OrcaSendReceipt => {
   const acceptedValue = receipt['accepted'] ?? send?.['accepted']
   const accepted = inputAccepted || acceptedValue === true || (acceptedValue !== false && (result === null || result === undefined || Object.keys(record).length === 0))
   const warnings = Array.isArray(record['warnings']) ? record['warnings'] : send && Array.isArray(send['warnings']) ? send['warnings'] : []
-  return { accepted, requestId: str(receipt['requestId'], str(prompt?.['requestId'], str(record['requestId']))) || null, stages, warnings: warnings.map((warning: unknown) => isRecord(warning) ? str(warning['message'], JSON.stringify(warning)) : str(warning)) }
+  const observation = str(prompt?.['observation'], str(receipt['observation'])) || null
+  return { accepted, requestId: str(receipt['requestId'], str(prompt?.['requestId'], str(record['requestId']))) || null, stages, warnings: warnings.map((warning: unknown) => isRecord(warning) ? str(warning['message'], JSON.stringify(warning)) : str(warning)), observation }
 }
 
 /** The request id Orca hands back when a prompt send failed ambiguously and must be retried by id, never re-sent. */

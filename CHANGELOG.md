@@ -30,6 +30,10 @@ Found by running the loop on a real repository migration with a single, non-defa
   still carries an objection, even at consensus, and lists them; `--accept-objections` carries them into decompose,
   which is told to settle each one as a decision inside the issue it affects. A 2-of-3 design had been approved while
   two votes named the same missing decision, and it came back as two blocking contract escalations.
+- **An agent whose turns Orca cannot observe is confirmed by its screen.** For such an agent (opencode reports
+  `observation: unsupported`) the stages never pass `input_accepted`, so the launcher checks that the prompt's first
+  words appear on screen and sends again, up to twice, when they do not — an opencode TUI reported idle while still on
+  its splash screen and swallowed the brief. `OrcaSendReceipt` gains `observation`.
 - **A brief counts as delivered only when the agent's turn starts.** Orca's `input_accepted` means typed, not
   submitted; a pointer prompt sat unsubmitted for 21 minutes and the worker only began when an idle nudge's Enter
   submitted it. The launcher now observes the request again, presses Enter alone if the turn still has not started

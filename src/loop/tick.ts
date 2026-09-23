@@ -5,7 +5,7 @@ import type { CommandRunner } from '../adapters/command.js'
 import { fetchLinearQueue, linearLabelRemove, type LinearIssueDetail, type LoopIssue } from '../adapters/linear-orca.js'
 import { resolveConnectors, type TrackerConnector } from './connectors.js'
 import { createOrcaDispatchPlan } from '../adapters/orca.js'
-import { orcaTerminalEnter, orcaTurnStarted, orcaAccountList, orcaAgentHooks, orcaDiagnosticsMemory, orcaTerminalCreate, orcaTerminalSend, orcaTerminalWait, orcaWorktreeCreate, orcaWorktreeRemove, orcaWorktrees, type OrcaWorktree } from '../adapters/orca-cli.js'
+import { orcaTerminalScreen, orcaTerminalEnter, orcaTurnStarted, orcaAccountList, orcaAgentHooks, orcaDiagnosticsMemory, orcaTerminalCreate, orcaTerminalSend, orcaTerminalWait, orcaWorktreeCreate, orcaWorktreeRemove, orcaWorktrees, type OrcaWorktree } from '../adapters/orca-cli.js'
 import { detectProviders, type ProviderAvailability } from '../adapters/providers.js'
 import { createDispatchLedger, type DispatchLedger, type DispatchLease } from '../execution/coordination.js'
 import { HarnessError } from '../kernel/errors.js'
@@ -149,7 +149,7 @@ export const BRIEF_POINTER_PROMPT = `Your full task brief is in ${ARTIFACT_DIR}/
  * no retry fixes: a real 44 KB brief failed every send with `agent_session_ownership_unknown`, deterministically,
  * while random text of the same size and line count went through — the TUI's paste handling reacts to content.
  */
-export const launchWorkerTerminal = async (input: { readonly runner: CommandRunner; readonly config: LoopConfig; readonly worktreeId: string; readonly command: string; readonly title: string; readonly brief: string; readonly worktreePath?: string; readonly idleTimeoutMs?: number }): Promise<{ readonly terminal: string; readonly accepted: boolean; readonly idle: boolean }> => {
+export const launchWorkerTerminal = async (input: { readonly runner: CommandRunner; readonly config: LoopConfig; readonly worktreeId: string; readonly command: string; readonly title: string; readonly brief: string; readonly worktreePath?: string; readonly idleTimeoutMs?: number; readonly screenCheckDelayMs?: number }): Promise<{ readonly terminal: string; readonly accepted: boolean; readonly idle: boolean }> => {
   let prompt = input.brief
   if (input.worktreePath) {
     const dir = join(input.worktreePath, ARTIFACT_DIR)
@@ -172,6 +172,21 @@ export const launchWorkerTerminal = async (input: { readonly runner: CommandRunn
   // `input_accepted` is "typed", not "submitted": observed, a pointer prompt sat in the input box for 21 minutes and
   // the worker only started when an idle nudge's Enter submitted it. Observe the same request again; if the turn still
   // has not started, press Enter alone (a no-op for a busy agent) and observe once more.
+  // Orca cannot observe every agent's turns (opencode reports `observation: unsupported`, so its stages stop at
+  // `input_accepted` forever). There the screen is the proof: the prompt's first words must show up; if they never
+  // do, the keystrokes were dropped — observed, an opencode TUI reported idle while still on its splash screen and
+  // swallowed the brief — and the prompt is sent again, up to twice.
+  if (receipt.observation === 'unsupported') {
+    const probe = prompt.split('\n').find((line) => line.trim())?.trim().slice(0, 40) ?? ''
+    let visible = false
+    for (let attempt = 0; attempt < 3 && probe; attempt += 1) {
+      await new Promise((resolve) => { setTimeout(resolve, input.screenCheckDelayMs ?? 4_000) })
+      try { visible = (await orcaTerminalScreen(input.runner, { terminal: created.handle }, orca)).replace(/\s+/g, ' ').includes(probe.replace(/\s+/g, ' ')) } catch { visible = false }
+      if (visible || attempt === 2) break
+      receipt = await orcaTerminalSend(input.runner, { terminal: created.handle, text: prompt, enter: true, waitSubmitSeconds: 5 }, orca)
+    }
+    return { terminal: created.handle, accepted: receipt.accepted && visible, idle }
+  }
   if (receipt.requestId && receipt.stages.length && !orcaTurnStarted(receipt)) {
     const observe = async () => orcaTerminalSend(input.runner, { terminal: created.handle, text: prompt, enter: true, waitSubmitSeconds: 20, retryRequest: receipt.requestId as string }, orca).catch(() => receipt)
     receipt = await observe()

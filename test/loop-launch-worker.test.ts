@@ -86,4 +86,23 @@ describe('launchWorkerTerminal', () => {
     expect(sends[2]).not.toContain('--text')
     expect(sends[3]).toEqual(expect.arrayContaining(['--retry-request', 'r-1']))
   })
+
+  it('confirms an unobservable agent by its screen, and sends again when the keystrokes were dropped', async () => {
+    const calls: string[][] = []
+    // Orca cannot see this agent's turns; the first send lands on a splash screen and is lost.
+    const screens = ['Ask anything…', 'Your full task brief is in .ak-loop/brief.md at the root']
+    const runner = { run: async (argv: readonly string[]) => {
+      calls.push([...argv])
+      if (argv.includes('create')) return ok({ terminal: { handle: 'term-1' } })
+      if (argv.includes('wait')) return ok({ wait: { satisfied: true } })
+      if (argv.includes('read')) return ok({ terminal: { tail: [screens.shift() ?? ''] } })
+      return ok({ send: { accepted: true, prompt: { requestId: 'r', stages: ['input_accepted'], observation: 'unsupported' } } })
+    } }
+    const worktree = mkdtempSync(join(tmpdir(), 'agentskit-launch-wt-')); dirs.push(worktree)
+    const launched = await launchWorkerTerminal({ runner, config: config(), worktreeId: 'repo::/wt', worktreePath: worktree, command: 'opencode', title: 't', brief: 'long brief', screenCheckDelayMs: 0 })
+    expect(launched.accepted).toBe(true)
+    expect(calls.filter((argv) => argv.includes('send'))).toHaveLength(2)
+    // No bare Enter and no retry-by-id: those need turn observation this agent does not have.
+    expect(calls.some((argv) => argv.includes('--retry-request'))).toBe(false)
+  })
 })
