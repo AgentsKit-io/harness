@@ -1,8 +1,9 @@
+import { execFileSync } from 'node:child_process'
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
-import { approveDesign, approvePlan, designExcerptFor, designPathFor, loadLoopConfig, prdPathFor, renderDesignMarkdown, renderPrdMarkdown, startPlan, writeDesignDocument, writePrdDocument } from '../src/index.js'
+import { approveDesign, approvePlan, createProcessRunner, designExcerptFor, designPathFor, documentRoot, loadLoopConfig, prdPathFor, readCheckoutState, renderDesignMarkdown, renderPrdMarkdown, startPlan, writeDesignDocument, writePrdDocument } from '../src/index.js'
 import type { Design, LoadedLoopConfig, PlanStageState, Prd } from '../src/index.js'
 
 const exampleYaml = readFileSync(join(process.cwd(), 'loop.config.example.yaml'), 'utf8').replace('person: my-linear-display-name', 'person: person')
@@ -71,6 +72,33 @@ describe('the PRD document', () => {
     const off = setup('documents:\n  backend: none\n')
     expect(writePrdDocument(off, approved)).toBeNull()
     expect(existsSync(prdPathFor(off, approved.id))).toBe(false)
+  })
+
+  it('stays out of a checkout that is not the clean base branch, and says where it went instead', () => {
+    const loaded = setup()
+    const approved = approvePlan({ ...planWith(), phase: 'review' }, 'emerson', NOW)
+    expect(documentRoot(loaded, { branch: 'main', dirty: false })).toEqual({ root: loaded.root })
+    expect(documentRoot(loaded, null)).toEqual({ root: loaded.root })
+    const elsewhere = documentRoot(loaded, { branch: 'feature/unrelated', dirty: false })
+    expect(elsewhere.root).toBe(join(loaded.stateDir, 'documents'))
+    expect(elsewhere.note).toContain('feature/unrelated, not main')
+    expect(documentRoot(loaded, { branch: 'main', dirty: true }).note).toContain('uncommitted changes')
+    expect(documentRoot(loaded, { branch: null, dirty: false }).note).toContain('detached HEAD')
+    const written = writePrdDocument(loaded, approved, elsewhere)
+    expect(written?.path.startsWith(join(loaded.stateDir, 'documents'))).toBe(true)
+    expect(written?.note).toContain('in a PR of its own')
+    expect(existsSync(prdPathFor(loaded, approved.id))).toBe(false)
+  })
+
+  it('reads the checkout branch and whether it is dirty from git', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'agentskit-checkout-')); cleanups.push(dir)
+    const git = (...args: string[]): void => { execFileSync('git', args, { cwd: dir, stdio: 'ignore' }) }
+    git('init', '-q', '-b', 'main'); git('-c', 'user.email=t@t', '-c', 'user.name=t', 'commit', '-q', '--allow-empty', '-m', 'root')
+    const runner = createProcessRunner()
+    expect(await readCheckoutState(runner, dir)).toEqual({ branch: 'main', dirty: false })
+    writeFileSync(join(dir, 'wip.txt'), 'x'); git('checkout', '-q', '-b', 'feature/x')
+    expect(await readCheckoutState(runner, dir)).toEqual({ branch: 'feature/x', dirty: true })
+    expect(await readCheckoutState(runner, tmpdir())).toBeNull()
   })
 
   it('writes nothing for a plan with no objective yet', () => {

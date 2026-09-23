@@ -4,7 +4,7 @@
   "package": "@agentskit/harness",
   "packageVersion": "0.18.0",
   "entryPoint": "src/index.ts",
-  "sourceDigest": "f9980371abf65b42774bec6ab1bd70dd6582d4422597bcf626004e3c697fdcfa",
+  "sourceDigest": "0102200567727bb77acc8fbffc9406834034d838dca510f44f41ca8a78c82bbf",
   "capabilities": [
     {
       "id": "public-surface:adapters/agent",
@@ -1149,10 +1149,13 @@
       "kind": "composition",
       "entryPoint": "src/index.ts",
       "exports": [
+        "CheckoutState",
         "WrittenDocument",
         "designExcerptFor",
         "designPathFor",
+        "documentRoot",
         "prdPathFor",
+        "readCheckoutState",
         "renderDesignMarkdown",
         "renderPrdMarkdown",
         "writeDesignDocument",
@@ -1837,5 +1840,5 @@
       ]
     }
   ],
-  "digest": "21470c67ce58c14fbc6bf1bb6e012af50d970e38e6f41e26586b74343e496c95"
+  "digest": "9ae150f1f38bf545ffaa2dd2ac3b7424a93632cbba4d50cadf57596a13c3f896"
 }

@@ -4,6 +4,11 @@
 
 Found by running the loop on a real repository migration with a single, non-default provider.
 
+- **Approved plan documents stay out of someone else's work.** `loop plan approve` and `approve-design` wrote
+  the PRD and the design into `project.root` whatever that checkout held; approved while it sat on an unrelated,
+  dirty branch, the PRD landed silently among that branch's uncommitted changes. They are now written there only
+  when the checkout is the clean `project.baseBranch`; otherwise under `<stateDir>/documents`, and the command's
+  output carries a `note` saying why and that the file needs a PR of its own.
 - **A PR closed without merge is escalated once.** Every later deliver pass repeated the escalation for the
   same closed PR — blocked label, transition back to `delivery.returnState`, claim release, Orca comment and a
   `worker.abandoned` event — so an issue a person had since moved was moved back every few minutes.

@@ -5,7 +5,7 @@ import { Command } from 'commander'
 import { approveRun, ARTIFACT_SCHEMA_VERSION, assessAcceptance, assessBlock, assessDiscovery, assessImprovementCycle, assessIntegration, assessPilot, assessPreflight, assessProduction, assessWip, assessWorktreeCleanup, authorizeRun, benchmarkRuns, cancelRun, cleanTaskArtifacts, composePullRequest, createDispatchLedger, createDocBridgeContextProvider, createStatusSnapshot, exportEvidenceBundle, FileArtifactStore, loadBenchmarkManifest, loadConfig, loadLatestRun, parseRetro, planFilePreflight, planRun, readArtifactFile, readContextSnapshots, readEvidenceTrustStore, reconcileRun, recordBenchmarkObservation, renderArtifactMarkdown, retryRun, selectRuntime, startRun, validateBlockManifest, validateStatusSnapshot, verifyEvidenceBundle, verifyRun } from './index.js'
 import type { BenchmarkObservationEvidence } from './execution/metrics.js'
 import { fail } from './kernel/errors.js'
-import { appendLoopEvent, approveHeldDelivery, ensureBaseView, attachNotifier, buildDebriefReport, buildRetroReport, createLoopEventBus, createProcessRunner, createRichIO, fetchLinearIssue, formatWatchEvent, generateContract, installLoopAutomations, linearLabelRemove, loadLoopConfig, loadLoopPlugins, openLoopMemory, promoteLearningsToMemory, runGuidedInstall, runLoopInit, loopStatus, renderDebriefMarkdown, renderObservabilityMarkdown, renderRetroMarkdown, retroLearnings, runRetroStage, precheckDeliver, precheckTick, rankModels, promoteLearnings, writePrdDocument, writeDesignDocument, readLearningsLedger, startPlan, interviewRound, answerRound, approvePlan, architectRound, approveDesign, decomposeRound, createPlannedIssues, designApproved, listPlans, prdGaps, readPlanState, writePlanState, renderPlanMarkdown, readStoredContract, writeLearningsLedger, runDeliver, runLoopDoctor, runIntakeStage, runMaintainStage, readReleaseBatch, readReleaseState, approveRelease, renderReleaseMarkdown, runReleaseStage, runObservability, runObserveStage, runTick, uninstallLoopAutomations, watchDeliveries, writeStoredContract, isStagePaused, recordStageRunResult, resumeIssue, resumeStage, readIssueFailures, stageEntry, listPausedIssues, readLastConfigHash, writeLastConfigHash, buildIssueTimeline, renderIssueTimelineMarkdown, runWorkerGuard, type LoopStageName } from './index.js'
+import { appendLoopEvent, approveHeldDelivery, ensureBaseView, attachNotifier, buildDebriefReport, buildRetroReport, createLoopEventBus, createProcessRunner, createRichIO, fetchLinearIssue, formatWatchEvent, generateContract, installLoopAutomations, linearLabelRemove, loadLoopConfig, loadLoopPlugins, openLoopMemory, promoteLearningsToMemory, runGuidedInstall, runLoopInit, loopStatus, renderDebriefMarkdown, renderObservabilityMarkdown, renderRetroMarkdown, retroLearnings, runRetroStage, precheckDeliver, precheckTick, rankModels, promoteLearnings, writePrdDocument, writeDesignDocument, documentRoot, readCheckoutState, readLearningsLedger, startPlan, interviewRound, answerRound, approvePlan, architectRound, approveDesign, decomposeRound, createPlannedIssues, designApproved, listPlans, prdGaps, readPlanState, writePlanState, renderPlanMarkdown, readStoredContract, writeLearningsLedger, runDeliver, runLoopDoctor, runIntakeStage, runMaintainStage, readReleaseBatch, readReleaseState, approveRelease, renderReleaseMarkdown, runReleaseStage, runObservability, runObserveStage, runTick, uninstallLoopAutomations, watchDeliveries, writeStoredContract, isStagePaused, recordStageRunResult, resumeIssue, resumeStage, readIssueFailures, stageEntry, listPausedIssues, readLastConfigHash, writeLastConfigHash, buildIssueTimeline, renderIssueTimelineMarkdown, runWorkerGuard, type LoopStageName } from './index.js'
 import { FileEventStore, inspectEventLogLock, recoverEventLogLock } from './kernel/events.js'
 import { acquireStageLock } from './loop/stage-lock.js'
 
@@ -310,13 +310,14 @@ loopPlan.command('show [id]').description('Show a plan (Markdown by default), or
   if (options().json) return print(state)
   console.log(renderPlanMarkdown(state))
 })
-loopPlan.command('approve <id>').description('Human gate: approve the PRD, which starts the architect.').option('--by <actor>', 'who approves', 'human').action(function (this: Command, id: string, command: { readonly by: string }) {
+loopPlan.command('approve <id>').description('Human gate: approve the PRD, which starts the architect.').option('--by <actor>', 'who approves', 'human').action(async function (this: Command, id: string, command: { readonly by: string }) {
   const loaded = loadLoopConfig(loopFile(this))
   const next = approvePlan(planOrFail(loaded, id), command.by, new Date())
   writePlanState(loaded.stateDir, next)
-  // Approval is what makes the PRD a document people read, so it lands in the repository here and not before.
-  const document = writePrdDocument(loaded, next)
-  print({ id, phase: next.phase, ...(document ? { wrote: document.path } : {}), next: `ak-harness loop plan architect ${id}` })
+  // Approval is what makes the PRD a document people read, so it lands in the repository here and not before —
+  // unless the checkout is not the clean base branch, where it would ride along with someone else's work.
+  const document = writePrdDocument(loaded, next, documentRoot(loaded, await readCheckoutState(createProcessRunner(), loaded.root)))
+  print({ id, phase: next.phase, ...(document ? { wrote: document.path, ...(document.note ? { note: document.note } : {}) } : {}), next: `ak-harness loop plan architect ${id}` })
 })
 loopPlan.command('architect <id>').description('Produce the technical design for the whole PRD and put it to a vote (2 of 3 by default).').action(async function (this: Command, id: string) {
   const deps = await planDeps(this)
@@ -326,12 +327,12 @@ loopPlan.command('architect <id>').description('Produce the technical design for
   print({ id, consensus, cycles: next.designCycles, votes: next.designVotes, ...(consensus ? { next: `ak-harness loop plan approve-design ${id}` } : { objections: next.designVotes.flatMap((vote) => vote.objections) }) })
   if (!consensus) process.exitCode = 1
 })
-loopPlan.command('approve-design <id>').description('Human gate: approve the design after it reached consensus. Everything built afterwards inherits it.').option('--by <actor>', 'who approves', 'human').option('--accept-objections', 'approve although votes still carry objections; decompose must settle each one in an issue').action(function (this: Command, id: string, command: { readonly by: string; readonly acceptObjections?: boolean }) {
+loopPlan.command('approve-design <id>').description('Human gate: approve the design after it reached consensus. Everything built afterwards inherits it.').option('--by <actor>', 'who approves', 'human').option('--accept-objections', 'approve although votes still carry objections; decompose must settle each one in an issue').action(async function (this: Command, id: string, command: { readonly by: string; readonly acceptObjections?: boolean }) {
   const loaded = loadLoopConfig(loopFile(this))
   const next = approveDesign(planOrFail(loaded, id), command.by, new Date(), loaded.config, { acceptObjections: command.acceptObjections === true })
   writePlanState(loaded.stateDir, next)
-  const document = writeDesignDocument(loaded, next)
-  print({ id, phase: next.phase, ...(document ? { wrote: document.path } : {}), next: `ak-harness loop plan decompose ${id}` })
+  const document = writeDesignDocument(loaded, next, documentRoot(loaded, await readCheckoutState(createProcessRunner(), loaded.root)))
+  print({ id, phase: next.phase, ...(document ? { wrote: document.path, ...(document.note ? { note: document.note } : {}) } : {}), next: `ak-harness loop plan decompose ${id}` })
 })
 loopPlan.command('decompose <id>').description('Break the approved design into issues. Without --create nothing is written to the tracker; --create writes the list already shown, not a new one.').option('--create', 'create the issues already decomposed (and reviewed) in the tracker, in linear.entryState (outside the queue)').option('--refresh', 'decompose again even when a list already exists').option('--parent <issue>', 'the epic these issues break down (tracker identifier)').option('--project <name>', 'tracker project; default: the one project the queue drains, when there is exactly one').action(async function (this: Command, id: string, command: { readonly create?: boolean; readonly refresh?: boolean; readonly parent?: string; readonly project?: string }) {
   const deps = await planDeps(this)
