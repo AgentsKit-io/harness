@@ -4,7 +4,7 @@
   "package": "@agentskit/harness",
   "packageVersion": "0.18.0",
   "entryPoint": "src/index.ts",
-  "sourceDigest": "6c3b0d21cfd3a21975f5e4de5dfd0e15dae341aede714f558508f06c653fa268",
+  "sourceDigest": "f9980371abf65b42774bec6ab1bd70dd6582d4422597bcf626004e3c697fdcfa",
   "capabilities": [
     {
       "id": "public-surface:adapters/agent",
@@ -171,12 +171,16 @@
         "orcaAutomationsList",
         "orcaDiagnosticsMemory",
         "orcaJson",
+        "orcaRetryRequestId",
         "orcaStatus",
+        "orcaTerminalClose",
         "orcaTerminalCreate",
+        "orcaTerminalEnter",
         "orcaTerminalList",
         "orcaTerminalScreen",
         "orcaTerminalSend",
         "orcaTerminalWait",
+        "orcaTurnStarted",
         "orcaVersion",
         "orcaWorktreeCreate",
         "orcaWorktreeRemove",
@@ -368,6 +372,7 @@
         "MachineThresholds",
         "adaptiveConcurrency",
         "createMachineMonitor",
+        "measureCpuBusyPercent",
         "sampleMachine",
         "summarizeMachine"
       ]
@@ -930,6 +935,7 @@
         "VerifyArtifact",
         "VerifyArtifactSchema",
         "artifactPath",
+        "excludeArtifactsFromGit",
         "missingArtifacts",
         "readPhaseArtifacts",
         "readPlanArtifact",
@@ -950,6 +956,17 @@
         "automationDrift",
         "automationFields",
         "reconcileAutomations"
+      ]
+    },
+    {
+      "id": "public-surface:loop/base-view",
+      "version": "0.18.0",
+      "kind": "composition",
+      "entryPoint": "src/index.ts",
+      "exports": [
+        "BaseView",
+        "baseViewPath",
+        "ensureBaseView"
       ]
     },
     {
@@ -1103,6 +1120,7 @@
         "DeliverReport",
         "DeliverResult",
         "DeliveryState",
+        "approveHeldDelivery",
         "deliveryStatePath",
         "listDispatched",
         "precheckDeliver",
@@ -1452,6 +1470,15 @@
       ]
     },
     {
+      "id": "public-surface:loop/output-block",
+      "version": "0.18.0",
+      "kind": "composition",
+      "entryPoint": "src/index.ts",
+      "exports": [
+        "extractOutputBlock"
+      ]
+    },
+    {
       "id": "public-surface:loop/plan-stage",
       "version": "0.18.0",
       "kind": "composition",
@@ -1488,12 +1515,14 @@
         "designApproved",
         "interviewRound",
         "listPlans",
+        "openDesignObjections",
         "parseDesignOutput",
         "parseIssuesOutput",
         "parseQuestionOutput",
         "planId",
         "planStateDir",
         "planStatePath",
+        "plannedIssueLabels",
         "prdGaps",
         "readPlanState",
         "renderArchitectPrompt",
@@ -1722,6 +1751,7 @@
       "kind": "composition",
       "entryPoint": "src/index.ts",
       "exports": [
+        "BRIEF_POINTER_PROMPT",
         "DispatchRecordFile",
         "LoopState",
         "TickCandidateResult",
@@ -1807,5 +1837,5 @@
       ]
     }
   ],
-  "digest": "f35f9f0597ea94a86b6a0082c4cae38f7481a5db8964b6f08621e3f2ba3f32e2"
+  "digest": "21470c67ce58c14fbc6bf1bb6e012af50d970e38e6f41e26586b74343e496c95"
 }

@@ -24,6 +24,21 @@ const linuxSwap = (): number | undefined => {
   return Number(((1 - (values['SwapFree'] ?? 0) / values['SwapTotal']) * 100).toFixed(2))
 }
 
+/** Busy share of all CPUs over `windowMs`, from two `os.cpus()` snapshots; null when it cannot be measured. */
+export const measureCpuBusyPercent = (windowMs = 250): number | null => {
+  const totals = () => cpuInfo().reduce((sum, cpu) => {
+    const { user, nice, sys, idle, irq } = cpu.times
+    return { busy: sum.busy + user + nice + sys + irq, all: sum.all + user + nice + sys + idle + irq }
+  }, { busy: 0, all: 0 })
+  try {
+    const first = totals()
+    Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, windowMs)
+    const second = totals()
+    const all = second.all - first.all
+    return all > 0 ? Number(Math.min(100, Math.max(0, ((second.busy - first.busy) / all) * 100)).toFixed(2)) : null
+  } catch { return null }
+}
+
 export const sampleMachine = (): MachineSample => {
   const cpus = Math.max(1, cpuInfo().length)
   // Windows has no load average: `os.loadavg()` returns [0, 0, 0] there, always.
@@ -31,6 +46,8 @@ export const sampleMachine = (): MachineSample => {
   const load1 = loadAvailable ? Math.max(0, loadavg()[0] ?? 0) : 0
   const memory = Math.max(0, Math.min(100, (1 - freemem() / Math.max(1, totalmem())) * 100))
   const swapUsedPercent = linuxSwap()
+  // macOS only: its load average overstates pressure (see `MachineSample.cpuBusyPercent`).
+  const cpuBusyPercent = process.platform === 'darwin' ? measureCpuBusyPercent() : null
   return {
     at: new Date().toISOString(),
     cpus,
@@ -40,6 +57,7 @@ export const sampleMachine = (): MachineSample => {
     memoryUsedPercent: Number(memory.toFixed(2)),
     rssBytes: process.memoryUsage().rss,
     ...(swapUsedPercent === undefined ? {} : { swapUsedPercent }),
+    ...(cpuBusyPercent === null ? {} : { cpuBusyPercent }),
   }
 }
 
@@ -65,7 +83,7 @@ export const adaptiveConcurrency = (configured: number, sample: MachineSample, l
   const limit = thresholds(limits)
   // A load average nobody measured is not a load of zero: on a platform without one, the decision rests on the
   // signals that are real (memory, swap, the sampler's own pressure reading) instead of a fabricated calm.
-  const load = sample.loadAvailable === false ? null : sample.load1PerCpuPercent
+  const load = sample.cpuBusyPercent ?? (sample.loadAvailable === false ? null : sample.load1PerCpuPercent)
   const critical = (load !== null && load >= limit.criticalPercent) || sample.memoryUsedPercent >= limit.criticalPercent || (sample.swapUsedPercent ?? 0) >= limit.criticalPercent || sample.memoryPressure === 'critical'
   const warning = (load !== null && load >= limit.warningPercent) || sample.memoryUsedPercent >= limit.warningPercent || (sample.swapUsedPercent ?? 0) >= limit.warningPercent || sample.memoryPressure === 'warning'
   if (critical) return 1

@@ -53,7 +53,7 @@ export { BENCHMARK_SCHEMA_VERSION, benchmarkRuns, loadBenchmarkManifest, recordB
 export { createSessionRecorder } from './execution/agent.js'
 export { createPolicyGate } from './kernel/policy.js'
 export { createConfiguredToolRuntime, createDockerToolRuntime, createProcessToolRuntime, createToolRuntime } from './execution/runtime.js'
-export { adaptiveConcurrency, createMachineMonitor, sampleMachine, summarizeMachine } from './execution/machine.js'
+export { adaptiveConcurrency, createMachineMonitor, measureCpuBusyPercent, sampleMachine, summarizeMachine } from './execution/machine.js'
 export type { MachineThresholds } from './execution/machine.js'
 export { createDispatchLedger } from './execution/coordination.js'
 export type { ClaimResult, CoordinationIdentity, DispatchLease, DispatchLedger, DispatchRecord } from './execution/coordination.js'

@@ -455,6 +455,19 @@ Show the loop automations Orca knows about and their latest runs.
 ak-harness loop status [options]
 ```
 
+### `ak-harness loop approve`
+
+Attest that you reviewed a PR the loop held for protected paths, for one exact head; the loop then reviews and merges it as usual. A new push needs a new approval.
+
+```bash
+ak-harness loop approve [options] <issue>
+```
+
+| Flag | What it does | Default |
+|---|---|---|
+| `--head &lt;sha&gt;` | the head commit you reviewed (at least 7 characters) |  |
+| `--by &lt;actor&gt;` | who approves — recorded in the event log |  |
+
 ### `ak-harness loop resume`
 
 Resume a paused issue (clears its failure counter and removes the pause label) or, with --stage, a paused tick/deliver stage.
@@ -623,10 +636,11 @@ ak-harness loop plan approve-design [options] <id>
 | Flag | What it does | Default |
 |---|---|---|
 | `--by &lt;actor&gt;` | who approves | `"human"` |
+| `--accept-objections` | approve although votes still carry objections; decompose must settle each one in an issue |  |
 
 ### `ak-harness loop plan decompose`
 
-Break the approved design into issues. Without --create nothing is written to the tracker.
+Break the approved design into issues. Without --create nothing is written to the tracker; --create writes the list already shown, not a new one.
 
 ```bash
 ak-harness loop plan decompose [options] <id>
@@ -634,7 +648,10 @@ ak-harness loop plan decompose [options] <id>
 
 | Flag | What it does | Default |
 |---|---|---|
-| `--create` | create the issues in the tracker, in the queue entry state |  |
+| `--create` | create the issues already decomposed (and reviewed) in the tracker, in linear.entryState (outside the queue) |  |
+| `--refresh` | decompose again even when a list already exists |  |
+| `--parent &lt;issue&gt;` | the epic these issues break down (tracker identifier) |  |
+| `--project &lt;name&gt;` | tracker project; default: the one project the queue drains, when there is exactly one |  |
 
 ### `ak-harness loop release`
 

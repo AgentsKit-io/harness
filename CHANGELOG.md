@@ -30,6 +30,10 @@ Found by running the loop on a real repository migration with a single, non-defa
   still carries an objection, even at consensus, and lists them; `--accept-objections` carries them into decompose,
   which is told to settle each one as a decision inside the issue it affects. A 2-of-3 design had been approved while
   two votes named the same missing decision, and it came back as two blocking contract escalations.
+- **On macOS, machine pressure is the CPU actually busy, not the load average.** `sampleMachine` measures the busy
+  share over 250 ms (`cpuBusyPercent`) and concurrency decisions use it when present; the load average also counts
+  runnable-but-idle and I/O-blocked threads and was observed at 60–80 % with the CPU 80 % idle, capping the loop for
+  nothing.
 - **Review rounds that only discover do not spend the fix-round budget.** A review re-reads the whole change at every
   head, so a worker that fixed everything it was told could still get a new finding each round and be blocked at
   `maxFixRounds` — observed: three rounds, three different findings, all fixed, issue blocked. A round whose findings
