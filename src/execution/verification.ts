@@ -83,7 +83,13 @@ export const planRun = async ({ configPath, decision, actor = 'human', allowDirt
   const configRelative = relative(loaded.root, loaded.absolute)
   const meaningful = baseline.status.split('\n').filter(Boolean).filter((line) => !statusLineIsPath(line, configRelative))
   if (meaningful.length && !allowDirty) fail(`Worktree is dirty before planning:\n${meaningful.join('\n')}\nUse --allow-dirty only with explicit human authorization.`, 'WORKTREE_DIRTY')
-  const previous = loadLatestRun(loaded.stateDir)
+  let previous = loadLatestRun(loaded.stateDir)
+  // A finished run whose source or contract moved on is stale whether or not anyone ran `status` since; refusing a
+  // new plan until someone does sent the approver on a detour through a command that only reconciles.
+  if (previous && ['AWAITING_HUMAN_APPROVAL', 'AWAITING_AUTHORIZATION', 'COMPLETE'].includes(previous.state) && !(await isFresh(loaded, previous))) {
+    previous = transition(previous, 'STALE', 'Run is stale because source or contract changed.') as VerificationRun
+    saveRun(loaded.stateDir, previous); setLatest(loaded.stateDir, previous)
+  }
   if (previous && !['STALE', 'SUPERSEDED'].includes(previous.state)) fail(`An active run already exists: ${previous.runId} (${previous.state}).`, 'ACTIVE_RUN')
   return createRun({ loaded, baseline, supersedes: previous?.runId, dirtyBaselineAuthorized: allowDirty, contextSnapshots: validatedContextSnapshots })
 }
