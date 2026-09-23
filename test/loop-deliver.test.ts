@@ -517,8 +517,8 @@ describe('deliver', () => {
     const [provider] = Object.keys(cooldowns)
     expect(provider).toBeDefined()
     // The reset the CLI printed (4 h), not the default back-off.
-    // Test clock: 2026-09-11T12:00Z, so the CLI's "reset in 4 hours" lands at 16:00Z.
-    expect(cooldowns[provider as string]?.until).toBe('2026-09-11T16:00:00.000Z')
+    // Test clock: 2026-09-11T12:00Z, so the CLI's "reset in 4 hours 38 minutes" lands at 16:38Z.
+    expect(cooldowns[provider as string]?.until).toBe('2026-09-11T16:38:00.000Z')
   })
 
   it('holds a worker stopped at a permission prompt — never types into it, never hands it off', async () => {
