@@ -4,6 +4,10 @@
 
 Found by running the loop on a real repository migration with a single, non-default provider.
 
+- **A reset time in days is read whole.** "reset in 4 days 11 hours" (opencode's weekly limit) matched nothing,
+  so the provider cooled down for the default 30 minutes and the next dispatch went straight back to it;
+  "1 hour 32 minutes" lost its minutes. Every amount after "reset(s) in" now counts, days included.
+
 - **A brief confirmed on screen must stay there.** For agents whose turns Orca cannot observe, the brief counted
   as delivered as soon as its first words appeared; observed, an opencode TUI showed the pointer prompt, dropped it
   and sat on an empty input for minutes. The words must now still be on screen a moment later (a started turn keeps
