@@ -4,6 +4,11 @@
 
 Found by running the loop on a real repository migration with a single, non-default provider.
 
+- **A brief confirmed on screen must stay there.** For agents whose turns Orca cannot observe, the brief counted
+  as delivered as soon as its first words appeared; observed, an opencode TUI showed the pointer prompt, dropped it
+  and sat on an empty input for minutes. The words must now still be on screen a moment later (a started turn keeps
+  the message in its transcript), or the prompt is sent again.
+
 - **An incomplete review says why.** The reviewer's own explanation (exit code and the tail of its output) was
   dropped, so "review incomplete twice; needs a human look" sent a person to re-run the review by hand to find out
   that one lens had returned invalid structured output. It is now kept on the review record, on the
