@@ -448,6 +448,22 @@ describe('deliver', () => {
     expect(abandonedEvents).toHaveLength(1)
   })
 
+  it('re-sends a brief the terminal never confirmed at once, instead of waiting out the idle timeout', async () => {
+    // Dispatched a minute ago — far inside the 45 min idle timeout — and the brief was never confirmed.
+    const env = setup({ pr: null, dispatchedAt: '2026-09-11T11:59:00.000Z' })
+    const path = dispatchRecordPath(env.loaded.stateDir, 'ENG-10')
+    writeFileSync(path, JSON.stringify({ ...JSON.parse(readFileSync(path, 'utf8')), briefAccepted: false }))
+    const first = await deliver(env, { assumeIdle: true })
+    expect(first.results[0]).toMatchObject({ outcome: 'nudged', reason: 'brief never confirmed; sent again' })
+    const sent = env.runner.calls.filter((argv) => argv[1] === 'terminal' && argv[2] === 'send')
+    expect(sent.at(-1)?.join(' ')).toContain('.ak-loop/brief.md')
+    // Once: the next pass waits like any worker does.
+    expect((await deliver(env, { assumeIdle: true })).results[0]).toMatchObject({ outcome: 'waiting' })
+    // A confirmed brief is left alone.
+    const confirmed = setup({ pr: null, dispatchedAt: '2026-09-11T11:59:00.000Z' })
+    expect((await deliver(confirmed, { assumeIdle: true })).results[0]).toMatchObject({ outcome: 'waiting' })
+  })
+
   it('nudges an idle worker without a PR once, then marks it stuck and frees the slot while keeping the worktree', async () => {
     const env = setup({ pr: null, dispatchedAt: '2026-09-11T09:00:00.000Z' })
     const first = await deliver(env, { assumeIdle: true })

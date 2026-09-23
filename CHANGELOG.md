@@ -4,6 +4,13 @@
 
 Found by running the loop on a real repository migration with a single, non-default provider.
 
+- **A brief the terminal never confirmed is sent again at once.** The dispatch (and a handoff) recorded that the
+  brief was not confirmed, and then nothing acted on it until the 45-minute idle timeout — observed twice, an agent
+  sat on an empty prompt because the pointer was typed while its shell was still starting it. The dispatch record
+  now carries `briefAccepted`; deliver re-sends the pointer on its first pass over an idle worker, once. The idle
+  nudge also points at `.ak-loop/brief.md`, since "continue from `git status`" means nothing to a worker that never
+  read the brief.
+
 - **A reset time in days is read whole.** "reset in 4 days 11 hours" (opencode's weekly limit) matched nothing,
   so the provider cooled down for the default 30 minutes and the next dispatch went straight back to it;
   "1 hour 32 minutes" lost its minutes. Every amount after "reset(s) in" now counts, days included.
