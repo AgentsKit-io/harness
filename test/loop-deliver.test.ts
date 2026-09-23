@@ -214,6 +214,26 @@ describe('deliver', () => {
     expect(prListCalls.some((argv) => argv.includes('100') && !argv.includes('--label'))).toBe(false) // orca-branch fallback search
   })
 
+  it('does not spend the fix-round budget on discovery: a new finding each head is not a worker failing to fix', async () => {
+    const finding = (title: string) => ({ review: { code: 1, findings: [{ severity: 'high', title, file: 'a.ts', line: 2, rationale: 'r' }] } })
+    const env = setup(finding('Flush'))
+    expect((await deliver(env)).results[0]).toMatchObject({ outcome: 'fix-round' })
+    const heads = ['1111111111111111111111111111111111111111', '2222222222222222222222222222222222222222', '3333333333333333333333333333333333333333']
+    const titles = ['Path traversal', 'Missing guard tests', 'Flush']
+    const outcomes: string[] = []
+    for (const [index, head] of heads.entries()) {
+      env.scenario.review = finding(titles[index] as string).review
+      env.scenario.pr = basePr({ headRefOid: head })
+      outcomes.push((await deliver(env)).results[0]?.outcome ?? '')
+    }
+    // Rounds 2 and 3 only discovered new findings → not counted; round 4 repeats "Flush" from round 1 → counted (2/2).
+    expect(outcomes).toEqual(['fix-round', 'fix-round', 'fix-round'])
+    expect(readDeliveryState(env.loaded.stateDir, 'ENG-10').fixRounds).toBe(2)
+    // The budget is now spent by a finding that persisted, so the next head with findings blocks.
+    env.scenario.pr = basePr({ headRefOid: '4444444444444444444444444444444444444444' })
+    expect((await deliver(env)).results[0]).toMatchObject({ outcome: 'blocked' })
+  })
+
   it('sends review findings to the worker as a fix round, never re-reviews the same head, and blocks after the budget', async () => {
     const env = setup({ review: { code: 1, findings: [{ severity: 'high', title: 'Bug', file: 'a.ts', line: 2, rationale: 'wrong' }] } })
     const first = await deliver(env)

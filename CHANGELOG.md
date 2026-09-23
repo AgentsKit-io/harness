@@ -30,6 +30,11 @@ Found by running the loop on a real repository migration with a single, non-defa
   still carries an objection, even at consensus, and lists them; `--accept-objections` carries them into decompose,
   which is told to settle each one as a decision inside the issue it affects. A 2-of-3 design had been approved while
   two votes named the same missing decision, and it came back as two blocking contract escalations.
+- **Review rounds that only discover do not spend the fix-round budget.** A review re-reads the whole change at every
+  head, so a worker that fixed everything it was told could still get a new finding each round and be blocked at
+  `maxFixRounds` — observed: three rounds, three different findings, all fixed, issue blocked. A round whose findings
+  were all absent at earlier heads is now not counted; a finding that persists across heads still is, and twice
+  `maxFixRounds` in total review rounds stays a hard ceiling on cost.
 - **A PR held for protected paths can be released inside the loop, by an attested approval.** `ak-harness loop
   approve <issue> --head <sha> --by <you>` records who vouched for which commit (in the delivery state and the event
   log as `pr.human-approved`); the loop then reviews and merges that PR as usual, and a new push needs a new approval.

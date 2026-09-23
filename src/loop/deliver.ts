@@ -596,11 +596,35 @@ const blockAfterRounds = async (ctx: Context, record: DispatchRecordFile, lease:
   return { issue: record.issue, outcome: ctx.dryRun ? 'dry-run' : 'blocked', reason: why, pr: pr.number, head: pr.headSha, actions }
 }
 
-const fixRound = async (ctx: Context, record: DispatchRecordFile, lease: DispatchLease | undefined, state: DeliveryState, pr: PullRequestSnapshot, kind: 'ci' | 'review' | 'conflict', text: string, why: string, actions: string[]): Promise<DeliverResult> => {
+/** What makes two review findings the same finding across heads: the file and the title, not the line (code moves). */
+const findingKey = (finding: Pick<CodeReviewOutcome['blocking'][number], 'file' | 'title'>): string => `${finding.file ?? ''}::${finding.title.trim().toLowerCase()}`
+
+/**
+ * Whether this review round only DISCOVERED problems — none of its findings was raised at an earlier head.
+ *
+ * A review re-reads the whole change at every head, so a worker that fixes everything it was told can still get a
+ * fresh finding each round. Observed: three rounds, three different findings, all fixed, and the issue blocked at
+ * `maxFixRounds` — the limit was spent on the reviewer's discovery, not on a worker failing to fix. Such rounds do
+ * not count against `maxFixRounds`; a finding that persists across heads still does, and a hard ceiling of twice
+ * the limit in total review rounds keeps the cost bounded.
+ */
+const discoveryOnly = (ctx: Context, record: DispatchRecordFile, state: DeliveryState, findings: readonly CodeReviewOutcome['blocking'][number][]): boolean => {
+  const earlierHeads = [...new Set(state.nudges.filter((nudge) => nudge.kind === 'review' && nudge.head).map((nudge) => nudge.head as string))]
+  if (!earlierHeads.length || !findings.length) return false
+  const earlier = new Set(earlierHeads.flatMap((head) => readBlockingReviewFindings(ctx.loaded.stateDir, record.issue, head, 'nit').map(findingKey)))
+  return findings.every((finding) => !earlier.has(findingKey(finding)))
+}
+
+const fixRound = async (ctx: Context, record: DispatchRecordFile, lease: DispatchLease | undefined, state: DeliveryState, pr: PullRequestSnapshot, kind: 'ci' | 'review' | 'conflict', text: string, why: string, actions: string[], findings: readonly CodeReviewOutcome['blocking'][number][] = []): Promise<DeliverResult> => {
   const already = state.nudges.some((nudge) => nudge.kind === kind && nudge.head === pr.headSha)
   if (already) return { issue: record.issue, outcome: 'waiting', reason: `${kind} nudge already sent for head ${pr.headSha.slice(0, 7)}; waiting for a new push`, pr: pr.number, head: pr.headSha, actions }
-  const counts = kind !== 'conflict'
-  if (counts && state.fixRounds >= flowFor(ctx, record).maxFixRounds) return blockAfterRounds(ctx, record, lease, state, pr, why, actions)
+  const limit = flowFor(ctx, record).maxFixRounds
+  const reviewRounds = state.nudges.filter((nudge) => nudge.kind === 'review').length
+  const discovery = kind === 'review' && reviewRounds < limit * 2 && discoveryOnly(ctx, record, state, findings)
+  if (discovery) actions.push(`review round ${reviewRounds + 1}: every finding is new at this head (discovery), not counted against maxFixRounds (${state.fixRounds}/${limit})`)
+  const counts = kind !== 'conflict' && !discovery
+  if (kind === 'review' && reviewRounds >= limit * 2) return blockAfterRounds(ctx, record, lease, state, pr, `${why} — ${reviewRounds} review rounds, the ceiling of twice maxFixRounds`, actions)
+  if (counts && state.fixRounds >= limit) return blockAfterRounds(ctx, record, lease, state, pr, why, actions)
   // The worker already has its brief; the round points back at it by digest instead of re-sending what it holds.
   // Delta, not repetition — and the anchor is what lets a worker that lost the thread find it again.
   const anchor = record.briefDigest ? `\n\nContext: contract \`${record.contractDigest.slice(0, 12)}\` · brief \`${record.briefDigest.slice(0, 12)}\`${record.skills?.length ? ` · pinned skills: ${record.skills.map((skill) => `\`${skill.path}\``).join(', ')} — re-read them in the worktree, they are unchanged for this run` : ''}.` : ''
@@ -742,10 +766,10 @@ ${marker}` }); actions.push('secret-file hold commented') } catch (error) { acti
         actions.push(`reviewer ${reviewerProviderId} marked cooling down until ${entry.until} (${failureKind})`)
         event(ctx, { type: 'provider.cooldown', provider: reviewerProviderId, kind: failureKind, until: entry.until, source: 'review' })
       }
-      if (review.blocking.length) return fixRound(ctx, record, lease, state, pr, 'review', `Loop: the review of PR #${pr.number} is incomplete, but it found ${review.blocking.length} blocking issue(s). Address the findings below, re-run \`${closes}\`, commit and push; the loop will require a complete review before merge. Findings:\n${renderFindingsForWorker(review.blocking)}\nThe full (incomplete) review is on the PR.`, `review incomplete with ${review.blocking.length} blocking finding(s)`, actions)
+      if (review.blocking.length) return fixRound(ctx, record, lease, state, pr, 'review', `Loop: the review of PR #${pr.number} is incomplete, but it found ${review.blocking.length} blocking issue(s). Address the findings below, re-run \`${closes}\`, commit and push; the loop will require a complete review before merge. Findings:\n${renderFindingsForWorker(review.blocking)}\nThe full (incomplete) review is on the PR.`, `review incomplete with ${review.blocking.length} blocking finding(s)`, actions, review.blocking)
       return { issue: record.issue, outcome: 'waiting', reason: review.summary, pr: pr.number, head: pr.headSha, review, actions }
     }
-    if (review.status === 'findings') return fixRound(ctx, record, lease, state, pr, 'review', `Loop: the code review of PR #${pr.number} (head ${pr.headSha.slice(0, 7)}) found ${review.blocking.length} issue(s) at or above "${reviewSettings.minSeverity}". Address each one (or explain in the PR why it is not applicable), re-run \`${closes}\`, commit and push. Findings:\n${renderFindingsForWorker(review.blocking)}\nThe full review is on the PR. Reply here when pushed.`, `review found ${review.blocking.length} blocking finding(s)`, actions)
+    if (review.status === 'findings') return fixRound(ctx, record, lease, state, pr, 'review', `Loop: the code review of PR #${pr.number} (head ${pr.headSha.slice(0, 7)}) found ${review.blocking.length} issue(s) at or above "${reviewSettings.minSeverity}". Address each one (or explain in the PR why it is not applicable), re-run \`${closes}\`, commit and push. Findings:\n${renderFindingsForWorker(review.blocking)}\nThe full review is on the PR. Reply here when pushed.`, `review found ${review.blocking.length} blocking finding(s)`, actions, review.blocking)
   } else if (reviewPhase && prior?.status === 'findings') return { issue: record.issue, outcome: 'waiting', reason: `review findings pending a new push (head ${pr.headSha.slice(0, 7)})`, pr: pr.number, head: pr.headSha, actions }
 
   // The phase artifacts are the contract between the worker and the harness: the machine advances on files it can
