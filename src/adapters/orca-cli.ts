@@ -270,6 +270,9 @@ export const orcaRetryRequestId = (message: string): string | null => /--retry-r
 /** Whether Orca observed the agent actually start a turn for a prompt — `input_accepted` alone means typed, not submitted. */
 export const orcaTurnStarted = (receipt: OrcaSendReceipt): boolean => receipt.stages.some((stage) => stage.toLowerCase() === 'turn_started')
 
+/** Close one terminal (its process ends). */
+export const orcaTerminalClose = async (runner: CommandRunner, input: { readonly terminal: string }, options: OrcaCliOptions = {}): Promise<unknown> => orcaJson(runner, ['terminal', 'close', '--terminal', input.terminal], options)
+
 /** Press Enter alone in a terminal — submits input that was typed but never submitted; a no-op for a busy agent. */
 export const orcaTerminalEnter = async (runner: CommandRunner, input: { readonly terminal: string }, options: OrcaCliOptions = {}): Promise<unknown> => orcaJson(runner, ['terminal', 'send', '--terminal', input.terminal, '--enter'], options)
 
