@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [0.19.0] — 2026-09-23
+
 Found by running the loop on a real repository migration with a single, non-default provider.
 
 - **A brief the terminal never confirmed is sent again at once.** The dispatch (and a handoff) recorded that the
