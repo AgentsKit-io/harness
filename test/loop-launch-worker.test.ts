@@ -95,7 +95,8 @@ describe('launchWorkerTerminal', () => {
       calls.push([...argv])
       if (argv.includes('create')) return ok({ terminal: { handle: 'term-1' } })
       if (argv.includes('wait')) return ok({ wait: { satisfied: true } })
-      if (argv.includes('read')) return ok({ terminal: { tail: [screens.shift() ?? ''] } })
+      // Once the resent brief is on screen it stays there: the turn started.
+      if (argv.includes('read')) return ok({ terminal: { tail: [screens.length > 1 ? screens.shift() : screens[0]] } })
       return ok({ send: { accepted: true, prompt: { requestId: 'r', stages: ['input_accepted'], observation: 'unsupported' } } })
     } }
     const worktree = mkdtempSync(join(tmpdir(), 'agentskit-launch-wt-')); dirs.push(worktree)
@@ -104,5 +105,33 @@ describe('launchWorkerTerminal', () => {
     expect(calls.filter((argv) => argv.includes('send'))).toHaveLength(2)
     // No bare Enter and no retry-by-id: those need turn observation this agent does not have.
     expect(calls.some((argv) => argv.includes('--retry-request'))).toBe(false)
+  })
+
+  it('sends again when the brief shows up and then vanishes without a turn starting', async () => {
+    const calls: string[][] = []
+    // Observed on opencode: the pointer prompt appeared, then the TUI dropped it and sat on an empty input.
+    const screens = ['Your full task brief is in .ak-loop/brief.md at the root', 'Ask anything…', 'Your full task brief is in .ak-loop/brief.md at the root']
+    const runner = { run: async (argv: readonly string[]) => {
+      calls.push([...argv])
+      if (argv.includes('create')) return ok({ terminal: { handle: 'term-1' } })
+      if (argv.includes('wait')) return ok({ wait: { satisfied: true } })
+      if (argv.includes('read')) return ok({ terminal: { tail: [screens.length > 1 ? screens.shift() : screens[0]] } })
+      return ok({ send: { accepted: true, prompt: { requestId: 'r', stages: ['input_accepted'], observation: 'unsupported' } } })
+    } }
+    const worktree = mkdtempSync(join(tmpdir(), 'agentskit-launch-wt-')); dirs.push(worktree)
+    const launched = await launchWorkerTerminal({ runner, config: config(), worktreeId: 'repo::/wt', worktreePath: worktree, command: 'opencode', title: 't', brief: 'long brief', screenCheckDelayMs: 0 })
+    expect(launched.accepted).toBe(true)
+    expect(calls.filter((argv) => argv.includes('send'))).toHaveLength(2)
+  })
+
+  it('reports the brief as not accepted when it never stays on screen', async () => {
+    const runner = { run: async (argv: readonly string[]) => {
+      if (argv.includes('create')) return ok({ terminal: { handle: 'term-1' } })
+      if (argv.includes('wait')) return ok({ wait: { satisfied: true } })
+      if (argv.includes('read')) return ok({ terminal: { tail: ['Ask anything…'] } })
+      return ok({ send: { accepted: true, prompt: { requestId: 'r', stages: ['input_accepted'], observation: 'unsupported' } } })
+    } }
+    const worktree = mkdtempSync(join(tmpdir(), 'agentskit-launch-wt-')); dirs.push(worktree)
+    expect((await launchWorkerTerminal({ runner, config: config(), worktreeId: 'repo::/wt', worktreePath: worktree, command: 'opencode', title: 't', brief: 'long brief', screenCheckDelayMs: 0 })).accepted).toBe(false)
   })
 })

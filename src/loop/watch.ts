@@ -41,11 +41,11 @@ export interface WatchInput {
 
 const defaultSleep = (ms: number): Promise<void> => new Promise((resolve) => setTimeout(resolve, ms))
 
-const latestReview = (state: DeliveryState): { readonly status: string; readonly attempts: number } | null => {
+const latestReview = (state: DeliveryState): { readonly status: string; readonly attempts: number; readonly reason?: string } | null => {
   const entries = Object.values(state.reviews)
   if (entries.length === 0) return null
   const latest = entries.reduce((best, item) => (item.at > best.at ? item : best))
-  return { status: latest.status, attempts: latest.attempts }
+  return { status: latest.status, attempts: latest.attempts, ...(latest.reason ? { reason: latest.reason } : {}) }
 }
 
 export const classifyWatchPhase = (delivery: DeliveryState, pr: PullRequestSnapshot | null): string => {
@@ -70,7 +70,7 @@ export const classifyWatchEvent = (phase: string, delivery: DeliveryState, pr: P
     return { kind: 'FAILED', issue, message: `Delivery finished as ${phase}`, phase, pr: prNumber, finalOutcome: delivery.finalOutcome, at }
   }
   if (phase === 'held' || phase === 'held-incomplete-review') {
-    return { kind: 'ACTION_REQUIRED', issue, message: phase === 'held' ? `Held for a human${delivery.heldFor ? ` at ${delivery.heldFor.slice(0, 7)}` : ''}` : 'Review incomplete twice; needs a human look', phase, pr: prNumber, finalOutcome: delivery.finalOutcome, at }
+    return { kind: 'ACTION_REQUIRED', issue, message: phase === 'held' ? `Held for a human${delivery.heldFor ? ` at ${delivery.heldFor.slice(0, 7)}` : ''}` : `Review incomplete twice; needs a human look${latestReview(delivery)?.reason ? ` — ${latestReview(delivery)?.reason}` : ''}`, phase, pr: prNumber, finalOutcome: delivery.finalOutcome, at }
   }
   if (phase === 'fix-round') return { kind: 'ACTION_REQUIRED', issue, message: `Review findings pending a fix round (${delivery.fixRounds})`, phase, pr: prNumber, finalOutcome: null, at }
   return { kind: 'PROGRESS', issue, message: `Phase ${phase}${prNumber ? ` · PR #${prNumber}` : ''}`, phase, pr: prNumber, finalOutcome: null, at }
@@ -162,7 +162,8 @@ export const watchDeliveries = async (input: WatchInput): Promise<WatchReport> =
       if (event.kind === 'FAILED') anyFailed = true
       if (event.kind !== 'DONE' && event.kind !== 'FAILED') allTerminal = false
     }
-    if (targets.length === 0) return 'done'
+    // Nothing to watch is done — unless one issue was named: then it is not dispatched yet, and waiting for it is the point.
+    if (targets.length === 0) return input.issue ? 'continue' : 'done'
     if (allTerminal) return anyFailed ? 'failed' : 'done'
     if (anyFailed) return 'failed'
     if (anyAction) return 'action-required'

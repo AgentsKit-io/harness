@@ -35,6 +35,9 @@ describe('extractResetsAt', () => {
   it('parses a relative reset in minutes', () => {
     const now = new Date('2026-09-11T22:00:00.000Z')
     expect(extractResetsAt('resets in 45 minutes', now)).toBe('2026-09-11T22:45:00.000Z')
+    // opencode's wording: several amounts, days included — the whole duration counts, not the first pair.
+    expect(extractResetsAt('weekly usage limit reached. It will reset in 4 days 11 hours. To continue', now)).toBe('2026-09-16T09:00:00.000Z')
+    expect(extractResetsAt('5 hour usage limit reached. It will reset in 1 hour 32 minutes.', now)).toBe('2026-09-11T23:32:00.000Z')
   })
 
   it('parses a clock-time reset, rolling to tomorrow when already past', () => {

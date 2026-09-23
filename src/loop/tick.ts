@@ -82,6 +82,8 @@ export interface DispatchRecordFile {
   readonly delegation?: 'subagents' | 'alone'
   readonly setup: { readonly command: readonly string[]; readonly exitCode: number | null; readonly durationMs: number; readonly timedOut: boolean } | null
   readonly effort: EffortLevel
+  /** False when the worker's terminal never confirmed the brief; deliver re-sends it instead of waiting out the idle timeout. */
+  readonly briefAccepted?: boolean
   /** Builder provider's remaining Orca usage percent at dispatch time (`resilience.maxUsageDeltaPercent` cost guard); `null` when usage was unknown. */
   readonly initialRemainingPercent: number | null
   /**
@@ -173,15 +175,20 @@ export const launchWorkerTerminal = async (input: { readonly runner: CommandRunn
   // the worker only started when an idle nudge's Enter submitted it. Observe the same request again; if the turn still
   // has not started, press Enter alone (a no-op for a busy agent) and observe once more.
   // Orca cannot observe every agent's turns (opencode reports `observation: unsupported`, so its stages stop at
-  // `input_accepted` forever). There the screen is the proof: the prompt's first words must show up; if they never
-  // do, the keystrokes were dropped — observed, an opencode TUI reported idle while still on its splash screen and
-  // swallowed the brief — and the prompt is sent again, up to twice.
+  // `input_accepted` forever). There the screen is the proof: the prompt's first words must show up and still be
+  // there a moment later — a started turn keeps the message in its transcript, a swallowed one vanishes. Observed
+  // both: an opencode TUI reported idle while still on its splash screen and never showed the brief; another showed
+  // it, then dropped it and sat on an empty prompt for minutes. Either way the prompt is sent again, up to twice.
   if (receipt.observation === 'unsupported') {
     const probe = prompt.split('\n').find((line) => line.trim())?.trim().slice(0, 40) ?? ''
+    const delayMs = input.screenCheckDelayMs ?? 4_000
+    const onScreen = async (): Promise<boolean> => {
+      await new Promise((resolve) => { setTimeout(resolve, delayMs) })
+      try { return (await orcaTerminalScreen(input.runner, { terminal: created.handle }, orca)).replace(/\s+/g, ' ').includes(probe.replace(/\s+/g, ' ')) } catch { return false }
+    }
     let visible = false
     for (let attempt = 0; attempt < 3 && probe; attempt += 1) {
-      await new Promise((resolve) => { setTimeout(resolve, input.screenCheckDelayMs ?? 4_000) })
-      try { visible = (await orcaTerminalScreen(input.runner, { terminal: created.handle }, orca)).replace(/\s+/g, ' ').includes(probe.replace(/\s+/g, ' ')) } catch { visible = false }
+      visible = await onScreen() && await onScreen()
       if (visible || attempt === 2) break
       receipt = await orcaTerminalSend(input.runner, { terminal: created.handle, text: prompt, enter: true, waitSubmitSeconds: 5 }, orca)
     }
@@ -732,7 +739,7 @@ export const runTick = async (input: TickInput): Promise<TickReport> => {
       const launched = await launchWorkerTerminal({ runner: input.runner, config, worktreeId: created.id, worktreePath: created.path, command: worker.tui, title, brief })
       if (!launched.accepted) notes.push(`${detail.identifier}: terminal ${launched.terminal} did not confirm the brief; deliver will nudge it if it stays idle`)
       ledger.recordDispatch({ lease: claim.lease, idempotencyKey: plan.idempotencyKey, commandDigest: plan.commandDigest })
-      const record: DispatchRecordFile = { issue: detail.identifier, worktreeId: created.id, worktree, branch: actualBranch, terminal: launched.terminal, provider: worker.provider, model: worker.model, contractDigest: stored.digest, leaseKey: claim.lease.key, leaseId: claim.lease.leaseId, dispatchedAt: now().toISOString(), url: detail.url, briefDigest, skills: skillRefs(pinnedSkills), ...(delegation ? { delegation } : {}), setup: setupResult, effort: worker.effort, initialRemainingPercent: worker.remainingPercent, worktreePath: created.path, labels: [...detail.labels], project: detail.project, priorityLabel: detail.priorityLabel, workerGuardInstalled: workerGuard.installed }
+      const record: DispatchRecordFile = { issue: detail.identifier, worktreeId: created.id, worktree, branch: actualBranch, terminal: launched.terminal, provider: worker.provider, model: worker.model, contractDigest: stored.digest, leaseKey: claim.lease.key, leaseId: claim.lease.leaseId, dispatchedAt: now().toISOString(), url: detail.url, briefDigest, skills: skillRefs(pinnedSkills), ...(delegation ? { delegation } : {}), setup: setupResult, effort: worker.effort, briefAccepted: launched.accepted, initialRemainingPercent: worker.remainingPercent, worktreePath: created.path, labels: [...detail.labels], project: detail.project, priorityLabel: detail.priorityLabel, workerGuardInstalled: workerGuard.installed }
       resetDeliveryStateForDispatch(loaded.stateDir, detail.identifier)
       writeJsonAtomic(dispatchRecordPath(loaded.stateDir, detail.identifier), record)
       appendLoopEvent(loaded.stateDir, { at: record.dispatchedAt, type: 'worker.dispatched', ...record, command: worker.tui, briefAccepted: launched.accepted, tuiIdle: launched.idle }, bus)

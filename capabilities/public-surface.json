@@ -2,13 +2,13 @@
   "type": "agentskit-harness-capability-manifest",
   "schemaVersion": 1,
   "package": "@agentskit/harness",
-  "packageVersion": "0.18.0",
+  "packageVersion": "0.19.0",
   "entryPoint": "src/index.ts",
   "sourceDigest": "0102200567727bb77acc8fbffc9406834034d838dca510f44f41ca8a78c82bbf",
   "capabilities": [
     {
       "id": "public-surface:adapters/agent",
-      "version": "0.18.0",
+      "version": "0.19.0",
       "kind": "adapter",
       "entryPoint": "src/index.ts",
       "exports": [
@@ -22,7 +22,7 @@
     },
     {
       "id": "public-surface:adapters/code-review",
-      "version": "0.18.0",
+      "version": "0.19.0",
       "kind": "adapter",
       "entryPoint": "src/index.ts",
       "exports": [
@@ -43,7 +43,7 @@
     },
     {
       "id": "public-surface:adapters/command",
-      "version": "0.18.0",
+      "version": "0.19.0",
       "kind": "adapter",
       "entryPoint": "src/index.ts",
       "exports": [
@@ -56,7 +56,7 @@
     },
     {
       "id": "public-surface:adapters/doc-bridge",
-      "version": "0.18.0",
+      "version": "0.19.0",
       "kind": "adapter",
       "entryPoint": "src/index.ts",
       "exports": [
@@ -67,7 +67,7 @@
     },
     {
       "id": "public-surface:adapters/github-cli",
-      "version": "0.18.0",
+      "version": "0.19.0",
       "kind": "adapter",
       "entryPoint": "src/index.ts",
       "exports": [
@@ -95,7 +95,7 @@
     },
     {
       "id": "public-surface:adapters/linear-orca",
-      "version": "0.18.0",
+      "version": "0.19.0",
       "kind": "adapter",
       "entryPoint": "src/index.ts",
       "exports": [
@@ -131,7 +131,7 @@
     },
     {
       "id": "public-surface:adapters/mcp",
-      "version": "0.18.0",
+      "version": "0.19.0",
       "kind": "adapter",
       "entryPoint": "src/index.ts",
       "exports": [
@@ -146,7 +146,7 @@
     },
     {
       "id": "public-surface:adapters/orca-cli",
-      "version": "0.18.0",
+      "version": "0.19.0",
       "kind": "adapter",
       "entryPoint": "src/index.ts",
       "exports": [
@@ -199,7 +199,7 @@
     },
     {
       "id": "public-surface:adapters/orca",
-      "version": "0.18.0",
+      "version": "0.19.0",
       "kind": "adapter",
       "entryPoint": "src/index.ts",
       "exports": [
@@ -214,7 +214,7 @@
     },
     {
       "id": "public-surface:adapters/providers",
-      "version": "0.18.0",
+      "version": "0.19.0",
       "kind": "adapter",
       "entryPoint": "src/index.ts",
       "exports": [
@@ -237,7 +237,7 @@
     },
     {
       "id": "public-surface:adapters/rag-context",
-      "version": "0.18.0",
+      "version": "0.19.0",
       "kind": "adapter",
       "entryPoint": "src/index.ts",
       "exports": [
@@ -251,7 +251,7 @@
     },
     {
       "id": "public-surface:adapters/tracking",
-      "version": "0.18.0",
+      "version": "0.19.0",
       "kind": "adapter",
       "entryPoint": "src/index.ts",
       "exports": [
@@ -263,7 +263,7 @@
     },
     {
       "id": "public-surface:context/index",
-      "version": "0.18.0",
+      "version": "0.19.0",
       "kind": "kernel",
       "entryPoint": "src/index.ts",
       "exports": [
@@ -278,7 +278,7 @@
     },
     {
       "id": "public-surface:delivery/index",
-      "version": "0.18.0",
+      "version": "0.19.0",
       "kind": "kernel",
       "entryPoint": "src/index.ts",
       "exports": [
@@ -305,7 +305,7 @@
     },
     {
       "id": "public-surface:execution/agent",
-      "version": "0.18.0",
+      "version": "0.19.0",
       "kind": "execution",
       "entryPoint": "src/index.ts",
       "exports": [
@@ -315,7 +315,7 @@
     },
     {
       "id": "public-surface:execution/bundle",
-      "version": "0.18.0",
+      "version": "0.19.0",
       "kind": "execution",
       "entryPoint": "src/index.ts",
       "exports": [
@@ -328,7 +328,7 @@
     },
     {
       "id": "public-surface:execution/config",
-      "version": "0.18.0",
+      "version": "0.19.0",
       "kind": "execution",
       "entryPoint": "src/index.ts",
       "exports": [
@@ -341,7 +341,7 @@
     },
     {
       "id": "public-surface:execution/coordination",
-      "version": "0.18.0",
+      "version": "0.19.0",
       "kind": "execution",
       "entryPoint": "src/index.ts",
       "exports": [
@@ -355,7 +355,7 @@
     },
     {
       "id": "public-surface:execution/files",
-      "version": "0.18.0",
+      "version": "0.19.0",
       "kind": "execution",
       "entryPoint": "src/index.ts",
       "exports": [
@@ -364,7 +364,7 @@
     },
     {
       "id": "public-surface:execution/machine",
-      "version": "0.18.0",
+      "version": "0.19.0",
       "kind": "execution",
       "entryPoint": "src/index.ts",
       "exports": [
@@ -379,7 +379,7 @@
     },
     {
       "id": "public-surface:execution/metrics",
-      "version": "0.18.0",
+      "version": "0.19.0",
       "kind": "execution",
       "entryPoint": "src/index.ts",
       "exports": [
@@ -393,7 +393,7 @@
     },
     {
       "id": "public-surface:execution/runtime",
-      "version": "0.18.0",
+      "version": "0.19.0",
       "kind": "execution",
       "entryPoint": "src/index.ts",
       "exports": [
@@ -406,7 +406,7 @@
     },
     {
       "id": "public-surface:execution/verification",
-      "version": "0.18.0",
+      "version": "0.19.0",
       "kind": "execution",
       "entryPoint": "src/index.ts",
       "exports": [
@@ -423,7 +423,7 @@
     },
     {
       "id": "public-surface:kernel/adapter-contract",
-      "version": "0.18.0",
+      "version": "0.19.0",
       "kind": "kernel",
       "entryPoint": "src/index.ts",
       "exports": [
@@ -437,7 +437,7 @@
     },
     {
       "id": "public-surface:kernel/artifacts",
-      "version": "0.18.0",
+      "version": "0.19.0",
       "kind": "kernel",
       "entryPoint": "src/index.ts",
       "exports": [
@@ -462,7 +462,7 @@
     },
     {
       "id": "public-surface:kernel/block",
-      "version": "0.18.0",
+      "version": "0.19.0",
       "kind": "kernel",
       "entryPoint": "src/index.ts",
       "exports": [
@@ -476,7 +476,7 @@
     },
     {
       "id": "public-surface:kernel/cache",
-      "version": "0.18.0",
+      "version": "0.19.0",
       "kind": "kernel",
       "entryPoint": "src/index.ts",
       "exports": [
@@ -490,7 +490,7 @@
     },
     {
       "id": "public-surface:kernel/capabilities",
-      "version": "0.18.0",
+      "version": "0.19.0",
       "kind": "kernel",
       "entryPoint": "src/index.ts",
       "exports": [
@@ -507,7 +507,7 @@
     },
     {
       "id": "public-surface:kernel/compatibility",
-      "version": "0.18.0",
+      "version": "0.19.0",
       "kind": "kernel",
       "entryPoint": "src/index.ts",
       "exports": [
@@ -526,7 +526,7 @@
     },
     {
       "id": "public-surface:kernel/constants",
-      "version": "0.18.0",
+      "version": "0.19.0",
       "kind": "kernel",
       "entryPoint": "src/index.ts",
       "exports": [
@@ -536,7 +536,7 @@
     },
     {
       "id": "public-surface:kernel/cycle",
-      "version": "0.18.0",
+      "version": "0.19.0",
       "kind": "kernel",
       "entryPoint": "src/index.ts",
       "exports": [
@@ -547,7 +547,7 @@
     },
     {
       "id": "public-surface:kernel/discovery",
-      "version": "0.18.0",
+      "version": "0.19.0",
       "kind": "kernel",
       "entryPoint": "src/index.ts",
       "exports": [
@@ -558,7 +558,7 @@
     },
     {
       "id": "public-surface:kernel/error-policy",
-      "version": "0.18.0",
+      "version": "0.19.0",
       "kind": "kernel",
       "entryPoint": "src/index.ts",
       "exports": [
@@ -571,7 +571,7 @@
     },
     {
       "id": "public-surface:kernel/errors",
-      "version": "0.18.0",
+      "version": "0.19.0",
       "kind": "kernel",
       "entryPoint": "src/index.ts",
       "exports": [
@@ -581,7 +581,7 @@
     },
     {
       "id": "public-surface:kernel/eval",
-      "version": "0.18.0",
+      "version": "0.19.0",
       "kind": "kernel",
       "entryPoint": "src/index.ts",
       "exports": [
@@ -609,7 +609,7 @@
     },
     {
       "id": "public-surface:kernel/events",
-      "version": "0.18.0",
+      "version": "0.19.0",
       "kind": "kernel",
       "entryPoint": "src/index.ts",
       "exports": [
@@ -630,7 +630,7 @@
     },
     {
       "id": "public-surface:kernel/experiment",
-      "version": "0.18.0",
+      "version": "0.19.0",
       "kind": "kernel",
       "entryPoint": "src/index.ts",
       "exports": [
@@ -640,7 +640,7 @@
     },
     {
       "id": "public-surface:kernel/learning",
-      "version": "0.18.0",
+      "version": "0.19.0",
       "kind": "kernel",
       "entryPoint": "src/index.ts",
       "exports": [
@@ -654,7 +654,7 @@
     },
     {
       "id": "public-surface:kernel/memory",
-      "version": "0.18.0",
+      "version": "0.19.0",
       "kind": "kernel",
       "entryPoint": "src/index.ts",
       "exports": [
@@ -671,7 +671,7 @@
     },
     {
       "id": "public-surface:kernel/model-policy",
-      "version": "0.18.0",
+      "version": "0.19.0",
       "kind": "kernel",
       "entryPoint": "src/index.ts",
       "exports": [
@@ -685,7 +685,7 @@
     },
     {
       "id": "public-surface:kernel/optimization",
-      "version": "0.18.0",
+      "version": "0.19.0",
       "kind": "kernel",
       "entryPoint": "src/index.ts",
       "exports": [
@@ -701,7 +701,7 @@
     },
     {
       "id": "public-surface:kernel/phase-executor",
-      "version": "0.18.0",
+      "version": "0.19.0",
       "kind": "kernel",
       "entryPoint": "src/index.ts",
       "exports": [
@@ -739,7 +739,7 @@
     },
     {
       "id": "public-surface:kernel/pii",
-      "version": "0.18.0",
+      "version": "0.19.0",
       "kind": "kernel",
       "entryPoint": "src/index.ts",
       "exports": [
@@ -751,7 +751,7 @@
     },
     {
       "id": "public-surface:kernel/pilot",
-      "version": "0.18.0",
+      "version": "0.19.0",
       "kind": "kernel",
       "entryPoint": "src/index.ts",
       "exports": [
@@ -761,7 +761,7 @@
     },
     {
       "id": "public-surface:kernel/plugins",
-      "version": "0.18.0",
+      "version": "0.19.0",
       "kind": "kernel",
       "entryPoint": "src/index.ts",
       "exports": [
@@ -773,7 +773,7 @@
     },
     {
       "id": "public-surface:kernel/policy",
-      "version": "0.18.0",
+      "version": "0.19.0",
       "kind": "kernel",
       "entryPoint": "src/index.ts",
       "exports": [
@@ -783,7 +783,7 @@
     },
     {
       "id": "public-surface:kernel/preflight",
-      "version": "0.18.0",
+      "version": "0.19.0",
       "kind": "kernel",
       "entryPoint": "src/index.ts",
       "exports": [
@@ -795,7 +795,7 @@
     },
     {
       "id": "public-surface:kernel/quality",
-      "version": "0.18.0",
+      "version": "0.19.0",
       "kind": "kernel",
       "entryPoint": "src/index.ts",
       "exports": [
@@ -817,7 +817,7 @@
     },
     {
       "id": "public-surface:kernel/resilience",
-      "version": "0.18.0",
+      "version": "0.19.0",
       "kind": "kernel",
       "entryPoint": "src/index.ts",
       "exports": [
@@ -833,7 +833,7 @@
     },
     {
       "id": "public-surface:kernel/state-machine",
-      "version": "0.18.0",
+      "version": "0.19.0",
       "kind": "kernel",
       "entryPoint": "src/index.ts",
       "exports": [
@@ -844,7 +844,7 @@
     },
     {
       "id": "public-surface:kernel/status",
-      "version": "0.18.0",
+      "version": "0.19.0",
       "kind": "kernel",
       "entryPoint": "src/index.ts",
       "exports": [
@@ -856,7 +856,7 @@
     },
     {
       "id": "public-surface:kernel/types",
-      "version": "0.18.0",
+      "version": "0.19.0",
       "kind": "kernel",
       "entryPoint": "src/index.ts",
       "exports": [
@@ -865,7 +865,7 @@
     },
     {
       "id": "public-surface:kernel/wip",
-      "version": "0.18.0",
+      "version": "0.19.0",
       "kind": "kernel",
       "entryPoint": "src/index.ts",
       "exports": [
@@ -876,7 +876,7 @@
     },
     {
       "id": "public-surface:kernel/workflow",
-      "version": "0.18.0",
+      "version": "0.19.0",
       "kind": "kernel",
       "entryPoint": "src/index.ts",
       "exports": [
@@ -887,7 +887,7 @@
     },
     {
       "id": "public-surface:loop/agent-improvement",
-      "version": "0.18.0",
+      "version": "0.19.0",
       "kind": "composition",
       "entryPoint": "src/index.ts",
       "exports": [
@@ -908,7 +908,7 @@
     },
     {
       "id": "public-surface:loop/agent-registry",
-      "version": "0.18.0",
+      "version": "0.19.0",
       "kind": "composition",
       "entryPoint": "src/index.ts",
       "exports": [
@@ -925,7 +925,7 @@
     },
     {
       "id": "public-surface:loop/artifacts",
-      "version": "0.18.0",
+      "version": "0.19.0",
       "kind": "composition",
       "entryPoint": "src/index.ts",
       "exports": [
@@ -946,7 +946,7 @@
     },
     {
       "id": "public-surface:loop/automations",
-      "version": "0.18.0",
+      "version": "0.19.0",
       "kind": "composition",
       "entryPoint": "src/index.ts",
       "exports": [
@@ -960,7 +960,7 @@
     },
     {
       "id": "public-surface:loop/base-view",
-      "version": "0.18.0",
+      "version": "0.19.0",
       "kind": "composition",
       "entryPoint": "src/index.ts",
       "exports": [
@@ -971,7 +971,7 @@
     },
     {
       "id": "public-surface:loop/brief",
-      "version": "0.18.0",
+      "version": "0.19.0",
       "kind": "composition",
       "entryPoint": "src/index.ts",
       "exports": [
@@ -983,7 +983,7 @@
     },
     {
       "id": "public-surface:loop/budget",
-      "version": "0.18.0",
+      "version": "0.19.0",
       "kind": "composition",
       "entryPoint": "src/index.ts",
       "exports": [
@@ -998,7 +998,7 @@
     },
     {
       "id": "public-surface:loop/config",
-      "version": "0.18.0",
+      "version": "0.19.0",
       "kind": "composition",
       "entryPoint": "src/index.ts",
       "exports": [
@@ -1037,7 +1037,7 @@
     },
     {
       "id": "public-surface:loop/connectors",
-      "version": "0.18.0",
+      "version": "0.19.0",
       "kind": "composition",
       "entryPoint": "src/index.ts",
       "exports": [
@@ -1051,7 +1051,7 @@
     },
     {
       "id": "public-surface:loop/contract",
-      "version": "0.18.0",
+      "version": "0.19.0",
       "kind": "composition",
       "entryPoint": "src/index.ts",
       "exports": [
@@ -1083,7 +1083,7 @@
     },
     {
       "id": "public-surface:loop/cooldown",
-      "version": "0.18.0",
+      "version": "0.19.0",
       "kind": "composition",
       "entryPoint": "src/index.ts",
       "exports": [
@@ -1098,7 +1098,7 @@
     },
     {
       "id": "public-surface:loop/debrief",
-      "version": "0.18.0",
+      "version": "0.19.0",
       "kind": "composition",
       "entryPoint": "src/index.ts",
       "exports": [
@@ -1111,7 +1111,7 @@
     },
     {
       "id": "public-surface:loop/deliver",
-      "version": "0.18.0",
+      "version": "0.19.0",
       "kind": "composition",
       "entryPoint": "src/index.ts",
       "exports": [
@@ -1130,7 +1130,7 @@
     },
     {
       "id": "public-surface:loop/doctor",
-      "version": "0.18.0",
+      "version": "0.19.0",
       "kind": "composition",
       "entryPoint": "src/index.ts",
       "exports": [
@@ -1145,7 +1145,7 @@
     },
     {
       "id": "public-surface:loop/documents",
-      "version": "0.18.0",
+      "version": "0.19.0",
       "kind": "composition",
       "entryPoint": "src/index.ts",
       "exports": [
@@ -1164,7 +1164,7 @@
     },
     {
       "id": "public-surface:loop/dod",
-      "version": "0.18.0",
+      "version": "0.19.0",
       "kind": "composition",
       "entryPoint": "src/index.ts",
       "exports": [
@@ -1182,7 +1182,7 @@
     },
     {
       "id": "public-surface:loop/event-bus",
-      "version": "0.18.0",
+      "version": "0.19.0",
       "kind": "composition",
       "entryPoint": "src/index.ts",
       "exports": [
@@ -1200,7 +1200,7 @@
     },
     {
       "id": "public-surface:loop/event-vocabulary",
-      "version": "0.18.0",
+      "version": "0.19.0",
       "kind": "composition",
       "entryPoint": "src/index.ts",
       "exports": [
@@ -1211,7 +1211,7 @@
     },
     {
       "id": "public-surface:loop/flows",
-      "version": "0.18.0",
+      "version": "0.19.0",
       "kind": "composition",
       "entryPoint": "src/index.ts",
       "exports": [
@@ -1231,7 +1231,7 @@
     },
     {
       "id": "public-surface:loop/github-intake",
-      "version": "0.18.0",
+      "version": "0.19.0",
       "kind": "composition",
       "entryPoint": "src/index.ts",
       "exports": [
@@ -1245,7 +1245,7 @@
     },
     {
       "id": "public-surface:loop/guided-install",
-      "version": "0.18.0",
+      "version": "0.19.0",
       "kind": "composition",
       "entryPoint": "src/index.ts",
       "exports": [
@@ -1258,7 +1258,7 @@
     },
     {
       "id": "public-surface:loop/init",
-      "version": "0.18.0",
+      "version": "0.19.0",
       "kind": "composition",
       "entryPoint": "src/index.ts",
       "exports": [
@@ -1274,7 +1274,7 @@
     },
     {
       "id": "public-surface:loop/install",
-      "version": "0.18.0",
+      "version": "0.19.0",
       "kind": "composition",
       "entryPoint": "src/index.ts",
       "exports": [
@@ -1300,7 +1300,7 @@
     },
     {
       "id": "public-surface:loop/intake",
-      "version": "0.18.0",
+      "version": "0.19.0",
       "kind": "composition",
       "entryPoint": "src/index.ts",
       "exports": [
@@ -1325,7 +1325,7 @@
     },
     {
       "id": "public-surface:loop/issue-timeline",
-      "version": "0.18.0",
+      "version": "0.19.0",
       "kind": "composition",
       "entryPoint": "src/index.ts",
       "exports": [
@@ -1338,7 +1338,7 @@
     },
     {
       "id": "public-surface:loop/layers",
-      "version": "0.18.0",
+      "version": "0.19.0",
       "kind": "composition",
       "entryPoint": "src/index.ts",
       "exports": [
@@ -1353,7 +1353,7 @@
     },
     {
       "id": "public-surface:loop/local-config",
-      "version": "0.18.0",
+      "version": "0.19.0",
       "kind": "composition",
       "entryPoint": "src/index.ts",
       "exports": [
@@ -1371,7 +1371,7 @@
     },
     {
       "id": "public-surface:loop/memory",
-      "version": "0.18.0",
+      "version": "0.19.0",
       "kind": "composition",
       "entryPoint": "src/index.ts",
       "exports": [
@@ -1397,7 +1397,7 @@
     },
     {
       "id": "public-surface:loop/model-catalog/index",
-      "version": "0.18.0",
+      "version": "0.19.0",
       "kind": "composition",
       "entryPoint": "src/index.ts",
       "exports": [
@@ -1422,7 +1422,7 @@
     },
     {
       "id": "public-surface:loop/notify",
-      "version": "0.18.0",
+      "version": "0.19.0",
       "kind": "composition",
       "entryPoint": "src/index.ts",
       "exports": [
@@ -1438,7 +1438,7 @@
     },
     {
       "id": "public-surface:loop/observability",
-      "version": "0.18.0",
+      "version": "0.19.0",
       "kind": "composition",
       "entryPoint": "src/index.ts",
       "exports": [
@@ -1455,7 +1455,7 @@
     },
     {
       "id": "public-surface:loop/observe-stage",
-      "version": "0.18.0",
+      "version": "0.19.0",
       "kind": "composition",
       "entryPoint": "src/index.ts",
       "exports": [
@@ -1474,7 +1474,7 @@
     },
     {
       "id": "public-surface:loop/output-block",
-      "version": "0.18.0",
+      "version": "0.19.0",
       "kind": "composition",
       "entryPoint": "src/index.ts",
       "exports": [
@@ -1483,7 +1483,7 @@
     },
     {
       "id": "public-surface:loop/plan-stage",
-      "version": "0.18.0",
+      "version": "0.19.0",
       "kind": "composition",
       "entryPoint": "src/index.ts",
       "exports": [
@@ -1539,7 +1539,7 @@
     },
     {
       "id": "public-surface:loop/plan-vote",
-      "version": "0.18.0",
+      "version": "0.19.0",
       "kind": "composition",
       "entryPoint": "src/index.ts",
       "exports": [
@@ -1569,7 +1569,7 @@
     },
     {
       "id": "public-surface:loop/presets",
-      "version": "0.18.0",
+      "version": "0.19.0",
       "kind": "composition",
       "entryPoint": "src/index.ts",
       "exports": [
@@ -1583,7 +1583,7 @@
     },
     {
       "id": "public-surface:loop/process",
-      "version": "0.18.0",
+      "version": "0.19.0",
       "kind": "composition",
       "entryPoint": "src/index.ts",
       "exports": [
@@ -1592,7 +1592,7 @@
     },
     {
       "id": "public-surface:loop/progress",
-      "version": "0.18.0",
+      "version": "0.19.0",
       "kind": "composition",
       "entryPoint": "src/index.ts",
       "exports": [
@@ -1603,7 +1603,7 @@
     },
     {
       "id": "public-surface:loop/release",
-      "version": "0.18.0",
+      "version": "0.19.0",
       "kind": "composition",
       "entryPoint": "src/index.ts",
       "exports": [
@@ -1623,7 +1623,7 @@
     },
     {
       "id": "public-surface:loop/resilience-state",
-      "version": "0.18.0",
+      "version": "0.19.0",
       "kind": "composition",
       "entryPoint": "src/index.ts",
       "exports": [
@@ -1652,7 +1652,7 @@
     },
     {
       "id": "public-surface:loop/retro",
-      "version": "0.18.0",
+      "version": "0.19.0",
       "kind": "composition",
       "entryPoint": "src/index.ts",
       "exports": [
@@ -1677,7 +1677,7 @@
     },
     {
       "id": "public-surface:loop/rotation",
-      "version": "0.18.0",
+      "version": "0.19.0",
       "kind": "composition",
       "entryPoint": "src/index.ts",
       "exports": [
@@ -1689,7 +1689,7 @@
     },
     {
       "id": "public-surface:loop/routing",
-      "version": "0.18.0",
+      "version": "0.19.0",
       "kind": "composition",
       "entryPoint": "src/index.ts",
       "exports": [
@@ -1703,7 +1703,7 @@
     },
     {
       "id": "public-surface:loop/runner-connector",
-      "version": "0.18.0",
+      "version": "0.19.0",
       "kind": "composition",
       "entryPoint": "src/index.ts",
       "exports": [
@@ -1719,7 +1719,7 @@
     },
     {
       "id": "public-surface:loop/skills",
-      "version": "0.18.0",
+      "version": "0.19.0",
       "kind": "composition",
       "entryPoint": "src/index.ts",
       "exports": [
@@ -1735,7 +1735,7 @@
     },
     {
       "id": "public-surface:loop/slots",
-      "version": "0.18.0",
+      "version": "0.19.0",
       "kind": "composition",
       "entryPoint": "src/index.ts",
       "exports": [
@@ -1750,7 +1750,7 @@
     },
     {
       "id": "public-surface:loop/tick",
-      "version": "0.18.0",
+      "version": "0.19.0",
       "kind": "composition",
       "entryPoint": "src/index.ts",
       "exports": [
@@ -1777,7 +1777,7 @@
     },
     {
       "id": "public-surface:loop/tuning",
-      "version": "0.18.0",
+      "version": "0.19.0",
       "kind": "composition",
       "entryPoint": "src/index.ts",
       "exports": [
@@ -1800,7 +1800,7 @@
     },
     {
       "id": "public-surface:loop/ui/terminal",
-      "version": "0.18.0",
+      "version": "0.19.0",
       "kind": "composition",
       "entryPoint": "src/index.ts",
       "exports": [
@@ -1810,7 +1810,7 @@
     },
     {
       "id": "public-surface:loop/watch",
-      "version": "0.18.0",
+      "version": "0.19.0",
       "kind": "composition",
       "entryPoint": "src/index.ts",
       "exports": [
@@ -1828,7 +1828,7 @@
     },
     {
       "id": "public-surface:loop/worker-guard",
-      "version": "0.18.0",
+      "version": "0.19.0",
       "kind": "composition",
       "entryPoint": "src/index.ts",
       "exports": [
@@ -1840,5 +1840,5 @@
       ]
     }
   ],
-  "digest": "9ae150f1f38bf545ffaa2dd2ac3b7424a93632cbba4d50cadf57596a13c3f896"
+  "digest": "6c0181fcfd0667131ee7064f4a9e79b2997d133274653518380e2f280f9f5887"
 }

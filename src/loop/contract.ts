@@ -308,11 +308,13 @@ export const classifyProviderFailure = (detail: string, timedOut = false): Provi
  * callers fall back to the configured exponential cooldown.
  */
 export const extractResetsAt = (detail: string, now: Date = new Date()): string | null => {
-  const relative = detail.match(/resets?\s+in\s+(\d+)\s*(h|hour|hours|m|min|minute|minutes)/i)
+  // Every amount after "reset(s) in" counts: opencode prints "reset in 4 days 11 hours" and "1 hour 32 minutes";
+  // reading only the first pair (or no pair, for days) cooled a provider down for 30 min instead of 4 days.
+  const relative = detail.match(/resets?\s+in\s+((?:\d+\s*(?:d|days?|h|hrs?|hours?|m|mins?|minutes?)\b[\s,and]*)+)/i)
   if (relative) {
-    const amount = Number(relative[1])
-    const unitMs = /^h/i.test(relative[2] ?? '') ? 3_600_000 : 60_000
-    if (Number.isFinite(amount)) return new Date(now.getTime() + amount * unitMs).toISOString()
+    const unitMs = (unit: string): number => /^d/i.test(unit) ? 86_400_000 : /^h/i.test(unit) ? 3_600_000 : 60_000
+    const totalMs = [...(relative[1] ?? '').matchAll(/(\d+)\s*(d|days?|h|hrs?|hours?|m|mins?|minutes?)\b/gi)].reduce((sum, part) => sum + Number(part[1]) * unitMs(part[2] ?? ''), 0)
+    if (totalMs > 0) return new Date(now.getTime() + totalMs).toISOString()
   }
   const clockMatch = detail.match(/resets?\s+(?:at\s+)?(\d{1,2}):(\d{2})\s*(am|pm)?/i)
   if (clockMatch) {

@@ -2,7 +2,33 @@
 
 ## [Unreleased]
 
+## [0.19.0] — 2026-09-23
+
 Found by running the loop on a real repository migration with a single, non-default provider.
+
+- **A brief the terminal never confirmed is sent again at once.** The dispatch (and a handoff) recorded that the
+  brief was not confirmed, and then nothing acted on it until the 45-minute idle timeout — observed twice, an agent
+  sat on an empty prompt because the pointer was typed while its shell was still starting it. The dispatch record
+  now carries `briefAccepted`; deliver re-sends the pointer on its first pass over an idle worker, once. The idle
+  nudge also points at `.ak-loop/brief.md`, since "continue from `git status`" means nothing to a worker that never
+  read the brief.
+
+- **A reset time in days is read whole.** "reset in 4 days 11 hours" (opencode's weekly limit) matched nothing,
+  so the provider cooled down for the default 30 minutes and the next dispatch went straight back to it;
+  "1 hour 32 minutes" lost its minutes. Every amount after "reset(s) in" now counts, days included.
+
+- **A brief confirmed on screen must stay there.** For agents whose turns Orca cannot observe, the brief counted
+  as delivered as soon as its first words appeared; observed, an opencode TUI showed the pointer prompt, dropped it
+  and sat on an empty input for minutes. The words must now still be on screen a moment later (a started turn keeps
+  the message in its transcript), or the prompt is sent again.
+
+- **An incomplete review says why.** The reviewer's own explanation (exit code and the tail of its output) was
+  dropped, so "review incomplete twice; needs a human look" sent a person to re-run the review by hand to find out
+  that one lens had returned invalid structured output. It is now kept on the review record, on the
+  `pr.reviewed` event, in the held reason and in `loop watch`.
+
+- **`loop watch --issue` waits for an issue that is not dispatched yet.** It returned `done` at once, silently,
+  when the named issue had no dispatch record — the usual case right after moving it into the queue.
 
 - **Decompose files work outside this repository outside the queue.** The loop delivers pull requests to
   `project.repo` and nothing else, but decompose also split out issues for other repositories and a deploy;

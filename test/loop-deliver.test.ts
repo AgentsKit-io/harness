@@ -292,6 +292,20 @@ describe('deliver', () => {
     expect(events).toContain('"source":"review"')
   })
 
+  it('keeps why a review was incomplete, and says it when holding the PR for a human', async () => {
+    const env = setup({ review: { code: 2, failureMessage: 'Review execution failed: 9 of 10 lens executions succeeded (1 failed); 1 reviewable file had zero successful lenses: scripts/check-quality-gates.mjs' } })
+    await deliver(env)
+    await deliver(env)
+    const review = Object.values(readDeliveryState(env.loaded.stateDir, 'ENG-10').reviews)[0]
+    expect(review).toMatchObject({ status: 'incomplete', attempts: 2 })
+    expect(review?.reason).toContain('zero successful lenses: scripts/check-quality-gates.mjs')
+    const held = (await deliver(env)).results[0]
+    expect(held).toMatchObject({ outcome: 'held' })
+    expect(held?.reason).toContain('zero successful lenses')
+    const reviewed = readFileSync(join(env.loaded.stateDir, 'events.ndjson'), 'utf8').split('\n').filter(Boolean).map((line) => JSON.parse(line) as Record<string, unknown>).filter((event) => event['type'] === 'pr.reviewed')
+    expect(reviewed.every((event) => String(event['reason']).includes('lens executions'))).toBe(true)
+  })
+
   it('sends known blocking findings even when the review is incomplete, without approving the PR', async () => {
     const env = setup({ review: { code: 2, incomplete: true, findings: [{ severity: 'high', title: 'Unsafe path', file: 'a.ts', line: 4, rationale: 'escape' }] } })
     const report = await deliver(env)
@@ -434,6 +448,22 @@ describe('deliver', () => {
     expect(abandonedEvents).toHaveLength(1)
   })
 
+  it('re-sends a brief the terminal never confirmed at once, instead of waiting out the idle timeout', async () => {
+    // Dispatched a minute ago — far inside the 45 min idle timeout — and the brief was never confirmed.
+    const env = setup({ pr: null, dispatchedAt: '2026-09-11T11:59:00.000Z' })
+    const path = dispatchRecordPath(env.loaded.stateDir, 'ENG-10')
+    writeFileSync(path, JSON.stringify({ ...JSON.parse(readFileSync(path, 'utf8')), briefAccepted: false }))
+    const first = await deliver(env, { assumeIdle: true })
+    expect(first.results[0]).toMatchObject({ outcome: 'nudged', reason: 'brief never confirmed; sent again' })
+    const sent = env.runner.calls.filter((argv) => argv[1] === 'terminal' && argv[2] === 'send')
+    expect(sent.at(-1)?.join(' ')).toContain('.ak-loop/brief.md')
+    // Once: the next pass waits like any worker does.
+    expect((await deliver(env, { assumeIdle: true })).results[0]).toMatchObject({ outcome: 'waiting' })
+    // A confirmed brief is left alone.
+    const confirmed = setup({ pr: null, dispatchedAt: '2026-09-11T11:59:00.000Z' })
+    expect((await deliver(confirmed, { assumeIdle: true })).results[0]).toMatchObject({ outcome: 'waiting' })
+  })
+
   it('nudges an idle worker without a PR once, then marks it stuck and frees the slot while keeping the worktree', async () => {
     const env = setup({ pr: null, dispatchedAt: '2026-09-11T09:00:00.000Z' })
     const first = await deliver(env, { assumeIdle: true })
@@ -503,8 +533,8 @@ describe('deliver', () => {
     const [provider] = Object.keys(cooldowns)
     expect(provider).toBeDefined()
     // The reset the CLI printed (4 h), not the default back-off.
-    // Test clock: 2026-09-11T12:00Z, so the CLI's "reset in 4 hours" lands at 16:00Z.
-    expect(cooldowns[provider as string]?.until).toBe('2026-09-11T16:00:00.000Z')
+    // Test clock: 2026-09-11T12:00Z, so the CLI's "reset in 4 hours 38 minutes" lands at 16:38Z.
+    expect(cooldowns[provider as string]?.until).toBe('2026-09-11T16:38:00.000Z')
   })
 
   it('holds a worker stopped at a permission prompt — never types into it, never hands it off', async () => {
