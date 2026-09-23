@@ -25,6 +25,8 @@ export interface LoopIssue {
 export interface LinearQueueFilter {
   readonly states: readonly string[]
   readonly excludeLabels: readonly string[]
+  /** Work the loop cannot deliver as a PR to its own repository; never dispatched, like `excludeLabels`. */
+  readonly outsideLabel?: string
   /** Every one of these must be present on the issue (AND). Empty = no constraint. */
   readonly requireLabels: readonly string[]
   /**
@@ -107,7 +109,7 @@ const priorityRank = (priority: number): number => priority === 0 ? Number.MAX_S
 
 export const filterAndOrderQueue = (issues: readonly LoopIssue[], filter: LinearQueueFilter): readonly LoopIssue[] => {
   const states = new Set(filter.states)
-  const exclude = new Set(filter.excludeLabels)
+  const exclude = new Set([...filter.excludeLabels, ...(filter.outsideLabel ? [filter.outsideLabel] : [])])
   const seen = new Set<string>()
   const eligible = issues.filter((issue) => {
     if (seen.has(issue.identifier)) return false

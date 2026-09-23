@@ -9,7 +9,7 @@ The four layers that produce this configuration — the machine's global file, t
 machine's overlay — are described in [ADR-0033](https://github.com/AgentsKit-io/harness/blob/main/docs/ADR-0033-four-config-layers-and-presets.md).
 `ak-harness loop validate` prints the effective result, which is the only one that decides anything.
 
-213 of 372 paths carry no description yet.
+213 of 373 paths carry no description yet.
 
 ## `schemaVersion`
 
@@ -74,6 +74,7 @@ Type: string
 | `linear.doneState` | string | `"Done"` |  |
 | `linear.blockedLabel` | string | `"blocked"` |  |
 | `linear.needsInfoLabel` | string | `"needs-info"` |  |
+| `linear.outsideLabel` | string | `"outside-loop"` | Marks work the loop cannot deliver as a pull request to `project.repo` — another repository, a deploy, a setting in an external service. Decompose puts it on such issues and the queue never dispatches them, whatever state they are moved to: a worker given one opens a PR here that does not do the work, or none. |
 
 ## `knownFailures`
 

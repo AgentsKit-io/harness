@@ -190,6 +190,12 @@ export const LoopConfigSchema = z.object({
     doneState: nonEmpty.default('Done'),
     blockedLabel: nonEmpty.default('blocked'),
     needsInfoLabel: nonEmpty.default('needs-info'),
+    /**
+     * Marks work the loop cannot deliver as a pull request to `project.repo` — another repository, a deploy, a
+     * setting in an external service. Decompose puts it on such issues and the queue never dispatches them,
+     * whatever state they are moved to: a worker given one opens a PR here that does not do the work, or none.
+     */
+    outsideLabel: nonEmpty.default('outside-loop'),
   }),
   /**
    * Suites already red on the base branch, declared so a worker is not asked to pass a verification that

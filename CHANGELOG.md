@@ -4,6 +4,12 @@
 
 Found by running the loop on a real repository migration with a single, non-default provider.
 
+- **Decompose files work outside this repository outside the queue.** The loop delivers pull requests to
+  `project.repo` and nothing else, but decompose also split out issues for other repositories and a deploy;
+  once moved into the queue, a worker would have opened a PR here that did not do the work. Planned issues now
+  carry `outside` (where the work happens, empty for a PR here); those are filed with `linear.outsideLabel`
+  (default `outside-loop`) instead of the queue's labels, say so at the top of their description, and the queue
+  never dispatches an issue carrying that label.
 - **Approved plan documents stay out of someone else's work.** `loop plan approve` and `approve-design` wrote
   the PRD and the design into `project.root` whatever that checkout held; approved while it sat on an unrelated,
   dirty branch, the PRD landed silently among that branch's uncommitted changes. They are now written there only

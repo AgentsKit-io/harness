@@ -64,6 +64,11 @@ export const PlannedIssueSchema = z.object({
   acceptance: z.array(nonEmpty).min(1),
   /** Which part of the design this issue implements. A ticket that points at nothing invents its own architecture. */
   designRef: nonEmpty,
+  /**
+   * Where the work happens when it is not a pull request to this repository (another repository, a deploy, an
+   * external service); empty when it is. Such an issue is filed outside the queue's reach (`linear.outsideLabel`).
+   */
+  outside: z.string().trim().default(''),
 })
 export type PlannedIssue = z.infer<typeof PlannedIssueSchema>
 
@@ -229,7 +234,9 @@ Approved design:
 ${JSON.stringify(state.design, null, 2)}
 ${state.acceptedObjections?.length ? `\nObjections the human carried past the design gate — each one must be settled as an explicit decision inside the issue it affects (in its description), never left for the worker to guess:\n${state.acceptedObjections.map((objection) => `- ${objection}`).join('\n')}\n` : ''}${renderLayersForPrompt(config)}
 Answer as JSON between the exact markers ${ISSUES_OPEN} and ${ISSUES_CLOSE}: an array of issues, each one
-{ "title": "…", "description": "what to do and why, referencing the design", "layer": "${layerChoices(config).length ? `<one of: ${layerChoices(config).join(', ')}>` : ''}", "priority": "urgent|high|medium|low", "acceptance": ["verifiable criterion a machine can check"], "designRef": "the module, contract or decision id this issue implements" }
+{ "title": "…", "description": "what to do and why, referencing the design", "layer": "${layerChoices(config).length ? `<one of: ${layerChoices(config).join(', ')}>` : ''}", "priority": "urgent|high|medium|low", "acceptance": ["verifiable criterion a machine can check"], "designRef": "the module, contract or decision id this issue implements", "outside": "" }
+
+Every issue is delivered by an agent opening a pull request to ${config.project.repo} — nothing else. Work that cannot be done that way (a change in another repository, a deploy, a setting in an external service) still gets an issue, with "outside" naming where it happens (e.g. "repository owner/other", "production deploy"); leave "outside" empty for everything that is a pull request here. Never split one PR here into an "outside" issue to avoid it.
 
 Rules: every issue points at a part of the design — a ticket that points at nothing invents its own architecture. Every acceptance criterion must be checkable without a human's judgement. Order matters: follow the design's sequence. Split anything that cannot be delivered in one pull request.`
 
@@ -376,7 +383,8 @@ export interface PlannedIssueTarget {
 /** The labels a planned issue may carry as its layer: the configured layers, else the queue's `anyLabels`. */
 const layerChoices = (config: LoopConfig): readonly string[] => config.layers.length ? config.layers.map((layer) => layer.label) : config.linear.anyLabels
 
-export const plannedIssueLabels = (config: LoopConfig, layer?: string): readonly string[] => {
+export const plannedIssueLabels = (config: LoopConfig, layer?: string, outside?: string): readonly string[] => {
+  if (outside) return [config.linear.outsideLabel]
   // Only a label the project declared becomes a label: a model asked to pick from an empty list writes the prompt's
   // own wording back ("no layers configured"), and the tracker refuses the whole issue for it.
   const known = layer && layerChoices(config).includes(layer) ? layer : undefined
@@ -405,10 +413,11 @@ export const createPlannedIssues = async (deps: PlanStageDeps, state: PlanStageS
     // The design travels as content, not as a pointer: a worker that cannot fetch the reference invents the
     // architecture instead of implementing the one that was approved.
     const excerpt = designExcerptFor(state.design, issue.designRef)
-    const description = `${issue.description}\n\n**Acceptance**\n${issue.acceptance.map((item) => `- [ ] ${item}`).join('\n')}\n\n**Design — ${issue.designRef}**\n\n${excerpt || '_not found in the approved design_'}\n\n<!-- loop:plan:${state.id} -->`
+    const where = issue.outside ? `**Outside this loop — ${issue.outside}.** The loop delivers pull requests to ${config.project.repo} only, so it will not dispatch this issue (\`${config.linear.outsideLabel}\`); a person or another loop carries it.\n\n` : ''
+    const description = `${where}${issue.description}\n\n**Acceptance**\n${issue.acceptance.map((item) => `- [ ] ${item}`).join('\n')}\n\n**Design — ${issue.designRef}**\n\n${excerpt || '_not found in the approved design_'}\n\n<!-- loop:plan:${state.id} -->`
     const result = await linearSaveIssue(deps.runner, {
       team: config.linear.teamKey, title: issue.title, description, state: entryState,
-      priority: priorityFor(issue), labels: plannedIssueLabels(config, issue.layer),
+      priority: priorityFor(issue), labels: plannedIssueLabels(config, issue.layer, issue.outside),
       ...(project ? { project } : {}), ...(target.parent ? { parentId: target.parent } : {}),
       dedupeKey: `plan:${state.id}:${issue.title}`,
     }, write)
@@ -422,7 +431,7 @@ export const renderPlanMarkdown = (state: PlanStageState): string => {
   if (state.rounds.length) { lines.push('## Interview', ''); for (const round of state.rounds) lines.push(`- **${round.field || 'q'}** — ${round.question}\n  - ${round.answer}`); lines.push('') }
   if (state.design) lines.push('## Design', '', state.design.summary, '', ...state.design.modules.map((module) => `- **${module.name}** — ${module.responsibility}${module.boundary ? ` (never: ${module.boundary})` : ''}`), '')
   if (state.designVotes.length) lines.push(`_Design votes: ${state.designVotes.filter((vote) => vote.vote === 'approve').length}/${state.designVotes.length} after ${state.designCycles} cycle(s)_`, '')
-  if (state.issues.length) { lines.push('## Issues', ''); for (const issue of state.issues) lines.push(`- ${issue.identifier ? `\`${issue.identifier}\` ` : ''}${issue.title}${issue.layer ? ` · ${issue.layer}` : ''} → ${issue.designRef}`); lines.push('') }
+  if (state.issues.length) { lines.push('## Issues', ''); for (const issue of state.issues) lines.push(`- ${issue.identifier ? `\`${issue.identifier}\` ` : ''}${issue.title}${issue.layer ? ` · ${issue.layer}` : ''}${issue.outside ? ` · outside: ${issue.outside}` : ''} → ${issue.designRef}`); lines.push('') }
   lines.push(`Approvals: plan ${state.approvals.plan ?? 'pending'} · design ${state.approvals.design ?? 'pending'}`)
   return lines.join('\n')
 }

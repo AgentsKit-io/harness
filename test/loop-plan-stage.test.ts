@@ -178,6 +178,28 @@ describe('planned issues land where the queue looks', () => {
     expect(plannedIssueLabels({ ...config, layers: [], linear: { ...config.linear, anyLabels: [] } }, 'no layers configured')).toEqual(['pilot'])
   })
 
+  it('files work that is not a PR to this repository outside the queue, and says so in the issue', async () => {
+    const loaded = setup()
+    const config = { ...loaded.config, linear: { ...loaded.config.linear, requireLabels: ['pilot'], anyLabels: ['layer:L1'] } }
+    const state: PlanStageState = { ...startPlan('x', NOW), phase: 'decompose', prd: FULL_PRD, design: { summary: 's', modules: [{ name: 'api', responsibility: 'r', boundary: '' }], contracts: [], decisions: [], sequence: [], risks: [] } }
+    const planned = [
+      { title: 'wire CI in the product repo', description: 'd', layer: 'layer:L1', priority: 'high', acceptance: ['CI green'], designRef: 'api', outside: 'repository acme/product' },
+      { title: 'add /health', description: 'd', layer: 'layer:L1', priority: 'high', acceptance: ['200'], designRef: 'api' },
+    ]
+    const runner = scripted([`${ISSUES_OPEN}${JSON.stringify(planned)}${ISSUES_CLOSE}`, JSON.stringify({ ok: true, result: { issue: { identifier: 'ENG-7' } } }), JSON.stringify({ ok: true, result: { issue: { identifier: 'ENG-8' } } })])
+    expect(renderDecomposePrompt(state, config)).toContain(`pull request to ${config.project.repo} — nothing else`)
+    const decomposed = await decomposeRound(deps({ ...loaded, config }, runner), state)
+    expect(decomposed.issues.map((issue) => issue.outside)).toEqual(['repository acme/product', ''])
+    await createPlannedIssues(deps({ ...loaded, config }, runner), decomposed)
+    const saves = runner.calls.filter((argv) => argv.includes('save-issue'))
+    const labelsOf = (argv: readonly string[]): string[] => argv.flatMap((arg, index) => argv[index - 1] === '--label' ? [arg] : [])
+    // Not the queue's labels: the queue would otherwise dispatch it the moment a person moves it to Todo.
+    expect(labelsOf(saves[0]!)).toEqual(['outside-loop'])
+    expect(saves[0]!.join(' ')).toContain('Outside this loop — repository acme/product.')
+    expect(labelsOf(saves[1]!)).toEqual(['pilot', 'layer:L1'])
+    expect(renderPlanMarkdown({ ...decomposed, issues: decomposed.issues })).toContain('outside: repository acme/product')
+  })
+
   it('refuses a config whose entry state is already in the queue', () => {
     expect(() => parseLoopConfigText(readFileSync(join(process.cwd(), 'loop.config.example.yaml'), 'utf8').replace('person: my-linear-display-name', 'person: person').replace('  entryState: Backlog ', '  entryState: Todo '))).toThrow(/entryState "Todo" is one of linear.states/)
   })
