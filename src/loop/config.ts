@@ -361,6 +361,16 @@ export const LoopConfigSchema = z.object({
        * error, just a review that quietly never got a fair budget. 300s cleared every case observed.
        */
       subprocessTimeoutMs: z.number().int().positive().default(300_000),
+      /**
+       * `agentskit-review`'s own per-run analysis token budget (`review.maxTokens`/`globalMaxTokens`, ~87_200
+       * usable by default under `--profile fast`) has no CLI flag — only a `--config <file>` JSON document,
+       * which nothing here ever generated. Observed live 2026-09-23: an ordinary ~10-file issue PR aborted
+       * mid-review with "analysis tokens budget exceeded (87200)", landing as the same `status: incomplete`
+       * a missing `subprocessTimeoutMs` used to cause. `runCodeReview` writes a small temp `--config` with
+       * just these two fields when set.
+       */
+      analysisMaxTokens: z.number().int().positive().default(800_000),
+      analysisGlobalMaxTokens: z.number().int().positive().default(2_000_000),
       maxCalls: z.number().int().positive().max(1000).default(400),
       /** Post the review to the PR (inline + summary). */
       post: z.boolean().default(true),

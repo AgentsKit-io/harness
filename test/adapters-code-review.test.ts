@@ -1,4 +1,4 @@
-import { mkdtempSync, rmSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
@@ -205,6 +205,35 @@ describe('runCodeReview', () => {
     const trackingRunner: CommandRunner = { run: async (argv, options) => { calls.push(options); return cmd({ code: 0 }) } }
     await runCodeReview(trackingRunner, { ...baseInput, resultFile: tempResultFile(), env: { FOO: 'bar' } })
     expect(calls[0]).toMatchObject({ env: { FOO: 'bar' } })
+  })
+
+  // agentskit-review's own per-run analysis token budget (~87_200 usable under --profile fast) has no CLI
+  // flag, only a --config <file> JSON document. Observed live: an ordinary ~10-file PR — not an unusually
+  // large one — aborted mid-review with "analysis tokens budget exceeded (87200)" because nothing ever
+  // raised it. This writes that config to a temp file and points --config at it.
+  it('writes a temp --config file carrying analysisMaxTokens/analysisGlobalMaxTokens, and cleans it up', async () => {
+    let seenArgv: readonly string[] = []
+    let configFileDuringRun: string | undefined
+    const resultFile = tempResultFile()
+    const trackingRunner: CommandRunner = {
+      run: async (argv) => {
+        seenArgv = argv
+        configFileDuringRun = argv[argv.indexOf('--config') + 1]
+        expect(existsSync(configFileDuringRun!)).toBe(true)
+        expect(JSON.parse(readFileSync(configFileDuringRun!, 'utf8'))).toMatchObject({ review: { maxTokens: 800_000, globalMaxTokens: 2_000_000 } })
+        return cmd({ code: 0 })
+      },
+    }
+    await runCodeReview(trackingRunner, { ...baseInput, resultFile, analysisMaxTokens: 800_000, analysisGlobalMaxTokens: 2_000_000 })
+    expect(seenArgv).toContain('--config')
+    expect(existsSync(configFileDuringRun!)).toBe(false)
+  })
+
+  it('never adds --config when analysisMaxTokens/analysisGlobalMaxTokens are both omitted', async () => {
+    const calls: readonly string[][] = []
+    const trackingRunner: CommandRunner = { run: async (argv) => { calls.push([...argv]); return cmd({ code: 0 }) } }
+    await runCodeReview(trackingRunner, { ...baseInput, resultFile: tempResultFile() })
+    expect(calls[0]).not.toContain('--config')
   })
 })
 
