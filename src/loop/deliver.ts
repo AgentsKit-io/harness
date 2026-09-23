@@ -135,6 +135,15 @@ export const approveHeldDelivery = (loaded: LoadedLoopConfig, issue: string, inp
  */
 const incompleteReason = (review: CodeReviewOutcome): { readonly reason?: string } => review.status === 'incomplete' ? { reason: review.summary } : {}
 
+/** Commits on the worker's branch that are not on the remote base: finished-but-unpushed work. 0 when unknown. */
+const unpushedCommits = async (ctx: Context, record: DispatchRecordFile): Promise<number> => {
+  if (!record.worktreePath || ctx.dryRun) return 0
+  try {
+    const out = await ctx.runner.run(['git', 'rev-list', '--count', `origin/${ctx.config.project.baseBranch}..HEAD`, '--not', '--remotes'], { cwd: record.worktreePath, timeoutMs: 10_000 })
+    return out.code === 0 ? Number.parseInt(out.stdout.trim(), 10) || 0 : 0
+  } catch { return 0 }
+}
+
 const resumableOutcomes = new Set<DeliverOutcome>(['blocked', 'stuck', 'abandoned', 'held'])
 const lastReviewHead = (state: DeliveryState): string | null => {
   const heads = Object.keys(state.reviews)
@@ -562,6 +571,15 @@ const handleNoPullRequest = async (ctx: Context, record: DispatchRecordFile, lea
   const lastNudge = idleNudges.at(-1)
   if (!lastNudge || minutesBetween(now, lastNudge.at) < idleTimeout) {
     if (lastNudge) return { issue: record.issue, outcome: 'waiting', reason: 'nudged recently; waiting for the worker to open the PR', actions }
+    // Committed but never pushed is its own case (observed: the work sat finished in the worktree until the worker
+    // was marked stuck). Say exactly what is missing instead of the generic "continue from git status".
+    const unpushed = await unpushedCommits(ctx, record)
+    if (unpushed > 0) {
+      const sentPush = await sendToWorker(ctx, record, `Loop check-in: your work is committed (${unpushed} local commit(s) on ${record.branch}) but not pushed, and no pull request exists. Run the project verification if you have not, then \`git push -u origin HEAD\` and open the PR exactly as .ak-loop/brief.md describes, then print LOOP_WORKER_DONE ${record.issue}.`, actions)
+      saveState(ctx, { ...state, nudges: [...state.nudges, { kind: 'idle', at: now.toISOString(), head: null }] })
+      event(ctx, { type: 'worker.nudged', issue: record.issue, kind: 'idle', reason: 'unpushed commits' })
+      return { issue: record.issue, outcome: ctx.dryRun ? 'dry-run' : sentPush ? 'nudged' : 'waiting', reason: `idle with ${unpushed} unpushed commit(s); nudged to push and open the PR`, actions }
+    }
     const sent = await sendToWorker(ctx, record, `Loop check-in: the terminal has been idle for ${Math.round(sinceOutput)} minutes and no pull request exists for branch ${record.branch}. Your task brief is in .ak-loop/brief.md at the root of this worktree — read it first if you have not. Continue from \`git status\`: finish the contract outcomes, run the project verification, push, open the PR exactly as the brief describes, then print LOOP_WORKER_DONE ${record.issue}. If you are blocked, run \`orca worktree set --worktree active --comment "BLOCKED: <reason>" --json\` and stop.`, actions)
     saveState(ctx, { ...state, nudges: [...state.nudges, { kind: 'idle', at: now.toISOString(), head: null }] })
     event(ctx, { type: 'worker.nudged', issue: record.issue, kind: 'idle' })

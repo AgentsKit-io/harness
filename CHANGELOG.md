@@ -2,6 +2,14 @@
 
 ## [Unreleased]
 
+- **`plan approved` supersedes a stale finished run by itself.** A `COMPLETE` (or approval-pending) run whose
+  source or contract had moved on still blocked a new plan with `ACTIVE_RUN` until someone ran `status`, which
+  only reconciles. Planning now marks it `STALE` and supersedes it; a fresh finished run still blocks.
+- **An idle worker with committed but unpushed work is told exactly that.** Observed: a worker committed the whole
+  change and stopped before pushing; the generic idle check-in did not see it and the dispatch was marked stuck
+  40 minutes later with the work sitting in the worktree. Deliver now counts local commits no remote has and
+  asks the worker to push and open the PR.
+
 ## [0.19.0] — 2026-09-23
 
 Found by running the loop on a real repository migration with a single, non-default provider.
