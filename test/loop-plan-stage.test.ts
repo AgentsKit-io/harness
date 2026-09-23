@@ -6,7 +6,7 @@ import {
   DESIGN_CLOSE, DESIGN_OPEN, ISSUES_CLOSE, ISSUES_OPEN, QUESTION_CLOSE, QUESTION_OPEN,
   answerRound, approveDesign, approvePlan, architectRound, createPlannedIssues, decomposeRound, designApproved,
   interviewRound, listPlans, plannedIssueLabels, loadLoopConfig, parseIssuesOutput, parseLoopConfigText, parseQuestionOutput, prdGaps, readPlanState,
-  renderInterviewPrompt, renderPlanMarkdown, startPlan, writePlanState,
+  renderDecomposePrompt, renderInterviewPrompt, renderPlanMarkdown, startPlan, writePlanState,
 } from '../src/index.js'
 import type { CommandResult, CommandRunner, LoadedLoopConfig, PlanStageState, Prd, RankedModel } from '../src/index.js'
 
@@ -109,9 +109,14 @@ describe('the two human gates', () => {
     const designed = await architectRound(deps(loaded, runner), state)
     expect(designed.design?.modules[0]?.name).toBe('api')
     expect(designApproved(designed, loaded.config)).toBe(true)
-    const approved = approveDesign(designed, 'emerson', NOW, loaded.config)
+    // Consensus with an objection still open is not enough: the human must carry it past the gate on purpose.
+    expect(() => approveDesign(designed, 'emerson', NOW, loaded.config)).toThrow(/1 objection\(s\) are still open:\n- naming/)
+    const approved = approveDesign(designed, 'emerson', NOW, loaded.config, { acceptObjections: true })
     expect(approved.phase).toBe('decompose')
     expect(approved.approvals.design).toContain('emerson@')
+    expect(approved.acceptedObjections).toEqual(['naming'])
+    // ...and decompose is told to settle it inside an issue, not to leave it for the worker.
+    expect(renderDecomposePrompt(approved, loaded.config)).toContain('carried past the design gate')
   })
 
   it('comes back without consensus when the votes keep rejecting', async () => {

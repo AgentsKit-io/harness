@@ -276,9 +276,9 @@ loopPlan.command('architect <id>').description('Produce the technical design for
   print({ id, consensus, cycles: next.designCycles, votes: next.designVotes, ...(consensus ? { next: `ak-harness loop plan approve-design ${id}` } : { objections: next.designVotes.flatMap((vote) => vote.objections) }) })
   if (!consensus) process.exitCode = 1
 })
-loopPlan.command('approve-design <id>').description('Human gate: approve the design after it reached consensus. Everything built afterwards inherits it.').option('--by <actor>', 'who approves', 'human').action(function (this: Command, id: string, command: { readonly by: string }) {
+loopPlan.command('approve-design <id>').description('Human gate: approve the design after it reached consensus. Everything built afterwards inherits it.').option('--by <actor>', 'who approves', 'human').option('--accept-objections', 'approve although votes still carry objections; decompose must settle each one in an issue').action(function (this: Command, id: string, command: { readonly by: string; readonly acceptObjections?: boolean }) {
   const loaded = loadLoopConfig(loopFile(this))
-  const next = approveDesign(planOrFail(loaded, id), command.by, new Date(), loaded.config)
+  const next = approveDesign(planOrFail(loaded, id), command.by, new Date(), loaded.config, { acceptObjections: command.acceptObjections === true })
   writePlanState(loaded.stateDir, next)
   const document = writeDesignDocument(loaded, next)
   print({ id, phase: next.phase, ...(document ? { wrote: document.path } : {}), next: `ak-harness loop plan decompose ${id}` })

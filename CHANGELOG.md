@@ -15,6 +15,10 @@ Found by running the loop on a real repository migration with a single, non-defa
   command the agent's own config marked dangerous (`rm -rf`, `git reset --hard`). It now reads Orca's `permission`
   activity (`OrcaWorktree.activity`, from `worktree ps`) or the prompt on screen, reports `held`, emits
   `worker.permission-wait` once per idle window, keeps the lease, and no nudge, handoff or relaunch happens.
+- **The design gate does not approve open objections by default.** `loop plan approve-design` refuses when any vote
+  still carries an objection, even at consensus, and lists them; `--accept-objections` carries them into decompose,
+  which is told to settle each one as a decision inside the issue it affects. A 2-of-3 design had been approved while
+  two votes named the same missing decision, and it came back as two blocking contract escalations.
 - **A brief counts as delivered only when the agent's turn starts.** Orca's `input_accepted` means typed, not
   submitted; a pointer prompt sat unsubmitted for 21 minutes and the worker only began when an idle nudge's Enter
   submitted it. The launcher now observes the request again, presses Enter alone if the turn still has not started

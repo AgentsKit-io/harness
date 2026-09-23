@@ -89,7 +89,7 @@ describe('the design document', () => {
         { vote: 'reject', objections: ['naming'], provider: 'grok', model: 'fast' },
       ],
     }
-    const approved = approveDesign(state, 'emerson', NOW, loaded.config)
+    const approved = approveDesign(state, 'emerson', NOW, loaded.config, { acceptObjections: true })
     const written = writeDesignDocument(loaded, approved)
     expect(written?.path).toBe(designPathFor(loaded, approved.id))
     const text = readFileSync(written!.path, 'utf8')

@@ -112,6 +112,8 @@ export interface PlanStageState {
   readonly designCycles: number
   readonly issues: readonly (PlannedIssue & { readonly identifier?: string; readonly url?: string })[]
   readonly approvals: { readonly plan: string | null; readonly design: string | null }
+  /** Objections a human chose to carry past the design gate; decompose must resolve each one inside an issue. */
+  readonly acceptedObjections?: readonly string[]
   readonly createdAt: string
   readonly updatedAt: string
 }
@@ -227,7 +229,7 @@ ${JSON.stringify(state.prd, null, 2)}
 
 Approved design:
 ${JSON.stringify(state.design, null, 2)}
-${renderLayersForPrompt(config)}
+${state.acceptedObjections?.length ? `\nObjections the human carried past the design gate — each one must be settled as an explicit decision inside the issue it affects (in its description), never left for the worker to guess:\n${state.acceptedObjections.map((objection) => `- ${objection}`).join('\n')}\n` : ''}${renderLayersForPrompt(config)}
 Answer as JSON between the exact markers ${ISSUES_OPEN} and ${ISSUES_CLOSE}: an array of issues, each one
 { "title": "…", "description": "what to do and why, referencing the design", "layer": "${layerChoices(config).length ? `<one of: ${layerChoices(config).join(', ')}>` : ''}", "priority": "urgent|high|medium|low", "acceptance": ["verifiable criterion a machine can check"], "designRef": "the module, contract or decision id this issue implements" }
 
@@ -336,10 +338,21 @@ export const architectRound = async (deps: PlanStageDeps, state: PlanStageState)
 
 export const designApproved = (state: PlanStageState, config: LoopConfig): boolean => state.design !== null && tallyVotes(state.designVotes, config.worker.plan.approvals).approved
 
-export const approveDesign = (state: PlanStageState, actor: string, now: Date, config: LoopConfig): PlanStageState => {
+/** Objections raised in the latest design round, even by voters who approved — consensus does not make them go away. */
+export const openDesignObjections = (state: PlanStageState): readonly string[] => [...new Set(state.designVotes.flatMap((vote) => vote.objections))]
+
+/**
+ * The human design gate. Consensus is necessary, not sufficient: when any vote still carries an objection, the gate
+ * refuses unless the human accepts them explicitly — and then they travel into decompose, which must settle each one
+ * inside an issue. Observed: a 2-of-3 design was approved while two votes named the same missing decision (which
+ * package gets the moved code); it resurfaced as two blocking contract escalations on the first issue.
+ */
+export const approveDesign = (state: PlanStageState, actor: string, now: Date, config: LoopConfig, options: { readonly acceptObjections?: boolean } = {}): PlanStageState => {
   if (state.phase !== 'architect') return fail(`The plan is in phase "${state.phase}"; only a design can be approved here.`, 'INVALID_STATE')
   if (!designApproved(state, config)) return fail('The design has not reached consensus yet; run the architect round again or settle the objections.', 'INVALID_STATE')
-  return { ...state, phase: 'decompose', approvals: { ...state.approvals, design: `${actor}@${now.toISOString()}` }, updatedAt: now.toISOString() }
+  const objections = openDesignObjections(state)
+  if (objections.length && !options.acceptObjections) return fail(`The design reached consensus but ${objections.length} objection(s) are still open:\n- ${objections.join('\n- ')}\nRun the architect round again, or approve with --accept-objections to hand them to decompose as decisions each issue must settle.`, 'HUMAN_APPROVAL_REQUIRED')
+  return { ...state, phase: 'decompose', approvals: { ...state.approvals, design: `${actor}@${now.toISOString()}` }, ...(objections.length ? { acceptedObjections: objections } : {}), updatedAt: now.toISOString() }
 }
 
 /** Break the approved design into issues. Nothing is written to the tracker here — that is `createPlannedIssues`. */
