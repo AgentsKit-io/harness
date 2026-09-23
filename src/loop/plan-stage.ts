@@ -4,6 +4,7 @@ import { z } from 'zod'
 import type { CommandRunner } from '../adapters/command.js'
 import { linearSaveIssue } from '../adapters/linear-orca.js'
 import { fail } from '../kernel/errors.js'
+import { extractOutputBlock } from './output-block.js'
 import { hashJson } from '../kernel/hash.js'
 import { providerIdentity, renderHeadlessArgv, type LoadedLoopConfig, type LoopConfig } from './config.js'
 import { classifyProviderFailure, untrusted, type ProviderFailure } from './contract.js'
@@ -157,12 +158,8 @@ export const prdGaps = (prd: Partial<Prd>): readonly string[] => REQUIRED_PRD_FI
   return Array.isArray(value) ? value.length === 0 : !value
 })
 
-const between = (text: string, open: string, close: string, label: string): string => {
-  const start = text.lastIndexOf(open)
-  const end = text.lastIndexOf(close)
-  if (start < 0 || end < 0 || end <= start) return fail(`Output contains no ${label} block.`, 'INVALID_INPUT')
-  return text.slice(start + open.length, end).trim().replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '')
-}
+const between = (text: string, open: string, close: string, label: string): string =>
+  extractOutputBlock(text, open, close) ?? fail(`Output contains no ${label} block.`, 'INVALID_INPUT')
 
 const parseBlock = <T>(stdout: string, open: string, close: string, label: string, schema: z.ZodType<T>): T => {
   let parsed: unknown

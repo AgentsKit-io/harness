@@ -112,3 +112,4 @@ export type { EffectiveFlowSettings, FlowIssue, FlowProfile, FlowSource, Resolve
 export type { Notification, NotifyInput, NotifyOutcome } from './notify.js'
 export type { LoopEventBus, LoopEventListener, LoopEventPayload, LoopHookListener, LoopHookName, LoopHookPayload, LoopHookResult, LoopPluginModule } from './event-bus.js'
 export { baseViewPath, ensureBaseView, type BaseView } from './base-view.js'
+export { extractOutputBlock } from './output-block.js'

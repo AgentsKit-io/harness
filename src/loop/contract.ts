@@ -7,6 +7,7 @@ import { createDocBridgeContextProvider } from '../adapters/doc-bridge.js'
 import { createArgvRagContextProvider } from '../adapters/rag-context.js'
 import type { ContextReference } from '../context/index.js'
 import { fail } from '../kernel/errors.js'
+import { extractOutputBlock } from './output-block.js'
 import { hashJson } from '../kernel/hash.js'
 import { providerIdentity, renderHeadlessArgv, type EffortLevel, type LoopConfig } from './config.js'
 import { writeJsonAtomic } from './fs-atomic.js'
@@ -214,10 +215,7 @@ Now freeze the contract for ${issue.identifier}, between the markers, and write 
 }
 
 export const parseContractOutput = (stdout: string): TaskContract => {
-  const start = stdout.lastIndexOf(CONTRACT_OPEN)
-  const end = stdout.lastIndexOf(CONTRACT_CLOSE)
-  if (start < 0 || end < 0 || end <= start) return fail('Orchestrator output contains no contract block.', 'INVALID_INPUT')
-  const raw = stdout.slice(start + CONTRACT_OPEN.length, end).trim().replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '')
+  const raw = extractOutputBlock(stdout, CONTRACT_OPEN, CONTRACT_CLOSE) ?? fail('Orchestrator output contains no contract block.', 'INVALID_INPUT')
   let parsed: unknown
   try { parsed = JSON.parse(raw) } catch (error) { return fail(`Contract block is not valid JSON: ${error instanceof Error ? error.message : String(error)}`, 'INVALID_INPUT') }
   const result = TaskContractSchema.safeParse(parsed)
