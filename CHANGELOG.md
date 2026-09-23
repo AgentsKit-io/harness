@@ -15,6 +15,11 @@ Found by running the loop on a real repository migration with a single, non-defa
   command the agent's own config marked dangerous (`rm -rf`, `git reset --hard`). It now reads Orca's `permission`
   activity (`OrcaWorktree.activity`, from `worktree ps`) or the prompt on screen, reports `held`, emits
   `worker.permission-wait` once per idle window, keeps the lease, and no nudge, handoff or relaunch happens.
+- **Model output is found where models actually put it.** The plan stages, votes and contract share one extractor:
+  the exact markers when their content parses, else the last fenced JSON block, else the last balanced JSON value that
+  parses — the schema still validates whatever is found. Measured on the interview prompt across five models: kimi-k2.6
+  dropped the markers for a ```json fence, minimax-m3 mangled them (`<<…` / `<<<…>>>`); with the lenient list shapes
+  above, 5/5 now parse, against 2/5 with the strict markers-and-shapes parser.
 - **The design gate does not approve open objections by default.** `loop plan approve-design` refuses when any vote
   still carries an objection, even at consensus, and lists them; `--accept-objections` carries them into decompose,
   which is told to settle each one as a decision inside the issue it affects. A 2-of-3 design had been approved while
