@@ -77,6 +77,46 @@ describe('createProcessRunner', () => {
     expect(Date.now() - started).toBeLessThan(10_000)
   }, 15_000)
 
+  // Reproduced live: `renderContractPrompt`'s output is always multi-line, and on Windows cross-spawn joins
+  // `command` + every arg into one string for `cmd.exe /d /s /c "<that string>"` — cmd.exe's line parser then
+  // reads only up to the first newline and silently drops the rest, so `claude -p "<huge prompt>" ...` (real
+  // config, real issue, real claude-code) reached the CLI truncated to its very first line ("You are the
+  // orchestrator..."), with no error: exit 0, a plausible-sounding "what would you like me to work on?" reply
+  // instead of a contract. `generateContract`/plan-stage/plan-vote now pass `promptOnStdin: true`; on Windows
+  // this pulls any newline-bearing argv element out before spawning and writes it to stdin instead, where a
+  // missing positional CLI argument conventionally comes from (verified for `claude -p`, which reads stdin when
+  // the prompt argument is absent). Scoped to that opt-in so a caller with no stdin-reading convention (this
+  // suite's own `node -e '<multi-line script>'` fixtures included) is never affected.
+  it.runIf(process.platform === 'win32')('routes an argv element containing a newline to stdin instead of argv when promptOnStdin is set, leaving single-line elements untouched', async () => {
+    const runner = createProcessRunner()
+    const script = 'const fs = require("fs"); process.stdout.write(JSON.stringify({ argv: process.argv.slice(1), stdin: fs.readFileSync(0, "utf8") }))'
+    // Trailing args deliberately avoid a leading `--`: node's own CLI parser (not this runner) treats a `-e`
+    // script's later argv as its own options when they look like flags ("bad option: --model", exit 9) — a
+    // fixture artifact unrelated to what this test verifies.
+    const result = await runner.run([...node(script), 'model=claude-sonnet-5', 'line one\nline two\nline three'], { promptOnStdin: true })
+    expect(result.code).toBe(0)
+    expect(JSON.parse(result.stdout)).toEqual({ argv: ['model=claude-sonnet-5'], stdin: 'line one\nline two\nline three' })
+  })
+
+  it.runIf(process.platform === 'win32')('joins more than one newline-bearing argv element into a single stdin payload', async () => {
+    const runner = createProcessRunner()
+    const script = 'const fs = require("fs"); process.stdout.write(JSON.stringify({ argv: process.argv.slice(1), stdin: fs.readFileSync(0, "utf8") }))'
+    const result = await runner.run([...node(script), 'first\nblock', 'second\nblock'], { promptOnStdin: true })
+    expect(result.code).toBe(0)
+    expect(JSON.parse(result.stdout)).toEqual({ argv: [], stdin: 'first\nblock\n\nsecond\nblock' })
+  })
+
+  // Scope check for the fix above: a caller that does not opt in keeps today's argv-passing behaviour exactly,
+  // newline and all — this is what protects a plain internal command (or this suite's own `node -e` fixtures
+  // with multi-line scripts, e.g. the grandchild test above) from ever being affected by it.
+  it.runIf(process.platform === 'win32')('leaves a newline-bearing argv element on argv, unmoved, when promptOnStdin is not set', async () => {
+    const runner = createProcessRunner()
+    const script = 'const fs = require("fs"); process.stdout.write(JSON.stringify({ argv: process.argv.slice(1), stdin: fs.readFileSync(0, "utf8") }))'
+    const result = await runner.run([...node(script), 'line one\nline two'])
+    expect(result.code).toBe(0)
+    expect(JSON.parse(result.stdout)).toEqual({ argv: ['line one\nline two'], stdin: '' })
+  })
+
   // Every provider/review CLI a loop config points at (claude, agentskit-review, codex, ...) is a
   // globally npm-installed Node CLI, which on Windows means its only spawnable-by-name artifact is
   // a `.cmd` shim -- CreateProcess cannot execute one without a shell, so a plain
