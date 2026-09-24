@@ -9,7 +9,7 @@ The four layers that produce this configuration — the machine's global file, t
 machine's overlay — are described in [ADR-0033](https://github.com/AgentsKit-io/harness/blob/main/docs/ADR-0033-four-config-layers-and-presets.md).
 `ak-harness loop validate` prints the effective result, which is the only one that decides anything.
 
-213 of 373 paths carry no description yet.
+221 of 387 paths carry no description yet.
 
 ## `schemaVersion`
 
@@ -75,6 +75,15 @@ Type: string
 | `linear.blockedLabel` | string | `"blocked"` |  |
 | `linear.needsInfoLabel` | string | `"needs-info"` |  |
 | `linear.outsideLabel` | string | `"outside-loop"` | Marks work the loop cannot deliver as a pull request to `project.repo` — another repository, a deploy, a setting in an external service. Decompose puts it on such issues and the queue never dispatches them, whatever state they are moved to: a worker given one opens a PR here that does not do the work, or none. |
+
+## `queue`
+
+Source of dispatchable work. `backlog` preserves the historical tracker drain; `explicit` consumes only requests confirmed through the durable issue queue (the UI and future scheduler integrations share it).
+
+| Path | Type | Default | Description |
+|---|---|---|---|
+| `queue.mode` | `backlog` · `explicit` | `"backlog"` |  |
+| `queue.order` | string | `"fifo"` |  |
 
 ## `knownFailures`
 
@@ -306,6 +315,17 @@ Stricter review for the slices of the board that deserve it, keyed by label. The
 |---|---|---|---|
 | `github.intakeLabel` | string | null | `"loop:review"` | A PR labeled with this on GitHub is picked up by deliver even though the loop never dispatched it. Set null to disable intake entirely. |
 | `github.reviewOnly` | boolean | `true` | Intake PRs are always review + comment only; this loop never merges a PR it did not dispatch, regardless of a clean review. |
+| `github.issues` | object | `{}` |  |
+| `github.issues.state` | string | `"open"` | Active board reads are deliberately limited to open GitHub Issues; closed issues remain addressable by detail. |
+| `github.issues.maxIssues` | integer | `500` | Fetch one extra row to detect truncation while keeping the retained board bounded. |
+| `github.issues.refreshSeconds` | integer | `60` | Remote board reads are cached; this is the minimum age before another `gh` call. |
+| `github.issues.assignee` | string |  | Optional machine override. When absent, the authenticated `gh` user owns the loop queue. |
+| `github.issues.labels` | object | `{}` | Exactly one lifecycle label is applied to a GitHub issue at a time. |
+| `github.issues.labels.todo` | string | `"loop:todo"` |  |
+| `github.issues.labels.inProgress` | string | `"loop:in-progress"` |  |
+| `github.issues.labels.review` | string | `"loop:review"` |  |
+| `github.issues.labels.done` | string | `"loop:done"` |  |
+| `github.issues.labels.blocked` | string | `"loop:blocked"` |  |
 
 ## `resilience`
 
@@ -379,7 +399,7 @@ Which implementation of each connector this project uses. The engine speaks only
 
 | Path | Type | Default | Description |
 |---|---|---|---|
-| `connectors.tracker` | `linear` | `"linear"` |  |
+| `connectors.tracker` | `linear` · `github` | `"linear"` |  |
 | `connectors.scm` | `github` | `"github"` |  |
 | `connectors.runner` | `orca` · `local` | `"orca"` | `orca` drives Orca's worktrees and terminals; `local` is git worktree + tmux + the system crontab. |
 | `connectors.local` | object | `{}` |  |

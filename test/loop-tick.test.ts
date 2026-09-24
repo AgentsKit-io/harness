@@ -3,7 +3,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
 import {
-  BRIEF_POINTER_PROMPT, CONTRACT_CLOSE, CONTRACT_OPEN, assessContract, busyIssues, contractIsFresh, createDispatchLedger, deliveryStatePath, dispatchRecordPath, isIssuePaused, linearLabelRemove, loadLoopConfig, parseContractOutput, parseLinearIssueDetail, precheckTick, readCliModelsCache, readDispatchRecord, readDeliveryState, readIssueFailures, readStoredContract, recordIssueFailure, renderContractPrompt, renderWorkerBrief, resumeIssue, runTick, untrusted, worktreeNameFor, writeStoredContract,
+  BRIEF_POINTER_PROMPT, CONTRACT_CLOSE, CONTRACT_OPEN, assessContract, busyIssues, contractIsFresh, createDispatchLedger, createIssueQueue, deliveryStatePath, dispatchRecordPath, isIssuePaused, linearLabelRemove, loadLoopConfig, parseContractOutput, parseLinearIssueDetail, parseModelRef, precheckTick, readCliModelsCache, readDispatchRecord, readDeliveryState, readIssueFailures, readStoredContract, recordIssueFailure, renderContractPrompt, renderWorkerBrief, resumeIssue, runTick, untrusted, worktreeNameFor, writeStoredContract,
 } from '../src/index.js'
 import type { CommandResult, CommandRunner, StoredContract, TaskContract } from '../src/index.js'
 
@@ -19,10 +19,12 @@ interface Env { readonly dir: string; readonly bin: string; readonly runner: Com
 const cleanups: string[] = []
 afterEach(() => { for (const dir of cleanups.splice(0)) rmSync(dir, { recursive: true, force: true }) })
 
-const makeEnv = (options: { readonly contract?: TaskContract | 'garbage'; readonly worktrees?: unknown; readonly failCreate?: boolean; readonly claudeAuthFails?: boolean; readonly claudeSessionLimit?: boolean; readonly failAllContracts?: boolean; readonly accountList?: unknown; readonly briefSkills?: readonly string[]; readonly setup?: { readonly exitCode?: number; readonly timedOut?: boolean }; readonly setupRequired?: boolean; readonly pluginSource?: string; readonly issueDescription?: string; readonly securityPii?: { readonly action?: 'redact' | 'warn' | 'block' }; readonly catalogMode?: boolean; readonly queueOwnership?: 'person' | 'unassigned'; readonly knownFailures?: readonly { readonly path: string; readonly issue: string; readonly reason: string }[] } = {}): Env => {
+const makeEnv = (options: { readonly contract?: TaskContract | 'garbage'; readonly worktrees?: unknown; readonly failCreate?: boolean; readonly claudeAuthFails?: boolean; readonly claudeSessionLimit?: boolean; readonly failAllContracts?: boolean; readonly accountList?: unknown; readonly briefSkills?: readonly string[]; readonly setup?: { readonly exitCode?: number; readonly timedOut?: boolean }; readonly setupRequired?: boolean; readonly pluginSource?: string; readonly issueDescription?: string; readonly securityPii?: { readonly action?: 'redact' | 'warn' | 'block' }; readonly catalogMode?: boolean; readonly queueOwnership?: 'person' | 'unassigned'; readonly queueMode?: 'backlog' | 'explicit'; readonly tracker?: 'linear' | 'github'; readonly hideIssuesFromQueue?: boolean; readonly knownFailures?: readonly { readonly path: string; readonly issue: string; readonly reason: string }[] } = {}): Env => {
   const dir = mkdtempSync(join(tmpdir(), 'agentskit-loop-tick-')); cleanups.push(dir)
   const bin = join(dir, 'bin'); rmSync(bin, { recursive: true, force: true })
   let yaml = options.briefSkills?.length ? exampleYaml.replace('skills: []', `skills: [${options.briefSkills.join(', ')}]`) : exampleYaml
+  if (options.queueMode) yaml = yaml.replace('  mode: backlog', `  mode: ${options.queueMode}`)
+  if (options.tracker === 'github') yaml = yaml.replace('# connectors:\n#   tracker: linear', 'connectors:\n  tracker: github')
   if (options.securityPii) {
     const piiBlock = 'security:\n  pii:\n    enabled: false                    # scan issue text / worker brief for PII-shaped patterns before embedding them\n    action: redact                    # redact | warn | block\n'
     if (!yaml.includes(piiBlock)) throw new Error('loop.config.example.yaml security.pii block text drifted from the test fixture')
@@ -81,8 +83,12 @@ const makeEnv = (options: { readonly contract?: TaskContract | 'garbage'; readon
         extraLabels.set(issueId, set)
         return okResult({ ok: true })
       }
-      if (key.startsWith('orca linear list-issues')) return ok(applyExtraLabels(fixture(key.includes('--state Ready') ? 'list-issues-ready' : 'list-issues-todo') as never))
+      if (key.startsWith('orca linear list-issues')) {
+        const payload = applyExtraLabels(fixture(key.includes('--state Ready') ? 'list-issues-ready' : 'list-issues-todo') as never)
+        return options.hideIssuesFromQueue ? ok({ ...payload, result: { ...payload.result, issues: [] } }) : ok(payload)
+      }
       if (key.startsWith('orca linear issue')) { const id = argv[3]; const issues = [...(fixture('list-issues-todo') as { result: { issues: { identifier: string }[] } }).result.issues, ...(fixture('list-issues-ready') as { result: { issues: { identifier: string }[] } }).result.issues]; const issue = issues.find((item) => item.identifier === id); return issue ? okResult({ issue: { ...issue, description: options.issueDescription ?? 'Add the binding.\n\n## Acceptance\n- tests pass' }, comments: [] }) : { code: 1, stdout: '', stderr: 'not found', timedOut: false, durationMs: 1 } }
+      if (argv[0] === 'gh' && argv[1] === 'issue' && argv[2] === 'view') return ok({ number: 10, url: 'https://github.com/my-org/my-project/issues/10', title: 'GitHub issue', state: 'OPEN', labels: [], assignees: ['person'], createdAt: '2026-09-03T01:41:30.000Z', updatedAt: '2026-09-04T19:06:25.406Z', body: 'Add the binding.\n\n## Acceptance\n- tests pass', comments: [] })
       if (argv[0] === 'grok' && argv[1] === 'models') return { code: 0, stdout: '- grok-4.6\n', stderr: '', timedOut: false, durationMs: 1 }
       if (argv[0] === 'claude' && argv[1] === '-p' && options.claudeAuthFails) return { code: 1, stdout: 'Failed to authenticate: OAuth session expired and could not be refreshed\n', stderr: '', timedOut: false, durationMs: 1 }
       if (argv[0] === 'claude' && argv[1] === '-p' && options.claudeSessionLimit) return { code: 1, stdout: "You've hit your session limit \u00b7 resets 10:40pm (America/Sao_Paulo)\n", stderr: '', timedOut: false, durationMs: 1 }
@@ -195,6 +201,57 @@ describe('contract', () => {
 })
 
 describe('tick', () => {
+  it('in explicit queue mode dispatch candidates only after a UI-style confirmation', async () => {
+    const env = makeEnv({ queueMode: 'explicit' })
+    const loaded = loadLoopConfig(env.configPath)
+    const builder = parseModelRef(loaded.config.models.builder[0]![0]!)
+    const queue = createIssueQueue({ stateDir: loaded.stateDir })
+    queue.enqueue({ issue: 'ENG-11', title: 'selected', config: { configHash: loaded.configHash, flow: null, builder, maxFixRounds: loaded.config.delivery.maxFixRounds, perIssueTokens: loaded.config.budget.perIssueTokens, roles: { orchestrator: 'project', reviewer: 'project', watcher: 'project', delivery: 'snapshot' } }, contract: { digest: 'contract', status: 'valid', frozenAt: new Date().toISOString() }, preflight: { status: 'passed', checkedAt: new Date().toISOString() } })
+    const report = await runTick({ ...tickOptions(env), dryRun: true, maxDispatch: 1, skipContractGeneration: true })
+    expect(report.queue.candidates).toEqual(['ENG-11'])
+    expect(report.queue.candidates).not.toContain('ENG-10')
+  })
+
+  it('in explicit queue mode does not require backlog labels or states', async () => {
+    const env = makeEnv({ queueMode: 'explicit', hideIssuesFromQueue: true })
+    const loaded = loadLoopConfig(env.configPath)
+    const builder = parseModelRef(loaded.config.models.builder[0]![0]!)
+    createIssueQueue({ stateDir: loaded.stateDir }).enqueue({ issue: 'ENG-10', title: 'confirmed without a backlog label', config: { configHash: loaded.configHash, flow: null, builder, maxFixRounds: loaded.config.delivery.maxFixRounds, perIssueTokens: loaded.config.budget.perIssueTokens, roles: { orchestrator: 'project', reviewer: 'project', watcher: 'project', delivery: 'snapshot' } }, contract: { digest: 'contract', status: 'valid', frozenAt: new Date().toISOString() }, preflight: { status: 'passed', checkedAt: new Date().toISOString() } })
+    const report = await runTick({ ...tickOptions(env), dryRun: true, maxDispatch: 1, skipContractGeneration: true })
+    expect(report.queue.candidates).toEqual(['ENG-10'])
+  })
+
+  it('does not pass a GitHub issue identifier through Orca’s Linear-only flag', async () => {
+    const env = makeEnv({ tracker: 'github', queueMode: 'explicit' })
+    const loaded = loadLoopConfig(env.configPath)
+    const builder = parseModelRef('claude/sonnet')
+    createIssueQueue({ stateDir: loaded.stateDir }).enqueue({ issue: 'my-org/my-project#10', title: 'GitHub issue', config: { configHash: loaded.configHash, flow: null, builder, maxFixRounds: loaded.config.delivery.maxFixRounds, perIssueTokens: loaded.config.budget.perIssueTokens, roles: { orchestrator: 'project', reviewer: 'project', watcher: 'project', delivery: 'snapshot' } }, contract: { digest: 'contract', status: 'valid', frozenAt: new Date().toISOString() }, preflight: { status: 'passed', checkedAt: new Date().toISOString() } })
+    const report = await runTick({ ...tickOptions(env), dryRun: true, maxDispatch: 1 })
+    const [result] = report.results
+    expect(result?.outcome).toBe('dry-run')
+    expect(result?.argv).not.toContain('--linear-issue')
+  })
+
+  it('does not dispatch an explicit run cancelled while the tracker detail is loading', async () => {
+    const env = makeEnv({ tracker: 'github', queueMode: 'explicit' })
+    const loaded = loadLoopConfig(env.configPath)
+    const builder = parseModelRef('claude/sonnet')
+    const queue = createIssueQueue({ stateDir: loaded.stateDir })
+    const run = queue.enqueue({ issue: 'my-org/my-project#10', title: 'GitHub issue', config: { configHash: loaded.configHash, flow: null, builder, maxFixRounds: loaded.config.delivery.maxFixRounds, perIssueTokens: loaded.config.budget.perIssueTokens, roles: { orchestrator: 'project', reviewer: 'project', watcher: 'project', delivery: 'snapshot' } }, contract: { digest: 'contract', status: 'valid', frozenAt: new Date().toISOString() }, preflight: { status: 'passed', checkedAt: new Date().toISOString() } })
+    let releaseIssue: (() => void) | null = null
+    let issueStarted: (() => void) | null = null
+    const started = new Promise<void>((resolve) => { issueStarted = resolve })
+    const gate = new Promise<void>((resolve) => { releaseIssue = resolve })
+    const delayedRunner: CommandRunner = { run: async (argv, options) => { if (argv[0] === 'gh' && argv[1] === 'issue' && argv[2] === 'view') { issueStarted?.(); await gate } return env.runner.run(argv, options) } }
+    const tick = runTick({ ...tickOptions(env), runner: delayedRunner, dryRun: true, maxDispatch: 1 })
+    await started
+    expect(queue.cancel(run.id).status).toBe('cancelled')
+    releaseIssue?.()
+    const report = await tick
+    expect(report.results[0]).toMatchObject({ issue: 'my-org/my-project#10', outcome: 'skipped' })
+    expect(env.runner.calls.some((argv) => argv[1] === 'worktree' && argv[2] === 'create')).toBe(false)
+  })
+
   it('derives worktree names and busy issues from leases, linked worktrees and branches', () => {
     expect(worktreeNameFor({ identifier: 'ENG-7', branchName: 'person/eng-7-Some Title!!' })).toBe('eng-7-some-title')
     expect(worktreeNameFor({ identifier: 'ENG-7', branchName: null })).toBe('eng-7')
@@ -606,18 +663,15 @@ describe('tick', () => {
     expect(env.runner.calls.some((argv) => argv[0] === 'claude' && argv[1] === '-p')).toBe(false)
   })
 
-  it('stays idle without free slots or candidates, and precheck mirrors that decision', async () => {
+  it('dispatches queued work even when the configured slots are full', async () => {
     const busyWorktrees = { worktrees: Array.from({ length: 6 }, (_, index) => ({ worktreeId: `repo-1::/w/${index}`, repoId: 'repo-1', repo: 'demo', path: `/w/${index}`, branch: `refs/heads/x${index}`, isArchived: false, isMainWorktree: false, liveTerminalCount: 1, linkedLinearIssue: null, workspaceStatus: 'in-progress' })) }
     const env = makeEnv({ worktrees: busyWorktrees })
     const report = await runTick({ ...tickOptions(env), maxDispatch: 1 })
-    expect(report.status).toBe('idle')
-    expect(report.notes[0]).toMatch(/no free slot/)
+    expect(report.status).toBe('ok')
+    expect(report.results[0]).toMatchObject({ outcome: 'dispatched' })
     const precheck = await precheckTick({ ...tickOptions(env) })
-    expect(precheck.work).toBe(false)
-    const free = makeEnv()
-    const ready = await precheckTick({ ...tickOptions(free) })
-    expect(ready.work).toBe(true)
-    expect(free.runner.calls.some((argv) => argv[1] === 'worktree' && argv[2] === 'create')).toBe(false)
+    expect(precheck.work).toBe(true)
+    expect(precheck.free).toBe(0)
     const skipped = await runTick({ ...tickOptions(makeEnv()), skipContractGeneration: true, maxDispatch: 1 })
     expect(skipped.results.every((item) => item.outcome === 'skipped')).toBe(true)
   })

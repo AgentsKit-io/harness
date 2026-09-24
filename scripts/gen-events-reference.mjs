@@ -8,12 +8,13 @@
 import { writeFileSync, readFileSync, mkdirSync, existsSync } from 'node:fs'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { pathToFileURL } from 'node:url'
 import { jsdocKeysOfObject } from './lib/jsdoc-paths.mjs'
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 const target = join(root, 'apps/docs/content/docs/reference/events.mdx')
 
-const { LOOP_EVENT_TYPES, HARNESS_EVENT_TYPES } = await import(join(root, 'dist/index.js'))
+const { LOOP_EVENT_TYPES, HARNESS_EVENT_TYPES } = await import(pathToFileURL(join(root, 'dist/index.js')).href)
 const docs = jsdocKeysOfObject(join(root, 'src/loop/event-vocabulary.ts'), 'LOOP_EVENT_TYPES')
 
 const oneLine = (text) => text.replace(/\s*\n\s*/g, ' ').replace(/\|/g, '\\|').trim()

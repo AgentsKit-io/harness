@@ -1,0 +1,50 @@
+# Pi + MiniMax Global worker preset. Copy this to loop.config.yaml and replace
+# the project/Linear/reference-model values for the target project.
+schemaVersion: 1
+
+project:
+  name: my-project
+  repo: my-org/my-project
+  baseBranch: main
+  root: .
+  stateDir: .codex/loop
+
+linear:
+  workspaceId: <linear-workspace-id>
+  teamKey: ENG
+  person: <linear-display-name>
+
+models:
+  # Project-owned reference models: Pi/M3 does not plan contracts or review PRs.
+  orchestrator: [[codex/gpt-5.6-sol]]
+  reviewer: [[codex/gpt-5.6-sol]]
+  # Intentional single-candidate bindings: no automatic Codex/Claude fallback.
+  builder: [[pi-minimax/M3]]
+  watcher: [[pi-minimax/M3]]
+  cooldown:
+    initialMin: 30
+    maxMin: 240
+    probeBeforeReenable: true
+    exhaustedPercent: 100
+  providers:
+    codex:
+      bin: codex
+      auth: subscription
+      tui: "codex -m {model} -s workspace-write -a never"
+      headless: [codex, exec, -m, "{model}", -s, read-only, --skip-git-repo-check, "{prompt}"]
+    pi-minimax:
+      bin: pi
+      auth: api-key
+      envKeys: [MINIMAX_API_KEY]
+      orcaUsageKey: minimax
+      probe: [pi, --version]
+      tui: "pi --provider minimax --model {model}"
+
+delivery:
+  verifyCommand: pnpm test
+
+# The default executes tick/deliver as Orca prechecks. `watcher` is retained for
+# installations that explicitly choose `runner: agent`; no extra Pi session is
+# opened by this preset.
+schedule:
+  runner: precheck

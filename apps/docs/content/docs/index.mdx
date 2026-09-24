@@ -7,8 +7,11 @@ description: The keep-pushing loop for your SDLC — what it is, what it does no
 PRD, the PRD becomes a design and issues, each issue becomes a contract, a worker in its own worktree, a
 reviewed pull request proven against a definition of done, a merge — and, behind a human gate, a release.
 
-It is a CLI and a library. There is no daemon, no dashboard and no database: the state is files in
-`.ak-loop/` next to your repository, and the schedule is whatever your machine already uses.
+It is a CLI, a library and an optional local operational UI. The UI is served by `ak-harness ui`, reads the
+files in `.ak-loop/` next to your repository, and does not introduce a daemon or database. Its issue-first flow
+freezes a selected issue's contract/profile/limits into a durable queue; the Inbox is reserved for human decisions.
+Its remote board can use
+either Linear or GitHub Issues, selected by `connectors.tracker`; both providers use the same Harness execution seam.
 
 It is free and open source under the [MIT licence](https://github.com/AgentsKit-io/harness/blob/main/LICENSE).
 

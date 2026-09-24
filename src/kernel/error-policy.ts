@@ -25,6 +25,7 @@ export const HARNESS_ERROR_CATALOG: Readonly<Record<HarnessErrorCode, ErrorDescr
   NO_RUN: { disposition: 'block', retryable: false },
   HUMAN_APPROVAL_REQUIRED: { disposition: 'block', retryable: false },
   GIT_REQUIRED: { disposition: 'block', retryable: false },
+  TRACKER_READ_ONLY: { disposition: 'block', retryable: false },
 }
 
 const nonEmpty = (value: unknown, label: string): string => {
