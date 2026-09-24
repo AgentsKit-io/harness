@@ -28,6 +28,8 @@ interface Scenario {
   readonly mergedEventPr?: Record<string, unknown>
   /** Exhaust Claude usage so deliver prefers a handoff to another builder. */
   readonly exhaustClaude?: boolean
+  /** Local commits on the worker's branch that no remote has (finished but never pushed). */
+  readonly unpushedCommits?: number
   /** PR whose head is Orca's `<git user>/<worktree>` branch, only visible through the open-PR listing. */
   readonly orcaBranchPr?: Record<string, unknown>
   /** PRs returned only for a label-scoped `gh pr list --label ...` (github-intake discovery) — kept separate from `pr` so ordinary dispatch tests never accidentally pick one up. */
@@ -138,6 +140,7 @@ const setup = (initial: Scenario = {}) => {
       if (argv[0] === 'gh' && argv[1] === 'api' && argv.includes('--method')) return scenario.mergeRefused ? { code: 1, stdout: JSON.stringify({ message: 'Head branch was modified.' }), stderr: '', timedOut: false, durationMs: 1 } : ok({ merged: true, sha: 'deadbeef', message: 'merged' })
       if (argv[0] === 'gh' && argv[1] === 'api') return ok([])
       if (argv[0] === 'gh' && argv[1] === 'pr' && argv[2] === 'comment') return { code: 0, stdout: '', stderr: '', timedOut: false, durationMs: 1 }
+      if (argv[0] === 'git' && argv[1] === 'rev-list') return { code: 0, stdout: `${scenario.unpushedCommits ?? 0}\n`, stderr: '', timedOut: false, durationMs: 1 }
       if (key === 'agentskit-verify-fixture') return { code: scenario.verifyExitCode ?? 0, stdout: 'verify output', stderr: '', timedOut: false, durationMs: 1 }
       return { code: 127, stdout: '', stderr: `no fixture for ${key} ${options?.cwd ?? ''}`, timedOut: false, durationMs: 1 }
     },
@@ -465,6 +468,18 @@ describe('deliver', () => {
     // A confirmed brief is left alone.
     const confirmed = setup({ pr: null, dispatchedAt: '2026-09-11T11:59:00.000Z' })
     expect((await deliver(confirmed, { assumeIdle: true })).results[0]).toMatchObject({ outcome: 'waiting' })
+  })
+
+  it('tells an idle worker with committed but unpushed work to push and open the PR', async () => {
+    const env = setup({ pr: null, dispatchedAt: '2026-09-11T09:00:00.000Z', worktreeFiles: { 'brief.md': 'b' }, unpushedCommits: 2 })
+    const report = await deliver(env, { assumeIdle: true })
+    expect(report.results[0]).toMatchObject({ outcome: 'nudged', reason: 'idle with 2 unpushed commit(s); nudged to push and open the PR' })
+    const sent = env.runner.calls.filter((argv) => argv[1] === 'terminal' && argv[2] === 'send').at(-1)?.join(' ') ?? ''
+    expect(sent).toContain('committed (2 local commit(s)')
+    expect(sent).toContain('git push -u origin HEAD')
+    // Nothing unpushed: the generic check-in, as before.
+    const none = setup({ pr: null, dispatchedAt: '2026-09-11T09:00:00.000Z', worktreeFiles: { 'brief.md': 'b' }, unpushedCommits: 0 })
+    expect((await deliver(none, { assumeIdle: true })).results[0]).toMatchObject({ outcome: 'nudged', reason: 'idle without PR; nudged once' })
   })
 
   it('nudges an idle worker without a PR once, then marks it stuck and frees the slot while keeping the worktree', async () => {
