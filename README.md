@@ -10,7 +10,7 @@ docbridge:
 becomes a frozen contract, a worker in its own worktree, a reviewed pull request proven against a definition of
 done, a merge — and, behind a human gate, a release.
 
-No daemon, no dashboard, no database: files in `.ak-loop/` and whatever scheduler the machine already has.
+The local UI is optional and loopback-protected: it projects `.ak-loop/` files and events and can start typed Harness jobs without adding a daemon or database. Its primary flow is issue-first: select an available issue, freeze its contract/profile/limits, enqueue it, and resolve only human decisions from the persistent Inbox.
 Docs: **[harness.agentskit.io](https://harness.agentskit.io)**
 
 ## Install
@@ -27,6 +27,7 @@ verification-protocol name).
 ```bash
 npx ak-harness loop init           # writes loop.config.yaml from a preset
 npx ak-harness loop doctor         # providers, routing, slots, queue — dispatches nothing
+npx ak-harness ui                  # local operational view at http://127.0.0.1:4321
 npx ak-harness loop tick --dry-run --max 1
 npx ak-harness loop install        # puts tick + deliver on a schedule
 ```
@@ -115,11 +116,39 @@ layers:
   - { id: L2, label: 'layer:L2', paths: ['packages/runtime/**'], verify: pnpm test packages/runtime }
 ```
 
+### GitHub Issues as the configured tracker
+
+Set the tracker to GitHub when the UI and execution loop should operate on issues from `project.repo`:
+
+```yaml
+connectors:
+  tracker: github
+github:
+  issues:
+    state: open
+    maxIssues: 500
+    refreshSeconds: 60
+    labels:
+      todo: loop:todo
+      inProgress: loop:in-progress
+      review: loop:review
+      done: loop:done
+      blocked: loop:blocked
+```
+
+The Harness calls the existing `gh` CLI, sorts by most recently updated, and caches the board at
+`.ak-loop/ui/github-issues.json`. `gh auth status` and repository write permission are checked before a mutating job.
+Lifecycle labels are exclusive; `done` closes an issue and active states reopen it. Missing configured labels fail
+closed. The UI exposes typed, confirmed actions and jobs; only one tracker is selected per configuration.
+
+The Harness reads `loop.config.yaml`; it does not consume a project's `.github/ai-loop.yaml`, whose schema belongs to a
+different executor.
+
 ## Commands
 
 | Read-only | |
 |---|---|
-| `loop doctor` | Providers, usage, routing, slots, queue, installed agents |
+| `loop doctor` | Providers, usage, routing, slots, selected tracker board, installed agents |
 | `loop debrief` | What the loop is doing right now, per issue |
 | `loop observe --since 24h` | Anomalies and metrics; `--precheck` gives a scheduler exit code |
 | `loop retro --since 7d` | Digest, learnings and calibration suggestions |

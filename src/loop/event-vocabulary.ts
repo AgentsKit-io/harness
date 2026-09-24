@@ -79,6 +79,10 @@ export const LOOP_EVENT_TYPES = {
   'pr.reviewed': ['issue', 'pr', 'head', 'status', 'blocking', 'provider', 'model', 'profile', 'votes', 'minSeverity', 'source', 'calls', 'inputTokens', 'outputTokens', 'totalTokens'],
   /** The PR was squash-merged by the loop. */
   'pr.merged': ['issue', 'pr', 'head', 'sha'],
+  /** A tracked PR closed without merge; the issue waits for a close-or-reopen decision. */
+  'pr.closed': ['issue', 'pr', 'head', 'reason'],
+  /** A remote tracker write failed; local lifecycle remains authoritative until a human retries synchronization. */
+  'tracker.sync-failed': ['issue', 'operation', 'error'],
   /** GitHub refused the merge — branch protection, a required check, a race with another merge. */
   'pr.merge-refused': ['issue', 'pr', 'head', 'message'],
   /** A person attested a PR held for protected paths, for exactly this head. */

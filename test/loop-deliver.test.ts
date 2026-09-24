@@ -187,7 +187,9 @@ describe('deliver', () => {
     const merge = env.runner.calls.find((argv) => argv[0] === 'gh' && argv[1] === 'api' && argv.includes('--method'))
     expect(merge).toContain('merge_method=squash')
     expect(merge?.some((arg) => arg.startsWith('sha=c74d687e'))).toBe(true)
-    expect(env.runner.calls.find((argv) => argv[1] === 'linear' && argv[2] === 'status')).toContain('Done')
+    const statusCalls = env.runner.calls.filter((argv) => argv[1] === 'linear' && argv[2] === 'status')
+    expect(statusCalls.some((argv) => argv.includes('In Review'))).toBe(true)
+    expect(statusCalls.some((argv) => argv.includes('Done'))).toBe(true)
     expect(env.runner.calls.some((argv) => argv[1] === 'linear' && argv[2] === 'attach')).toBe(true)
     expect(env.runner.calls.some((argv) => argv[1] === 'worktree' && argv[2] === 'rm')).toBe(true)
     expect(env.ledger.active()).toEqual([])
@@ -257,7 +259,7 @@ describe('deliver', () => {
     expect(fourth.results[0]).toMatchObject({ outcome: 'blocked' })
     expect(env.runner.calls.filter((argv) => argv[0] === 'agentskit-review')).toHaveLength(3)
     expect(env.runner.calls.find((argv) => argv[1] === 'linear' && argv[2] === 'label')).toContain('blocked')
-    expect(env.runner.calls.find((argv) => argv[1] === 'linear' && argv[2] === 'status')).toContain('Todo')
+    expect(env.runner.calls.filter((argv) => argv[1] === 'linear' && argv[2] === 'status').some((argv) => argv.includes('Todo'))).toBe(true)
     expect(env.ledger.active()).toEqual([])
     expect(env.runner.calls.some((argv) => argv[1] === 'worktree' && argv[2] === 'rm')).toBe(false)
   })
@@ -416,8 +418,9 @@ describe('deliver', () => {
     expect(cleared).toEqual(expect.arrayContaining(['blocked', 'needs-info']))
     const closed = setup({ pr: null, closedPr: basePr({ state: 'CLOSED' }) })
     expect((await deliver(closed)).results[0]).toMatchObject({ outcome: 'abandoned' })
-    expect(closed.runner.calls.find((argv) => argv[1] === 'linear' && argv[2] === 'status')).toContain('Todo')
+    expect(closed.runner.calls.some((argv) => argv[1] === 'linear' && argv[2] === 'status')).toBe(false)
     expect(closed.runner.calls.some((argv) => argv[1] === 'worktree' && argv[2] === 'rm')).toBe(false)
+    expect(closed.ledger.active()).toHaveLength(1)
   })
 
   it('reconciles a recorded merge after GitHub deletes the head branch', async () => {
@@ -447,8 +450,8 @@ describe('deliver', () => {
     expect(second.results).toEqual([])
     const linearWrites = env.runner.calls.slice(callsAfterFirst).filter((argv) => argv[1] === 'linear' || (argv[1] === 'worktree' && argv[2] === 'set'))
     expect(linearWrites).toEqual([])
-    const abandonedEvents = readFileSync(join(env.loaded.stateDir, 'events.ndjson'), 'utf8').split('\n').filter(Boolean).map((line) => JSON.parse(line) as Record<string, unknown>).filter((event) => event['type'] === 'worker.abandoned')
-    expect(abandonedEvents).toHaveLength(1)
+    const closedEvents = readFileSync(join(env.loaded.stateDir, 'events.ndjson'), 'utf8').split('\n').filter(Boolean).map((line) => JSON.parse(line) as Record<string, unknown>).filter((event) => event['type'] === 'pr.closed')
+    expect(closedEvents).toHaveLength(1)
   })
 
   it('re-sends a brief the terminal never confirmed at once, instead of waiting out the idle timeout', async () => {

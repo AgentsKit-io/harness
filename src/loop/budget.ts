@@ -83,8 +83,8 @@ export interface BudgetVerdict { readonly exceeded: boolean; readonly spent: num
  * Whether one issue has spent its ceiling. Exceeding it is an escalation, never a retry with less headroom: an
 * item that has already cost more than it was worth does not get cheaper by being attempted again.
  */
-export const issueBudget = (config: LoopConfig, stateDir: string, issue: string): BudgetVerdict => {
-  const ceiling = config.budget.perIssueTokens
+export const issueBudget = (config: LoopConfig, stateDir: string, issue: string, ceilingOverride?: number): BudgetVerdict => {
+  const ceiling = ceilingOverride ?? config.budget.perIssueTokens
   const { totalTokens } = issueSpend(stateDir, issue)
   if (ceiling <= 0) return { exceeded: false, spent: totalTokens, ceiling: 0, reason: null }
   return totalTokens >= ceiling

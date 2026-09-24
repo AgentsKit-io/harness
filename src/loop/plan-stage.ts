@@ -2,7 +2,6 @@ import { existsSync, mkdirSync, readFileSync, readdirSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { z } from 'zod'
 import type { CommandRunner } from '../adapters/command.js'
-import { linearSaveIssue } from '../adapters/linear-orca.js'
 import { fail } from '../kernel/errors.js'
 import { extractOutputBlock } from './output-block.js'
 import { hashJson } from '../kernel/hash.js'
@@ -14,6 +13,7 @@ import { renderLayersForPrompt } from './layers.js'
 import { tallyVotes, type CastVote } from './plan-vote.js'
 import type { RankedModel } from './routing.js'
 import { readJsonFile } from '../kernel/json-file.js'
+import { requireWritableTracker, resolveConnectors } from './connectors.js'
 
 export const PRD_OPEN = '<<<LOOP_PRD'
 export const PRD_CLOSE = 'LOOP_PRD>>>'
@@ -394,7 +394,8 @@ export const plannedIssueLabels = (config: LoopConfig, layer?: string, outside?:
 }
 
 /**
- * Create the decomposed issues in the tracker, in `linear.entryState` — never in one of `linear.states`, which ARE
+ * Create the decomposed issues in the configured tracker, in the compatibility `entryState` — never in one of the
+ * dispatchable compatibility states, which ARE
  * the queue. Moving them into the queue stays a human gesture; that is the single gate.
  *
  * They are created where the queue will look for them — the project it drains (when it drains exactly one, or
@@ -403,8 +404,9 @@ export const plannedIssueLabels = (config: LoopConfig, layer?: string, outside?:
  */
 export const createPlannedIssues = async (deps: PlanStageDeps, state: PlanStageState, target: PlannedIssueTarget = {}): Promise<PlanStageState> => {
   const config = deps.loaded.config
+  requireWritableTracker(config)
   const now = (deps.now ?? (() => new Date()))()
-  const write = { bin: config.orca.bin, workspaceId: config.linear.workspaceId, orca: { timeoutMs: config.orca.timeoutMs } }
+  const tracker = resolveConnectors({ runner: deps.runner, config }).tracker
   const entryState = config.linear.entryState
   const project = target.project ?? (config.linear.projects.length === 1 ? config.linear.projects[0] : undefined)
   const created: (PlannedIssue & { identifier?: string; url?: string })[] = []
@@ -415,12 +417,12 @@ export const createPlannedIssues = async (deps: PlanStageDeps, state: PlanStageS
     const excerpt = designExcerptFor(state.design, issue.designRef)
     const where = issue.outside ? `**Outside this loop — ${issue.outside}.** The loop delivers pull requests to ${config.project.repo} only, so it will not dispatch this issue (\`${config.linear.outsideLabel}\`); a person or another loop carries it.\n\n` : ''
     const description = `${where}${issue.description}\n\n**Acceptance**\n${issue.acceptance.map((item) => `- [ ] ${item}`).join('\n')}\n\n**Design — ${issue.designRef}**\n\n${excerpt || '_not found in the approved design_'}\n\n<!-- loop:plan:${state.id} -->`
-    const result = await linearSaveIssue(deps.runner, {
-      team: config.linear.teamKey, title: issue.title, description, state: entryState,
+    const result = await tracker.createIssue({
+      title: issue.title, description, state: entryState,
       priority: priorityFor(issue), labels: plannedIssueLabels(config, issue.layer, issue.outside),
-      ...(project ? { project } : {}), ...(target.parent ? { parentId: target.parent } : {}),
+      ...(project ? { project } : {}), ...(target.parent ? { parent: target.parent } : {}),
       dedupeKey: `plan:${state.id}:${issue.title}`,
-    }, write)
+    })
     created.push({ ...issue, ...(result.identifier ? { identifier: result.identifier } : {}), ...(result.url ? { url: result.url } : {}) })
   }
   return { ...state, issues: created, phase: 'done', updatedAt: now.toISOString() }

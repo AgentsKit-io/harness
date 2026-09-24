@@ -18,6 +18,7 @@ import { attachNotifier } from './notify.js'
 import { applyTuning, renderTuningMarkdown } from './tuning.js'
 import { improveAgent, roleSignals } from './agent-improvement.js'
 import { queueOwner } from './rotation.js'
+import { requireWritableTracker } from './connectors.js'
 
 /** Newest mtime across an issue's state files, or `null` if none exist. Every field `buildRetroReport` filters
  * on (`dispatchedAt`, `finishedAt`, `contract.generatedAt`) is written in the same call that last touched its
@@ -302,6 +303,7 @@ export const runRetroStage = async (input: {
   const loaded = input.loaded ?? loadLoopConfig(input.configPath)
   const issue = loaded.config.schedule.retroIssue ?? null
   if (!issue) return { status: 'skipped', issue: null, digest: null, posted: false, learningsProposed: 0, autoPromoted: [], tuned: [], agentChanges: [], detail: 'schedule.retroIssue is not set' }
+  requireWritableTracker(loaded.config)
   // An externally-owned bus (`loop stage`) already has plugins/notifier attached, flushed once by its owner for
   // the whole invocation; a call with no bus of its own (`loop retro`, tests) stays self-sufficient.
   const ownsBus = !input.bus

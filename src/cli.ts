@@ -5,9 +5,10 @@ import { Command } from 'commander'
 import { approveRun, ARTIFACT_SCHEMA_VERSION, assessAcceptance, assessBlock, assessDiscovery, assessImprovementCycle, assessIntegration, assessPilot, assessPreflight, assessProduction, assessWip, assessWorktreeCleanup, authorizeRun, benchmarkRuns, cancelRun, cleanTaskArtifacts, composePullRequest, createDispatchLedger, createDocBridgeContextProvider, createStatusSnapshot, exportEvidenceBundle, FileArtifactStore, loadBenchmarkManifest, loadConfig, loadLatestRun, parseRetro, planFilePreflight, planRun, readArtifactFile, readContextSnapshots, readEvidenceTrustStore, reconcileRun, recordBenchmarkObservation, renderArtifactMarkdown, retryRun, selectRuntime, startRun, validateBlockManifest, validateStatusSnapshot, verifyEvidenceBundle, verifyRun } from './index.js'
 import type { BenchmarkObservationEvidence } from './execution/metrics.js'
 import { fail } from './kernel/errors.js'
-import { appendLoopEvent, approveHeldDelivery, ensureBaseView, attachNotifier, buildDebriefReport, buildRetroReport, createLoopEventBus, createProcessRunner, createRichIO, fetchLinearIssue, formatWatchEvent, generateContract, installLoopAutomations, linearLabelRemove, loadLoopConfig, loadLoopPlugins, openLoopMemory, promoteLearningsToMemory, runGuidedInstall, runLoopInit, loopStatus, renderDebriefMarkdown, renderObservabilityMarkdown, renderRetroMarkdown, retroLearnings, runRetroStage, precheckDeliver, precheckTick, rankModels, promoteLearnings, writePrdDocument, writeDesignDocument, documentRoot, readCheckoutState, readLearningsLedger, startPlan, interviewRound, answerRound, approvePlan, architectRound, approveDesign, decomposeRound, createPlannedIssues, designApproved, listPlans, prdGaps, readPlanState, writePlanState, renderPlanMarkdown, readStoredContract, writeLearningsLedger, runDeliver, runLoopDoctor, runIntakeStage, runMaintainStage, readReleaseBatch, readReleaseState, approveRelease, renderReleaseMarkdown, runReleaseStage, runObservability, runObserveStage, runTick, uninstallLoopAutomations, watchDeliveries, writeStoredContract, isStagePaused, recordStageRunResult, resumeIssue, resumeStage, readIssueFailures, stageEntry, listPausedIssues, readLastConfigHash, writeLastConfigHash, buildIssueTimeline, renderIssueTimelineMarkdown, runWorkerGuard, type LoopStageName } from './index.js'
+import { appendLoopEvent, approveHeldDelivery, ensureBaseView, attachNotifier, buildDebriefReport, buildRetroReport, createLoopEventBus, createProcessRunner, createRichIO, formatWatchEvent, generateContract, installLoopAutomations, loadLoopConfig, loadLoopPlugins, openLoopMemory, promoteLearningsToMemory, requireWritableTracker, resolveConnectors, runGuidedInstall, runLoopInit, loopStatus, renderDebriefMarkdown, renderObservabilityMarkdown, renderRetroMarkdown, retroLearnings, runRetroStage, precheckDeliver, precheckTick, rankModels, promoteLearnings, writePrdDocument, writeDesignDocument, documentRoot, readCheckoutState, readLearningsLedger, startPlan, interviewRound, answerRound, approvePlan, architectRound, approveDesign, decomposeRound, createPlannedIssues, designApproved, listPlans, prdGaps, readPlanState, writePlanState, renderPlanMarkdown, readStoredContract, writeLearningsLedger, runDeliver, runLoopDoctor, runIntakeStage, runMaintainStage, readReleaseBatch, readReleaseState, approveRelease, renderReleaseMarkdown, runReleaseStage, runObservability, runObserveStage, runTick, uninstallLoopAutomations, watchDeliveries, writeStoredContract, isStagePaused, recordStageRunResult, resumeIssue, resumeStage, readIssueFailures, stageEntry, listPausedIssues, readLastConfigHash, writeLastConfigHash, buildIssueTimeline, renderIssueTimelineMarkdown, runWorkerGuard, type LoopStageName } from './index.js'
 import { FileEventStore, inspectEventLogLock, recoverEventLogLock } from './kernel/events.js'
 import { acquireStageLock } from './loop/stage-lock.js'
+import { startUiServer } from './ui/server.js'
 
 interface CliOptions { readonly config: string; readonly json: boolean }
 const packageJson = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8')) as { readonly version: string }
@@ -15,6 +16,7 @@ const program = new Command()
 program.name('ak-harness').description('Portable, evidence-backed development harness for coding agents.').version(packageJson.version).option('-c, --config <path>', 'verification contract path (default: .ak-harness/verification.json, falling back to a legacy .codex/verification.json)').option('--json', 'emit machine-readable output')
 const options = (): CliOptions => program.opts<CliOptions>()
 const print = (value: unknown): void => { if (options().json) console.log(JSON.stringify(value)); else console.log(typeof value === 'string' ? value : JSON.stringify(value, null, 2)) }
+let activeUiShutdown: (() => Promise<void>) | null = null
 const readBenchmarkEvidence = (path: string): { readonly evidence: readonly BenchmarkObservationEvidence[]; readonly digest: string } => {
   try {
     const content = readFileSync(path, 'utf8')
@@ -34,6 +36,11 @@ const readJsonInput = (path: string, label: string): unknown => {
   try { return JSON.parse(readFileSync(path, 'utf8')) as unknown } catch (error) { return fail(`Invalid ${label} JSON: ${error instanceof Error ? error.message : String(error)}`, 'INVALID_INPUT') }
 }
 program.command('doctor').description('Validate the contract without starting a run.').action(() => print({ status: 'passed', criteria: ['package'], config: loadConfig(options().config).config }))
+program.command('ui').description('Start the local Harness operational UI.').option('--loop-config <path>', 'loop configuration path', 'loop.config.yaml').option('--host <host>', 'loopback host to bind', '127.0.0.1').option('--port <port>', 'TCP port (0 selects a free port)', (value: string) => Number(value), 4321).option('--window-hours <hours>', 'event window shown in the UI', (value: string) => Number(value), 24).action(async (command: { readonly loopConfig: string; readonly host: string; readonly port: number; readonly windowHours: number }) => {
+  const server = await startUiServer({ configPath: command.loopConfig, host: command.host, port: command.port, windowHours: command.windowHours })
+  activeUiShutdown = server.close
+  print({ status: 'listening', url: server.url, message: 'Press Ctrl-C to stop the Harness UI.' })
+})
 program.command('plan <decision>').description('Approve the frozen task contract and create a planned run.').option('--by <actor>', 'approval actor', 'human').option('--allow-dirty', 'allow a human-authorized dirty worktree').option('--context-file <path>', 'attach a context snapshot JSON file').action(async (decision: string, command: { readonly by: string; readonly allowDirty?: boolean; readonly contextFile?: string }) => print(await planRun({ configPath: options().config, decision, actor: command.by, allowDirty: command.allowDirty ?? false, contextSnapshots: command.contextFile ? readContextSnapshots(command.contextFile) : [] })))
 const context = program.command('context').description('Resolve portable, provenance-bearing context snapshots.')
 context.command('resolve <query>').description('Resolve a Doc Bridge snapshot from the local index.').option('--provider <provider>', 'context provider', 'doc-bridge').option('--scope <scope...>', 'optional search scopes').option('--index <path>', 'Doc Bridge index path', '.doc-bridge/index.json').action(async (query: string, command: { readonly provider: string; readonly scope?: readonly string[]; readonly index: string }) => {
@@ -73,16 +80,16 @@ const artifacts = program.command('artifacts').description('Inspect versioned, p
 artifacts.command('inspect <path>').description('Validate and print one artifact as JSON or Markdown.').action((path: string) => { const artifact = readArtifactFile(path); print(options().json ? artifact : renderArtifactMarkdown(artifact)) })
 artifacts.command('list [run-id]').description('List artifacts for the latest or selected run.').action((runId?: string) => { const loaded = loadConfig(options().config); const run = runId ? { runId } : loadLatestRun(loaded.stateDir); print(new FileArtifactStore(loaded.stateDir).list(run?.runId ?? fail('No verification run exists.', 'NO_RUN'))) })
 artifacts.command('schema').description('Print the artifact schema version.').action(() => print({ schemaVersion: ARTIFACT_SCHEMA_VERSION, types: ['plan', 'finding', 'decision', 'repair', 'blocker', 'approval', 'phase'] }))
-const loop = program.command('loop').description('Keep-pushing SDLC loop: drain one person\'s Linear queue through Orca worktrees with role-based model routing.').option('-f, --file <path>', 'loop config path', 'loop.config.yaml')
+const loop = program.command('loop').description('Keep-pushing SDLC loop: drain the configured issue tracker through worktrees with role-based model routing.').option('-f, --file <path>', 'loop config path', 'loop.config.yaml')
 const loopFile = (command: Command): string => (command.parent?.opts<{ readonly file?: string }>().file ?? command.opts<{ readonly file?: string }>().file ?? 'loop.config.yaml')
 loop.command('validate').description('Validate loop.config.yaml and print the effective configuration. Reports keys the schema does not know — almost always a typo, which zod otherwise strips in silence.').action(function (this: Command) {
   const loaded = loadLoopConfig(loopFile(this))
   if (loaded.unknownKeys.length) console.error(`loop.config.yaml declares ${loaded.unknownKeys.length} key(s) this version does not know, and they were ignored: ${loaded.unknownKeys.join(', ')}`)
   print({ status: 'passed', criteria: ['loop-config'], path: loaded.path, configHash: loaded.configHash, unknownKeys: loaded.unknownKeys, config: loaded.config })
 })
-loop.command('doctor').description('Check Orca, providers, usage, machine slots, routing, and the Linear queue without dispatching.').option('--no-probe', 'skip provider probe commands').action(async function (this: Command, command: { readonly probe: boolean }) { const report = await runLoopDoctor({ configPath: loopFile(this), runner: createProcessRunner(), probe: command.probe }); print(report); if (report.status === 'failed') process.exitCode = 1 })
+loop.command('doctor').description('Check Orca, providers, usage, machine slots, routing, and the selected tracker board without dispatching.').option('--no-probe', 'skip provider probe commands').action(async function (this: Command, command: { readonly probe: boolean }) { const report = await runLoopDoctor({ configPath: loopFile(this), runner: createProcessRunner(), probe: command.probe }); print(report); if (report.status === 'failed') process.exitCode = 1 })
 loop.command('precheck <stage>').description('Read-only Orca precheck: exit 0 when the stage (tick | deliver) has work.').action(async function (this: Command, stage: string) { if (stage !== 'tick' && stage !== 'deliver') fail(`Unknown precheck stage: ${stage}`, 'INVALID_INPUT'); const result = stage === 'tick' ? await precheckTick({ configPath: loopFile(this), runner: createProcessRunner() }) : precheckDeliver(loadLoopConfig(loopFile(this)).stateDir); print(result); process.exitCode = result.work ? 0 : 1 })
-loop.command('deliver').description('Drive dispatched workers to merge: PR detection, CI, review, fix rounds, squash-merge, Linear Done, cleanup.').option('--dry-run', 'decide only; no terminal input, no review, no merge, no Linear write').option('--issue <identifier>', 'restrict to one issue').action(async function (this: Command, command: { readonly dryRun?: boolean; readonly issue?: string }) { print(await runDeliver({ configPath: loopFile(this), runner: createProcessRunner(), dryRun: command.dryRun ?? false, onlyIssue: command.issue })) })
+loop.command('deliver').description('Drive dispatched workers to merge: PR detection, CI, review, fix rounds, squash-merge, tracker Done, cleanup.').option('--dry-run', 'decide only; no terminal input, no review, no merge, no tracker write').option('--issue <identifier>', 'restrict to one issue').action(async function (this: Command, command: { readonly dryRun?: boolean; readonly issue?: string }) { print(await runDeliver({ configPath: loopFile(this), runner: createProcessRunner(), dryRun: command.dryRun ?? false, onlyIssue: command.issue })) })
 loop.command('stage <stage>').description('Run one stage (tick | deliver | retro | observe | release | intake | maintain) as an Orca precheck: prints the JSON report and exits 1 so Orca records the run without launching an agent — except `observe`, which exits 0 when a human has to look.').action(async function (this: Command, stage: string) {
   if (stage !== 'tick' && stage !== 'deliver' && stage !== 'retro' && stage !== 'observe' && stage !== 'release' && stage !== 'intake' && stage !== 'maintain') fail(`Unknown stage: ${stage}`, 'INVALID_INPUT')
   const runner = createProcessRunner(); const file = loopFile(this)
@@ -167,12 +174,13 @@ loop.command('stage <stage>').description('Run one stage (tick | deliver | retro
     await flushNotifications()
   }
 })
-loop.command('tick').description('One keep-pushing tick: intake → admit → contract → dispatch workers into Orca worktrees.').option('--dry-run', 'plan only; no worktree, no Linear write, no contract cached').option('--max <n>', 'max dispatches this tick', (value: string) => Number(value)).option('--issue <identifier>', 'restrict to one issue').option('--skip-contract', 'do not call the orchestrator when no contract is cached').action(async function (this: Command, command: { readonly dryRun?: boolean; readonly max?: number; readonly issue?: string; readonly skipContract?: boolean }) { const report = await runTick({ configPath: loopFile(this), runner: createProcessRunner(), dryRun: command.dryRun ?? false, maxDispatch: command.max, onlyIssue: command.issue, skipContractGeneration: command.skipContract ?? false }); print(report); if (report.status === 'blocked') process.exitCode = 1 })
-loop.command('contract <identifier>').description('Freeze (or show) the orchestrator contract for one Linear issue.').option('--refresh', 'regenerate even when a cached contract exists').option('--dry-run', 'generate but do not cache').action(async function (this: Command, identifier: string, command: { readonly refresh?: boolean; readonly dryRun?: boolean }) {
+loop.command('tick').description('One keep-pushing tick: intake → admit → contract → dispatch workers into worktrees.').option('--dry-run', 'plan only; no worktree, no tracker write, no contract cached').option('--max <n>', 'max dispatches this tick', (value: string) => Number(value)).option('--issue <identifier>', 'restrict to one issue').option('--skip-contract', 'do not call the orchestrator when no contract is cached').action(async function (this: Command, command: { readonly dryRun?: boolean; readonly max?: number; readonly issue?: string; readonly skipContract?: boolean }) { const report = await runTick({ configPath: loopFile(this), runner: createProcessRunner(), dryRun: command.dryRun ?? false, maxDispatch: command.max, onlyIssue: command.issue, skipContractGeneration: command.skipContract ?? false }); print(report); if (report.status === 'blocked') process.exitCode = 1 })
+loop.command('contract <identifier>').description('Freeze (or show) the orchestrator contract for one configured-tracker issue.').option('--refresh', 'regenerate even when a cached contract exists').option('--dry-run', 'generate but do not cache').action(async function (this: Command, identifier: string, command: { readonly refresh?: boolean; readonly dryRun?: boolean }) {
   const loaded = loadLoopConfig(loopFile(this)); const runner = createProcessRunner(); const cached = command.refresh ? null : readStoredContract(loaded.stateDir, identifier)
   if (cached) return print(cached)
   const doctor = await runLoopDoctor({ loaded, runner, probe: false }); const candidates = rankModels(loaded.config, 'orchestrator', doctor.providers)
-  const issue = await fetchLinearIssue(runner, identifier, { bin: loaded.config.orca.bin, workspaceId: loaded.config.linear.workspaceId })
+  requireWritableTracker(loaded.config)
+  const issue = await resolveConnectors({ runner, config: loaded.config }).tracker.issue(identifier)
   const stored = await generateContract({ runner, config: loaded.config, root: (await ensureBaseView(runner, loaded)).path, issue, candidates })
   if (!command.dryRun) writeStoredContract(loaded.stateDir, stored)
   print(stored)
@@ -214,10 +222,11 @@ loop.command('resume [issue]').description('Resume a paused issue (clears its fa
     return print({ status: 'resumed', stage: command.stage })
   }
   if (!issue) fail('Provide an issue identifier, or --stage <tick|deliver> to resume a paused stage.', 'INVALID_INPUT')
+  requireWritableTracker(loaded.config)
   const issueId = issue as string
   const before = readIssueFailures(loaded.stateDir, issueId)
   resumeIssue(loaded.stateDir, issueId)
-  try { await linearLabelRemove(createProcessRunner(), { issue: issueId, labels: [loaded.config.resilience.pausedLabel] }, { bin: loaded.config.orca.bin, workspaceId: loaded.config.linear.workspaceId }) } catch { /* best-effort: the CLI resume already cleared the local pause even if Linear is unreachable */ }
+  try { await resolveConnectors({ runner: createProcessRunner(), config: loaded.config }).tracker.removeLabels(issueId, [loaded.config.resilience.pausedLabel]) } catch { /* best-effort: the CLI resume already cleared the local pause even if the tracker is unreachable */ }
   print({ status: 'resumed', issue: issueId, wasPaused: before.pausedAt !== null, previousConsecutiveFailures: before.consecutive })
 })
 loop.command('paused').description('List issues the loop has paused after repeated failures (local state, no network calls).').action(function (this: Command) { print(listPausedIssues(loadLoopConfig(loopFile(this)).stateDir)) })
@@ -334,7 +343,7 @@ loopPlan.command('approve-design <id>').description('Human gate: approve the des
   const document = writeDesignDocument(loaded, next, documentRoot(loaded, await readCheckoutState(createProcessRunner(), loaded.root)))
   print({ id, phase: next.phase, ...(document ? { wrote: document.path, ...(document.note ? { note: document.note } : {}) } : {}), next: `ak-harness loop plan decompose ${id}` })
 })
-loopPlan.command('decompose <id>').description('Break the approved design into issues. Without --create nothing is written to the tracker; --create writes the list already shown, not a new one.').option('--create', 'create the issues already decomposed (and reviewed) in the tracker, in linear.entryState (outside the queue)').option('--refresh', 'decompose again even when a list already exists').option('--parent <issue>', 'the epic these issues break down (tracker identifier)').option('--project <name>', 'tracker project; default: the one project the queue drains, when there is exactly one').action(async function (this: Command, id: string, command: { readonly create?: boolean; readonly refresh?: boolean; readonly parent?: string; readonly project?: string }) {
+loopPlan.command('decompose <id>').description('Break the approved design into issues. Without --create nothing is written to the tracker; --create writes the list already shown, not a new one.').option('--create', 'create the issues already decomposed (and reviewed) in the configured tracker, outside the dispatch queue').option('--refresh', 'decompose again even when a list already exists').option('--parent <issue>', 'the epic these issues break down (tracker identifier)').option('--project <name>', 'tracker project; default: the one project the queue drains, when there is exactly one').action(async function (this: Command, id: string, command: { readonly create?: boolean; readonly refresh?: boolean; readonly parent?: string; readonly project?: string }) {
   const deps = await planDeps(this)
   const current = planOrFail(deps.loaded, id)
   // `--create` files the list a human already read. Decomposing again here would put a list nobody reviewed into
@@ -343,6 +352,7 @@ loopPlan.command('decompose <id>').description('Break the approved design into i
   const decomposed = reuse ? current : await decomposeRound(deps, current)
   if (!reuse) writePlanState(deps.loaded.stateDir, decomposed)
   if (!command.create) return print({ id, issues: decomposed.issues, create: `ak-harness loop plan decompose ${id} --create` })
+  requireWritableTracker(deps.loaded.config)
   const created = await createPlannedIssues(deps, decomposed, { ...(command.parent ? { parent: command.parent } : {}), ...(command.project ? { project: command.project } : {}) })
   writePlanState(deps.loaded.stateDir, created)
   print({ id, phase: created.phase, issues: created.issues.map((issue) => ({ identifier: issue.identifier ?? null, title: issue.title, layer: issue.layer, designRef: issue.designRef })), note: `created in "${deps.loaded.config.linear.entryState}" — moving them to ${deps.loaded.config.linear.states.map((name) => `"${name}"`).join(' or ')} is the human gate into the queue` })
@@ -426,7 +436,16 @@ program.command('clean').description('Remove only configured task-owned temporar
 // `process.exitCode` alone does not terminate the process while an event-loop timer is still pending — `loop
 // watch` without `--once`/`--timeout` sits in a live `setTimeout` poll loop, so setting only the exit code let
 // Ctrl-C print "Cancelled." while the polling (and its `gh`/`orca` shell-outs) kept running in the background.
-process.on('SIGINT', () => { process.stderr.write('Cancelled.\n'); process.exit(130) })
+process.on('SIGINT', () => {
+  if (activeUiShutdown) {
+    const shutdown = activeUiShutdown
+    activeUiShutdown = null
+    void shutdown().catch((error: unknown) => { process.stderr.write(`UI shutdown failed: ${error instanceof Error ? error.message : String(error)}\n`) }).finally(() => process.exit(130))
+    return
+  }
+  process.stderr.write('Cancelled.\n')
+  process.exit(130)
+})
 /**
  * The command tree, exported so `pnpm docs:generate` can walk it instead of parsing `--help` output.
  *

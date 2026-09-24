@@ -30,6 +30,12 @@ project:
     timeoutSec: 600
     required: true                    # failing/timing-out setup removes the worktree and counts as a dispatch failure
 
+# `backlog` keeps the legacy tracker drain. `explicit` consumes only requests confirmed through the persistent
+# issue queue (the UI and scheduler share the same state).
+queue:
+  mode: backlog
+  order: fifo
+
 orca:
   bin: orca                          # on Linux outside Orca terminals use orca-ide (bare `orca` is the GNOME screen reader)
   # repoSelector: id:<orca-repo-id>  # default: path:<project.root>
@@ -360,6 +366,17 @@ github:
   intakeLabel: loop:review           # a PR with this label is reviewed even though the loop never dispatched it;
                                       # null disables intake entirely
   reviewOnly: true                   # fixed: intake PRs are always review + comment, never auto-merged
+  issues:
+    state: open
+    maxIssues: 500
+    refreshSeconds: 60
+    # GitHub uses exactly one of these labels as the issue lifecycle state.
+    labels:
+      todo: loop:todo
+      inProgress: loop:in-progress
+      review: loop:review
+      done: loop:done
+      blocked: loop:blocked
 
 plugins:
   modules: []                        # e.g. [scripts/loop-plugins/notify.mjs] — local .mjs files (relative to
