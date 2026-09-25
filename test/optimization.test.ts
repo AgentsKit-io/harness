@@ -34,8 +34,8 @@ it('serializes independent mutations for the same issue', async () => {
     return value
   }
   const result = await runWorkflow([
-    { id: 'mutate-b', mutationKey: 'issue:AGE-10', run: () => mutate('b') },
-    { id: 'mutate-a', mutationKey: 'issue:AGE-10', run: () => mutate('a') },
+    { id: 'mutate-b', mutationKey: 'issue:ABC-10', run: () => mutate('b') },
+    { id: 'mutate-a', mutationKey: 'issue:ABC-10', run: () => mutate('a') },
     { id: 'read', run: () => mutate('read') },
   ], { maxConcurrency: 3 })
   expect(result.order).toEqual(['mutate-a', 'read', 'mutate-b'])
@@ -55,7 +55,7 @@ it('accepts a bounded concurrency decision at each scheduling batch', async () =
 it('rejects cycles and compares only identically bound optimization observations', async () => {
   const base = { sourceRevision: 's', contractHash: 'c', configHash: 'g', provider: 'p', model: 'm', durationMs: 100, accuracy: 0.9, tokens: { inputTokens: 2, outputTokens: 3, totalTokens: 5 }, memory: { reads: 2, writes: 1, relevantHits: 1, staleHits: 0 }, cache: { hits: 1, misses: 1, invalidations: 0 }, parallelism: { tasks: 2, peakConcurrency: 2, criticalPathMs: 80 } }
   expect(validateOptimizationObservation(base)).toEqual(base)
-  expect(validateMemoryRecord({ id: 'decision-1', scope: 'project', summary: 'Use bounded fan-out.', source: 'linear:AGE-1', sourceRevision: 's', contentHash: 'h', approved: true })).toMatchObject({ id: 'decision-1', approved: true })
+  expect(validateMemoryRecord({ id: 'decision-1', scope: 'project', summary: 'Use bounded fan-out.', source: 'linear:ABC-1', sourceRevision: 's', contentHash: 'h', approved: true })).toMatchObject({ id: 'decision-1', approved: true })
   expect(() => validateMemoryRecord({ id: 'draft', scope: 'issue', summary: 'Unapproved', source: 'agent', sourceRevision: 's', contentHash: 'h', approved: false as true })).toThrow(/approved memory/)
   expect(compareOptimization(base, { ...base, durationMs: 90, accuracy: 1 })).toMatchObject({ comparable: true, durationDeltaMs: -10, accuracyDelta: 0.1 })
   expect(compareOptimization(base, { ...base, model: 'other' })).toMatchObject({ comparable: false })

@@ -13,10 +13,10 @@ describe('loop observability', () => {
   it('detects the requested blocking signals and exposes operating metrics', () => {
     const report = assessObservability({
       ...base,
-      missingDeliveryIssues: ['AGE-1'],
+      missingDeliveryIssues: ['ABC-1'],
       terminals: [{ handle: 't1', status: 'connected', worktreeId: 'w1', lastOutputAt: null, preview: '' }],
-      finalizedDirtyWorktrees: [{ worktreeId: 'w2', issue: 'AGE-2', files: 3 }],
-      issues: [{ issue: 'AGE-3', phase: 'fix-round', ageMin: 60, heldFor: null }],
+      finalizedDirtyWorktrees: [{ worktreeId: 'w2', issue: 'ABC-2', files: 3 }],
+      issues: [{ issue: 'ABC-3', phase: 'fix-round', ageMin: 60, heldFor: null }],
     })
     expect(report.status).toBe('action_required')
     expect(report.anomalies.map((item) => item.id)).toEqual(expect.arrayContaining(['claim-without-delivery', 'connected-without-output', 'finalized-dirty-worktree', 'queue-ready-no-dispatch', 'stalled-delivery']))
@@ -24,7 +24,7 @@ describe('loop observability', () => {
   })
 
   it('does not flag a held item as a stalled review and renders a useful report', () => {
-    const report = assessObservability({ ...base, queueReady: 0, freeSlots: 0, issues: [{ issue: 'AGE-4', phase: 'review-incomplete', ageMin: 90, heldFor: 'human' }] })
+    const report = assessObservability({ ...base, queueReady: 0, freeSlots: 0, issues: [{ issue: 'ABC-4', phase: 'review-incomplete', ageMin: 90, heldFor: 'human' }] })
     expect(report.status).toBe('healthy')
     expect(report.anomalies).toHaveLength(0)
     expect(renderObservabilityMarkdown(report)).toContain('## Metrics')

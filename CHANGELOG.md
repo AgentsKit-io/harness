@@ -311,7 +311,7 @@ something a human — or a study comparing how different models behave on the sa
 
 ## [0.15.0] - 2026-09-20
 
-The loop becomes a cycle. The twelve steps of [docs/ROADMAP-SDLC.md](docs/ROADMAP-SDLC.md) close, the phases of one
+The loop becomes a cycle. The twelve steps of the SDLC roadmap close, the phases of one
 issue become files the machine can check instead of claims in a terminal, and the parts of the design that were
 decided in conversation become ADRs 0032–0037.
 

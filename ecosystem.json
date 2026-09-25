@@ -8,9 +8,9 @@
   "positioning": {
     "canonicalDescription": "AgentsKit is the open-source TypeScript ecosystem for building production AI agents without locking application architecture to a model provider, framework, database, or hosted platform.",
     "metaDescription": "Open-source TypeScript ecosystem for production AI agents. Swap models, providers, tools, memory, RAG, and interfaces without architectural lock-in.",
-    "commercialBoundary": "AgentsKit, Chat, Registry, Playbook, Doc Bridge, and Code Review are free and open source. AKOS is the optional paid managed control plane for teams that need enterprise operations, governance, and infrastructure.",
+    "commercialBoundary": "AgentsKit, Chat, Registry, Playbook, Doc Bridge, Harness, and Code Review are free and open source.",
     "openSourceProductIds": ["agentskit", "registry", "agentskit-chat", "doc-bridge", "harness", "playbook", "code-review"],
-    "managedProductIds": ["akos"]
+    "managedProductIds": []
   },
   "products": [
     {
@@ -98,8 +98,7 @@
           "doc-bridge",
           "harness",
           "playbook",
-          "code-review",
-          "akos"
+          "code-review"
         ]
       }
     },
@@ -155,8 +154,7 @@
           "doc-bridge",
           "harness",
           "playbook",
-          "code-review",
-          "akos"
+          "code-review"
         ]
       }
     },
@@ -208,8 +206,7 @@
           "doc-bridge",
           "harness",
           "playbook",
-          "code-review",
-          "akos"
+          "code-review"
         ]
       }
     },
@@ -262,8 +259,7 @@
           "agentskit-chat",
           "harness",
           "playbook",
-          "code-review",
-          "akos"
+          "code-review"
         ]
       }
     },
@@ -337,8 +333,7 @@
           "agentskit-chat",
           "doc-bridge",
           "playbook",
-          "code-review",
-          "akos"
+          "code-review"
         ]
       }
     },
@@ -392,8 +387,7 @@
           "agentskit-chat",
           "doc-bridge",
           "harness",
-          "code-review",
-          "akos"
+          "code-review"
         ]
       }
     },
@@ -425,57 +419,8 @@
           "agentskit-chat",
           "doc-bridge",
           "harness",
-          "playbook",
-          "akos"
+          "playbook"
         ]
-      }
-    },
-    {
-      "id": "akos",
-      "public": false,
-      "distributionClass": "managed-service",
-      "accessModel": "paid-managed-service",
-      "aliases": ["AgentsKit OS"],
-      "name": "AKOS",
-      "shortName": "AKOS",
-      "kind": "managed-service",
-      "role": "operation",
-      "promise": "Add optional managed operations when production governance calls for it.",
-      "maturity": "stable",
-      "repo": null,
-      "distributionPolicy": "Public commercial references only; never use private implementation as contribution evidence.",
-      "accent": "#34D399",
-      "showcase": {
-        "stage": "Operate",
-        "headline": "Optional managed operations for agents.",
-        "detail": "A managed layer for teams that need additional operational controls. AgentsKit can be used without it.",
-        "proof": "Optional · managed operations",
-        "sales": {
-          "kind": "enterprise-control",
-          "headline": "Managed operations for production agents.",
-          "metric": "Optional",
-          "metricLabel": "managed layer",
-          "logos": [
-            { "id": "managed", "label": "Managed" },
-            { "id": "optional", "label": "Optional" },
-            { "id": "operations", "label": "Operations" }
-          ],
-          "capabilities": ["Managed operations", "Production support", "Optional adoption"],
-          "steps": ["Assess the operational need", "Evaluate the managed layer", "Adopt it only when it fits"]
-        },
-        "cta": "Evaluate managed operations"
-      },
-      "surfaces": {
-        "home": "https://akos.agentskit.io",
-        "docs": "https://akos.agentskit.io/docs",
-        "llms": "https://akos.agentskit.io/llms.txt",
-        "documentation": "fumadocs",
-        "chat": "none"
-      },
-      "navigation": {
-        "showInBar": true,
-        "order": 7,
-        "next": []
       }
     }
   ],
@@ -492,18 +437,6 @@
       "accent": "#2EA043",
       "llms": "https://www.agentskit.io/llms.txt",
       "stats": "https://www.agentskit.io/api/stats.json"
-    },
-    {
-      "id": "akos",
-      "name": "AKOS",
-      "barLabel": "AKOS",
-      "domain": "akos.agentskit.io",
-      "url": "https://akos.agentskit.io",
-      "repo": null,
-      "tagline": "Add optional managed operations when production governance calls for it.",
-      "kind": "managed-service",
-      "accent": "#34D399",
-      "llms": "https://akos.agentskit.io/llms.txt"
     },
     {
       "id": "playbook",
