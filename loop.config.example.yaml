@@ -174,6 +174,12 @@ delivery:
     minSeverity: med                  # nit < med < high < blocker; findings at/above this block auto-merge
     # doctorProbe: help                 # help | none — how `loop doctor` probes the review CLI
     deadlineMs: 600000
+    # subprocessTimeoutMs: 300000     # agentskit-review's own inner CLI-call timeout (AGENTSKIT_REVIEW_SUBPROCESS_TIMEOUT_MS),
+                                     # separate from deadlineMs above; its own unset default (120s) was routinely too
+                                     # short for an ordinary review and silently landed as status: incomplete
+    # analysisMaxTokens: 800000       # agentskit-review's own per-run analysis token budget (no CLI flag; set via a
+    # analysisGlobalMaxTokens: 2000000 # generated --config file) — its own default (~87_200 usable under --profile fast)
+                                     # can abort an ordinary PR review with "analysis tokens budget exceeded"
     # smallChangeLines: 0            # >0: a change at or below this many lines (or docs-only) is reviewed by the
                                      # cheapest candidate instead of the strongest — cost lever 3
     # criticalPaths: []              # path prefixes that always get the strongest reviewer, whatever the size

@@ -73,7 +73,7 @@ describe('parseReviewResult', () => {
 })
 
 const baseInput: CodeReviewInput = {
-  cli: 'agentskit-review', repo: 'org/repo', number: 42, provider: 'codex', profile: 'strict', votes: 1,
+  cli: 'agentskit-review', repo: 'org/repo', baseBranch: 'main', number: 42, provider: 'codex', profile: 'strict', votes: 1,
   minSeverity: 'med', deadlineMs: 60_000, maxCalls: 10, post: false, resultFile: '/tmp/does-not-matter.json',
 }
 
@@ -211,7 +211,7 @@ describe('runCodeReview', () => {
   // flag, only a --config <file> JSON document. Observed live: an ordinary ~10-file PR — not an unusually
   // large one — aborted mid-review with "analysis tokens budget exceeded (87200)" because nothing ever
   // raised it. This writes that config to a temp file and points --config at it.
-  it('writes a temp --config file carrying analysisMaxTokens/analysisGlobalMaxTokens, and cleans it up', async () => {
+  it('writes a temp --config file carrying analysisMaxTokens/analysisGlobalMaxTokens and the real project baseBranch, and cleans it up', async () => {
     let seenArgv: readonly string[] = []
     let configFileDuringRun: string | undefined
     const resultFile = tempResultFile()
@@ -220,11 +220,13 @@ describe('runCodeReview', () => {
         seenArgv = argv
         configFileDuringRun = argv[argv.indexOf('--config') + 1]
         expect(existsSync(configFileDuringRun!)).toBe(true)
-        expect(JSON.parse(readFileSync(configFileDuringRun!, 'utf8'))).toMatchObject({ review: { maxTokens: 800_000, globalMaxTokens: 2_000_000 } })
+        expect(JSON.parse(readFileSync(configFileDuringRun!, 'utf8'))).toMatchObject({ target: { baseBranch: 'trunk' }, review: { maxTokens: 800_000, globalMaxTokens: 2_000_000 } })
         return cmd({ code: 0 })
       },
     }
-    await runCodeReview(trackingRunner, { ...baseInput, resultFile, analysisMaxTokens: 800_000, analysisGlobalMaxTokens: 2_000_000 })
+    // baseBranch deliberately not 'main': proves the temp config's target.baseBranch tracks the project's real
+    // base branch instead of a hardcoded literal — a repo that isn't named 'main' used to get a wrong value here.
+    await runCodeReview(trackingRunner, { ...baseInput, baseBranch: 'trunk', resultFile, analysisMaxTokens: 800_000, analysisGlobalMaxTokens: 2_000_000 })
     expect(seenArgv).toContain('--config')
     expect(existsSync(configFileDuringRun!)).toBe(false)
   })
@@ -234,6 +236,26 @@ describe('runCodeReview', () => {
     const trackingRunner: CommandRunner = { run: async (argv) => { calls.push([...argv]); return cmd({ code: 0 }) } }
     await runCodeReview(trackingRunner, { ...baseInput, resultFile: tempResultFile() })
     expect(calls[0]).not.toContain('--config')
+  })
+
+  // The temp config path used to be keyed only by PR number (review-config-<number>.json): two overlapping
+  // reviews of the same PR (a retry started before a killed prior attempt's process fully released the file)
+  // would share one path and could stomp each other's config or delete it out from under the other mid-run.
+  it('gives two concurrent reviews of the same PR number distinct temp config paths', async () => {
+    const seenPaths: string[] = []
+    const trackingRunner: CommandRunner = {
+      run: async (argv) => {
+        seenPaths.push(argv[argv.indexOf('--config') + 1]!)
+        await new Promise((resolve) => setTimeout(resolve, 10)) // hold the window open, as two real overlapping runs would
+        return cmd({ code: 0 })
+      },
+    }
+    await Promise.all([
+      runCodeReview(trackingRunner, { ...baseInput, resultFile: tempResultFile(), analysisMaxTokens: 800_000 }),
+      runCodeReview(trackingRunner, { ...baseInput, resultFile: tempResultFile(), analysisMaxTokens: 800_000 }),
+    ])
+    expect(seenPaths).toHaveLength(2)
+    expect(seenPaths[0]).not.toBe(seenPaths[1])
   })
 })
 
