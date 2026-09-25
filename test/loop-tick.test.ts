@@ -627,6 +627,52 @@ describe('tick', () => {
     expect(readIssueFailures(loaded.stateDir, 'ENG-10').consecutive).toBe(1)
   })
 
+  it('still applies the pause label when the pause comment fails (regression: a comment timeout skipped the label entirely, so the next tick read the missing "loop:paused" label as a human resuming it and immediately retried the same broken issue — AGE-1742/AGE-1752, 2026-09-22)', async () => {
+    const env = makeEnv({ failAllContracts: true })
+    const loaded = loadLoopConfig(env.configPath)
+    const originalRun = env.runner.run
+    const runner: CommandRunner = {
+      run: async (argv) => (argv[1] === 'linear' && argv[2] === 'comment' && argv[3] === 'add')
+        ? { code: 1, stdout: '', stderr: 'timed out', timedOut: true, durationMs: 1 }
+        : originalRun(argv),
+    }
+    for (let i = 0; i < 3; i += 1) await runTick({ ...tickOptions(env), runner, onlyIssue: 'ENG-10' })
+    expect(isIssuePaused(loaded.stateDir, 'ENG-10')).toBe(true)
+    const pauseLabel = env.runner.calls.find((argv) => argv[1] === 'linear' && argv[2] === 'label' && argv[3] === 'add')
+    expect(pauseLabel).toContain('loop:paused')
+  })
+
+  it('does not treat a missing pause label as a human resume when every label-add attempt failed (regression: same AGE-1742/AGE-1752 race, but for a tracker outage that fails both attempts instead of just the comment)', async () => {
+    const env = makeEnv({ failAllContracts: true })
+    const loaded = loadLoopConfig(env.configPath)
+    const originalRun = env.runner.run
+    let failLabels = true
+    const runner: CommandRunner = {
+      run: async (argv) => (failLabels && argv[1] === 'linear' && argv[2] === 'label' && argv[3] === 'add')
+        ? { code: 1, stdout: '', stderr: 'linear outage', timedOut: false, durationMs: 1 }
+        : originalRun(argv),
+    }
+    for (let i = 0; i < 3; i += 1) await runTick({ ...tickOptions(env), runner, onlyIssue: 'ENG-10' })
+    expect(isIssuePaused(loaded.stateDir, 'ENG-10')).toBe(true)
+    expect(readIssueFailures(loaded.stateDir, 'ENG-10').pauseLabelApplied).toBe(false)
+    // The label never landed, so the fetched issue still has no "loop:paused" label — the exact shape that used
+    // to read as a human resume. It must not: the issue stays paused and the label add is retried instead.
+    const next = await runTick({ ...tickOptions(env), runner, onlyIssue: 'ENG-10' })
+    expect(next.results[0]).toMatchObject({ outcome: 'skipped' })
+    expect(next.notes.some((note) => note.includes('resumed'))).toBe(false)
+    expect(isIssuePaused(loaded.stateDir, 'ENG-10')).toBe(true)
+    // The outage clears; the retried label add now succeeds, and pauseLabelApplied is confirmed true.
+    failLabels = false
+    const healed = await runTick({ ...tickOptions(env), runner, onlyIssue: 'ENG-10' })
+    expect(healed.results[0]).toMatchObject({ outcome: 'skipped' })
+    expect(readIssueFailures(loaded.stateDir, 'ENG-10').pauseLabelApplied).toBe(true)
+    // Only now does removing the label on Linear behave as a genuine resume.
+    await linearLabelRemove(env.runner, { issue: 'ENG-10', labels: ['loop:paused'] }, { workspaceId: loaded.config.linear.workspaceId })
+    const resumed = await runTick({ ...tickOptions(env), runner, onlyIssue: 'ENG-10' })
+    expect(isIssuePaused(loaded.stateDir, 'ENG-10')).toBe(false)
+    expect(resumed.notes.some((note) => note.includes('resumed'))).toBe(true)
+  })
+
   it('auto-resumes a paused issue once the "loop:paused" label is removed on Linear, without requiring the resume CLI', async () => {
     const env = makeEnv({ failAllContracts: true })
     const loaded = loadLoopConfig(env.configPath)
