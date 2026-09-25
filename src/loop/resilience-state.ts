@@ -18,9 +18,20 @@ export interface IssueFailureState {
   readonly history: readonly IssueFailureRecord[]
   readonly pausedAt: string | null
   readonly pausedReason: string | null
+  /**
+   * Whether the pause label write to the tracker is *confirmed* to have landed at least once since `pausedAt`.
+   * The tick loop's own resume detection ("the label is gone from the fetched issue, so a human must have removed
+   * it") is only trustworthy once this is true — false means either the label add is still pending its first
+   * successful attempt, or every attempt has failed so far, and the label's absence on the remote issue therefore
+   * proves nothing about a human's intent. Without this distinction, a tracker outage that fails *every* label
+   * write reproduces the exact bug label-before-comment ordering was written to fix, just needing both attempts
+   * to fail instead of one: pausedAt is set locally, the label never lands, and the next tick reads "no label" as
+   * a resume and immediately retries the same broken candidate.
+   */
+  readonly pauseLabelApplied: boolean
 }
 
-const emptyIssueState = (issue: string): IssueFailureState => ({ issue, consecutive: 0, history: [], pausedAt: null, pausedReason: null })
+const emptyIssueState = (issue: string): IssueFailureState => ({ issue, consecutive: 0, history: [], pausedAt: null, pausedReason: null, pauseLabelApplied: false })
 
 export const issueFailurePath = (stateDir: string, issue: string): string => join(stateDir, 'issues', issue, 'failures.json')
 
@@ -49,6 +60,7 @@ export const recordIssueFailure = (stateDir: string, issue: string, kind: string
     history: [{ kind, at: now.toISOString(), reason: reason.slice(0, 300) }, ...current.history].slice(0, 10),
     pausedAt: current.pausedAt,
     pausedReason: current.pausedReason,
+    pauseLabelApplied: current.pauseLabelApplied,
   }
   writeIssueFailures(stateDir, next)
   return next
@@ -63,9 +75,18 @@ export const clearIssueFailures = (stateDir: string, issue: string): void => {
 
 export const pauseIssue = (stateDir: string, issue: string, reason: string, now: Date = new Date()): IssueFailureState => {
   const current = readIssueFailures(stateDir, issue)
-  const next: IssueFailureState = { ...current, pausedAt: now.toISOString(), pausedReason: reason }
+  // pauseLabelApplied starts false: the caller hasn't attempted the tracker label write yet at this point (see
+  // `markPauseLabelApplied`) — see that field's doc comment for why this distinction matters.
+  const next: IssueFailureState = { ...current, pausedAt: now.toISOString(), pausedReason: reason, pauseLabelApplied: false }
   writeIssueFailures(stateDir, next)
   return next
+}
+
+/** Call once the tracker confirms the pause label write actually landed — see `pauseLabelApplied`'s doc comment. */
+export const markPauseLabelApplied = (stateDir: string, issue: string): void => {
+  const current = readIssueFailures(stateDir, issue)
+  if (current.pausedAt === null || current.pauseLabelApplied) return
+  writeIssueFailures(stateDir, { ...current, pauseLabelApplied: true })
 }
 
 /** Manual or label-driven resume: clears the pause and the counter so the issue gets a clean slate; history is kept. */
