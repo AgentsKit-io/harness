@@ -4,7 +4,7 @@
   "package": "@agentskit/harness",
   "packageVersion": "0.19.0",
   "entryPoint": "src/index.ts",
-  "sourceDigest": "471ee1079a1fbc16e12336c2dfbbaed738105a01b224b5f02f41f15678e649cb",
+  "sourceDigest": "88ade38a5b913545ad7c329e9e29e1578704df65272e8d1d57384e6f6a2f3ed6",
   "capabilities": [
     {
       "id": "public-surface:adapters/agent",
@@ -1731,6 +1731,7 @@
         "isStagePaused",
         "issueFailurePath",
         "listPausedIssues",
+        "markPauseLabelApplied",
         "pauseIssue",
         "readIssueFailures",
         "readLastConfigHash",
@@ -2064,5 +2065,5 @@
       ]
     }
   ],
-  "digest": "3ecec736e31317366ec131942067b19b8f193cb56610b3947098c926b795e956"
+  "digest": "d777beea813a7ea374ca7c108eb2db65c3b87fe4a6288a4719cc78dfc2daa2b8"
 }

@@ -3,7 +3,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
 import {
-  clearIssueFailures, isIssuePaused, isStagePaused, listPausedIssues, pauseIssue, readIssueFailures,
+  clearIssueFailures, isIssuePaused, isStagePaused, listPausedIssues, markPauseLabelApplied, pauseIssue, readIssueFailures,
   readLastConfigHash, readStagePause, recordIssueFailure, recordStageRunResult, resumeIssue, resumeStage,
   writeLastConfigHash,
 } from '../src/index.js'
@@ -15,7 +15,7 @@ const tempStateDir = (): string => { const dir = mkdtempSync(join(tmpdir(), 'age
 describe('per-issue failure tracking', () => {
   it('starts empty, accumulates consecutive failures with capped history, and clears on progress', () => {
     const stateDir = tempStateDir()
-    expect(readIssueFailures(stateDir, 'ENG-1')).toEqual({ issue: 'ENG-1', consecutive: 0, history: [], pausedAt: null, pausedReason: null })
+    expect(readIssueFailures(stateDir, 'ENG-1')).toEqual({ issue: 'ENG-1', consecutive: 0, history: [], pausedAt: null, pausedReason: null, pauseLabelApplied: false })
     const now = new Date('2026-09-12T10:00:00.000Z')
     let state = recordIssueFailure(stateDir, 'ENG-1', 'contract.failed', 'exit 1: quota', now)
     expect(state.consecutive).toBe(1)
@@ -47,6 +47,33 @@ describe('per-issue failure tracking', () => {
 
   it('lists no paused issues when the issues directory does not exist yet', () => {
     expect(listPausedIssues(tempStateDir())).toEqual([])
+  })
+
+  // See IssueFailureState.pauseLabelApplied's doc comment for the race it exists to close: the tick loop's
+  // resume detection only treats a missing pause label as a genuine human signal once this is true.
+  describe('markPauseLabelApplied', () => {
+    it('starts false on a fresh pause and turns true once the caller confirms the label landed', () => {
+      const stateDir = tempStateDir()
+      pauseIssue(stateDir, 'ENG-1', 'contract.failed: quota', new Date('2026-09-12T10:00:00.000Z'))
+      expect(readIssueFailures(stateDir, 'ENG-1').pauseLabelApplied).toBe(false)
+      markPauseLabelApplied(stateDir, 'ENG-1')
+      expect(readIssueFailures(stateDir, 'ENG-1').pauseLabelApplied).toBe(true)
+    })
+
+    it('is a no-op when the issue is not currently paused, so a stray late label confirmation cannot fabricate a pause', () => {
+      const stateDir = tempStateDir()
+      markPauseLabelApplied(stateDir, 'ENG-1')
+      expect(readIssueFailures(stateDir, 'ENG-1')).toMatchObject({ pausedAt: null, pauseLabelApplied: false })
+    })
+
+    it('is reset back to false the next time the issue is paused', () => {
+      const stateDir = tempStateDir()
+      pauseIssue(stateDir, 'ENG-1', 'contract.failed: quota', new Date('2026-09-12T10:00:00.000Z'))
+      markPauseLabelApplied(stateDir, 'ENG-1')
+      resumeIssue(stateDir, 'ENG-1')
+      pauseIssue(stateDir, 'ENG-1', 'contract.failed: quota again', new Date('2026-09-12T11:00:00.000Z'))
+      expect(readIssueFailures(stateDir, 'ENG-1').pauseLabelApplied).toBe(false)
+    })
   })
 })
 

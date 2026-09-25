@@ -199,9 +199,9 @@ export {
 export type { LearningsLedger, MemoryContextPlan, MemoryPromptSelection } from './loop/memory.js'
 
 export {
-  clearIssueFailures, isIssuePaused, isStagePaused, issueFailurePath, listPausedIssues, pauseIssue, readIssueFailures,
-  readLastConfigHash, readStagePause, recordIssueFailure, recordStageRunResult, resumeIssue, resumeStage, stageEntry,
-  stagePausePath, writeLastConfigHash,
+  clearIssueFailures, isIssuePaused, isStagePaused, issueFailurePath, listPausedIssues, markPauseLabelApplied, pauseIssue,
+  readIssueFailures, readLastConfigHash, readStagePause, recordIssueFailure, recordStageRunResult, resumeIssue, resumeStage,
+  stageEntry, stagePausePath, writeLastConfigHash,
 } from './loop/resilience-state.js'
 export type { IssueFailureRecord, IssueFailureState, LoopStageName, StagePauseEntry, StagePauseState } from './loop/resilience-state.js'
 export { archiveIssueRun, createIssueQueue, issueQueuePath, restoreIssueRun, retryIssueRun } from './loop/queue.js'

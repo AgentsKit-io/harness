@@ -36,6 +36,14 @@ export interface OrcaWorktree {
    * an agent in it is stopped at a tool-permission prompt. Only `worktree ps` reports it; `unknown` otherwise.
    */
   readonly activity: string
+  /**
+   * Agents genuinely computing or paused on a tool-permission prompt right now, from `worktree ps`'s per-agent
+   * `agents[].state`. `null` when the tool didn't report an `agents` array at all (older Orca, or a command other
+   * than `worktree ps`) — callers should fail closed on `null`, not read it as zero. A worktree can have a live
+   * terminal and a linked Linear issue yet an empty `agents` array: that's a worktree a circuit-breaker trip or
+   * escalation preserved for human inspection, with its agent already finished — not one still doing work.
+   */
+  readonly activeAgentCount: number | null
 }
 
 export type OrcaAgentHookState = 'installed' | 'not_installed' | 'unknown'
@@ -75,6 +83,11 @@ const linkedLinear = (value: unknown): string | null => {
   return null
 }
 
+const activeAgentCount = (value: unknown): number | null => {
+  if (!Array.isArray(value)) return null
+  return value.filter(isRecord).filter((agent) => agent['state'] === 'working' || agent['state'] === 'permission').length
+}
+
 export const parseOrcaWorktrees = (result: unknown): readonly OrcaWorktree[] => {
   const list = isRecord(result) && Array.isArray(result['worktrees']) ? result['worktrees'] : Array.isArray(result) ? result : []
   return list.filter(isRecord).map((item) => ({
@@ -92,6 +105,7 @@ export const parseOrcaWorktrees = (result: unknown): readonly OrcaWorktree[] => 
     linkedLinearIssue: linkedLinear(item['linkedLinearIssue']),
     comment: str(item['comment']),
     activity: str(item['status'], 'unknown'),
+    activeAgentCount: activeAgentCount(item['agents']),
   })).filter((item) => item.id)
 }
 

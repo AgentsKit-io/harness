@@ -19,12 +19,12 @@ describe('assessPilot validation', () => {
   })
 
   it('rejects a duplicate entry issueId', () => {
-    expect(() => assessPilot({ ...base, entries: [{ issueId: 'AGE-1', classification: 'normal', status: 'excluded', reason: 'dup' }, { issueId: 'AGE-1', classification: 'normal', status: 'excluded', reason: 'dup' }] })).toThrow(/must be unique/)
+    expect(() => assessPilot({ ...base, entries: [{ issueId: 'ABC-1', classification: 'normal', status: 'excluded', reason: 'dup' }, { issueId: 'ABC-1', classification: 'normal', status: 'excluded', reason: 'dup' }] })).toThrow(/must be unique/)
   })
 
   it('rejects an invalid classification or status', () => {
-    expect(() => assessPilot({ ...base, entries: [{ issueId: 'AGE-1', classification: 'urgent', status: 'included' }] })).toThrow(/classification is invalid/)
-    expect(() => assessPilot({ ...base, entries: [{ issueId: 'AGE-1', classification: 'normal', status: 'pending' }] })).toThrow(/status is invalid/)
+    expect(() => assessPilot({ ...base, entries: [{ issueId: 'ABC-1', classification: 'urgent', status: 'included' }] })).toThrow(/classification is invalid/)
+    expect(() => assessPilot({ ...base, entries: [{ issueId: 'ABC-1', classification: 'normal', status: 'pending' }] })).toThrow(/status is invalid/)
   })
 })
 

@@ -44,22 +44,22 @@ orca:
   minVersion: 1.4.200
   timeoutMs: 20000
 
-# Revisão mais rigorosa só nas fatias que pedem, por label. A revisão É o gate quando não há CI, e um
-# contrato que congela evidência não deve ser julgado com o mesmo orçamento de um ajuste de copy.
-# Primeira entrada que casa vence, e só os campos nomeados são trocados.
+# Stricter review only for the slices that ask for it, by label. Review IS the gate when there is no CI, and a
+# contract that freezes evidence should not be judged on the same budget as a copy tweak.
+# The first matching entry wins, and only the named fields are replaced.
 # reviewOverrides:
 #   - anyLabels: [layer:L2, layer:L3]
 #     votes: 2
 #     minSeverity: nit
-#     reason: caminho crítico do MVP
+#     reason: MVP critical path
 
-# Suítes já vermelhas na branch base. O harness NÃO roda o verifyCommand — o worker roda, na worktree
-# dele — então tolerar falha conhecida é informação no briefing, não parsing de saída. A issue de
-# rastreamento é obrigatória: quarentena sem dono vira permanente.
+# Suites already red on the base branch. The harness does NOT run verifyCommand — the worker does, in its
+# own worktree — so tolerating a known failure is information in the brief, not output parsing. The tracking
+# issue is mandatory: a quarantine without an owner becomes permanent.
 # knownFailures:
 #   - path: packages/foo/tests/bar.test.ts
 #     issue: ENG-123
-#     reason: corrida de escrita em arquivo, pré-existente
+#     reason: pre-existing file write race
 
 linear:
   workspaceId: <linear-workspace-id> # orca linear team list --workspace all --json
@@ -136,6 +136,13 @@ models:
       tui: "claude --model {model} --permission-mode auto"
       headless: [claude, -p, "{prompt}", --model, "{model}", --permission-mode, plan, --output-format, text]
       # effortFlag: "--effort {effort}"
+      # `--permission-mode plan` is read-only in the terminal but leaves the model free to end its turn with a
+      # plan/status summary instead of the contract text between markers ("stop losing contract generation to
+      # Task-tool delegation", #87) — structuredOutputFlag reads the contract from the CLI's own schema-validated
+      # `structured_output` field instead, so a compliant reply is never lost to that free-text path. Only
+      # contract generation passes a schema and benefits today; plan-stage/plan-vote headless calls to this same
+      # provider still rely on marker-parsing and remain exposed to the same #87 regression.
+      structuredOutputFlag: [--output-format, json, --json-schema, "{schema}"]
     codex:
       bin: codex
       auth: subscription
@@ -180,6 +187,12 @@ delivery:
     minSeverity: med                  # nit < med < high < blocker; findings at/above this block auto-merge
     # doctorProbe: help                 # help | none — how `loop doctor` probes the review CLI
     deadlineMs: 600000
+    # subprocessTimeoutMs: 300000     # agentskit-review's own inner CLI-call timeout (AGENTSKIT_REVIEW_SUBPROCESS_TIMEOUT_MS),
+                                     # separate from deadlineMs above; its own unset default (120s) was routinely too
+                                     # short for an ordinary review and silently landed as status: incomplete
+    # analysisMaxTokens: 800000       # agentskit-review's own per-run analysis token budget (no CLI flag; set via a
+    # analysisGlobalMaxTokens: 2000000 # generated --config file) — its own default (~87_200 usable under --profile fast)
+                                     # can abort an ordinary PR review with "analysis tokens budget exceeded"
     # smallChangeLines: 0            # >0: a change at or below this many lines (or docs-only) is reviewed by the
                                      # cheapest candidate instead of the strongest — cost lever 3
     # criticalPaths: []              # path prefixes that always get the strongest reviewer, whatever the size
@@ -443,7 +456,7 @@ schedule:
   harnessCommand: ak-harness         # how the Orca automation runs the harness inside the workspace
   namePrefix: loop                   # automations: loop-tick, loop-deliver[, loop-retro][, loop-observe]
   # retro: weekly                     # with retroIssue, installs <prefix>-retro
-  # retroIssue: AGE-0                 # Linear issue that receives the digest comment
+  # retroIssue: ABC-0                 # Linear issue that receives the digest comment
   # This file is the source of truth for every automation. `loop install` reconciles Orca against it — creating what
   # is missing, editing only what drifted, switching off what this file stopped declaring — so changing a schedule is
   # editing the YAML and running install, never editing the automation inside Orca.

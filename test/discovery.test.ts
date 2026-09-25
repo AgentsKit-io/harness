@@ -2,7 +2,7 @@ import { expect, it } from 'vitest'
 import { assessDiscovery, isDiscoveryCurrent } from '../src/index.js'
 
 const base = {
-  issueId: 'AGE-123',
+  issueId: 'ABC-123',
   sourceRevision: 'source-a',
   contractHash: 'contract-a',
   contextHash: 'context-a',

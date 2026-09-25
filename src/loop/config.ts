@@ -246,7 +246,7 @@ export const LoopConfigSchema = z.object({
         anyLabels: z.array(nonEmpty).min(1),
         votes: z.number().int().positive().max(5).optional(),
         minSeverity: z.enum(['nit', 'med', 'high', 'blocker']).optional(),
-        /** Mesmo enum de `delivery.review.profile` — um perfil inventado aqui só falharia no CLI. */
+        /** Same enum as `delivery.review.profile` — a profile invented here would only fail in the CLI. */
         profile: z.enum(['fast', 'full']).optional(),
         /** Why this slice is stricter — read by whoever wonders about the cost. */
         reason: nonEmpty.optional(),
@@ -360,6 +360,27 @@ export const LoopConfigSchema = z.object({
       /** agentskit-review severity floor that blocks auto-merge: nit < med < high < blocker. */
       minSeverity: z.enum(['nit', 'med', 'high', 'blocker']).default('med'),
       deadlineMs: z.number().int().positive().default(600_000),
+      /**
+       * `agentskit-review` spawns each lens's `claude -p`/`codex exec`/etc. call with its own inner
+       * timeout, separate from `deadlineMs` above (the outer per-review budget) and from `--deadline-ms`
+       * on the CLI — neither reaches this inner call. It defaults to 120s (`DEFAULT_LOCAL_CLI_TIMEOUT_MS`
+       * in `@agentskit/code-review`), read only from the `AGENTSKIT_REVIEW_SUBPROCESS_TIMEOUT_MS` env var,
+       * which nothing here ever set. Observed live 2026-09-22/23: real reviews of ordinary source files
+       * (not just large ones) routinely exceeded 120s and came back `status: incomplete`, and after two
+       * such attempts at the same head `deliver` gives up and marks the PR "held" for a human — with no
+       * error, just a review that quietly never got a fair budget. 300s cleared every case observed.
+       */
+      subprocessTimeoutMs: z.number().int().positive().default(300_000),
+      /**
+       * `agentskit-review`'s own per-run analysis token budget (`review.maxTokens`/`globalMaxTokens`, ~87_200
+       * usable by default under `--profile fast`) has no CLI flag — only a `--config <file>` JSON document,
+       * which nothing here ever generated. Observed live 2026-09-23: an ordinary ~10-file issue PR aborted
+       * mid-review with "analysis tokens budget exceeded (87200)", landing as the same `status: incomplete`
+       * a missing `subprocessTimeoutMs` used to cause. `runCodeReview` writes a small temp `--config` with
+       * just these two fields when set.
+       */
+      analysisMaxTokens: z.number().int().positive().default(800_000),
+      analysisGlobalMaxTokens: z.number().int().positive().default(2_000_000),
       maxCalls: z.number().int().positive().max(1000).default(400),
       /** Post the review to the PR (inline + summary). */
       post: z.boolean().default(true),
@@ -947,8 +968,19 @@ export const LoopConfigSchema = z.object({
      * work and an Orca-launched agent runs the harness (needs a provider that runs non-interactively).
      */
     runner: z.enum(['precheck', 'agent']).default('precheck'),
-    /** Time budget for one stage when `runner: precheck`. Orca caps prechecks at 600 s; the stage itself must fit. */
-    stageTimeoutSec: z.number().int().positive().max(600).default(600),
+    /**
+     * Time budget for one stage when `runner: precheck`. Orca caps prechecks at 600s — enforced by Orca itself
+     * (`orca automations edit --precheck-timeout` rejects anything above 600, confirmed live 2026-09-22) — so a
+     * value here above 600 is simply unreachable for a stage actually wired to an Orca precheck automation.
+     *
+     * Not capped here, though: `ak-harness loop stage <name>` reads this value whenever it runs, including
+     * outside Orca entirely (e.g. a plain OS scheduler invoking it directly, sidestepping the precheck ceiling
+     * altogether — see docs/LOOP.md's tick-scheduling section). `tick`'s own contract-generation gate needs
+     * roughly contract.timeoutMs + setup timeout + 120s of budget just to attempt one candidate, which exceeds
+     * 600s on its own, so a caller with a longer real leash (like a scheduled task) needs to set this higher
+     * than an Orca precheck ever could.
+     */
+    stageTimeoutSec: z.number().int().positive().default(600),
     timezone: nonEmpty.optional(),
   }).prefault({}),
 })

@@ -62,7 +62,7 @@ describe('automationSpecs with an Orca host and a retro automation', () => {
     const yaml = exampleYaml
       .replace('  # host: runtime:<environment-id>   # paired remote Orca host', '  host: my-remote-host')
       .replace('  # retro: weekly                     # with retroIssue, installs <prefix>-retro', '  retro: "0 9 * * 1"')
-      .replace('  # retroIssue: AGE-0                 # Linear issue that receives the digest comment', '  retroIssue: ENG-1')
+      .replace('  # retroIssue: ABC-0                 # Linear issue that receives the digest comment', '  retroIssue: ENG-1')
     const dir = mkdtempSync(join(tmpdir(), 'agentskit-loop-install-gaps-retro-')); cleanups.push(dir)
     writeFileSync(join(dir, 'loop.config.yaml'), yaml)
     const loaded = loadLoopConfig(join(dir, 'loop.config.yaml'))
@@ -81,7 +81,7 @@ describe('installLoopAutomations edge cases', () => {
   })
 
   it('warns when schedule.retroIssue is set without a retro cron', async () => {
-    const withIssueOnly = exampleYaml.replace('  # retroIssue: AGE-0                 # Linear issue that receives the digest comment', '  retroIssue: ENG-1')
+    const withIssueOnly = exampleYaml.replace('  # retroIssue: ABC-0                 # Linear issue that receives the digest comment', '  retroIssue: ENG-1')
     const env1 = setup({ yaml: withIssueOnly })
     const report = await installLoopAutomations({ loaded: env1.loaded, runner: env1.runner, env: env(env1.bin), platform: 'darwin' })
     expect(report.notes.some((note) => note.includes('retro cron is missing'))).toBe(true)

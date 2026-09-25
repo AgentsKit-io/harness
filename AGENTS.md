@@ -25,6 +25,12 @@ comment instead of building it out "properly" now — see
 full ladder. This repo already uses the convention (`src/execution/verification.ts`,
 `src/loop/deliver.ts`, `src/loop/doctor.ts`); keep it going.
 
+## Reuse first
+
+Before adding a package or dependency, check existing AgentsKit ecosystem
+packages first, then established libraries or services. Write new code only
+when neither fits, and justify it in the PR's **Reuse** section.
+
 ## Output style — caveman
 
 Commit messages, PR bodies, and review replies are technical and short: state the

@@ -1,8 +1,8 @@
 # AgentsKit Harness — Home Page Design Brief
 
 Hand this to a design session. It covers the hero animation and every section below it. The home page is the only
-part of the site being designed separately; the docs shell, content and reference pages are built from
-`PLAN-0.15.0.md`.
+part of the site being designed separately; the docs shell, content and reference pages are built
+separately.
 
 ## 1. What this page is
 

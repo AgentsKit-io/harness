@@ -56,12 +56,20 @@ export const providerSpecs = (config: LoopConfig): readonly ProviderSpec[] => Ob
   return { id, bin: settings.bin, auth: settings.auth, envKeys: settings.envKeys, orcaUsageKey, ...(settings.probe ? { probe: settings.probe } : {}) }
 })
 
-/** Count worktrees still doing implementation work. Review/completed worktrees keep their lease for delivery, but must not consume a builder slot. */
+/**
+ * Count worktrees still doing implementation work. Review/completed worktrees keep their lease for delivery, but
+ * must not consume a builder slot — and neither must one a circuit-breaker trip or an escalation preserved "for
+ * inspection": it stays linked to its issue and keeps its terminal pane, but no agent is running in it any more.
+ * When `worktree ps` reports `agents[]` (current Orca), trust that precise signal over the coarse terminal/linked-
+ * issue heuristic, so a preserved-but-idle worktree stops leaking a slot forever. `activeAgentCount === null` means
+ * the tool didn't report agents at all (older Orca) — fail closed to the old heuristic rather than assume idle.
+ */
 export const countRunningWorkers = (worktrees: readonly OrcaWorktree[]): number => worktrees.filter((item) => {
   if (item.isArchived || item.isMainWorktree) return false
   // ponytail: only explicit terminal lifecycle states are excluded; unknown states stay fail-closed.
   const status = item.workspaceStatus.trim().toLowerCase()
   if (status === 'in-review' || status === 'completed') return false
+  if (item.activeAgentCount !== null) return item.activeAgentCount > 0
   return item.liveTerminalCount > 0 || item.linkedLinearIssue !== null
 }).length
 
@@ -83,6 +91,12 @@ export const runLoopDoctor = async (input: LoopDoctorInput): Promise<LoopDoctorR
   else push('orca.version', 'passed', `Orca ${version} ≥ ${config.orca.minVersion}`)
   if (status) push('orca.runtime', status.runtimeReady ? 'passed' : 'failed', status.runtimeReady ? `runtime ready (app ${status.appRunning ? 'running' : 'not running'})` : `runtime ${status.runtimeState}; start it with "${config.orca.bin} open"`)
   else push('orca.runtime', 'failed', orcaError ?? 'status unavailable')
+  // schedule.stageTimeoutSec has no schema ceiling (a caller outside Orca's precheck, e.g. a plain OS scheduler,
+  // legitimately needs more than 600s) but Orca's own `automations edit --precheck-timeout` rejects anything
+  // above 600 for a stage actually wired to a precheck automation — this deterministically fails `loop install`
+  // for that stage, worth catching here (doctor is read-only, install is not) rather than only via Orca's own
+  // CLI error at install time.
+  if (config.schedule.runner === 'precheck' && config.schedule.stageTimeoutSec > 600) push('schedule.stage-timeout', 'failed', `stageTimeoutSec (${config.schedule.stageTimeoutSec}s) exceeds Orca's precheck ceiling of 600s; "loop install" will fail creating/editing the precheck automation. Lower schedule.stageTimeoutSec to 600 or fewer, or switch schedule.runner to "agent".`)
 
   const [accountList, agentHooks] = await Promise.all([
     orcaAccountList(input.runner, orcaOptions).catch((error: unknown) => { push('orca.accounts', 'warning', `account list unavailable: ${message(error)}`); return null }),
