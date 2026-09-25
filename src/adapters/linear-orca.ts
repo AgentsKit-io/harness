@@ -3,24 +3,12 @@ import { hashJson } from '../kernel/hash.js'
 import { orcaJson, type OrcaCliOptions } from './orca-cli.js'
 import { createTrackingAdapter, type TrackingAdapter } from './tracking.js'
 import type { CommandRunner } from './command.js'
+import type { TrackerComment, TrackerIssue, TrackerIssueDetail } from '../loop/tracker.js'
 
-export interface LoopIssue {
-  readonly id: string
-  readonly identifier: string
-  readonly title: string
-  readonly url: string
-  readonly state: string
-  readonly stateType: string
-  readonly assignee: string | null
-  readonly assigneeId: string | null
-  readonly labels: readonly string[]
-  readonly priority: number
-  readonly priorityLabel: string
-  readonly project: string | null
-  readonly branchName: string | null
-  readonly createdAt: string
-  readonly updatedAt: string
-}
+export type { TrackerComment, TrackerIssue, TrackerIssueDetail } from '../loop/tracker.js'
+
+/** @deprecated Use TrackerIssue at the provider-neutral seam. */
+export type LoopIssue = TrackerIssue
 
 export interface LinearQueueFilter {
   readonly states: readonly string[]
@@ -152,13 +140,10 @@ export const fetchLinearQueue = async (runner: CommandRunner, input: FetchQueueI
 
 // ---- issue detail and writes ------------------------------------------------------------------
 
-export interface LinearIssueDetail extends LoopIssue {
-  readonly description: string
-  readonly comments: readonly { readonly author: string | null; readonly body: string; readonly createdAt: string }[]
-  readonly raw: unknown
-}
+/** @deprecated Use TrackerIssueDetail at the provider-neutral seam. */
+export interface LinearIssueDetail extends TrackerIssueDetail {}
 
-const commentsOf = (result: Record<string, unknown>): LinearIssueDetail['comments'] => {
+const commentsOf = (result: Record<string, unknown>): TrackerComment[] => {
   const list = Array.isArray(result['comments']) ? result['comments'] : []
   return list.filter(isRecord).map((item) => ({ author: isRecord(item['user']) ? str(item['user']['displayName'], str(item['user']['name'])) || null : str(item['author']) || null, body: str(item['body']), createdAt: str(item['createdAt']) }))
 }

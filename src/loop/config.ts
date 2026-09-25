@@ -23,7 +23,9 @@ export const teamConfigFile = (team: string): string => `loop.config.team.${team
  * `~/.agentskit/harness.yaml`. A missing file is not an error — the global layer is optional by design.
  */
 export const globalConfigPath = (env: NodeJS.ProcessEnv = process.env, home: string = homedir()): string =>
-  env['AK_HARNESS_CONFIG']?.trim() || resolve(env['AK_HARNESS_HOME']?.trim() || resolve(home, '.agentskit'), GLOBAL_CONFIG_FILE)
+  env['AK_HARNESS_CONFIG']?.trim() || ((env['AK_HARNESS_HOME']?.trim() || home).startsWith('/')
+    ? `${(env['AK_HARNESS_HOME']?.trim() || `${home}/.agentskit`).replace(/\/+$/, '')}/${GLOBAL_CONFIG_FILE}`
+    : resolve(env['AK_HARNESS_HOME']?.trim() || resolve(home, '.agentskit'), GLOBAL_CONFIG_FILE))
 
 /** `AK_HARNESS_NO_GLOBAL=1` loads the project without the user's layer — for tests and for reproducing what CI sees. */
 export const globalLayerDisabled = (env: NodeJS.ProcessEnv = process.env): boolean => env['AK_HARNESS_NO_GLOBAL'] === '1'
@@ -196,7 +198,15 @@ export const LoopConfigSchema = z.object({
      * whatever state they are moved to: a worker given one opens a PR here that does not do the work, or none.
      */
     outsideLabel: nonEmpty.default('outside-loop'),
-  }),
+  }).optional(),
+  /**
+   * Source of dispatchable work. `backlog` preserves the historical tracker drain; `explicit` consumes only
+   * requests confirmed through the durable issue queue (the UI and future scheduler integrations share it).
+   */
+  queue: z.object({
+    mode: z.enum(['backlog', 'explicit']).default('backlog'),
+    order: z.literal('fifo').default('fifo'),
+  }).prefault({}),
   /**
    * Suites already red on the base branch, declared so a worker is not asked to pass a verification that
    * nobody can pass.
@@ -236,7 +246,7 @@ export const LoopConfigSchema = z.object({
         anyLabels: z.array(nonEmpty).min(1),
         votes: z.number().int().positive().max(5).optional(),
         minSeverity: z.enum(['nit', 'med', 'high', 'blocker']).optional(),
-        /** Mesmo enum de `delivery.review.profile` — um perfil inventado aqui só falharia no CLI. */
+        /** Same enum as `delivery.review.profile` — a profile invented here would only fail in the CLI. */
         profile: z.enum(['fast', 'full']).optional(),
         /** Why this slice is stricter — read by whoever wonders about the cost. */
         reason: nonEmpty.optional(),
@@ -563,6 +573,24 @@ export const LoopConfigSchema = z.object({
     intakeLabel: nonEmpty.nullable().default('loop:review'),
     /** Intake PRs are always review + comment only; this loop never merges a PR it did not dispatch, regardless of a clean review. */
     reviewOnly: z.literal(true).default(true),
+    issues: z.object({
+      /** Active board reads are deliberately limited to open GitHub Issues; closed issues remain addressable by detail. */
+      state: z.literal('open').default('open'),
+      /** Fetch one extra row to detect truncation while keeping the retained board bounded. */
+      maxIssues: z.number().int().positive().max(5_000).default(500),
+      /** Remote board reads are cached; this is the minimum age before another `gh` call. */
+      refreshSeconds: z.number().int().positive().default(60),
+      /** Optional machine override. When absent, the authenticated `gh` user owns the loop queue. */
+      assignee: nonEmpty.optional(),
+      /** Exactly one lifecycle label is applied to a GitHub issue at a time. */
+      labels: z.object({
+        todo: nonEmpty.default('loop:todo'),
+        inProgress: nonEmpty.default('loop:in-progress'),
+        review: nonEmpty.default('loop:review'),
+        done: nonEmpty.default('loop:done'),
+        blocked: nonEmpty.default('loop:blocked'),
+      }).prefault({}),
+    }).prefault({}),
   }).prefault({}),
   resilience: z.object({
     /**
@@ -666,7 +694,7 @@ export const LoopConfigSchema = z.object({
    * implementation and a new value here, never a change in tick, deliver or release.
    */
   connectors: z.object({
-    tracker: z.enum(['linear']).default('linear'),
+    tracker: z.enum(['linear', 'github']).default('linear'),
     scm: z.enum(['github']).default('github'),
     /** `orca` drives Orca's worktrees and terminals; `local` is git worktree + tmux + the system crontab. */
     runner: z.enum(['orca', 'local']).default('orca'),
@@ -947,7 +975,9 @@ export const LoopConfigSchema = z.object({
 })
 
 export type LoopConfigInput = z.input<typeof LoopConfigSchema>
-export type LoopConfig = z.output<typeof LoopConfigSchema>
+type ParsedLoopConfig = z.output<typeof LoopConfigSchema>
+/** Runtime validation fills a compatibility Linear-shaped value for GitHub configs. */
+export type LoopConfig = Omit<ParsedLoopConfig, 'linear'> & { readonly linear: NonNullable<ParsedLoopConfig['linear']> }
 export type LoopProviderConfig = LoopConfig['models']['providers'][string]
 
 export interface ModelReference { readonly provider: string; readonly model: string }
@@ -985,7 +1015,33 @@ const formatIssues = (issues: readonly z.core.$ZodIssue[]): string => issues.map
 export const validateLoopConfig = (value: unknown): LoopConfig => {
   const result = LoopConfigSchema.safeParse(value)
   if (!result.success) return fail(`Invalid ${LOOP_CONFIG_FILE}: ${formatIssues(result.error.issues)}`, 'INVALID_CONFIG')
-  const config = result.data
+  const parsed = result.data
+  const rawLinear = isPlainObject(value) ? value['linear'] : undefined
+  if (parsed.connectors.tracker === 'linear' && !isPlainObject(rawLinear)) fail('linear is required when connectors.tracker is "linear".', 'INVALID_CONFIG')
+  // ponytail: existing loop modules still read config.linear; the GitHub adapter maps this compatibility state model to labels.
+  const config = (parsed.linear ? parsed : {
+    ...parsed,
+    linear: {
+      workspaceId: 'github', teamKey: 'github', person: 'github', people: {},
+      rotation: { enabled: false, owners: [], advanceWhenEmpty: true }, queueOwnership: 'person',
+      states: ['Todo', 'Ready'], entryState: 'Backlog', excludeLabels: ['blocked', 'needs-info'], requireLabels: [],
+      anyLabels: [], projects: [], order: ['priority', 'updatedAt'], maxQueue: 50,
+      inProgressState: 'In Progress', reviewState: 'In Review', doneState: 'Done', blockedLabel: 'blocked',
+      needsInfoLabel: 'needs-info', outsideLabel: 'outside-loop',
+    },
+  }) as LoopConfig
+  const githubLifecycleLabels = Object.values(config.github.issues.labels)
+  if (new Set(githubLifecycleLabels).size !== githubLifecycleLabels.length) fail('github.issues.labels values must be unique so exactly one lifecycle label can be active.', 'INVALID_CONFIG')
+  if (config.connectors.tracker === 'github') {
+    const normalizedReturnState = config.delivery.returnState.toLowerCase()
+    const githubStateNames = new Set([
+      ...config.linear.states,
+      'todo', 'ready',
+      config.linear.inProgressState, config.linear.reviewState, config.linear.doneState, config.linear.blockedLabel,
+      ...githubLifecycleLabels,
+    ].map((state) => state.toLowerCase()))
+    if (!githubStateNames.has(normalizedReturnState)) fail(`delivery.returnState "${config.delivery.returnState}" has no configured GitHub lifecycle label. Use one of the configured github.issues.labels or a mapped state such as Todo.`, 'INVALID_CONFIG')
+  }
   for (const role of MODEL_ROLES) for (const [tierIndex, tier] of config.models[role].entries()) for (const ref of tier) {
     const { provider } = parseModelRef(ref)
     if (!config.models.providers[provider]) fail(`models.${role}[${tierIndex}] references unknown provider "${provider}"; declare it under models.providers.`, 'INVALID_CONFIG')

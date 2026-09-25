@@ -1,32 +1,24 @@
-# 0.18.0 release candidate
+# 0.19.0 release candidate
 
-What a pre-publish review found when it went looking for the gap between what this package claims and what it
-does. Seven changes landed; every one of them is a place the harness was wrong about itself.
+Everything here was found by running the keep-pushing loop on a real multi-week repository migration, first with
+a single non-default provider and then a mixed one. Each fix was observed live and has a test; `CHANGELOG.md`
+has the full list.
 
-**Worker guard.** `ak-harness loop worker-guard` blocks a `Write`/`Edit`/`MultiEdit`/`NotebookEdit` touching
-`delivery.selfEditPaths` or `delivery.secretFilePatterns` as it happens, inside the worker's own session — the
-same check `deliver` already made on a PR's changed files, early enough to prevent the write instead of
-reporting it. The review then found four ways the guard failed open *while reporting itself installed*; all
-four are fixed. `docs/ADR-0038` states what it does not claim, including the `Bash` path it cannot see and the
-fail-open on a crashed hook.
+**Safety.** A worker at a tool-permission prompt is held for a person, never typed into. The orchestrator reads
+a harness-owned view of `origin/<baseBranch>`, and workers start from it. A PR held for protected paths is
+released only by `loop approve <issue> --head <sha> --by <you>`, bound to that commit. Gate lists accumulate
+across config layers. Approved plan documents stay out of a checkout that is not the clean base branch.
 
-**Gates.** A flow profile could turn the review, the verify, the definition of done and CI gating all off and
-still auto-merge, with no human approval required — nothing examined the diff and nobody was asked to. There is
-a floor under auto-merge now. `connectors.runner: "local"` is rejected at load rather than silently running
-Orca. `docs/ADR-0039` covers both.
+**Delivery.** The brief goes over as a file with a one-line pointer, and counts as delivered only when the turn
+starts, or, for agents Orca cannot observe, when it stays on screen. An unconfirmed brief is re-sent on the
+first idle pass. A worker out of usage is handed to another provider after its terminal is closed, and a reset
+given in days is read whole. A PR closed without merge is escalated once.
 
-**Boundaries.** Every read of a JSON file the harness wrote is validated before the caller sees it, and a rule
-in CI keeps new unchecked casts out. `DispatchRecordFile.worktreePath` is optional, because it always was on
-disk — making the type honest surfaced the one defect a human review had to find by reading.
+**Planning.** Model output is found in markers, a fenced block or the last valid JSON value. Decompose files
+what it reviewed, outside the queue, and marks work that is not a PR to this repository (`outside-loop`).
 
-**Economy.** Four of this repository's own five house conventions were being broken by it: fix rounds ran the
-whole gate instead of the layer's, the role writing the code reasoned less than the roles reading it, the issue
-timeline read the event log unbounded, and plan votes made one full call each even when the pool had one model.
+**Breaking.** Gate lists accumulate across layers; `approve-design` needs `--accept-objections` when votes
+carry objections; decompose files issues in `linear.entryState`, which must not be one of `linear.states`;
+the queue never dispatches `linear.outsideLabel`.
 
-**Release.** Publishing ran in parallel with CI and could ship past a red gate. It is a job in
-`release-harness.yml` now, needing all three check jobs. The filename is load-bearing: npm Trusted Publishing
-authorises by repository and workflow filename.
-
-The blockers in `release/manifest.json` (`ecosystem-compatibility`, `pilot-benchmark`) are unchanged and still
-open; `release/qualification.json` records what was and was not measured for this version rather than asserting
-a qualification run that did not happen.
+The blockers in `release/manifest.json` (`ecosystem-compatibility`, `pilot-benchmark`) are unchanged.

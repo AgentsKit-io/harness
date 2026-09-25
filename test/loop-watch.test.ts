@@ -27,6 +27,7 @@ describe('loop watch', () => {
     expect(classifyWatchPhase(delivery({ reviews: { a: { status: 'incomplete', at: 't', provider: 'x', model: 'm', blocking: 0, attempts: 2 } } }), null)).toBe('held-incomplete-review')
     const event = classifyWatchEvent('held-incomplete-review', delivery({ reviews: { a: { status: 'incomplete', at: 't', provider: 'x', model: 'm', blocking: 0, attempts: 2 } } }), null, '2026-09-12T12:00:00.000Z', 'ENG-1')
     expect(event.kind).toBe('ACTION_REQUIRED')
+    expect(classifyWatchEvent('held-incomplete-review', delivery({ reviews: { a: { status: 'incomplete', at: 't', provider: 'x', model: 'm', blocking: 0, attempts: 2, reason: 'review incomplete (exit 2): one lens returned invalid structured output' } } }), null, '2026-09-12T12:00:00.000Z', 'ENG-1').message).toContain('invalid structured output')
     expect(formatWatchEvent(event)).toContain('ACTION_REQUIRED: ENG-1')
   })
 
@@ -156,6 +157,30 @@ describe('loop watch', () => {
     })
     expect(report.status).toBe('done')
     expect(seen).toEqual(['DONE']) // the initial waiting-for-pr PROGRESS was suppressed; only the change to merged was reported
+  })
+
+  it('waits for a named issue that is not dispatched yet instead of calling it done', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'agentskit-loop-watch-pending-')); cleanups.push(dir)
+    writeFileSync(join(dir, 'loop.config.yaml'), exampleYaml)
+    const loaded = loadLoopConfig(join(dir, 'loop.config.yaml'))
+    expect((await watchDeliveries({ loaded, issue: 'ENG-1', once: true, livePr: false })).status).toBe('waiting')
+    let tickCount = 0
+    const seen: string[] = []
+    const report = await watchDeliveries({
+      loaded, issue: 'ENG-1', livePr: false, intervalMs: 10,
+      sleep: async () => {
+        tickCount += 1
+        // Dispatched between polls, then merged: the watch must still be there to see it.
+        if (tickCount === 1) {
+          mkdirSync(join(loaded.stateDir, 'issues', 'ENG-1'), { recursive: true })
+          writeFileSync(join(loaded.stateDir, 'issues', 'ENG-1', 'dispatch.json'), JSON.stringify(dispatchRecord('ENG-1')))
+          writeFileSync(join(loaded.stateDir, 'issues', 'ENG-1', 'delivery.json'), JSON.stringify(delivery({ finalOutcome: 'merged', finishedAt: '2026-09-12T12:00:00.000Z' })))
+        }
+      },
+      onEvent: (event) => seen.push(event.kind),
+    })
+    expect(report.status).toBe('done')
+    expect(seen).toContain('DONE')
   })
 
   it('uses the real clock and a real timer for now/sleep when neither is overridden', async () => {

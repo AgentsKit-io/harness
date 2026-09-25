@@ -2,8 +2,9 @@ import { appendFileSync, closeSync, existsSync, mkdirSync, openSync, readdirSync
 import { dirname, join } from 'node:path'
 import { z } from 'zod'
 import type { CommandRunner } from '../adapters/command.js'
-import { fetchLinearQueue, linearLabelRemove, type LinearIssueDetail, type LoopIssue } from '../adapters/linear-orca.js'
-import { resolveConnectors, type TrackerConnector } from './connectors.js'
+import type { LoopIssue } from '../adapters/linear-orca.js'
+import { requireWritableTracker, resolveConnectors, type TrackerConnector } from './connectors.js'
+import type { TrackerIssueDetail } from './tracker.js'
 import { createOrcaDispatchPlan } from '../adapters/orca.js'
 import { orcaTerminalScreen, orcaTerminalEnter, orcaTurnStarted, orcaAccountList, orcaAgentHooks, orcaDiagnosticsMemory, orcaTerminalCreate, orcaTerminalSend, orcaTerminalWait, orcaWorktreeCreate, orcaWorktreeRemove, orcaWorktrees, type OrcaWorktree } from '../adapters/orca-cli.js'
 import { detectProviders, type ProviderAvailability } from '../adapters/providers.js'
@@ -31,6 +32,8 @@ import { createLoopEventBus, loadLoopPlugins, type LoopEventBus, type LoopEventP
 import { attachNotifier } from './notify.js'
 import { applyRoleSettings, resolveFlow, resolveRoleSettings, workerPhaseEnabled } from './flows.js'
 import { installWorkerGuard } from './worker-guard.js'
+import { createIssueQueue, type IssueRun } from './queue.js'
+import { createLifecycleStore } from './lifecycle.js'
 
 export type TickOutcome = 'dispatched' | 'dry-run' | 'skipped' | 'escalated' | 'failed'
 
@@ -82,6 +85,8 @@ export interface DispatchRecordFile {
   readonly delegation?: 'subagents' | 'alone'
   readonly setup: { readonly command: readonly string[]; readonly exitCode: number | null; readonly durationMs: number; readonly timedOut: boolean } | null
   readonly effort: EffortLevel
+  /** False when the worker's terminal never confirmed the brief; deliver re-sends it instead of waiting out the idle timeout. */
+  readonly briefAccepted?: boolean
   /** Builder provider's remaining Orca usage percent at dispatch time (`resilience.maxUsageDeltaPercent` cost guard); `null` when usage was unknown. */
   readonly initialRemainingPercent: number | null
   /**
@@ -109,6 +114,11 @@ export interface DispatchRecordFile {
    * yet (`codex`) or when `delivery.workerGuard.enabled` is off. A record without this field predates the feature.
    */
   readonly workerGuardInstalled?: boolean
+  /** UI-confirmed queue snapshot; absent on legacy backlog dispatches. */
+  readonly queueRunId?: string
+  readonly frozenFlow?: string | null
+  readonly frozenMaxFixRounds?: number
+  readonly frozenPerIssueTokens?: number
 }
 
 export interface TickInput {
@@ -173,15 +183,20 @@ export const launchWorkerTerminal = async (input: { readonly runner: CommandRunn
   // the worker only started when an idle nudge's Enter submitted it. Observe the same request again; if the turn still
   // has not started, press Enter alone (a no-op for a busy agent) and observe once more.
   // Orca cannot observe every agent's turns (opencode reports `observation: unsupported`, so its stages stop at
-  // `input_accepted` forever). There the screen is the proof: the prompt's first words must show up; if they never
-  // do, the keystrokes were dropped — observed, an opencode TUI reported idle while still on its splash screen and
-  // swallowed the brief — and the prompt is sent again, up to twice.
+  // `input_accepted` forever). There the screen is the proof: the prompt's first words must show up and still be
+  // there a moment later — a started turn keeps the message in its transcript, a swallowed one vanishes. Observed
+  // both: an opencode TUI reported idle while still on its splash screen and never showed the brief; another showed
+  // it, then dropped it and sat on an empty prompt for minutes. Either way the prompt is sent again, up to twice.
   if (receipt.observation === 'unsupported') {
     const probe = prompt.split('\n').find((line) => line.trim())?.trim().slice(0, 40) ?? ''
+    const delayMs = input.screenCheckDelayMs ?? 4_000
+    const onScreen = async (): Promise<boolean> => {
+      await new Promise((resolve) => { setTimeout(resolve, delayMs) })
+      try { return (await orcaTerminalScreen(input.runner, { terminal: created.handle }, orca)).replace(/\s+/g, ' ').includes(probe.replace(/\s+/g, ' ')) } catch { return false }
+    }
     let visible = false
     for (let attempt = 0; attempt < 3 && probe; attempt += 1) {
-      await new Promise((resolve) => { setTimeout(resolve, input.screenCheckDelayMs ?? 4_000) })
-      try { visible = (await orcaTerminalScreen(input.runner, { terminal: created.handle }, orca)).replace(/\s+/g, ' ').includes(probe.replace(/\s+/g, ' ')) } catch { visible = false }
+      visible = await onScreen() && await onScreen()
       if (visible || attempt === 2) break
       receipt = await orcaTerminalSend(input.runner, { terminal: created.handle, text: prompt, enter: true, waitSubmitSeconds: 5 }, orca)
     }
@@ -261,12 +276,12 @@ const resetDeliveryStateForDispatch = (stateDir: string, issue: string): void =>
   const path = join(stateDir, 'issues', issue, 'delivery.json')
   if (!existsSync(path)) return
   try {
-    const previous = JSON.parse(readFileSync(path, 'utf8')) as { readonly finalOutcome?: unknown }
-    if (!['stuck', 'blocked', 'abandoned'].includes(String(previous.finalOutcome))) return
+    const previous = JSON.parse(readFileSync(path, 'utf8')) as { readonly finalOutcome?: unknown; readonly cancelledAt?: unknown }
+    if (!previous.cancelledAt && !['stuck', 'blocked', 'abandoned'].includes(String(previous.finalOutcome))) return
   } catch { return }
   // `writeJsonAtomic` e não `writeJson`: o remoto trocou toda escrita de estado por escrita atômica
   // (PR #80), e um reset de estado de entrega escrito pela metade é pior que nenhum reset.
-  writeJsonAtomic(path, { issue, prNumber: null, reviews: {}, fixRounds: 0, nudges: [], handoffs: [], heldFor: null, finishedAt: null, finalOutcome: null })
+  writeJsonAtomic(path, { issue, prNumber: null, reviews: {}, fixRounds: 0, nudges: [], handoffs: [], heldFor: null, finishedAt: null, finalOutcome: null, cancelledAt: null })
 }
 /** Above this, the hot `events.ndjson` file rotates to an archive instead of growing forever — a 24/7 loop
  * emits several events per dispatch, and every `retro`/`debrief` read loads the whole file into memory. */
@@ -355,15 +370,26 @@ export interface LoopState {
 
 export const gatherLoopState = async (input: { readonly loaded: LoadedLoopConfig; readonly runner: CommandRunner; readonly ledger: DispatchLedger; readonly env?: NodeJS.ProcessEnv; readonly platform?: NodeJS.Platform; readonly now: () => Date; readonly onlyIssue?: string; readonly machine?: TickInput['machine'] }): Promise<LoopState> => {
   const { config } = input.loaded
+  requireWritableTracker(config)
   const person = queueOwner(input.loaded)
   const orca = { bin: config.orca.bin, timeoutMs: config.orca.timeoutMs }
-  const [accountList, agentHooks, worktrees, queue, orcaMemory] = await Promise.all([
+  const tracker = resolveConnectors({ runner: input.runner, config, env: input.env }).tracker
+  const explicitRuns = config.queue.mode === 'explicit'
+    ? createIssueQueue({ stateDir: input.loaded.stateDir }).list().filter((run) => run.status === 'queued').sort((left, right) => left.sequence - right.sequence)
+    : []
+  const [accountList, agentHooks, worktrees, backlogQueue, orcaMemory] = await Promise.all([
     orcaAccountList(input.runner, orca).catch(() => ({})),
     orcaAgentHooks(input.runner, orca).catch(() => ({}) as Readonly<Record<string, 'installed' | 'not_installed' | 'unknown'>>),
     orcaWorktrees(input.runner, orca),
-    fetchLinearQueue(input.runner, { bin: config.orca.bin, workspaceId: config.linear.workspaceId, teamKey: config.linear.teamKey, assignee: person, filter: config.linear, orca }),
+    config.queue.mode === 'explicit' ? Promise.resolve<readonly LoopIssue[]>([]) : tracker.queue({ assignee: person }),
     orcaDiagnosticsMemory(input.runner, orca),
   ])
+  // Explicit mode is driven by a confirmed queue record, not by the backlog view. Fetching each selected issue by
+  // identifier avoids making wizard-confirmed work depend on lifecycle labels, assignee filters, or provider state
+  // filters that exist only to keep legacy backlog mode tidy.
+  const queue = config.queue.mode === 'explicit'
+    ? await Promise.all(explicitRuns.map((run) => tracker.issue(run.issue)))
+    : backlogQueue
   const providers = await detectProviders({ providers: providerSpecs(config), accountList, agentHooks, env: input.env, platform: input.platform, exhaustedPercent: config.models.cooldown.exhaustedPercent, cooldowns: activeCooldowns(readCooldowns(input.loaded.stateDir), input.now()), now: input.now })
   const availableIds = providers.filter((provider) => provider.available).map((provider) => provider.id)
   const extrasByRole: Partial<Record<ModelRole, readonly ModelReference[]>> = config.models.routing.mode === 'catalog'
@@ -382,21 +408,29 @@ export const gatherLoopState = async (input: { readonly loaded: LoadedLoopConfig
   const slots = assessSlots({ machine: config.machine, running, platform: input.platform, orcaMemory, ...input.machine })
   const leases = input.ledger.active()
   const busy = busyIssues(queue, leases, worktrees, person)
-  const candidates = queue.filter((issue) => !busy.has(issue.identifier) && (!input.onlyIssue || issue.identifier === input.onlyIssue))
+  const targetedRun = input.onlyIssue
+    ? createIssueQueue({ stateDir: input.loaded.stateDir }).list().filter((run) => run.issue === input.onlyIssue).sort((left, right) => right.sequence - left.sequence)[0] ?? null
+    : null
+  const targetedRunBlocked = targetedRun !== null && targetedRun.status !== 'queued'
+  const candidates = queue
+    .filter((issue) => !busy.has(issue.identifier) && !targetedRunBlocked && (!input.onlyIssue || issue.identifier === input.onlyIssue))
+    .sort((left, right) => config.queue.mode === 'explicit'
+      ? (explicitRuns.find((run) => run.issue === left.identifier)?.sequence ?? Number.MAX_SAFE_INTEGER) - (explicitRuns.find((run) => run.issue === right.identifier)?.sequence ?? Number.MAX_SAFE_INTEGER)
+      : 0)
   return { person, providers, routing, worktrees, slots, queue, leases, busy, candidates, extrasByRole }
 }
 
-/** Read-only: exit-0 semantics for Orca `--precheck`. Work exists when a slot is free, a builder is routable, and a candidate waits. */
+/** Read-only: exit-0 semantics for Orca `--precheck`. Work exists when a builder is routable and a candidate waits; capacity is telemetry, not an enqueue or dispatch gate. */
 export const precheckTick = async (input: Omit<TickInput, 'dryRun' | 'maxDispatch'>): Promise<{ readonly work: boolean; readonly reason: string; readonly free: number; readonly candidates: number }> => {
   const loaded = input.loaded ?? loadLoopConfig(input.configPath)
   const now = input.now ?? (() => new Date())
   const state = await gatherLoopState({ loaded, runner: input.runner, ledger: createDispatchLedger(loaded.stateDir), env: input.env, platform: input.platform, now, onlyIssue: input.onlyIssue, machine: input.machine })
   const builder = state.routing['builder']?.selected ?? null
-  const reason = state.slots.free <= 0 ? `no free slot (${state.slots.running}/${state.slots.maxAgents})` : !builder ? 'no builder provider available' : !state.candidates.length ? 'queue has no dispatchable candidate' : `${Math.min(state.slots.free, state.candidates.length)} dispatch(es) possible`
-  return { work: state.slots.free > 0 && Boolean(builder) && state.candidates.length > 0, reason, free: state.slots.free, candidates: state.candidates.length }
+  const reason = !builder ? 'no builder provider available' : !state.candidates.length ? 'queue has no dispatchable candidate' : `${state.candidates.length} dispatch(es) possible; machine capacity is advisory`
+  return { work: Boolean(builder) && state.candidates.length > 0, reason, free: state.slots.free, candidates: state.candidates.length }
 }
 
-const escalate = async (input: { readonly tracker: TrackerConnector; readonly config: LoopConfig; readonly issue: LinearIssueDetail; readonly stored: StoredContract; readonly dryRun: boolean }): Promise<void> => {
+const escalate = async (input: { readonly tracker: TrackerConnector; readonly config: LoopConfig; readonly issue: TrackerIssueDetail; readonly stored: StoredContract; readonly dryRun: boolean }): Promise<void> => {
   if (input.dryRun) return
   const body = `**Loop: not dispatched — needs information**\n\nThe orchestrator (${input.stored.provider}/${input.stored.model}) could not freeze a verifiable contract:\n${input.stored.assessment.reasons.map((reason) => `- ${reason}`).join('\n')}\n\nIntent it inferred: ${input.stored.contract.intent}\n\nAnswer in this issue (or edit the description with acceptance criteria) and remove the \`${input.config.linear.needsInfoLabel}\` label; the loop will re-evaluate on the next tick.\n\n<!-- loop:needs-info:${input.stored.digest} -->`
   await input.tracker.comment({ issue: input.issue.identifier, body, dedupeKey: `needs-info:${input.issue.identifier}:${input.stored.digest}` })
@@ -407,7 +441,7 @@ const escalate = async (input: { readonly tracker: TrackerConnector; readonly co
  * The plan the votes could not agree on becomes a human's problem, with the objections still standing attached.
  * Three models disagreeing three times is an ambiguous requirement, not a retry.
  */
-const escalatePlan = async (input: { readonly tracker: TrackerConnector; readonly config: LoopConfig; readonly issue: LinearIssueDetail; readonly plan: StoredPlan; readonly dryRun: boolean }): Promise<void> => {
+const escalatePlan = async (input: { readonly tracker: TrackerConnector; readonly config: LoopConfig; readonly issue: TrackerIssueDetail; readonly plan: StoredPlan; readonly dryRun: boolean }): Promise<void> => {
   if (input.dryRun) return
   const body = `**Loop: not dispatched — the plan did not reach consensus**\n\n${input.plan.votes.filter((vote) => vote.vote === 'approve').length} of ${input.plan.votes.length} agents approved after ${input.plan.cycles} cycle(s); ${input.config.worker.plan.approvals} are required.\n\nObjections still standing:\n${input.plan.unresolved.map((objection) => `- ${objection}`).join('\n') || '- none recorded'}\n\nProposed plan: ${input.plan.plan.summary}\n\nSettle the ambiguity in this issue and remove the \`${input.config.linear.needsInfoLabel}\` label; the loop will re-plan on the next tick.\n\n<!-- loop:no-consensus:${input.plan.digest} -->`
   await input.tracker.comment({ issue: input.issue.identifier, body, dedupeKey: `no-consensus:${input.issue.identifier}:${input.plan.digest}` })
@@ -417,6 +451,7 @@ const escalatePlan = async (input: { readonly tracker: TrackerConnector; readonl
 export const runTick = async (input: TickInput): Promise<TickReport> => {
   const loaded = input.loaded ?? loadLoopConfig(input.configPath)
   const { config } = loaded
+  requireWritableTracker(config)
   const now = input.now ?? (() => new Date())
   const dryRun = input.dryRun === true
   const ledger = createDispatchLedger(loaded.stateDir)
@@ -453,7 +488,6 @@ export const runTick = async (input: TickInput): Promise<TickReport> => {
   const summary = { orchestrator: orchestrator.selected ? `${orchestrator.selected.provider}/${orchestrator.selected.model}` : null, builder: builder ? `${builder.provider}/${builder.model}` : null }
   const base = { generatedAt: now().toISOString(), dryRun, slots: { maxAgents: state.slots.maxAgents, running: state.slots.running, free: state.slots.free, reasons: state.slots.reasons }, routing: summary, queue: { total: state.queue.length, busy: [...state.busy], candidates: state.candidates.map((issue) => issue.identifier) } }
   if (!builder) { notes.push('no builder provider available; nothing dispatched'); await flushNotifications(); return { ...base, status: 'blocked', results, notes } }
-  if (state.slots.free <= 0) { notes.push(`no free slot (${state.slots.running}/${state.slots.maxAgents})`); await flushNotifications(); return { ...base, status: 'idle', results, notes } }
   if (!state.candidates.length) {
     const rotation = dryRun ? { owner: state.person, advanced: false } : advanceQueueOwner(loaded, { queueEmpty: state.queue.length === 0, activeLeases: countRotationBlockingLeases(loaded, state.leases), now: now() })
     if (rotation.advanced) notes.push(`queue drained for ${state.person}; switched to ${rotation.owner}`)
@@ -462,12 +496,24 @@ export const runTick = async (input: TickInput): Promise<TickReport> => {
     return { ...base, status: 'idle', results, notes }
   }
 
-  const budget = Math.min(state.slots.free, input.maxDispatch ?? state.slots.free)
+  const budget = Math.min(state.candidates.length, input.maxDispatch ?? state.candidates.length)
   const startedAt = Date.now()
   const timeBudgetMs = input.budgetMs ?? Number.POSITIVE_INFINITY
   const remainingMs = (): number => timeBudgetMs - (Date.now() - startedAt)
   // Every tracker write in this stage goes through the connector; the engine never names Linear.
   const { tracker } = resolveConnectors({ runner: input.runner, config, dryRun })
+  // UI-confirmed runs need status projection even for legacy backlog projects; only explicit mode changes which
+  // tracker issues are eligible when a tick is not targeted at one selected request.
+  const issueQueue = config.queue.mode === 'explicit' || input.onlyIssue ? createIssueQueue({ stateDir: loaded.stateDir }) : null
+  const lifecycle = createLifecycleStore(loaded.stateDir)
+  const queueRun = (issue: string): IssueRun | null => issueQueue?.getByIssue(issue) ?? null
+  const updateQueueRun = (run: IssueRun | null, patch: Parameters<ReturnType<typeof createIssueQueue>['update']>[1]): void => {
+    if (!run || dryRun) return
+    try {
+      const updated = issueQueue?.update(run.id, patch)
+      if (updated) lifecycle.upsert({ issue: updated.issue, runId: updated.id, runStatus: updated.status, stage: updated.projection.stage, error: updated.error, technicalFailure: updated.status === 'failed', now: now() })
+    } catch (error) { notes.push(`queue update for ${run.issue} failed: ${message(error)}`) }
+  }
   const tracking = tracker.transitions
   const memory = openLoopMemory(loaded)
   /**
@@ -525,19 +571,39 @@ export const runTick = async (input: TickInput): Promise<TickReport> => {
       if (!dryRun) clearIssueFailures(loaded.stateDir, candidate.identifier)
       notes.push(`${candidate.identifier}: resumed (the "${config.resilience.pausedLabel}" label was removed)`)
     }
-    let detail: LinearIssueDetail
+    let detail: TrackerIssueDetail
     try { detail = await tracker.issue(candidate.identifier) } catch (error) { results.push({ issue: candidate.identifier, outcome: 'failed', reason: `issue fetch failed: ${message(error)}` }); continue }
+    const selectedRun = queueRun(detail.identifier)
+    // A UI cancellation can land after gatherLoopState read the queue but before the tracker fetch returns.
+    // In explicit mode, dispatch only the still-queued reservation; never turn a stale snapshot into a new worker.
+    if (config.queue.mode === 'explicit' && (!selectedRun || selectedRun.status !== 'queued')) {
+      results.push({ issue: detail.identifier, outcome: 'skipped', reason: 'queue request is no longer queued' })
+      continue
+    }
+    updateQueueRun(selectedRun, { status: 'dispatching', projection: { stage: 'contract' } })
 
     // The flow this issue belongs to decides who runs each role and which phases run at all. Resolved once, here,
     // so the contract, the plan and the vote all answer to the same profile.
-    const flow = resolveFlow(config, { labels: detail.labels, project: detail.project, priorityLabel: detail.priorityLabel })
+    const resolvedFlow = resolveFlow(config, { labels: detail.labels, project: detail.project, priorityLabel: detail.priorityLabel })
+    const flow = selectedRun
+      ? { name: selectedRun.config.flow, source: selectedRun.config.flow ? 'default' as const : 'none' as const, matched: null, profile: selectedRun.config.flow ? config.flows.profiles[selectedRun.config.flow] ?? null : null }
+      : resolvedFlow
     const orchestratorSettings = resolveRoleSettings(config, flow, 'orchestrator')
     // A flow may name the builder for its own issues. Without an override the tick-wide routing decision stands
     // for everyone, which is what every project that never drew a flow already has.
     const builderSettings = resolveRoleSettings(config, flow, 'builder')
-    const worker = builderSettings.source === 'flow'
+    const frozenBuilder = selectedRun
+      ? rankModels(config, 'builder', state.providers, state.extrasByRole['builder'] ?? []).find((candidate) => candidate.provider === selectedRun.config.builder.provider && candidate.model === selectedRun.config.builder.model) ?? null
+      : null
+    if (selectedRun && !frozenBuilder) {
+      const reason = `frozen builder ${selectedRun.config.builder.provider}/${selectedRun.config.builder.model} is not routable now`
+      updateQueueRun(selectedRun, { status: 'failed', error: reason, projection: { stage: 'failed' } })
+      results.push({ issue: detail.identifier, outcome: 'failed', reason })
+      continue
+    }
+    const worker = frozenBuilder ?? (builderSettings.source === 'flow'
       ? applyRoleSettings(rankModels(config, 'builder', state.providers, state.extrasByRole['builder'] ?? []), builderSettings)[0] ?? builder
-      : builder
+      : builder)
     const issueOrchestrators = applyRoleSettings(orchestratorCandidates, orchestratorSettings)
 
     let stored = cachedContract
@@ -595,6 +661,7 @@ export const runTick = async (input: TickInput): Promise<TickReport> => {
       } catch (error) {
         const reason = `contract generation failed: ${message(error)}`
         if (!dryRun) { appendLoopEvent(loaded.stateDir, { at: now().toISOString(), type: 'contract.failed', issue: detail.identifier, error: message(error) }, bus); await recordFailureAndMaybePause(detail.identifier, 'contract.failed', reason) }
+        updateQueueRun(selectedRun, { status: 'failed', error: reason, projection: { stage: 'failed' } })
         results.push({ issue: detail.identifier, outcome: 'failed', reason })
         continue
       }
@@ -606,6 +673,7 @@ export const runTick = async (input: TickInput): Promise<TickReport> => {
         appendLoopEvent(loaded.stateDir, { at: now().toISOString(), type: 'contract.escalated', issue: detail.identifier, reasons: assessment.reasons, digest: stored.digest }, bus)
         await bus.runHook('onEscalate', { issue: detail.identifier, reasons: assessment.reasons, digest: stored.digest })
       }
+      updateQueueRun(selectedRun, { status: 'needs-input', error: assessment.reasons.join('; '), projection: { stage: 'needs-input' } })
       results.push({ issue: detail.identifier, outcome: 'escalated', reason: assessment.reasons.join('; '), contractDigest: stored.digest })
       continue
     }
@@ -639,6 +707,7 @@ export const runTick = async (input: TickInput): Promise<TickReport> => {
         } catch (error) {
           const reason = `planning failed: ${message(error)}`
           if (!dryRun) { appendLoopEvent(loaded.stateDir, { at: now().toISOString(), type: 'plan.failed', issue: detail.identifier, error: message(error) }, bus); await recordFailureAndMaybePause(detail.identifier, 'plan.failed', reason) }
+          updateQueueRun(selectedRun, { status: 'failed', error: reason, projection: { stage: 'failed' } })
           results.push({ issue: detail.identifier, outcome: 'failed', reason })
           continue
         }
@@ -649,6 +718,7 @@ export const runTick = async (input: TickInput): Promise<TickReport> => {
           appendLoopEvent(loaded.stateDir, { at: now().toISOString(), type: 'plan.escalated', issue: detail.identifier, cycles: approvedPlan.cycles, unresolved: approvedPlan.unresolved }, bus)
           await bus.runHook('onEscalate', { issue: detail.identifier, reasons: approvedPlan.unresolved, digest: approvedPlan.digest })
         }
+        updateQueueRun(selectedRun, { status: 'needs-input', error: `plan without consensus after ${approvedPlan.cycles} cycle(s)`, projection: { stage: 'needs-input' } })
         results.push({ issue: detail.identifier, outcome: 'escalated', reason: `plan without consensus after ${approvedPlan.cycles} cycle(s): ${approvedPlan.unresolved.join('; ') || 'no objection recorded'}`, contractDigest: stored.digest })
         continue
       }
@@ -656,12 +726,17 @@ export const runTick = async (input: TickInput): Promise<TickReport> => {
 
     const branch = branchFor(detail, state.person)
     const worktree = worktreeNameFor(detail)
-    const claim = ledger.claim({ tracker: 'linear', repository: config.project.repo, issue: detail.identifier, worktree, branch, owner: input.owner ?? `loop:${state.person}` })
+    const currentQueueRun = selectedRun ? issueQueue?.get(selectedRun.id) : null
+    if (config.queue.mode === 'explicit' && (!currentQueueRun || (currentQueueRun.status !== 'dispatching' && !(dryRun && currentQueueRun.status === 'queued')))) {
+      results.push({ issue: detail.identifier, outcome: 'skipped', reason: 'queue request was cancelled before dispatch' })
+      continue
+    }
+    const claim = ledger.claim({ tracker: config.connectors.tracker, repository: config.project.repo, issue: detail.identifier, worktree, branch, owner: input.owner ?? `loop:${state.person}` })
     if (claim.decision === 'already-claimed') { results.push({ issue: detail.identifier, outcome: 'skipped', reason: `lease already held by ${claim.lease.owner} since ${claim.lease.claimedAt}` }); continue }
     const plan = createOrcaDispatchPlan({ repository: config.orca.repoSelector ?? `path:${loaded.root}`, worktree, branch,
       // The remote base, fetched just before: Orca resolves a bare branch name against the operator's local ref, which
       // nobody fast-forwards — observed, a worker started 2 merges behind main and measured code that no longer existed.
-      baseBranch: `origin/${config.project.baseBranch}`, launch: 'worktree-only', linearIssue: detail.url || detail.identifier, comment: `loop · ${detail.identifier} · ${worker.provider}/${worker.model}`, noParent: true, orcaBin: config.orca.bin })
+      baseBranch: `origin/${config.project.baseBranch}`, launch: 'worktree-only', ...(tracker.id === 'linear' ? { linearIssue: detail.url || detail.identifier } : {}), comment: `loop · ${detail.identifier} · ${worker.provider}/${worker.model}`, noParent: true, orcaBin: config.orca.bin })
     const title = `loop ${detail.identifier} · ${worker.provider}`
     if (dryRun) {
       ledger.release(claim.lease, 'dry-run')
@@ -732,7 +807,7 @@ export const runTick = async (input: TickInput): Promise<TickReport> => {
       const launched = await launchWorkerTerminal({ runner: input.runner, config, worktreeId: created.id, worktreePath: created.path, command: worker.tui, title, brief })
       if (!launched.accepted) notes.push(`${detail.identifier}: terminal ${launched.terminal} did not confirm the brief; deliver will nudge it if it stays idle`)
       ledger.recordDispatch({ lease: claim.lease, idempotencyKey: plan.idempotencyKey, commandDigest: plan.commandDigest })
-      const record: DispatchRecordFile = { issue: detail.identifier, worktreeId: created.id, worktree, branch: actualBranch, terminal: launched.terminal, provider: worker.provider, model: worker.model, contractDigest: stored.digest, leaseKey: claim.lease.key, leaseId: claim.lease.leaseId, dispatchedAt: now().toISOString(), url: detail.url, briefDigest, skills: skillRefs(pinnedSkills), ...(delegation ? { delegation } : {}), setup: setupResult, effort: worker.effort, initialRemainingPercent: worker.remainingPercent, worktreePath: created.path, labels: [...detail.labels], project: detail.project, priorityLabel: detail.priorityLabel, workerGuardInstalled: workerGuard.installed }
+      const record: DispatchRecordFile = { issue: detail.identifier, worktreeId: created.id, worktree, branch: actualBranch, terminal: launched.terminal, provider: worker.provider, model: worker.model, contractDigest: stored.digest, leaseKey: claim.lease.key, leaseId: claim.lease.leaseId, dispatchedAt: now().toISOString(), url: detail.url, briefDigest, skills: skillRefs(pinnedSkills), ...(delegation ? { delegation } : {}), setup: setupResult, effort: worker.effort, briefAccepted: launched.accepted, initialRemainingPercent: worker.remainingPercent, worktreePath: created.path, labels: [...detail.labels], project: detail.project, priorityLabel: detail.priorityLabel, workerGuardInstalled: workerGuard.installed, ...(selectedRun ? { queueRunId: selectedRun.id, frozenFlow: selectedRun.config.flow, frozenMaxFixRounds: selectedRun.config.maxFixRounds, frozenPerIssueTokens: selectedRun.config.perIssueTokens } : {}) }
       resetDeliveryStateForDispatch(loaded.stateDir, detail.identifier)
       writeJsonAtomic(dispatchRecordPath(loaded.stateDir, detail.identifier), record)
       appendLoopEvent(loaded.stateDir, { at: record.dispatchedAt, type: 'worker.dispatched', ...record, command: worker.tui, briefAccepted: launched.accepted, tuiIdle: launched.idle }, bus)
@@ -755,9 +830,10 @@ export const runTick = async (input: TickInput): Promise<TickReport> => {
         }
       }
       try {
-        await tracking.transition({ tracker: 'linear', issue: detail.identifier, from: detail.state, to: config.linear.inProgressState, reason: `loop dispatched ${worker.provider}/${worker.model} in ${created.id}` })
+        await tracking.transition({ tracker: tracker.id, issue: detail.identifier, from: detail.state, to: config.linear.inProgressState, reason: `loop dispatched ${worker.provider}/${worker.model} in ${created.id}` })
         await tracker.comment({ issue: detail.identifier, body: `**Loop: dispatched**\n\nWorker \`${worker.provider}/${worker.model}\` started in Orca worktree \`${worktree}\` on branch \`${actualBranch}\` (contract \`${stored.digest.slice(0, 12)}\`). It will open a PR against \`${config.project.baseBranch}\` when the contract's outcomes pass.\n\n<!-- loop:dispatched:${claim.lease.leaseId} -->`, dedupeKey: `dispatched:${detail.identifier}:${claim.lease.leaseId}` })
-      } catch (error) { notes.push(`Linear update for ${detail.identifier} failed after dispatch: ${message(error)}`) }
+      } catch (error) { notes.push(`Tracker update for ${detail.identifier} failed after dispatch: ${message(error)}`) }
+      updateQueueRun(selectedRun, { status: 'running', projection: { stage: 'running', branch: actualBranch, worktree, terminal: launched.terminal } })
       results.push({ issue: detail.identifier, outcome: 'dispatched', reason: 'worker started', branch: actualBranch, worktree, worktreeId: created.id, terminal: launched.terminal, provider: worker.provider, model: worker.model, argv: plan.argv, contractDigest: stored.digest })
       dispatched += 1
     } catch (error) {
@@ -765,6 +841,7 @@ export const runTick = async (input: TickInput): Promise<TickReport> => {
       if (created) { try { await orcaWorktreeRemove(input.runner, { worktree: `id:${created.id}`, force: true }, { bin: config.orca.bin, timeoutMs: 60_000 }); notes.push(`${detail.identifier}: removed half-created worktree ${created.id}`) } catch (cleanup) { notes.push(`${detail.identifier}: worktree ${created.id} left behind (${message(cleanup)})`) } }
       appendLoopEvent(loaded.stateDir, { at: now().toISOString(), type: 'worker.dispatch-failed', issue: detail.identifier, error: message(error) }, bus)
       await recordFailureAndMaybePause(detail.identifier, 'worker.dispatch-failed', `dispatch failed: ${message(error)}`)
+      updateQueueRun(selectedRun, { status: 'failed', error: `dispatch failed: ${message(error)}`, projection: { stage: 'failed', branch, worktree } })
       results.push({ issue: detail.identifier, outcome: 'failed', reason: `dispatch failed: ${message(error)}`, branch, worktree, argv: plan.argv })
     }
   }

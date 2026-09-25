@@ -1,10 +1,10 @@
 import { existsSync, mkdirSync, readdirSync, readFileSync } from 'node:fs'
 import { z } from 'zod'
-import { dirname, join } from 'node:path'
+import { dirname, join, relative, sep } from 'node:path'
 import type { CommandRunner } from '../adapters/command.js'
 import { atLeast, parseReviewResult, renderFindingsForWorker, runCodeReview, type CodeReviewOutcome } from '../adapters/code-review.js'
 import { assessChecks, githubComment, githubCommentExists, githubCompare, githubLabelRemove, githubMerge, githubOpenPullRequests, githubPullRequest, githubPullRequestsForBranch, touchesProtectedPaths, type PullRequestSnapshot } from '../adapters/github-cli.js'
-import { resolveConnectors, type ScmConnector, type TrackerConnector } from './connectors.js'
+import { requireWritableTracker, resolveConnectors, type ScmConnector, type TrackerConnector } from './connectors.js'
 import { issueBudget, modelForChange } from './budget.js'
 import { assessBoundary, verifyCommandFor } from './layers.js'
 import { installWorkerGuard } from './worker-guard.js'
@@ -15,13 +15,13 @@ import { HarnessError, fail } from '../kernel/errors.js'
 import { renderHandoffBrief } from './brief.js'
 import { renderSkillsForHandoff } from './skills.js'
 import { writeJsonAtomic } from './fs-atomic.js'
-import { loadLoopConfig, providerIdentity, type LoadedLoopConfig, type LoopConfig, type ModelReference } from './config.js'
+import { loadLoopConfig, providerIdentity, resolveReviewSettings, type LoadedLoopConfig, type LoopConfig, type ModelReference } from './config.js'
 import { classifyProviderFailure, extractResetsAt, readStoredContract } from './contract.js'
 import { activeCooldowns, markProviderExhausted, readCooldowns } from './cooldown.js'
 import { providerSpecs } from './doctor.js'
 import { resolveCatalogCandidates } from './model-catalog/index.js'
 import { rankModels, type RankedModel } from './routing.js'
-import { appendLoopEvent, briefPath, dispatchRecordPath, launchWorkerTerminal, readDispatchRecord, writeDispatchRecord, type DispatchRecordFile } from './tick.js'
+import { appendLoopEvent, BRIEF_POINTER_PROMPT, briefPath, dispatchRecordPath, launchWorkerTerminal, readDispatchRecord, writeDispatchRecord, type DispatchRecordFile } from './tick.js'
 import { intakeIssueId, discoverIntake, listIntake } from './github-intake.js'
 import { createLoopEventBus, loadLoopPlugins, type LoopEventBus, type LoopEventPayload } from './event-bus.js'
 import { attachNotifier } from './notify.js'
@@ -29,6 +29,9 @@ import { applyRoleSettings, resolveFlowSettings, resolveRoleSettings, workerPhas
 import { assessDod, readDodEvidence, renderDodMarkdown } from './dod.js'
 import { missingArtifacts, readPhaseArtifacts, readVerifyArtifact, verifyProofs, type PhaseArtifactName } from './artifacts.js'
 import { readJsonFile } from '../kernel/json-file.js'
+import { createIssueQueue } from './queue.js'
+import { createInboxStore } from './inbox.js'
+import { createLifecycleStore, type LifecyclePullRequest } from './lifecycle.js'
 
 export type DeliverOutcome = 'waiting' | 'reviewed' | 'fix-round' | 'nudged' | 'handed-off' | 'merged' | 'held' | 'blocked' | 'stuck' | 'abandoned' | 'failed' | 'dry-run'
 
@@ -64,15 +67,17 @@ export interface DeliveryHandoff {
 export interface DeliveryState {
   readonly issue: string
   readonly prNumber: number | null
-  readonly reviews: Readonly<Record<string, { readonly status: CodeReviewOutcome['status']; readonly at: string; readonly provider: string; readonly model: string | null; readonly blocking: number; readonly attempts: number }>>
+  readonly reviews: Readonly<Record<string, { readonly status: CodeReviewOutcome['status']; readonly at: string; readonly provider: string; readonly model: string | null; readonly blocking: number; readonly attempts: number; readonly reason?: string }>>
   readonly fixRounds: number
-  readonly nudges: readonly { readonly kind: 'idle' | 'conflict' | 'ci' | 'review' | 'handoff' | 'permission'; readonly at: string; readonly head: string | null }[]
+  readonly nudges: readonly { readonly kind: 'idle' | 'conflict' | 'ci' | 'review' | 'handoff' | 'permission' | 'brief'; readonly at: string; readonly head: string | null }[]
   readonly handoffs: readonly DeliveryHandoff[]
   readonly heldFor: string | null
   /** A person's attested approval of a PR held for protected paths — valid only for this exact head. */
   readonly humanApproval?: { readonly head: string; readonly by: string; readonly at: string } | null
   readonly finishedAt: string | null
   readonly finalOutcome: DeliverOutcome | null
+  /** Cancellation is a UI/control-plane terminal marker, not a delivery outcome. */
+  readonly cancelledAt?: string | null
 }
 
 export interface DeliverInput {
@@ -101,11 +106,19 @@ const isMissingOrcaWorktree = (error: unknown): boolean => message(error).includ
 export const deliveryStatePath = (stateDir: string, identifier: string): string => join(stateDir, 'issues', identifier, 'delivery.json')
 export const readDeliveryState = (stateDir: string, identifier: string): DeliveryState => {
   const path = deliveryStatePath(stateDir, identifier)
-  const empty: DeliveryState = { issue: identifier, prNumber: null, reviews: {}, fixRounds: 0, nudges: [], handoffs: [], heldFor: null, finishedAt: null, finalOutcome: null }
+  const empty: DeliveryState = { issue: identifier, prNumber: null, reviews: {}, fixRounds: 0, nudges: [], handoffs: [], heldFor: null, finishedAt: null, finalOutcome: null, cancelledAt: null }
   if (!existsSync(path)) return empty
   const parsed = readJsonFile(path, z.object({}).loose()) as Partial<DeliveryState> | null
   if (!parsed) return empty
   return { ...empty, ...parsed, handoffs: parsed.handoffs ?? [], nudges: parsed.nudges ?? [] }
+}
+
+/** Keep a cancelled dispatch visible as historical evidence without letting it consume a worker slot. */
+export const markDispatchCancelled = (stateDir: string, identifier: string, at = new Date()): DeliveryState => {
+  const state = readDeliveryState(stateDir, identifier)
+  const next: DeliveryState = { ...state, finishedAt: state.finishedAt ?? at.toISOString(), heldFor: null, cancelledAt: state.cancelledAt ?? at.toISOString() }
+  writeJsonAtomic(deliveryStatePath(stateDir, identifier), next)
+  return next
 }
 
 /**
@@ -129,6 +142,21 @@ export const approveHeldDelivery = (loaded: LoadedLoopConfig, issue: string, inp
   return next
 }
 
+/**
+ * Why a review came back incomplete, kept with the review. Without it "incomplete twice; needs a human look" sends
+ * the human to re-run the reviewer by hand only to learn it was, say, one lens returning invalid structured output.
+ */
+const incompleteReason = (review: CodeReviewOutcome): { readonly reason?: string } => review.status === 'incomplete' ? { reason: review.summary } : {}
+
+/** Commits on the worker's branch that are not on the remote base: finished-but-unpushed work. 0 when unknown. */
+const unpushedCommits = async (ctx: Context, record: DispatchRecordFile): Promise<number> => {
+  if (!record.worktreePath || ctx.dryRun) return 0
+  try {
+    const out = await ctx.runner.run(['git', 'rev-list', '--count', `origin/${ctx.config.project.baseBranch}..HEAD`, '--not', '--remotes'], { cwd: record.worktreePath, timeoutMs: 10_000 })
+    return out.code === 0 ? Number.parseInt(out.stdout.trim(), 10) || 0 : 0
+  } catch { return 0 }
+}
+
 const resumableOutcomes = new Set<DeliverOutcome>(['blocked', 'stuck', 'abandoned', 'held'])
 const lastReviewHead = (state: DeliveryState): string | null => {
   const heads = Object.keys(state.reviews)
@@ -139,7 +167,21 @@ const lastReviewHead = (state: DeliveryState): string | null => {
 export const listDispatched = (stateDir: string): readonly DispatchRecordFile[] => {
   const dir = join(stateDir, 'issues')
   if (!existsSync(dir)) return []
-  return readdirSync(dir, { withFileTypes: true }).filter((entry) => entry.isDirectory()).map((entry) => readDispatchRecord(stateDir, entry.name)).filter((record): record is DispatchRecordFile => record !== null && existsSync(dispatchRecordPath(stateDir, record.issue)))
+  const paths: string[] = []
+  const visit = (current: string): void => {
+    for (const entry of readdirSync(current, { withFileTypes: true })) {
+      const path = join(current, entry.name)
+      if (entry.isDirectory()) visit(path)
+      else if (entry.isFile() && entry.name === 'dispatch.json') paths.push(path)
+    }
+  }
+  visit(dir)
+  return paths.map((path) => {
+    // Provider identifiers such as `owner/repository#217` are stored as nested folders.
+    // Reconstruct the identifier before using the canonical dispatch reader.
+    const identifier = relative(dir, dirname(path)).split(sep).join('/')
+    return readDispatchRecord(stateDir, identifier)
+  }).filter((record): record is DispatchRecordFile => record !== null && existsSync(dispatchRecordPath(stateDir, record.issue)))
 }
 
 const minutesBetween = (later: Date, earlier: string | number | null): number => earlier === null ? Number.POSITIVE_INFINITY : (later.getTime() - (typeof earlier === 'number' ? earlier : Date.parse(earlier))) / 60_000
@@ -301,24 +343,32 @@ const captureWorkerOutput = async (ctx: Context, terminal: string | null): Promi
   } catch { return null }
 }
 
-const escalateLinear = async (ctx: Context, record: DispatchRecordFile, kind: 'stuck' | 'blocked' | 'abandoned', body: string, actions: string[]): Promise<void> => {
-  if (ctx.dryRun) { actions.push(`would mark ${kind} in Linear and Orca`); return }
+const escalateTracker = async (ctx: Context, record: DispatchRecordFile, kind: 'stuck' | 'blocked' | 'abandoned', body: string, actions: string[]): Promise<void> => {
+  if (ctx.dryRun) { actions.push(`would mark ${kind} in ${ctx.tracker.id} and Orca`); return }
   const workerOutput = await captureWorkerOutput(ctx, record.terminal)
   const fullBody = workerOutput ? `${body}\n\n<details><summary>Worker's last terminal output</summary>\n\n\`\`\`\n${workerOutput}\n\`\`\`\n\n</details>` : body
   if (workerOutput) actions.push('captured worker terminal output for the escalation')
   try {
     await ctx.tracker.comment({ issue: record.issue, body: `${fullBody}\n\n<!-- loop:${kind}:${record.leaseId} -->`, dedupeKey: `${kind}:${record.issue}:${record.leaseId}` })
-    await ctx.tracker.addLabels(record.issue, [ctx.config.linear.blockedLabel])
-    await ctx.tracker.transitions.transition({ tracker: ctx.tracker.id, issue: record.issue, to: ctx.config.delivery.returnState, reason: `loop ${kind}` })
+    if (ctx.tracker.id === 'github') await ctx.tracker.transitions.transition({ tracker: ctx.tracker.id, issue: record.issue, to: ctx.config.linear.blockedLabel, reason: `loop ${kind}` })
+    else {
+      await ctx.tracker.addLabels(record.issue, [ctx.config.linear.blockedLabel])
+      await ctx.tracker.transitions.transition({ tracker: ctx.tracker.id, issue: record.issue, to: ctx.config.delivery.returnState, reason: `loop ${kind}` })
+    }
     // Release the claim, under `queueOwnership: 'unassigned'`. Returning an issue to the queue state
     // while it still carries this machine's assignee would make it invisible to the queue — which
     // filters on "no assignee" — so it would sit in `Ready` forever, owned by a worker that is gone.
     if (ctx.config.linear.queueOwnership === 'unassigned') {
       await ctx.tracker.release(record.issue)
-      actions.push('Linear: assignee cleared (claim released)')
+      actions.push(`${ctx.tracker.id}: assignee cleared (claim released)`)
     }
-    actions.push(`Linear: comment + ${ctx.config.linear.blockedLabel} + ${ctx.config.delivery.returnState}`)
-  } catch (error) { actions.push(`Linear escalation failed: ${message(error)}`) }
+    actions.push(ctx.tracker.id === 'github' ? `${ctx.tracker.id}: comment + blocked lifecycle state` : `${ctx.tracker.id}: comment + ${ctx.config.linear.blockedLabel} + ${ctx.config.delivery.returnState}`)
+  } catch (error) {
+    const detail = message(error)
+    actions.push(`${ctx.tracker.id} escalation failed: ${detail}`)
+    event(ctx, { type: 'tracker.sync-failed', issue: record.issue, operation: `escalate:${kind}`, error: detail })
+    createInboxStore(ctx.loaded.stateDir).upsert({ issue: record.issue, gate: 'sync.failed', title: 'Sincronização remota pendente', message: `${ctx.tracker.id} não aceitou a atualização de lifecycle: ${detail}`, fingerprint: `tracker:${ctx.tracker.id}:escalate:${kind}:${detail}`, actions: ['retry', 'respond'] })
+  }
   try { await orcaWorktreeSet(ctx.runner, { worktree: `id:${record.worktreeId}`, comment: `LOOP ${kind.toUpperCase()}: ${body.split('\n')[0]?.slice(0, 120)}` }, orcaOptions(ctx.config)); actions.push('Orca worktree comment set') } catch (error) { actions.push(`Orca comment failed: ${message(error)}`) }
 }
 
@@ -331,9 +381,9 @@ const reopenFinishedIssue = async (ctx: Context, record: DispatchRecordFile, sta
   ctx.notes.push(`${record.issue}: reopened after a new PR head (${pr.headSha.slice(0, 7)})`)
   if (!ctx.dryRun) {
     try {
-      await ctx.tracker.removeLabels(record.issue, [ctx.config.linear.blockedLabel])
+      await ctx.tracker.removeLabels(record.issue, [ctx.tracker.id === 'github' ? ctx.config.github.issues.labels.blocked : ctx.config.linear.blockedLabel])
       await ctx.tracker.transitions.transition({ tracker: ctx.tracker.id, issue: record.issue, to: ctx.config.linear.inProgressState, reason: `new PR head ${pr.headSha.slice(0, 7)}` })
-    } catch (error) { ctx.notes.push(`${record.issue}: Linear reopen update failed: ${message(error)}`) }
+    } catch (error) { ctx.notes.push(`${record.issue}: ${ctx.tracker.id} reopen update failed: ${message(error)}`) }
   }
   return next
 }
@@ -355,7 +405,7 @@ const finish = (ctx: Context, record: DispatchRecordFile, lease: DispatchLease |
  */
 const tripCircuitBreaker = async (ctx: Context, record: DispatchRecordFile, lease: DispatchLease | undefined, state: DeliveryState, kind: 'cost-guard' | 'max-duration', reason: string): Promise<DeliverResult> => {
   const actions: string[] = []
-  await escalateLinear(ctx, record, 'blocked', `**Loop: stopped (${kind})** — ${reason}. The worktree was preserved for inspection; the slot was released and the issue returned to ${ctx.config.delivery.returnState}.`, actions)
+  await escalateTracker(ctx, record, 'blocked', `**Loop: stopped (${kind})** — ${reason}. The worktree was preserved for inspection; the slot was released and the issue returned to ${ctx.config.delivery.returnState}.`, actions)
   event(ctx, { type: `${kind}.tripped`, issue: record.issue, reason })
   finish(ctx, record, lease, state, 'blocked', reason)
   return { issue: record.issue, outcome: ctx.dryRun ? 'dry-run' : 'blocked', reason, actions }
@@ -432,6 +482,7 @@ const performHandoff = async (
     provider: next.provider,
     model: next.model,
     workerGuardInstalled: workerGuard.installed,
+    briefAccepted: launched.accepted,
   }
   writeDispatchRecord(ctx.loaded.stateDir, updated)
   const handoff: DeliveryHandoff = {
@@ -490,7 +541,7 @@ const handleNoPullRequest = async (ctx: Context, record: DispatchRecordFile, lea
     if (canHandoff(ctx, record, state, nextBuilder)) {
       return performHandoff(ctx, record, state, nextBuilder, unavailable ? 'previous terminal gone and provider unavailable' : 'previous terminal gone', actions)
     }
-    await escalateLinear(ctx, record, 'stuck', `**Loop: worker stuck** — the worker terminal for \`${record.worktree}\` is gone and no pull request was opened. The worktree was preserved for inspection; the slot was released.`, actions)
+    await escalateTracker(ctx, record, 'stuck', `**Loop: worker stuck** — the worker terminal for \`${record.worktree}\` is gone and no pull request was opened. The worktree was preserved for inspection; the slot was released.`, actions)
     finish(ctx, record, lease, state, 'stuck', 'terminal gone before PR')
     return { issue: record.issue, outcome: ctx.dryRun ? 'dry-run' : 'stuck', reason: 'worker terminal gone before a PR was opened', actions }
   }
@@ -533,6 +584,15 @@ const handleNoPullRequest = async (ctx: Context, record: DispatchRecordFile, lea
   if (ctx.assumeIdle === undefined && record.terminal) {
     try { idle = (await orcaTerminalWait(ctx.runner, { terminal: record.terminal, for: 'tui-idle', timeoutMs: 1_500 }, orcaOptions(ctx.config))).satisfied } catch { idle = false }
   }
+  // The terminal never confirmed the brief and sits idle: it most likely never received it (observed, a prompt typed
+  // while the shell was still starting the agent). Waiting out the idle timeout would burn it doing nothing — send
+  // the pointer once, now.
+  if (idle && record.briefAccepted === false && !state.nudges.some((nudge) => nudge.kind === 'brief')) {
+    const sent = await sendToWorker(ctx, record, BRIEF_POINTER_PROMPT, actions)
+    if (!ctx.dryRun) saveState(ctx, { ...state, nudges: [...state.nudges, { kind: 'brief', at: now.toISOString(), head: null }] })
+    event(ctx, { type: 'worker.nudged', issue: record.issue, kind: 'brief' })
+    return { issue: record.issue, outcome: ctx.dryRun ? 'dry-run' : sent ? 'nudged' : 'waiting', reason: 'brief never confirmed; sent again', actions }
+  }
   if (!idle || sinceOutput < idleTimeout) {
     return { issue: record.issue, outcome: 'waiting', reason: idle ? `worker idle for ${Math.round(sinceOutput)} min (< ${idleTimeout})` : 'worker active', actions }
   }
@@ -546,7 +606,16 @@ const handleNoPullRequest = async (ctx: Context, record: DispatchRecordFile, lea
   const lastNudge = idleNudges.at(-1)
   if (!lastNudge || minutesBetween(now, lastNudge.at) < idleTimeout) {
     if (lastNudge) return { issue: record.issue, outcome: 'waiting', reason: 'nudged recently; waiting for the worker to open the PR', actions }
-    const sent = await sendToWorker(ctx, record, `Loop check-in: the terminal has been idle for ${Math.round(sinceOutput)} minutes and no pull request exists for branch ${record.branch}. Continue from \`git status\`: finish the contract outcomes, run the project verification, push, open the PR exactly as the brief describes, then print LOOP_WORKER_DONE ${record.issue}. If you are blocked, run \`orca worktree set --worktree active --comment "BLOCKED: <reason>" --json\` and stop.`, actions)
+    // Committed but never pushed is its own case (observed: the work sat finished in the worktree until the worker
+    // was marked stuck). Say exactly what is missing instead of the generic "continue from git status".
+    const unpushed = await unpushedCommits(ctx, record)
+    if (unpushed > 0) {
+      const sentPush = await sendToWorker(ctx, record, `Loop check-in: your work is committed (${unpushed} local commit(s) on ${record.branch}) but not pushed, and no pull request exists. Run the project verification if you have not, then \`git push -u origin HEAD\` and open the PR exactly as .ak-loop/brief.md describes, then print LOOP_WORKER_DONE ${record.issue}.`, actions)
+      saveState(ctx, { ...state, nudges: [...state.nudges, { kind: 'idle', at: now.toISOString(), head: null }] })
+      event(ctx, { type: 'worker.nudged', issue: record.issue, kind: 'idle', reason: 'unpushed commits' })
+      return { issue: record.issue, outcome: ctx.dryRun ? 'dry-run' : sentPush ? 'nudged' : 'waiting', reason: `idle with ${unpushed} unpushed commit(s); nudged to push and open the PR`, actions }
+    }
+    const sent = await sendToWorker(ctx, record, `Loop check-in: the terminal has been idle for ${Math.round(sinceOutput)} minutes and no pull request exists for branch ${record.branch}. Your task brief is in .ak-loop/brief.md at the root of this worktree — read it first if you have not. Continue from \`git status\`: finish the contract outcomes, run the project verification, push, open the PR exactly as the brief describes, then print LOOP_WORKER_DONE ${record.issue}. If you are blocked, run \`orca worktree set --worktree active --comment "BLOCKED: <reason>" --json\` and stop.`, actions)
     saveState(ctx, { ...state, nudges: [...state.nudges, { kind: 'idle', at: now.toISOString(), head: null }] })
     event(ctx, { type: 'worker.nudged', issue: record.issue, kind: 'idle' })
     return { issue: record.issue, outcome: ctx.dryRun ? 'dry-run' : sent ? 'nudged' : 'waiting', reason: 'idle without PR; nudged once', actions }
@@ -557,7 +626,7 @@ const handleNoPullRequest = async (ctx: Context, record: DispatchRecordFile, lea
     return performHandoff(ctx, record, state, nextBuilder, `idle after nudge and ${record.provider} unavailable`, actions)
   }
 
-  await escalateLinear(ctx, record, 'stuck', `**Loop: worker stuck** — idle for ${Math.round(sinceOutput)} minutes after a check-in, no pull request on \`${record.branch}\`. Worktree \`${record.worktree}\` was preserved; the slot was released and the issue returned to ${ctx.config.delivery.returnState}.`, actions)
+  await escalateTracker(ctx, record, 'stuck', `**Loop: worker stuck** — idle for ${Math.round(sinceOutput)} minutes after a check-in, no pull request on \`${record.branch}\`. Worktree \`${record.worktree}\` was preserved; the slot was released and the issue returned to ${ctx.config.delivery.returnState}.`, actions)
   finish(ctx, record, lease, state, 'stuck', 'idle after nudge without PR')
   return { issue: record.issue, outcome: ctx.dryRun ? 'dry-run' : 'stuck', reason: 'idle after nudge without PR', actions }
 }
@@ -570,10 +639,15 @@ const complete = async (ctx: Context, record: DispatchRecordFile, lease: Dispatc
       const how = mergedBy === 'loop' ? 'after a clean review and green checks' : 'by a person, outside the loop — the loop\'s own review and checks did not decide it'
       await ctx.tracker.comment({ issue: record.issue, body: `**Loop: merged** — ${pr.url}${mergeSha ? ` as \`${mergeSha.slice(0, 12)}\`` : ''} ${how}. Worker: \`${record.provider}/${record.model}\`.\n\n<!-- loop:merged:${pr.number} -->`, dedupeKey: `merged:${record.issue}:${pr.number}` })
       await ctx.tracker.transitions.transition({ tracker: ctx.tracker.id, issue: record.issue, to: ctx.config.linear.doneState, reason: `PR #${pr.number} merged` })
-      actions.push(`Linear: attached PR, commented, → ${ctx.config.linear.doneState}`)
+      actions.push(`${ctx.tracker.id}: attached PR, commented, → ${ctx.config.linear.doneState}`)
       // A merged issue is no longer blocked or waiting for information — clear the flags the loop itself set on the way.
-      try { await ctx.tracker.removeLabels(record.issue, [ctx.config.linear.blockedLabel, ctx.config.linear.needsInfoLabel]) } catch (error) { actions.push(`clearing blocked/needs-info labels failed: ${message(error)}`) }
-    } catch (error) { actions.push(`Linear completion failed: ${message(error)}`) }
+      try { await ctx.tracker.removeLabels(record.issue, [ctx.tracker.id === 'github' ? ctx.config.github.issues.labels.blocked : ctx.config.linear.blockedLabel, ctx.config.linear.needsInfoLabel]) } catch (error) { actions.push(`clearing blocked/needs-info labels failed: ${message(error)}`) }
+    } catch (error) {
+      const detail = message(error)
+      actions.push(`${ctx.tracker.id} completion failed: ${detail}`)
+      event(ctx, { type: 'tracker.sync-failed', issue: record.issue, operation: 'completion', error: detail })
+      createInboxStore(ctx.loaded.stateDir).upsert({ issue: record.issue, gate: 'sync.failed', title: 'Sincronização remota pendente', message: `${ctx.tracker.id} não sincronizou a conclusão: ${detail}`, fingerprint: `tracker:${ctx.tracker.id}:completion:${detail}`, actions: ['retry', 'respond'], data: { pr: pr.number, runId: record.queueRunId ?? null } })
+    }
     try { await orcaWorktreeSet(ctx.runner, { worktree: `id:${record.worktreeId}`, comment: `LOOP MERGED: PR #${pr.number}` }, orcaOptions(ctx.config)) } catch (error) {
       if (isMissingOrcaWorktree(error)) actions.push('Orca worktree already absent; comment skipped')
       else actions.push(`Orca comment failed: ${message(error)}`)
@@ -590,7 +664,7 @@ const complete = async (ctx: Context, record: DispatchRecordFile, lease: Dispatc
 }
 
 const blockAfterRounds = async (ctx: Context, record: DispatchRecordFile, lease: DispatchLease | undefined, state: DeliveryState, pr: PullRequestSnapshot, why: string, actions: string[]): Promise<DeliverResult> => {
-  await escalateLinear(ctx, record, 'blocked', `**Loop: blocked after ${state.fixRounds} fix round(s)** — ${why}. PR: ${pr.url}. The worktree and PR stay open for a human; the slot was released.`, actions)
+  await escalateTracker(ctx, record, 'blocked', `**Loop: blocked after ${state.fixRounds} fix round(s)** — ${why}. PR: ${pr.url}. The worktree and PR stay open for a human; the slot was released.`, actions)
   if (!ctx.dryRun) { try { await githubComment(ctx.runner, { repo: ctx.config.project.repo, number: pr.number, body: `**Loop: blocked** — ${why}. Fix rounds exhausted (${state.fixRounds}/${flowFor(ctx, record).maxFixRounds}); a human needs to take over.\n\n<!-- loop:blocked:${pr.headSha} -->` }) } catch (error) { actions.push(`PR comment failed: ${message(error)}`) } }
   finish(ctx, record, lease, { ...state, prNumber: pr.number }, 'blocked', why)
   return { issue: record.issue, outcome: ctx.dryRun ? 'dry-run' : 'blocked', reason: why, pr: pr.number, head: pr.headSha, actions }
@@ -639,11 +713,36 @@ const fixRound = async (ctx: Context, record: DispatchRecordFile, lease: Dispatc
  * The flow in force for one dispatched item, from the labels, project and priority frozen at dispatch time. A gate
  * must be decided by what the issue looked like when it entered, never by what someone edited while it ran.
  */
-const flowFor = (ctx: Context, record: DispatchRecordFile): EffectiveFlowSettings => resolveFlowSettings(ctx.config, {
-  labels: record.labels ?? [],
-  project: record.project ?? null,
-  priorityLabel: record.priorityLabel ?? null,
-})
+const flowFor = (ctx: Context, record: DispatchRecordFile): EffectiveFlowSettings => {
+  const resolved = resolveFlowSettings(ctx.config, {
+    labels: record.labels ?? [],
+    project: record.project ?? null,
+    priorityLabel: record.priorityLabel ?? null,
+  })
+  // Queue-confirmed limits are frozen at dispatch. Legacy records keep resolving their historical flow settings.
+  if (record.frozenFlow === undefined && record.frozenMaxFixRounds === undefined) return resolved
+  const flow = record.frozenFlow === undefined ? resolved.flow : { name: record.frozenFlow, source: record.frozenFlow === null ? 'none' as const : 'default' as const, matched: null, profile: record.frozenFlow ? ctx.config.flows.profiles[record.frozenFlow] ?? null : null }
+  return {
+    ...resolved,
+    flow,
+    review: { ...resolveReviewSettings(ctx.config, record.labels ?? []), ...(flow.profile?.review ?? {}) },
+    merge: { ...ctx.config.delivery.merge, ...(flow.profile?.merge ?? {}) },
+    maxFixRounds: record.frozenMaxFixRounds ?? flow.profile?.maxFixRounds ?? ctx.config.delivery.maxFixRounds,
+  }
+}
+
+const syncReviewTracker = async (ctx: Context, record: DispatchRecordFile, pr: PullRequestSnapshot, actions: string[]): Promise<void> => {
+  if (ctx.dryRun) { actions.push(`would move ${ctx.tracker.id} issue to ${ctx.config.linear.reviewState}`); return }
+  try {
+    await ctx.tracker.setState({ issue: record.issue, to: ctx.config.linear.reviewState, reason: `PR #${pr.number} opened; review lifecycle is now remote-authoritative` })
+    actions.push(`${ctx.tracker.id}: → ${ctx.config.linear.reviewState}`)
+  } catch (error) {
+    const detail = message(error)
+    actions.push(`${ctx.tracker.id} review sync failed: ${detail}`)
+    event(ctx, { type: 'tracker.sync-failed', issue: record.issue, operation: 'review-state', error: detail })
+    createInboxStore(ctx.loaded.stateDir).upsert({ issue: record.issue, gate: 'sync.failed', title: 'Sincronização remota pendente', message: `${ctx.tracker.id} não atualizou a issue para revisão: ${detail}`, fingerprint: `tracker:${ctx.tracker.id}:review-state:${detail}`, actions: ['retry', 'respond'], data: { pr: pr.number, runId: record.queueRunId ?? null } })
+  }
+}
 
 const handlePullRequest = async (ctx: Context, record: DispatchRecordFile, lease: DispatchLease | undefined, state: DeliveryState, pr: PullRequestSnapshot): Promise<DeliverResult> => {
   const actions: string[] = []
@@ -725,7 +824,7 @@ ${marker}` }); actions.push('secret-file hold commented') } catch (error) { acti
     if (prior && prior.attempts >= 2 && prior.provider === reviewProvider && prior.model === chosen.model) {
       const known = readBlockingReviewFindings(ctx.loaded.stateDir, record.issue, pr.headSha, reviewSettings.minSeverity)
       if (known.length && !state.nudges.some((nudge) => nudge.kind === 'review' && nudge.head === pr.headSha)) return fixRound(ctx, record, lease, state, pr, 'review', `Loop: the last review was incomplete after ${prior.attempts} attempts, but it recorded ${known.length} blocking issue(s). Address the findings below, re-run \`${closes}\`, commit and push; a complete review is still required before merge. Findings:\n${renderFindingsForWorker(known)}\nThe full review is on the PR.`, `replaying ${known.length} blocking finding(s) from incomplete review`, actions)
-      return { issue: record.issue, outcome: 'held', reason: 'review incomplete twice at this head; needs a human look', pr: pr.number, head: pr.headSha, actions }
+      return { issue: record.issue, outcome: 'held', reason: `review incomplete twice at this head; needs a human look${prior.reason ? ` (${prior.reason})` : ''}`, pr: pr.number, head: pr.headSha, actions }
     }
     // Cost lever: the cheap verifier runs before the expensive one. A build that does not compile does not
     // deserve a two-vote review, and `delivery.verify.argv` is the project's own check, not a guess.
@@ -749,11 +848,11 @@ ${marker}` }); actions.push('secret-file hold commented') } catch (error) { acti
     review = await runCodeReview(ctx.runner, { cli: reviewSettings.cli, repo: config.project.repo, baseBranch: config.project.baseBranch, number: pr.number, provider: reviewProvider, model: chosen.model, mode: reviewSettings.mode, ...(reviewSettings.transport ? { transport: reviewSettings.transport } : {}), profile: reviewSettings.profile, votes: reviewSettings.votes, concurrency: reviewSettings.concurrency, minSeverity: reviewSettings.minSeverity, deadlineMs: Math.min(ctx.reviewDeadlineMs, roleSettings.timeoutMs ?? ctx.reviewDeadlineMs), subprocessTimeoutMs: reviewSettings.subprocessTimeoutMs, analysisMaxTokens: reviewSettings.analysisMaxTokens, analysisGlobalMaxTokens: reviewSettings.analysisGlobalMaxTokens, maxCalls: reviewSettings.maxCalls, post: reviewSettings.post, resultFile, cwd: ctx.loaded.root, env: ctx.env })
     actions.push(`review ${review.status}: ${review.summary}`)
     const attempts = (prior?.attempts ?? 0) + 1
-    state = { ...state, prNumber: pr.number, reviews: { ...state.reviews, [pr.headSha]: { status: review.status, at: ctx.now().toISOString(), provider: review.provider, model: review.model, blocking: review.blocking.length, attempts } } }
+    state = { ...state, prNumber: pr.number, reviews: { ...state.reviews, [pr.headSha]: { status: review.status, at: ctx.now().toISOString(), provider: review.provider, model: review.model, blocking: review.blocking.length, attempts, ...incompleteReason(review) } } }
     saveState(ctx, state)
     // windowed/cost visibility: agentskit-review already tracks provider calls and tokens per invocation
     // (`review.usage`); recording it here is what lets issueBudget/issueSpend see review spend at all.
-    event(ctx, { type: 'pr.reviewed', issue: record.issue, pr: pr.number, head: pr.headSha, status: review.status, blocking: review.blocking.length, provider: review.provider, model: review.model, profile: reviewSettings.profile, votes: reviewSettings.votes, minSeverity: reviewSettings.minSeverity, calls: review.usage.providerCalls, inputTokens: review.usage.inputTokens, outputTokens: review.usage.outputTokens, totalTokens: review.usage.totalTokens })
+    event(ctx, { type: 'pr.reviewed', issue: record.issue, pr: pr.number, head: pr.headSha, status: review.status, blocking: review.blocking.length, provider: review.provider, model: review.model, profile: reviewSettings.profile, votes: reviewSettings.votes, minSeverity: reviewSettings.minSeverity, calls: review.usage.providerCalls, inputTokens: review.usage.inputTokens, outputTokens: review.usage.outputTokens, totalTokens: review.usage.totalTokens, ...incompleteReason(review) })
     await ctx.bus.runHook('afterReview', { issue: record.issue, pr: pr.number, head: pr.headSha, status: review.status, blocking: review.blocking.length })
     if (review.status === 'incomplete') {
       const failureKind = classifyProviderFailure(review.rawTail)
@@ -914,7 +1013,7 @@ const handleIntakePullRequest = async (ctx: Context, identifier: string, pr: Pul
   const prior = state.reviews[pr.headSha]
   if (prior?.status === 'findings') return { issue: identifier, outcome: 'waiting', reason: `review findings pending a new push (head ${pr.headSha.slice(0, 7)})`, pr: pr.number, head: pr.headSha, actions }
   if (!prior || prior.status === 'incomplete') {
-    if (prior && prior.attempts >= 2) return { issue: identifier, outcome: 'held', reason: 'review incomplete twice at this head; needs a human look', pr: pr.number, head: pr.headSha, actions }
+    if (prior && prior.attempts >= 2) return { issue: identifier, outcome: 'held', reason: `review incomplete twice at this head; needs a human look${prior.reason ? ` (${prior.reason})` : ''}`, pr: pr.number, head: pr.headSha, actions }
     if (!ctx.reviewer) return { issue: identifier, outcome: 'waiting', reason: 'no reviewer provider available', pr: pr.number, head: pr.headSha, actions }
     if (ctx.dryRun) { actions.push(`would review with ${ctx.reviewer.provider}/${ctx.reviewer.model}`); return { issue: identifier, outcome: 'dry-run', reason: 'review pending', pr: pr.number, head: pr.headSha, actions } }
     const { settings } = providerIdentity(config, ctx.reviewer.provider)
@@ -925,9 +1024,9 @@ const handleIntakePullRequest = async (ctx: Context, identifier: string, pr: Pul
     const review = await runCodeReview(ctx.runner, { cli: config.delivery.review.cli, repo: config.project.repo, baseBranch: config.project.baseBranch, number: pr.number, provider: settings.reviewProvider ?? `${ctx.reviewer.provider}-cli`, model: ctx.reviewer.model, mode: config.delivery.review.mode, ...(config.delivery.review.transport ? { transport: config.delivery.review.transport } : {}), profile: config.delivery.review.profile, votes: config.delivery.review.votes, concurrency: config.delivery.review.concurrency, minSeverity: config.delivery.review.minSeverity, deadlineMs: ctx.reviewDeadlineMs, subprocessTimeoutMs: config.delivery.review.subprocessTimeoutMs, analysisMaxTokens: config.delivery.review.analysisMaxTokens, analysisGlobalMaxTokens: config.delivery.review.analysisGlobalMaxTokens, maxCalls: config.delivery.review.maxCalls, post: config.delivery.review.post, resultFile, cwd: ctx.loaded.root, env: ctx.env })
     actions.push(`review ${review.status}: ${review.summary}`)
     const attempts = (prior?.attempts ?? 0) + 1
-    const next: DeliveryState = { ...state, prNumber: pr.number, reviews: { ...state.reviews, [pr.headSha]: { status: review.status, at: ctx.now().toISOString(), provider: review.provider, model: review.model, blocking: review.blocking.length, attempts } } }
+    const next: DeliveryState = { ...state, prNumber: pr.number, reviews: { ...state.reviews, [pr.headSha]: { status: review.status, at: ctx.now().toISOString(), provider: review.provider, model: review.model, blocking: review.blocking.length, attempts, ...incompleteReason(review) } } }
     saveState(ctx, next)
-    event(ctx, { type: 'pr.reviewed', pr: pr.number, head: pr.headSha, status: review.status, blocking: review.blocking.length, provider: review.provider, model: review.model, profile: config.delivery.review.profile, votes: config.delivery.review.votes, minSeverity: config.delivery.review.minSeverity, source: 'github-intake', calls: review.usage.providerCalls, inputTokens: review.usage.inputTokens, outputTokens: review.usage.outputTokens, totalTokens: review.usage.totalTokens })
+    event(ctx, { type: 'pr.reviewed', pr: pr.number, head: pr.headSha, status: review.status, blocking: review.blocking.length, provider: review.provider, model: review.model, profile: config.delivery.review.profile, votes: config.delivery.review.votes, minSeverity: config.delivery.review.minSeverity, source: 'github-intake', calls: review.usage.providerCalls, inputTokens: review.usage.inputTokens, outputTokens: review.usage.outputTokens, totalTokens: review.usage.totalTokens, ...incompleteReason(review) })
     await ctx.bus.runHook('afterReview', { issue: identifier, pr: pr.number, head: pr.headSha, status: review.status, blocking: review.blocking.length, source: 'github-intake' })
     if (review.status === 'incomplete') {
       const failureKind = classifyProviderFailure(review.rawTail)
@@ -967,6 +1066,7 @@ export const precheckDeliver = (stateDir: string): { readonly work: boolean; rea
 export const runDeliver = async (input: DeliverInput): Promise<DeliverReport> => {
   const loaded = input.loaded ?? loadLoopConfig(input.configPath)
   const { config } = loaded
+  requireWritableTracker(config)
   const now = input.now ?? (() => new Date())
   const dryRun = input.dryRun === true
   const notes: string[] = []
@@ -1015,7 +1115,7 @@ export const runDeliver = async (input: DeliverInput): Promise<DeliverReport> =>
         continue
       }
       // A ceiling reached is an escalation, never another attempt with less headroom.
-      const spend = issueBudget(config, ctx.loaded.stateDir, record.issue)
+      const spend = issueBudget(config, ctx.loaded.stateDir, record.issue, record.frozenPerIssueTokens)
       if (spend.exceeded) {
         results.push(await tripCircuitBreaker(ctx, record, lease, state, 'cost-guard', spend.reason ?? 'per-issue budget exhausted'))
         continue
@@ -1048,6 +1148,9 @@ export const runDeliver = async (input: DeliverInput): Promise<DeliverReport> =>
         const wasFinished = Boolean(state.finishedAt)
         state = await reopenFinishedIssue(ctx, record, state, pr)
         if (wasFinished && state.finishedAt) continue
+        const reviewActions: string[] = []
+        await syncReviewTracker(ctx, record, pr, reviewActions)
+        if (reviewActions.length) notes.push(`${record.issue}: ${reviewActions.join('; ')}`)
         results.push(await handlePullRequest(ctx, record, lease, state, pr)); continue
       }
       const recordedMerge = readMergedEvent(loaded.stateDir, record.issue)
@@ -1066,19 +1169,44 @@ export const runDeliver = async (input: DeliverInput): Promise<DeliverReport> =>
       if (merged) { const actions: string[] = ['PR merged outside the loop']; results.push(await complete(ctx, record, lease, state, merged, null, actions, 'outside')); continue }
       const abandoned = closed.find((item) => item.state === 'CLOSED')
       if (abandoned) {
-        // Already escalated for this very PR: repeating it every pass re-labels the issue and moves it back to
-        // `returnState` again, undoing whatever a person did with it since.
+        // A closed PR is a human decision, not a technical block. Keep the issue in review and retain the
+        // lease/worktree until the person chooses close or reopen; both decisions use the same cleanup gate.
         if (state.finishedAt && state.finalOutcome === 'abandoned' && state.prNumber === abandoned.number) continue
         const actions: string[] = []
-        await escalateLinear(ctx, record, 'abandoned', `**Loop: PR closed without merge** — ${abandoned.url}. The issue returned to ${config.delivery.returnState}; the worktree was preserved.`, actions)
-        finish(ctx, record, lease, { ...state, prNumber: abandoned.number }, 'abandoned', `PR #${abandoned.number} closed`)
+        if (!dryRun) {
+          saveState(ctx, { ...state, prNumber: abandoned.number, finishedAt: ctx.now().toISOString(), finalOutcome: 'abandoned' })
+          event(ctx, { type: 'pr.closed', issue: record.issue, pr: abandoned.number, head: abandoned.headSha, reason: `PR #${abandoned.number} closed without merge` })
+          createInboxStore(ctx.loaded.stateDir).upsert({ issue: record.issue, gate: 'delivery.pr-closed', title: 'PR fechado sem merge', message: `PR #${abandoned.number} foi fechado sem merge. Escolha fechar a issue ou reabrir para uma nova execução.`, fingerprint: `pr:${abandoned.number}:closed:${abandoned.headSha}`, actions: ['close-issue', 'reopen', 'respond'], data: { runId: record.queueRunId ?? null, pr: abandoned.number, head: abandoned.headSha } })
+        }
         results.push({ issue: record.issue, outcome: dryRun ? 'dry-run' : 'abandoned', reason: `PR #${abandoned.number} closed without merge`, pr: abandoned.number, actions })
         continue
       }
       if (state.finishedAt) continue
       results.push(await handleNoPullRequest(ctx, record, lease, state))
     } catch (error) {
-      results.push({ issue: record.issue, outcome: 'failed', reason: message(error), actions: [] })
+      const reason = message(error)
+      // Common tool/API failures are retryable. Finish the local attempt so its lease and capacity slot are released;
+      // the queue projection puts the issue back in Available and keeps this failed attempt in History.
+      finish(ctx, record, lease, state, 'failed', reason)
+      results.push({ issue: record.issue, outcome: 'failed', reason, actions: [] })
+    }
+  }
+
+  // The durable queue is the UI/CLI/scheduler seam; delivery only projects its terminal decision into that store.
+  if (!dryRun) {
+    const queue = createIssueQueue({ stateDir: loaded.stateDir })
+    const lifecycle = createLifecycleStore(loaded.stateDir)
+    for (const result of results) {
+      const run = queue.getLatestByIssue(result.issue)
+      if (!run) continue
+      const openPullRequest = result.pr !== undefined && result.outcome !== 'merged' && result.outcome !== 'abandoned'
+      const stage = result.outcome === 'merged' ? 'merged' : result.outcome === 'abandoned' ? 'pr-closed' : openPullRequest ? 'pr-open' : result.outcome
+      const status = openPullRequest || result.outcome === 'merged' || result.outcome === 'abandoned' ? 'completed' : result.outcome === 'failed' ? 'failed' : ['blocked', 'stuck'].includes(result.outcome) ? 'needs-input' : null
+      // Once a PR was observed, this run is historical. A later delivery/API failure belongs to the issue's review
+      // projection and Inbox, not to rewriting the completed execution attempt into a different terminal run.
+      if (status && run.status !== status && !(run.status === 'completed' && status === 'failed')) queue.update(run.id, { status, error: status === 'completed' ? null : result.reason, projection: { stage, pullRequest: result.pr ?? run.projection.pullRequest } })
+      const pullRequest: LifecyclePullRequest | null = result.pr === undefined ? null : { number: result.pr, state: result.outcome === 'merged' ? 'MERGED' : result.outcome === 'abandoned' ? 'CLOSED' : 'OPEN', ...(result.head ? { head: result.head } : {}) }
+      lifecycle.upsert({ issue: result.issue, runId: run.id, runStatus: status ?? run.status, stage, deliveryOutcome: result.outcome, pullRequest, error: result.outcome === 'failed' ? result.reason : null, finalFailure: ['blocked', 'stuck'].includes(result.outcome), events: [{ type: result.outcome === 'held' ? 'worker.held' : result.outcome === 'waiting' ? 'worker.waiting' : 'worker.reviewed', reason: result.reason }], now: now() })
     }
   }
 
