@@ -1,8 +1,8 @@
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
-import { createInboxStore, createIssueQueue, createLifecycleStore, listDispatched, markDispatchCancelled, projectLifecycle, readDeliveryState, type EnqueueIssueRunInput } from '../src/index.js'
+import { createIssueQueue, createLifecycleStore, listDispatched, markDispatchCancelled, projectLifecycle, readDeliveryState, type EnqueueIssueRunInput } from '../src/index.js'
 
 const roots: string[] = []
 afterEach(() => { for (const root of roots.splice(0)) rmSync(root, { recursive: true, force: true }) })
@@ -45,6 +45,14 @@ describe('persistent issue queue', () => {
     expect(queue.cancel(queued.id, { confirmActive: true, cleanupConfirmed: true }).status).toBe('cancelled')
   })
 
+  it('migrates persisted v2 queue records to the current schema', () => {
+    const root = mkdtempSync(join(tmpdir(), 'harness-queue-v2-')); roots.push(root)
+    const run = createIssueQueue({ stateDir: root }).enqueue(input('ENG-v2', '2026-09-23T10:00:00.000Z'))
+    const state = JSON.parse(readFileSync(join(root, 'queue.json'), 'utf8')) as { schemaVersion: number; runs: readonly Record<string, unknown>[] }
+    writeFileSync(join(root, 'queue.json'), JSON.stringify({ ...state, schemaVersion: 2, runs: state.runs.map((record) => ({ ...record, schemaVersion: 2 })) }))
+    expect(createIssueQueue({ stateDir: root }).get(run.id)).toMatchObject({ schemaVersion: 3, issue: 'ENG-v2', archived: false, archivedAt: null })
+  })
+
   it('accepts an idempotent running projection from a second observer', () => {
     const root = mkdtempSync(join(tmpdir(), 'harness-queue-projection-')); roots.push(root)
     const queue = createIssueQueue({ stateDir: root })
@@ -77,12 +85,12 @@ describe('persistent issue queue', () => {
     const root = mkdtempSync(join(tmpdir(), 'harness-queue-blocked-retry-')); roots.push(root)
     const queue = createIssueQueue({ stateDir: root })
     const first = queue.enqueue(input('ENG-13', '2026-09-23T10:00:00.000Z'))
-    queue.update(first.id, { status: 'needs-input', error: 'fix rounds exhausted', projection: { stage: 'blocked' } })
+    queue.update(first.id, { status: 'blocked', error: 'fix rounds exhausted', projection: { stage: 'blocked' } })
     const retry = queue.retry(first.id, new Date('2026-09-23T10:01:00.000Z'))
     expect(retry.id).not.toBe(first.id)
     expect(retry.status).toBe('queued')
     expect(retry.attempt).toBe(2)
-    expect(queue.get(first.id)).toMatchObject({ status: 'needs-input', error: 'fix rounds exhausted', projection: { stage: 'blocked' } })
+    expect(queue.get(first.id)).toMatchObject({ status: 'blocked', error: 'fix rounds exhausted', projection: { stage: 'blocked' } })
   })
 
   it('does not enqueue a second run after a PR-backed run becomes historical', () => {
@@ -94,49 +102,13 @@ describe('persistent issue queue', () => {
   })
 })
 
-describe('persistent Inbox', () => {
-  it('deduplicates issue plus gate, survives a new store, and keeps failures open', () => {
-    const root = mkdtempSync(join(tmpdir(), 'harness-inbox-')); roots.push(root)
-    const inbox = createInboxStore(root, () => new Date('2026-09-23T10:00:00.000Z'))
-    const first = inbox.upsert({ issue: 'ENG-6', gate: 'contract.escalated', message: 'missing acceptance criteria', fingerprint: 'a' })
-    const second = inbox.upsert({ issue: 'ENG-6', gate: 'contract.escalated', message: 'still missing acceptance criteria', fingerprint: 'a' })
-    expect(second.id).toBe(first.id)
-    expect(inbox.list({ status: 'open' })).toHaveLength(1)
-    expect(inbox.unreadCount()).toBe(1)
-    expect(createInboxStore(root).resolve(first.id, { actor: 'human', action: 'respond' }).status).toBe('resolved')
-    expect(createInboxStore(root).list({ status: 'open' })).toHaveLength(0)
-    const failure = createInboxStore(root).upsert({ issue: 'ENG-7', gate: 'failure.final', message: 'cleanup failed' })
-    expect(createInboxStore(root).get(failure.id)?.status).toBe('open')
-  })
-
-  it('exposes cleanup separately from retry for failed resource cleanup', () => {
-    const root = mkdtempSync(join(tmpdir(), 'harness-inbox-cleanup-')); roots.push(root)
-    const inbox = createInboxStore(root)
-    const item = inbox.upsert({ issue: 'Dev4LifeV/mais-thopp-sistemas#217', gate: 'cleanup.failed', message: 'worktree cleanup failed' })
-    expect(item.actions).toEqual(expect.arrayContaining(['cleanup', 'respond']))
-    expect(item.actions).not.toContain('retry')
-    expect(inbox.resolve(item.id, { actor: 'human', action: 'cleanup' }).status).toBe('resolved')
-  })
-
+describe('lifecycle projection and delivery evidence', () => {
   it('marks a cancelled dispatch finished while retaining its delivery evidence', () => {
     const root = mkdtempSync(join(tmpdir(), 'harness-delivery-cancel-')); roots.push(root)
     const cancelled = markDispatchCancelled(root, 'Dev4LifeV/mais-thopp-sistemas#217', new Date('2026-09-23T10:00:00.000Z'))
     expect(cancelled.cancelledAt).toBe('2026-09-23T10:00:00.000Z')
     expect(cancelled.finishedAt).toBe('2026-09-23T10:00:00.000Z')
     expect(readDeliveryState(root, 'Dev4LifeV/mais-thopp-sistemas#217')).toMatchObject({ cancelledAt: '2026-09-23T10:00:00.000Z', finishedAt: '2026-09-23T10:00:00.000Z' })
-  })
-
-  it('suppresses a deleted Inbox condition until its fingerprint changes', () => {
-    const root = mkdtempSync(join(tmpdir(), 'harness-inbox-suppress-')); roots.push(root)
-    const inbox = createInboxStore(root)
-    const item = inbox.upsert({ issue: 'ENG-10', gate: 'delivery.pr-closed', message: 'PR closed', fingerprint: 'pr:10:closed:abc' })
-    inbox.delete(item.id, { actor: 'human', confirm: true })
-    expect(inbox.list({ status: 'open' })).toHaveLength(0)
-    inbox.upsert({ issue: 'ENG-10', gate: 'delivery.pr-closed', message: 'same PR closed', fingerprint: 'pr:10:closed:abc' })
-    expect(inbox.list({ status: 'open' })).toHaveLength(0)
-    const newCondition = inbox.upsert({ issue: 'ENG-10', gate: 'delivery.pr-closed', message: 'new head closed', fingerprint: 'pr:10:closed:def' })
-    expect(newCondition.status).toBe('open')
-    expect(inbox.list({ status: 'open' })).toHaveLength(1)
   })
 
   it('projects PR review and terminal decisions without conflating the run with the issue', () => {

@@ -1,7 +1,7 @@
 import { existsSync, mkdirSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { z } from 'zod'
-import { writeJsonAtomic } from '../loop/fs-atomic.js'
+import { writeJsonAtomic } from '../../loop/fs-atomic.js'
 
 export const UI_WIZARD_SCHEMA_VERSION = 1 as const
 export type UiWizardStep = 0 | 1 | 2 | 3 | 4 | 5 | 6

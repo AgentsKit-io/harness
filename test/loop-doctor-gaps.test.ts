@@ -196,12 +196,12 @@ describe('review.cli and memory checks', () => {
     const dir = configDir(exampleYaml)
     const configPath = join(dir, 'loop.config.yaml')
     const shared = { runner: fakeRunner(), env: { PATH: bin, XAI_API_KEY: 'k' }, platform: 'darwin' as const, now: () => new Date('2026-09-11T12:00:00.000Z'), probe: false }
-    const automation = (name: string, rrule: string) => ({ id: `id-${name}`, name, enabled: true, rrule, agentId: 'claude', prompt: `This automation does its work inside its precheck command (ak-harness loop stage ${name.slice(5)} -f "${configPath}"), which always exits non-zero so that no agent session is needed. If you are reading this, the precheck unexpectedly exited 0: reply exactly LOOP_PRECHECK_BYPASSED and stop. Do not run any command.`, precheck: { command: `ak-harness loop stage ${name.slice(5)} -f "${configPath}"`, timeoutSeconds: 600 }, workspaceId: `repo-1::${dir}` })
-    const inSync = fakeRunner({ 'orca automations list --json': ok({ ok: true, result: { automations: [automation('loop-tick', '*/5 * * * *'), automation('loop-deliver', '*/10 * * * *')] } }) })
+    const automation = (stage: string, rrule: string) => { const name = `loop-my-project-${stage}`; return { id: `id-${name}`, name, enabled: true, rrule, agentId: 'claude', prompt: `This automation does its work inside its precheck command (ak-harness loop stage ${stage} -f "${configPath}"), which always exits non-zero so that no agent session is needed. If you are reading this, the precheck unexpectedly exited 0: reply exactly LOOP_PRECHECK_BYPASSED and stop. Do not run any command.`, precheck: { command: `ak-harness loop stage ${stage} -f "${configPath}"`, timeoutSeconds: 600 }, workspaceId: `repo-1::${dir}` } }
+    const inSync = fakeRunner({ 'orca automations list --json': ok({ ok: true, result: { automations: [automation('tick', '*/5 * * * *'), automation('deliver', '*/10 * * * *')] } }) })
     expect((await runLoopDoctor({ ...shared, runner: inSync, configPath })).checks.find((check) => check.id === 'automations.drift')).toMatchObject({ status: 'passed' })
 
-    const drifted = fakeRunner({ 'orca automations list --json': ok({ ok: true, result: { automations: [automation('loop-tick', '0 4 * * *')] } }) })
-    expect((await runLoopDoctor({ ...shared, runner: drifted, configPath })).checks.find((check) => check.id === 'automations.drift')).toMatchObject({ status: 'warning', detail: expect.stringContaining('loop-tick: drifted (trigger)') })
+    const drifted = fakeRunner({ 'orca automations list --json': ok({ ok: true, result: { automations: [automation('tick', '0 4 * * *')] } }) })
+    expect((await runLoopDoctor({ ...shared, runner: drifted, configPath })).checks.find((check) => check.id === 'automations.drift')).toMatchObject({ status: 'warning', detail: expect.stringContaining('loop-my-project-tick: drifted (trigger)') })
 
     // Orca unreachable is a warning about the check, never a silent pass.
     expect((await runLoopDoctor({ ...shared, runner: fakeRunner({}, { 'orca automations list': 'orca is down' }), configPath })).checks.find((check) => check.id === 'automations.drift')).toMatchObject({ status: 'warning', detail: expect.stringContaining('orca is down') })

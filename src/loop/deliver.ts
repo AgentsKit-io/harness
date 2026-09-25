@@ -3,6 +3,7 @@ import { z } from 'zod'
 import { dirname, join, relative, sep } from 'node:path'
 import type { CommandRunner } from '../adapters/command.js'
 import { atLeast, parseReviewResult, renderFindingsForWorker, runCodeReview, type CodeReviewOutcome } from '../adapters/code-review.js'
+import { createHitlStore, HITL_ANCHOR_ID, HITL_ANCHOR_TITLE, type HitlRequest } from './hitl.js'
 import { assessChecks, githubComment, githubCommentExists, githubCompare, githubLabelRemove, githubMerge, githubOpenPullRequests, githubPullRequest, githubPullRequestsForBranch, touchesProtectedPaths, type PullRequestSnapshot } from '../adapters/github-cli.js'
 import { requireWritableTracker, resolveConnectors, type ScmConnector, type TrackerConnector } from './connectors.js'
 import { issueBudget, modelForChange } from './budget.js'
@@ -30,10 +31,9 @@ import { assessDod, readDodEvidence, renderDodMarkdown } from './dod.js'
 import { missingArtifacts, readPhaseArtifacts, readVerifyArtifact, verifyProofs, type PhaseArtifactName } from './artifacts.js'
 import { readJsonFile } from '../kernel/json-file.js'
 import { createIssueQueue } from './queue.js'
-import { createInboxStore } from './inbox.js'
 import { createLifecycleStore, type LifecyclePullRequest } from './lifecycle.js'
 
-export type DeliverOutcome = 'waiting' | 'reviewed' | 'fix-round' | 'nudged' | 'handed-off' | 'merged' | 'held' | 'blocked' | 'stuck' | 'abandoned' | 'failed' | 'dry-run'
+export type DeliverOutcome = 'waiting' | 'reviewed' | 'fix-round' | 'nudged' | 'handed-off' | 'merged' | 'held' | 'needs-input' | 'blocked' | 'stuck' | 'abandoned' | 'failed' | 'dry-run'
 
 export interface DeliverResult {
   readonly issue: string
@@ -69,7 +69,7 @@ export interface DeliveryState {
   readonly prNumber: number | null
   readonly reviews: Readonly<Record<string, { readonly status: CodeReviewOutcome['status']; readonly at: string; readonly provider: string; readonly model: string | null; readonly blocking: number; readonly attempts: number; readonly reason?: string }>>
   readonly fixRounds: number
-  readonly nudges: readonly { readonly kind: 'idle' | 'conflict' | 'ci' | 'review' | 'handoff' | 'permission' | 'brief'; readonly at: string; readonly head: string | null }[]
+  readonly nudges: readonly { readonly kind: 'idle' | 'conflict' | 'ci' | 'review' | 'handoff' | 'permission' | 'brief' | 'hitl'; readonly at: string; readonly head: string | null }[]
   readonly handoffs: readonly DeliveryHandoff[]
   readonly heldFor: string | null
   /** A person's attested approval of a PR held for protected paths — valid only for this exact head. */
@@ -367,7 +367,6 @@ const escalateTracker = async (ctx: Context, record: DispatchRecordFile, kind: '
     const detail = message(error)
     actions.push(`${ctx.tracker.id} escalation failed: ${detail}`)
     event(ctx, { type: 'tracker.sync-failed', issue: record.issue, operation: `escalate:${kind}`, error: detail })
-    createInboxStore(ctx.loaded.stateDir).upsert({ issue: record.issue, gate: 'sync.failed', title: 'Sincronização remota pendente', message: `${ctx.tracker.id} não aceitou a atualização de lifecycle: ${detail}`, fingerprint: `tracker:${ctx.tracker.id}:escalate:${kind}:${detail}`, actions: ['retry', 'respond'] })
   }
   try { await orcaWorktreeSet(ctx.runner, { worktree: `id:${record.worktreeId}`, comment: `LOOP ${kind.toUpperCase()}: ${body.split('\n')[0]?.slice(0, 120)}` }, orcaOptions(ctx.config)); actions.push('Orca worktree comment set') } catch (error) { actions.push(`Orca comment failed: ${message(error)}`) }
 }
@@ -632,6 +631,13 @@ const handleNoPullRequest = async (ctx: Context, record: DispatchRecordFile, lea
 }
 
 const complete = async (ctx: Context, record: DispatchRecordFile, lease: DispatchLease | undefined, state: DeliveryState, pr: PullRequestSnapshot, mergeSha: string | null, actions: string[], mergedBy: 'loop' | 'outside' = 'loop'): Promise<DeliverResult> => {
+  // Single source of truth for the terminal merge signal: `pr.merged` is what flips the projection to `completed`,
+  // so it must fire on every path that lands in `complete` — including a merge a human performed outside the loop
+  // (the gap that left the control plane stuck in `running`). Idempotent against re-emission: when `state.finalOutcome`
+  // is already `merged` (a reconciliation pass picking up the same work) we do not double-log.
+  if (!ctx.dryRun && state.finalOutcome !== 'merged') {
+    event(ctx, { type: 'pr.merged', issue: record.issue, pr: pr.number, head: pr.headSha, sha: mergeSha })
+  }
   if (!ctx.dryRun) {
     try {
       await ctx.tracker.attach({ issue: record.issue, url: pr.url, title: `PR #${pr.number}`, dedupeKey: `attach:${record.issue}:${pr.number}` })
@@ -646,7 +652,6 @@ const complete = async (ctx: Context, record: DispatchRecordFile, lease: Dispatc
       const detail = message(error)
       actions.push(`${ctx.tracker.id} completion failed: ${detail}`)
       event(ctx, { type: 'tracker.sync-failed', issue: record.issue, operation: 'completion', error: detail })
-      createInboxStore(ctx.loaded.stateDir).upsert({ issue: record.issue, gate: 'sync.failed', title: 'Sincronização remota pendente', message: `${ctx.tracker.id} não sincronizou a conclusão: ${detail}`, fingerprint: `tracker:${ctx.tracker.id}:completion:${detail}`, actions: ['retry', 'respond'], data: { pr: pr.number, runId: record.queueRunId ?? null } })
     }
     try { await orcaWorktreeSet(ctx.runner, { worktree: `id:${record.worktreeId}`, comment: `LOOP MERGED: PR #${pr.number}` }, orcaOptions(ctx.config)) } catch (error) {
       if (isMissingOrcaWorktree(error)) actions.push('Orca worktree already absent; comment skipped')
@@ -740,8 +745,58 @@ const syncReviewTracker = async (ctx: Context, record: DispatchRecordFile, pr: P
     const detail = message(error)
     actions.push(`${ctx.tracker.id} review sync failed: ${detail}`)
     event(ctx, { type: 'tracker.sync-failed', issue: record.issue, operation: 'review-state', error: detail })
-    createInboxStore(ctx.loaded.stateDir).upsert({ issue: record.issue, gate: 'sync.failed', title: 'Sincronização remota pendente', message: `${ctx.tracker.id} não atualizou a issue para revisão: ${detail}`, fingerprint: `tracker:${ctx.tracker.id}:review-state:${detail}`, actions: ['retry', 'respond'], data: { pr: pr.number, runId: record.queueRunId ?? null } })
   }
+}
+
+const materializeReviewHitl = (ctx: Context, record: DispatchRecordFile, pr: PullRequestSnapshot, requests: NonNullable<CodeReviewOutcome['hitl']>): void => {
+  const store = createHitlStore(ctx.loaded.stateDir)
+  const batchId = `review:${record.issue}:${pr.number}:${pr.headSha}`
+  for (const [index, request] of requests.entries()) {
+    const requestId = `${batchId}:${index}`
+    const digest = `${record.contractDigest ?? record.issue}:review-hitl:${pr.headSha}:${index}`
+    const created = store.create({ requestId, batchId, issue: record.issue, role: 'reviewer', stage: 'review', question: request.question, context: request.context, options: request.options, recommendedOptionId: request.recommendedOptionId, digest, metadata: { runId: record.queueRunId ?? null, stage: 'review', pr: pr.number, head: pr.headSha } })
+    event(ctx, { type: 'human.hitl-requested', issue: record.issue, requestId: created.requestId, batchId: created.batchId, role: created.role, stage: created.stage, question: created.question, context: created.context, options: created.options, recommendedOptionId: created.recommendedOptionId, digest: created.digest })
+  }
+}
+
+const materializeWorkerHitl = (ctx: Context, record: DispatchRecordFile): { readonly open: boolean; readonly invalid: boolean; readonly answered: readonly HitlRequest[] } => {
+  if (!record.worktreePath) return { open: false, invalid: false, answered: [] }
+  const root = join(record.worktreePath, '.ak-loop', 'hitl')
+  if (!existsSync(root)) return { open: false, invalid: false, answered: [] }
+  const store = createHitlStore(ctx.loaded.stateDir); let open = false; let invalid = false; const answered: HitlRequest[] = []
+  for (const file of readdirSync(root).filter((name) => name.endsWith('.json'))) {
+    try {
+      const raw = JSON.parse(readFileSync(join(root, file), 'utf8')) as Record<string, unknown>
+      const options = Array.isArray(raw['options']) ? raw['options'].filter((option): option is Record<string, unknown> => typeof option === 'object' && option !== null && !Array.isArray(option)).map((option) => ({ id: String(option['id'] ?? ''), title: String(option['title'] ?? ''), description: String(option['description'] ?? '') })) : []
+      const request = store.create({ requestId: typeof raw['requestId'] === 'string' ? raw['requestId'] : `worker:${record.issue}:${file}`, batchId: typeof raw['batchId'] === 'string' ? raw['batchId'] : `worker:${record.issue}:${record.queueRunId ?? record.issue}`, issue: record.issue, role: 'builder', stage: 'worker', question: String(raw['question'] ?? ''), context: String(raw['context'] ?? ''), options, recommendedOptionId: String(raw['recommendedOptionId'] ?? ''), digest: typeof raw['digest'] === 'string' ? raw['digest'] : `${record.contractDigest ?? record.issue}:${file}`, metadata: { runId: record.queueRunId ?? null, worktreePath: record.worktreePath, terminal: record.terminal ?? null, stage: 'worker' } })
+      if (request.status === 'open') open = true
+      if (request.status === 'answered' && request.answer) {
+        answered.push(request)
+        if (!raw['answer']) writeJsonAtomic(join(root, file), { ...raw, answer: request.answer })
+      }
+    } catch { invalid = true }
+  }
+  return { open, invalid, answered }
+}
+
+const renderWorkerHitlAnswer = (request: HitlRequest): string => {
+  const option = request.answer?.optionId === HITL_ANCHOR_ID ? HITL_ANCHOR_TITLE : request.options.find((candidate) => candidate.id === request.answer?.optionId)?.title ?? request.answer?.optionId ?? 'unknown option'
+  return `HUMAN HITL DECISION for request ${request.requestId}:
+- Question: ${request.question}
+- Selected option: ${option} (${request.answer?.optionId ?? 'unknown'})
+${request.answer?.freeText ? `- Human explanation: ${request.answer.freeText}\n` : ''}- Continue the existing task using this decision. Do not ask the same HITL question again. Read the current worktree state and continue the brief.`
+}
+
+const resumeAnsweredWorkerHitl = async (ctx: Context, record: DispatchRecordFile, state: DeliveryState, requests: readonly HitlRequest[], actions: string[]): Promise<boolean> => {
+  const pending = requests.filter((request) => !state.nudges.some((nudge) => nudge.kind === 'hitl' && nudge.head === request.digest))
+  if (!pending.length) return false
+  const text = pending.map(renderWorkerHitlAnswer).join('\n\n')
+  const sent = await sendToWorker(ctx, record, text, actions)
+  if (!sent) return false
+  const at = ctx.now().toISOString()
+  saveState(ctx, { ...state, nudges: [...state.nudges, ...pending.map((request) => ({ kind: 'hitl' as const, at, head: request.digest }))] })
+  event(ctx, { type: 'worker.hitl-resumed', issue: record.issue, requestIds: pending.map((request) => request.requestId) })
+  return true
 }
 
 const handlePullRequest = async (ctx: Context, record: DispatchRecordFile, lease: DispatchLease | undefined, state: DeliveryState, pr: PullRequestSnapshot): Promise<DeliverResult> => {
@@ -852,9 +907,10 @@ ${marker}` }); actions.push('secret-file hold commented') } catch (error) { acti
     saveState(ctx, state)
     // windowed/cost visibility: agentskit-review already tracks provider calls and tokens per invocation
     // (`review.usage`); recording it here is what lets issueBudget/issueSpend see review spend at all.
-    event(ctx, { type: 'pr.reviewed', issue: record.issue, pr: pr.number, head: pr.headSha, status: review.status, blocking: review.blocking.length, provider: review.provider, model: review.model, profile: reviewSettings.profile, votes: reviewSettings.votes, minSeverity: reviewSettings.minSeverity, calls: review.usage.providerCalls, inputTokens: review.usage.inputTokens, outputTokens: review.usage.outputTokens, totalTokens: review.usage.totalTokens, ...incompleteReason(review) })
-    await ctx.bus.runHook('afterReview', { issue: record.issue, pr: pr.number, head: pr.headSha, status: review.status, blocking: review.blocking.length })
-    if (review.status === 'incomplete') {
+     event(ctx, { type: 'pr.reviewed', issue: record.issue, pr: pr.number, head: pr.headSha, status: review.status, blocking: review.blocking.length, provider: review.provider, model: review.model, profile: reviewSettings.profile, votes: reviewSettings.votes, minSeverity: reviewSettings.minSeverity, calls: review.usage.providerCalls, inputTokens: review.usage.inputTokens, outputTokens: review.usage.outputTokens, totalTokens: review.usage.totalTokens, ...incompleteReason(review) })
+     await ctx.bus.runHook('afterReview', { issue: record.issue, pr: pr.number, head: pr.headSha, status: review.status, blocking: review.blocking.length })
+     if (review.hitl?.length) { materializeReviewHitl(ctx, record, pr, review.hitl); return { issue: record.issue, outcome: 'needs-input', reason: 'review requested a structured human decision', pr: pr.number, head: pr.headSha, review, actions } }
+     if (review.status === 'incomplete') {
       const failureKind = classifyProviderFailure(review.rawTail)
       // Cooldown keys off the internal provider id (ctx.reviewer.provider, e.g. "codex"), not the review-CLI transport id
       // (review.provider, e.g. "codex-cli") — those differ and detectProviders()/rankModels() only look up the former.
@@ -947,7 +1003,6 @@ ${marker}` }); actions.push('secret-file hold commented') } catch (error) { acti
   const merged = await githubMerge(ctx.runner, { repo: config.project.repo, number: pr.number, headSha: pr.headSha, method: config.delivery.merge.method, title: `${pr.title} (#${pr.number})` })
   if (!merged.merged) { actions.push(`merge refused: ${merged.message}`); event(ctx, { type: 'pr.merge-refused', issue: record.issue, pr: pr.number, head: pr.headSha, message: merged.message }); return { issue: record.issue, outcome: 'waiting', reason: `merge refused: ${merged.message}`, pr: pr.number, head: pr.headSha, actions } }
   actions.push(`merged as ${merged.sha ?? 'unknown sha'}`)
-  event(ctx, { type: 'pr.merged', issue: record.issue, pr: pr.number, head: pr.headSha, sha: merged.sha })
   await ctx.bus.runHook('afterMerge', { issue: record.issue, pr: pr.number, head: pr.headSha, sha: merged.sha })
   return complete(ctx, record, lease, state, pr, merged.sha, actions)
 }
@@ -1026,7 +1081,7 @@ const handleIntakePullRequest = async (ctx: Context, identifier: string, pr: Pul
     const attempts = (prior?.attempts ?? 0) + 1
     const next: DeliveryState = { ...state, prNumber: pr.number, reviews: { ...state.reviews, [pr.headSha]: { status: review.status, at: ctx.now().toISOString(), provider: review.provider, model: review.model, blocking: review.blocking.length, attempts, ...incompleteReason(review) } } }
     saveState(ctx, next)
-    event(ctx, { type: 'pr.reviewed', pr: pr.number, head: pr.headSha, status: review.status, blocking: review.blocking.length, provider: review.provider, model: review.model, profile: config.delivery.review.profile, votes: config.delivery.review.votes, minSeverity: config.delivery.review.minSeverity, source: 'github-intake', calls: review.usage.providerCalls, inputTokens: review.usage.inputTokens, outputTokens: review.usage.outputTokens, totalTokens: review.usage.totalTokens, ...incompleteReason(review) })
+    event(ctx, { type: 'pr.reviewed', issue: identifier, pr: pr.number, head: pr.headSha, status: review.status, blocking: review.blocking.length, provider: review.provider, model: review.model, profile: config.delivery.review.profile, votes: config.delivery.review.votes, minSeverity: config.delivery.review.minSeverity, source: 'github-intake', calls: review.usage.providerCalls, inputTokens: review.usage.inputTokens, outputTokens: review.usage.outputTokens, totalTokens: review.usage.totalTokens, ...incompleteReason(review) })
     await ctx.bus.runHook('afterReview', { issue: identifier, pr: pr.number, head: pr.headSha, status: review.status, blocking: review.blocking.length, source: 'github-intake' })
     if (review.status === 'incomplete') {
       const failureKind = classifyProviderFailure(review.rawTail)
@@ -1137,6 +1192,16 @@ export const runDeliver = async (input: DeliverInput): Promise<DeliverReport> =>
       }
     }
     try {
+      const workerHitl = materializeWorkerHitl(ctx, record)
+      if (workerHitl.invalid) { results.push({ issue: record.issue, outcome: 'blocked', reason: 'worker HITL request file is invalid; the worker protocol is blocked', actions: [] }); continue }
+      if (workerHitl.open) { results.push({ issue: record.issue, outcome: 'needs-input', reason: 'worker requested a structured human decision', actions: [] }); continue }
+      if (workerHitl.answered.length) {
+        const actions: string[] = []
+        if (await resumeAnsweredWorkerHitl(ctx, record, state, workerHitl.answered, actions)) {
+          results.push({ issue: record.issue, outcome: 'nudged', reason: 'answered worker HITL decision sent to the worker', actions })
+          continue
+        }
+      }
       let open = await githubPullRequestsForBranch(input.runner, { repo: config.project.repo, head: record.branch })
       if (!open.length) {
         // The worker may have pushed the branch Orca assigned (`<git user>/<worktree>`) rather than the recorded one.
@@ -1176,7 +1241,6 @@ export const runDeliver = async (input: DeliverInput): Promise<DeliverReport> =>
         if (!dryRun) {
           saveState(ctx, { ...state, prNumber: abandoned.number, finishedAt: ctx.now().toISOString(), finalOutcome: 'abandoned' })
           event(ctx, { type: 'pr.closed', issue: record.issue, pr: abandoned.number, head: abandoned.headSha, reason: `PR #${abandoned.number} closed without merge` })
-          createInboxStore(ctx.loaded.stateDir).upsert({ issue: record.issue, gate: 'delivery.pr-closed', title: 'PR fechado sem merge', message: `PR #${abandoned.number} foi fechado sem merge. Escolha fechar a issue ou reabrir para uma nova execução.`, fingerprint: `pr:${abandoned.number}:closed:${abandoned.headSha}`, actions: ['close-issue', 'reopen', 'respond'], data: { runId: record.queueRunId ?? null, pr: abandoned.number, head: abandoned.headSha } })
         }
         results.push({ issue: record.issue, outcome: dryRun ? 'dry-run' : 'abandoned', reason: `PR #${abandoned.number} closed without merge`, pr: abandoned.number, actions })
         continue
@@ -1199,14 +1263,15 @@ export const runDeliver = async (input: DeliverInput): Promise<DeliverReport> =>
     for (const result of results) {
       const run = queue.getLatestByIssue(result.issue)
       if (!run) continue
-      const openPullRequest = result.pr !== undefined && result.outcome !== 'merged' && result.outcome !== 'abandoned'
-      const stage = result.outcome === 'merged' ? 'merged' : result.outcome === 'abandoned' ? 'pr-closed' : openPullRequest ? 'pr-open' : result.outcome
-      const status = openPullRequest || result.outcome === 'merged' || result.outcome === 'abandoned' ? 'completed' : result.outcome === 'failed' ? 'failed' : ['blocked', 'stuck'].includes(result.outcome) ? 'needs-input' : null
+      const openPullRequest = result.pr !== undefined && !['merged', 'abandoned', 'needs-input'].includes(result.outcome)
+      const stage = result.outcome === 'merged' ? 'merged' : result.outcome === 'abandoned' ? 'pr-closed' : result.outcome === 'needs-input' ? 'needs-input' : openPullRequest ? 'pr-open' : result.outcome
+      const status = result.outcome === 'needs-input' ? 'needs-input' : openPullRequest || result.outcome === 'merged' || result.outcome === 'abandoned' ? 'completed' : result.outcome === 'failed' ? 'failed' : ['blocked', 'stuck'].includes(result.outcome) ? 'blocked' : null
       // Once a PR was observed, this run is historical. A later delivery/API failure belongs to the issue's review
       // projection and Inbox, not to rewriting the completed execution attempt into a different terminal run.
       if (status && run.status !== status && !(run.status === 'completed' && status === 'failed')) queue.update(run.id, { status, error: status === 'completed' ? null : result.reason, projection: { stage, pullRequest: result.pr ?? run.projection.pullRequest } })
       const pullRequest: LifecyclePullRequest | null = result.pr === undefined ? null : { number: result.pr, state: result.outcome === 'merged' ? 'MERGED' : result.outcome === 'abandoned' ? 'CLOSED' : 'OPEN', ...(result.head ? { head: result.head } : {}) }
-      lifecycle.upsert({ issue: result.issue, runId: run.id, runStatus: status ?? run.status, stage, deliveryOutcome: result.outcome, pullRequest, error: result.outcome === 'failed' ? result.reason : null, finalFailure: ['blocked', 'stuck'].includes(result.outcome), events: [{ type: result.outcome === 'held' ? 'worker.held' : result.outcome === 'waiting' ? 'worker.waiting' : 'worker.reviewed', reason: result.reason }], now: now() })
+      const syncError = result.actions.find((action) => action.includes('review sync failed')) ?? null
+      lifecycle.upsert({ issue: result.issue, runId: run.id, runStatus: status ?? run.status, stage, deliveryOutcome: result.outcome, pullRequest, error: result.outcome === 'failed' ? result.reason : syncError, finalFailure: ['blocked', 'stuck'].includes(result.outcome), events: [{ type: result.outcome === 'held' ? 'worker.held' : result.outcome === 'waiting' ? 'worker.waiting' : 'worker.reviewed', reason: result.reason }], now: now() })
     }
   }
 

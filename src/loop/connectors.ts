@@ -7,7 +7,7 @@ import {
 import {
   githubComment, githubCommentExists, githubCurrentUser, githubIssue, githubIssueClose, githubIssueComment,
   githubIssueCommentExists, githubIssueCreate, githubIssueEdit, githubIssueReopen, githubMerge, githubOpenIssues,
-  githubOpenPullRequests, githubPullRequest, githubPullRequestsForBranch, githubPreflight, githubLabelRemove, type GitHubIssueDetail,
+  githubOpenPullRequests, githubPullRequest, githubPullRequestsForBranch, githubPullRequestsForIssue, githubPreflight, githubLabelRemove, type GitHubIssueDetail,
   type PullRequestSnapshot,
 } from '../adapters/github-cli.js'
 import { createTrackingAdapter, type TrackingAdapter } from '../adapters/tracking.js'
@@ -48,6 +48,7 @@ export interface ScmConnector {
   readonly id: string
   pullRequest(number: number): Promise<PullRequestSnapshot>
   pullRequestsForBranch(head: string, state?: 'open' | 'merged' | 'closed' | 'all'): Promise<readonly PullRequestSnapshot[]>
+  pullRequestsForIssue(issue: string, state?: 'open' | 'closed' | 'all'): Promise<readonly PullRequestSnapshot[]>
   openPullRequests(input?: { readonly limit?: number; readonly label?: string }): Promise<readonly PullRequestSnapshot[]>
   comment(input: { readonly number: number; readonly body: string }): Promise<void>
   commentExists(input: { readonly number: number; readonly marker: string }): Promise<boolean>
@@ -244,6 +245,7 @@ export const createGitHubScm = (input: ConnectorInput): ScmConnector => {
     id: 'github',
     pullRequest: async (number) => githubPullRequest(runner, { repo, number }, options),
     pullRequestsForBranch: async (head, state) => githubPullRequestsForBranch(runner, { repo, head, ...(state ? { state } : {}) }, options),
+    pullRequestsForIssue: async (issue, state) => { const number = Number(issue.split('#').at(-1)); if (!Number.isInteger(number) || number < 1) return []; return githubPullRequestsForIssue(runner, { repo, issue: number, ...(state ? { state } : {}) }, options) },
     openPullRequests: async (query) => githubOpenPullRequests(runner, { repo, ...(query?.limit ? { limit: query.limit } : {}), ...(query?.label ? { label: query.label } : {}) }, options),
     comment: async ({ number, body }) => { await githubComment(runner, { repo, number, body }, options) },
     commentExists: async ({ number, marker }) => githubCommentExists(runner, { repo, number, marker }, options),

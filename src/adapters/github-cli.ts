@@ -130,6 +130,12 @@ export const githubOpenPullRequests = async (runner: CommandRunner, input: { rea
   return (Array.isArray(list) ? list : []).map(parsePullRequest)
 }
 
+/** PRs natively associated with a GitHub issue through GitHub's issue search/index. */
+export const githubPullRequestsForIssue = async (runner: CommandRunner, input: { readonly repo: string; readonly issue: number; readonly state?: 'open' | 'closed' | 'all' }, options: GitHubCliOptions = {}): Promise<readonly PullRequestSnapshot[]> => {
+  const list = await ghJson(runner, ['pr', 'list', '--repo', input.repo, '--state', input.state ?? 'all', '--search', `is:pr #${input.issue}`, '--limit', '50', '--json', PR_FIELDS.join(',')], options)
+  return (Array.isArray(list) ? list : []).map(parsePullRequest)
+}
+
 export interface GitHubIssueSnapshot {
   readonly number: number
   readonly identifier: string

@@ -2,7 +2,7 @@ import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
-import { automationName, automationPrompt, automationSpecs, installLoopAutomations, loadLoopConfig, loopStatus, parseAutomationRuns, precheckCommand, shellQuote, uninstallLoopAutomations } from '../src/index.js'
+import { automationName, automationPrompt, automationSpecs, installLoopAutomations, loadLoopConfig, loopStatus, parseAutomationRuns, precheckCommand, sanitizeAutomationSuffix, shellQuote, uninstallLoopAutomations } from '../src/index.js'
 import type { CommandResult, CommandRunner } from '../src/index.js'
 
 const fixture = (name: string): unknown => JSON.parse(readFileSync(join(process.cwd(), 'test/fixtures/loop', `${name}.json`), 'utf8')) as unknown
@@ -43,7 +43,10 @@ describe('loop install', () => {
   it('derives two automation specs with read-only prechecks, existing-workspace mode and the config path baked in', () => {
     const { loaded } = setup()
     const specs = automationSpecs(loaded, 'claude')
-    expect(specs.map((spec) => spec.name)).toEqual(['loop-tick', 'loop-deliver'])
+    // Default `schedule.namePrefix: 'loop'` plus a non-default `project.name` (`my-project` in the fixture) yields a
+    // per-project prefix — two configs running side-by-side no longer share `<prefix>-tick`/`<prefix>-deliver` and
+    // overwriting each other's automations on every Orca reconcile.
+    expect(specs.map((spec) => spec.name)).toEqual(['loop-my-project-tick', 'loop-my-project-deliver'])
     expect(specs[0]).toMatchObject({ trigger: '*/5 * * * *', provider: 'claude', reuseSession: true })
     expect(specs[0]?.precheck).toBe(precheckCommand(loaded.config, loaded.path, 'tick'))
     expect(specs[0]?.precheck).toBe(`ak-harness loop stage tick -f "${loaded.path}"`)
@@ -56,7 +59,21 @@ describe('loop install', () => {
     expect(shellQuote('C:\\Users\\x y\\loop.config.yaml')).toBe('"C:\\Users\\x y\\loop.config.yaml"')
     expect(shellQuote('/a/"b"/c')).toBe('"/a/\\"b\\"/c"')
     expect(specs[0]?.workspace).toBe(`path:${loaded.root}`)
-    expect(automationName(loaded.config, 'tick')).toBe('loop-tick')
+    expect(automationName(loaded.config, 'tick')).toBe('loop-my-project-tick')
+  })
+
+  it('respects an explicit `schedule.namePrefix` and does not derive from project.name', () => {
+    const { loaded } = setup()
+    const pinned = { ...loaded, config: { ...loaded.config, schedule: { ...loaded.config.schedule, namePrefix: 'cust-x' } } }
+    expect(automationSpecs(pinned, 'claude').map((spec) => spec.name)).toEqual(['cust-x-tick', 'cust-x-deliver'])
+  })
+
+  it('sanitizes awkward project names so two configs can never collide on an automation name', () => {
+    expect(sanitizeAutomationSuffix('My Repo (v2)!')).toBe('my-repo-v2')
+    expect(sanitizeAutomationSuffix('   ')).toBe('')
+    expect(sanitizeAutomationSuffix('café résumé')).toBe('cafe-re-sume')
+    // 32-char ceiling keeps the Orca-side identifier bounded.
+    expect(sanitizeAutomationSuffix('a'.repeat(80)).length).toBe(32)
   })
 
   it('creates on first install, leaves a matching automation alone on the second, picks the watcher provider, and warns when the harness binary is missing', async () => {

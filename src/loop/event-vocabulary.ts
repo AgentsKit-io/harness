@@ -11,6 +11,12 @@
 export const LOOP_EVENT_TYPES = {
   /** A contract was frozen but is not dispatchable; a human was asked to settle it. */
   'contract.escalated': ['issue', 'reasons', 'digest'],
+  /** A structured human decision was requested by an LLM stage. */
+  'human.hitl-requested': ['issue', 'requestId', 'batchId', 'role', 'stage', 'question', 'context', 'options', 'recommendedOptionId', 'digest'],
+  /** A human answered one structured HITL request. */
+  'human.hitl-answered': ['issue', 'requestId', 'batchId', 'role', 'stage', 'optionId', 'freeText', 'digest', 'actor'],
+  /** All requests in a structured HITL batch have answers and the stage may resume. */
+  'human.hitl-batch-ready': ['issue', 'batchId', 'requestId'],
   /** Contract generation failed on every candidate provider. */
   'contract.failed': ['issue', 'error'],
   /** A contract was frozen successfully. `provider`/`model`/`effort` are what actually produced it — the join key
@@ -39,6 +45,8 @@ export const LOOP_EVENT_TYPES = {
   'worker.permission-wait': ['issue', 'terminal', 'reason'],
   /** A stale terminal was relaunched for a worker that was still supposed to be working. */
   'worker.reactivated': ['issue', 'terminal', 'previousTerminal'],
+  /** A human answered a worker HITL request and the decision was sent back to the worker terminal. */
+  'worker.hitl-resumed': ['issue', 'requestIds'],
   /** A finished issue came back: a new head on a PR the loop had already closed out. */
   'worker.reopened': ['issue', 'pr', 'previousHead', 'head', 'previousOutcome'],
   /**
@@ -72,6 +80,8 @@ export const LOOP_EVENT_TYPES = {
   'worker.reviewed': ['issue', 'reason', 'worktreeId'],
   /** The pass ended by sending the worker back to work. */
   'worker.fix-round': ['issue', 'reason', 'worktreeId'],
+  /** A structured human decision stopped delivery without turning it into a technical failure. */
+  'worker.needs-input': ['issue', 'reason', 'worktreeId'],
 
   /** A review ran against a PR, with the verdict, who gave it, how it was configured (profile/votes/severity
    * floor) and what it cost (`calls`/token fields, from `agentskit-review`'s own usage tracking) — what a study
@@ -113,6 +123,8 @@ export const LOOP_EVENT_TYPES = {
   'github-intake.nudged': ['pr', 'reason'],
   /** It changed hands. */
   'github-intake.handed-off': ['pr', 'reason'],
+  /** An external review requested a structured human decision. */
+  'github-intake.needs-input': ['pr', 'reason'],
 
   /** A batch is on the integration branch with nobody's approval behind it. Emitted once per head. */
   'release.waiting': ['head', 'branch', 'commits', 'issues', 'detail'],
@@ -189,6 +201,22 @@ export const LOOP_EVENT_TYPES = {
   'dod.assessed': ['issue', 'pr', 'head', 'complete', 'proven', 'missing', 'failed'],
   /** The project's own `delivery.verify.argv` passed before a review was even requested. */
   'verify.passed': ['issue', 'pr', 'head'],
+
+  /**
+   * A fresh attempt is queued through the control plane — the wizard's confirm, or a retry. `queue.ts` is the
+   * authoritative record of the attempt itself (read live by `store.ts`, and by `tick.ts` for
+   * `queue.mode: explicit`); this event only carries the phase signal nothing else emits before a dispatch
+   * happens: "an operator just asked for this."
+   */
+  'ui.run-enqueued': ['issue'],
+  /** Cancellation cleanup (terminal, worktree, lease, tracker state) finished for a run. */
+  'ui.cleanup-completed': ['issue', 'runId'],
+  /** Cancellation cleanup failed partway; the run is held for a human to inspect. */
+  'ui.cleanup-failed': ['issue', 'runId', 'detail'],
+  /** A human resolved a `needs-decision` issue (a PR closed without merge): close it for good, or reopen it for
+   * a fresh run. The only decision type in the control plane that isn't a structured HITL question — there is
+   * nothing to ask the LLM, the tracker state already says what happened. */
+  'ui.issue-decided': ['issue', 'action'],
 } as const satisfies Readonly<Record<string, readonly string[]>>
 
 export type LoopEventType = keyof typeof LOOP_EVENT_TYPES

@@ -76,6 +76,19 @@ export const CONTRACT_JSON_SCHEMA = {
         required: ['question'],
       },
     },
+    hitl: {
+      type: 'array',
+      items: {
+        type: 'object',
+        properties: {
+          question: { type: 'string', minLength: 1 },
+          context: { type: 'string' },
+          options: { type: 'array', minItems: 3, maxItems: 4 },
+          recommendedOptionId: { type: 'string', minLength: 1 },
+        },
+        required: ['question', 'options', 'recommendedOptionId'],
+      },
+    },
     touchpoints: { type: 'array', items: { type: 'string' } },
     risks: { type: 'array', items: { type: 'string' } },
   },
@@ -94,6 +107,8 @@ export const TaskContractSchema = z.object({
   scope: z.object({ inScope: z.array(nonEmpty).min(1), outOfScope: z.array(z.string().trim()).default([]) }),
   outcomes: z.array(ContractOutcomeSchema).default([]),
   ambiguities: z.array(z.object({ question: nonEmpty, blocking: z.boolean().default(true) })).default([]),
+  /** Structured human decisions emitted by the LLM; only these requests may enter the Control Plane Inbox. */
+  hitl: z.array(z.object({ question: nonEmpty, context: z.string().trim().default(''), options: z.array(z.object({ id: nonEmpty, title: nonEmpty, description: nonEmpty })).min(3).max(4), recommendedOptionId: nonEmpty })).default([]),
   /** Files or areas the orchestrator expects to change; advisory for the worker. */
   touchpoints: z.array(z.string().trim()).default([]),
   risks: z.array(z.string().trim()).default([]),

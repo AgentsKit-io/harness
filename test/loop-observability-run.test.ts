@@ -89,7 +89,7 @@ describe('runObserveStage', () => {
     const runner = fakeRunner({ 'orca automations list --json': ok({ ok: true, result: { automations: [] } }) })
     const first = await runObserveStage({ loaded: env.loaded, runner, now: () => now })
     expect(first).toMatchObject({ status: 'action_required', notify: true, reason: 'new-problems' })
-    expect(first.problems.map((problem) => problem.id)).toContain('automation-missing:loop-tick')
+    expect(first.problems.map((problem) => problem.id)).toContain('automation-missing:loop-my-project-tick')
     expect(first.observability.project).toBe('my-project')
     expect(readObserverState(env.loaded.stateDir)).toMatchObject({ signature: first.signature, firstSeenAt: now.toISOString() })
 

@@ -7,9 +7,9 @@ import { writeJsonAtomic } from './fs-atomic.js'
 import type { ModelReference } from './config.js'
 
 /** The queue is deliberately a small durable state machine shared by UI, CLI and scheduled ticks. */
-export const ISSUE_QUEUE_SCHEMA_VERSION = 2 as const
+export const ISSUE_QUEUE_SCHEMA_VERSION = 3 as const
 
-export type IssueRunStatus = 'queued' | 'dispatching' | 'running' | 'needs-input' | 'failed' | 'completed' | 'cancelled'
+export type IssueRunStatus = 'queued' | 'dispatching' | 'running' | 'needs-input' | 'blocked' | 'failed' | 'completed' | 'cancelled'
 
 export interface IssueRunConfigSnapshot {
   readonly configHash: string
@@ -79,6 +79,7 @@ export interface IssueQueueProjection {
   readonly dispatching: number
   readonly running: number
   readonly needsInput: number
+  readonly blocked: number
   readonly failed: number
   readonly completed: number
   readonly cancelled: number
@@ -117,10 +118,10 @@ export interface IssueQueueOptions {
 }
 
 const issueRunSchema = z.object({
-  schemaVersion: z.union([z.literal(1), z.literal(ISSUE_QUEUE_SCHEMA_VERSION)]),
+  schemaVersion: z.union([z.literal(1), z.literal(2), z.literal(ISSUE_QUEUE_SCHEMA_VERSION)]),
   id: z.string().min(1), issue: z.string().min(1), title: z.string().nullable(), url: z.string().nullable(),
   sequence: z.number().int().positive(), acceptedAt: z.string(), updatedAt: z.string(),
-  status: z.enum(['queued', 'dispatching', 'running', 'needs-input', 'failed', 'completed', 'cancelled']),
+  status: z.enum(['queued', 'dispatching', 'running', 'needs-input', 'blocked', 'failed', 'completed', 'cancelled']),
   attempt: z.number().int().positive(),
   config: z.object({ configHash: z.string().min(1), flow: z.string().nullable(), builder: z.object({ provider: z.string().min(1), model: z.string().min(1) }), maxFixRounds: z.number().int().min(0), perIssueTokens: z.number().int().min(0), roles: z.object({ orchestrator: z.literal('project'), reviewer: z.literal('project'), watcher: z.literal('project'), delivery: z.literal('snapshot') }) }),
   contract: z.object({ digest: z.string().min(1), status: z.literal('valid'), frozenAt: z.string() }),
@@ -129,11 +130,11 @@ const issueRunSchema = z.object({
   error: z.string().nullable(), archived: z.boolean().optional(), archivedAt: z.string().nullable().optional(),
 })
 
-const stateSchema = z.object({ schemaVersion: z.union([z.literal(1), z.literal(ISSUE_QUEUE_SCHEMA_VERSION)]), nextSequence: z.number().int().positive(), runs: z.array(issueRunSchema) })
+const stateSchema = z.object({ schemaVersion: z.union([z.literal(1), z.literal(2), z.literal(ISSUE_QUEUE_SCHEMA_VERSION)]), nextSequence: z.number().int().positive(), runs: z.array(issueRunSchema) })
 type QueueState = { readonly schemaVersion: typeof ISSUE_QUEUE_SCHEMA_VERSION; readonly nextSequence: number; readonly runs: readonly IssueRun[] }
 
 const terminal = (status: IssueRunStatus): boolean => ['completed', 'failed', 'cancelled'].includes(status)
-const active = (status: IssueRunStatus): boolean => ['queued', 'dispatching', 'running', 'needs-input'].includes(status)
+const active = (status: IssueRunStatus): boolean => ['queued', 'dispatching', 'running', 'needs-input', 'blocked'].includes(status)
 const executing = (status: IssueRunStatus): boolean => ['queued', 'dispatching', 'running'].includes(status)
 const historicalDelivery = (run: IssueRun): boolean => run.status === 'completed' && ['pr-open', 'pr-closed', 'merged', 'closed'].includes(run.projection.stage)
 const pathFor = (stateDir: string): string => join(stateDir, 'queue.json')
@@ -143,6 +144,7 @@ const emptyState = (): QueueState => ({ schemaVersion: ISSUE_QUEUE_SCHEMA_VERSIO
 const normalizeRun = (run: z.infer<typeof issueRunSchema>): IssueRun => ({
   ...run,
   schemaVersion: ISSUE_QUEUE_SCHEMA_VERSION,
+  status: run.status === 'needs-input' && run.projection.stage === 'blocked' ? 'blocked' : run.status,
   archived: run.archived ?? false,
   archivedAt: run.archivedAt ?? null,
 }) as IssueRun
@@ -214,7 +216,7 @@ export const createIssueQueue = (options: IssueQueueOptions): IssueQueue => {
   }
   const update = (id: string, patch: IssueRunPatch): IssueRun => mutate((current) => {
     const existing = current.runs.find((run) => run.id === id) ?? fail(`Unknown queue run ${id}.`, 'INVALID_INPUT')
-    if (patch.status === 'running' && existing.status !== 'running' && existing.status !== 'dispatching' && existing.status !== 'queued') fail(`Run ${id} cannot enter running from ${existing.status}.`, 'INVALID_STATE')
+    if (patch.status === 'running' && !['running', 'dispatching', 'queued', 'needs-input'].includes(existing.status)) fail(`Run ${id} cannot enter running from ${existing.status}.`, 'INVALID_STATE')
     if (patch.status === 'completed' && existing.status !== 'completed' && !['running', 'dispatching', 'queued'].includes(existing.status)) fail(`Run ${id} cannot complete from ${existing.status}.`, 'INVALID_STATE')
     const at = (patch.now ?? now()).toISOString()
     const requestedStage = patch.projection?.stage ?? existing.projection.stage
@@ -248,7 +250,7 @@ export const createIssueQueue = (options: IssueQueueOptions): IssueQueue => {
   })
   const retry = (id: string, retryAt = now()): IssueRun => mutate((current) => {
     const existing = current.runs.find((run) => run.id === id) ?? fail(`Unknown queue run ${id}.`, 'INVALID_INPUT')
-    if (!['failed', 'cancelled', 'needs-input'].includes(existing.status)) fail(`Only failed, cancelled or blocked runs can be retried (got ${existing.status}).`, 'INVALID_STATE')
+    if (!['failed', 'cancelled', 'needs-input', 'blocked'].includes(existing.status)) fail(`Only failed, cancelled or blocked runs can be retried (got ${existing.status}).`, 'INVALID_STATE')
     const duplicate = current.runs.some((run) => run.id !== id && run.issue === existing.issue && active(run.status))
     if (duplicate) throw new HarnessError(`Issue ${existing.issue} already has an active queue request.`, 'ACTIVE_RUN')
     const at = retryAt.toISOString()
@@ -281,7 +283,7 @@ export const createIssueQueue = (options: IssueQueueOptions): IssueQueue => {
   })
   const project = (): IssueQueueProjection => {
     const runs = list(); const count = (status: IssueRunStatus): number => runs.filter((run) => run.status === status).length
-    return { queued: count('queued'), dispatching: count('dispatching'), running: count('running'), needsInput: count('needs-input'), failed: count('failed'), completed: count('completed'), cancelled: count('cancelled'), activeIssues: [...new Set(runs.filter((run) => active(run.status)).map((run) => run.issue))], runs }
+    return { queued: count('queued'), dispatching: count('dispatching'), running: count('running'), needsInput: count('needs-input'), blocked: count('blocked'), failed: count('failed'), completed: count('completed'), cancelled: count('cancelled'), activeIssues: [...new Set(runs.filter((run) => active(run.status)).map((run) => run.issue))], runs }
   }
   const getLatestByIssue = (issue: string): IssueRun | null => refresh().runs.filter((run) => run.issue === issue).sort((left, right) => right.sequence - left.sequence)[0] ?? null
   return { list, get, getByIssue, getLatestByIssue, enqueue, consumeFifo, update, cancel, retry, archive, restore, archiveMany, restoreMany, project }

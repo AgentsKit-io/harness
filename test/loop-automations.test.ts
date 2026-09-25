@@ -33,7 +33,7 @@ describe('declared automations', () => {
     expect(declaredStages(halfRetro.config).notes[0]).toContain('retroIssue is missing')
     const full = load('\n  retro: "0 9 * * 1"\n  retroIssue: ENG-1\n  observe: "*/15 * * * *"\n')
     expect(declaredStages(full.config).stages).toEqual(['tick', 'deliver', 'retro', 'observe'])
-    expect(automationSpecs(full, 'claude').map((spec) => spec.name)).toEqual(['loop-tick', 'loop-deliver', 'loop-retro', 'loop-observe'])
+    expect(automationSpecs(full, 'claude').map((spec) => spec.name)).toEqual(['loop-my-project-tick', 'loop-my-project-deliver', 'loop-my-project-retro', 'loop-my-project-observe'])
   })
 
   it('gives observe the shim command and the precheck budget, never the stage budget', () => {
@@ -58,22 +58,22 @@ describe('automation drift', () => {
   it('reports no drift when the live automation matches, including Orca\'s repo-prefixed workspace id', () => {
     const loaded = load()
     const spec = automationSpecs(loaded, 'claude')[0]!
-    expect(automationDrift(spec, live('loop-tick', rawFor(loaded, 'loop-tick', 'tick')))).toEqual([])
+    expect(automationDrift(spec, live('loop-my-project-tick', rawFor(loaded, 'loop-my-project-tick', 'tick')))).toEqual([])
   })
 
   it('reports no workspace drift against Orca\'s forward-slash-normalized path, even from a backslash root', () => {
     const loaded = load()
     const spec = automationSpecs(loaded, 'claude')[0]!
-    const raw = { ...rawFor(loaded, 'loop-tick', 'tick'), workspaceId: `repo-1::${loaded.root.replace(/\\/g, '/')}` }
-    expect(automationDrift(spec, live('loop-tick', raw))).toEqual([])
+    const raw = { ...rawFor(loaded, 'loop-my-project-tick', 'tick'), workspaceId: `repo-1::${loaded.root.replace(/\\/g, '/')}` }
+    expect(automationDrift(spec, live('loop-my-project-tick', raw))).toEqual([])
   })
 
   it('names every field that drifted, and stays silent about fields Orca did not report', () => {
     const loaded = load()
     const spec = automationSpecs(loaded, 'claude')[0]!
-    const raw = { ...rawFor(loaded, 'loop-tick', 'tick'), rrule: '0 3 * * *', prompt: 'hand-edited', precheck: { command: 'ak-harness loop stage tick -f "/old/loop.config.yaml"', timeoutSeconds: 60 }, agentId: 'codex', workspaceId: 'repo-1::/somewhere/else', enabled: false }
-    expect(automationDrift(spec, live('loop-tick', raw))).toEqual(['trigger', 'prompt', 'precheck', 'precheckTimeout', 'provider', 'workspace', 'enabled'])
-    const sparse = live('loop-tick', { rrule: spec.trigger, enabled: true })
+    const raw = { ...rawFor(loaded, 'loop-my-project-tick', 'tick'), rrule: '0 3 * * *', prompt: 'hand-edited', precheck: { command: 'ak-harness loop stage tick -f "/old/loop.config.yaml"', timeoutSeconds: 60 }, agentId: 'codex', workspaceId: 'repo-1::/somewhere/else', enabled: false }
+    expect(automationDrift(spec, live('loop-my-project-tick', raw))).toEqual(['trigger', 'prompt', 'precheck', 'precheckTimeout', 'provider', 'workspace', 'enabled'])
+    const sparse = live('loop-my-project-tick', { rrule: spec.trigger, enabled: true })
     expect(automationDrift(spec, sparse)).toEqual([])
     expect(automationFields(sparse)).toMatchObject({ prompt: null, precheck: null, precheckTimeoutSec: null, workspace: null })
   })
@@ -81,24 +81,24 @@ describe('automation drift', () => {
   it('leaves the provider alone when the caller did not resolve one', () => {
     const loaded = load()
     const spec = { ...automationSpecs(loaded, 'claude')[0]!, provider: '' }
-    expect(automationDrift(spec, live('loop-tick', { ...rawFor(loaded, 'loop-tick', 'tick'), agentId: 'codex' }))).toEqual([])
+    expect(automationDrift(spec, live('loop-my-project-tick', { ...rawFor(loaded, 'loop-my-project-tick', 'tick'), agentId: 'codex' }))).toEqual([])
   })
 
   it('classifies every managed automation: in sync, missing, drifted, or no longer declared', () => {
     const loaded = load()
     const specs = automationSpecs(loaded, 'claude')
     const existing = [
-      live('loop-tick', rawFor(loaded, 'loop-tick', 'tick')),
-      live('loop-deliver', { ...rawFor(loaded, 'loop-deliver', 'deliver'), rrule: '0 * * * *' }),
-      live('loop-retro', { rrule: '0 9 * * 1', enabled: true }),
-      live('loop-observe', { rrule: '*/15 * * * *', enabled: false }),
+      live('loop-my-project-tick', rawFor(loaded, 'loop-my-project-tick', 'tick')),
+      live('loop-my-project-deliver', { ...rawFor(loaded, 'loop-my-project-deliver', 'deliver'), rrule: '0 * * * *' }),
+      live('loop-my-project-retro', { rrule: '0 9 * * 1', enabled: true }),
+      live('loop-my-project-observe', { rrule: '*/15 * * * *', enabled: false }),
       live('someone-else', { rrule: 'daily', enabled: true }),
     ]
     expect(reconcileAutomations(specs, existing, loaded.config)).toEqual([
-      { name: 'loop-tick', stage: 'tick', state: 'in-sync', fields: [] },
-      { name: 'loop-deliver', stage: 'deliver', state: 'drifted', fields: ['trigger'] },
-      // loop-retro is not declared by this config but is still running: that is reported, not ignored.
-      { name: 'loop-retro', stage: 'retro', state: 'undeclared', fields: [] },
+      { name: 'loop-my-project-tick', stage: 'tick', state: 'in-sync', fields: [] },
+      { name: 'loop-my-project-deliver', stage: 'deliver', state: 'drifted', fields: ['trigger'] },
+      // loop-my-project-retro is not declared by this config but is still running: that is reported, not ignored.
+      { name: 'loop-my-project-retro', stage: 'retro', state: 'undeclared', fields: [] },
     ])
     expect(reconcileAutomations(specs, [], loaded.config).map((row) => row.state)).toEqual(['missing', 'missing'])
   })

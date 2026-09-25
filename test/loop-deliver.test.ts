@@ -1,8 +1,8 @@
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
-import { join } from 'node:path'
+import { dirname, join } from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
-import { approveHeldDelivery, atLeast, buildReviewArgv, createDispatchLedger, dispatchRecordPath, listDispatched, loadLoopConfig, parseReviewResult, precheckDeliver, readDeliveryState, renderFindingsForWorker, runCodeReview, runDeliver } from '../src/index.js'
+import { approveHeldDelivery, atLeast, buildReviewArgv, createDispatchLedger, createHitlStore, dispatchRecordPath, listDispatched, loadLoopConfig, parseReviewResult, precheckDeliver, readDeliveryState, renderFindingsForWorker, runCodeReview, runDeliver } from '../src/index.js'
 import type { CommandResult, CommandRunner, DispatchRecordFile } from '../src/index.js'
 
 const fixture = (name: string): unknown => JSON.parse(readFileSync(join(process.cwd(), 'test/fixtures/loop', `${name}.json`), 'utf8')) as unknown
@@ -76,7 +76,7 @@ const setup = (initial: Scenario = {}) => {
   if (scenario.worktreeFiles) {
     worktreePath = mkdtempSync(join(tmpdir(), 'agentskit-loop-deliver-wt-')); cleanups.push(worktreePath)
     mkdirSync(join(worktreePath, '.ak-loop'), { recursive: true })
-    for (const [name, body] of Object.entries(scenario.worktreeFiles)) writeFileSync(join(worktreePath, '.ak-loop', name), body)
+    for (const [name, body] of Object.entries(scenario.worktreeFiles)) { mkdirSync(dirname(join(worktreePath, '.ak-loop', name)), { recursive: true }); writeFileSync(join(worktreePath, '.ak-loop', name), body) }
   }
   const record: DispatchRecordFile = { issue: 'ENG-10', worktreeId: 'repo-1::/w/eng-10-demo', worktree: 'eng-10-demo', branch: 'person/eng-10-demo', terminal: 'term_w', provider: 'claude', model: 'sonnet', contractDigest: 'abc', leaseKey: claim.lease.key, leaseId: claim.lease.leaseId, dispatchedAt: scenario.dispatchedAt ?? '2026-09-11T10:00:00.000Z', url: 'https://linear.app/x/issue/ENG-10', initialRemainingPercent: scenario.initialRemainingPercent ?? null, ...(worktreePath ? { worktreePath } : {}) } as DispatchRecordFile
   mkdirSync(join(loaded.stateDir, 'issues', 'ENG-10'), { recursive: true })
@@ -145,7 +145,7 @@ const setup = (initial: Scenario = {}) => {
       return { code: 127, stdout: '', stderr: `no fixture for ${key} ${options?.cwd ?? ''}`, timedOut: false, durationMs: 1 }
     },
   }
-  return { dir, bin, loaded, runner, record, ledger, scenario }
+  return { dir, bin, loaded, runner, record, ledger, scenario, worktreePath }
 }
 
 const deliver = (env: ReturnType<typeof setup>, extra: Partial<Parameters<typeof runDeliver>[0]> = {}) => runDeliver({ configPath: env.loaded.path, runner: env.runner, env: { PATH: env.bin, XAI_API_KEY: 'k' }, platform: 'darwin', now: () => NOW, ...extra })
@@ -172,6 +172,37 @@ describe('code review adapter', () => {
 })
 
 describe('deliver', () => {
+  it('replays an answered worker HITL decision into the worker and does not replay it twice', async () => {
+    const request = {
+      requestId: 'worker:ENG-10:T-IC-05-blocked.json',
+      batchId: 'worker:ENG-10:run-1',
+      question: 'How should the worker proceed?',
+      context: 'The prerequisites are missing from this branch.',
+      options: [
+        { id: 'block', title: 'Stop', description: 'Wait for prerequisites.' },
+        { id: 'expand', title: 'Expand', description: 'Implement the prerequisites here.' },
+        { id: 'partial', title: 'Partial', description: 'Ship only the testable subset.' },
+      ],
+      recommendedOptionId: 'block',
+      digest: 'worker-hitl-digest',
+    }
+    const env = setup({ pr: null, worktreeFiles: { 'hitl/T-IC-05-blocked.json': JSON.stringify(request) } })
+    const hitl = createHitlStore(env.loaded.stateDir)
+    const created = hitl.create({ issue: 'ENG-10', role: 'builder', stage: 'worker', ...request })
+    hitl.answer(created.requestId, { optionId: 'expand', actor: 'alice', expectedDigest: created.digest })
+
+    const first = await deliver(env, { assumeIdle: false })
+    expect(first.results[0]).toMatchObject({ outcome: 'nudged', reason: expect.stringContaining('HITL') })
+    const firstSend = env.runner.calls.find((argv) => argv[1] === 'terminal' && argv[2] === 'send')
+    expect(firstSend?.[firstSend.indexOf('--text') + 1]).toContain('expand')
+    expect(readDeliveryState(env.loaded.stateDir, 'ENG-10').nudges).toEqual(expect.arrayContaining([expect.objectContaining({ kind: 'hitl' })]))
+
+    env.runner.calls.length = 0
+    const second = await deliver(env, { assumeIdle: false })
+    expect(second.results[0]).toMatchObject({ outcome: 'waiting' })
+    expect(env.runner.calls.some((argv) => argv[1] === 'terminal' && argv[2] === 'send')).toBe(false)
+  })
+
   it('reviews a green PR, squash-merges on a clean review, completes Linear, and releases the lease', async () => {
     const env = setup({ review: { code: 0, findings: [{ severity: 'nit', title: 'style', file: 'x', line: 1 }] } })
     const report = await deliver(env)
@@ -421,6 +452,32 @@ describe('deliver', () => {
     expect(closed.runner.calls.some((argv) => argv[1] === 'linear' && argv[2] === 'status')).toBe(false)
     expect(closed.runner.calls.some((argv) => argv[1] === 'worktree' && argv[2] === 'rm')).toBe(false)
     expect(closed.ledger.active()).toHaveLength(1)
+  })
+
+  it('emits a single `pr.merged` event when the PR was merged outside the loop (no prior event)', async () => {
+    // Regression: previously the external-merge path called `complete(...)` without emitting `pr.merged`, so the
+    // control plane projection could never see the terminal. The reducer still defaults to the latest phase it
+    // saw (often `running` or `review`), and the UI stuck. Now `complete()` is the single source of truth for the
+    // terminal merge signal; the reducer handles `pr.merged -> completed`.
+    const env = setup({ pr: null, mergedPr: basePr({ state: 'MERGED' }) })
+    const report = await deliver(env)
+    expect(report.results[0]).toMatchObject({ outcome: 'merged' })
+    const events = readFileSync(join(env.loaded.stateDir, 'events.ndjson'), 'utf8').split('\n').filter(Boolean).map((line) => JSON.parse(line) as Record<string, unknown>)
+    const prMerged = events.filter((event) => event['type'] === 'pr.merged')
+    expect(prMerged).toHaveLength(1)
+    expect(prMerged[0]).toMatchObject({ issue: 'ENG-10', pr: expect.any(Number) })
+  })
+
+  it('does not double-emit `pr.merged` on a reconciliation pass over an already-merged delivery', async () => {
+    // Setup plants one `pr.merged` event (the recorded merge). The first deliver pass must add exactly one more
+    // (from `complete()`); a second pass over the same `finalOutcome: 'merged'` must add none.
+    const env = setup({ pr: null, orcaWorktreeMissing: true, mergedEvent: { pr: 6112, sha: 'merge-sha' }, mergedEventPr: basePr({ state: 'MERGED', number: 6112, url: 'https://github.com/o/r/pull/6112' }) })
+    await deliver(env)
+    const afterFirst = readFileSync(join(env.loaded.stateDir, 'events.ndjson'), 'utf8').split('\n').filter(Boolean).map((line) => JSON.parse(line) as Record<string, unknown>).filter((event) => event['type'] === 'pr.merged')
+    expect(afterFirst).toHaveLength(2)
+    await deliver(env)
+    const afterSecond = readFileSync(join(env.loaded.stateDir, 'events.ndjson'), 'utf8').split('\n').filter(Boolean).map((line) => JSON.parse(line) as Record<string, unknown>).filter((event) => event['type'] === 'pr.merged')
+    expect(afterSecond).toHaveLength(2)
   })
 
   it('reconciles a recorded merge after GitHub deletes the head branch', async () => {

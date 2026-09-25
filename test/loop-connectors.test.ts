@@ -106,11 +106,11 @@ describe('the runner connector, twice', () => {
 
   it('reconciles only the crontab lines it owns, and leaves everyone else\'s alone', async () => {
     const loaded = setup()
-    const existing = '0 9 * * * /usr/bin/backup\n*/9 * * * * old-command # ak-harness loop-tick\n'
+    const existing = '0 9 * * * /usr/bin/backup\n*/9 * * * * old-command # ak-harness loop-my-project-tick\n'
     const runner = recording((argv) => argv[0] === 'crontab' && argv[1] === '-l' ? ok(existing) : ok())
     const local = createLocalRunner({ loaded, runner })
     const jobs = scheduledJobs(loaded, ['tick', 'deliver'])
-    expect(jobs.map((job) => job.name)).toEqual(['loop-tick', 'loop-deliver'])
+    expect(jobs.map((job) => job.name)).toEqual(['loop-my-project-tick', 'loop-my-project-deliver'])
     expect(jobs[0]?.command).toContain('loop stage tick')
 
     const changed = await local.schedule(jobs)
@@ -118,7 +118,7 @@ describe('the runner connector, twice', () => {
     const written = readFileSync(join(loaded.stateDir, 'crontab.local'), 'utf8')
     expect(written).toContain('0 9 * * * /usr/bin/backup')
     expect(written).not.toContain('old-command')
-    expect(written).toContain('# ak-harness loop-tick')
+    expect(written).toContain('# ak-harness loop-my-project-tick')
     expect(runner.calls.at(-1)).toEqual(['crontab', join(loaded.stateDir, 'crontab.local')])
   })
 

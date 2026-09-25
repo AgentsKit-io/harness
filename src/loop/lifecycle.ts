@@ -7,7 +7,7 @@ import { writeJsonAtomic } from './fs-atomic.js'
 /** The issue lifecycle is separate from an execution attempt: a PR can outlive its run. */
 export const ISSUE_LIFECYCLE_SCHEMA_VERSION = 1 as const
 
-export type LifecyclePhase = 'available' | 'running' | 'review' | 'needs-decision' | 'blocked' | 'completed'
+export type LifecyclePhase = 'available' | 'running' | 'review' | 'needs-input' | 'needs-decision' | 'blocked' | 'completed'
 export type ReviewSubstatus = 'pr-open' | 'ci-pending' | 'ci-failed' | 'review-pending' | 'changes-requested' | 'human-approval' | 'ready-to-merge'
 
 export interface LifecyclePullRequest {
@@ -70,7 +70,7 @@ export interface LifecycleStore {
 
 const lifecycleSchema = z.object({
   schemaVersion: z.literal(ISSUE_LIFECYCLE_SCHEMA_VERSION), issue: z.string().min(1), title: z.string().nullable(), url: z.string().nullable(),
-  phase: z.enum(['available', 'running', 'review', 'needs-decision', 'blocked', 'completed']), reviewState: z.enum(['pr-open', 'ci-pending', 'ci-failed', 'review-pending', 'changes-requested', 'human-approval', 'ready-to-merge']).nullable(),
+  phase: z.enum(['available', 'running', 'review', 'needs-input', 'needs-decision', 'blocked', 'completed']), reviewState: z.enum(['pr-open', 'ci-pending', 'ci-failed', 'review-pending', 'changes-requested', 'human-approval', 'ready-to-merge']).nullable(),
   runId: z.string().nullable(), pullRequest: z.object({ number: z.number().int().positive(), state: z.enum(['OPEN', 'CLOSED', 'MERGED']), url: z.string().nullable().optional(), head: z.string().nullable().optional() }).nullable(),
   error: z.string().nullable(), action: z.enum(['configure', 'retry', 'resume', 'close-or-reopen', 'inspect']).nullable(), updatedAt: z.string(), trackerState: z.string().nullable(),
 })
@@ -111,13 +111,13 @@ const phaseFor = (input: LifecycleReconcileInput, previous: IssueLifecycle | nul
   if (input.pullRequest?.state === 'MERGED' || input.deliveryOutcome === 'merged') return 'completed'
   if (input.pullRequest?.state === 'CLOSED' || input.deliveryOutcome === 'abandoned' || input.stage === 'pr-closed') return 'needs-decision'
   if (input.pullRequest?.state === 'OPEN' || input.stage === 'pr-open' || ['waiting', 'reviewed', 'fix-round', 'nudged', 'held'].includes(input.deliveryOutcome ?? '') || previous?.phase === 'review' && input.runStatus === 'completed') return 'review'
-  if (input.runStatus === 'needs-input') return input.finalFailure ? 'blocked' : 'needs-decision'
+  if (input.runStatus === 'needs-input') return input.finalFailure ? 'blocked' : 'needs-input'
   if (['queued', 'dispatching', 'running'].includes(input.runStatus ?? '') || input.stage === 'running') return 'running'
   if (input.stage === 'available') return 'available'
   return previous?.phase ?? 'available'
 }
 
-const actionFor = (phase: LifecyclePhase, error: string | null): IssueLifecycle['action'] => phase === 'available' ? (error ? 'retry' : 'configure') : phase === 'needs-decision' ? 'close-or-reopen' : phase === 'blocked' ? 'retry' : phase === 'completed' ? null : 'inspect'
+const actionFor = (phase: LifecyclePhase, error: string | null): IssueLifecycle['action'] => phase === 'available' ? (error ? 'retry' : 'configure') : phase === 'needs-input' ? 'resume' : phase === 'needs-decision' ? 'close-or-reopen' : phase === 'blocked' ? 'retry' : phase === 'review' && error ? 'retry' : phase === 'completed' ? null : 'inspect'
 
 /** Pure issue projection. The previous record lets a later delivery tick retain PR identity and evidence. */
 export const projectLifecycle = (input: LifecycleReconcileInput, previous: IssueLifecycle | null = null): IssueLifecycle => {
@@ -133,7 +133,7 @@ export const projectLifecycle = (input: LifecycleReconcileInput, previous: Issue
     reviewState: phase === 'review' ? reviewStateFor(input, previous) : null,
     runId: input.runId === undefined ? previous?.runId ?? null : input.runId,
     pullRequest,
-    error: phase === 'available' || phase === 'blocked' ? error : null,
+    error: phase === 'available' || phase === 'blocked' || phase === 'review' || phase === 'needs-input' ? error : null,
     action: actionFor(phase, error),
     updatedAt: (input.now ?? new Date()).toISOString(),
     trackerState: input.trackerState === undefined ? previous?.trackerState ?? null : input.trackerState,

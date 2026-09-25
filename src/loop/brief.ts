@@ -162,9 +162,10 @@ You are a worker in an unattended delivery loop for ${config.project.repo}. You 
 6. Open exactly one pull request against \`${config.project.baseBranch}\` with \`gh pr create --base ${config.project.baseBranch} --title "<issue id>: <short title>" --body-file <file>\`. The body must contain: a summary, the outcome list with how each was verified, the issue's tracker URL, and the line \`Loop-Contract: <the contract digest below>\`.
 7. After the PR exists run \`orca worktree set --worktree active --workspace-status in-review --json\`. Do not change the tracker status or attach the PR manually; the Harness does that during delivery.
 8. If you are blocked (missing credentials, contradictory requirements, an outcome that cannot be met) do not guess: write the blocker into the PR body if a PR exists, otherwise run \`orca worktree set --worktree active --comment "BLOCKED: <reason>" --json\`, and stop.
-9. When the PR is open and step 7 is done, print exactly \`LOOP_WORKER_DONE <issue id>\` and stop working.
-10. Never use \`git stash\`: the stash is shared by every worktree of this repository, so another worker's entry can sit at \`stash@{0}\` and a drop by index destroys it. Keep work in progress as commits on your own branch.
-11. Optional but helpful: as you finish each outcome, write \`progress.json\` at the root of this worktree, e.g. \`{"o1": "done", "o2": "in-progress"}\` (ids match the outcome list). Nothing enforces this; it only makes \`loop status\`/\`loop debrief\` show real progress instead of "in flight".
+9. If you need a human decision to continue, write one JSON request under \`.ak-loop/hitl/\` with \`question\`, \`context\`, exactly 3 or 4 \`options\` (each with \`id\`, \`title\`, \`description\`), and \`recommendedOptionId\`; do not use a free-form prompt or Inbox comment.
+10. When the PR is open and step 7 is done, print exactly \`LOOP_WORKER_DONE <issue id>\` and stop working.
+11. Never use \`git stash\`: the stash is shared by every worktree of this repository, so another worker's entry can sit at \`stash@{0}\` and a drop by index destroys it. Keep work in progress as commits on your own branch.
+12. Optional but helpful: as you finish each outcome, write \`progress.json\` at the root of this worktree, e.g. \`{"o1": "done", "o2": "in-progress"}\` (ids match the outcome list). Nothing enforces this; it only makes \`loop status\`/\`loop debrief\` show real progress instead of "in flight".
 ${renderDodForBrief(config)}${renderArtifactsForBrief(config)}${knownFailures}${skills}
 ---
 
