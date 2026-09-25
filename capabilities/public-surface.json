@@ -4,7 +4,7 @@
   "package": "@agentskit/harness",
   "packageVersion": "0.19.0",
   "entryPoint": "src/index.ts",
-  "sourceDigest": "7d2f183dc8ce4f7825dc12a6a2969667511f398747af9e140179815967c9f73c",
+  "sourceDigest": "0aefa132a0c325c2992470f556dfd1beb60f083d70053da2c13b8c03bb6cbf02",
   "capabilities": [
     {
       "id": "public-surface:adapters/agent",
@@ -1145,6 +1145,7 @@
         "approveHeldDelivery",
         "deliveryStatePath",
         "listDispatched",
+        "markDispatchCancelled",
         "precheckDeliver",
         "readDeliveryState",
         "runDeliver"
@@ -1284,13 +1285,18 @@
       "kind": "composition",
       "entryPoint": "src/index.ts",
       "exports": [
+        "INBOX_SCHEMA_VERSION",
+        "InboxAction",
         "InboxGate",
         "InboxItem",
         "InboxStatus",
         "InboxStore",
+        "InboxSuppression",
         "InboxUpsertInput",
         "createInboxStore",
-        "inboxPath"
+        "deleteInboxItem",
+        "inboxPath",
+        "suppressInboxItem"
       ]
     },
     {
@@ -1386,6 +1392,26 @@
         "layerFor",
         "renderLayersForPrompt",
         "verifyCommandFor"
+      ]
+    },
+    {
+      "id": "public-surface:loop/lifecycle",
+      "version": "0.19.0",
+      "kind": "composition",
+      "entryPoint": "src/index.ts",
+      "exports": [
+        "ISSUE_LIFECYCLE_SCHEMA_VERSION",
+        "IssueLifecycle",
+        "LifecycleEvent",
+        "LifecyclePhase",
+        "LifecyclePullRequest",
+        "LifecycleReconcileInput",
+        "LifecycleStore",
+        "ReviewSubstatus",
+        "createLifecycleStore",
+        "lifecyclePath",
+        "projectLifecycle",
+        "reconcileLifecycle"
       ]
     },
     {
@@ -1645,6 +1671,7 @@
       "entryPoint": "src/index.ts",
       "exports": [
         "EnqueueIssueRunInput",
+        "ISSUE_QUEUE_SCHEMA_VERSION",
         "IssueQueue",
         "IssueQueueOptions",
         "IssueQueueProjection",
@@ -1655,8 +1682,11 @@
         "IssueRunPreflightSnapshot",
         "IssueRunProjection",
         "IssueRunStatus",
+        "archiveIssueRun",
         "createIssueQueue",
-        "issueQueuePath"
+        "issueQueuePath",
+        "restoreIssueRun",
+        "retryIssueRun"
       ]
     },
     {
@@ -1974,7 +2004,22 @@
         "renderUiHtml",
         "startUiServer"
       ]
+    },
+    {
+      "id": "public-surface:ui/wizard",
+      "version": "0.19.0",
+      "kind": "kernel",
+      "entryPoint": "src/index.ts",
+      "exports": [
+        "UiWizardDraft",
+        "UiWizardDraftPatch",
+        "UiWizardStep",
+        "UiWizardStore",
+        "createUiWizardStore",
+        "parseUiWizardDraftPatch",
+        "uiWizardPath"
+      ]
     }
   ],
-  "digest": "f006e16d400227dee533748d1f697845cf83031a8c08748345c12c81fb23bd83"
+  "digest": "4c2540e826ca1c422a7204e716875d349cae481da7813f3c7c546f0d79fa5e6e"
 }
