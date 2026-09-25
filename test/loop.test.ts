@@ -71,6 +71,17 @@ describe('loop config', () => {
     expect(parseModelRef('opencode/opencode-go/glm-5.3')).toEqual({ provider: 'opencode', model: 'opencode-go/glm-5.3' })
   })
 
+  // #87 added `structuredOutputFlag` specifically because claude-code's `--permission-mode plan` headless calls
+  // regressed to ending their turn with a status/plan summary instead of the `<<<LOOP_CONTRACT` markers — but the
+  // shipped example never turned it on for the `claude` provider it documents. Reproduced live end to end
+  // (generateContract, real issue, real claude-code): every call failed with "Orchestrator output contains no
+  // contract block" until this flag was set, exactly the failure mode #87 exists to route around. Guards against
+  // the fix regressing back out of the file every project copies verbatim.
+  it('ships structuredOutputFlag for the claude provider, so contract generation is not exposed to the #87 marker-parsing regression by default', () => {
+    const config = parseLoopConfigText(exampleYaml)
+    expect(config.models.providers['claude']?.structuredOutputFlag).toEqual(['--output-format', 'json', '--json-schema', '{schema}'])
+  })
+
   it('fails closed on missing sections, unknown providers, and bad values', () => {
     const attempt = (value: unknown): HarnessError => { try { validateLoopConfig(value); throw new Error('expected failure') } catch (error) { return error as HarnessError } }
     expect(attempt({})).toMatchObject({ code: 'INVALID_CONFIG' })

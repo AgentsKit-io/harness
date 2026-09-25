@@ -183,7 +183,7 @@ const callHeadless = async (input: { readonly runner: CommandRunner; readonly co
   const { settings } = providerIdentity(input.config, candidate.provider)
   const argv = renderHeadlessArgv(settings, candidate.model, input.call.prompt, candidate.effort)
   if (!argv) return { failure: { provider: candidate.provider, model: candidate.model, kind: 'other', detail: `no headless argv template (models.providers.${candidate.provider}.headless)` } }
-  const outcome = await input.runner.run(argv, { timeoutMs: input.timeoutMs, cwd: input.root })
+  const outcome = await input.runner.run(argv, { timeoutMs: input.timeoutMs, cwd: input.root, promptOnStdin: true })
   input.onProviderCall?.({ role: input.call.role, provider: candidate.provider, model: candidate.model, effort: candidate.effort, durationMs: outcome.durationMs, exitCode: outcome.code, timedOut: outcome.timedOut, stdoutBytes: outcome.stdout.length, stderrBytes: outcome.stderr.length })
   const detail = `${outcome.stderr.trim()}\n${outcome.stdout.trim()}`.trim().slice(0, 600)
   if (outcome.timedOut || outcome.code !== 0) return { failure: { provider: candidate.provider, model: candidate.model, kind: classifyProviderFailure(detail, outcome.timedOut), detail: outcome.timedOut ? `timed out after ${input.timeoutMs}ms` : `exited ${outcome.code ?? 'null'}: ${detail || 'no output'}` } }
