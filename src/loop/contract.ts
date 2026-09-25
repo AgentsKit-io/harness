@@ -383,7 +383,7 @@ export const generateContract = async (input: GenerateContractInput): Promise<St
     const argv = renderHeadlessArgv(settings, candidate.model, prompt, candidate.effort, structured ? JSON.stringify(CONTRACT_JSON_SCHEMA) : undefined)
     if (!argv) { failures.push({ provider: candidate.provider, model: candidate.model, kind: 'other', detail: `no headless argv template (models.providers.${candidate.provider}.headless)` }); continue }
     const timeoutMs = input.timeoutMs ?? input.config.contract.timeoutMs
-    const outcome = await input.runner.run(argv, { timeoutMs, cwd: input.root })
+    const outcome = await input.runner.run(argv, { timeoutMs, cwd: input.root, promptOnStdin: true })
     input.onProviderCall?.({ provider: candidate.provider, model: candidate.model, effort: candidate.effort, durationMs: outcome.durationMs, exitCode: outcome.code, timedOut: outcome.timedOut, stdoutBytes: outcome.stdout.length, stderrBytes: outcome.stderr.length })
     const detail = `${outcome.stderr.trim()}\n${outcome.stdout.trim()}`.trim().slice(0, 600)
     if (outcome.timedOut || outcome.code !== 0) {
