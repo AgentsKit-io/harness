@@ -61,6 +61,14 @@ describe('parseOrcaWorktrees: linkedLinear and defaults', () => {
   it('accepts a bare array result', () => {
     expect(parseOrcaWorktrees([{ worktreeId: 'w1' }])).toHaveLength(1)
   })
+
+  it('counts agents in a working or permission-prompt state; null when the tool reported no agents array at all', () => {
+    const of = (agents: unknown) => parseOrcaWorktrees({ worktrees: [{ worktreeId: 'w1', agents }] })[0]?.activeAgentCount
+    expect(of(undefined)).toBeNull()
+    expect(of([])).toBe(0)
+    expect(of([{ state: 'done' }])).toBe(0)
+    expect(of([{ state: 'working' }, { state: 'permission' }, { state: 'done' }])).toBe(2)
+  })
 })
 
 describe('parseOrcaAgentHooks', () => {

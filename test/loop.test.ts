@@ -179,6 +179,18 @@ describe('orca and linear parsers', () => {
     expect(parseOrcaAgentHooks(result('agent-hooks'))).toMatchObject({ claude: 'installed', codex: 'installed', gemini: 'not_installed' })
   })
 
+  it('countRunningWorkers trusts activeAgentCount over the terminal/linked-issue heuristic once Orca reports agents', () => {
+    const worktrees = parseOrcaWorktrees(result('worktree-ps'))
+    const dispatched = worktrees[0]!
+    // Preserved for inspection after a circuit-breaker trip or an escalation: still in-progress, still linked to
+    // its issue, terminal pane still attached — but the agent inside it already finished. Must not leak a slot.
+    expect(countRunningWorkers([{ ...dispatched, activeAgentCount: 0 }])).toBe(0)
+    // A genuinely working (or permission-prompt-blocked) agent still counts.
+    expect(countRunningWorkers([{ ...dispatched, activeAgentCount: 1 }])).toBe(1)
+    // activeAgentCount === null (older Orca, no `agents` array reported at all): fail closed to the old heuristic.
+    expect(countRunningWorkers([{ ...dispatched, activeAgentCount: null }])).toBe(1)
+  })
+
   it('parses Linear issues and builds one argv per state without shell strings', () => {
     const issues = parseLinearIssues(result('list-issues-todo'))
     expect(issues[0]).toMatchObject({ identifier: 'ENG-10', state: 'Todo', stateType: 'unstarted', assignee: 'person' })
