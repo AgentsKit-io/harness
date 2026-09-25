@@ -34,19 +34,24 @@ import { KILL_GRACE_MS, detachedForTreeKill, killProcessTree } from '../kernel/p
  * `generateContract`, `plan-stage`, `plan-vote` — never for an arbitrary internal command), pull any argv
  * element(s) containing `\n` out of argv on Windows before spawning and write them to the child's stdin instead,
  * newline-joined if there is more than one. A CLI whose positional prompt argument is missing conventionally
- * reads it from stdin (verified for `claude -p`) — every provider in `loop.config.example.yaml` uses that same
- * `-p`/`exec ... "{prompt}"` shape. A CLI that does not follow the convention now fails loudly with its own
- * "missing argument" usage error instead of silently answering a truncated first line — strictly better than
- * today's failure mode either way. Opt-in and Windows-only so every other caller (an internal `gh`/`git`
- * invocation, a test fixture that happens to pass a multi-line script to `node -e`) is completely unaffected —
- * POSIX `spawn` never had this bug, and a plain `.exe` on Windows does not go through the `cmd.exe` hop that
- * causes it, but this runner has no cheap, dependency-internals-free way to tell that case apart from a `.cmd`
- * shim before spawning, so the flag stays scoped to callers who know their argv is a rendered prompt.
+ * reads it from stdin — verified live for `claude -p` only. `promptOnStdin` is applied uniformly to whichever
+ * provider a role's model tiers select, not just claude, and `loop.config.example.yaml`'s own tiers put codex
+ * ahead of claude for every role: **codex's and grok's stdin-on-missing-argument behavior is assumed, not
+ * verified** (no access to either CLI while writing this fix). A provider that does not follow the convention
+ * fails on its own missing/misrouted argument, at which point the harness's existing per-role tier fallback and
+ * ambiguity-escalation-to-a-human paths apply exactly as they would for any other provider failure — no worse
+ * than today's failure mode, just not the fix for that specific provider until someone verifies it.
+ * Opt-in and Windows-only so every other caller (an internal `gh`/`git` invocation, a test fixture that happens
+ * to pass a multi-line script to `node -e`) is completely unaffected — POSIX `spawn` never had this bug, and a
+ * plain `.exe` on Windows does not go through the `cmd.exe` hop that causes it, but this runner has no cheap,
+ * dependency-internals-free way to tell that case apart from a `.cmd` shim before spawning, so the flag stays
+ * scoped to callers who know their argv is a rendered prompt.
  */
 const extractMultilineArgs = (args: readonly string[]): { readonly args: readonly string[]; readonly stdin: string | null } => {
-  const multiline = args.filter((arg) => arg.includes('\n'))
-  if (!multiline.length) return { args, stdin: null }
-  return { args: args.filter((arg) => !arg.includes('\n')), stdin: multiline.join('\n\n') }
+  const clean: string[] = []
+  const multiline: string[] = []
+  for (const arg of args) (arg.includes('\n') ? multiline : clean).push(arg)
+  return multiline.length ? { args: clean, stdin: multiline.join('\n\n') } : { args, stdin: null }
 }
 
 export const createProcessRunner = (defaults: { readonly timeoutMs?: number; readonly maxOutputBytes?: number; readonly env?: NodeJS.ProcessEnv } = {}): CommandRunner => ({
@@ -69,7 +74,14 @@ export const createProcessRunner = (defaults: { readonly timeoutMs?: number; rea
       resolve({ code, stdout, stderr: error ? `${stderr}${stderr ? '\n' : ''}${error}` : stderr, timedOut, durationMs: Date.now() - started })
     }
     const child = spawn(command, args, { cwd: options.cwd, env: options.env ?? defaults.env ?? process.env, shell: false, stdio: [stdin === null ? 'ignore' : 'pipe', 'pipe', 'pipe'], windowsHide: true, detached: detachedForTreeKill() })
-    if (stdin !== null) child.stdin?.end(stdin)
+    if (stdin !== null) {
+      // A child that exits (bad flags, fast failure) or is killed by the timeout path below before it has
+      // finished reading stdin turns this write into an EPIPE/EOF — unhandled on the stream itself (distinct
+      // from `child`'s own 'error' event below), that throws and crashes the whole process, not just this run.
+      // Same guard the codebase already uses for the same shape of write, see execution/runtime.ts.
+      child.stdin?.on('error', () => {})
+      child.stdin?.end(stdin)
+    }
     let grace: ReturnType<typeof setTimeout> | undefined
     const timer = setTimeout(() => {
       timedOut = true

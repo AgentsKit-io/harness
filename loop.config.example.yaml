@@ -139,7 +139,9 @@ models:
       # `--permission-mode plan` is read-only in the terminal but leaves the model free to end its turn with a
       # plan/status summary instead of the contract text between markers ("stop losing contract generation to
       # Task-tool delegation", #87) — structuredOutputFlag reads the contract from the CLI's own schema-validated
-      # `structured_output` field instead, so a compliant reply is never lost to that free-text path.
+      # `structured_output` field instead, so a compliant reply is never lost to that free-text path. Only
+      # contract generation passes a schema and benefits today; plan-stage/plan-vote headless calls to this same
+      # provider still rely on marker-parsing and remain exposed to the same #87 regression.
       structuredOutputFlag: [--output-format, json, --json-schema, "{schema}"]
     codex:
       bin: codex

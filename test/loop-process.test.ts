@@ -117,6 +117,20 @@ describe('createProcessRunner', () => {
     expect(JSON.parse(result.stdout)).toEqual({ argv: ['line one\nline two'], stdin: '' })
   })
 
+  // Code review on this fix caught a second bug in the fix itself, reproduced live: writing the prompt via
+  // `child.stdin.end(stdin)` with no listener on the stdin stream's own 'error' event. A child that exits (or is
+  // killed by the timeout path above) before it has read all of a large stdin payload turns that write into an
+  // EPIPE/EOF — unhandled on the *stream*, a separate EventEmitter from the ChildProcess object `child.on('error',
+  // ...)` below already covers — which throws and crashes the whole process, not just this one run. This is the
+  // same shape of write `execution/runtime.ts` already guards correctly; `runner.run` must resolve, not crash the
+  // process, when it happens.
+  it.runIf(process.platform === 'win32')('resolves instead of crashing the process when the child exits before it has read a large stdin payload', async () => {
+    const runner = createProcessRunner()
+    const hugePrompt = 'orchestrator line\n'.repeat(200_000) // several MB: large enough that the OS pipe buffer cannot absorb it before the child below exits
+    const result = await runner.run([...node('process.exit(0)'), hugePrompt], { promptOnStdin: true })
+    expect(result.code).toBe(0)
+  }, 10_000)
+
   // Every provider/review CLI a loop config points at (claude, agentskit-review, codex, ...) is a
   // globally npm-installed Node CLI, which on Windows means its only spawnable-by-name artifact is
   // a `.cmd` shim -- CreateProcess cannot execute one without a shell, so a plain
