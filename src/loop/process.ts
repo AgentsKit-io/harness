@@ -17,12 +17,49 @@ import { KILL_GRACE_MS, detachedForTreeKill, killProcessTree } from '../kernel/p
  * `cmd.exe` wrapper, and the real command keeps the inherited pipes open after the wrapper dies, so the `close`
  * event would never arrive. The same is true on POSIX of any CLI that spawns a helper. The grace timer is the
  * last resort — after it the call ends with what it has, rather than never ending.
+ *
+ * On Windows, that `cmd.exe` hop also breaks any argv element containing a literal newline: cross-spawn joins
+ * `command` and every arg into one string and hands it to `cmd.exe /d /s /c "<that string>"` — cmd.exe's line
+ * parser then reads only up to the first newline in that string and silently drops the rest, so a multi-line
+ * prompt (every orchestrator/reviewer/builder headless call renders one — see `renderContractPrompt`) reaches
+ * the provider CLI truncated to its first line, with no error: exit 0, a plausible-looking reply, no argv-length
+ * or quoting complaint. The provider CLI then genuinely has no task to act on and asks a clarifying question
+ * ("what would you like me to work on") or errors on the now-missing markers — which surfaces upstream as
+ * `HARNESS_ERROR: Orchestrator output contains no contract block.`, indistinguishable from a real model
+ * non-compliance failure. Reproduced directly: `cross-spawn`'s own escaping (`lib/util/escape.js`) never
+ * touches `\n`, and cmd.exe fundamentally cannot carry an embedded newline through `/c "<one-line command>"` —
+ * there is no quoting that survives it. POSIX `spawn` passes argv untouched, so this is Windows-only.
+ *
+ * Fix: when the caller marks the call with `promptOnStdin` (set only at the three headless-prompt call sites —
+ * `generateContract`, `plan-stage`, `plan-vote` — never for an arbitrary internal command), pull any argv
+ * element(s) containing `\n` out of argv on Windows before spawning and write them to the child's stdin instead,
+ * newline-joined if there is more than one. A CLI whose positional prompt argument is missing conventionally
+ * reads it from stdin — verified live for `claude -p` only. `promptOnStdin` is applied uniformly to whichever
+ * provider a role's model tiers select, not just claude, and `loop.config.example.yaml`'s own tiers put codex
+ * ahead of claude for every role: **codex's and grok's stdin-on-missing-argument behavior is assumed, not
+ * verified** (no access to either CLI while writing this fix). A provider that does not follow the convention
+ * fails on its own missing/misrouted argument, at which point the harness's existing per-role tier fallback and
+ * ambiguity-escalation-to-a-human paths apply exactly as they would for any other provider failure — no worse
+ * than today's failure mode, just not the fix for that specific provider until someone verifies it.
+ * Opt-in and Windows-only so every other caller (an internal `gh`/`git` invocation, a test fixture that happens
+ * to pass a multi-line script to `node -e`) is completely unaffected — POSIX `spawn` never had this bug, and a
+ * plain `.exe` on Windows does not go through the `cmd.exe` hop that causes it, but this runner has no cheap,
+ * dependency-internals-free way to tell that case apart from a `.cmd` shim before spawning, so the flag stays
+ * scoped to callers who know their argv is a rendered prompt.
  */
+const extractMultilineArgs = (args: readonly string[]): { readonly args: readonly string[]; readonly stdin: string | null } => {
+  const clean: string[] = []
+  const multiline: string[] = []
+  for (const arg of args) (arg.includes('\n') ? multiline : clean).push(arg)
+  return multiline.length ? { args: clean, stdin: multiline.join('\n\n') } : { args, stdin: null }
+}
+
 export const createProcessRunner = (defaults: { readonly timeoutMs?: number; readonly maxOutputBytes?: number; readonly env?: NodeJS.ProcessEnv } = {}): CommandRunner => ({
   run: (argv: readonly string[], options: CommandRunOptions = {}): Promise<CommandResult> => new Promise((resolve) => {
-    const [command, ...args] = argv
+    const [command, ...rawArgs] = argv
     const started = Date.now()
     if (!command) return resolve({ code: null, stdout: '', stderr: 'empty argv', timedOut: false, durationMs: 0 })
+    const { args, stdin } = options.promptOnStdin && process.platform === 'win32' ? extractMultilineArgs(rawArgs) : { args: rawArgs, stdin: null }
     const timeoutMs = options.timeoutMs ?? defaults.timeoutMs ?? 30_000
     const maxOutputBytes = defaults.maxOutputBytes ?? 4 * 1_048_576
     let stdout = ''
@@ -36,7 +73,15 @@ export const createProcessRunner = (defaults: { readonly timeoutMs?: number; rea
       if (grace) clearTimeout(grace)
       resolve({ code, stdout, stderr: error ? `${stderr}${stderr ? '\n' : ''}${error}` : stderr, timedOut, durationMs: Date.now() - started })
     }
-    const child = spawn(command, args, { cwd: options.cwd, env: options.env ?? defaults.env ?? process.env, shell: false, stdio: ['ignore', 'pipe', 'pipe'], windowsHide: true, detached: detachedForTreeKill() })
+    const child = spawn(command, args, { cwd: options.cwd, env: options.env ?? defaults.env ?? process.env, shell: false, stdio: [stdin === null ? 'ignore' : 'pipe', 'pipe', 'pipe'], windowsHide: true, detached: detachedForTreeKill() })
+    if (stdin !== null) {
+      // A child that exits (bad flags, fast failure) or is killed by the timeout path below before it has
+      // finished reading stdin turns this write into an EPIPE/EOF — unhandled on the stream itself (distinct
+      // from `child`'s own 'error' event below), that throws and crashes the whole process, not just this run.
+      // Same guard the codebase already uses for the same shape of write, see execution/runtime.ts.
+      child.stdin?.on('error', () => {})
+      child.stdin?.end(stdin)
+    }
     let grace: ReturnType<typeof setTimeout> | undefined
     const timer = setTimeout(() => {
       timedOut = true

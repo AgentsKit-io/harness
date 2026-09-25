@@ -13,6 +13,16 @@ export interface CommandRunOptions {
   readonly timeoutMs?: number
   readonly cwd?: string
   readonly env?: NodeJS.ProcessEnv
+  /**
+   * This argv carries a rendered prompt that may be multiple lines (an orchestrator/reviewer/builder headless
+   * call — see `renderHeadlessArgv`), and the target CLI reads its prompt from stdin when it is absent from argv
+   * (verified for `claude -p`). On Windows, `createProcessRunner` uses this to route any newline-bearing argv
+   * element to stdin instead of argv — see its doc comment for why: `cmd.exe`, which a `.cmd`-shim CLI always
+   * spawns through, silently truncates any command line at its first embedded newline. Ignored on other
+   * platforms and by callers that omit it, so a command with no stdin-reading convention (an internal `gh`/`git`
+   * call, a test fixture) is never affected.
+   */
+  readonly promptOnStdin?: boolean
 }
 
 /** Shell-free command execution seam. Adapters receive it; composition supplies the real one; tests supply fakes. */
