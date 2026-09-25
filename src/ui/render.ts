@@ -137,10 +137,11 @@ const renderOperation = () => {
   const runs = snapshot?.runs || [];
   const queuedIssues = new Set(runs.map((run) => run.issue));
   const legacy = (snapshot?.issues || []).filter((issue) => !queuedIssues.has(issue.issue));
-  const running = snapshot?.executingRuns || [...runs.filter((run) => ['queued','dispatching','running'].includes(run.status)), ...legacy.filter((issue) => issue.outcome === 'in-flight').map(legacyRun)];
+  // executingRuns/blockedRuns/historyRuns are server-computed from the new queue.mode: explicit queue only (server.ts) and always come back as a real array, so a plain \`||\` fallback here never ran for a queue.mode: backlog project (still the default) -- an empty array is truthy in JS. \`?.length ? \` makes an empty server array fall through to the legacy computation below, the same as an absent one always should have. Reproduced live: a real backlog-mode project (2 real in-flight dispatches, executingRuns: []) showed "Executando 0" before this, "Executando 2" after. ponytail: no automated test -- this file's whole client bundle has zero DOM/vm test harness today (test/ui.test.ts only checks the static skeleton HTML), and building one is disproportionate to a 3-line fallback fix; verified against the real running UI instead.
+  const running = snapshot?.executingRuns?.length ? snapshot.executingRuns : [...runs.filter((run) => ['queued','dispatching','running'].includes(run.status)), ...legacy.filter((issue) => issue.outcome === 'in-flight').map(legacyRun)];
   const decisions = runs.filter((run) => run.status === 'needs-input');
-  const blocked = snapshot?.blockedRuns || [...runs.filter((run) => run.status === 'failed'), ...legacy.filter((issue) => ['blocked','stuck','abandoned','failed'].includes(issue.outcome)).map(legacyRun)];
-  const history = snapshot?.historyRuns || [...runs.filter((run) => ['completed','cancelled'].includes(run.status)), ...legacy.filter((issue) => ['completed','merged','reviewed'].includes(issue.outcome)).map(legacyRun)];
+  const blocked = snapshot?.blockedRuns?.length ? snapshot.blockedRuns : [...runs.filter((run) => run.status === 'failed'), ...legacy.filter((issue) => ['blocked','stuck','abandoned','failed'].includes(issue.outcome)).map(legacyRun)];
+  const history = snapshot?.historyRuns?.length ? snapshot.historyRuns : [...runs.filter((run) => ['completed','cancelled'].includes(run.status)), ...legacy.filter((issue) => ['completed','merged','reviewed'].includes(issue.outcome)).map(legacyRun)];
   const archived = snapshot?.archived || [];
   const review = snapshot?.reviewIssues || [];
   const available = snapshot?.availableIssues || [];
