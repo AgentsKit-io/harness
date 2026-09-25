@@ -13,7 +13,7 @@ timestamp) and `type` on top of the fields below. A plugin subscribes with
 The vocabulary is enforced by the compiler: `appendLoopEvent` accepts only these names, so an event that is not
 here cannot be emitted — and a name here that nothing emits fails the test suite.
 
-72 loop events.
+74 loop events.
 
 ## `contract.*`
 
@@ -62,9 +62,16 @@ here cannot be emitted — and a name here that nothing emits fails the test sui
 |---|---|---|
 | `pr.reviewed` | `issue`, `pr`, `head`, `status`, `blocking`, `provider`, `model`, `profile`, `votes`, `minSeverity`, `source`, `calls`, `inputTokens`, `outputTokens`, `totalTokens` | A review ran against a PR, with the verdict, who gave it, how it was configured (profile/votes/severity floor) and what it cost (`calls`/token fields, from `agentskit-review`'s own usage tracking) — what a study comparing review thoroughness and spend across models needs. `source` marks a PR that came from GitHub intake. |
 | `pr.merged` | `issue`, `pr`, `head`, `sha` | The PR was squash-merged by the loop. |
+| `pr.closed` | `issue`, `pr`, `head`, `reason` | A tracked PR closed without merge; the issue waits for a close-or-reopen decision. |
 | `pr.merge-refused` | `issue`, `pr`, `head`, `message` | GitHub refused the merge — branch protection, a required check, a race with another merge. |
 | `pr.human-approved` | `issue`, `head`, `by`, `pr` | A person attested a PR held for protected paths, for exactly this head. |
 | `pr.smoke-failed` | `issue`, `pr`, `head`, `detail` | The optional post-merge smoke failed. |
+
+## `tracker.*`
+
+| Event | Carries | What it means |
+|---|---|---|
+| `tracker.sync-failed` | `issue`, `operation`, `error` | A remote tracker write failed; local lifecycle remains authoritative until a human retries synchronization. |
 
 ## `github-intake.*`
 

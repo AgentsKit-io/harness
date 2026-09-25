@@ -44,22 +44,22 @@ orca:
   minVersion: 1.4.200
   timeoutMs: 20000
 
-# Revisão mais rigorosa só nas fatias que pedem, por label. A revisão É o gate quando não há CI, e um
-# contrato que congela evidência não deve ser julgado com o mesmo orçamento de um ajuste de copy.
-# Primeira entrada que casa vence, e só os campos nomeados são trocados.
+# Stricter review only for the slices that ask for it, by label. Review IS the gate when there is no CI, and a
+# contract that freezes evidence should not be judged on the same budget as a copy tweak.
+# The first matching entry wins, and only the named fields are replaced.
 # reviewOverrides:
 #   - anyLabels: [layer:L2, layer:L3]
 #     votes: 2
 #     minSeverity: nit
-#     reason: caminho crítico do MVP
+#     reason: MVP critical path
 
-# Suítes já vermelhas na branch base. O harness NÃO roda o verifyCommand — o worker roda, na worktree
-# dele — então tolerar falha conhecida é informação no briefing, não parsing de saída. A issue de
-# rastreamento é obrigatória: quarentena sem dono vira permanente.
+# Suites already red on the base branch. The harness does NOT run verifyCommand — the worker does, in its
+# own worktree — so tolerating a known failure is information in the brief, not output parsing. The tracking
+# issue is mandatory: a quarantine without an owner becomes permanent.
 # knownFailures:
 #   - path: packages/foo/tests/bar.test.ts
 #     issue: ENG-123
-#     reason: corrida de escrita em arquivo, pré-existente
+#     reason: pre-existing file write race
 
 linear:
   workspaceId: <linear-workspace-id> # orca linear team list --workspace all --json
@@ -450,7 +450,7 @@ schedule:
   harnessCommand: ak-harness         # how the Orca automation runs the harness inside the workspace
   namePrefix: loop                   # automations: loop-tick, loop-deliver[, loop-retro][, loop-observe]
   # retro: weekly                     # with retroIssue, installs <prefix>-retro
-  # retroIssue: AGE-0                 # Linear issue that receives the digest comment
+  # retroIssue: ABC-0                 # Linear issue that receives the digest comment
   # This file is the source of truth for every automation. `loop install` reconciles Orca against it — creating what
   # is missing, editing only what drifted, switching off what this file stopped declaring — so changing a schedule is
   # editing the YAML and running install, never editing the automation inside Orca.

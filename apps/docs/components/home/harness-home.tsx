@@ -1,8 +1,11 @@
 'use client'
 
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { GitBranch, GitPullRequest, Workflow } from 'lucide-react'
 
 import { EcosystemShowcase } from './ecosystem'
+import { LiquidCursorGradient } from './liquid-cursor-gradient'
+import { CopyButton } from '@/components/copy-button'
 import type { HarnessStatCounts } from '@/lib/stats'
 
 /**
@@ -62,10 +65,24 @@ const SPIN = ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧']
 const INSTALL = 'npx @agentskit/harness loop init'
 
 const PROFILES = {
-  enterprise: { votes: 3, ci: 1, pr: 1 },
-  poc: { votes: 1, ci: 0.25, pr: 0.25 },
-  incident: { votes: 0.25, ci: 0.25, pr: 0.25 },
+  enterprise: {
+    label: 'Enterprise',
+    description: 'For production changes with shared ownership.',
+    steps: ['Plan', '3 votes', 'Build', 'CI checks', 'Human PR', 'Release'],
+  },
+  poc: {
+    label: 'POC',
+    description: 'A short path for validating an idea.',
+    steps: ['Plan', '1 vote', 'Build', 'Release'],
+  },
+  incident: {
+    label: 'Incident',
+    description: 'Move quickly while keeping verification and review.',
+    steps: ['Objective', 'Build', 'Verify', 'Review ×2', 'Release'],
+  },
 } as const
+
+const PROFILE_ORDER = Object.keys(PROFILES) as ProfileName[]
 
 type ProfileName = keyof typeof PROFILES
 
@@ -238,6 +255,14 @@ export function HarnessHome({ counts }: HarnessHomeProps) {
     }
   }, [restartReplay])
 
+  useEffect(() => {
+    if (reduced) return undefined
+    const timer = window.setInterval(() => {
+      setProfile((current) => PROFILE_ORDER[(PROFILE_ORDER.indexOf(current) + 1) % PROFILE_ORDER.length]!)
+    }, 4200)
+    return () => window.clearInterval(timer)
+  }, [reduced])
+
   const toggleFigure = useCallback(() => {
     setPlaying((current) => {
       if (current) frozen.current = performance.now() - origin.current
@@ -261,7 +286,6 @@ export function HarnessHome({ counts }: HarnessHomeProps) {
   }, [])
 
   const selected = PROFILES[profile]
-  const border = (name: ProfileName): string => (profile === name ? '#56D364' : '#30363D')
 
   const replayLines: readonly ReplayRow[] = reduced
     ? TRANSCRIPT.map((line, index) => row(line, index, false, null, spin))
@@ -275,22 +299,13 @@ export function HarnessHome({ counts }: HarnessHomeProps) {
   const figureLabel = playing ? 'Pause' : 'Play'
   const replayLabel = replaying ? 'Pause' : done ? 'Replay' : 'Play'
   const copyLabel = copied ? 'Copied' : 'Copy'
-  const nVotes = selected.votes < 1 ? 0 : selected.votes
-  const hasVotes = selected.votes >= 1
-  const hasCI = selected.ci >= 1
-  const hasPr = selected.pr >= 1
-  const bEnterprise = border('enterprise')
-  const bPoc = border('poc')
-  const bIncident = border('incident')
-  const pickEnterprise = useCallback(() => setProfile('enterprise'), [])
-  const pickPoc = useCallback(() => setProfile('poc'), [])
-  const pickIncident = useCallback(() => setProfile('incident'), [])
   const nightShift = true
 
   return (
     <div className="harness-home">
+      <LiquidCursorGradient />
 
-      <div style={{ maxWidth: '100%', overflowX: 'hidden' }}>
+      <div data-home-content="" style={{ maxWidth: '100%', overflowX: 'hidden' }}>
 
       <header style={{ position: 'sticky', top: '0', zIndex: '40', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '24px', padding: '14px 28px', borderBottom: '1px solid #30363D', background: 'rgba(13,17,23,0.86)', backdropFilter: 'blur(10px)' }}>
         <a href="/" style={{ display: 'flex', alignItems: 'center', gap: '10px', color: '#E6EDF3' }}>
@@ -300,9 +315,9 @@ export function HarnessHome({ counts }: HarnessHomeProps) {
             <circle cx="5" cy="17" r="2.7" fill="#56D364"></circle>
             <circle cx="19" cy="17" r="2.7" fill="#56D364"></circle>
           </svg>
-          <span style={{ fontFamily: '\'Space Grotesk\', sans-serif', fontWeight: '600', letterSpacing: '-0.02em', fontSize: '15px' }}>agentskit harness</span>
+          <span style={{ fontFamily: 'var(--ak-font-display)', fontWeight: '600', letterSpacing: '-0.02em', fontSize: '15px' }}>agentskit harness</span>
         </a>
-        <nav style={{ display: 'flex', alignItems: 'center', gap: '22px', fontFamily: '\'JetBrains Mono\', monospace', fontSize: '11px', letterSpacing: '0.2em', textTransform: 'uppercase', color: '#8B949E' }}>
+        <nav style={{ display: 'flex', alignItems: 'center', gap: '22px', fontFamily: 'var(--ak-font-mono)', fontSize: '11px', letterSpacing: '0.2em', textTransform: 'uppercase', color: '#8B949E' }}>
           <a href="/docs" style={{ color: '#8B949E' }}>Docs</a>
           <a href="#gates" style={{ color: '#8B949E' }}>Gates</a>
           <a href="#run" style={{ color: '#8B949E' }}>A run</a>
@@ -311,22 +326,23 @@ export function HarnessHome({ counts }: HarnessHomeProps) {
         </nav>
       </header>
 
+      <main>
       <section style={{ padding: '72px 28px 40px', maxWidth: '1180px', margin: '0 auto' }}>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(340px, 100%), 1fr))', gap: '56px', alignItems: 'start' }}>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '22px', paddingTop: '8px' }}>
-            <h1 style={{ margin: '0', display: 'flex', alignItems: 'center', gap: '10px', fontFamily: '\'JetBrains Mono\', monospace', fontSize: '11px', letterSpacing: '0.2em', textTransform: 'uppercase', color: '#56D364', fontWeight: '500' }}><span style={{ display: 'inline-block', width: '6px', height: '6px', borderRadius: '999px', background: '#56D364' }}></span>AgentsKit Harness</h1>
-            <p style={{ margin: '0', fontFamily: '\'Space Grotesk\', sans-serif', letterSpacing: '-0.02em', fontSize: 'clamp(34px, 4.6vw, 54px)', lineHeight: '1.05', fontWeight: '600', color: '#E6EDF3', textWrap: 'pretty' }}>The keep-pushing loop for your SDLC.</p>
+            <h1 style={{ margin: '0', display: 'flex', alignItems: 'center', gap: '10px', fontFamily: 'var(--ak-font-mono)', fontSize: '11px', letterSpacing: '0.2em', textTransform: 'uppercase', color: '#56D364', fontWeight: '500' }}><span style={{ display: 'inline-block', width: '6px', height: '6px', borderRadius: '999px', background: '#56D364' }}></span>AgentsKit Harness</h1>
+            <p style={{ margin: '0', fontFamily: 'var(--ak-font-display)', letterSpacing: '-0.02em', fontSize: 'clamp(34px, 4.6vw, 54px)', lineHeight: '1.05', fontWeight: '600', color: '#E6EDF3', textWrap: 'pretty' }}>The keep-pushing loop for your SDLC.</p>
             <p style={{ margin: '0', maxWidth: '46ch', fontSize: '16px', lineHeight: '1.65', color: '#8B949E', textWrap: 'pretty' }}>From a vague objective to production without babysitting an agent — interview, plan, votes, worker, review, merge, release. Every transition is the machine's decision over an explicit state. A human acts in five places, and only where something touches the world.</p>
 
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '12px 14px', border: '1px solid #30363D', boxSizing: 'border-box', borderRadius: '0.5rem', background: '#161B22', width: '100%', maxWidth: '420px' }}>
-              <span style={{ fontFamily: '\'JetBrains Mono\', monospace', fontSize: '13px', color: '#8B949E' }}>$</span>
-              <code style={{ fontFamily: '\'JetBrains Mono\', monospace', fontSize: '13px', color: '#E6EDF3', flex: '1', overflowX: 'auto', whiteSpace: 'nowrap' }}>npx @agentskit/harness loop init</code>
-              <button className="hv1" onClick={copyInstall} style={{ fontFamily: '\'JetBrains Mono\', monospace', fontSize: '10px', letterSpacing: '0.2em', textTransform: 'uppercase', color: '#8B949E', background: 'transparent', border: '1px solid #30363D', borderRadius: '0.375rem', padding: '6px 9px', cursor: 'pointer' }}>{copyLabel}</button>
+              <span style={{ fontFamily: 'var(--ak-font-mono)', fontSize: '13px', color: '#8B949E' }}>$</span>
+              <code style={{ fontFamily: 'var(--ak-font-mono)', fontSize: '13px', color: '#E6EDF3', flex: '1', overflowX: 'auto', whiteSpace: 'nowrap' }}>npx @agentskit/harness loop init</code>
+              <button className="hv1" onClick={copyInstall} style={{ fontFamily: 'var(--ak-font-mono)', fontSize: '10px', letterSpacing: '0.2em', textTransform: 'uppercase', color: '#8B949E', background: 'transparent', border: '1px solid #30363D', borderRadius: '0.375rem', padding: '6px 9px', cursor: 'pointer' }}>{copyLabel}</button>
             </div>
 
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '14px', alignItems: 'center', fontFamily: '\'JetBrains Mono\', monospace', fontSize: '11px', letterSpacing: '0.2em', textTransform: 'uppercase' }}>
-              <a className="hv2" href="https://github.com/AgentsKit-io/harness" style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '10px 16px', border: '1px solid #30363D', borderRadius: '0.5rem', background: '#161B22', color: '#E6EDF3', fontFamily: '\'JetBrains Mono\', monospace', fontSize: '11px', letterSpacing: '0.2em', textTransform: 'uppercase', transition: 'border-color 200ms cubic-bezier(0.4,0,0.2,1)' }}><span style={{ color: '#56D364', letterSpacing: '0' }}>★</span>Star on GitHub</a>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '14px', alignItems: 'center', fontFamily: 'var(--ak-font-mono)', fontSize: '11px', letterSpacing: '0.2em', textTransform: 'uppercase' }}>
+              <a className="hv2" href="https://github.com/AgentsKit-io/harness" style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '10px 16px', border: '1px solid #30363D', borderRadius: '0.5rem', background: '#161B22', color: '#E6EDF3', fontFamily: 'var(--ak-font-mono)', fontSize: '11px', letterSpacing: '0.2em', textTransform: 'uppercase', transition: 'border-color 200ms cubic-bezier(0.4,0,0.2,1)' }}><span style={{ color: '#56D364', letterSpacing: '0' }}>★</span>Star on GitHub</a>
               <a href="/docs">Read the docs →</a>
               <a href="#run" style={{ color: '#8B949E' }}>See a run →</a>
             </div>
@@ -334,20 +350,20 @@ export function HarnessHome({ counts }: HarnessHomeProps) {
 
           <figure role="group" aria-label="The harness loop, drawn as a vertical factory" style={{ margin: '0', display: 'flex', flexDirection: 'column', gap: '12px' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px' }}>
-              <figcaption style={{ fontFamily: '\'JetBrains Mono\', monospace', fontSize: '11px', letterSpacing: '0.2em', textTransform: 'uppercase', color: '#8B949E' }}>the loop · 11s cycle</figcaption>
-              <button className="hv3" onClick={toggleFigure} aria-label="Play or pause the loop animation" style={{ display: 'flex', alignItems: 'center', gap: '8px', fontFamily: '\'JetBrains Mono\', monospace', fontSize: '10px', letterSpacing: '0.2em', textTransform: 'uppercase', color: '#E6EDF3', background: '#161B22', border: '1px solid #30363D', borderRadius: '999px', padding: '7px 13px', cursor: 'pointer' }}>{figureLabel}</button>
+              <figcaption style={{ fontFamily: 'var(--ak-font-mono)', fontSize: '11px', letterSpacing: '0.2em', textTransform: 'uppercase', color: '#8B949E' }}>the loop · 11s cycle</figcaption>
+              <button className="hv3" onClick={toggleFigure} aria-label="Play or pause the loop animation" style={{ display: 'flex', alignItems: 'center', gap: '8px', fontFamily: 'var(--ak-font-mono)', fontSize: '10px', letterSpacing: '0.2em', textTransform: 'uppercase', color: '#E6EDF3', background: '#161B22', border: '1px solid #30363D', borderRadius: '999px', padding: '7px 13px', cursor: 'pointer' }}>{figureLabel}</button>
             </div>
 
             <p style={{ position: 'absolute', width: '1px', height: '1px', overflow: 'hidden', clip: 'rect(0 0 0 0)', whiteSpace: 'nowrap' }}>A vague objective enters at the top and descends through six levels: the objective becomes a PRD, the PRD becomes a technical design, the design fans out into parallel issues worked by separate agents, one of which goes back a level for a fix round, the branches converge into a reviewed pull request, and a merge reaches production. A human gate stops the flow at the PRD, at the design, and before the release. A return stroke climbs the right edge and starts the next cycle with a new objective.</p>
 
-            <div style={{ boxSizing: 'border-box', width: '58.82%', minWidth: '0', margin: '0 auto -10px', border: '1px solid #30363D', borderRadius: '8px', background: '#161B22', padding: '10px 14px 12px', fontFamily: '\'JetBrains Mono\', monospace' }}>
+            <div style={{ boxSizing: 'border-box', width: '58.82%', minWidth: '0', margin: '0 auto -10px', padding: '10px 14px 12px', border: '1px solid #30363D', borderRadius: '8px', background: '#161B22', fontFamily: 'var(--ak-font-mono)' }}>
               <div style={{ fontSize: '9.5px', letterSpacing: '0.2em', color: '#8B949E' }}>00 · OBJECTIVE</div>
               <div style={{ display: 'flex', gap: '6px', alignItems: 'baseline', fontSize: '14px', color: '#E6EDF3', marginTop: '6px' }}>
                 <span style={{ color: '#56D364', flex: 'none' }}>›</span>
                 <span style={{ flex: '1', minWidth: '0', overflow: 'hidden', display: 'flex', justifyContent: 'flex-end', whiteSpace: 'nowrap' }}><span style={{ flex: 'none', display: 'flex', marginRight: 'auto' }}><span>{typed}</span><span style={{ color: '#56D364', animation: 'blink 1s steps(1) infinite' }}>▌</span></span></span>
               </div>
             </div>
-            <svg viewBox="0 84 680 716" role="img" aria-hidden="true" data-figure={figState} style={{ width: '100%', height: 'auto', display: 'block', fontFamily: '\'JetBrains Mono\', monospace', overflow: 'visible' }}>
+            <svg viewBox="0 84 680 716" role="img" aria-hidden="true" data-figure={figState} style={{ width: '100%', height: 'auto', display: 'block', fontFamily: 'var(--ak-font-mono)', overflow: 'visible' }}>
 
               <path d="M340 84 V 128" stroke="#30363D" strokeWidth="1.5" fill="none"></path>
               <path d="M340 84 V 128" stroke="#56D364" strokeWidth="1.5" fill="none" strokeDasharray="7 7" style={{ animation: 'flow .9s linear infinite, litA 11s linear infinite' }}></path>
@@ -516,48 +532,45 @@ export function HarnessHome({ counts }: HarnessHomeProps) {
       </section>
 
       <section id="gates" style={{ padding: '88px 28px', maxWidth: '1180px', margin: '0 auto', borderTop: '1px solid #30363D' }}>
-        <span style={{ fontFamily: '\'JetBrains Mono\', monospace', fontSize: '11px', letterSpacing: '0.2em', textTransform: 'uppercase', color: '#56D364' }}>01 · The human part</span>
-        <h2 style={{ margin: '16px 0 12px', fontFamily: '\'Space Grotesk\', sans-serif', letterSpacing: '-0.02em', fontSize: 'clamp(28px, 3.4vw, 40px)', lineHeight: '1.1', fontWeight: '600' }}>Five places where you act. Nowhere else.</h2>
-        <p style={{ margin: '0 0 40px', maxWidth: '62ch', fontSize: '16px', lineHeight: '1.65', color: '#8B949E' }}>Everything that touches the world keeps a person in front of it. Everything else is the machine's decision over an explicit state.</p>
-
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(260px, 100%), 1fr))', gap: '16px' }}>
+        <span style={{ fontFamily: 'var(--ak-font-mono)', fontSize: '11px', letterSpacing: '0.2em', textTransform: 'uppercase', color: '#56D364' }}>01 · The human part</span>
+        <h2 style={{ margin: '16px 0 12px', fontFamily: 'var(--ak-font-display)', letterSpacing: '-0.02em', fontSize: 'clamp(28px, 3.4vw, 40px)', lineHeight: '1.1', fontWeight: '600' }}>Five places where you act. Nowhere else.</h2>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(260px, 100%), 1fr))', gap: '16px', alignItems: 'stretch' }}>
           <div className="hv4" style={{ display: 'flex', flexDirection: 'column', gap: '12px', padding: '20px', border: '1px solid #30363D', borderRadius: '0.75rem', background: '#161B22', transition: 'border-color 200ms cubic-bezier(0.4,0,0.2,1)' }}>
-            <span style={{ fontFamily: '\'JetBrains Mono\', monospace', fontSize: '11px', letterSpacing: '0.2em', color: '#56D364' }}>01</span>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px' }}><span style={{ fontFamily: 'var(--ak-font-mono)', fontSize: '11px', letterSpacing: '0.2em', color: '#56D364' }}>01</span><CopyButton text="ak-harness loop plan approve <id>" className="!min-h-8 !min-w-8 !rounded-md !border !border-[#30363D] !px-2 !py-1 !text-[#8B949E] hover:!border-[#56D364] hover:!bg-[#0D1117]" /></div>
             <p style={{ margin: '0', fontSize: '15px', lineHeight: '1.5', color: '#E6EDF3' }}>The PRD is approved.</p>
-            <code style={{ fontFamily: '\'JetBrains Mono\', monospace', fontSize: '12px', color: '#8B949E', background: '#0D1117', border: '1px solid #30363D', borderRadius: '0.375rem', padding: '8px 10px', overflowX: 'auto' }}>loop plan approve &lt;id&gt;</code>
+            <code className="harness-gate-command" style={{ marginTop: 'auto', display: 'block', overflowX: 'auto', whiteSpace: 'nowrap', border: '1px solid #30363D', borderRadius: '6px', background: '#0D1117', padding: '9px 10px', fontFamily: 'var(--ak-font-mono)', fontSize: '12px', color: '#C9D1D9' }}><span style={{ color: '#56D364' }}>ak-harness</span> loop plan approve &lt;id&gt;</code>
           </div>
           <div className="hv5" style={{ display: 'flex', flexDirection: 'column', gap: '12px', padding: '20px', border: '1px solid #30363D', borderRadius: '0.75rem', background: '#161B22', transition: 'border-color 200ms cubic-bezier(0.4,0,0.2,1)' }}>
-            <span style={{ fontFamily: '\'JetBrains Mono\', monospace', fontSize: '11px', letterSpacing: '0.2em', color: '#56D364' }}>02</span>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px' }}><span style={{ fontFamily: 'var(--ak-font-mono)', fontSize: '11px', letterSpacing: '0.2em', color: '#56D364' }}>02</span><CopyButton text="ak-harness loop plan approve-design <id>" className="!min-h-8 !min-w-8 !rounded-md !border !border-[#30363D] !px-2 !py-1 !text-[#8B949E] hover:!border-[#56D364] hover:!bg-[#0D1117]" /></div>
             <p style={{ margin: '0', fontSize: '15px', lineHeight: '1.5', color: '#E6EDF3' }}>The technical design is approved, after 2 of 3 agents agree.</p>
-            <code style={{ fontFamily: '\'JetBrains Mono\', monospace', fontSize: '12px', color: '#8B949E', background: '#0D1117', border: '1px solid #30363D', borderRadius: '0.375rem', padding: '8px 10px', overflowX: 'auto' }}>loop plan approve-design &lt;id&gt;</code>
+            <code className="harness-gate-command" style={{ marginTop: 'auto', display: 'block', overflowX: 'auto', whiteSpace: 'nowrap', border: '1px solid #30363D', borderRadius: '6px', background: '#0D1117', padding: '9px 10px', fontFamily: 'var(--ak-font-mono)', fontSize: '12px', color: '#C9D1D9' }}><span style={{ color: '#56D364' }}>ak-harness</span> loop plan approve-design &lt;id&gt;</code>
           </div>
           <div className="hv6" style={{ display: 'flex', flexDirection: 'column', gap: '12px', padding: '20px', border: '1px solid #30363D', borderRadius: '0.75rem', background: '#161B22', transition: 'border-color 200ms cubic-bezier(0.4,0,0.2,1)' }}>
-            <span style={{ fontFamily: '\'JetBrains Mono\', monospace', fontSize: '11px', letterSpacing: '0.2em', color: '#56D364' }}>03</span>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px' }}><span style={{ fontFamily: 'var(--ak-font-mono)', fontSize: '11px', letterSpacing: '0.2em', color: '#56D364' }}>03</span><CopyButton text="ak-harness loop tick --issue <identifier>" className="!min-h-8 !min-w-8 !rounded-md !border !border-[#30363D] !px-2 !py-1 !text-[#8B949E] hover:!border-[#56D364] hover:!bg-[#0D1117]" /></div>
             <p style={{ margin: '0', fontSize: '15px', lineHeight: '1.5', color: '#E6EDF3' }}>An issue enters the queue: Todo → Ready.</p>
-            <code style={{ fontFamily: '\'JetBrains Mono\', monospace', fontSize: '12px', color: '#8B949E', background: '#0D1117', border: '1px solid #30363D', borderRadius: '0.375rem', padding: '8px 10px', overflowX: 'auto' }}>a gesture in your tracker</code>
+            <code className="harness-gate-command" style={{ marginTop: 'auto', display: 'block', overflowX: 'auto', whiteSpace: 'nowrap', border: '1px solid #30363D', borderRadius: '6px', background: '#0D1117', padding: '9px 10px', fontFamily: 'var(--ak-font-mono)', fontSize: '12px', color: '#C9D1D9' }}><span style={{ color: '#56D364' }}>ak-harness</span> loop tick --issue &lt;identifier&gt;</code>
           </div>
           <div className="hv7" style={{ display: 'flex', flexDirection: 'column', gap: '12px', padding: '20px', border: '1px solid #30363D', borderRadius: '0.75rem', background: '#161B22', transition: 'border-color 200ms cubic-bezier(0.4,0,0.2,1)' }}>
-            <span style={{ fontFamily: '\'JetBrains Mono\', monospace', fontSize: '11px', letterSpacing: '0.2em', color: '#56D364' }}>04</span>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px' }}><span style={{ fontFamily: 'var(--ak-font-mono)', fontSize: '11px', letterSpacing: '0.2em', color: '#56D364' }}>04</span><CopyButton text="ak-harness loop approve <issue> --head <sha> --by <actor>" className="!min-h-8 !min-w-8 !rounded-md !border !border-[#30363D] !px-2 !py-1 !text-[#8B949E] hover:!border-[#56D364] hover:!bg-[#0D1117]" /></div>
             <p style={{ margin: '0', fontSize: '15px', lineHeight: '1.5', color: '#E6EDF3' }}>A pull request is approved — only if the flow asks for it.</p>
-            <code style={{ fontFamily: '\'JetBrains Mono\', monospace', fontSize: '12px', color: '#8B949E', background: '#0D1117', border: '1px solid #30363D', borderRadius: '0.375rem', padding: '8px 10px', overflowX: 'auto' }}>on GitHub</code>
+            <code className="harness-gate-command" style={{ marginTop: 'auto', display: 'block', overflowX: 'auto', whiteSpace: 'nowrap', border: '1px solid #30363D', borderRadius: '6px', background: '#0D1117', padding: '9px 10px', fontFamily: 'var(--ak-font-mono)', fontSize: '12px', color: '#C9D1D9' }}><span style={{ color: '#56D364' }}>ak-harness</span> loop approve &lt;issue&gt; --head &lt;sha&gt; --by &lt;actor&gt;</code>
           </div>
           <div className="hv8" style={{ display: 'flex', flexDirection: 'column', gap: '12px', padding: '20px', border: '1px solid #30363D', borderRadius: '0.75rem', background: '#161B22', transition: 'border-color 200ms cubic-bezier(0.4,0,0.2,1)' }}>
-            <span style={{ fontFamily: '\'JetBrains Mono\', monospace', fontSize: '11px', letterSpacing: '0.2em', color: '#56D364' }}>05</span>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px' }}><span style={{ fontFamily: 'var(--ak-font-mono)', fontSize: '11px', letterSpacing: '0.2em', color: '#56D364' }}>05</span><CopyButton text="ak-harness loop release approve" className="!min-h-8 !min-w-8 !rounded-md !border !border-[#30363D] !px-2 !py-1 !text-[#8B949E] hover:!border-[#56D364] hover:!bg-[#0D1117]" /></div>
             <p style={{ margin: '0', fontSize: '15px', lineHeight: '1.5', color: '#E6EDF3' }}>A release batch is promoted and deployed.</p>
-            <code style={{ fontFamily: '\'JetBrains Mono\', monospace', fontSize: '12px', color: '#8B949E', background: '#0D1117', border: '1px solid #30363D', borderRadius: '0.375rem', padding: '8px 10px', overflowX: 'auto' }}>loop release approve</code>
+            <code className="harness-gate-command" style={{ marginTop: 'auto', display: 'block', overflowX: 'auto', whiteSpace: 'nowrap', border: '1px solid #30363D', borderRadius: '6px', background: '#0D1117', padding: '9px 10px', fontFamily: 'var(--ak-font-mono)', fontSize: '12px', color: '#C9D1D9' }}><span style={{ color: '#56D364' }}>ak-harness</span> loop release approve</code>
           </div>
         </div>
 
-        <p style={{ margin: '28px 0 0', fontFamily: '\'JetBrains Mono\', monospace', fontSize: '12px', lineHeight: '1.7', color: '#8B949E' }}>Everything between these five is decided by the machine over state it can read: plan, votes, worktree, checks, Definition of Done, merge, release batch.</p>
       </section>
 
-      <section style={{ padding: '88px 28px', maxWidth: '1180px', margin: '0 auto', borderTop: '1px solid #30363D' }}>
-        <span style={{ fontFamily: '\'JetBrains Mono\', monospace', fontSize: '11px', letterSpacing: '0.2em', textTransform: 'uppercase', color: '#56D364' }}>02 · Per issue</span>
-        <h2 style={{ margin: '16px 0 12px', fontFamily: '\'Space Grotesk\', sans-serif', letterSpacing: '-0.02em', fontSize: 'clamp(28px, 3.4vw, 40px)', lineHeight: '1.1', fontWeight: '600' }}>A plan, voted on, before any worker starts.</h2>
+      <section style={{ padding: '88px 28px', maxWidth: '1180px', margin: '0 auto' }}>
+        <span style={{ fontFamily: 'var(--ak-font-mono)', fontSize: '11px', letterSpacing: '0.2em', textTransform: 'uppercase', color: '#56D364' }}>02 · Per issue</span>
+        <h2 style={{ margin: '16px 0 12px', fontFamily: 'var(--ak-font-display)', letterSpacing: '-0.02em', fontSize: 'clamp(28px, 3.4vw, 40px)', lineHeight: '1.1', fontWeight: '600' }}>A plan, voted on, before any worker starts.</h2>
         <p style={{ margin: '0 0 36px', maxWidth: '62ch', fontSize: '16px', lineHeight: '1.65', color: '#8B949E' }}>The planner writes the plan and three agents vote on it — in the harness, headless, before a worktree exists. You read the plan and the votes; the machine counts them and decides.</p>
 
-        <div data-anim="track" style={{ border: '1px solid #30363D', borderRadius: '0.75rem', background: '#161B22', padding: '24px', overflowX: 'auto' }}>
-          <svg viewBox="0 0 980 240" role="img" aria-label="Track: planner, three voting agents, build, verify, review, definition of done, pull request, with a retry edge back to build" style={{ minWidth: '720px', width: '100%', height: 'auto', fontFamily: '\'JetBrains Mono\', monospace' }}>
+        <div data-anim="track" style={{ overflowX: 'auto' }}>
+          <svg viewBox="0 0 980 240" role="img" aria-label="Track: planner, three voting agents, build, verify, review, definition of done, pull request, with a retry edge back to build" style={{ minWidth: '720px', width: '100%', height: 'auto', fontFamily: 'var(--ak-font-mono)' }}>
             <rect x="10" y="96" width="112" height="48" rx="6" fill="#0D1117" stroke="#30363D"></rect>
             <text x="26" y="118" fill="#E6EDF3" fontSize="12">planner</text>
             <text x="26" y="134" fill="#8B949E" fontSize="9.5" letterSpacing="1.6">6 STEPS</text>
@@ -596,30 +609,25 @@ export function HarnessHome({ counts }: HarnessHomeProps) {
           </svg>
         </div>
 
-        <ul style={{ listStyle: 'none', margin: '24px 0 0', padding: '0', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(280px, 100%), 1fr))', gap: '14px' }}>
-          <li style={{ fontFamily: '\'JetBrains Mono\', monospace', fontSize: '12px', lineHeight: '1.7', color: '#8B949E', borderLeft: '1px solid #30363D', paddingLeft: '14px' }}>A rejecting vote must carry a concrete objection. One that cannot be answered is discarded, not counted.</li>
-          <li style={{ fontFamily: '\'JetBrains Mono\', monospace', fontSize: '12px', lineHeight: '1.7', color: '#8B949E', borderLeft: '1px solid #30363D', paddingLeft: '14px' }}>Both Definition of Done lists — the project's and the issue's — are proven on the PR before it merges.</li>
-          <li style={{ fontFamily: '\'JetBrains Mono\', monospace', fontSize: '12px', lineHeight: '1.7', color: '#8B949E', borderLeft: '1px solid #30363D', paddingLeft: '14px' }}>Three models disagreeing three times is an ambiguous requirement, not a retry.</li>
-        </ul>
       </section>
 
-      <section id="run" style={{ padding: '88px 28px', maxWidth: '1180px', margin: '0 auto', borderTop: '1px solid #30363D' }}>
-        <span style={{ fontFamily: '\'JetBrains Mono\', monospace', fontSize: '11px', letterSpacing: '0.2em', textTransform: 'uppercase', color: '#56D364' }}>03 · Evidence</span>
-        <h2 style={{ margin: '16px 0 12px', fontFamily: '\'Space Grotesk\', sans-serif', letterSpacing: '-0.02em', fontSize: 'clamp(28px, 3.4vw, 40px)', lineHeight: '1.1', fontWeight: '600' }}>This is the actual output.</h2>
+      <section id="run" style={{ padding: '88px 28px', maxWidth: '1180px', margin: '0 auto' }}>
+        <span style={{ fontFamily: 'var(--ak-font-mono)', fontSize: '11px', letterSpacing: '0.2em', textTransform: 'uppercase', color: '#56D364' }}>03 · Evidence</span>
+        <h2 style={{ margin: '16px 0 12px', fontFamily: 'var(--ak-font-display)', letterSpacing: '-0.02em', fontSize: 'clamp(28px, 3.4vw, 40px)', lineHeight: '1.1', fontWeight: '600' }}>This is the actual output.</h2>
         <p style={{ margin: '0 0 36px', maxWidth: '62ch', fontSize: '16px', lineHeight: '1.65', color: '#8B949E' }}>Recorded from a real run. Lines the harness could not yet write to a live repository are marked <span style={{ color: '#E6EDF3' }}>reconstructed</span> — they are not evidence, and we will not pretend otherwise.</p>
 
-        <div style={{ border: '1px solid #30363D', borderRadius: '0.75rem', background: '#161B22', overflow: 'hidden' }}>
+        <div style={{ background: 'rgb(22 27 34 / 42%)', overflow: 'hidden' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 16px', borderBottom: '1px solid #30363D' }}>
             <span style={{ display: 'flex', gap: '6px' }}>
               <span style={{ width: '10px', height: '10px', borderRadius: '999px', background: '#30363D', display: 'inline-block' }}></span>
               <span style={{ width: '10px', height: '10px', borderRadius: '999px', background: '#30363D', display: 'inline-block' }}></span>
               <span style={{ width: '10px', height: '10px', borderRadius: '999px', background: '#30363D', display: 'inline-block' }}></span>
             </span>
-            <span style={{ fontFamily: '\'JetBrains Mono\', monospace', fontSize: '11px', letterSpacing: '0.2em', textTransform: 'uppercase', color: '#8B949E', flex: '1' }}>run-2026-09-19-a3.log</span>
-            <button className="hv9" onClick={toggleReplay} style={{ fontFamily: '\'JetBrains Mono\', monospace', fontSize: '10px', letterSpacing: '0.2em', textTransform: 'uppercase', color: '#E6EDF3', background: '#0D1117', border: '1px solid #30363D', borderRadius: '999px', padding: '6px 12px', cursor: 'pointer' }}>{replayLabel}</button>
-            <button className="hv10" onClick={restartReplay} style={{ fontFamily: '\'JetBrains Mono\', monospace', fontSize: '10px', letterSpacing: '0.2em', textTransform: 'uppercase', color: '#8B949E', background: 'transparent', border: '1px solid #30363D', borderRadius: '999px', padding: '6px 12px', cursor: 'pointer' }}>Restart</button>
+            <span style={{ fontFamily: 'var(--ak-font-mono)', fontSize: '11px', letterSpacing: '0.2em', textTransform: 'uppercase', color: '#8B949E', flex: '1' }}>run-2026-09-19-a3.log</span>
+            <button className="hv9" onClick={toggleReplay} style={{ fontFamily: 'var(--ak-font-mono)', fontSize: '10px', letterSpacing: '0.2em', textTransform: 'uppercase', color: '#E6EDF3', background: '#0D1117', border: '1px solid #30363D', borderRadius: '999px', padding: '6px 12px', cursor: 'pointer' }}>{replayLabel}</button>
+            <button className="hv10" onClick={restartReplay} style={{ fontFamily: 'var(--ak-font-mono)', fontSize: '10px', letterSpacing: '0.2em', textTransform: 'uppercase', color: '#8B949E', background: 'transparent', border: '1px solid #30363D', borderRadius: '999px', padding: '6px 12px', cursor: 'pointer' }}>Restart</button>
           </div>
-          <div ref={termRef} style={{ padding: '20px 18px', minHeight: '340px', fontFamily: '\'JetBrains Mono\', monospace', fontSize: '12.5px', lineHeight: '1.9' }}>
+          <div ref={termRef} style={{ padding: '20px 18px', minHeight: '340px', fontFamily: 'var(--ak-font-mono)', fontSize: '12.5px', lineHeight: '1.9' }}>
             {replayLines.map((line) => (
               <div key={line.key} style={{ display: 'flex', gap: '10px', alignItems: 'baseline' }}>
                 <span data-col="time" style={{ color: '#8B949E', width: '44px', flex: 'none', fontSize: '11px' }}>{line.time}</span>
@@ -631,172 +639,79 @@ export function HarnessHome({ counts }: HarnessHomeProps) {
             ))}
           </div>
         </div>
-        <p style={{ margin: '16px 0 0', fontFamily: '\'JetBrains Mono\', monospace', fontSize: '11px', letterSpacing: '0.2em', textTransform: 'uppercase', color: '#8B949E' }}>41 s of wall clock · one issue · one pull request</p>
       </section>
 
-      <section style={{ padding: '88px 28px', maxWidth: '1180px', margin: '0 auto', borderTop: '1px solid #30363D' }}>
-        <span style={{ fontFamily: '\'JetBrains Mono\', monospace', fontSize: '11px', letterSpacing: '0.2em', textTransform: 'uppercase', color: '#56D364' }}>04 · Flow profiles</span>
-        <h2 style={{ margin: '16px 0 12px', fontFamily: '\'Space Grotesk\', sans-serif', letterSpacing: '-0.02em', fontSize: 'clamp(28px, 3.4vw, 40px)', lineHeight: '1.1', fontWeight: '600' }}>Not every change deserves the same ceremony.</h2>
-        <p style={{ margin: '0 0 32px', maxWidth: '62ch', fontSize: '16px', lineHeight: '1.65', color: '#8B949E' }}>Same engine, three configurations. Pick one and the loop re-prices itself.</p>
+      <section id="profiles" style={{ padding: '88px 28px', maxWidth: '1180px', margin: '0 auto' }}>
+        <span style={{ fontFamily: 'var(--ak-font-mono)', fontSize: '11px', letterSpacing: '0.2em', textTransform: 'uppercase', color: '#56D364' }}>04 · Flow profiles</span>
+        <h2 style={{ margin: '16px 0 12px', fontFamily: 'var(--ak-font-display)', letterSpacing: '-0.02em', fontSize: 'clamp(28px, 3.4vw, 40px)', lineHeight: '1.1', fontWeight: '600' }}>Not every change deserves the same ceremony.</h2>
+        <p style={{ margin: '0 0 32px', maxWidth: '62ch', fontSize: '16px', lineHeight: '1.65', color: '#8B949E' }}>The same loop adapts to each kind of work. Profiles are configurable per project.</p>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(220px, 100%), 1fr))', gap: '14px', marginBottom: '28px' }}>
-          <button onClick={pickEnterprise} style={{ textAlign: 'left', display: 'flex', flexDirection: 'column', gap: '8px', padding: '18px', borderRadius: '0.75rem', background: '#161B22', cursor: 'pointer', transition: 'border-color 200ms cubic-bezier(0.4,0,0.2,1)', border: `1px solid ${bEnterprise}` }}>
-            <span style={{ fontFamily: '\'JetBrains Mono\', monospace', fontSize: '11px', letterSpacing: '0.2em', textTransform: 'uppercase', color: '#56D364' }}>enterprise</span>
-            <span style={{ fontSize: '14px', color: '#8B949E', lineHeight: '1.5' }}>Everything on. For code other teams depend on.</span>
-          </button>
-          <button onClick={pickPoc} style={{ textAlign: 'left', display: 'flex', flexDirection: 'column', gap: '8px', padding: '18px', borderRadius: '0.75rem', background: '#161B22', cursor: 'pointer', transition: 'border-color 200ms cubic-bezier(0.4,0,0.2,1)', border: `1px solid ${bPoc}` }}>
-            <span style={{ fontFamily: '\'JetBrains Mono\', monospace', fontSize: '11px', letterSpacing: '0.2em', textTransform: 'uppercase', color: '#56D364' }}>poc</span>
-            <span style={{ fontSize: '14px', color: '#8B949E', lineHeight: '1.5' }}>One vote, no CI babysitting, no PR approval.</span>
-          </button>
-          <button onClick={pickIncident} style={{ textAlign: 'left', display: 'flex', flexDirection: 'column', gap: '8px', padding: '18px', borderRadius: '0.75rem', background: '#161B22', cursor: 'pointer', transition: 'border-color 200ms cubic-bezier(0.4,0,0.2,1)', border: `1px solid ${bIncident}` }}>
-            <span style={{ fontFamily: '\'JetBrains Mono\', monospace', fontSize: '11px', letterSpacing: '0.2em', textTransform: 'uppercase', color: '#56D364' }}>incident</span>
-            <span style={{ fontSize: '14px', color: '#8B949E', lineHeight: '1.5' }}>Planning votes skipped. Two fix rounds kept.</span>
-          </button>
-        </div>
-
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(300px, 100%), 1fr))', gap: '20px', alignItems: 'stretch' }}>
-          <div style={{ border: '1px solid #30363D', borderRadius: '0.75rem', background: '#161B22', padding: '22px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
-            <span style={{ fontFamily: '\'JetBrains Mono\', monospace', fontSize: '11px', letterSpacing: '0.2em', textTransform: 'uppercase', color: '#8B949E' }}>the loop, re-priced</span>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', alignItems: 'center' }}>
-              <span style={{ fontFamily: '\'JetBrains Mono\', monospace', fontSize: '12px', padding: '8px 12px', border: '1px solid #30363D', borderRadius: '0.375rem', color: '#E6EDF3' }}>plan</span>
-              {hasVotes ? (<>
-                <span style={{ color: '#30363D' }}>→</span>
-                <span style={{ fontFamily: '\'JetBrains Mono\', monospace', fontSize: '12px', padding: '8px 12px', border: '1px solid #30363D', borderRadius: '0.375rem', color: '#E6EDF3' }}>votes ×{nVotes}</span>
-              </>) : null}
-              <span style={{ color: '#30363D' }}>→</span>
-              <span style={{ fontFamily: '\'JetBrains Mono\', monospace', fontSize: '12px', padding: '8px 12px', border: '1px solid #30363D', borderRadius: '0.375rem', color: '#E6EDF3' }}>work</span>
-              {hasCI ? (<>
-                <span style={{ color: '#30363D' }}>→</span>
-                <span style={{ fontFamily: '\'JetBrains Mono\', monospace', fontSize: '12px', padding: '8px 12px', border: '1px solid #30363D', borderRadius: '0.375rem', color: '#E6EDF3' }}>ci watch</span>
-              </>) : null}
-              {hasPr ? (<>
-                <span style={{ color: '#30363D' }}>→</span>
-                <span style={{ fontFamily: '\'JetBrains Mono\', monospace', fontSize: '12px', padding: '8px 12px', border: '1px solid #30363D', borderRadius: '0.375rem', color: '#E6EDF3' }}>human PR</span>
-              </>) : null}
-              <span style={{ color: '#30363D' }}>→</span>
-              <span style={{ fontFamily: '\'JetBrains Mono\', monospace', fontSize: '12px', padding: '8px 12px', border: '1px solid #56D364', borderRadius: '0.375rem', color: '#E6EDF3' }}>release</span>
+        <div data-profile={profile} aria-label="Configurable flow profile" style={{ border: '1px solid rgb(139 148 158 / 22%)', borderRadius: '20px', background: 'rgb(22 27 34 / 58%)', padding: 'clamp(20px, 4vw, 32px)', backdropFilter: 'blur(20px) saturate(120%)' }}>
+          <div key={profile} className="harness-profile-content" aria-live="off">
+            <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', gap: '12px' }}>
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: '10px', fontFamily: 'var(--ak-font-mono)', fontSize: '11px', letterSpacing: '0.2em', textTransform: 'uppercase', color: '#56D364' }}>
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  {profile === 'enterprise' ? <><path d="M4 21h16M6 21V4h12v17M9 8h2m2 0h2M9 12h2m2 0h2M9 16h2m2 0h2" /></> : profile === 'poc' ? <><path d="M9 3h6m-5 0v6l-5.5 9.2A2 2 0 0 0 6.2 21h11.6a2 2 0 0 0 1.7-2.8L14 9V3M8 15h8" /><path d="M10 18h.01M14 17h.01" /></> : <><path d="M3 12h4l3-8 4 16 3-8h4" /><circle cx="12" cy="12" r="10" /></>}
+                </svg>
+                {selected.label}
+              </span>
+              <span style={{ fontFamily: 'var(--ak-font-mono)', fontSize: '10px', letterSpacing: '0.16em', textTransform: 'uppercase', color: '#8B949E' }}>One configurable loop</span>
             </div>
-            <div style={{ borderTop: '1px solid #30363D', paddingTop: '14px', fontFamily: '\'JetBrains Mono\', monospace', fontSize: '12px', lineHeight: '1.8', color: '#8B949E' }}>
-              <div><span style={{ color: '#F85149' }}>- merge.requireChecks: true</span></div>
-              <div><span style={{ color: '#2EA043' }}>+ merge.requireChecks: false</span></div>
+            <p style={{ margin: '18px 0 22px', fontFamily: 'var(--ak-font-display)', fontSize: 'clamp(20px, 2.8vw, 28px)', lineHeight: '1.25', color: '#E6EDF3' }}>{selected.description}</p>
+            <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', columnGap: '12px', rowGap: '8px', fontFamily: 'var(--ak-font-mono)', fontSize: 'clamp(11px, 1.6vw, 13px)', color: '#C9D1D9' }}>
+              {selected.steps.map((step, index) => (
+                <span key={step}>{index > 0 ? <span aria-hidden="true" style={{ color: '#56D364', marginRight: '12px' }}>→</span> : null}{step}</span>
+              ))}
             </div>
-            <p style={{ margin: '0', fontSize: '14px', lineHeight: '1.6', color: '#8B949E' }}>That one line is the difference between an enterprise flow and a POC one.</p>
-          </div>
-
-          <div style={{ border: '1px solid #30363D', borderRadius: '0.75rem', background: '#161B22', height: '100%', boxSizing: 'border-box', display: 'flex', flexDirection: 'column', overflowX: 'auto' }}>
-            <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1.4fr) repeat(3, minmax(max-content, 1fr))', gridAutoRows: '1fr', flex: '1', fontFamily: '\'JetBrains Mono\', monospace' }}>
-              <span style={{ display: 'flex', alignItems: 'center', fontSize: '11px', letterSpacing: '0.12em', textTransform: 'uppercase', color: '#8B949E', whiteSpace: 'nowrap', minWidth: '0', borderBottom: '1px solid #30363D', padding: '14px 10px 14px 18px' }}></span>
-              <span style={{ display: 'flex', alignItems: 'center', fontSize: '11px', letterSpacing: '0.12em', textTransform: 'uppercase', color: '#8B949E', whiteSpace: 'nowrap', minWidth: '0', borderBottom: '1px solid #30363D', padding: '14px 10px 14px 0' }}>enterprise</span>
-              <span style={{ display: 'flex', alignItems: 'center', fontSize: '11px', letterSpacing: '0.12em', textTransform: 'uppercase', color: '#8B949E', whiteSpace: 'nowrap', minWidth: '0', borderBottom: '1px solid #30363D', padding: '14px 10px 14px 0' }}>poc</span>
-              <span style={{ display: 'flex', alignItems: 'center', fontSize: '11px', letterSpacing: '0.12em', textTransform: 'uppercase', color: '#8B949E', whiteSpace: 'nowrap', minWidth: '0', borderBottom: '1px solid #30363D', padding: '14px 18px 14px 0' }}>incident</span>
-              <span style={{ display: 'flex', alignItems: 'center', fontSize: '12.5px', color: '#8B949E', minWidth: '0', borderBottom: '1px solid #30363D', padding: '14px 10px 14px 18px' }}>Plan votes</span>
-              <span style={{ display: 'flex', alignItems: 'center', fontSize: '12.5px', color: '#E6EDF3', minWidth: '0', borderBottom: '1px solid #30363D', padding: '14px 10px 14px 0' }}>3</span>
-              <span style={{ display: 'flex', alignItems: 'center', fontSize: '12.5px', color: '#E6EDF3', minWidth: '0', borderBottom: '1px solid #30363D', padding: '14px 10px 14px 0' }}>1</span>
-              <span style={{ display: 'flex', alignItems: 'center', fontSize: '12.5px', color: '#E6EDF3', minWidth: '0', borderBottom: '1px solid #30363D', padding: '14px 18px 14px 0' }}>skipped</span>
-              <span style={{ display: 'flex', alignItems: 'center', fontSize: '12.5px', color: '#8B949E', minWidth: '0', borderBottom: '1px solid #30363D', padding: '14px 10px 14px 18px' }}>CI babysitting</span>
-              <span style={{ display: 'flex', alignItems: 'center', fontSize: '12.5px', color: '#E6EDF3', minWidth: '0', borderBottom: '1px solid #30363D', padding: '14px 10px 14px 0' }}>on</span>
-              <span style={{ display: 'flex', alignItems: 'center', fontSize: '12.5px', color: '#E6EDF3', minWidth: '0', borderBottom: '1px solid #30363D', padding: '14px 10px 14px 0' }}>off</span>
-              <span style={{ display: 'flex', alignItems: 'center', fontSize: '12.5px', color: '#E6EDF3', minWidth: '0', borderBottom: '1px solid #30363D', padding: '14px 18px 14px 0' }}>off</span>
-              <span style={{ display: 'flex', alignItems: 'center', fontSize: '12.5px', color: '#8B949E', minWidth: '0', borderBottom: '1px solid #30363D', padding: '14px 10px 14px 18px' }}>Human PR approval</span>
-              <span style={{ display: 'flex', alignItems: 'center', fontSize: '12.5px', color: '#E6EDF3', minWidth: '0', borderBottom: '1px solid #30363D', padding: '14px 10px 14px 0' }}>yes</span>
-              <span style={{ display: 'flex', alignItems: 'center', fontSize: '12.5px', color: '#E6EDF3', minWidth: '0', borderBottom: '1px solid #30363D', padding: '14px 10px 14px 0' }}>no</span>
-              <span style={{ display: 'flex', alignItems: 'center', fontSize: '12.5px', color: '#E6EDF3', minWidth: '0', borderBottom: '1px solid #30363D', padding: '14px 18px 14px 0' }}>no</span>
-              <span style={{ display: 'flex', alignItems: 'center', fontSize: '12.5px', color: '#8B949E', minWidth: '0', padding: '14px 10px 14px 18px' }}>Fix rounds</span>
-              <span style={{ display: 'flex', alignItems: 'center', fontSize: '12.5px', color: '#E6EDF3', minWidth: '0', padding: '14px 10px 14px 0' }}>2</span>
-              <span style={{ display: 'flex', alignItems: 'center', fontSize: '12.5px', color: '#E6EDF3', minWidth: '0', padding: '14px 10px 14px 0' }}>1</span>
-              <span style={{ display: 'flex', alignItems: 'center', fontSize: '12.5px', color: '#E6EDF3', minWidth: '0', padding: '14px 18px 14px 0' }}>2</span>
-            </div>
+            <p style={{ margin: '24px 0 0', paddingTop: '16px', borderTop: '1px solid rgb(139 148 158 / 18%)', fontSize: '13px', lineHeight: '1.6', color: '#8B949E' }}>Configure the steps, vote threshold, CI checks, review rounds, and human gates for your project.</p>
           </div>
         </div>
       </section>
 
       {nightShift ? (<>
-      <section style={{ padding: '88px 28px', maxWidth: '1180px', margin: '0 auto', borderTop: '1px solid #30363D' }}>
-        <span style={{ fontFamily: '\'JetBrains Mono\', monospace', fontSize: '11px', letterSpacing: '0.2em', textTransform: 'uppercase', color: '#56D364' }}>05 · While you sleep</span>
-        <h2 style={{ margin: '16px 0 12px', fontFamily: '\'Space Grotesk\', sans-serif', letterSpacing: '-0.02em', fontSize: 'clamp(28px, 3.4vw, 40px)', lineHeight: '1.1', fontWeight: '600' }}>It keeps pushing.</h2>
-        <p style={{ margin: '0 0 36px', maxWidth: '62ch', fontSize: '16px', lineHeight: '1.65', color: '#8B949E' }}>The crontab dispatches on its own schedule. At 09:00 the queue is a list of merged pull requests and one thing that needs a person.</p>
+      <section style={{ padding: '88px 28px', maxWidth: '1180px', margin: '0 auto' }}>
+        <span style={{ fontFamily: 'var(--ak-font-mono)', fontSize: '11px', letterSpacing: '0.2em', textTransform: 'uppercase', color: '#56D364' }}>05 · While you sleep</span>
+        <h2 style={{ margin: '16px 0 12px', fontFamily: 'var(--ak-font-display)', letterSpacing: '-0.02em', fontSize: 'clamp(28px, 3.4vw, 40px)', lineHeight: '1.1', fontWeight: '600' }}>It keeps pushing.</h2>
+        <p style={{ margin: '0 0 36px', maxWidth: '62ch', fontSize: '16px', lineHeight: '1.65', color: '#8B949E' }}>The runner dispatches on its configured schedule. Work moves through verification and review while releases wait at the human gate.</p>
 
-        <div data-anim="night" style={{ border: '1px solid #30363D', borderRadius: '0.75rem', background: '#161B22', padding: '24px', overflowX: 'auto' }}>
-          <svg viewBox="0 0 960 190" role="img" aria-label="A 24-hour band showing dispatches, reviews and merges through the night, with one item waiting for a human at 09:00" style={{ minWidth: '680px', width: '100%', height: 'auto', fontFamily: '\'JetBrains Mono\', monospace' }}>
-            <rect x="460" y="44" width="220" height="102" fill="#0D1117"></rect>
-            <text x="468" y="34" fill="#8B949E" fontSize="9.5" letterSpacing="2">02:00 — 06:00 · UNATTENDED</text>
-            <line x1="20" y1="146" x2="940" y2="146" stroke="#30363D"></line>
-            <g fill="#8B949E" fontSize="9.5" letterSpacing="1.6" textAnchor="middle">
-              <text x="20" y="166" textAnchor="start">18:00</text>
-              <text x="240" y="166">22:00</text>
-              <text x="460" y="166">02:00</text>
-              <text x="680" y="166">06:00</text>
-              <text x="900" y="166" textAnchor="end">09:00</text>
+        <div data-anim="night" style={{ overflowX: 'auto', padding: '18px 0' }}>
+          <svg viewBox="0 0 960 190" role="img" aria-label="Work moves from queue through dispatch, verification and review to a release waiting for human approval" style={{ minWidth: '680px', width: '100%', height: 'auto', fontFamily: 'var(--ak-font-mono)' }}>
+            <defs>
+              <linearGradient id="harness-flow-line" x1="0" x2="1"><stop offset="0%" stopColor="#30363D"/><stop offset="50%" stopColor="#56D364"/><stop offset="100%" stopColor="#30363D"/></linearGradient>
+            </defs>
+            <path d="M80 96 H 880" fill="none" stroke="#30363D" strokeWidth="2"/>
+            <path d="M80 96 H 880" fill="none" stroke="url(#harness-flow-line)" strokeWidth="2" strokeDasharray="10 14" style={{ animation: 'flow .65s linear infinite' }}/>
+            <g fill="#0D1117" stroke="#8B949E" strokeWidth="2">
+              <circle cx="80" cy="96" r="7"/><circle cx="280" cy="96" r="7"/><circle cx="480" cy="96" r="7"/><circle cx="680" cy="96" r="7"/><circle cx="880" cy="96" r="7"/>
             </g>
-            <g stroke="#30363D">
-              <line x1="20" y1="140" x2="20" y2="146"></line>
-              <line x1="240" y1="140" x2="240" y2="146"></line>
-              <line x1="460" y1="140" x2="460" y2="146"></line>
-              <line x1="680" y1="140" x2="680" y2="146"></line>
-              <line x1="900" y1="140" x2="900" y2="146"></line>
+            <g fill="#E6EDF3" fontSize="12" textAnchor="middle">
+              <text x="80" y="60">Queue</text><text x="280" y="60">Dispatch</text><text x="480" y="60">Verify</text><text x="680" y="60">Review</text><text x="880" y="60">Release</text>
             </g>
-            <g fontSize="10">
-              <rect x="60" y="112" width="86" height="22" rx="4" fill="#161B22" stroke="#30363D"></rect>
-              <text x="70" y="127" fill="#8B949E">dispatch ×2</text>
-              <rect x="250" y="82" width="78" height="22" rx="4" fill="#161B22" stroke="#58A6FF"></rect>
-              <text x="260" y="97" fill="#58A6FF">review ×3</text>
-              <rect x="400" y="112" width="86" height="22" rx="4" fill="#161B22" stroke="#30363D"></rect>
-              <text x="410" y="127" fill="#8B949E">dispatch ×3</text>
-              <rect x="520" y="52" width="72" height="22" rx="4" fill="#161B22" stroke="#2EA043"></rect>
-              <text x="530" y="67" fill="#2EA043">merge ×2</text>
-              <rect x="640" y="82" width="86" height="22" rx="4" fill="#161B22" stroke="#58A6FF"></rect>
-              <text x="650" y="97" fill="#58A6FF">fix round ×1</text>
-              <rect x="770" y="52" width="72" height="22" rx="4" fill="#161B22" stroke="#2EA043"></rect>
-              <text x="780" y="67" fill="#2EA043">merge ×4</text>
-              <rect x="856" y="96" width="96" height="40" rx="6" fill="#161B22" stroke="#56D364"></rect>
-              <text x="866" y="112" fill="#E6EDF3">waiting</text>
-              <text x="866" y="128" fill="#56D364" fontSize="9">1 release</text>
+            <g fill="#8B949E" fontSize="10" textAnchor="middle">
+              <text x="80" y="126">ready work</text><text x="280" y="126">worker starts</text><text x="480" y="126">checks run</text><text x="680" y="126">changes reviewed</text><text x="880" y="126">human gate</text>
             </g>
-            <line x1="20" y1="146" x2="940" y2="146" stroke="#56D364" strokeWidth="2" strokeDasharray="7 7" style={{ animation: 'flow .9s linear infinite' }}></line>
+            <g className="harness-timeline-pulse" style={{ transformBox: 'view-box', animation: 'harness-timeline-travel 5s linear infinite' }}><circle cx="80" cy="96" r="5" fill="#56D364"/></g>
+            <g className="harness-timeline-pulse" style={{ transformBox: 'view-box', animation: 'harness-timeline-travel 5s linear 2.5s infinite' }}><circle cx="80" cy="96" r="3.5" fill="#58A6FF"/></g>
           </svg>
         </div>
-        <p style={{ margin: '16px 0 0', fontFamily: '\'JetBrains Mono\', monospace', fontSize: '11px', letterSpacing: '0.2em', textTransform: 'uppercase', color: '#8B949E' }}>Local runner: git worktree + tmux + the system crontab</p>
+        <p style={{ margin: '8px 0 0', fontFamily: 'var(--ak-font-mono)', fontSize: '11px', letterSpacing: '0.12em', textTransform: 'uppercase', color: '#8B949E' }}>Local runner · git worktrees · tmux · configured schedule</p>
       </section>
       </>) : null}
 
-      <section style={{ padding: '88px 28px', maxWidth: '1180px', margin: '0 auto', borderTop: '1px solid #30363D' }}>
-        <span style={{ fontFamily: '\'JetBrains Mono\', monospace', fontSize: '11px', letterSpacing: '0.2em', textTransform: 'uppercase', color: '#56D364' }}>06 · Seams</span>
-        <h2 style={{ margin: '16px 0 12px', fontFamily: '\'Space Grotesk\', sans-serif', letterSpacing: '-0.02em', fontSize: 'clamp(28px, 3.4vw, 40px)', lineHeight: '1.1', fontWeight: '600' }}>It does not name your vendor.</h2>
-        <p style={{ margin: '0 0 36px', maxWidth: '62ch', fontSize: '16px', lineHeight: '1.65', color: '#8B949E' }}>Three interfaces, and today's implementations behind them. An interface with one implementation is a guess, so we say which ones are guesses.</p>
+      <section id="seams" style={{ padding: '88px 28px', maxWidth: '1180px', margin: '0 auto' }}>
+        <span style={{ fontFamily: 'var(--ak-font-mono)', fontSize: '11px', letterSpacing: '0.2em', textTransform: 'uppercase', color: '#56D364' }}>06 · Seams</span>
+        <h2 style={{ margin: '16px 0 12px', fontFamily: 'var(--ak-font-display)', letterSpacing: '-0.02em', fontSize: 'clamp(28px, 3.4vw, 40px)', lineHeight: '1.1', fontWeight: '600' }}>It does not name your vendor.</h2>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(240px, 100%), 1fr))', gap: '16px' }}>
-          <div style={{ border: '1px solid #30363D', borderRadius: '0.75rem', background: '#161B22', padding: '20px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
-            <code style={{ fontFamily: '\'JetBrains Mono\', monospace', fontSize: '13px', color: '#58A6FF' }}>TrackerConnector</code>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-              <span style={{ fontFamily: '\'JetBrains Mono\', monospace', fontSize: '11px', padding: '6px 10px', border: '1px solid #30363D', borderRadius: '999px', color: '#E6EDF3' }}>Linear</span>
-            </div>
-            <span style={{ fontFamily: '\'JetBrains Mono\', monospace', fontSize: '10px', letterSpacing: '0.2em', textTransform: 'uppercase', color: '#8B949E' }}>1 implementation</span>
-          </div>
-          <div style={{ border: '1px solid #30363D', borderRadius: '0.75rem', background: '#161B22', padding: '20px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
-            <code style={{ fontFamily: '\'JetBrains Mono\', monospace', fontSize: '13px', color: '#58A6FF' }}>ScmConnector</code>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-              <span style={{ fontFamily: '\'JetBrains Mono\', monospace', fontSize: '11px', padding: '6px 10px', border: '1px solid #30363D', borderRadius: '999px', color: '#E6EDF3' }}>GitHub</span>
-            </div>
-            <span style={{ fontFamily: '\'JetBrains Mono\', monospace', fontSize: '10px', letterSpacing: '0.2em', textTransform: 'uppercase', color: '#8B949E' }}>1 implementation</span>
-          </div>
-          <div style={{ border: '1px solid #30363D', borderRadius: '0.75rem', background: '#161B22', padding: '20px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
-            <code style={{ fontFamily: '\'JetBrains Mono\', monospace', fontSize: '13px', color: '#58A6FF' }}>RunnerConnector</code>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-              <span style={{ fontFamily: '\'JetBrains Mono\', monospace', fontSize: '11px', padding: '6px 10px', border: '1px solid #30363D', borderRadius: '999px', color: '#E6EDF3' }}>Orca</span>
-              <span style={{ fontFamily: '\'JetBrains Mono\', monospace', fontSize: '11px', padding: '6px 10px', border: '1px solid #30363D', borderRadius: '999px', color: '#E6EDF3' }}>local</span>
-            </div>
-            <span style={{ fontFamily: '\'JetBrains Mono\', monospace', fontSize: '10px', letterSpacing: '0.2em', textTransform: 'uppercase', color: '#8B949E' }}>2 implementations</span>
-          </div>
-        </div>
-
-        <div style={{ marginTop: '16px', border: '1px solid #30363D', borderLeft: '2px solid #56D364', borderRadius: '0.5rem', background: '#161B22', padding: '18px 20px' }}>
-          <p style={{ margin: '0', fontFamily: '\'JetBrains Mono\', monospace', fontSize: '13px', lineHeight: '1.7', color: '#E6EDF3' }}>The local runner is git worktree + tmux + the system crontab. No daemon, no Orca.</p>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(240px, 100%), 1fr))', columnGap: '32px', rowGap: '18px' }}>
+          <p style={{ margin: '0', display: 'flex', alignItems: 'center', gap: '12px' }}><GitBranch size={20} strokeWidth={1.6} aria-hidden="true" /><span style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}><code style={{ fontFamily: 'var(--ak-font-mono)', fontSize: '13px', color: '#E6EDF3' }}>Tracker</code><span style={{ fontSize: '12px', color: '#8B949E' }}>Linear</span></span></p>
+          <p style={{ margin: '0', display: 'flex', alignItems: 'center', gap: '12px' }}><GitPullRequest size={20} strokeWidth={1.6} aria-hidden="true" /><span style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}><code style={{ fontFamily: 'var(--ak-font-mono)', fontSize: '13px', color: '#E6EDF3' }}>Source control</code><span style={{ fontSize: '12px', color: '#8B949E' }}>GitHub</span></span></p>
+          <p style={{ margin: '0', display: 'flex', alignItems: 'center', gap: '12px' }}><Workflow size={20} strokeWidth={1.6} aria-hidden="true" /><span style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}><code style={{ fontFamily: 'var(--ak-font-mono)', fontSize: '13px', color: '#E6EDF3' }}>Runner</code><span style={{ fontSize: '12px', color: '#8B949E' }}>Orca · local</span></span></p>
         </div>
       </section>
 
-      <section style={{ padding: '88px 28px', maxWidth: '1180px', margin: '0 auto', borderTop: '1px solid #30363D' }}>
-        <span style={{ fontFamily: '\'JetBrains Mono\', monospace', fontSize: '11px', letterSpacing: '0.2em', textTransform: 'uppercase', color: '#56D364' }}>07 · Machine surfaces</span>
-        <h2 style={{ margin: '16px 0 12px', fontFamily: '\'Space Grotesk\', sans-serif', letterSpacing: '-0.02em', fontSize: 'clamp(28px, 3.4vw, 40px)', lineHeight: '1.1', fontWeight: '600' }}>Readable by the things that will read it.</h2>
+      <section style={{ padding: '88px 28px', maxWidth: '1180px', margin: '0 auto' }}>
+        <span style={{ fontFamily: 'var(--ak-font-mono)', fontSize: '11px', letterSpacing: '0.2em', textTransform: 'uppercase', color: '#56D364' }}>07 · Machine surfaces</span>
+        <h2 style={{ margin: '16px 0 12px', fontFamily: 'var(--ak-font-display)', letterSpacing: '-0.02em', fontSize: 'clamp(28px, 3.4vw, 40px)', lineHeight: '1.1', fontWeight: '600' }}>Readable by the things that will read it.</h2>
         <p style={{ margin: '0 0 28px', maxWidth: '62ch', fontSize: '16px', lineHeight: '1.65', color: '#8B949E' }}>Every command that reports also reports as JSON, and every page has a raw Markdown twin.</p>
 
         {/* Counted out of the repository at build time and served verbatim at /api/stats.json — the page and the
@@ -804,47 +719,54 @@ export function HarnessHome({ counts }: HarnessHomeProps) {
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(160px, 100%), 1fr))', gap: '16px', marginBottom: '28px' }}>
           {STATS.map((stat) => (
             <div key={stat.label} style={{ border: '1px solid #30363D', borderRadius: '0.75rem', background: '#161B22', padding: '20px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              <span style={{ fontFamily: '\'Space Grotesk\', sans-serif', letterSpacing: '-0.02em', fontSize: '32px', lineHeight: '1', fontWeight: '600', color: '#E6EDF3' }}>{counts[stat.key]}</span>
-              <span style={{ fontFamily: '\'JetBrains Mono\', monospace', fontSize: '10px', letterSpacing: '0.2em', textTransform: 'uppercase', color: '#8B949E' }}>{stat.label}</span>
+              <span style={{ fontFamily: 'var(--ak-font-display)', letterSpacing: '-0.02em', fontSize: '32px', lineHeight: '1', fontWeight: '600', color: '#E6EDF3' }}>{counts[stat.key]}</span>
+              <span style={{ fontFamily: 'var(--ak-font-mono)', fontSize: '10px', letterSpacing: '0.2em', textTransform: 'uppercase', color: '#8B949E' }}>{stat.label}</span>
             </div>
           ))}
         </div>
 
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px' }}>
-          <a href="/llms.txt" style={{ fontFamily: '\'JetBrains Mono\', monospace', fontSize: '12px', padding: '10px 14px', border: '1px solid #30363D', borderRadius: '0.5rem', background: '#161B22' }}>/llms.txt</a>
-          <a href="/api/stats.json" style={{ fontFamily: '\'JetBrains Mono\', monospace', fontSize: '12px', padding: '10px 14px', border: '1px solid #30363D', borderRadius: '0.5rem', background: '#161B22' }}>/api/stats.json</a>
-          <a href="/docs" style={{ fontFamily: '\'JetBrains Mono\', monospace', fontSize: '12px', padding: '10px 14px', border: '1px solid #30363D', borderRadius: '0.5rem', background: '#161B22' }}>raw Markdown for every page</a>
-          <a href="/docs/reference/cli" style={{ fontFamily: '\'JetBrains Mono\', monospace', fontSize: '12px', padding: '10px 14px', border: '1px solid #30363D', borderRadius: '0.5rem', background: '#161B22' }}>--json on every command</a>
+          <a href="/llms.txt" style={{ fontFamily: 'var(--ak-font-mono)', fontSize: '12px', padding: '10px 14px', border: '1px solid #30363D', borderRadius: '0.5rem', background: '#161B22' }}>/llms.txt</a>
+          <a href="/api/stats.json" style={{ fontFamily: 'var(--ak-font-mono)', fontSize: '12px', padding: '10px 14px', border: '1px solid #30363D', borderRadius: '0.5rem', background: '#161B22' }}>/api/stats.json</a>
+          <a href="/docs" style={{ fontFamily: 'var(--ak-font-mono)', fontSize: '12px', padding: '10px 14px', border: '1px solid #30363D', borderRadius: '0.5rem', background: '#161B22' }}>raw Markdown for every page</a>
+          <a href="/docs/reference/cli" style={{ fontFamily: 'var(--ak-font-mono)', fontSize: '12px', padding: '10px 14px', border: '1px solid #30363D', borderRadius: '0.5rem', background: '#161B22' }}>--json on every command</a>
         </div>
       </section>
 
-      <section style={{ padding: '96px 28px', borderTop: '1px solid #30363D', background: '#161B22' }}>
+      <section style={{ padding: 'clamp(88px, 12vw, 144px) 28px' }}>
         <div style={{ maxWidth: '1180px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '24px', alignItems: 'flex-start' }}>
-          <h2 style={{ margin: '0', fontFamily: '\'Space Grotesk\', sans-serif', letterSpacing: '-0.02em', fontSize: 'clamp(32px, 4vw, 48px)', lineHeight: '1.05', fontWeight: '600' }}>Start the loop.</h2>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '12px 14px', border: '1px solid #30363D', boxSizing: 'border-box', borderRadius: '0.5rem', background: '#0D1117', width: '100%', maxWidth: '420px' }}>
-            <span style={{ fontFamily: '\'JetBrains Mono\', monospace', fontSize: '13px', color: '#8B949E' }}>$</span>
-            <code style={{ fontFamily: '\'JetBrains Mono\', monospace', fontSize: '13px', color: '#E6EDF3', flex: '1', overflowX: 'auto', whiteSpace: 'nowrap' }}>npx @agentskit/harness loop init</code>
-            <button className="hv11" onClick={copyInstall} style={{ fontFamily: '\'JetBrains Mono\', monospace', fontSize: '10px', letterSpacing: '0.2em', textTransform: 'uppercase', color: '#8B949E', background: 'transparent', border: '1px solid #30363D', borderRadius: '0.375rem', padding: '6px 9px', cursor: 'pointer' }}>{copyLabel}</button>
-          </div>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '14px', alignItems: 'center', fontFamily: '\'JetBrains Mono\', monospace', fontSize: '11px', letterSpacing: '0.2em', textTransform: 'uppercase' }}>
-            <a className="hv12" href="https://github.com/AgentsKit-io/harness" style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '10px 16px', border: '1px solid #30363D', borderRadius: '0.5rem', color: '#E6EDF3', fontFamily: '\'JetBrains Mono\', monospace', fontSize: '11px', letterSpacing: '0.2em', textTransform: 'uppercase', transition: 'border-color 200ms cubic-bezier(0.4,0,0.2,1)', background: '#0D1117' }}><span style={{ color: '#56D364', letterSpacing: '0' }}>★</span>Star on GitHub</a>
-            <a href="/docs">Read the docs →</a>
+          <span style={{ fontFamily: 'var(--ak-font-mono)', fontSize: '11px', letterSpacing: '0.2em', textTransform: 'uppercase', color: '#56D364' }}>AgentsKit Harness</span>
+          <h2 style={{ margin: '0', fontFamily: 'var(--ak-font-display)', letterSpacing: '-0.035em', fontSize: 'clamp(40px, 7vw, 76px)', lineHeight: '0.98', fontWeight: '600', maxWidth: '11ch' }}>Put the loop to work.</h2>
+          <p style={{ margin: '0', maxWidth: '52ch', fontSize: '16px', lineHeight: '1.65', color: '#8B949E' }}>Start with one command. Keep the workflow, evidence, and release gates under your control.</p>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px', alignItems: 'center' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 14px', border: '1px solid rgb(139 148 158 / 24%)', borderRadius: '14px', background: 'rgb(22 27 34 / 48%)', minWidth: 'min(420px, 100%)', boxSizing: 'border-box' }}>
+              <span style={{ fontFamily: 'var(--ak-font-mono)', fontSize: '13px', color: '#56D364' }}>$</span>
+              <code style={{ fontFamily: 'var(--ak-font-mono)', fontSize: '13px', color: '#E6EDF3', flex: '1', overflowX: 'auto', whiteSpace: 'nowrap' }}>{INSTALL}</code>
+              <CopyButton text={INSTALL} />
+            </div>
+            <a href="https://github.com/AgentsKit-io/harness" style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', minHeight: '44px', padding: '0 16px', borderRadius: '999px', background: '#E6EDF3', color: '#0D1117', fontSize: '14px', fontWeight: '600' }}>Star on GitHub →</a>
+            <a href="/docs" style={{ color: '#8B949E', fontSize: '14px' }}>Read the docs</a>
           </div>
         </div>
       </section>
 
       <EcosystemShowcase />
+      </main>
 
-      <footer style={{ padding: '56px 28px 72px', borderTop: '1px solid #30363D' }}>
-        <div style={{ maxWidth: '1180px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '28px' }}>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '20px', justifyContent: 'space-between', alignItems: 'center', fontFamily: '\'JetBrains Mono\', monospace', fontSize: '11px', letterSpacing: '0.2em', textTransform: 'uppercase', color: '#8B949E' }}>
-            <span>Built in the open · free and open source</span>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '18px' }}>
-              <a href="https://github.com/AgentsKit-io/harness/blob/main/LICENSE" style={{ color: '#8B949E' }}>MIT</a>
-              <a href="/docs" style={{ color: '#8B949E' }}>Docs</a>
-              <a href="/llms.txt" style={{ color: '#8B949E' }}>llms.txt</a>
-              <a href="https://github.com/AgentsKit-io" style={{ color: '#8B949E' }}>GitHub</a>
+      <footer style={{ padding: '64px 28px 56px' }}>
+        <div style={{ maxWidth: '1180px', margin: '0 auto' }}>
+          <div className="harness-footer-grid">
+            <div style={{ minWidth: '0' }}>
+              <a href="/" style={{ display: 'inline-flex', alignItems: 'center', gap: '10px', color: '#E6EDF3', fontFamily: 'var(--ak-font-mono)', fontSize: '16px', fontWeight: '700', letterSpacing: '-0.02em' }}>
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 4 5 17h14L12 4Z" stroke="#E6EDF3" strokeWidth="1.4"/><circle cx="12" cy="4" r="2" fill="#56D364"/><circle cx="5" cy="17" r="2" fill="#56D364"/><circle cx="19" cy="17" r="2" fill="#56D364"/></svg>
+                AgentsKit Harness
+              </a>
+              <p style={{ maxWidth: '28ch', margin: '16px 0 0', fontSize: '14px', lineHeight: '1.65', color: '#8B949E' }}>The configurable loop that takes software work from objective to release.</p>
             </div>
+            <div><h3 className="harness-footer-title">Start</h3><a href="/docs">Documentation</a><a href="#gates">Human gates</a><a href="#run">Example run</a></div>
+            <div><h3 className="harness-footer-title">Build</h3><a href="#profiles">Flow profiles</a><a href="#seams">Connectors</a><a href="/llms.txt">llms.txt</a></div>
+            <div><h3 className="harness-footer-title">Ecosystem</h3><a href="https://www.agentskit.io/docs">AgentsKit</a><a href="https://registry.agentskit.io/docs">Registry</a><a href="https://chat.agentskit.io/docs">Chat</a><a href="https://doc-bridge.agentskit.io/">Doc Bridge</a><a href="https://code-review.agentskit.io/docs">Code Review</a><a href="https://harness.agentskit.io/docs" aria-current="page" className="harness-footer-current">Harness <span aria-hidden="true">●</span></a></div>
+            <div><h3 className="harness-footer-title">Community</h3><a href="https://github.com/AgentsKit-io/harness">GitHub</a><a href="https://github.com/AgentsKit-io/harness/blob/main/CONTRIBUTING.md">Contribute</a><a href="https://github.com/AgentsKit-io/harness/blob/main/LICENSE">MIT License</a></div>
           </div>
         </div>
       </footer>
