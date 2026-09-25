@@ -17,7 +17,7 @@ import { assessContract, contractIsFresh, extractResetsAt, generateContract, rea
 import { activeCooldowns, readCooldowns } from './cooldown.js'
 import { countRunningWorkers, providerSpecs } from './doctor.js'
 import { openLoopMemory, planMemoryContext } from './memory.js'
-import { clearIssueFailures, isIssuePaused, pauseIssue, readIssueFailures, recordIssueFailure } from './resilience-state.js'
+import { clearIssueFailures, isIssuePaused, markPauseLabelApplied, pauseIssue, readIssueFailures, recordIssueFailure } from './resilience-state.js'
 import { MODEL_ROLES, type ModelRole } from '../kernel/model-policy.js'
 import { resolveCatalogCandidates } from './model-catalog/index.js'
 import { rankModels, routeAllRoles, type RoutingDecision } from './routing.js'
@@ -390,14 +390,22 @@ export const runTick = async (input: TickInput): Promise<TickReport> => {
     const body = `**Loop: paused after ${failureState.consecutive} consecutive failures**\n\nMost recent (\`${kind}\`): ${reason.split('\n')[0]?.slice(0, 300)}\n\nThe loop will not retry this issue until you remove the \`${config.resilience.pausedLabel}\` label (or run \`ak-harness loop resume ${issue}\`).\n\n<!-- loop:paused:${issue}:${failureState.consecutive} -->`
     // The label is what actually keeps this issue out of the queue (tick.ts's own resume-on-missing-label
     // heuristic, and `excludeLabels` at the fetch level) — it must not be skipped just because the comment call
-    // timed out first. Separate try/catches, label before comment: observed live (2026-09-22, AGE-1742 and
-    // AGE-1752) a Linear comment timing out under load left the label never applied, and the next tick then read
-    // the label's absence as a human resuming the issue — undoing the pause and immediately retrying the same
-    // broken candidate. A transiently-failed label add is retried right here (once) for the same reason.
-    try { await tracker.addLabels(issue, [config.resilience.pausedLabel]) } catch {
-      try { await tracker.addLabels(issue, [config.resilience.pausedLabel]) } catch (error) { notes.push(`pause label for ${issue} failed twice: ${message(error)}`) }
+    // timed out first. Independent try/catches, so one failing never skips the other: observed live (2026-09-22,
+    // AGE-1742 and AGE-1752) a Linear comment timing out under load left the label never applied, and the next
+    // tick then read the label's absence as a human resuming the issue — undoing the pause and immediately
+    // retrying the same broken candidate. A transiently-failed label add is retried once for the same reason
+    // (and `markPauseLabelApplied`, below, closes the residual race where even the retry fails — see its own
+    // doc comment). Run concurrently, not label-then-comment: both calls are already independent and unawaited by
+    // each other's outcome, so serializing them only adds latency inside a time-budgeted tick for no added safety.
+    const applyPauseLabel = async (): Promise<void> => {
+      try { await tracker.addLabels(issue, [config.resilience.pausedLabel]); markPauseLabelApplied(loaded.stateDir, issue) } catch {
+        try { await tracker.addLabels(issue, [config.resilience.pausedLabel]); markPauseLabelApplied(loaded.stateDir, issue) } catch (error) { notes.push(`pause label for ${issue} failed twice: ${message(error)}`) }
+      }
     }
-    try { await tracker.comment({ issue, body, dedupeKey: `paused:${issue}:${failureState.consecutive}` }) } catch (error) { notes.push(`pause comment for ${issue} failed: ${message(error)}`) }
+    const postPauseComment = async (): Promise<void> => {
+      try { await tracker.comment({ issue, body, dedupeKey: `paused:${issue}:${failureState.consecutive}` }) } catch (error) { notes.push(`pause comment for ${issue} failed: ${message(error)}`) }
+    }
+    await Promise.all([applyPauseLabel(), postPauseComment()])
     appendLoopEvent(loaded.stateDir, { at: now().toISOString(), type: 'issue.paused', issue, kind, consecutive: failureState.consecutive, reason }, bus)
     await bus.runHook('onPause', { issue, kind, consecutive: failureState.consecutive, reason })
   }
@@ -427,7 +435,18 @@ export const runTick = async (input: TickInput): Promise<TickReport> => {
     const failureState = readIssueFailures(loaded.stateDir, candidate.identifier)
     if (failureState.pausedAt !== null) {
       if (candidate.labels.includes(config.resilience.pausedLabel)) { results.push({ issue: candidate.identifier, outcome: 'skipped', reason: `paused after ${failureState.consecutive} consecutive failures; remove the "${config.resilience.pausedLabel}" label or run "ak-harness loop resume ${candidate.identifier}" to retry` }); continue }
-      // The pause label was removed on Linear since we last checked — treat that as the human's resume signal.
+      if (!failureState.pauseLabelApplied) {
+        // The pause label write never confirmed landing (see IssueFailureState.pauseLabelApplied) — a tracker
+        // outage that failed both attempts in recordFailureAndMaybePause looks identical, from here, to a human
+        // removing the label. Its absence proves nothing yet, so retry the write instead of treating it as a
+        // resume signal — the same race label-before-comment ordering exists to close, just for the case where
+        // every label attempt failed instead of only the comment.
+        if (!dryRun) { try { await tracker.addLabels(candidate.identifier, [config.resilience.pausedLabel]); markPauseLabelApplied(loaded.stateDir, candidate.identifier) } catch { /* still paused; try again next tick */ } }
+        results.push({ issue: candidate.identifier, outcome: 'skipped', reason: `paused after ${failureState.consecutive} consecutive failures; the "${config.resilience.pausedLabel}" label failed to apply earlier and was retried — remove it or run "ak-harness loop resume ${candidate.identifier}" to retry the issue` })
+        continue
+      }
+      // The pause label was removed on Linear since we last checked, and we know it was applied at least once —
+      // treat that as the human's resume signal.
       if (!dryRun) clearIssueFailures(loaded.stateDir, candidate.identifier)
       notes.push(`${candidate.identifier}: resumed (the "${config.resilience.pausedLabel}" label was removed)`)
     }
