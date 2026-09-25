@@ -968,8 +968,19 @@ export const LoopConfigSchema = z.object({
      * work and an Orca-launched agent runs the harness (needs a provider that runs non-interactively).
      */
     runner: z.enum(['precheck', 'agent']).default('precheck'),
-    /** Time budget for one stage when `runner: precheck`. Orca caps prechecks at 600 s; the stage itself must fit. */
-    stageTimeoutSec: z.number().int().positive().max(600).default(600),
+    /**
+     * Time budget for one stage when `runner: precheck`. Orca caps prechecks at 600s — enforced by Orca itself
+     * (`orca automations edit --precheck-timeout` rejects anything above 600, confirmed live 2026-09-22) — so a
+     * value here above 600 is simply unreachable for a stage actually wired to an Orca precheck automation.
+     *
+     * Not capped here, though: `ak-harness loop stage <name>` reads this value whenever it runs, including
+     * outside Orca entirely (e.g. a plain OS scheduler invoking it directly, sidestepping the precheck ceiling
+     * altogether — see docs/LOOP.md's tick-scheduling section). `tick`'s own contract-generation gate needs
+     * roughly contract.timeoutMs + setup timeout + 120s of budget just to attempt one candidate, which exceeds
+     * 600s on its own, so a caller with a longer real leash (like a scheduled task) needs to set this higher
+     * than an Orca precheck ever could.
+     */
+    stageTimeoutSec: z.number().int().positive().default(600),
     timezone: nonEmpty.optional(),
   }).prefault({}),
 })
