@@ -2,7 +2,7 @@ import { mkdirSync, mkdtempSync, readFileSync, rmSync, utimesSync, writeFileSync
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
-import { runLoopDoctor } from '../src/index.js'
+import { loadLoopConfig, runLoopDoctor } from '../src/index.js'
 import type { CommandResult, CommandRunner } from '../src/index.js'
 
 const fixture = (name: string): unknown => JSON.parse(readFileSync(join(process.cwd(), 'test/fixtures/loop', `${name}.json`), 'utf8')) as unknown
@@ -236,20 +236,10 @@ describe('review.cli and memory checks', () => {
 describe('the local runner', () => {
   const localYaml = `${exampleYaml}\nconnectors:\n  runner: local\n`
 
-  it('fails on Windows, and names what is missing anywhere else', async () => {
-    const dir = configDir(localYaml)
-    const shared = { runner: fakeRunner(), now: () => new Date('2026-09-11T12:00:00.000Z'), probe: false, configPath: join(dir, 'loop.config.yaml') }
-
-    // tmux and the system crontab do not exist on Windows, and the alternative is worth naming in the check
-    // rather than in a stack trace halfway through a dispatch.
-    const windows = await runLoopDoctor({ ...shared, env: { PATH: fakeBinDir(['claude', 'codex', 'git', 'tmux', 'crontab']) }, platform: 'win32' })
-    expect(windows.checks.find((check) => check.id === 'runner.local')).toMatchObject({ status: 'failed', detail: expect.stringContaining('Windows') })
-
-    const missing = await runLoopDoctor({ ...shared, env: { PATH: fakeBinDir(['claude', 'codex', 'git']) }, platform: 'darwin' })
-    expect(missing.checks.find((check) => check.id === 'runner.local')).toMatchObject({ status: 'failed', detail: expect.stringContaining('tmux') })
-
-    const ready = await runLoopDoctor({ ...shared, env: { PATH: fakeBinDir(['claude', 'codex', 'grok', 'opencode', 'git', 'tmux', 'crontab']) }, platform: 'darwin' })
-    expect(ready.checks.find((check) => check.id === 'runner.local')).toMatchObject({ status: 'passed' })
+  it('never reaches doctor: the config is rejected at load, loudly', async () => {
+    // doctor used to probe git/tmux/crontab here and report `runner.local: passed` for a runner nothing in
+    // dispatch calls — a green check on a configuration that silently ran Orca instead.
+    expect(() => configDir(localYaml) && loadLoopConfig(join(configDir(localYaml), 'loop.config.yaml'))).toThrow(/not wired into dispatch yet/)
   })
 
   it('says nothing at all when the project uses the Orca runner', async () => {

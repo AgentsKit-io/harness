@@ -1,6 +1,6 @@
 import { compareVersions, orcaAccountList, orcaAgentHooks, orcaAutomationsList, orcaDiagnosticsMemory, orcaStatus, orcaVersion, orcaWorktrees, type OrcaStatus, type OrcaWorktree } from '../adapters/orca-cli.js'
 import { detectProviders, remainingUsagePercent, undeclaredOrcaProviders, type ProviderAvailability, type ProviderSpec } from '../adapters/providers.js'
-import { fetchLinearQueue, type LoopIssue } from '../adapters/linear-orca.js'
+import type { LoopIssue } from '../adapters/linear-orca.js'
 import { findExecutable, type CommandRunner } from '../adapters/command.js'
 import { inspectDocBridgeIndex } from '../adapters/doc-bridge.js'
 import { existsSync, readFileSync } from 'node:fs'
@@ -20,6 +20,7 @@ import { queueOwner } from './rotation.js'
 import { createLoopEventBus, loadLoopPlugins } from './event-bus.js'
 import { createMcpToolBridge } from '../adapters/mcp.js'
 import { createPolicyGate } from '../kernel/policy.js'
+import { resolveConnectors } from './connectors.js'
 
 export type DoctorCheckStatus = 'passed' | 'warning' | 'failed'
 export interface DoctorCheck { readonly id: string; readonly status: DoctorCheckStatus; readonly detail: string }
@@ -140,13 +141,18 @@ export const runLoopDoctor = async (input: LoopDoctorInput): Promise<LoopDoctorR
   let queue: readonly LoopIssue[] = []
   let queueError: string | null = null
   try {
-    queue = await fetchLinearQueue(input.runner, { bin: config.orca.bin, workspaceId: config.linear.workspaceId, teamKey: config.linear.teamKey, assignee: person, filter: config.linear, orca: orcaOptions })
+    const tracker = resolveConnectors({ runner: input.runner, config }).tracker
+    if (tracker.preflight) {
+      const access = await tracker.preflight()
+      push('tracker.access', 'passed', `${tracker.id} write access for ${access.login} (${access.permission})`)
+    }
+    queue = await tracker.queue({ assignee: person })
     // Say WHICH queue was read. Under `unassigned` ownership the old wording ("for <person>") described
     // the opposite of what was listed, and a diagnostic that misnames its own subject is how the empty
     // queue went unnoticed in the first place.
     const whose = config.linear.queueOwnership === 'unassigned' ? 'unassigned' : `assigned to ${person}`
-    push('linear.queue', 'passed', `${queue.length} dispatchable issue(s) ${whose} in ${config.linear.states.join('/')}`)
-  } catch (error) { queueError = message(error); push('linear.queue', 'failed', queueError) }
+    push(`${tracker.id}.queue`, 'passed', `${queue.length} dispatchable issue(s) ${whose} in ${config.linear.states.join('/')}`)
+  } catch (error) { queueError = message(error); push(`${config.connectors.tracker}.queue`, 'failed', queueError) }
 
   const docBridge = inspectDocBridgeIndex(loaded.root)
   if (!docBridge.present) {
@@ -205,16 +211,8 @@ export const runLoopDoctor = async (input: LoopDoctorInput): Promise<LoopDoctorR
     }
   }
 
-  // The local runner is git + tmux + the system crontab. On Windows there is no tmux and no crontab, and the
-  // failure would otherwise arrive as a raw ENOENT from the middle of a dispatch — after the worktree exists.
-  if (config.connectors.runner === 'local') {
-    const platform = input.platform ?? process.platform
-    const env = input.env ?? process.env
-    const missing = ['git', config.connectors.local.tmuxBin, 'crontab'].filter((bin) => !findExecutable(bin, env, platform))
-    if (platform === 'win32') push('runner.local', 'failed', 'connectors.runner is "local", which needs tmux and the system crontab; neither exists on Windows — use the Orca runner, or run the loop under WSL')
-    else if (missing.length) push('runner.local', 'failed', `connectors.runner is "local" but ${missing.join(', ')} ${missing.length === 1 ? 'is' : 'are'} not on PATH`)
-    else push('runner.local', 'passed', `git, ${config.connectors.local.tmuxBin} and crontab present · worktrees under ${config.connectors.local.worktreeRoot}`)
-  }
+  // No `runner.local` probe: `connectors.runner: "local"` is rejected at config load (see config.ts), so a config
+  // reaching doctor is always the Orca runner. Probing for tmux and crontab here only implied otherwise.
 
   const reviewCli = config.delivery.review.cli
   const reviewBin = findExecutable(reviewCli, input.env ?? process.env, input.platform ?? process.platform)

@@ -130,6 +130,136 @@ export const githubOpenPullRequests = async (runner: CommandRunner, input: { rea
   return (Array.isArray(list) ? list : []).map(parsePullRequest)
 }
 
+export interface GitHubIssueSnapshot {
+  readonly number: number
+  readonly identifier: string
+  readonly url: string
+  readonly title: string
+  readonly state: 'OPEN' | 'CLOSED'
+  readonly labels: readonly string[]
+  readonly assignees: readonly string[]
+  readonly createdAt: string
+  readonly updatedAt: string
+}
+
+export const ISSUE_FIELDS = ['number', 'url', 'title', 'state', 'labels', 'assignees', 'createdAt', 'updatedAt'] as const
+export const ISSUE_DETAIL_FIELDS = [...ISSUE_FIELDS, 'body', 'comments'] as const
+
+export const parseGitHubIssue = (value: unknown, repo: string): GitHubIssueSnapshot => {
+  if (!isRecord(value) || !Number.isInteger(value['number']) || (value['number'] as number) < 1) fail('GitHub issue payload must contain a positive numeric number.', 'INVALID_INPUT')
+  const record = value as Record<string, unknown>
+  const url = str(record['url'])
+  const title = str(record['title'])
+  const state = str(record['state']).toUpperCase()
+  const createdAt = str(record['createdAt'])
+  const updatedAt = str(record['updatedAt'])
+  if (!url || !title || (state !== 'OPEN' && state !== 'CLOSED') || !createdAt || !updatedAt) fail(`GitHub issue #${record['number']} payload is incomplete.`, 'INVALID_INPUT')
+  const labels = Array.isArray(record['labels']) ? record['labels'].map((label) => isRecord(label) ? str(label['name']) : str(label)).filter(Boolean) : []
+  const assignees = Array.isArray(record['assignees']) ? record['assignees'].map((assignee) => isRecord(assignee) ? str(assignee['login']) : str(assignee)).filter(Boolean) : []
+  return { number: record['number'] as number, identifier: `${repo}#${record['number'] as number}`, url, title, state: state as 'OPEN' | 'CLOSED', labels, assignees, createdAt, updatedAt }
+}
+
+/** Open issues only; the caller may request one extra row to detect a bounded board truncation. */
+export const githubOpenIssues = async (runner: CommandRunner, input: { readonly repo: string; readonly limit: number }, options: GitHubCliOptions = {}): Promise<readonly GitHubIssueSnapshot[]> => {
+  const list = await ghJson(runner, ['issue', 'list', '--repo', input.repo, '--state', 'open', '--limit', String(input.limit), '--search', 'sort:updated-desc', '--json', ISSUE_FIELDS.join(',')], options)
+  return (Array.isArray(list) ? list : []).map((issue) => parseGitHubIssue(issue, input.repo)).sort((left, right) => right.updatedAt.localeCompare(left.updatedAt))
+}
+
+export interface GitHubIssueComment {
+  readonly author: string | null
+  readonly body: string
+  readonly createdAt: string
+}
+
+export interface GitHubIssueDetail extends GitHubIssueSnapshot {
+  readonly description: string
+  readonly comments: readonly GitHubIssueComment[]
+  readonly raw: unknown
+}
+
+const issueComments = (value: unknown): readonly GitHubIssueComment[] => Array.isArray(value) ? value.filter(isRecord).map((item) => {
+  const author = isRecord(item['author']) ? str(item['author']['login']) : str(item['user'])
+  return { author: author || null, body: str(item['body']), createdAt: str(item['createdAt']) }
+}).filter((comment) => comment.body || comment.createdAt) : []
+
+const issueNumber = (identifier: string): number => {
+  const match = identifier.match(/(?:#|\/issues\/)(\d+)$/) ?? identifier.match(/^(\d+)$/)
+  const number = match ? Number(match[1]) : Number.NaN
+  if (!Number.isInteger(number) || number < 1) fail(`Invalid GitHub issue identifier "${identifier}".`, 'INVALID_INPUT')
+  return number
+}
+
+export const githubIssueNumber = issueNumber
+
+export const parseGitHubIssueDetail = (value: unknown, repo: string): GitHubIssueDetail => {
+  const issue = parseGitHubIssue(value, repo)
+  const record = isRecord(value) ? value : {}
+  return { ...issue, description: str(record['body']), comments: issueComments(record['comments']), raw: value }
+}
+
+export const githubIssue = async (runner: CommandRunner, input: { readonly repo: string; readonly identifier: string }, options: GitHubCliOptions = {}): Promise<GitHubIssueDetail> =>
+  parseGitHubIssueDetail(await ghJson(runner, ['issue', 'view', String(issueNumber(input.identifier)), '--repo', input.repo, '--json', ISSUE_DETAIL_FIELDS.join(',')], options), input.repo)
+
+const ghRun = async (runner: CommandRunner, argv: readonly string[], options: GitHubCliOptions, timeoutMs = 30_000): Promise<string> => {
+  const outcome = await runner.run([options.bin ?? 'gh', ...argv], { timeoutMs, ...(options.cwd ? { cwd: options.cwd } : {}) })
+  if (outcome.timedOut) return fail(`${argv.slice(0, 2).join(' ')} timed out.`, 'HARNESS_ERROR')
+  if (outcome.code !== 0) return fail(`${argv.slice(0, 2).join(' ')} exited ${outcome.code ?? 'null'}: ${outcome.stderr.trim().slice(0, 300)}`, 'HARNESS_ERROR')
+  return outcome.stdout.trim()
+}
+
+export const githubIssueEditArgv = (input: { readonly identifier: string; readonly repo: string; readonly addLabels?: readonly string[]; readonly removeLabels?: readonly string[]; readonly addAssignees?: readonly string[]; readonly removeAssignees?: readonly string[] }, bin = 'gh'): readonly string[] => [bin, 'issue', 'edit', String(issueNumber(input.identifier)), '--repo', input.repo, ...(input.addLabels ?? []).flatMap((label) => ['--add-label', label]), ...(input.removeLabels ?? []).flatMap((label) => ['--remove-label', label]), ...(input.addAssignees ?? []).flatMap((assignee) => ['--add-assignee', assignee]), ...(input.removeAssignees ?? []).flatMap((assignee) => ['--remove-assignee', assignee])]
+
+export const githubIssueEdit = async (runner: CommandRunner, input: Parameters<typeof githubIssueEditArgv>[0], options: GitHubCliOptions = {}): Promise<void> => {
+  const args = githubIssueEditArgv(input, options.bin)
+  if (args.length <= 6) return
+  await ghRun(runner, args.slice(1), options)
+}
+
+export const githubIssueCommentArgv = (input: { readonly repo: string; readonly identifier: string; readonly body: string }, bin = 'gh'): readonly string[] => [bin, 'issue', 'comment', String(issueNumber(input.identifier)), '--repo', input.repo, '--body', input.body]
+
+export const githubIssueComment = async (runner: CommandRunner, input: Parameters<typeof githubIssueCommentArgv>[0], options: GitHubCliOptions = {}): Promise<void> => { await ghRun(runner, githubIssueCommentArgv(input, options.bin).slice(1), options) }
+
+export const githubIssueCommentExists = async (runner: CommandRunner, input: { readonly repo: string; readonly identifier: string; readonly marker: string }, options: GitHubCliOptions = {}): Promise<boolean> => {
+  const list = await ghJson(runner, ['api', '--paginate', `repos/${input.repo}/issues/${issueNumber(input.identifier)}/comments`, '--jq', '[.[].body]'], options)
+  return Array.isArray(list) && list.some((body) => typeof body === 'string' && body.includes(input.marker))
+}
+
+export const githubIssueClose = async (runner: CommandRunner, input: { readonly repo: string; readonly identifier: string }, options: GitHubCliOptions = {}): Promise<void> => { await ghRun(runner, ['issue', 'close', String(issueNumber(input.identifier)), '--repo', input.repo], options) }
+export const githubIssueReopen = async (runner: CommandRunner, input: { readonly repo: string; readonly identifier: string }, options: GitHubCliOptions = {}): Promise<void> => { await ghRun(runner, ['issue', 'reopen', String(issueNumber(input.identifier)), '--repo', input.repo], options) }
+
+export const githubIssueCreate = async (runner: CommandRunner, input: { readonly repo: string; readonly title: string; readonly body: string; readonly labels?: readonly string[]; readonly assignee?: string | null; readonly dedupeKey?: string }, options: GitHubCliOptions = {}): Promise<{ readonly identifier: string | null; readonly url: string | null }> => {
+  if (input.dedupeKey) {
+    const existing = await ghJson(runner, ['issue', 'list', '--repo', input.repo, '--state', 'all', '--limit', '20', '--search', input.dedupeKey, '--json', 'number,url'], options)
+    const first = Array.isArray(existing) && isRecord(existing[0]) ? existing[0] : null
+    if (first && typeof first['number'] === 'number') return { identifier: `${input.repo}#${first['number']}`, url: str(first['url']) || null }
+  }
+  const output = await ghRun(runner, ['issue', 'create', '--repo', input.repo, '--title', input.title, '--body', input.body, ...(input.labels ?? []).flatMap((label) => ['--label', label]), ...(input.assignee ? ['--assignee', input.assignee] : [])], options)
+  const url = output.match(/https?:\/\/[^\s]+/)?.[0] ?? null
+  const number = url ? url.match(/\/issues\/(\d+)(?:$|\s)/)?.[1] : null
+  return { identifier: number ? `${input.repo}#${number}` : null, url }
+}
+
+export const githubCurrentUser = async (runner: CommandRunner, options: GitHubCliOptions = {}): Promise<string> => {
+  const value = await ghJson(runner, ['api', 'user'], options)
+  const login = isRecord(value) ? str(value['login']) : ''
+  return login || fail('GitHub did not return the authenticated user login.', 'HARNESS_ERROR')
+}
+
+export const githubPreflight = async (runner: CommandRunner, input: { readonly repo: string; readonly labels?: readonly string[] }, options: GitHubCliOptions = {}): Promise<{ readonly login: string; readonly permission: string }> => {
+  await ghRun(runner, ['auth', 'status'], options)
+  const value = await ghJson(runner, ['repo', 'view', input.repo, '--json', 'nameWithOwner,viewerPermission'], options)
+  const record = isRecord(value) ? value : {}
+  const permission = str(record['viewerPermission']).toUpperCase()
+  if (!['ADMIN', 'MAINTAIN', 'WRITE'].includes(permission)) fail(`GitHub user has "${permission || 'unknown'}" permission for ${input.repo}; write access is required.`, 'POLICY_BLOCKED')
+  if (input.labels?.length) {
+    const listed = await ghJson(runner, ['label', 'list', '--repo', input.repo, '--limit', '1000', '--json', 'name'], options)
+    const available = new Set(Array.isArray(listed) ? listed.filter(isRecord).map((label) => str(label['name'])).filter(Boolean) : [])
+    const missing = input.labels.filter((label) => !available.has(label))
+    if (missing.length) fail(`GitHub lifecycle labels are missing in ${input.repo}: ${missing.join(', ')}.`, 'INVALID_CONFIG')
+  }
+  return { login: await githubCurrentUser(runner, options), permission }
+}
+
 export interface DiffStat { readonly files: readonly string[]; readonly changedLines: number }
 
 /** Files and changed-line count between two commits — used to size a fix-round review off what actually changed

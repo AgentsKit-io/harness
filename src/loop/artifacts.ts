@@ -1,6 +1,7 @@
-import { existsSync, readFileSync } from 'node:fs'
-import { join } from 'node:path'
+import { appendFileSync, existsSync, mkdirSync, readFileSync } from 'node:fs'
+import { dirname, isAbsolute, join } from 'node:path'
 import { z } from 'zod'
+import type { CommandRunner } from '../adapters/command.js'
 import type { LoopConfig } from './config.js'
 
 /**
@@ -89,6 +90,24 @@ export const verifyProofs = (verify: VerifyArtifact | null): readonly { readonly
   verify ? verify.outcomes.map((outcome) => ({ id: outcome.id, status: outcome.status, evidence: outcome.evidence || `${verify.command || 'verify'} → ${outcome.status}` })) : []
 
 /** The block in the worker's brief that names the three files and what each one is for. */
+/**
+ * Keep the phase artifacts out of every commit a worker makes: add `.ak-loop/` to the repository's shared
+ * `info/exclude` (one file for all worktrees, never versioned). Observed: a worker's `git add -A` put the harness's
+ * own evidence files into a product PR. Best effort — a failure here is reported, not fatal; the brief says it too.
+ */
+export const excludeArtifactsFromGit = async (runner: CommandRunner, worktreePath: string): Promise<boolean> => {
+  const outcome = await runner.run(['git', 'rev-parse', '--git-common-dir'], { cwd: worktreePath, timeoutMs: 10_000 })
+  const common = outcome.code === 0 ? outcome.stdout.trim() : ''
+  if (!common) return false
+  const exclude = join(isAbsolute(common) ? common : join(worktreePath, common), 'info', 'exclude')
+  const line = `/${ARTIFACT_DIR}/`
+  const current = existsSync(exclude) ? readFileSync(exclude, 'utf8') : ''
+  if (current.split(/\r?\n/).includes(line)) return true
+  mkdirSync(dirname(exclude), { recursive: true })
+  appendFileSync(exclude, `${current && !current.endsWith('\n') ? '\n' : ''}${line}\n`)
+  return true
+}
+
 export const renderArtifactsForBrief = (config: LoopConfig): string => `
 ## What to leave behind (\`${ARTIFACT_DIR}/\` at the root of this worktree)
 The loop advances on files it can check, not on what a terminal said. Write all three before you open the PR:
@@ -98,4 +117,6 @@ The loop advances on files it can check, not on what a terminal said. Write all 
 - \`${config.dod.evidenceFile}\` — the Definition of Done proofs, in the shape described above.
 
 A file that is missing blocks the merge and comes back to you as a fix round naming it. A file that exists but does not match its schema is worse than a missing one, because it looks like evidence.
+
+\`${ARTIFACT_DIR}/\` is evidence for the loop, read from this worktree — **never commit it**. It is excluded from git here; do not force-add it.
 `

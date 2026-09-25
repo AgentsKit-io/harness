@@ -54,6 +54,11 @@ describe('filterAndOrderQueue', () => {
     expect(result[0]?.id).toBe('a')
   })
 
+  it('never queues work marked as outside the loop, whatever its state', () => {
+    expect(filterAndOrderQueue([issue({ labels: ['outside-loop'] })], filter({ outsideLabel: 'outside-loop' }))).toEqual([])
+    expect(filterAndOrderQueue([issue({ labels: ['outside-loop'] })], filter())).toHaveLength(1)
+  })
+
   it('excludes issues carrying an excluded label', () => {
     expect(filterAndOrderQueue([issue({ labels: ['blocked'] })], filter({ excludeLabels: ['blocked'] }))).toEqual([])
   })

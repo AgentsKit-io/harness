@@ -2,8 +2,8 @@ import { existsSync, mkdirSync, readFileSync, readdirSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { z } from 'zod'
 import type { CommandRunner } from '../adapters/command.js'
-import { linearSaveIssue } from '../adapters/linear-orca.js'
 import { fail } from '../kernel/errors.js'
+import { extractOutputBlock } from './output-block.js'
 import { hashJson } from '../kernel/hash.js'
 import { providerIdentity, renderHeadlessArgv, type LoadedLoopConfig, type LoopConfig } from './config.js'
 import { classifyProviderFailure, untrusted, type ProviderFailure } from './contract.js'
@@ -12,6 +12,8 @@ import { designExcerptFor } from './documents.js'
 import { renderLayersForPrompt } from './layers.js'
 import { tallyVotes, type CastVote } from './plan-vote.js'
 import type { RankedModel } from './routing.js'
+import { readJsonFile } from '../kernel/json-file.js'
+import { requireWritableTracker, resolveConnectors } from './connectors.js'
 
 export const PRD_OPEN = '<<<LOOP_PRD'
 export const PRD_CLOSE = 'LOOP_PRD>>>'
@@ -62,8 +64,32 @@ export const PlannedIssueSchema = z.object({
   acceptance: z.array(nonEmpty).min(1),
   /** Which part of the design this issue implements. A ticket that points at nothing invents its own architecture. */
   designRef: nonEmpty,
+  /**
+   * Where the work happens when it is not a pull request to this repository (another repository, a deploy, an
+   * external service); empty when it is. Such an issue is filed outside the queue's reach (`linear.outsideLabel`).
+   */
+  outside: z.string().trim().default(''),
 })
 export type PlannedIssue = z.infer<typeof PlannedIssueSchema>
+
+/**
+ * A list the interviewer reports while the PRD is still being filled. Two shapes a model produces for "one item"
+ * or "nothing yet" are read for what they mean instead of failing the round: a bare string is a one-item list, and
+ * an empty list (or blank string) is a gap, which `prdGaps` — not the parser — decides about. Observed with
+ * `glm-5.3`, which answered `"users": "..."` and `"successCriteria": []` and lost the whole round to the schema.
+ */
+const interviewList = z.preprocess((value) => {
+  if (typeof value === 'string') return value.trim() ? [value] : undefined
+  if (Array.isArray(value)) { const items = value.filter((item) => !(typeof item === 'string' && !item.trim())); return items.length ? items : undefined }
+  return value
+}, z.array(nonEmpty).min(1).optional())
+
+/** The PRD as the interview reports it: every field optional, lists tolerant of the shapes above. */
+const InterviewPrdSchema = z.object({
+  objective: z.preprocess((value) => typeof value === 'string' && !value.trim() ? undefined : value, nonEmpty.optional()),
+  users: interviewList, inScope: interviewList, outOfScope: interviewList, nonGoals: interviewList,
+  constraints: interviewList, successCriteria: interviewList, risks: interviewList,
+})
 
 export const QuestionSchema = z.object({
   /** Empty when the interviewer has no gap left to close. */
@@ -72,7 +98,7 @@ export const QuestionSchema = z.object({
   options: z.array(nonEmpty).default([]),
   recommendation: z.string().trim().default(''),
   complete: z.boolean().default(false),
-  prd: PrdSchema.partial().default({}),
+  prd: InterviewPrdSchema.default({}),
 })
 export type InterviewQuestion = z.infer<typeof QuestionSchema>
 
@@ -93,6 +119,8 @@ export interface PlanStageState {
   readonly designCycles: number
   readonly issues: readonly (PlannedIssue & { readonly identifier?: string; readonly url?: string })[]
   readonly approvals: { readonly plan: string | null; readonly design: string | null }
+  /** Objections a human chose to carry past the design gate; decompose must resolve each one inside an issue. */
+  readonly acceptedObjections?: readonly string[]
   readonly createdAt: string
   readonly updatedAt: string
 }
@@ -105,7 +133,7 @@ export const planStatePath = (stateDir: string, id: string): string => join(plan
 export const readPlanState = (stateDir: string, id: string): PlanStageState | null => {
   const path = planStatePath(stateDir, id)
   if (!existsSync(path)) return null
-  try { return JSON.parse(readFileSync(path, 'utf8')) as PlanStageState } catch { return null }
+  return readJsonFile(path, z.object({ id: z.string().min(1), phase: z.string().min(1) }).loose()) as PlanStageState | null
 }
 
 export const writePlanState = (stateDir: string, state: PlanStageState): void => {
@@ -135,12 +163,8 @@ export const prdGaps = (prd: Partial<Prd>): readonly string[] => REQUIRED_PRD_FI
   return Array.isArray(value) ? value.length === 0 : !value
 })
 
-const between = (text: string, open: string, close: string, label: string): string => {
-  const start = text.lastIndexOf(open)
-  const end = text.lastIndexOf(close)
-  if (start < 0 || end < 0 || end <= start) return fail(`Output contains no ${label} block.`, 'INVALID_INPUT')
-  return text.slice(start + open.length, end).trim().replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '')
-}
+const between = (text: string, open: string, close: string, label: string): string =>
+  extractOutputBlock(text, open, close) ?? fail(`Output contains no ${label} block.`, 'INVALID_INPUT')
 
 const parseBlock = <T>(stdout: string, open: string, close: string, label: string, schema: z.ZodType<T>): T => {
   let parsed: unknown
@@ -208,9 +232,11 @@ ${JSON.stringify(state.prd, null, 2)}
 
 Approved design:
 ${JSON.stringify(state.design, null, 2)}
-${renderLayersForPrompt(config)}
+${state.acceptedObjections?.length ? `\nObjections the human carried past the design gate — each one must be settled as an explicit decision inside the issue it affects (in its description), never left for the worker to guess:\n${state.acceptedObjections.map((objection) => `- ${objection}`).join('\n')}\n` : ''}${renderLayersForPrompt(config)}
 Answer as JSON between the exact markers ${ISSUES_OPEN} and ${ISSUES_CLOSE}: an array of issues, each one
-{ "title": "…", "description": "what to do and why, referencing the design", "layer": "<one of: ${config.layers.length ? config.layers.map((layer) => layer.label).join(', ') : config.linear.anyLabels.join(', ') || 'no layers configured'}>", "priority": "urgent|high|medium|low", "acceptance": ["verifiable criterion a machine can check"], "designRef": "the module, contract or decision id this issue implements" }
+{ "title": "…", "description": "what to do and why, referencing the design", "layer": "${layerChoices(config).length ? `<one of: ${layerChoices(config).join(', ')}>` : ''}", "priority": "urgent|high|medium|low", "acceptance": ["verifiable criterion a machine can check"], "designRef": "the module, contract or decision id this issue implements", "outside": "" }
+
+Every issue is delivered by an agent opening a pull request to ${config.project.repo} — nothing else. Work that cannot be done that way (a change in another repository, a deploy, a setting in an external service) still gets an issue, with "outside" naming where it happens (e.g. "repository owner/other", "production deploy"); leave "outside" empty for everything that is a pull request here. Never split one PR here into an "outside" issue to avoid it.
 
 Rules: every issue points at a part of the design — a ticket that points at nothing invents its own architecture. Every acceptance criterion must be checkable without a human's judgement. Order matters: follow the design's sequence. Split anything that cannot be delivered in one pull request.`
 
@@ -220,7 +246,7 @@ const callHeadless = async (input: { readonly runner: CommandRunner; readonly co
   const { settings } = providerIdentity(input.config, input.candidate.provider)
   const argv = renderHeadlessArgv(settings, input.candidate.model, input.prompt, input.candidate.effort)
   if (!argv) return { failure: { provider: input.candidate.provider, model: input.candidate.model, kind: 'other', detail: `no headless argv template (models.providers.${input.candidate.provider}.headless)` } }
-  const outcome = await input.runner.run(argv, { timeoutMs: input.timeoutMs, cwd: input.root })
+  const outcome = await input.runner.run(argv, { timeoutMs: input.timeoutMs, cwd: input.root, promptOnStdin: true })
   const detail = `${outcome.stderr.trim()}\n${outcome.stdout.trim()}`.trim().slice(0, 600)
   if (outcome.timedOut || outcome.code !== 0) return { failure: { provider: input.candidate.provider, model: input.candidate.model, kind: classifyProviderFailure(detail, outcome.timedOut), detail: outcome.timedOut ? `timed out after ${input.timeoutMs}ms` : `exited ${outcome.code ?? 'null'}: ${detail || 'no output'}` } }
   return { stdout: outcome.stdout }
@@ -239,6 +265,8 @@ const firstUsable = async <T>(input: { readonly runner: CommandRunner; readonly 
 export interface PlanStageDeps {
   readonly loaded: LoadedLoopConfig
   readonly runner: CommandRunner
+  /** Where the model reads the repository — the base view (`ensureBaseView`). Defaults to `project.root`. */
+  readonly readRoot?: string
   readonly candidates: readonly RankedModel[]
   readonly voters?: readonly RankedModel[]
   readonly now?: () => Date
@@ -252,8 +280,9 @@ export interface PlanStageDeps {
  */
 export const interviewRound = async (deps: PlanStageDeps, state: PlanStageState): Promise<PlanStageState> => {
   const now = (deps.now ?? (() => new Date()))()
-  const { value } = await firstUsable({ runner: deps.runner, config: deps.loaded.config, root: deps.loaded.root, timeoutMs: deps.loaded.config.worker.plan.timeoutMs, candidates: deps.candidates, prompt: renderInterviewPrompt(state, deps.loaded.config), parse: parseQuestionOutput, label: 'Interview' })
-  const prd = { ...state.prd, ...value.prd }
+  const { value } = await firstUsable({ runner: deps.runner, config: deps.loaded.config, root: deps.readRoot ?? deps.loaded.root, timeoutMs: deps.loaded.config.worker.plan.stageTimeoutMs, candidates: deps.candidates, prompt: renderInterviewPrompt(state, deps.loaded.config), parse: parseQuestionOutput, label: 'Interview' })
+  // An absent field in this round keeps what earlier rounds established; the parser turns "nothing yet" into absent.
+  const prd = { ...state.prd, ...Object.fromEntries(Object.entries(value.prd).filter(([, field]) => field !== undefined)) }
   const gaps = prdGaps(prd)
   const done = value.complete && gaps.length === 0 && !value.question
   return { ...state, prd, pending: done ? null : value, phase: done ? 'review' : 'interview', updatedAt: now.toISOString() }
@@ -288,13 +317,13 @@ export const architectRound = async (deps: PlanStageDeps, state: PlanStageState)
   let design: Design | null = null
   let votes: readonly CastVote[] = []
   for (let cycle = 1; cycle <= config.worker.plan.maxCycles; cycle += 1) {
-    const proposal = await firstUsable({ runner: deps.runner, config, root: deps.loaded.root, timeoutMs: config.worker.plan.timeoutMs, candidates: deps.candidates, prompt: renderArchitectPrompt(state, config, objections), parse: parseDesignOutput, label: 'Design' })
+    const proposal = await firstUsable({ runner: deps.runner, config, root: deps.readRoot ?? deps.loaded.root, timeoutMs: config.worker.plan.stageTimeoutMs, candidates: deps.candidates, prompt: renderArchitectPrompt(state, config, objections), parse: parseDesignOutput, label: 'Design' })
     design = proposal.value
     const cast: CastVote[] = []
     for (let index = 0; index < config.worker.plan.votes; index += 1) {
       const candidate = voters[index % Math.max(1, voters.length)]
       if (!candidate) break
-      const outcome = await callHeadless({ runner: deps.runner, config, root: deps.loaded.root, timeoutMs: config.worker.plan.timeoutMs, candidate, prompt: renderDesignVotePrompt(state, config, design) })
+      const outcome = await callHeadless({ runner: deps.runner, config, root: deps.readRoot ?? deps.loaded.root, timeoutMs: config.worker.plan.stageTimeoutMs, candidate, prompt: renderDesignVotePrompt(state, config, design) })
       if ('failure' in outcome) continue
       try {
         const parsed = JSON.parse(between(outcome.stdout, '<<<LOOP_VOTE', 'LOOP_VOTE>>>', 'vote')) as { vote?: unknown; objections?: unknown }
@@ -314,43 +343,86 @@ export const architectRound = async (deps: PlanStageDeps, state: PlanStageState)
 
 export const designApproved = (state: PlanStageState, config: LoopConfig): boolean => state.design !== null && tallyVotes(state.designVotes, config.worker.plan.approvals).approved
 
-export const approveDesign = (state: PlanStageState, actor: string, now: Date, config: LoopConfig): PlanStageState => {
+/** Objections raised in the latest design round, even by voters who approved — consensus does not make them go away. */
+export const openDesignObjections = (state: PlanStageState): readonly string[] => [...new Set(state.designVotes.flatMap((vote) => vote.objections))]
+
+/**
+ * The human design gate. Consensus is necessary, not sufficient: when any vote still carries an objection, the gate
+ * refuses unless the human accepts them explicitly — and then they travel into decompose, which must settle each one
+ * inside an issue. Observed: a 2-of-3 design was approved while two votes named the same missing decision (which
+ * package gets the moved code); it resurfaced as two blocking contract escalations on the first issue.
+ */
+export const approveDesign = (state: PlanStageState, actor: string, now: Date, config: LoopConfig, options: { readonly acceptObjections?: boolean } = {}): PlanStageState => {
   if (state.phase !== 'architect') return fail(`The plan is in phase "${state.phase}"; only a design can be approved here.`, 'INVALID_STATE')
   if (!designApproved(state, config)) return fail('The design has not reached consensus yet; run the architect round again or settle the objections.', 'INVALID_STATE')
-  return { ...state, phase: 'decompose', approvals: { ...state.approvals, design: `${actor}@${now.toISOString()}` }, updatedAt: now.toISOString() }
+  const objections = openDesignObjections(state)
+  if (objections.length && !options.acceptObjections) return fail(`The design reached consensus but ${objections.length} objection(s) are still open:\n- ${objections.join('\n- ')}\nRun the architect round again, or approve with --accept-objections to hand them to decompose as decisions each issue must settle.`, 'HUMAN_APPROVAL_REQUIRED')
+  return { ...state, phase: 'decompose', approvals: { ...state.approvals, design: `${actor}@${now.toISOString()}` }, ...(objections.length ? { acceptedObjections: objections } : {}), updatedAt: now.toISOString() }
 }
 
 /** Break the approved design into issues. Nothing is written to the tracker here — that is `createPlannedIssues`. */
 export const decomposeRound = async (deps: PlanStageDeps, state: PlanStageState): Promise<PlanStageState> => {
   if (state.phase !== 'decompose') return fail(`The plan is in phase "${state.phase}"; decomposition runs after the design is approved.`, 'INVALID_STATE')
   const now = (deps.now ?? (() => new Date()))()
-  const { value } = await firstUsable({ runner: deps.runner, config: deps.loaded.config, root: deps.loaded.root, timeoutMs: deps.loaded.config.worker.plan.timeoutMs, candidates: deps.candidates, prompt: renderDecomposePrompt(state, deps.loaded.config), parse: parseIssuesOutput, label: 'Decomposition' })
+  const { value } = await firstUsable({ runner: deps.runner, config: deps.loaded.config, root: deps.readRoot ?? deps.loaded.root, timeoutMs: deps.loaded.config.worker.plan.stageTimeoutMs, candidates: deps.candidates, prompt: renderDecomposePrompt(state, deps.loaded.config), parse: parseIssuesOutput, label: 'Decomposition' })
   return { ...state, issues: value.map((issue) => ({ ...issue })), updatedAt: now.toISOString() }
 }
 
 const priorityFor = (issue: PlannedIssue): string => issue.priority
 
+/** Where the planned issues land, beyond the team: the epic they break down, and the project the queue drains. */
+export interface PlannedIssueTarget {
+  readonly parent?: string
+  readonly project?: string
+}
+
 /**
- * Create the decomposed issues in the tracker, in the queue's **entry** state — never in a dispatchable one.
- * `Todo → Ready` stays a human gesture; that is the single gate into the queue.
+ * The labels an issue needs so that, once a human moves it into the queue, the queue actually sees it: every
+ * `requireLabels`, one of `anyLabels` (the first) when none is already there, and the issue's own layer.
  */
-export const createPlannedIssues = async (deps: PlanStageDeps, state: PlanStageState): Promise<PlanStageState> => {
+/** The labels a planned issue may carry as its layer: the configured layers, else the queue's `anyLabels`. */
+const layerChoices = (config: LoopConfig): readonly string[] => config.layers.length ? config.layers.map((layer) => layer.label) : config.linear.anyLabels
+
+export const plannedIssueLabels = (config: LoopConfig, layer?: string, outside?: string): readonly string[] => {
+  if (outside) return [config.linear.outsideLabel]
+  // Only a label the project declared becomes a label: a model asked to pick from an empty list writes the prompt's
+  // own wording back ("no layers configured"), and the tracker refuses the whole issue for it.
+  const known = layer && layerChoices(config).includes(layer) ? layer : undefined
+  const labels = [...config.linear.requireLabels, ...(known ? [known] : [])]
+  if (config.linear.anyLabels.length && !labels.some((label) => config.linear.anyLabels.includes(label))) labels.push(config.linear.anyLabels[0] as string)
+  return [...new Set(labels)]
+}
+
+/**
+ * Create the decomposed issues in the configured tracker, in the compatibility `entryState` — never in one of the
+ * dispatchable compatibility states, which ARE
+ * the queue. Moving them into the queue stays a human gesture; that is the single gate.
+ *
+ * They are created where the queue will look for them — the project it drains (when it drains exactly one, or
+ * the one given), carrying its labels — and under the epic they came from. An issue the planner creates and the
+ * queue cannot see is work that silently never happens.
+ */
+export const createPlannedIssues = async (deps: PlanStageDeps, state: PlanStageState, target: PlannedIssueTarget = {}): Promise<PlanStageState> => {
   const config = deps.loaded.config
+  requireWritableTracker(config)
   const now = (deps.now ?? (() => new Date()))()
-  const write = { bin: config.orca.bin, workspaceId: config.linear.workspaceId, orca: { timeoutMs: config.orca.timeoutMs } }
-  const entryState = config.linear.states[0] ?? 'Todo'
+  const tracker = resolveConnectors({ runner: deps.runner, config }).tracker
+  const entryState = config.linear.entryState
+  const project = target.project ?? (config.linear.projects.length === 1 ? config.linear.projects[0] : undefined)
   const created: (PlannedIssue & { identifier?: string; url?: string })[] = []
   for (const issue of state.issues) {
     if (issue.identifier) { created.push(issue); continue }
     // The design travels as content, not as a pointer: a worker that cannot fetch the reference invents the
     // architecture instead of implementing the one that was approved.
     const excerpt = designExcerptFor(state.design, issue.designRef)
-    const description = `${issue.description}\n\n**Acceptance**\n${issue.acceptance.map((item) => `- [ ] ${item}`).join('\n')}\n\n**Design — ${issue.designRef}**\n\n${excerpt || '_not found in the approved design_'}\n\n<!-- loop:plan:${state.id} -->`
-    const result = await linearSaveIssue(deps.runner, {
-      team: config.linear.teamKey, title: issue.title, description, state: entryState,
-      priority: priorityFor(issue), ...(issue.layer ? { labels: [issue.layer] } : {}),
+    const where = issue.outside ? `**Outside this loop — ${issue.outside}.** The loop delivers pull requests to ${config.project.repo} only, so it will not dispatch this issue (\`${config.linear.outsideLabel}\`); a person or another loop carries it.\n\n` : ''
+    const description = `${where}${issue.description}\n\n**Acceptance**\n${issue.acceptance.map((item) => `- [ ] ${item}`).join('\n')}\n\n**Design — ${issue.designRef}**\n\n${excerpt || '_not found in the approved design_'}\n\n<!-- loop:plan:${state.id} -->`
+    const result = await tracker.createIssue({
+      title: issue.title, description, state: entryState,
+      priority: priorityFor(issue), labels: plannedIssueLabels(config, issue.layer, issue.outside),
+      ...(project ? { project } : {}), ...(target.parent ? { parent: target.parent } : {}),
       dedupeKey: `plan:${state.id}:${issue.title}`,
-    }, write)
+    })
     created.push({ ...issue, ...(result.identifier ? { identifier: result.identifier } : {}), ...(result.url ? { url: result.url } : {}) })
   }
   return { ...state, issues: created, phase: 'done', updatedAt: now.toISOString() }
@@ -361,7 +433,7 @@ export const renderPlanMarkdown = (state: PlanStageState): string => {
   if (state.rounds.length) { lines.push('## Interview', ''); for (const round of state.rounds) lines.push(`- **${round.field || 'q'}** — ${round.question}\n  - ${round.answer}`); lines.push('') }
   if (state.design) lines.push('## Design', '', state.design.summary, '', ...state.design.modules.map((module) => `- **${module.name}** — ${module.responsibility}${module.boundary ? ` (never: ${module.boundary})` : ''}`), '')
   if (state.designVotes.length) lines.push(`_Design votes: ${state.designVotes.filter((vote) => vote.vote === 'approve').length}/${state.designVotes.length} after ${state.designCycles} cycle(s)_`, '')
-  if (state.issues.length) { lines.push('## Issues', ''); for (const issue of state.issues) lines.push(`- ${issue.identifier ? `\`${issue.identifier}\` ` : ''}${issue.title}${issue.layer ? ` · ${issue.layer}` : ''} → ${issue.designRef}`); lines.push('') }
+  if (state.issues.length) { lines.push('## Issues', ''); for (const issue of state.issues) lines.push(`- ${issue.identifier ? `\`${issue.identifier}\` ` : ''}${issue.title}${issue.layer ? ` · ${issue.layer}` : ''}${issue.outside ? ` · outside: ${issue.outside}` : ''} → ${issue.designRef}`); lines.push('') }
   lines.push(`Approvals: plan ${state.approvals.plan ?? 'pending'} · design ${state.approvals.design ?? 'pending'}`)
   return lines.join('\n')
 }

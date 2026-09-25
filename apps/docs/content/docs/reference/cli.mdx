@@ -16,6 +16,21 @@ Validate the contract without starting a run.
 ak-harness doctor [options]
 ```
 
+## `ak-harness ui`
+
+Start the local Harness operational UI.
+
+```bash
+ak-harness ui [options]
+```
+
+| Flag | What it does | Default |
+|---|---|---|
+| `--loop-config &lt;path&gt;` | loop configuration path | `"loop.config.yaml"` |
+| `--host &lt;host&gt;` | loopback host to bind | `"127.0.0.1"` |
+| `--port &lt;port&gt;` | TCP port (0 selects a free port) | `4321` |
+| `--window-hours &lt;hours&gt;` | event window shown in the UI | `24` |
+
 ## `ak-harness plan`
 
 Approve the frozen task contract and create a planned run.
@@ -310,7 +325,7 @@ ak-harness artifacts schema [options]
 
 ## `ak-harness loop`
 
-Keep-pushing SDLC loop: drain one person's Linear queue through Orca worktrees with role-based model routing.
+Keep-pushing SDLC loop: drain the configured issue tracker through worktrees with role-based model routing.
 
 ```bash
 ak-harness loop [options] [command]
@@ -322,7 +337,7 @@ ak-harness loop [options] [command]
 
 ### `ak-harness loop validate`
 
-Validate loop.config.yaml and print the effective configuration.
+Validate loop.config.yaml and print the effective configuration. Reports keys the schema does not know — almost always a typo, which zod otherwise strips in silence.
 
 ```bash
 ak-harness loop validate [options]
@@ -330,7 +345,7 @@ ak-harness loop validate [options]
 
 ### `ak-harness loop doctor`
 
-Check Orca, providers, usage, machine slots, routing, and the Linear queue without dispatching.
+Check Orca, providers, usage, machine slots, routing, and the selected tracker board without dispatching.
 
 ```bash
 ak-harness loop doctor [options]
@@ -350,7 +365,7 @@ ak-harness loop precheck [options] <stage>
 
 ### `ak-harness loop deliver`
 
-Drive dispatched workers to merge: PR detection, CI, review, fix rounds, squash-merge, Linear Done, cleanup.
+Drive dispatched workers to merge: PR detection, CI, review, fix rounds, squash-merge, tracker Done, cleanup.
 
 ```bash
 ak-harness loop deliver [options]
@@ -358,7 +373,7 @@ ak-harness loop deliver [options]
 
 | Flag | What it does | Default |
 |---|---|---|
-| `--dry-run` | decide only; no terminal input, no review, no merge, no Linear write |  |
+| `--dry-run` | decide only; no terminal input, no review, no merge, no tracker write |  |
 | `--issue &lt;identifier&gt;` | restrict to one issue |  |
 
 ### `ak-harness loop stage`
@@ -371,7 +386,7 @@ ak-harness loop stage [options] <stage>
 
 ### `ak-harness loop tick`
 
-One keep-pushing tick: intake → admit → contract → dispatch workers into Orca worktrees.
+One keep-pushing tick: intake → admit → contract → dispatch workers into worktrees.
 
 ```bash
 ak-harness loop tick [options]
@@ -379,14 +394,14 @@ ak-harness loop tick [options]
 
 | Flag | What it does | Default |
 |---|---|---|
-| `--dry-run` | plan only; no worktree, no Linear write, no contract cached |  |
+| `--dry-run` | plan only; no worktree, no tracker write, no contract cached |  |
 | `--max &lt;n&gt;` | max dispatches this tick |  |
 | `--issue &lt;identifier&gt;` | restrict to one issue |  |
 | `--skip-contract` | do not call the orchestrator when no contract is cached |  |
 
 ### `ak-harness loop contract`
 
-Freeze (or show) the orchestrator contract for one Linear issue.
+Freeze (or show) the orchestrator contract for one configured-tracker issue.
 
 ```bash
 ak-harness loop contract [options] <identifier>
@@ -455,6 +470,19 @@ Show the loop automations Orca knows about and their latest runs.
 ak-harness loop status [options]
 ```
 
+### `ak-harness loop approve`
+
+Attest that you reviewed a PR the loop held for protected paths, for one exact head; the loop then reviews and merges it as usual. A new push needs a new approval.
+
+```bash
+ak-harness loop approve [options] <issue>
+```
+
+| Flag | What it does | Default |
+|---|---|---|
+| `--head &lt;sha&gt;` | the head commit you reviewed (at least 7 characters) |  |
+| `--by &lt;actor&gt;` | who approves — recorded in the event log |  |
+
 ### `ak-harness loop resume`
 
 Resume a paused issue (clears its failure counter and removes the pause label) or, with --stage, a paused tick/deliver stage.
@@ -502,6 +530,18 @@ Every logged step for one issue, oldest first: what ran, how long since the prev
 
 ```bash
 ak-harness loop issue-timeline [options] <identifier>
+```
+
+| Flag | What it does | Default |
+|---|---|---|
+| `--since &lt;window&gt;` | how far back to read the event log; an issue older than this window reports nothing | `"30d"` |
+
+### `ak-harness loop worker-guard`
+
+PreToolUse hook entrypoint (Claude Code / Grok Build CLI-compatible): reads a hook event on stdin and exits 2 to block a Write/Edit that would touch a path matching delivery.selfEditPaths or delivery.secretFilePatterns. Installed automatically into a dispatched worktree; not meant to be run by a human.
+
+```bash
+ak-harness loop worker-guard [options]
 ```
 
 ### `ak-harness loop observe`
@@ -611,10 +651,11 @@ ak-harness loop plan approve-design [options] <id>
 | Flag | What it does | Default |
 |---|---|---|
 | `--by &lt;actor&gt;` | who approves | `"human"` |
+| `--accept-objections` | approve although votes still carry objections; decompose must settle each one in an issue |  |
 
 ### `ak-harness loop plan decompose`
 
-Break the approved design into issues. Without --create nothing is written to the tracker.
+Break the approved design into issues. Without --create nothing is written to the tracker; --create writes the list already shown, not a new one.
 
 ```bash
 ak-harness loop plan decompose [options] <id>
@@ -622,7 +663,10 @@ ak-harness loop plan decompose [options] <id>
 
 | Flag | What it does | Default |
 |---|---|---|
-| `--create` | create the issues in the tracker, in the queue entry state |  |
+| `--create` | create the issues already decomposed (and reviewed) in the configured tracker, outside the dispatch queue |  |
+| `--refresh` | decompose again even when a list already exists |  |
+| `--parent &lt;issue&gt;` | the epic these issues break down (tracker identifier) |  |
+| `--project &lt;name&gt;` | tracker project; default: the one project the queue drains, when there is exactly one |  |
 
 ### `ak-harness loop release`
 

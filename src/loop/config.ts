@@ -23,7 +23,9 @@ export const teamConfigFile = (team: string): string => `loop.config.team.${team
  * `~/.agentskit/harness.yaml`. A missing file is not an error — the global layer is optional by design.
  */
 export const globalConfigPath = (env: NodeJS.ProcessEnv = process.env, home: string = homedir()): string =>
-  env['AK_HARNESS_CONFIG']?.trim() || resolve(env['AK_HARNESS_HOME']?.trim() || resolve(home, '.agentskit'), GLOBAL_CONFIG_FILE)
+  env['AK_HARNESS_CONFIG']?.trim() || ((env['AK_HARNESS_HOME']?.trim() || home).startsWith('/')
+    ? `${(env['AK_HARNESS_HOME']?.trim() || `${home}/.agentskit`).replace(/\/+$/, '')}/${GLOBAL_CONFIG_FILE}`
+    : resolve(env['AK_HARNESS_HOME']?.trim() || resolve(home, '.agentskit'), GLOBAL_CONFIG_FILE))
 
 /** `AK_HARNESS_NO_GLOBAL=1` loads the project without the user's layer — for tests and for reproducing what CI sees. */
 export const globalLayerDisabled = (env: NodeJS.ProcessEnv = process.env): boolean => env['AK_HARNESS_NO_GLOBAL'] === '1'
@@ -119,6 +121,12 @@ export const LoopConfigSchema = z.object({
     stateDir: nonEmpty.default('.ak-loop'),
     /** Selects the `loop.config.team.<key>.yaml` layer. `$AK_LOOP_TEAM` overrides it; a declared team whose file is missing fails loudly. */
     team: nonEmpty.optional(),
+    /**
+     * The tree the orchestrator's headless calls (contract, plan interview, architect, votes, decompose) read.
+     * `base` (default): a harness-owned detached worktree of `origin/<baseBranch>`, fetched before each use.
+     * `root`: `project.root` as it is — whatever branch and age the operator's checkout has.
+     */
+    orchestratorView: z.enum(['base', 'root']).default('base'),
     setup: z.object({
       /** Argv (no shell — one element per arg, e.g. `[pnpm, install, --frozen-lockfile]`) run once in a freshly created worktree before the worker terminal opens. Unset/empty = skip. */
       command: z.array(nonEmpty).min(1).optional(),
@@ -162,6 +170,11 @@ export const LoopConfigSchema = z.object({
      */
     queueOwnership: z.enum(['person', 'unassigned']).default('person'),
     states: z.array(nonEmpty).min(1).default(['Todo', 'Ready']),
+    /**
+     * Where `loop plan decompose --create` puts new issues. It must NOT be one of `states`: those are the queue, and
+     * an issue the planner just wrote is not work anyone approved yet. Moving it into `states` is the human gate.
+     */
+    entryState: nonEmpty.default('Backlog'),
     excludeLabels: z.array(nonEmpty).default(['blocked', 'needs-info']),
     /** ALL of these must be on the issue (AND). */
     requireLabels: z.array(nonEmpty).default([]),
@@ -179,7 +192,21 @@ export const LoopConfigSchema = z.object({
     doneState: nonEmpty.default('Done'),
     blockedLabel: nonEmpty.default('blocked'),
     needsInfoLabel: nonEmpty.default('needs-info'),
-  }),
+    /**
+     * Marks work the loop cannot deliver as a pull request to `project.repo` — another repository, a deploy, a
+     * setting in an external service. Decompose puts it on such issues and the queue never dispatches them,
+     * whatever state they are moved to: a worker given one opens a PR here that does not do the work, or none.
+     */
+    outsideLabel: nonEmpty.default('outside-loop'),
+  }).optional(),
+  /**
+   * Source of dispatchable work. `backlog` preserves the historical tracker drain; `explicit` consumes only
+   * requests confirmed through the durable issue queue (the UI and future scheduler integrations share it).
+   */
+  queue: z.object({
+    mode: z.enum(['backlog', 'explicit']).default('backlog'),
+    order: z.literal('fifo').default('fifo'),
+  }).prefault({}),
   /**
    * Suites already red on the base branch, declared so a worker is not asked to pass a verification that
    * nobody can pass.
@@ -219,7 +246,7 @@ export const LoopConfigSchema = z.object({
         anyLabels: z.array(nonEmpty).min(1),
         votes: z.number().int().positive().max(5).optional(),
         minSeverity: z.enum(['nit', 'med', 'high', 'blocker']).optional(),
-        /** Mesmo enum de `delivery.review.profile` — um perfil inventado aqui só falharia no CLI. */
+        /** Same enum as `delivery.review.profile` — a profile invented here would only fail in the CLI. */
         profile: z.enum(['fast', 'full']).optional(),
         /** Why this slice is stricter — read by whoever wonders about the cost. */
         reason: nonEmpty.optional(),
@@ -292,11 +319,19 @@ export const LoopConfigSchema = z.object({
       exhaustedPercent: z.number().min(1).max(100).default(100),
     }).prefault({}),
     providers: z.record(z.string().trim().regex(/^[a-z0-9][a-z0-9_-]*$/i), ProviderSchema),
-    /** Reasoning effort requested per role; only applied for providers whose `effortFlag` is set. */
+    /**
+     * Reasoning effort requested per role; only applied for providers whose `effortFlag` is set.
+     *
+     * cheapest-sufficient, the same rule `routing.roles.*.quality` already follows: effort tracks the difficulty
+     * of what a role does. `builder` writes and debugs the code — open-ended, the hardest thing here — while
+     * `reviewer` reads a finished diff against stated criteria and `orchestrator` turns an issue into a contract;
+     * both are bounded. Giving the writer `medium` while the readers got `high` was the inversion the rule
+     * exists to stop, and it was paying more for the cheaper problem.
+     */
     effort: z.object({
-      orchestrator: effortLevel.default('high'),
-      reviewer: effortLevel.default('high'),
-      builder: effortLevel.default('medium'),
+      orchestrator: effortLevel.default('medium'),
+      reviewer: effortLevel.default('medium'),
+      builder: effortLevel.default('high'),
       watcher: effortLevel.default('low'),
     }).prefault({}),
   }),
@@ -325,6 +360,27 @@ export const LoopConfigSchema = z.object({
       /** agentskit-review severity floor that blocks auto-merge: nit < med < high < blocker. */
       minSeverity: z.enum(['nit', 'med', 'high', 'blocker']).default('med'),
       deadlineMs: z.number().int().positive().default(600_000),
+      /**
+       * `agentskit-review` spawns each lens's `claude -p`/`codex exec`/etc. call with its own inner
+       * timeout, separate from `deadlineMs` above (the outer per-review budget) and from `--deadline-ms`
+       * on the CLI — neither reaches this inner call. It defaults to 120s (`DEFAULT_LOCAL_CLI_TIMEOUT_MS`
+       * in `@agentskit/code-review`), read only from the `AGENTSKIT_REVIEW_SUBPROCESS_TIMEOUT_MS` env var,
+       * which nothing here ever set. Observed live 2026-09-22/23: real reviews of ordinary source files
+       * (not just large ones) routinely exceeded 120s and came back `status: incomplete`, and after two
+       * such attempts at the same head `deliver` gives up and marks the PR "held" for a human — with no
+       * error, just a review that quietly never got a fair budget. 300s cleared every case observed.
+       */
+      subprocessTimeoutMs: z.number().int().positive().default(300_000),
+      /**
+       * `agentskit-review`'s own per-run analysis token budget (`review.maxTokens`/`globalMaxTokens`, ~87_200
+       * usable by default under `--profile fast`) has no CLI flag — only a `--config <file>` JSON document,
+       * which nothing here ever generated. Observed live 2026-09-23: an ordinary ~10-file issue PR aborted
+       * mid-review with "analysis tokens budget exceeded (87200)", landing as the same `status: incomplete`
+       * a missing `subprocessTimeoutMs` used to cause. `runCodeReview` writes a small temp `--config` with
+       * just these two fields when set.
+       */
+      analysisMaxTokens: z.number().int().positive().default(800_000),
+      analysisGlobalMaxTokens: z.number().int().positive().default(2_000_000),
       maxCalls: z.number().int().positive().max(1000).default(400),
       /** Post the review to the PR (inline + summary). */
       post: z.boolean().default(true),
@@ -391,6 +447,19 @@ export const LoopConfigSchema = z.object({
      * `selfEditPaths`, with a distinct reason. Defaults cover the most common accidentally-committed secret files.
      */
     secretFilePatterns: z.array(nonEmpty).default(['**/.env', '**/.env.*', '**/*.pem', '**/*.key', '**/id_rsa', '**/id_rsa.*', '**/credentials.json', '**/*.p12', '**/*.pfx']),
+    /**
+     * Real-time enforcement of `selfEditPaths`/`secretFilePatterns` inside the worker's own session, not just at
+     * PR-review time. Where the dispatched provider supports it (`claude`, `grok`; `codex` is deliberately left
+     * out — its `PreToolUse` hooks have open upstream bugs, see ADR-0038 — and `opencode` gets static deny rules
+     * instead of a live hook, also ADR-0038), the loop writes a provider-native permission config into the fresh
+     * worktree before the terminal opens, so a write to a protected or secret-shaped path is refused as it
+     * happens. This is additive: the PR-time gate stays the only enforcement for a provider it does not cover,
+     * and a worker whose hook itself fails (crash/timeout) falls back to that same PR-time gate — see ADR-0038
+     * for the fail-open caveats this cannot close.
+     */
+    workerGuard: z.object({
+      enabled: z.boolean().default(true),
+    }).prefault({}),
     /** Check names ignored when deciding CI is green (e.g. advisory bots). */
     ignoreChecks: z.array(nonEmpty).default([]),
     /** Check names that must be observed and green; empty = every reported check must pass. */
@@ -504,6 +573,24 @@ export const LoopConfigSchema = z.object({
     intakeLabel: nonEmpty.nullable().default('loop:review'),
     /** Intake PRs are always review + comment only; this loop never merges a PR it did not dispatch, regardless of a clean review. */
     reviewOnly: z.literal(true).default(true),
+    issues: z.object({
+      /** Active board reads are deliberately limited to open GitHub Issues; closed issues remain addressable by detail. */
+      state: z.literal('open').default('open'),
+      /** Fetch one extra row to detect truncation while keeping the retained board bounded. */
+      maxIssues: z.number().int().positive().max(5_000).default(500),
+      /** Remote board reads are cached; this is the minimum age before another `gh` call. */
+      refreshSeconds: z.number().int().positive().default(60),
+      /** Optional machine override. When absent, the authenticated `gh` user owns the loop queue. */
+      assignee: nonEmpty.optional(),
+      /** Exactly one lifecycle label is applied to a GitHub issue at a time. */
+      labels: z.object({
+        todo: nonEmpty.default('loop:todo'),
+        inProgress: nonEmpty.default('loop:in-progress'),
+        review: nonEmpty.default('loop:review'),
+        done: nonEmpty.default('loop:done'),
+        blocked: nonEmpty.default('loop:blocked'),
+      }).prefault({}),
+    }).prefault({}),
   }).prefault({}),
   resilience: z.object({
     /**
@@ -607,7 +694,7 @@ export const LoopConfigSchema = z.object({
    * implementation and a new value here, never a change in tick, deliver or release.
    */
   connectors: z.object({
-    tracker: z.enum(['linear']).default('linear'),
+    tracker: z.enum(['linear', 'github']).default('linear'),
     scm: z.enum(['github']).default('github'),
     /** `orca` drives Orca's worktrees and terminals; `local` is git worktree + tmux + the system crontab. */
     runner: z.enum(['orca', 'local']).default('orca'),
@@ -657,6 +744,12 @@ export const LoopConfigSchema = z.object({
       /** Planner → vote → replan cycles before the item becomes a human's problem. Three models disagreeing three times is an ambiguous requirement. */
       maxCycles: z.number().int().min(1).max(5).default(3),
       timeoutMs: z.number().int().positive().default(300_000),
+      /**
+       * Per-call budget for `loop plan` (interview, architect, design vote, decompose). Separate from `timeoutMs`
+       * because the architect designs a whole PRD against the whole repository, not one issue — and it runs from a
+       * human's shell, not inside a scheduler stage capped at 600 s. At 300 s `glm-5.3` never finished a design.
+       */
+      stageTimeoutMs: z.number().int().positive().default(900_000),
     }).prefault({}),
     /**
      * The phases that run for one issue, in order.
@@ -893,7 +986,9 @@ export const LoopConfigSchema = z.object({
 })
 
 export type LoopConfigInput = z.input<typeof LoopConfigSchema>
-export type LoopConfig = z.output<typeof LoopConfigSchema>
+type ParsedLoopConfig = z.output<typeof LoopConfigSchema>
+/** Runtime validation fills a compatibility Linear-shaped value for GitHub configs. */
+export type LoopConfig = Omit<ParsedLoopConfig, 'linear'> & { readonly linear: NonNullable<ParsedLoopConfig['linear']> }
 export type LoopProviderConfig = LoopConfig['models']['providers'][string]
 
 export interface ModelReference { readonly provider: string; readonly model: string }
@@ -910,6 +1005,12 @@ export interface LoadedLoopConfig {
   readonly stateDir: string
   readonly config: LoopConfig
   readonly configHash: string
+  /**
+   * Key paths the project's YAML declares that this version's schema does not know, so they were stripped.
+   * Almost always a typo (`maxFixRoundz`), occasionally a config written for a newer harness. Reported by
+   * `loop validate` and `loop doctor` rather than rejected — see `unknownConfigKeys`.
+   */
+  readonly unknownKeys: readonly string[]
 }
 
 export const parseModelRef = (value: string): ModelReference => {
@@ -925,24 +1026,98 @@ const formatIssues = (issues: readonly z.core.$ZodIssue[]): string => issues.map
 export const validateLoopConfig = (value: unknown): LoopConfig => {
   const result = LoopConfigSchema.safeParse(value)
   if (!result.success) return fail(`Invalid ${LOOP_CONFIG_FILE}: ${formatIssues(result.error.issues)}`, 'INVALID_CONFIG')
-  const config = result.data
+  const parsed = result.data
+  const rawLinear = isPlainObject(value) ? value['linear'] : undefined
+  if (parsed.connectors.tracker === 'linear' && !isPlainObject(rawLinear)) fail('linear is required when connectors.tracker is "linear".', 'INVALID_CONFIG')
+  // ponytail: existing loop modules still read config.linear; the GitHub adapter maps this compatibility state model to labels.
+  const config = (parsed.linear ? parsed : {
+    ...parsed,
+    linear: {
+      workspaceId: 'github', teamKey: 'github', person: 'github', people: {},
+      rotation: { enabled: false, owners: [], advanceWhenEmpty: true }, queueOwnership: 'person',
+      states: ['Todo', 'Ready'], entryState: 'Backlog', excludeLabels: ['blocked', 'needs-info'], requireLabels: [],
+      anyLabels: [], projects: [], order: ['priority', 'updatedAt'], maxQueue: 50,
+      inProgressState: 'In Progress', reviewState: 'In Review', doneState: 'Done', blockedLabel: 'blocked',
+      needsInfoLabel: 'needs-info', outsideLabel: 'outside-loop',
+    },
+  }) as LoopConfig
+  const githubLifecycleLabels = Object.values(config.github.issues.labels)
+  if (new Set(githubLifecycleLabels).size !== githubLifecycleLabels.length) fail('github.issues.labels values must be unique so exactly one lifecycle label can be active.', 'INVALID_CONFIG')
+  if (config.connectors.tracker === 'github') {
+    const normalizedReturnState = config.delivery.returnState.toLowerCase()
+    const githubStateNames = new Set([
+      ...config.linear.states,
+      'todo', 'ready',
+      config.linear.inProgressState, config.linear.reviewState, config.linear.doneState, config.linear.blockedLabel,
+      ...githubLifecycleLabels,
+    ].map((state) => state.toLowerCase()))
+    if (!githubStateNames.has(normalizedReturnState)) fail(`delivery.returnState "${config.delivery.returnState}" has no configured GitHub lifecycle label. Use one of the configured github.issues.labels or a mapped state such as Todo.`, 'INVALID_CONFIG')
+  }
   for (const role of MODEL_ROLES) for (const [tierIndex, tier] of config.models[role].entries()) for (const ref of tier) {
     const { provider } = parseModelRef(ref)
     if (!config.models.providers[provider]) fail(`models.${role}[${tierIndex}] references unknown provider "${provider}"; declare it under models.providers.`, 'INVALID_CONFIG')
   }
+  if (config.linear.states.includes(config.linear.entryState)) fail(`linear.entryState "${config.linear.entryState}" is one of linear.states — planned issues would be dispatched before a human approved them.`, 'INVALID_CONFIG')
   if (config.machine.warningPercent > config.machine.criticalPercent) fail('machine.warningPercent must not exceed machine.criticalPercent.', 'INVALID_CONFIG')
   if (config.models.cooldown.initialMin > config.models.cooldown.maxMin) fail('models.cooldown.initialMin must not exceed maxMin.', 'INVALID_CONFIG')
   if (config.machine.ceiling !== undefined && config.machine.ceiling < config.machine.floor) fail('machine.ceiling must be at least machine.floor.', 'INVALID_CONFIG')
+  // `RunnerConnector` has a `local` implementation and no production caller: `tick`/`deliver`/`install` still go
+  // straight to Orca. Accepting this silently gave a project Orca behaviour while its config said otherwise —
+  // and `doctor` reported `runner.local: passed` on top of it. Fail closed until it is actually wired.
+  if (config.connectors.runner === 'local') fail('connectors.runner: "local" is not wired into dispatch yet — tick, deliver and install still use Orca, so setting it would silently run Orca anyway. Use "orca"; follow the local runner in docs/ADR-0039.', 'INVALID_CONFIG')
   return config
 }
 
 const isPlainObject = (value: unknown): value is Record<string, unknown> => typeof value === 'object' && value !== null && !Array.isArray(value)
 
-/** Recursive merge: objects merge key by key, arrays and scalars from the overlay replace the base. */
-export const mergeLoopConfig = (base: unknown, overlay: unknown): unknown => {
+/**
+ * Key paths present in the YAML a project wrote but absent from the validated config: fields zod stripped
+ * because nothing declares them. `maxFixRoundz: 9` used to be accepted in silence, with `maxFixRounds` quietly
+ * taking its default — a typo that reads as "I configured this" and behaves as "I did not".
+ *
+ * Reported rather than rejected. A config written for a newer harness legitimately carries keys this version
+ * does not know, and failing that closed would make every upgrade a flag day. Silence was the bug, not leniency.
+ */
+export const unknownConfigKeys = (raw: unknown, parsed: unknown, prefix = ''): readonly string[] => {
+  if (!isPlainObject(raw) || !isPlainObject(parsed)) return []
+  const dropped: string[] = []
+  for (const [key, value] of Object.entries(raw)) {
+    const path = prefix ? `${prefix}.${key}` : key
+    if (!(key in parsed)) { dropped.push(path); continue }
+    dropped.push(...unknownConfigKeys(value, parsed[key], path))
+  }
+  return dropped
+}
+
+/**
+ * Lists that ARE gates: an overlay adds to them, and removes an entry only by naming it as `!entry`.
+ *
+ * Replacing them would let an older, more specific layer silently undo a protection added later to a broader one.
+ * That is not hypothetical: a machine overlay written to free one file under `.github/` replaced the whole
+ * `selfEditPaths`, and so dropped a `packages/**` freeze the project added days later without anyone noticing.
+ */
+const GATE_LISTS: readonly string[] = ['delivery.selfEditPaths', 'delivery.secretFilePatterns', 'delivery.requiredChecks']
+
+const mergeGateList = (base: unknown, overlay: readonly unknown[]): unknown[] => {
+  const removed = new Set(overlay.filter((item): item is string => typeof item === 'string' && item.startsWith('!')).map((item) => item.slice(1)))
+  const kept = (Array.isArray(base) ? base : []).filter((item) => !removed.has(String(item)))
+  const added = overlay.filter((item) => !(typeof item === 'string' && item.startsWith('!')) && !kept.includes(item))
+  return [...kept, ...added]
+}
+
+/**
+ * Recursive merge: objects merge key by key, arrays and scalars from the overlay replace the base — except the
+ * gate lists in {@link GATE_LISTS}, which accumulate across layers and shrink only through an explicit `!entry`.
+ */
+export const mergeLoopConfig = (base: unknown, overlay: unknown, path = ''): unknown => {
+  if (Array.isArray(overlay) && GATE_LISTS.includes(path)) return mergeGateList(base, overlay)
   if (!isPlainObject(base) || !isPlainObject(overlay)) return overlay === undefined ? base : overlay
   const result: Record<string, unknown> = { ...base }
-  for (const [key, value] of Object.entries(overlay)) result[key] = key in base ? mergeLoopConfig(base[key], value) : value
+  for (const [key, value] of Object.entries(overlay)) {
+    const child = path ? `${path}.${key}` : key
+    // A section the base never declared still goes through the merge, so a gate list nested in it is normalised too.
+    result[key] = key in base ? mergeLoopConfig(base[key], value, child) : isPlainObject(value) || Array.isArray(value) ? mergeLoopConfig(isPlainObject(value) ? {} : undefined, value, child) : value
+  }
   return result
 }
 
@@ -1017,6 +1192,7 @@ export const loadLoopConfig = (path: string = LOOP_CONFIG_FILE, env: NodeJS.Proc
   const root = resolve(directory, config.project.root)
   return {
     path: absolute, root, stateDir: resolve(root, config.project.stateDir), config, configHash: hashJson(config),
+    unknownKeys: unknownConfigKeys(parseYamlMapping(text, LOOP_CONFIG_FILE), config),
     ...(localText === undefined ? {} : { localPath }),
     ...(globalText === undefined ? {} : { globalPath }),
     ...(teamText === undefined || teamPath === null || team === null ? {} : { teamPath, team }),

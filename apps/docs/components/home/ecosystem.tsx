@@ -15,14 +15,14 @@ const PEERS = [
   { stage: '02 / Discover', name: 'Registry', url: 'https://registry.agentskit.io' },
   { stage: '03 / Deliver', name: 'Chat', url: 'https://chat.agentskit.io' },
   { stage: '04 / Understand', name: 'Doc Bridge', url: 'https://doc-bridge.agentskit.io' },
-  { stage: '05 / Ship', name: 'Harness', url: '/', current: true },
-  { stage: '06 / Standardize', name: 'Playbook', url: 'https://playbook.agentskit.io' },
+  { stage: '05 / Review', name: 'Code Review', url: 'https://code-review.agentskit.io' },
+  { stage: '06 / Ship', name: 'Harness', url: '/', current: true },
 ]
 
 export function EcosystemShowcase() {
   return createElement(
     'agentskit-ecosystem',
-    { current: 'harness' },
+    { current: 'harness', 'data-visual': 'agentskit-home', style: { '--ak-bg': '#0D1117', '--ak-graphite': '#8B949E' } },
     <section style={{ padding: '72px 28px', maxWidth: '1180px', margin: '0 auto', borderTop: '1px solid #30363D' }}>
       <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '11px', letterSpacing: '0.2em', textTransform: 'uppercase', color: '#8B949E' }}>
         The AgentsKit ecosystem

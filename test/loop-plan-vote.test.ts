@@ -108,6 +108,40 @@ describe('planner → vote → replan', () => {
     expect(runner.prompts.filter((prompt) => prompt.includes('You are the planner'))).toHaveLength(1)
   })
 
+  it('asks one voter for the whole panel in a single call when the pool is smaller than the vote count', async () => {
+    const loaded = setup()
+    // votes: 3, one distinct voter — this used to be three byte-identical calls, each re-sending the contract
+    // and the whole plan to buy sampling noise from the same model.
+    const panel = `${VOTE_OPEN}\n${JSON.stringify([{ vote: 'approve', objections: [] }, { vote: 'approve', objections: [] }, { vote: 'reject', objections: ['naming'] }])}\n${VOTE_CLOSE}`
+    const runner = scripted([[panel]])
+    const stored = await runPlanWithVotes({ runner, config: loaded.config, root: loaded.root, issue: 'ENG-1', contract, contractDigest: 'c1', planner: planners, voters: [candidate('claude', 'opus')] })
+    expect(stored).toMatchObject({ status: 'approved', cycles: 1 })
+    expect(stored.votes).toHaveLength(3) // the tally still sees three votes, so `approvals` keeps its meaning
+    expect(stored.votes.every((vote) => vote.model === 'opus')).toBe(true)
+    const votePrompts = runner.prompts.filter((prompt) => prompt.includes('voting on a technical plan'))
+    expect(votePrompts).toHaveLength(1)
+    expect(votePrompts[0]).toContain('panel of 3 independent reviewers')
+  })
+
+  it('still makes one call per model when there are enough distinct voters — a jury is the point', async () => {
+    const loaded = setup()
+    const runner = scripted([[voteOut('approve'), voteOut('approve'), voteOut('approve')]])
+    const stored = await runPlanWithVotes({ runner, config: loaded.config, root: loaded.root, issue: 'ENG-1', contract, contractDigest: 'c1', planner: planners, voters })
+    expect(stored.votes.map((vote) => vote.model)).toEqual(['opus', 'gpt-5.6-sol', 'grok-4-fast'])
+    expect(runner.prompts.filter((prompt) => prompt.includes('voting on a technical plan'))).toHaveLength(3)
+    expect(runner.prompts.some((prompt) => prompt.includes('panel of'))).toBe(false)
+  })
+
+  it('duplicated voters collapse to the distinct pool instead of calling one model twice', async () => {
+    const loaded = setup()
+    const duplicated = [candidate('claude', 'opus'), candidate('claude', 'opus'), candidate('codex', 'gpt-5.6-sol')]
+    const pair = `${VOTE_OPEN}\n${JSON.stringify([{ vote: 'approve', objections: [] }, { vote: 'approve', objections: [] }])}\n${VOTE_CLOSE}`
+    const runner = scripted([[pair, voteOut('approve')]])
+    const stored = await runPlanWithVotes({ runner, config: loaded.config, root: loaded.root, issue: 'ENG-1', contract, contractDigest: 'c1', planner: planners, voters: duplicated })
+    expect(stored.votes).toHaveLength(3)
+    expect(runner.prompts.filter((prompt) => prompt.includes('voting on a technical plan'))).toHaveLength(2)
+  })
+
   it('replans with the objections and approves on a later cycle', async () => {
     const loaded = setup()
     const runner = scripted([

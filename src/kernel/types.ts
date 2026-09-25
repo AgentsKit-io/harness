@@ -174,6 +174,12 @@ export interface MachineSample {
    * 0% load there is a machine that looks idle rather than one nobody measured.
    */
   readonly loadAvailable?: boolean
+  /**
+   * Share of CPU time actually spent busy over a short window, where it was measured. On macOS the load average
+   * also counts runnable-but-idle and I/O-blocked threads: observed at 60-80% "load" with the CPU 80% idle (agent
+   * TUIs redrawing), which capped concurrency for nothing. When present, pressure decisions use this instead.
+   */
+  readonly cpuBusyPercent?: number
   readonly memoryUsedPercent: number
   readonly rssBytes: number
   readonly swapUsedPercent?: number

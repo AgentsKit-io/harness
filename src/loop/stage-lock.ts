@@ -1,5 +1,7 @@
 import { closeSync, mkdirSync, openSync, readFileSync, statSync, unlinkSync, writeFileSync } from 'node:fs'
+import { z } from 'zod'
 import { join } from 'node:path'
+import { readJsonFile } from '../kernel/json-file.js'
 
 type StageLockMetadata = { readonly pid?: unknown; readonly stage?: unknown }
 
@@ -15,8 +17,8 @@ const ownerIsAlive = (pid: number): boolean => {
 
 const readOwner = (path: string): number | null => {
   try {
-    const value = JSON.parse(readFileSync(path, 'utf8')) as StageLockMetadata
-    return typeof value.pid === 'number' && Number.isInteger(value.pid) && value.pid > 0 ? value.pid : null
+    const value = readJsonFile(path, z.object({ pid: z.number().int().positive() }).loose())
+    return value ? value.pid : null
   } catch {
     return null
   }

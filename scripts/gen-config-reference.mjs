@@ -13,13 +13,14 @@
 import { writeFileSync, readFileSync, mkdirSync, existsSync } from 'node:fs'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { pathToFileURL } from 'node:url'
 import { z } from 'zod'
 import { jsdocPathsOfSchema } from './lib/jsdoc-paths.mjs'
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 const target = join(root, 'apps/docs/content/docs/reference/configuration.mdx')
 
-const { LoopConfigSchema } = await import(join(root, 'dist/index.js'))
+const { LoopConfigSchema } = await import(pathToFileURL(join(root, 'dist/index.js')).href)
 
 const jsonSchema = z.toJSONSchema(LoopConfigSchema, { io: 'input', unrepresentable: 'any' })
 

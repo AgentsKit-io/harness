@@ -20,6 +20,7 @@ project:
   baseBranch: main
   root: .                            # relative to this file
   # team: platform                   # selects loop.config.team.platform.yaml; a declared team without a file fails loudly
+  orchestratorView: base            # base = the orchestrator reads a fresh worktree of origin/<baseBranch>; root = this checkout as-is
   stateDir: .ak-loop                 # runtime state: ledger, cooldowns, contracts, events, agent memory, plans.
                                      # Per machine — add it to .gitignore. The config (this file) stays at the
                                      # repo root and IS versioned.
@@ -29,6 +30,12 @@ project:
     timeoutSec: 600
     required: true                    # failing/timing-out setup removes the worktree and counts as a dispatch failure
 
+# `backlog` keeps the legacy tracker drain. `explicit` consumes only requests confirmed through the persistent
+# issue queue (the UI and scheduler share the same state).
+queue:
+  mode: backlog
+  order: fifo
+
 orca:
   bin: orca                          # on Linux outside Orca terminals use orca-ide (bare `orca` is the GNOME screen reader)
   # repoSelector: id:<orca-repo-id>  # default: path:<project.root>
@@ -37,22 +44,22 @@ orca:
   minVersion: 1.4.200
   timeoutMs: 20000
 
-# Revisão mais rigorosa só nas fatias que pedem, por label. A revisão É o gate quando não há CI, e um
-# contrato que congela evidência não deve ser julgado com o mesmo orçamento de um ajuste de copy.
-# Primeira entrada que casa vence, e só os campos nomeados são trocados.
+# Stricter review only for the slices that ask for it, by label. Review IS the gate when there is no CI, and a
+# contract that freezes evidence should not be judged on the same budget as a copy tweak.
+# The first matching entry wins, and only the named fields are replaced.
 # reviewOverrides:
 #   - anyLabels: [layer:L2, layer:L3]
 #     votes: 2
 #     minSeverity: nit
-#     reason: caminho crítico do MVP
+#     reason: MVP critical path
 
-# Suítes já vermelhas na branch base. O harness NÃO roda o verifyCommand — o worker roda, na worktree
-# dele — então tolerar falha conhecida é informação no briefing, não parsing de saída. A issue de
-# rastreamento é obrigatória: quarentena sem dono vira permanente.
+# Suites already red on the base branch. The harness does NOT run verifyCommand — the worker does, in its
+# own worktree — so tolerating a known failure is information in the brief, not output parsing. The tracking
+# issue is mandatory: a quarantine without an owner becomes permanent.
 # knownFailures:
 #   - path: packages/foo/tests/bar.test.ts
 #     issue: ENG-123
-#     reason: corrida de escrita em arquivo, pré-existente
+#     reason: pre-existing file write race
 
 linear:
   workspaceId: <linear-workspace-id> # orca linear team list --workspace all --json
@@ -71,6 +78,7 @@ linear:
     owners: [my-linear-display-name] # ordered display names; the first entry is the initial owner
     advanceWhenEmpty: true           # never switch while an implementation lease remains
   states: [Todo, Ready]              # dispatchable states; anything already started is left alone
+  entryState: Backlog                # where `loop plan decompose --create` files new issues; must not be in states
   excludeLabels: [blocked, needs-info]
   requireLabels: []                  # ALL of these (AND); empty = no constraint
   anyLabels: []                      # at least ONE of these (OR) — how a machine declares the slices it
@@ -116,9 +124,9 @@ models:
     exhaustedPercent: 100
   # Reasoning effort requested per role. Only applied for providers below that declare `effortFlag`; others ignore it.
   effort:
-    orchestrator: high
-    reviewer: high                  # currently unused: agentskit-review has no reasoning-effort flag (see reviewProvider below)
-    builder: medium
+    orchestrator: medium            # cheapest-sufficient: turning an issue into a contract is bounded work
+    reviewer: medium                # currently unused: agentskit-review has no reasoning-effort flag (see reviewProvider below)
+    builder: high                   # the role that writes and debugs the code is the hardest problem here
     watcher: low
   providers:
     claude:
@@ -128,6 +136,13 @@ models:
       tui: "claude --model {model} --permission-mode auto"
       headless: [claude, -p, "{prompt}", --model, "{model}", --permission-mode, plan, --output-format, text]
       # effortFlag: "--effort {effort}"
+      # `--permission-mode plan` is read-only in the terminal but leaves the model free to end its turn with a
+      # plan/status summary instead of the contract text between markers ("stop losing contract generation to
+      # Task-tool delegation", #87) — structuredOutputFlag reads the contract from the CLI's own schema-validated
+      # `structured_output` field instead, so a compliant reply is never lost to that free-text path. Only
+      # contract generation passes a schema and benefits today; plan-stage/plan-vote headless calls to this same
+      # provider still rely on marker-parsing and remain exposed to the same #87 regression.
+      structuredOutputFlag: [--output-format, json, --json-schema, "{schema}"]
     codex:
       bin: codex
       auth: subscription
@@ -145,7 +160,10 @@ models:
     grok:
       bin: grok
       auth: subscription             # `grok login` (OAuth) — no API key needed
-      tui: "grok -m {model}"
+      # --trust pre-grants folder trust for this fresh worktree, the same way grok's own PTY e2e tests do
+      # (--yolo --trust); without it the first-run "trust this folder?" dialog blocks with no TTY to answer it.
+      # Deliberately not --yolo: that also relaxes the permission mode this loop's hook (ADR-0038) relies on.
+      tui: "grok -m {model} --trust"
       headless: [grok, -p, "{prompt}", -m, "{model}"]
       # effortFlag: "--reasoning-effort {effort}"
 
@@ -166,9 +184,15 @@ delivery:
     profile: fast                    # one bounded pass over required lenses; `full` needs batching to fit a 600 s stage
     votes: 1
     concurrency: 4
-    minSeverity: med
-    # doctorProbe: help                 # nit < med < high < blocker; findings at/above this block auto-merge
+    minSeverity: med                  # nit < med < high < blocker; findings at/above this block auto-merge
+    # doctorProbe: help                 # help | none — how `loop doctor` probes the review CLI
     deadlineMs: 600000
+    # subprocessTimeoutMs: 300000     # agentskit-review's own inner CLI-call timeout (AGENTSKIT_REVIEW_SUBPROCESS_TIMEOUT_MS),
+                                     # separate from deadlineMs above; its own unset default (120s) was routinely too
+                                     # short for an ordinary review and silently landed as status: incomplete
+    # analysisMaxTokens: 800000       # agentskit-review's own per-run analysis token budget (no CLI flag; set via a
+    # analysisGlobalMaxTokens: 2000000 # generated --config file) — its own default (~87_200 usable under --profile fast)
+                                     # can abort an ordinary PR review with "analysis tokens budget exceeded"
     # smallChangeLines: 0            # >0: a change at or below this many lines (or docs-only) is reviewed by the
                                      # cheapest candidate instead of the strongest — cost lever 3
     # criticalPaths: []              # path prefixes that always get the strongest reviewer, whatever the size
@@ -189,6 +213,9 @@ delivery:
   selfEditPaths: [loop.config.yaml, ".github/**"]   # PRs touching these never auto-merge
   # secretFilePatterns: [...]              # default already covers .env, *.pem, *.key, id_rsa, credentials.json, etc.
                                             # PRs touching a matching filename are held, never reviewed or merged
+  # workerGuard: { enabled: true }         # real-time enforcement of the two lists above, inside claude/grok's own
+                                            # session (not just at PR-review time); opencode gets static deny rules
+                                            # instead. codex is not covered yet — see ADR-0038. On by default.
   ignoreChecks: []                   # advisory check names that never block
   requiredChecks: []                 # empty = every reported check must be green
   cleanupWorktree: true              # remove the Orca worktree after merge
@@ -352,6 +379,17 @@ github:
   intakeLabel: loop:review           # a PR with this label is reviewed even though the loop never dispatched it;
                                       # null disables intake entirely
   reviewOnly: true                   # fixed: intake PRs are always review + comment, never auto-merged
+  issues:
+    state: open
+    maxIssues: 500
+    refreshSeconds: 60
+    # GitHub uses exactly one of these labels as the issue lifecycle state.
+    labels:
+      todo: loop:todo
+      inProgress: loop:in-progress
+      review: loop:review
+      done: loop:done
+      blocked: loop:blocked
 
 plugins:
   modules: []                        # e.g. [scripts/loop-plugins/notify.mjs] — local .mjs files (relative to
@@ -369,7 +407,8 @@ resilience:
   pausedLabel: loop:paused           # applied to the issue in Linear; remove it (or `loop resume <id>`) to retry
   stagePauseAfterRuns: 3             # pause `loop stage tick|deliver` itself after this many consecutive thrown runs
   # maxUsageDeltaPercent: 40          # stop a dispatch if its provider's remaining usage drops by this many
-                                      # points while the issue is in flight; unset = disabled (cost circuit breaker)
+                                      # points while the issue is in flight (cost circuit breaker). Defaults to 40
+                                      # even when unset — raise it to 100 to make it effectively never trip.
 
 brief:
   skills: []                         # e.g. [AGENTS.md, CLAUDE.md, docs/for-agents/INDEX.md] — paths relative to project.root,
@@ -417,7 +456,7 @@ schedule:
   harnessCommand: ak-harness         # how the Orca automation runs the harness inside the workspace
   namePrefix: loop                   # automations: loop-tick, loop-deliver[, loop-retro][, loop-observe]
   # retro: weekly                     # with retroIssue, installs <prefix>-retro
-  # retroIssue: AGE-0                 # Linear issue that receives the digest comment
+  # retroIssue: ABC-0                 # Linear issue that receives the digest comment
   # This file is the source of truth for every automation. `loop install` reconciles Orca against it — creating what
   # is missing, editing only what drifted, switching off what this file stopped declaring — so changing a schedule is
   # editing the YAML and running install, never editing the automation inside Orca.

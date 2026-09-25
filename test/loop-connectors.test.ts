@@ -66,7 +66,12 @@ describe('tracker and scm connectors', () => {
 describe('the runner connector, twice', () => {
   it('picks the implementation the config names', () => {
     expect(createRunnerConnector({ loaded: setup(), runner: recording() }).id).toBe('orca')
-    expect(createRunnerConnector({ loaded: setup('connectors:\n  runner: local\n'), runner: recording() }).id).toBe('local')
+  })
+
+  it('refuses connectors.runner: local, because nothing in dispatch is wired to it yet', () => {
+    // Accepting it gave a project Orca behaviour while its config said "local", and doctor called that `passed`.
+    // The implementation below stays tested so wiring it later is a change of caller, not a rewrite.
+    expect(() => setup('connectors:\n  runner: local\n')).toThrow(/not wired into dispatch yet/)
   })
 
   it('creates a workspace, launches and talks to it through Orca', async () => {
@@ -82,11 +87,11 @@ describe('the runner connector, twice', () => {
   })
 
   it('creates a git worktree, a tmux session, and types before it presses Enter', async () => {
-    const loaded = setup('connectors:\n  runner: local\n')
+    const loaded = setup()
     const runner = recording()
     const local = createLocalRunner({ loaded, runner })
     const workspace = await local.createWorkspace({ name: 'eng-1', branch: 'person/eng-1', baseBranch: 'main' })
-    expect(workspace.path.endsWith('/eng-1')).toBe(true)
+    expect(workspace.path.replaceAll('\\', '/').endsWith('/eng-1')).toBe(true)
     expect(runner.calls.some((argv) => argv.includes('worktree') && argv.includes('add'))).toBe(true)
 
     const session = await local.launchAgent({ workspace, command: 'claude --model opus' })
@@ -100,7 +105,7 @@ describe('the runner connector, twice', () => {
   })
 
   it('reconciles only the crontab lines it owns, and leaves everyone else\'s alone', async () => {
-    const loaded = setup('connectors:\n  runner: local\n')
+    const loaded = setup()
     const existing = '0 9 * * * /usr/bin/backup\n*/9 * * * * old-command # ak-harness loop-tick\n'
     const runner = recording((argv) => argv[0] === 'crontab' && argv[1] === '-l' ? ok(existing) : ok())
     const local = createLocalRunner({ loaded, runner })
@@ -118,11 +123,28 @@ describe('the runner connector, twice', () => {
   })
 
   it('writes nothing when the crontab already matches', async () => {
-    const loaded = setup('connectors:\n  runner: local\n')
+    const loaded = setup()
     const jobs = scheduledJobs(loaded, ['tick'])
     const current = `${jobs[0]?.cron} ${jobs[0]?.command} # ak-harness ${jobs[0]?.name}\n`
     const runner = recording((argv) => argv[1] === '-l' ? ok(current) : ok())
     expect(await createLocalRunner({ loaded, runner }).schedule(jobs)).toEqual([])
     expect(runner.calls).toHaveLength(1)
+  })
+})
+
+describe('unknown config keys', () => {
+  it('names a key the schema does not know instead of stripping it in silence', () => {
+    // `maxFixRoundz: 2` used to be accepted with `maxFixRounds` quietly taking its default — a typo that reads
+    // as "I configured this" and behaves as "I did not". Reported, not rejected: a config written for a newer
+    // harness legitimately carries keys this version has never heard of.
+    const dir = mkdtempSync(join(tmpdir(), 'agentskit-unknown-keys-')); cleanups.push(dir)
+    writeFileSync(join(dir, 'loop.config.yaml'), exampleYaml.replace('  maxFixRounds: 2', '  maxFixRoundz: 2'))
+    const loaded = loadLoopConfig(join(dir, 'loop.config.yaml'), { AK_HARNESS_NO_GLOBAL: '1' })
+    expect(loaded.unknownKeys).toEqual(['delivery.maxFixRoundz'])
+    expect(loaded.config.delivery.maxFixRounds).toBe(2) // still the default, but no longer silently
+  })
+
+  it('reports nothing for the example config every project copies', () => {
+    expect(setup().unknownKeys).toEqual([])
   })
 })

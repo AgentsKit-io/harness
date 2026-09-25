@@ -1,7 +1,8 @@
 import { spawnSync } from 'node:child_process'
 import { resolve } from 'node:path'
+import { fileURLToPath } from 'node:url'
 
-const root = resolve(new URL('..', import.meta.url).pathname)
+const root = resolve(fileURLToPath(new URL('..', import.meta.url)))
 const result = spawnSync(process.execPath, [resolve(root, 'examples/minimum-profile.mjs')], { cwd: root, encoding: 'utf8' })
 if (result.status !== 0) throw new Error(result.stderr || 'minimum profile example failed')
 const output = JSON.parse(result.stdout.trim())

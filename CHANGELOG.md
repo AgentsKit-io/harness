@@ -1,5 +1,264 @@
 # Changelog
 
+## [Unreleased]
+
+- **`plan approved` supersedes a stale finished run by itself.** A `COMPLETE` (or approval-pending) run whose
+  source or contract had moved on still blocked a new plan with `ACTIVE_RUN` until someone ran `status`, which
+  only reconciles. Planning now marks it `STALE` and supersedes it; a fresh finished run still blocks.
+- **An idle worker with committed but unpushed work is told exactly that.** Observed: a worker committed the whole
+  change and stopped before pushing; the generic idle check-in did not see it and the dispatch was marked stuck
+  40 minutes later with the work sitting in the worktree. Deliver now counts local commits no remote has and
+  asks the worker to push and open the PR.
+
+## [0.19.0] — 2026-09-23
+
+Found by running the loop on a real repository migration with a single, non-default provider.
+
+- **A brief the terminal never confirmed is sent again at once.** The dispatch (and a handoff) recorded that the
+  brief was not confirmed, and then nothing acted on it until the 45-minute idle timeout — observed twice, an agent
+  sat on an empty prompt because the pointer was typed while its shell was still starting it. The dispatch record
+  now carries `briefAccepted`; deliver re-sends the pointer on its first pass over an idle worker, once. The idle
+  nudge also points at `.ak-loop/brief.md`, since "continue from `git status`" means nothing to a worker that never
+  read the brief.
+
+- **A reset time in days is read whole.** "reset in 4 days 11 hours" (opencode's weekly limit) matched nothing,
+  so the provider cooled down for the default 30 minutes and the next dispatch went straight back to it;
+  "1 hour 32 minutes" lost its minutes. Every amount after "reset(s) in" now counts, days included.
+
+- **A brief confirmed on screen must stay there.** For agents whose turns Orca cannot observe, the brief counted
+  as delivered as soon as its first words appeared; observed, an opencode TUI showed the pointer prompt, dropped it
+  and sat on an empty input for minutes. The words must now still be on screen a moment later (a started turn keeps
+  the message in its transcript), or the prompt is sent again.
+
+- **An incomplete review says why.** The reviewer's own explanation (exit code and the tail of its output) was
+  dropped, so "review incomplete twice; needs a human look" sent a person to re-run the review by hand to find out
+  that one lens had returned invalid structured output. It is now kept on the review record, on the
+  `pr.reviewed` event, in the held reason and in `loop watch`.
+
+- **`loop watch --issue` waits for an issue that is not dispatched yet.** It returned `done` at once, silently,
+  when the named issue had no dispatch record — the usual case right after moving it into the queue.
+
+- **Decompose files work outside this repository outside the queue.** The loop delivers pull requests to
+  `project.repo` and nothing else, but decompose also split out issues for other repositories and a deploy;
+  once moved into the queue, a worker would have opened a PR here that did not do the work. Planned issues now
+  carry `outside` (where the work happens, empty for a PR here); those are filed with `linear.outsideLabel`
+  (default `outside-loop`) instead of the queue's labels, say so at the top of their description, and the queue
+  never dispatches an issue carrying that label.
+- **Approved plan documents stay out of someone else's work.** `loop plan approve` and `approve-design` wrote
+  the PRD and the design into `project.root` whatever that checkout held; approved while it sat on an unrelated,
+  dirty branch, the PRD landed silently among that branch's uncommitted changes. They are now written there only
+  when the checkout is the clean `project.baseBranch`; otherwise under `<stateDir>/documents`, and the command's
+  output carries a `note` saying why and that the file needs a PR of its own.
+- **A PR closed without merge is escalated once.** Every later deliver pass repeated the escalation for the
+  same closed PR — blocked label, transition back to `delivery.returnState`, claim release, Orca comment and a
+  `worker.abandoned` event — so an issue a person had since moved was moved back every few minutes.
+- **The orchestrator reads the base branch, not the operator's checkout.** Contract generation, the plan
+  interview, the architect, the votes and decompose ran their model in `project.root` — an operator's checkout
+  can sit on another branch, hundreds of commits behind, and an architect run from one designed work that had
+  already been merged. They now run in a harness-owned detached worktree of `origin/<baseBranch>` under the state
+  directory, fetched and reset before use; a failed fetch fails the stage instead of falling back to the stale
+  tree. `project.orchestratorView: root` keeps the old behaviour.
+- **A worker at a tool-permission prompt is held for a person, never typed into.** `deliver` used to see it as
+  idle and send a check-in: text plus Enter into a dialog whose default is "Allow once", approving exactly the
+  command the agent's own config marked dangerous (`rm -rf`, `git reset --hard`). It now reads Orca's `permission`
+  activity (`OrcaWorktree.activity`, from `worktree ps`) or the prompt on screen, reports `held`, emits
+  `worker.permission-wait` once per idle window, keeps the lease, and no nudge, handoff or relaunch happens.
+- **A worker out of usage is handed to another provider.** `deliver` reads the worker's screen for the CLI's own
+  usage-limit line (opencode: "5 hour usage limit reached. It will reset in …"), marks that provider exhausted until the
+  printed reset, closes the exhausted terminal and hands the task to a builder from a different provider in the same
+  worktree. Such a worker is never idle — its TUI keeps redrawing "retrying" — and Orca reports no usage for some
+  providers, so it used to sit until the provider came back. If the old terminal cannot be closed the issue is held:
+  two agents never share a worktree.
+- **Model output is found where models actually put it.** The plan stages, votes and contract share one extractor:
+  the exact markers when their content parses, else the last fenced JSON block, else the last balanced JSON value that
+  parses — the schema still validates whatever is found. Measured on the interview prompt across five models: kimi-k2.6
+  dropped the markers for a ```json fence, minimax-m3 mangled them (`<<…` / `<<<…>>>`); with the lenient list shapes
+  above, 5/5 now parse, against 2/5 with the strict markers-and-shapes parser.
+- **The design gate does not approve open objections by default.** `loop plan approve-design` refuses when any vote
+  still carries an objection, even at consensus, and lists them; `--accept-objections` carries them into decompose,
+  which is told to settle each one as a decision inside the issue it affects. A 2-of-3 design had been approved while
+  two votes named the same missing decision, and it came back as two blocking contract escalations.
+- **On macOS, machine pressure is the CPU actually busy, not the load average.** `sampleMachine` measures the busy
+  share over 250 ms (`cpuBusyPercent`) and concurrency decisions use it when present; the load average also counts
+  runnable-but-idle and I/O-blocked threads and was observed at 60–80 % with the CPU 80 % idle, capping the loop for
+  nothing.
+- **Review rounds that only discover do not spend the fix-round budget.** A review re-reads the whole change at every
+  head, so a worker that fixed everything it was told could still get a new finding each round and be blocked at
+  `maxFixRounds` — observed: three rounds, three different findings, all fixed, issue blocked. A round whose findings
+  were all absent at earlier heads is now not counted; a finding that persists across heads still is, and twice
+  `maxFixRounds` in total review rounds stays a hard ceiling on cost.
+- **A PR held for protected paths can be released inside the loop, by an attested approval.** `ak-harness loop
+  approve <issue> --head <sha> --by <you>` records who vouched for which commit (in the delivery state and the event
+  log as `pr.human-approved`); the loop then reviews and merges that PR as usual, and a new push needs a new approval.
+  The hold comment prints the exact command. Deliberately not a PR label: a worker holding the same credentials could
+  put one on its own pull request.
+- **An agent whose turns Orca cannot observe is confirmed by its screen.** For such an agent (opencode reports
+  `observation: unsupported`) the stages never pass `input_accepted`, so the launcher checks that the prompt's first
+  words appear on screen and sends again, up to twice, when they do not — an opencode TUI reported idle while still on
+  its splash screen and swallowed the brief. `OrcaSendReceipt` gains `observation`.
+- **A brief counts as delivered only when the agent's turn starts.** Orca's `input_accepted` means typed, not
+  submitted; a pointer prompt sat unsubmitted for 21 minutes and the worker only began when an idle nudge's Enter
+  submitted it. The launcher now observes the request again, presses Enter alone if the turn still has not started
+  (a no-op for a busy agent), and reports the brief unconfirmed otherwise.
+- **A merged issue sheds the flags the loop put on it, and the record says who merged.** Completion removes
+  `blocked`/`needs-info`, and a PR merged outside the loop is recorded as merged by a person — the comment used to
+  claim "a clean review and green checks" for a PR whose review had blocked and whose CI never ran.
+- **A worker starts from the remote base, not the operator's local branch.** The tick fetches
+  `origin/<baseBranch>` and creates the worktree from it; `--base-branch main` made Orca resolve the operator's local
+  `main`, which nobody fast-forwards — a worker started two merges behind and measured code that no longer existed.
+  A failed fetch fails the dispatch.
+- **The worker brief travels as a file, not as keystrokes.** The brief is written to `.ak-loop/brief.md` in the
+  worktree (already excluded from git) and the terminal receives one short line pointing at it. A real 44 KB brief
+  failed every send with `agent_session_ownership_unknown` — deterministically, even with retries — while random
+  text of the same size and line count went through: the TUI's paste handling reacts to content, and no retry fixes
+  that. Relaunches and handoffs use the same path when the worktree path is known.
+- **An ambiguous prompt send is retried by id, not lost.** When Orca answers a send with a failure that names a
+  `--retry-request <id>` (e.g. `agent_session_ownership_unknown`), the adapter re-issues it with that id — up to three
+  times, 5 s × attempt apart, because the cause is a race: a TUI reports idle a moment before its session hook tells
+  Orca who owns the pane. The dispatch used to fail and remove a freshly created worktree.
+- **Phase artifacts stay out of product commits.** At dispatch the harness adds `/.ak-loop/` to the repository's
+  shared `info/exclude`, and the brief says never to commit it — a worker's `git add -A` had put the loop's own
+  evidence files into a product pull request.
+- **The worker brief no longer forbids what the contract asks for.** Standing rule 5 listed `delivery.selfEditPaths`
+  as paths to *never edit* — but that list is a review gate (a PR touching it is held for a human), so a task whose
+  whole job lives under a gated path got a brief that contradicted its contract. The rule now says the paths are
+  gated, to edit them only when the contract requires it, and to say so in the PR. A new rule forbids `git stash`:
+  the stash is shared by every worktree of a repository, and a worker dropping `stash@{0}` by index can destroy
+  another worktree's entry.
+
+- **Gate lists accumulate across config layers.** `delivery.selfEditPaths`, `delivery.secretFilePatterns` and
+  `delivery.requiredChecks` are no longer replaced by a later layer; an entry leaves only when named as `"!entry"`.
+  A machine overlay written to free one path had silently dropped the `packages/**` freeze added to the project
+  five days later.
+- **`loop plan decompose --create` files issues outside the queue and where the queue will find them.** New
+  `linear.entryState` (default `Backlog`) must not be one of `linear.states` — the config is refused otherwise;
+  before, issues were created in `states[0]`, which *is* the queue, so the human gate did not exist. The issues now
+  carry the queue's `requireLabels`/`anyLabels`, land in the project the queue drains (or `--project`), and hang
+  under `--parent <epic>`. `--create` now files the list already decomposed and shown instead of asking the model
+  for a new one — the reviewed list and the created list used to differ; `--refresh` decomposes again. A layer
+  becomes a label only when the project declares it: with none configured the prompt used to offer "no layers
+  configured" as the choice, the model echoed it, and the tracker refused every issue.
+- **The plan interview reads what a model meant instead of losing the round.** While the PRD is being filled, a
+  bare string is a one-item list and an empty list is a gap for `prdGaps` to report — `glm-5.3` answered
+  `"users": "…"` and `"successCriteria": []` and the whole round failed validation. The final PRD stays strict.
+- **`loop plan` has its own time budget.** New `worker.plan.stageTimeoutMs` (default 900 s) covers the interview,
+  architect, design vote and decompose; `worker.plan.timeoutMs` stays the per-issue planner's. The architect designs
+  a whole PRD from a human's shell, and at the shared 300 s `glm-5.3` never finished one.
+- **A worker brief is never typed into a pane that is not `tui-idle`.** The launcher waits a second, longer window;
+  if the TUI still is not ready the dispatch fails (and the half-created worktree is removed) instead of losing the
+  prompt.
+
+## [0.18.0] - 2026-09-22
+
+What a pre-publish review found when it went looking for the gap between what this package claims and what it
+does. Six changes, every one of them a place the harness was wrong about itself.
+
+### Release
+
+- Publishing lives in `release-harness.yml` alongside the checks, as a job that `needs` all three. It used to be
+  a separate workflow running *in parallel* with CI, re-running only typecheck/test/build, so a commit could fail
+  `ak-verify`, the docs check or the Windows matrix and ship anyway. The filename is load-bearing: npm Trusted
+  Publishing authorises by repository **and workflow filename**, and moving the publish to `ci.yml` had it
+  rejected with a 404 on the PUT.
+- Whether a version is new is the registry's answer now, not a `git diff` against `github.event.before`, which is
+  absent after a force-push and was read as "changed".
+- `test:capabilities` and release evidence had nothing running them: the first was in no CI job and no contract
+  check, the second unchecked entirely while `qualification.json` said `0.4.0` inside the shipped tarball.
+
+
+### Hygiene
+
+- `loop validate` names config keys the schema does not know instead of stripping them in silence.
+  `maxFixRoundz: 2` used to be accepted with `maxFixRounds` quietly taking its default — a typo that reads as
+  "I configured this" and behaves as "I did not". Reported, not rejected: a config written for a newer harness
+  legitimately carries keys this version has never heard of.
+- `deliver` derives the required phase artifacts from the same source `tick` used to decide whether to run the
+  planner. A flow that turned the planner off still had deliver demand a `plan.md` the worker was never asked
+  to write, and send back a fix round for the omission.
+- A dispatch with a cached contract no longer skips the whole time-budget guard. It waived the setup share too,
+  and the setup timeout then floored at 1s — a command guaranteed to time out, and with `setup.required`
+  (default) a guaranteed dispatch failure that also burned the worktree.
+- `loop.config.example.yaml`: the `minSeverity` explanation was attached to the `doctorProbe` line, so copying
+  it produced a validation error. `AGENTS.md` no longer claims one `test:*` script per contract criterion —
+  there are 47 scripts emitting 82 criteria names against 18 outcomes, and 12 outcomes emit from none.
+
+### Boundaries
+
+- Every read of a JSON file the harness wrote goes through `readJsonFile(path, schema)` and is validated before
+  the caller sees it. `JSON.parse(readFileSync(path)) as SomeType` was a claim about a file on disk that nothing
+  checked; a record missing a field or holding the wrong type passed the cast and failed somewhere unrelated.
+  `scripts/verify-json-boundaries.mjs` keeps new ones out, with a short reviewed allowlist.
+
+### Token and time economy
+
+- `one-shot-vote:` — `plan-vote` made one full call per vote, so a pool with fewer distinct voters than `votes`
+  called the same model repeatedly with a byte-identical prompt, re-sending the contract and the whole plan each
+  time. It now makes one call per **distinct** voter and asks for the surplus votes inside that call. With enough
+  distinct models nothing changes — N models disagreeing is the point of a jury, and no prompt substitutes for it.
+  The tally still sees the same number of votes, so `approvals` keeps its meaning.
+
+- `scope:` — the seven worker-facing fix-round messages and the recovery brief told the worker to run
+  `delivery.verifyCommand`, the whole gate. `verifyCommandFor()` already existed and resolves the layer's own
+  verify from the labels frozen at dispatch; `deliver` never called it. A project with no layers sees no change;
+  one with them stops paying for the monorepo suite on every fix round, twice over (`maxFixRounds` defaults to 2).
+- `cheapest-sufficient:` — `routing.effort` gave `builder` (writing and debugging the code) `medium` while
+  `reviewer` and `orchestrator` (reading a finished diff, turning an issue into a contract) got `high`. That is
+  the inversion the rule exists to stop, and it paid more for the cheaper problem. Now `builder: high`,
+  the readers `medium`.
+- `windowed:` — `buildIssueTimeline` was the last unbounded read: `readLoopEvents(stateDir)` with no window,
+  parsing `events.ndjson` plus every rotated archive and filtering one issue out in memory. It takes a window
+  now (`--since`, default `30d`).
+
+### Breaking
+
+- `connectors.runner: "local"` is now rejected at config load. It was never wired: `tick`, `deliver` and
+  `install` go straight to Orca, so setting it ran Orca anyway while `doctor` reported `runner.local: passed`.
+  A silently-wrong runner is worse than a loud one. `createLocalRunner` stays tested so wiring it later is a
+  change of caller, not a rewrite.
+
+### Gates
+
+- Auto-merge now has a floor. A flow profile could turn the review, the local verify, the definition of done and
+  CI gating all off and still merge unattended — with `merge.requireHumanApproval` defaulting to `false`, nothing
+  examined the diff and nobody was asked to. Each switch stays (an incident flow skipping the review is the
+  point); all of them off at once holds the PR for a human. The comment in `deliver.ts` claiming the other gates
+  "still run" was false and now describes the floor it actually has.
+
+## [0.17.0] - 2026-09-22
+
+Real-time enforcement inside the worker's own session, and a release that can no
+longer outrun its own gate.
+
+### Worker guard
+
+- `ak-harness loop worker-guard`: a `PreToolUse` hook entrypoint that blocks a
+  `Write`/`Edit`/`MultiEdit`/`NotebookEdit` touching `delivery.selfEditPaths` or
+  `delivery.secretFilePatterns` as it happens — the same `touchesProtectedPaths`
+  check the PR-time gate already made, just early enough to prevent the write
+  instead of reporting it. Installed into the fresh worktree at dispatch and again
+  on a provider handoff, before the worker's terminal opens.
+- `claude` and `grok` get the hook (they share the event shape by design); `opencode`
+  gets static `deny` rules in `.opencode/opencode.json`, a directory created with a
+  self-covering `.gitignore` so nothing the harness writes is visible to `git add`;
+  `codex` is deliberately uncovered while its `PreToolUse` upstream bugs stand. See
+  `docs/ADR-0038`.
+- `delivery.workerGuard.enabled` (default `true`) is the escape hatch.
+- Known limits, stated rather than implied: a `Bash`-mediated write is not caught
+  (neither is it by the gate this backs up), a crashed or timed-out hook fails open
+  in every one of these CLIs, and upgrading the harness with workers in flight can
+  leave their hook pointing at a build that no longer exists — drain first.
+
+### Release can no longer publish past a red gate
+
+- Publishing moved into `ci.yml` as a job that `needs` verify, docs and the
+  macOS/Windows matrix. As its own workflow it ran *in parallel* with CI, re-running
+  only typecheck/test/build itself — so a commit could fail `ak-verify`, the docs
+  check or the Windows matrix and ship anyway.
+- Whether a version is new is now the registry's answer, not a `git diff` against
+  `github.event.before`, which is absent after a force-push and was read as "changed".
+- `scripts/verify-release-workflow.mjs` asserts the dependency itself, so the gap
+  cannot reopen silently.
+
 ## [0.16.0] - 2026-09-22
 
 Cheaper and more visible at the same time: the loop's own token/time waste gets cut, and what it spends becomes
@@ -52,7 +311,7 @@ something a human — or a study comparing how different models behave on the sa
 
 ## [0.15.0] - 2026-09-20
 
-The loop becomes a cycle. The twelve steps of [docs/ROADMAP-SDLC.md](docs/ROADMAP-SDLC.md) close, the phases of one
+The loop becomes a cycle. The twelve steps of the SDLC roadmap close, the phases of one
 issue become files the machine can check instead of claims in a terminal, and the parts of the design that were
 decided in conversation become ADRs 0032–0037.
 

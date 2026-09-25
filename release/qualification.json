@@ -2,13 +2,29 @@
   "type": "agentskit-harness-release-qualification",
   "schemaVersion": 1,
   "package": "@agentskit/harness",
-  "version": "0.4.0",
-  "sourceRevision": "2df60bcbda850382d1a1112f338fa53858c5d4cf",
+  "version": "0.19.0",
+  "sourceRevision": "6d2f6b359ad15c23e3aa6d51ec55d8127dfff42d",
   "status": "blocked",
-  "harnessVerification": { "runId": "1789065264843-3627-dgz8xb", "decision": "COMPLETE", "checksPassed": 21, "checksTotal": 21 },
-  "upstreamCompatibility": { "report": "compatibility/report.json", "status": "blocked" },
-  "pilotBenchmark": { "status": "blocked", "reason": "No comparable owner-approved no-Harness cohort; real code-review run has no baseline and did not pass quality matrix." },
-  "registrySmoke": { "status": "passed", "registry": "https://registry.npmjs.org", "package": "@agentskit/harness@0.4.0", "consumerImport": "passed (runEvalBattery, startRun)", "cliHelp": "passed (ak-verify)" },
+  "harnessVerification": {
+    "runId": null,
+    "decision": "NOT_RECORDED",
+    "note": "The contract runs in CI on every commit (ci.yml, verify job: dist/cli.js run --config .ak-harness/verification.json). No run id is captured into this file yet, so this records that it was not captured \u2014 not that it passed."
+  },
+  "upstreamCompatibility": {
+    "report": "compatibility/report.json",
+    "status": "blocked"
+  },
+  "pilotBenchmark": {
+    "status": "blocked",
+    "reason": "No comparable owner-approved no-Harness cohort; no baseline for a real run."
+  },
+  "registrySmoke": {
+    "status": "not-run",
+    "note": "A registry smoke cannot run before the version is published."
+  },
   "publishable": false,
-  "blockers": ["ecosystem-compatibility", "pilot-benchmark"]
+  "blockers": [
+    "ecosystem-compatibility",
+    "pilot-benchmark"
+  ]
 }

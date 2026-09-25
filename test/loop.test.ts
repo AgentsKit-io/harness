@@ -79,6 +79,17 @@ describe('loop config', () => {
     expect(config.schedule.stageTimeoutSec).toBe(2700)
   })
 
+  // #87 added `structuredOutputFlag` specifically because claude-code's `--permission-mode plan` headless calls
+  // regressed to ending their turn with a status/plan summary instead of the `<<<LOOP_CONTRACT` markers — but the
+  // shipped example never turned it on for the `claude` provider it documents. Reproduced live end to end
+  // (generateContract, real issue, real claude-code): every call failed with "Orchestrator output contains no
+  // contract block" until this flag was set, exactly the failure mode #87 exists to route around. Guards against
+  // the fix regressing back out of the file every project copies verbatim.
+  it('ships structuredOutputFlag for the claude provider, so contract generation is not exposed to the #87 marker-parsing regression by default', () => {
+    const config = parseLoopConfigText(exampleYaml)
+    expect(config.models.providers['claude']?.structuredOutputFlag).toEqual(['--output-format', 'json', '--json-schema', '{schema}'])
+  })
+
   it('fails closed on missing sections, unknown providers, and bad values', () => {
     const attempt = (value: unknown): HarnessError => { try { validateLoopConfig(value); throw new Error('expected failure') } catch (error) { return error as HarnessError } }
     expect(attempt({})).toMatchObject({ code: 'INVALID_CONFIG' })
@@ -108,6 +119,19 @@ describe('loop config', () => {
     expect(overlaid.config.models.builder).toEqual([['claude/haiku']])
     expect(overlaid.configHash).not.toBe(loaded.configHash)
     expect(mergeLoopConfig({ a: { b: 1, c: [1, 2] }, d: 1 }, { a: { c: [3] }, e: 2 })).toEqual({ a: { b: 1, c: [3] }, d: 1, e: 2 })
+  })
+
+  it('never lets an overlay silently drop a gate the project added — gate lists accumulate, and shrink only by !entry', () => {
+    const project = { delivery: { selfEditPaths: ['loop.config.yaml', '.github/**', 'packages/**'], requiredChecks: ['verify'], ignoreChecks: ['bot'] } }
+    // The overlay was written before `packages/**` existed and only meant to free `.github/**`.
+    const overlay = { delivery: { selfEditPaths: ['!.github/**', '.github/workflows/**', 'CODEOWNERS'], requiredChecks: ['e2e'], ignoreChecks: ['other'] } }
+    expect(mergeLoopConfig(project, overlay)).toEqual({ delivery: {
+      selfEditPaths: ['loop.config.yaml', 'packages/**', '.github/workflows/**', 'CODEOWNERS'],
+      requiredChecks: ['verify', 'e2e'],
+      ignoreChecks: ['other'],
+    } })
+    // A negation of something the base never had is dropped, not kept as a literal glob.
+    expect(mergeLoopConfig({}, { delivery: { selfEditPaths: ['!x', 'y'] } })).toEqual({ delivery: { selfEditPaths: ['y'] } })
   })
 
   it('advances the configured queue owner once the dispatchable queue and leases are empty', () => {

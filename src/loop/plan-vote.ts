@@ -3,11 +3,13 @@ import { dirname, join } from 'node:path'
 import { z } from 'zod'
 import type { CommandRunner } from '../adapters/command.js'
 import { fail } from '../kernel/errors.js'
+import { extractOutputBlock } from './output-block.js'
 import { hashJson } from '../kernel/hash.js'
 import { providerIdentity, renderHeadlessArgv, type EffortLevel, type LoopConfig } from './config.js'
 import { classifyProviderFailure, untrusted, type ProviderFailure, type TaskContract } from './contract.js'
 import { writeJsonAtomic } from './fs-atomic.js'
 import type { RankedModel } from './routing.js'
+import { readJsonFile } from '../kernel/json-file.js'
 
 export const PLAN_OPEN = '<<<LOOP_PLAN'
 export const PLAN_CLOSE = 'LOOP_PLAN>>>'
@@ -60,7 +62,9 @@ export const planPath = (stateDir: string, issue: string): string => join(stateD
 export const readStoredPlan = (stateDir: string, issue: string): StoredPlan | null => {
   const path = planPath(stateDir, issue)
   if (!existsSync(path)) return null
-  try { return JSON.parse(readFileSync(path, 'utf8')) as StoredPlan } catch { return null }
+  // The plan is read back to brief a worker and to judge a replan; a truncated one used to reach both as a
+  // fully-typed object. `issue` and `plan.steps` are what every reader dereferences without asking.
+  return readJsonFile(path, z.object({ issue: z.string().min(1), plan: z.object({ steps: z.array(z.unknown()) }).loose() }).loose()) as StoredPlan | null
 }
 
 export const writeStoredPlan = (stateDir: string, plan: StoredPlan): void => {
@@ -69,12 +73,8 @@ export const writeStoredPlan = (stateDir: string, plan: StoredPlan): void => {
   writeJsonAtomic(path, plan)
 }
 
-const between = (text: string, open: string, close: string, label: string): string => {
-  const start = text.lastIndexOf(open)
-  const end = text.lastIndexOf(close)
-  if (start < 0 || end < 0 || end <= start) return fail(`Output contains no ${label} block.`, 'INVALID_INPUT')
-  return text.slice(start + open.length, end).trim().replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '')
-}
+const between = (text: string, open: string, close: string, label: string): string =>
+  extractOutputBlock(text, open, close) ?? fail(`Output contains no ${label} block.`, 'INVALID_INPUT')
 
 export const parsePlanOutput = (stdout: string): TaskPlan => {
   let parsed: unknown
@@ -92,6 +92,28 @@ export const parseVoteOutput = (stdout: string): PlanVote => {
   // A rejection with no objection cannot be answered, so it is not allowed to count as one.
   if (result.data.vote === 'reject' && !result.data.objections.length) return fail('A rejecting vote must list at least one concrete objection.', 'INVALID_INPUT')
   return result.data
+}
+
+/**
+ * The panel form of `parseVoteOutput`: a JSON array of votes from one call. A model that returns fewer than were
+ * asked for yields fewer votes — the same shape as a voter whose call failed, which the tally already handles by
+ * counting what it got. Silently padding the list would invent approvals nobody cast.
+ */
+export const parseVoteBatchOutput = (stdout: string): readonly PlanVote[] => {
+  let parsed: unknown
+  try { parsed = JSON.parse(between(stdout, VOTE_OPEN, VOTE_CLOSE, 'vote')) } catch (error) { return fail(`Vote block is not valid JSON: ${error instanceof Error ? error.message : String(error)}`, 'INVALID_INPUT') }
+  const result = z.array(PlanVoteSchema).min(1).safeParse(parsed)
+  if (!result.success) return fail(`Vote block failed validation: ${result.error.issues.map((issue) => `${issue.path.join('.')}: ${issue.message}`).join('; ')}`, 'INVALID_INPUT')
+  // Same rule as a single vote: a rejection nobody can answer is dropped rather than counted against the plan.
+  return result.data.filter((vote) => vote.vote === 'approve' || vote.objections.length)
+}
+
+/** How many votes each distinct voter supplies, spreading the remainder over the first ones. */
+export const distributeVotes = (votes: number, voters: number): readonly number[] => {
+  if (voters <= 0) return []
+  const base = Math.floor(votes / voters)
+  const extra = votes % voters
+  return Array.from({ length: voters }, (_value, index) => base + (index < extra ? 1 : 0)).filter((count) => count > 0)
 }
 
 const contractBlock = (contract: TaskContract): string => [
@@ -119,7 +141,29 @@ Produce the plan as JSON between the exact markers ${PLAN_OPEN} and ${PLAN_CLOSE
 }
 Rules: every contract outcome must be reachable by the steps; new behaviour gets a test in \`tests\`; prefer the smallest change that satisfies the contract; never plan work outside the contract's scope.`
 
-export const renderVotePrompt = (input: { readonly issue: string; readonly config: LoopConfig; readonly contract: TaskContract; readonly plan: TaskPlan }): string => `You are one of ${input.config.worker.plan.votes} reviewers voting on a technical plan for ${input.config.project.repo}, issue ${input.issue}. ${input.config.worker.plan.approvals} of ${input.config.worker.plan.votes} approvals let the work start.
+/**
+ * one-shot-vote: when the distinct voter pool is smaller than `votes`, the same model used to be called once per
+ * vote with a byte-identical prompt — the contract and the whole plan re-sent each time to buy sampling noise.
+ * `perspectives > 1` asks that model for that many independent votes in a single call instead. Where there are
+ * enough distinct voters, the caller still makes one call each: N models disagreeing is the point of a jury, and
+ * no prompt can substitute for it.
+ */
+export const renderVotePrompt = (input: { readonly issue: string; readonly config: LoopConfig; readonly contract: TaskContract; readonly plan: TaskPlan; readonly perspectives?: number }): string => (input.perspectives ?? 1) > 1
+  ? `You are a panel of ${input.perspectives} independent reviewers voting on a technical plan for ${input.config.project.repo}, issue ${input.issue}. ${input.config.worker.plan.approvals} of ${input.config.worker.plan.votes} approvals let the work start.
+
+Each reviewer judges the plan alone, on its own reading, and may disagree with the others. Do not converge them: a panel that always agrees is one reviewer with extra steps.
+
+## Frozen contract
+${contractBlock(input.contract)}
+
+## Proposed plan
+${untrusted(`plan:${input.issue}`, JSON.stringify(input.plan, null, 2))}
+
+Return exactly ${input.perspectives} votes as a JSON array between the exact markers ${VOTE_OPEN} and ${VOTE_CLOSE}, nothing else between them:
+[ { "vote": "approve" | "reject", "objections": ["concrete, addressable problem"] } ]
+
+Reject only for something a planner can act on: an outcome no step reaches, a step that leaves the contract's scope, a missing test for new behaviour, a risk with no containment, or a step whose files contradict the contract's touchpoints. Style preferences are not objections. A rejection without at least one concrete objection is discarded.`
+  : `You are one of ${input.config.worker.plan.votes} reviewers voting on a technical plan for ${input.config.project.repo}, issue ${input.issue}. ${input.config.worker.plan.approvals} of ${input.config.worker.plan.votes} approvals let the work start.
 
 ## Frozen contract
 ${contractBlock(input.contract)}
@@ -139,7 +183,7 @@ const callHeadless = async (input: { readonly runner: CommandRunner; readonly co
   const { settings } = providerIdentity(input.config, candidate.provider)
   const argv = renderHeadlessArgv(settings, candidate.model, input.call.prompt, candidate.effort)
   if (!argv) return { failure: { provider: candidate.provider, model: candidate.model, kind: 'other', detail: `no headless argv template (models.providers.${candidate.provider}.headless)` } }
-  const outcome = await input.runner.run(argv, { timeoutMs: input.timeoutMs, cwd: input.root })
+  const outcome = await input.runner.run(argv, { timeoutMs: input.timeoutMs, cwd: input.root, promptOnStdin: true })
   input.onProviderCall?.({ role: input.call.role, provider: candidate.provider, model: candidate.model, effort: candidate.effort, durationMs: outcome.durationMs, exitCode: outcome.code, timedOut: outcome.timedOut, stdoutBytes: outcome.stdout.length, stderrBytes: outcome.stderr.length })
   const detail = `${outcome.stderr.trim()}\n${outcome.stdout.trim()}`.trim().slice(0, 600)
   if (outcome.timedOut || outcome.code !== 0) return { failure: { provider: candidate.provider, model: candidate.model, kind: classifyProviderFailure(detail, outcome.timedOut), detail: outcome.timedOut ? `timed out after ${input.timeoutMs}ms` : `exited ${outcome.code ?? 'null'}: ${detail || 'no output'}` } }
@@ -218,14 +262,21 @@ export const runPlanWithVotes = async (input: PlanWithVotesInput): Promise<Store
     }
 
     const votes: CastVote[] = []
-    // One vote per distinct candidate where possible; with fewer candidates than votes the list wraps, and the
-    // record says which model cast which vote, so "three votes" never silently means "one model, three times".
-    for (let index = 0; index < settings.votes; index += 1) {
-      const candidate = input.voters[index % Math.max(1, input.voters.length)]
+    // One call per DISTINCT voter, never one per vote. With enough distinct models the two are the same thing and
+    // nothing changes: the record still says which model cast which vote, so "three votes" never silently means
+    // "one model, three times". With fewer, the surplus votes are asked for inside that voter's single call
+    // (one-shot-vote) instead of re-sending the contract and the whole plan for each one.
+    const distinct = input.voters.filter((candidate, index) => input.voters.findIndex((other) => other.provider === candidate.provider && other.model === candidate.model) === index)
+    const perVoter = distributeVotes(settings.votes, distinct.length)
+    for (const [index, count] of perVoter.entries()) {
+      const candidate = distinct[index]
       if (!candidate) break
-      const result = await callHeadless({ runner: input.runner, config: input.config, root: input.root, timeoutMs: input.voteTimeoutMs ?? settings.timeoutMs, call: { candidate, role: 'voter', prompt: renderVotePrompt({ issue: input.issue, config: input.config, contract: input.contract, plan: proposed.plan }) }, onProviderCall: input.onProviderCall })
+      const result = await callHeadless({ runner: input.runner, config: input.config, root: input.root, timeoutMs: input.voteTimeoutMs ?? settings.timeoutMs, call: { candidate, role: 'voter', prompt: renderVotePrompt({ issue: input.issue, config: input.config, contract: input.contract, plan: proposed.plan, perspectives: count }) }, onProviderCall: input.onProviderCall })
       if ('failure' in result) { failures.push(result.failure); if (result.failure.kind !== 'other') input.onProviderFailure?.(result.failure); continue }
-      try { votes.push({ ...parseVoteOutput(result.stdout), provider: candidate.provider, model: candidate.model }) } catch (error) { failures.push({ provider: candidate.provider, model: candidate.model, kind: 'output', detail: error instanceof Error ? error.message : String(error) }) }
+      try {
+        const cast = count > 1 ? parseVoteBatchOutput(result.stdout) : [parseVoteOutput(result.stdout)]
+        for (const vote of cast.slice(0, count)) votes.push({ ...vote, provider: candidate.provider, model: candidate.model })
+      } catch (error) { failures.push({ provider: candidate.provider, model: candidate.model, kind: 'output', detail: error instanceof Error ? error.message : String(error) }) }
     }
     lastVotes = votes
     input.onCycle?.(cycle, votes)

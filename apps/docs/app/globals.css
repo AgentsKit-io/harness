@@ -5,6 +5,12 @@
 @import './brand-tokens.css';
 
 :root {
+  --ak-font-body: var(--font-inter), Inter, ui-sans-serif, system-ui, sans-serif;
+  --ak-font-mono: var(--font-jetbrains), 'JetBrains Mono', ui-monospace, monospace;
+  --ak-font-display: var(--font-space-grotesk), 'Space Grotesk', Inter, ui-sans-serif, system-ui, sans-serif;
+}
+
+:root {
   --harness-ink: var(--ak-fg);
   --harness-paper: #f7f8f3;
   --harness-paper-strong: #f4f7f2;
