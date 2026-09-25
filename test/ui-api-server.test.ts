@@ -1,7 +1,6 @@
-import { mkdirSync, mkdtempSync, rmSync } from 'node:fs'
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { fileURLToPath } from 'node:url'
 import { afterEach, describe, expect, it } from 'vitest'
 import type { CommandResult, CommandRunner } from '../src/adapters/command.js'
 import type { LoadedLoopConfig } from '../src/loop/config.js'
@@ -119,7 +118,10 @@ describe('the control-plane HTTP surface', () => {
 
   it('serves the built frontend with the session token injected before </head>', async () => {
     const root = mkdtempSync(join(tmpdir(), 'harness-ui-server-')); cleanups.push(root)
-    const appDir = fileURLToPath(new URL('../dist/app', import.meta.url))
+    // A minimal stand-in for the real `vite build` output, not the real `dist/app` — the assembled dist is only
+    // guaranteed to exist after `pnpm ui:build`, which the test suite never runs as a prerequisite.
+    const appDir = mkdtempSync(join(tmpdir(), 'harness-ui-app-')); cleanups.push(appDir)
+    writeFileSync(join(appDir, 'index.html'), '<!doctype html><html><head></head><body></body></html>')
     const server = await startUiServer({ loaded: loadedFor(root), runner, port: 0, board: emptyBoard, appDir })
     servers.push(server)
     const html = await (await fetch(server.url)).text()

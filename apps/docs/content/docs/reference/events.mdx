@@ -13,7 +13,7 @@ timestamp) and `type` on top of the fields below. A plugin subscribes with
 The vocabulary is enforced by the compiler: `appendLoopEvent` accepts only these names, so an event that is not
 here cannot be emitted — and a name here that nothing emits fails the test suite.
 
-74 loop events.
+84 loop events.
 
 ## `contract.*`
 
@@ -22,6 +22,14 @@ here cannot be emitted — and a name here that nothing emits fails the test sui
 | `contract.escalated` | `issue`, `reasons`, `digest` | A contract was frozen but is not dispatchable; a human was asked to settle it. |
 | `contract.failed` | `issue`, `error` | Contract generation failed on every candidate provider. |
 | `contract.generated` | `issue`, `provider`, `model`, `effort`, `digest` | A contract was frozen successfully. `provider`/`model`/`effort` are what actually produced it — the join key for comparing how different LLMs (at what reasoning effort) did on the same kind of issue. |
+
+## `human.*`
+
+| Event | Carries | What it means |
+|---|---|---|
+| `human.hitl-requested` | `issue`, `requestId`, `batchId`, `role`, `stage`, `question`, `context`, `options`, `recommendedOptionId`, `digest` | A structured human decision was requested by an LLM stage. |
+| `human.hitl-answered` | `issue`, `requestId`, `batchId`, `role`, `stage`, `optionId`, `freeText`, `digest`, `actor` | A human answered one structured HITL request. |
+| `human.hitl-batch-ready` | `issue`, `batchId`, `requestId` | All requests in a structured HITL batch have answers and the stage may resume. |
 
 ## `plan.*`
 
@@ -41,6 +49,7 @@ here cannot be emitted — and a name here that nothing emits fails the test sui
 | `worker.nudged` | `issue`, `kind`, `reason`, `worktreeId` | An idle worker was nudged in its own terminal — and also the terminal outcome `nudged`, which ends a delivery pass on the same issue. Two emissions, one name: `kind` is present on the first, `reason` on the second. |
 | `worker.permission-wait` | `issue`, `terminal`, `reason` | The worker stopped at a tool-permission prompt: held for a person, never typed into. Once per idle window. |
 | `worker.reactivated` | `issue`, `terminal`, `previousTerminal` | A stale terminal was relaunched for a worker that was still supposed to be working. |
+| `worker.hitl-resumed` | `issue`, `requestIds` | A human answered a worker HITL request and the decision was sent back to the worker terminal. |
 | `worker.reopened` | `issue`, `pr`, `previousHead`, `head`, `previousOutcome` | A finished issue came back: a new head on a PR the loop had already closed out. |
 | `worker.handed-off` | `issue`, `from`, `to`, `worktreeId`, `branch`, `reason`, `briefAccepted` | The task was handed to another provider in the same worktree, on the same branch — and also the terminal outcome `handed-off` that ends the delivery pass which did it. |
 | `worker.ci-round` | `issue`, `pr`, `head`, `round` | CI is red; the failing checks went back to the worker as a fix round. |
@@ -55,6 +64,7 @@ here cannot be emitted — and a name here that nothing emits fails the test sui
 | `worker.waiting` | `issue`, `reason`, `worktreeId` | Nothing to do at this head: the pass ended waiting for CI, a push, or a human. |
 | `worker.reviewed` | `issue`, `reason`, `worktreeId` | The review ran and the pass ended there, without merging. |
 | `worker.fix-round` | `issue`, `reason`, `worktreeId` | The pass ended by sending the worker back to work. |
+| `worker.needs-input` | `issue`, `reason`, `worktreeId` | A structured human decision stopped delivery without turning it into a technical failure. |
 
 ## `pr.*`
 
@@ -88,6 +98,7 @@ here cannot be emitted — and a name here that nothing emits fails the test sui
 | `github-intake.fix-round` | `pr`, `reason` | Sent back to its author. |
 | `github-intake.nudged` | `pr`, `reason` | Its author was nudged. |
 | `github-intake.handed-off` | `pr`, `reason` | It changed hands. |
+| `github-intake.needs-input` | `pr`, `reason` | An external review requested a structured human decision. |
 
 ## `release.*`
 
@@ -198,6 +209,15 @@ here cannot be emitted — and a name here that nothing emits fails the test sui
 | Event | Carries | What it means |
 |---|---|---|
 | `verify.passed` | `issue`, `pr`, `head` | The project's own `delivery.verify.argv` passed before a review was even requested. |
+
+## `ui.*`
+
+| Event | Carries | What it means |
+|---|---|---|
+| `ui.run-enqueued` | `issue` | A fresh attempt is queued through the control plane — the wizard's confirm, or a retry. `queue.ts` is the authoritative record of the attempt itself (read live by `store.ts`, and by `tick.ts` for `queue.mode: explicit`); this event only carries the phase signal nothing else emits before a dispatch happens: "an operator just asked for this." |
+| `ui.cleanup-completed` | `issue`, `runId` | Cancellation cleanup (terminal, worktree, lease, tracker state) finished for a run. |
+| `ui.cleanup-failed` | `issue`, `runId`, `detail` | Cancellation cleanup failed partway; the run is held for a human to inspect. |
+| `ui.issue-decided` | `issue`, `action` | A human resolved a `needs-decision` issue (a PR closed without merge): close it for good, or reopen it for a fresh run. The only decision type in the control plane that isn't a structured HITL question — there is nothing to ask the LLM, the tracker state already says what happened. |
 
 ## Harness run events
 
