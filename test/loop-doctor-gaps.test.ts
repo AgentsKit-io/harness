@@ -97,6 +97,31 @@ describe('runLoopDoctor probe failures', () => {
     expect(report.status).toBeDefined()
     expect(report.checks.some((check) => check.id.startsWith('routing.'))).toBe(true)
   })
+
+  // schedule.stageTimeoutSec has no schema ceiling (a caller outside Orca's precheck, e.g. a plain OS scheduler,
+  // legitimately needs more than 600s) but for schedule.runner: precheck (the default) Orca's own
+  // `automations edit --precheck-timeout` rejects anything above 600 — deterministically failing `loop install`.
+  // doctor is read-only and meant to catch exactly this kind of thing before a side-effecting command hits it.
+  it('fails schedule.stage-timeout when stageTimeoutSec exceeds Orca\'s precheck ceiling under runner: precheck', async () => {
+    const bin = fakeBinDir(['claude', 'codex', 'opencode', 'grok'])
+    const yaml = exampleYaml.replace('stageTimeoutSec: 600', 'stageTimeoutSec: 2700')
+    const dir = configDir(yaml)
+    const runner = fakeRunner()
+    const report = await runLoopDoctor({ configPath: join(dir, 'loop.config.yaml'), runner, env: { PATH: bin, XAI_API_KEY: 'k' }, platform: 'darwin', now: () => new Date('2026-09-11T12:00:00.000Z'), probe: false })
+    expect(report.checks.find((check) => check.id === 'schedule.stage-timeout')).toMatchObject({ status: 'failed', detail: expect.stringContaining('2700') })
+    expect(report.status).toBe('failed')
+  })
+
+  it('does not flag schedule.stage-timeout when stageTimeoutSec is within the ceiling, or when runner is not precheck', async () => {
+    const bin = fakeBinDir(['claude', 'codex', 'opencode', 'grok'])
+    const withinCeiling = configDir(exampleYaml)
+    const runner = fakeRunner()
+    const passing = await runLoopDoctor({ configPath: join(withinCeiling, 'loop.config.yaml'), runner, env: { PATH: bin, XAI_API_KEY: 'k' }, platform: 'darwin', now: () => new Date('2026-09-11T12:00:00.000Z'), probe: false })
+    expect(passing.checks.find((check) => check.id === 'schedule.stage-timeout')).toBeUndefined()
+    const agentRunner = configDir(exampleYaml.replace('runner: precheck', 'runner: agent').replace('stageTimeoutSec: 600', 'stageTimeoutSec: 2700'))
+    const agentReport = await runLoopDoctor({ configPath: join(agentRunner, 'loop.config.yaml'), runner, env: { PATH: bin, XAI_API_KEY: 'k' }, platform: 'darwin', now: () => new Date('2026-09-11T12:00:00.000Z'), probe: false })
+    expect(agentReport.checks.find((check) => check.id === 'schedule.stage-timeout')).toBeUndefined()
+  })
 })
 
 describe('doc-bridge checks', () => {

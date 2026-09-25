@@ -82,6 +82,12 @@ export const runLoopDoctor = async (input: LoopDoctorInput): Promise<LoopDoctorR
   else push('orca.version', 'passed', `Orca ${version} ≥ ${config.orca.minVersion}`)
   if (status) push('orca.runtime', status.runtimeReady ? 'passed' : 'failed', status.runtimeReady ? `runtime ready (app ${status.appRunning ? 'running' : 'not running'})` : `runtime ${status.runtimeState}; start it with "${config.orca.bin} open"`)
   else push('orca.runtime', 'failed', orcaError ?? 'status unavailable')
+  // schedule.stageTimeoutSec has no schema ceiling (a caller outside Orca's precheck, e.g. a plain OS scheduler,
+  // legitimately needs more than 600s) but Orca's own `automations edit --precheck-timeout` rejects anything
+  // above 600 for a stage actually wired to a precheck automation — this deterministically fails `loop install`
+  // for that stage, worth catching here (doctor is read-only, install is not) rather than only via Orca's own
+  // CLI error at install time.
+  if (config.schedule.runner === 'precheck' && config.schedule.stageTimeoutSec > 600) push('schedule.stage-timeout', 'failed', `stageTimeoutSec (${config.schedule.stageTimeoutSec}s) exceeds Orca's precheck ceiling of 600s; "loop install" will fail creating/editing the precheck automation. Lower schedule.stageTimeoutSec to 600 or fewer, or switch schedule.runner to "agent".`)
 
   const [accountList, agentHooks] = await Promise.all([
     orcaAccountList(input.runner, orcaOptions).catch((error: unknown) => { push('orca.accounts', 'warning', `account list unavailable: ${message(error)}`); return null }),
