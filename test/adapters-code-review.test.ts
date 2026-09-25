@@ -1,4 +1,4 @@
-import { mkdtempSync, rmSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
@@ -73,7 +73,7 @@ describe('parseReviewResult', () => {
 })
 
 const baseInput: CodeReviewInput = {
-  cli: 'agentskit-review', repo: 'org/repo', number: 42, provider: 'codex', profile: 'strict', votes: 1,
+  cli: 'agentskit-review', repo: 'org/repo', baseBranch: 'main', number: 42, provider: 'codex', profile: 'strict', votes: 1,
   minSeverity: 'med', deadlineMs: 60_000, maxCalls: 10, post: false, resultFile: '/tmp/does-not-matter.json',
 }
 
@@ -186,6 +186,76 @@ describe('runCodeReview', () => {
     const trackingRunner: CommandRunner = { run: async (argv, options) => { calls.push(options); return cmd({ code: 0 }) } }
     await runCodeReview(trackingRunner, { ...baseInput, resultFile: tempResultFile(), cwd: '/work', env: { FOO: 'bar' } })
     expect(calls[0]).toMatchObject({ cwd: '/work', env: { FOO: 'bar' } })
+  })
+
+  // `agentskit-review` spawns each lens's own `claude -p`/`codex exec` call with a 120s inner timeout,
+  // read only from this env var — separate from `deadlineMs` (the CLI's own `--deadline-ms`, an outer
+  // per-review budget that never reaches that inner call). Nothing set this before, so ordinary source
+  // files (not just large ones) routinely exceeded 120s and came back `status: incomplete` — observed
+  // live, twice, on the same PR — until a human looked. This is the fix.
+  it('forwards subprocessTimeoutMs as AGENTSKIT_REVIEW_SUBPROCESS_TIMEOUT_MS, merged with any existing env', async () => {
+    const calls: unknown[] = []
+    const trackingRunner: CommandRunner = { run: async (argv, options) => { calls.push(options); return cmd({ code: 0 }) } }
+    await runCodeReview(trackingRunner, { ...baseInput, resultFile: tempResultFile(), env: { FOO: 'bar' }, subprocessTimeoutMs: 300_000 })
+    expect(calls[0]).toMatchObject({ env: { FOO: 'bar', AGENTSKIT_REVIEW_SUBPROCESS_TIMEOUT_MS: '300000' } })
+  })
+
+  it('leaves env untouched when subprocessTimeoutMs is omitted', async () => {
+    const calls: unknown[] = []
+    const trackingRunner: CommandRunner = { run: async (argv, options) => { calls.push(options); return cmd({ code: 0 }) } }
+    await runCodeReview(trackingRunner, { ...baseInput, resultFile: tempResultFile(), env: { FOO: 'bar' } })
+    expect(calls[0]).toMatchObject({ env: { FOO: 'bar' } })
+  })
+
+  // agentskit-review's own per-run analysis token budget (~87_200 usable under --profile fast) has no CLI
+  // flag, only a --config <file> JSON document. Observed live: an ordinary ~10-file PR — not an unusually
+  // large one — aborted mid-review with "analysis tokens budget exceeded (87200)" because nothing ever
+  // raised it. This writes that config to a temp file and points --config at it.
+  it('writes a temp --config file carrying analysisMaxTokens/analysisGlobalMaxTokens and the real project baseBranch, and cleans it up', async () => {
+    let seenArgv: readonly string[] = []
+    let configFileDuringRun: string | undefined
+    const resultFile = tempResultFile()
+    const trackingRunner: CommandRunner = {
+      run: async (argv) => {
+        seenArgv = argv
+        configFileDuringRun = argv[argv.indexOf('--config') + 1]
+        expect(existsSync(configFileDuringRun!)).toBe(true)
+        expect(JSON.parse(readFileSync(configFileDuringRun!, 'utf8'))).toMatchObject({ target: { baseBranch: 'trunk' }, review: { maxTokens: 800_000, globalMaxTokens: 2_000_000 } })
+        return cmd({ code: 0 })
+      },
+    }
+    // baseBranch deliberately not 'main': proves the temp config's target.baseBranch tracks the project's real
+    // base branch instead of a hardcoded literal — a repo that isn't named 'main' used to get a wrong value here.
+    await runCodeReview(trackingRunner, { ...baseInput, baseBranch: 'trunk', resultFile, analysisMaxTokens: 800_000, analysisGlobalMaxTokens: 2_000_000 })
+    expect(seenArgv).toContain('--config')
+    expect(existsSync(configFileDuringRun!)).toBe(false)
+  })
+
+  it('never adds --config when analysisMaxTokens/analysisGlobalMaxTokens are both omitted', async () => {
+    const calls: readonly string[][] = []
+    const trackingRunner: CommandRunner = { run: async (argv) => { calls.push([...argv]); return cmd({ code: 0 }) } }
+    await runCodeReview(trackingRunner, { ...baseInput, resultFile: tempResultFile() })
+    expect(calls[0]).not.toContain('--config')
+  })
+
+  // The temp config path used to be keyed only by PR number (review-config-<number>.json): two overlapping
+  // reviews of the same PR (a retry started before a killed prior attempt's process fully released the file)
+  // would share one path and could stomp each other's config or delete it out from under the other mid-run.
+  it('gives two concurrent reviews of the same PR number distinct temp config paths', async () => {
+    const seenPaths: string[] = []
+    const trackingRunner: CommandRunner = {
+      run: async (argv) => {
+        seenPaths.push(argv[argv.indexOf('--config') + 1]!)
+        await new Promise((resolve) => setTimeout(resolve, 10)) // hold the window open, as two real overlapping runs would
+        return cmd({ code: 0 })
+      },
+    }
+    await Promise.all([
+      runCodeReview(trackingRunner, { ...baseInput, resultFile: tempResultFile(), analysisMaxTokens: 800_000 }),
+      runCodeReview(trackingRunner, { ...baseInput, resultFile: tempResultFile(), analysisMaxTokens: 800_000 }),
+    ])
+    expect(seenPaths).toHaveLength(2)
+    expect(seenPaths[0]).not.toBe(seenPaths[1])
   })
 })
 

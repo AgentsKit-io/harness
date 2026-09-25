@@ -1,4 +1,6 @@
-import { existsSync, readFileSync } from 'node:fs'
+import { randomUUID } from 'node:crypto'
+import { existsSync, readFileSync, unlinkSync, writeFileSync } from 'node:fs'
+import { dirname, join } from 'node:path'
 import type { CommandRunner } from './command.js'
 
 /** agentskit-review severities, weakest first. */
@@ -42,6 +44,8 @@ export interface CodeReviewOutcome {
 export interface CodeReviewInput {
   readonly cli: string
   readonly repo: string
+  /** `project.baseBranch` — only reaches the CLI via the `--config` temp file (see `buildAnalysisTokenConfig`'s `target.baseBranch`) when one is written; `--pr` below is what actually selects the PR. */
+  readonly baseBranch: string
   readonly number: number
   readonly provider: string
   readonly model?: string
@@ -54,6 +58,20 @@ export interface CodeReviewInput {
   readonly concurrency?: number
   readonly minSeverity: ReviewSeverity
   readonly deadlineMs: number
+  /** Forwarded as `AGENTSKIT_REVIEW_SUBPROCESS_TIMEOUT_MS` — see that config field's own doc comment for why this exists separately from `deadlineMs`. */
+  readonly subprocessTimeoutMs?: number
+  /**
+   * `agentskit-review`'s per-run analysis token budget (`review.maxTokens`/`globalMaxTokens` — 87_200 usable
+   * by default under `--profile fast`) has no CLI flag; it is readable only from a `--config <file>` JSON
+   * document, which nothing here ever generated. Observed live: an ordinary ~10-file issue PR — not an
+   * unusually large one — exceeded the default and aborted mid-review (`analysis tokens budget exceeded
+   * (87200)`), landing as the same `status: incomplete` the missing subprocess timeout used to cause. When
+   * either is set, `runCodeReview` writes a small temp config with just these two fields (plus the minimal
+   * `target` block the CLI's schema requires present, even though `--pr` below is what actually selects the
+   * PR) and passes `--config` pointing at it.
+   */
+  readonly analysisMaxTokens?: number
+  readonly analysisGlobalMaxTokens?: number
   readonly maxCalls: number
   readonly post: boolean
   readonly resultFile: string
@@ -112,10 +130,35 @@ export const parseReviewEvidence = (value: unknown): ReviewUsage => {
 
 export const buildReviewArgv = (input: CodeReviewInput): readonly string[] => [input.cli, '--pr', `${input.repo}#${input.number}`, '--provider', input.provider, ...(input.model ? ['--model', input.model] : []), ...(input.mode && input.mode !== 'isolated' ? ['--mode', input.mode] : []), ...(input.transport ? ['--transport', input.transport] : []), '--profile', input.profile, '--votes', String(input.votes), ...(input.concurrency ? ['--concurrency', String(input.concurrency)] : []), '--min-severity', 'nit', '--block', input.minSeverity, '--max-calls', String(input.maxCalls), '--deadline-ms', String(input.deadlineMs), '--result', input.resultFile, ...(input.sarifFile ? ['--sarif', input.sarifFile] : []), ...(input.post ? ['--post'] : [])]
 
+/**
+ * The `--config` document's own schema requires every top-level section present (`target` has no schema
+ * default), even though `--pr` below is what actually selects the PR — this exists only to carry
+ * `analysisMaxTokens`/`analysisGlobalMaxTokens` through, which have no CLI flag of their own.
+ */
+const buildAnalysisTokenConfig = (input: CodeReviewInput): Record<string, unknown> => ({
+  target: { provider: 'github', repository: input.repo, baseBranch: input.baseBranch },
+  review: { maxTokens: input.analysisMaxTokens, globalMaxTokens: input.analysisGlobalMaxTokens },
+})
+
 /** Run one review. Exit 0 = clean, 1 = findings at/above the floor, 2 = incomplete; the `--result` file refines the verdict. */
 export const runCodeReview = async (runner: CommandRunner, input: CodeReviewInput): Promise<CodeReviewOutcome> => {
-  const argv = buildReviewArgv(input)
-  const outcome = await runner.run(argv, { timeoutMs: input.deadlineMs + 120_000, ...(input.cwd ? { cwd: input.cwd } : {}), ...(input.env ? { env: input.env } : {}) })
+  const needsTokenConfig = input.analysisMaxTokens !== undefined || input.analysisGlobalMaxTokens !== undefined
+  // A random id, not just the PR number: two review invocations for the same PR (a retry started before a
+  // killed prior attempt's process fully released the file, or a lock bypass, or simply two concurrent calls in
+  // this same process) would otherwise share one path and step on each other's config/cleanup mid-run.
+  const configFile = needsTokenConfig ? join(dirname(input.resultFile), `.review-config-${input.number}-${randomUUID()}.json`) : null
+  if (configFile) writeFileSync(configFile, JSON.stringify(buildAnalysisTokenConfig(input)), 'utf8')
+  try {
+    const argv = [...buildReviewArgv(input), ...(configFile ? ['--config', configFile] : [])]
+    const env = input.subprocessTimeoutMs ? { ...input.env, AGENTSKIT_REVIEW_SUBPROCESS_TIMEOUT_MS: String(input.subprocessTimeoutMs) } : input.env
+    const outcome = await runner.run(argv, { timeoutMs: input.deadlineMs + 120_000, ...(input.cwd ? { cwd: input.cwd } : {}), ...(env ? { env } : {}) })
+    return finishCodeReview(input, outcome)
+  } finally {
+    if (configFile && existsSync(configFile)) unlinkSync(configFile)
+  }
+}
+
+const finishCodeReview = (input: CodeReviewInput, outcome: Awaited<ReturnType<CommandRunner['run']>>): CodeReviewOutcome => {
   let parsed: ReturnType<typeof parseReviewResult> | null = null
   let usage: ReviewUsage = { providerCalls: null, inputTokens: null, outputTokens: null, totalTokens: null }
   if (existsSync(input.resultFile)) {
