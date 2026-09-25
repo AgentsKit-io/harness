@@ -1,0 +1,35 @@
+@import "tailwindcss";
+
+/* Same dark palette the old control plane used — carried over deliberately, not redesigned: this is an
+   operational tool the user already reads by these colors, and the rewrite's job was stability, not a new look. */
+@theme {
+  --font-sans: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+
+  --color-surface: #08090b;
+  --color-surface-dim: #0c0d11;
+  --color-panel: #15161b;
+  --color-panel-alt: #1b1c22;
+  --color-line: rgba(255, 255, 255, 0.12);
+  --color-line-soft: rgba(255, 255, 255, 0.08);
+  --color-line-ghost: rgba(255, 255, 255, 0.05);
+  --color-ink: #f5f5f7;
+  --color-ink-muted: #a1a1aa;
+  --color-ink-subtle: #8a8a92;
+  --color-accent: #34d399;
+  --color-accent-dim: rgba(52, 211, 153, 0.14);
+  --color-ink-on-accent: #0a0a0a;
+  --color-success: #30d158;
+  --color-success-dim: rgba(48, 209, 88, 0.14);
+  --color-warning: #ffd60a;
+  --color-warning-dim: rgba(255, 214, 10, 0.14);
+  --color-danger: #ff453a;
+  --color-danger-dim: rgba(255, 69, 58, 0.14);
+  --color-info: #0a84ff;
+}
+
+body {
+  background: var(--color-surface);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+}

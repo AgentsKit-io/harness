@@ -25,6 +25,8 @@ export const TaskPlanSchema = z.object({
   /** Tests to write or extend, so "tested" is decided before the code exists, not after. */
   tests: z.array(nonEmpty).default([]),
   risks: z.array(nonEmpty).default([]),
+  /** Optional structured human decisions emitted by the planner before dispatch. */
+  hitl: z.array(z.object({ question: nonEmpty, context: z.string().trim().default(''), options: z.array(z.object({ id: nonEmpty, title: nonEmpty, description: nonEmpty })).min(3).max(4), recommendedOptionId: nonEmpty })).optional(),
 })
 export type TaskPlan = z.infer<typeof TaskPlanSchema>
 
@@ -137,7 +139,8 @@ Produce the plan as JSON between the exact markers ${PLAN_OPEN} and ${PLAN_CLOSE
   "summary": "one sentence: the approach",
   "steps": [ { "id": "s1", "description": "what changes and why", "files": ["path/that/will/change"] } ],
   "tests": ["the test to write or extend, named by file and behaviour"],
-  "risks": ["what could break, and how the plan contains it"]
+  "risks": ["what could break, and how the plan contains it"],
+  "hitl": []
 }
 Rules: every contract outcome must be reachable by the steps; new behaviour gets a test in \`tests\`; prefer the smallest change that satisfies the contract; never plan work outside the contract's scope.`
 
@@ -221,6 +224,8 @@ export interface PlanWithVotesInput {
    * zero votes so nothing downstream can mistake it for consensus.
    */
   readonly requireVotes?: boolean
+  /** Answers to a previous planner HITL request; included when the cached plan is invalidated. */
+  readonly humanDecisions?: readonly string[]
 }
 
 /**
@@ -242,7 +247,7 @@ export const runPlanWithVotes = async (input: PlanWithVotesInput): Promise<Store
   for (let cycle = 1; cycle <= settings.maxCycles; cycle += 1) {
     let proposed: { readonly plan: TaskPlan; readonly candidate: RankedModel } | null = null
     for (const candidate of input.planner) {
-      const result = await callHeadless({ runner: input.runner, config: input.config, root: input.root, timeoutMs: input.plannerTimeoutMs ?? settings.timeoutMs, call: { candidate, role: 'planner', prompt: renderPlanPrompt({ issue: input.issue, config: input.config, contract: input.contract, objections }) }, onProviderCall: input.onProviderCall })
+      const result = await callHeadless({ runner: input.runner, config: input.config, root: input.root, timeoutMs: input.plannerTimeoutMs ?? settings.timeoutMs, call: { candidate, role: 'planner', prompt: renderPlanPrompt({ issue: input.issue, config: input.config, contract: input.contract, objections: [...objections, ...(input.humanDecisions ?? []).map((decision) => `Human decision: ${decision}`)] }) }, onProviderCall: input.onProviderCall })
       if ('failure' in result) { failures.push(result.failure); if (result.failure.kind !== 'other') input.onProviderFailure?.(result.failure); continue }
       try { proposed = { plan: parsePlanOutput(result.stdout), candidate }; break } catch (error) { failures.push({ provider: candidate.provider, model: candidate.model, kind: 'output', detail: error instanceof Error ? error.message : String(error) }) }
     }
@@ -294,7 +299,7 @@ export const runPlanWithVotes = async (input: PlanWithVotesInput): Promise<Store
   return {
     schemaVersion: PLAN_SCHEMA_VERSION, issue: input.issue, generatedAt: now.toISOString(),
     provider: lastPlan?.candidate.provider ?? 'unknown', model: lastPlan?.candidate.model ?? 'unknown', effort: lastPlan?.candidate.effort,
-    plan: lastPlan?.plan ?? { summary: 'no plan reached consensus', steps: [{ id: 's0', description: 'none', files: [] }], tests: [], risks: [] },
+    plan: lastPlan?.plan ?? { summary: 'no plan reached consensus', steps: [{ id: 's0', description: 'none', files: [] }], tests: [], risks: [], hitl: [] },
     digest: lastPlan ? hashJson(lastPlan.plan) : '', contractDigest: input.contractDigest,
     cycles: settings.maxCycles, votes: lastVotes, status: 'no-consensus', unresolved: objections,
   }

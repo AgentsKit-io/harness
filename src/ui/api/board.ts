@@ -1,9 +1,9 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
-import { githubOpenIssues, type GitHubIssueSnapshot } from '../adapters/github-cli.js'
-import type { CommandRunner } from '../adapters/command.js'
-import { fetchLinearQueue, type LoopIssue } from '../adapters/linear-orca.js'
-import type { LoadedLoopConfig } from '../loop/config.js'
+import { githubOpenIssues, type GitHubIssueSnapshot } from '../../adapters/github-cli.js'
+import type { CommandRunner } from '../../adapters/command.js'
+import { fetchLinearQueue, type LoopIssue } from '../../adapters/linear-orca.js'
+import type { LoadedLoopConfig } from '../../loop/config.js'
 
 export type BoardProvider = 'linear' | 'github'
 export type BoardStatus = 'fresh' | 'stale' | 'error' | 'unavailable'

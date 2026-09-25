@@ -7,7 +7,25 @@ export const LOOP_STAGES: readonly LoopStage[] = ['tick', 'deliver']
 /** Every stage name install/uninstall/status reconcile, declared or not — an automation the config dropped must still be found to be switched off. */
 export const MANAGED_STAGES: readonly LoopStage[] = ['tick', 'deliver', 'retro', 'observe']
 
-export const automationName = (config: LoopConfig, stage: LoopStage): string => `${config.schedule.namePrefix}-${stage}`
+export const automationName = (config: LoopConfig, stage: LoopStage): string => `${effectiveAutomationPrefix(config)}-${stage}`
+
+/** Turn an arbitrary project name into a safe Orca automation-name suffix: lowercase, `[a-z0-9-]`, collapse repeats, trim,
+ * cap at 32 chars. Never throws — an empty result falls back to the literal default. */
+export const sanitizeAutomationSuffix = (value: string): string => {
+  const lowered = value.toLowerCase().normalize('NFKD').replace(/[^a-z0-9-]+/g, '-').replace(/-+/g, '-').replace(/^-+|-+$/g, '').slice(0, 32)
+  return lowered
+}
+
+/** Per-config discriminator for the automation name. Two configs running side-by-side in the same Orca must each
+ * get their own `<prefix>-tick` and `<prefix>-deliver`, otherwise one install overwrites the other's automation.
+ * Default `namePrefix: 'loop'` is the legacy single-project value; deriving from `project.name` here means opening
+ * `ak-harness ui` for a second project is enough — no `loop install` babysitting per project. An explicit
+ * `schedule.namePrefix` set in the config wins, always. */
+export const effectiveAutomationPrefix = (config: LoopConfig): string => {
+  if (config.schedule.namePrefix && config.schedule.namePrefix !== 'loop') return config.schedule.namePrefix
+  const sanitized = sanitizeAutomationSuffix(config.project.name)
+  return sanitized ? `loop-${sanitized}` : 'loop'
+}
 
 /** Quote a path for Orca's precheck shell on every platform: double quotes, no backslash doubling (cmd.exe keeps `\\` literal). */
 export const shellQuote = (value: string): string => `"${value.replace(/"/g, '\\"')}"`

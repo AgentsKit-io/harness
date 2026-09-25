@@ -69,7 +69,7 @@ describe('guided install', () => {
     expect(report.rehearsal?.results[0]).toMatchObject({ outcome: 'dry-run' })
     expect(terminal.questions).toHaveLength(2)
     expect(terminal.questions[1]).toContain('Install these automations now?')
-    expect(env.automations.map((item) => item['name'])).toEqual(['loop-tick', 'loop-deliver'])
+    expect(env.automations.map((item) => item['name'])).toEqual(['loop-my-project-tick', 'loop-my-project-deliver'])
     expect(terminal.lines.some((text) => text.includes('2/5 Doctor'))).toBe(true)
     expect(terminal.lines.some((text) => text.includes(`precheck ak-harness loop stage tick -f "${env.loaded.path}"`))).toBe(true)
     expect(env.runner.calls.some((argv) => argv[1] === 'worktree' && argv[2] === 'create')).toBe(false)

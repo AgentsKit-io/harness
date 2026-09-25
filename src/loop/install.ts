@@ -9,7 +9,7 @@ import { activeCooldowns, readCooldowns } from './cooldown.js'
 import { providerSpecs } from './doctor.js'
 import { rankModels } from './routing.js'
 
-export { automationName, automationPrompt, automationSpecs, declaredStages, LOOP_STAGES, MANAGED_STAGES, precheckCommand, shellQuote } from './automations.js'
+export { automationName, automationPrompt, automationSpecs, declaredStages, LOOP_STAGES, MANAGED_STAGES, precheckCommand, sanitizeAutomationSuffix, shellQuote } from './automations.js'
 export type { AutomationSpec, LoopStage } from './automations.js'
 
 export interface InstallInput {

@@ -34,6 +34,7 @@ import { applyRoleSettings, resolveFlow, resolveRoleSettings, workerPhaseEnabled
 import { installWorkerGuard } from './worker-guard.js'
 import { createIssueQueue, type IssueRun } from './queue.js'
 import { createLifecycleStore } from './lifecycle.js'
+import { createHitlStore } from './hitl.js'
 
 export type TickOutcome = 'dispatched' | 'dry-run' | 'skipped' | 'escalated' | 'failed'
 
@@ -514,6 +515,41 @@ export const runTick = async (input: TickInput): Promise<TickReport> => {
       if (updated) lifecycle.upsert({ issue: updated.issue, runId: updated.id, runStatus: updated.status, stage: updated.projection.stage, error: updated.error, technicalFailure: updated.status === 'failed', now: now() })
     } catch (error) { notes.push(`queue update for ${run.issue} failed: ${message(error)}`) }
   }
+  const materializeContractHitl = (stored: StoredContract, issue: string, run: IssueRun | null): boolean => {
+    const explicit = stored.contract.hitl ?? []
+    const ambiguities = stored.contract.ambiguities.filter((item) => item.blocking).map((item, index) => ({
+      question: item.question,
+      context: 'A decisão foi marcada como bloqueante pelo contrato gerado; a execução será retomada após uma resposta.',
+      options: [
+        { id: `proceed-${index}`, title: 'Prosseguir com a interpretação atual', description: 'Usar a leitura que o contrato congelou e continuar a execução.' },
+        { id: `clarify-${index}`, title: 'Aguardar critérios adicionais', description: 'Revisar a issue antes de permitir que a execução continue.' },
+        { id: `example-${index}`, title: 'Fornecer um exemplo', description: 'Adicionar um caso concreto para orientar a próxima validação.' },
+      ],
+      recommendedOptionId: `clarify-${index}`,
+    }))
+    const requests = explicit.length ? explicit : ambiguities
+    if (!requests.length) return false
+    if (dryRun) return true
+    const store = createHitlStore(loaded.stateDir)
+    const batchId = `contract:${issue}:${stored.digest}`
+    for (const [index, request] of requests.entries()) {
+      const requestId = `${batchId}:${index}`
+      const digest = `${stored.digest}:hitl:${index}`
+      const created = store.create({ requestId, batchId, issue, role: 'orchestrator', stage: 'contract', question: request.question, context: request.context, options: request.options, recommendedOptionId: request.recommendedOptionId, digest, metadata: { contractDigest: stored.digest, ...(run ? { runId: run.id } : {}) } })
+      if (!dryRun) appendLoopEvent(loaded.stateDir, { at: now().toISOString(), type: 'human.hitl-requested', issue, requestId: created.requestId, batchId: created.batchId, role: created.role, stage: created.stage, question: created.question, context: created.context, options: created.options, recommendedOptionId: created.recommendedOptionId, digest: created.digest }, bus)
+    }
+    return true
+  }
+  const materializePlanHitl = (plan: StoredPlan, issue: string, run: IssueRun | null): boolean => {
+    const requests = plan.plan.hitl ?? []
+    if (!requests.length || dryRun) return requests.length > 0
+    const store = createHitlStore(loaded.stateDir); const batchId = `plan:${issue}:${plan.digest}`
+    for (const [index, request] of requests.entries()) {
+      const created = store.create({ requestId: `${batchId}:${index}`, batchId, issue, role: 'planner', stage: 'plan', question: request.question, context: request.context, options: request.options, recommendedOptionId: request.recommendedOptionId, digest: `${plan.digest}:hitl:${index}`, metadata: { planDigest: plan.digest, ...(run ? { runId: run.id } : {}), stage: 'plan' } })
+      appendLoopEvent(loaded.stateDir, { at: now().toISOString(), type: 'human.hitl-requested', issue, requestId: created.requestId, batchId: created.batchId, role: created.role, stage: created.stage, question: created.question, context: created.context, options: created.options, recommendedOptionId: created.recommendedOptionId, digest: created.digest }, bus)
+    }
+    return true
+  }
   const tracking = tracker.transitions
   const memory = openLoopMemory(loaded)
   /**
@@ -571,7 +607,8 @@ export const runTick = async (input: TickInput): Promise<TickReport> => {
     const setupBudgetMs = config.project.setup.command
       ? Number.isFinite(timeBudgetMs) ? Math.min(config.project.setup.timeoutSec * 1000, Math.max(0, timeBudgetMs - config.contract.timeoutMs - 125_000)) : config.project.setup.timeoutSec * 1000
       : 0
-    const cachedContract = readStoredContract(loaded.stateDir, candidate.identifier)
+    const storedCandidateContract = readStoredContract(loaded.stateDir, candidate.identifier)
+    const cachedContract = storedCandidateContract && !createHitlStore(loaded.stateDir).list({ issue: candidate.identifier }).some((request) => request.status === 'answered' && request.metadata['contractDigest'] === storedCandidateContract.digest) ? storedCandidateContract : null
     // A cached contract saves the contract call, not the setup run — so only the contract's share of the budget
     // is waived. Skipping the whole check when a contract was cached let a candidate through with minutes left,
     // and the setup timeout below then floored at 1s: a command guaranteed to time out, and with
@@ -649,11 +686,15 @@ export const runTick = async (input: TickInput): Promise<TickReport> => {
       if (input.skipContractGeneration) { results.push({ issue: detail.identifier, outcome: 'skipped', reason: 'no cached contract; generation skipped' }); continue }
       if (!issueOrchestrators.length) { results.push({ issue: detail.identifier, outcome: 'skipped', reason: 'no orchestrator provider available to freeze a contract' }); continue }
       try {
+        const priorHitlAnswers = storedCandidateContract
+          ? createHitlStore(loaded.stateDir).list({ issue: detail.identifier }).filter((request) => request.status === 'answered' && request.metadata['contractDigest'] === storedCandidateContract.digest && request.answer).map((request) => `- ${request.question}: ${request.answer?.optionId}${request.answer?.freeText ? ` — ${request.answer.freeText}` : ''}`)
+          : []
+        const contractIssue = priorHitlAnswers.length ? { ...detail, description: `${detail.description}\n\nHuman decisions for contract regeneration:\n${priorHitlAnswers.join('\n')}` } : detail
         stored = await generateContract({
           runner: input.runner,
           config,
           root: await readRoot(),
-          issue: detail,
+          issue: contractIssue,
           candidates: issueOrchestrators,
           orchestrator,
           ...(orchestratorSettings.timeoutMs === null ? {} : { timeoutMs: orchestratorSettings.timeoutMs }),
@@ -686,20 +727,24 @@ export const runTick = async (input: TickInput): Promise<TickReport> => {
       } catch (error) {
         const reason = `contract generation failed: ${message(error)}`
         if (!dryRun) { appendLoopEvent(loaded.stateDir, { at: now().toISOString(), type: 'contract.failed', issue: detail.identifier, error: message(error) }, bus); await recordFailureAndMaybePause(detail.identifier, 'contract.failed', reason) }
-        updateQueueRun(selectedRun, { status: 'failed', error: reason, projection: { stage: 'failed' } })
+        const blocked = error instanceof HarnessError && error.code === 'INVALID_INPUT'
+        updateQueueRun(selectedRun, { status: blocked ? 'blocked' : 'failed', error: reason, projection: { stage: blocked ? 'blocked' : 'failed' } })
         results.push({ issue: detail.identifier, outcome: 'failed', reason })
         continue
       }
     }
     const assessment = assessContract(stored.contract)
-    if (!assessment.dispatchable) {
+    const hasContractHitl = (stored.contract.hitl?.length ?? 0) > 0
+    if (!assessment.dispatchable || hasContractHitl) {
+      const escalationReasons = assessment.reasons.length ? assessment.reasons : ['the contract requested a structured human decision']
       try { await escalate({ tracker, config, issue: detail, stored: { ...stored, assessment }, dryRun }) } catch (error) { notes.push(`escalation for ${detail.identifier} failed: ${message(error)}`) }
       if (!dryRun) {
-        appendLoopEvent(loaded.stateDir, { at: now().toISOString(), type: 'contract.escalated', issue: detail.identifier, reasons: assessment.reasons, digest: stored.digest }, bus)
-        await bus.runHook('onEscalate', { issue: detail.identifier, reasons: assessment.reasons, digest: stored.digest })
+        appendLoopEvent(loaded.stateDir, { at: now().toISOString(), type: 'contract.escalated', issue: detail.identifier, reasons: escalationReasons, digest: stored.digest }, bus)
+        await bus.runHook('onEscalate', { issue: detail.identifier, reasons: escalationReasons, digest: stored.digest })
       }
-      updateQueueRun(selectedRun, { status: 'needs-input', error: assessment.reasons.join('; '), projection: { stage: 'needs-input' } })
-      results.push({ issue: detail.identifier, outcome: 'escalated', reason: assessment.reasons.join('; '), contractDigest: stored.digest })
+      const hitl = materializeContractHitl(stored, detail.identifier, selectedRun)
+      updateQueueRun(selectedRun, { status: hitl ? 'needs-input' : 'blocked', error: escalationReasons.join('; '), projection: { stage: hitl ? 'needs-input' : 'blocked' } })
+      results.push({ issue: detail.identifier, outcome: 'escalated', reason: escalationReasons.join('; '), contractDigest: stored.digest })
       continue
     }
 
@@ -711,7 +756,11 @@ export const runTick = async (input: TickInput): Promise<TickReport> => {
     if (planPhase) {
       const plannerSettings = resolveRoleSettings(config, flow, 'planner')
       const voteSettings = resolveRoleSettings(config, flow, 'vote')
-      approvedPlan = readStoredPlan(loaded.stateDir, detail.identifier)
+      const storedPlan = readStoredPlan(loaded.stateDir, detail.identifier)
+      const humanDecisions = storedPlan
+        ? createHitlStore(loaded.stateDir).list({ issue: detail.identifier }).filter((request) => request.status === 'answered' && request.metadata['planDigest'] === storedPlan.digest && request.answer).map((request) => `- ${request.question}: ${request.answer?.optionId}${request.answer?.freeText ? ` — ${request.answer.freeText}` : ''}`)
+        : []
+      approvedPlan = storedPlan && !createHitlStore(loaded.stateDir).list({ issue: detail.identifier }).some((request) => request.status === 'answered' && request.metadata['planDigest'] === storedPlan.digest) ? storedPlan : null
       if (!approvedPlan || approvedPlan.contractDigest !== stored.digest || approvedPlan.status !== 'approved') {
         try {
           approvedPlan = await runPlanWithVotes({
@@ -722,6 +771,7 @@ export const runTick = async (input: TickInput): Promise<TickReport> => {
             requireVotes: votePhase,
             ...(plannerSettings.timeoutMs === null ? {} : { plannerTimeoutMs: plannerSettings.timeoutMs }),
             ...(voteSettings.timeoutMs === null ? {} : { voteTimeoutMs: voteSettings.timeoutMs }),
+            humanDecisions,
             now, onProviderFailure,
             onCycle: (cycle, votes) => { if (!dryRun) appendLoopEvent(loaded.stateDir, { at: now().toISOString(), type: 'plan.voted', issue: detail.identifier, cycle, approvals: votes.filter((vote) => vote.vote === 'approve').length, votes: votes.length, voters: votes.map((vote) => ({ provider: vote.provider, model: vote.model, vote: vote.vote })) }, bus) },
             onProviderCall: (event) => {
@@ -743,8 +793,13 @@ export const runTick = async (input: TickInput): Promise<TickReport> => {
           appendLoopEvent(loaded.stateDir, { at: now().toISOString(), type: 'plan.escalated', issue: detail.identifier, cycles: approvedPlan.cycles, unresolved: approvedPlan.unresolved }, bus)
           await bus.runHook('onEscalate', { issue: detail.identifier, reasons: approvedPlan.unresolved, digest: approvedPlan.digest })
         }
-        updateQueueRun(selectedRun, { status: 'needs-input', error: `plan without consensus after ${approvedPlan.cycles} cycle(s)`, projection: { stage: 'needs-input' } })
+        updateQueueRun(selectedRun, { status: 'blocked', error: `plan without consensus after ${approvedPlan.cycles} cycle(s)`, projection: { stage: 'blocked' } })
         results.push({ issue: detail.identifier, outcome: 'escalated', reason: `plan without consensus after ${approvedPlan.cycles} cycle(s): ${approvedPlan.unresolved.join('; ') || 'no objection recorded'}`, contractDigest: stored.digest })
+        continue
+      }
+      if (materializePlanHitl(approvedPlan, detail.identifier, selectedRun)) {
+        updateQueueRun(selectedRun, { status: 'needs-input', error: 'plan requested a structured human decision', projection: { stage: 'needs-input' } })
+        results.push({ issue: detail.identifier, outcome: 'escalated', reason: 'plan requested a structured human decision', contractDigest: stored.digest })
         continue
       }
     }

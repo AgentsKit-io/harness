@@ -16,6 +16,13 @@ export interface ReviewFinding {
   readonly category: string | null
 }
 
+export interface StructuredReviewHitl {
+  readonly question: string
+  readonly context: string
+  readonly options: readonly { readonly id: string; readonly title: string; readonly description: string }[]
+  readonly recommendedOptionId: string
+}
+
 /** What one review invocation cost — agentskit-review already tracks this (`ReviewResult.evidence`); the harness
  * only needs to read it and pass it on, instead of discarding it the way `parseReviewResult` used to. */
 export interface ReviewUsage {
@@ -39,6 +46,7 @@ export interface CodeReviewOutcome {
   /** Last 800 chars of combined stderr+stdout, for callers that need to classify *why* a review was incomplete (auth/quota/timeout) beyond the truncated `summary`. */
   readonly rawTail: string
   readonly usage: ReviewUsage
+  readonly hitl?: readonly StructuredReviewHitl[]
 }
 
 export interface CodeReviewInput {
@@ -107,6 +115,18 @@ export const parseReviewResult = (value: unknown): { readonly findings: readonly
   return { findings, blocking: typeof record['blocking'] === 'boolean' ? record['blocking'] : null, incomplete: typeof record['incomplete'] === 'boolean' ? record['incomplete'] : null }
 }
 
+/** Structured reviewer decisions are optional; malformed cards are ignored and the review remains fail-closed. */
+export const parseReviewHitl = (value: unknown): readonly StructuredReviewHitl[] => {
+  const record = isRecord(value) ? (isRecord(value['review']) ? value['review'] : value) : {}
+  if (!Array.isArray(record['hitl'])) return []
+  return record['hitl'].filter(isRecord).flatMap((item) => {
+    const question = str(item['question']).trim(); const context = str(item['context']).trim(); const recommendedOptionId = str(item['recommendedOptionId']).trim()
+    const options = Array.isArray(item['options']) ? item['options'].filter(isRecord).map((option) => ({ id: str(option['id']).trim(), title: str(option['title']).trim(), description: str(option['description']).trim() })).filter((option) => option.id && option.title && option.description) : []
+    const ids = new Set(options.map((option) => option.id))
+    return question && options.length >= 3 && options.length <= 4 && ids.size === options.length && ids.has(recommendedOptionId) ? [{ question, context, options, recommendedOptionId }] : []
+  })
+}
+
 const num = (value: unknown): number | null => typeof value === 'number' && Number.isFinite(value) ? value : null
 
 /** Read `ReviewResult.evidence`/`evidence.usage` out of the same `--result` JSON — agentskit-review already
@@ -161,11 +181,13 @@ export const runCodeReview = async (runner: CommandRunner, input: CodeReviewInpu
 const finishCodeReview = (input: CodeReviewInput, outcome: Awaited<ReturnType<CommandRunner['run']>>): CodeReviewOutcome => {
   let parsed: ReturnType<typeof parseReviewResult> | null = null
   let usage: ReviewUsage = { providerCalls: null, inputTokens: null, outputTokens: null, totalTokens: null }
+  let hitl: readonly StructuredReviewHitl[] = []
   if (existsSync(input.resultFile)) {
     try {
       const resultJson = JSON.parse(readFileSync(input.resultFile, 'utf8'))
       parsed = parseReviewResult(resultJson)
       usage = parseReviewEvidence(resultJson)
+      hitl = parseReviewHitl(resultJson)
     } catch { parsed = null }
   }
   const findings = parsed?.findings ?? []
@@ -173,7 +195,7 @@ const finishCodeReview = (input: CodeReviewInput, outcome: Awaited<ReturnType<Co
   const tail = `${outcome.stderr.trim()}\n${outcome.stdout.trim()}`.trim().slice(-800)
   const status: CodeReviewOutcome['status'] = outcome.timedOut || outcome.code === 2 || outcome.code === null || (outcome.code !== 0 && outcome.code !== 1) || parsed?.incomplete === true ? 'incomplete' : blocking.length || outcome.code === 1 || parsed?.blocking === true ? 'findings' : 'clean'
   const summary = status === 'incomplete' ? `review incomplete (exit ${outcome.timedOut ? 'timeout' : outcome.code ?? 'null'}): ${tail.split('\n').slice(-3).join(' ').slice(0, 300)}` : status === 'findings' ? `${blocking.length || 'unknown number of'} finding(s) at/above ${input.minSeverity}` : `clean at/above ${input.minSeverity} (${findings.length} lower-severity note(s))`
-  return { status, exitCode: outcome.timedOut ? null : outcome.code, findings, blocking, summary, provider: input.provider, model: input.model ?? null, resultParsed: parsed !== null, rawTail: tail, usage }
+  return { status, exitCode: outcome.timedOut ? null : outcome.code, findings, blocking, summary, provider: input.provider, model: input.model ?? null, resultParsed: parsed !== null, rawTail: tail, usage, ...(hitl.length ? { hitl } : {}) }
 }
 
 /** Compact, worker-facing rendering of blocking findings for a fix round. */

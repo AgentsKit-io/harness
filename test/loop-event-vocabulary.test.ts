@@ -22,20 +22,29 @@ const emittedLiterals = (): readonly string[] => {
  * Written out here because a name that only ever exists as `worker.${outcome}` is invisible to a reader — which
  * is the whole reason the vocabulary exists.
  */
-const DELIVER_OUTCOMES = ['waiting', 'reviewed', 'fix-round', 'nudged', 'handed-off', 'merged', 'held', 'blocked', 'stuck', 'abandoned', 'failed'] as const
+const DELIVER_OUTCOMES = ['waiting', 'reviewed', 'fix-round', 'nudged', 'handed-off', 'merged', 'held', 'needs-input', 'blocked', 'stuck', 'abandoned', 'failed'] as const
 const TEMPLATE_FAMILIES = [
   ...DELIVER_OUTCOMES.map((outcome) => `worker.${outcome}`),
   ...DELIVER_OUTCOMES.map((outcome) => `github-intake.${outcome}`),
   ...['ci', 'review', 'conflict'].map((kind) => `worker.${kind}-round`),
+  'human.hitl-answered', 'human.hitl-batch-ready',
   ...['adopted', 'rejected', 'needs-human', 'reverted'].map((status) => `agent.${status}`),
   ...['cost-guard', 'max-duration'].map((kind) => `${kind}.tripped`),
   'tuning.applied', 'tuning.reverted',
 ]
 
+/**
+ * Emitted from `src/ui/api/*`, not `src/loop/*` or `src/cli.ts` — outside the scanned source-file set above.
+ * `src/ui/*` is deliberately not scanned: it declares its own `UiAction` union with the same dotted-lowercase
+ * `type: '<name>'` shape (e.g. `parseUiAction({ type: 'loop.contract', ... })`), which the plain-text scan cannot
+ * tell apart from an actual `appendLoopEvent` call.
+ */
+const UI_ORIGINATED_EVENTS = ['ui.run-enqueued', 'ui.cleanup-completed', 'ui.cleanup-failed', 'ui.issue-decided']
+
 describe('the loop event vocabulary', () => {
   it('declares exactly the events the loop emits, and nothing it does not', () => {
     const declared = new Set<string>(Object.keys(LOOP_EVENT_TYPES))
-    const emitted = new Set<string>([...emittedLiterals(), ...TEMPLATE_FAMILIES])
+    const emitted = new Set<string>([...emittedLiterals(), ...TEMPLATE_FAMILIES, ...UI_ORIGINATED_EVENTS])
 
     // A new emission that skipped the vocabulary: nobody could subscribe to it on purpose.
     expect([...emitted].filter((type) => !declared.has(type)).sort()).toEqual([])

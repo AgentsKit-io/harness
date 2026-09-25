@@ -136,7 +136,7 @@ describe('installLoopAutomations edge cases', () => {
   })
 
   it('falls back to the existing automation id when the create/edit response has no id of its own', async () => {
-    const env1 = setup({ existing: [{ id: 'auto-existing', name: 'loop-tick', enabled: true, trigger: '0 4 * * *', provider: 'claude' }] })
+    const env1 = setup({ existing: [{ id: 'auto-existing', name: 'loop-my-project-tick', enabled: true, trigger: '0 4 * * *', provider: 'claude' }] })
     env1.runner.run = async (argv) => {
       const key = argv.join(' ')
       if (key.startsWith('orca automations list')) return okResult({ automations: env1.automations, items: env1.automations })
@@ -152,7 +152,7 @@ describe('installLoopAutomations edge cases', () => {
 
 describe('uninstallLoopAutomations edge cases', () => {
   it('reports a dry-run without removing anything', async () => {
-    const env1 = setup({ existing: [{ id: 'auto-1', name: 'loop-tick', enabled: true, trigger: '*/5 * * * *', provider: 'claude' }] })
+    const env1 = setup({ existing: [{ id: 'auto-1', name: 'loop-my-project-tick', enabled: true, trigger: '*/5 * * * *', provider: 'claude' }] })
     const report = await uninstallLoopAutomations({ loaded: env1.loaded, runner: env1.runner, dryRun: true })
     expect(report.status).toBe('dry-run')
     expect(report.actions[0]).toMatchObject({ action: 'remove', detail: 'dry-run' })
@@ -160,7 +160,7 @@ describe('uninstallLoopAutomations edge cases', () => {
   })
 
   it('marks the report failed and records the error when removal fails', async () => {
-    const env1 = setup({ existing: [{ id: 'auto-1', name: 'loop-tick', enabled: true, trigger: '*/5 * * * *', provider: 'claude' }] })
+    const env1 = setup({ existing: [{ id: 'auto-1', name: 'loop-my-project-tick', enabled: true, trigger: '*/5 * * * *', provider: 'claude' }] })
     env1.runner.run = async (argv) => {
       const key = argv.join(' ')
       if (key.startsWith('orca automations list')) return okResult({ automations: env1.automations, items: env1.automations })
@@ -173,7 +173,7 @@ describe('uninstallLoopAutomations edge cases', () => {
   })
 
   it('captures a thrown non-Error value from a failing removal', async () => {
-    const env1 = setup({ existing: [{ id: 'auto-1', name: 'loop-tick', enabled: true, trigger: '*/5 * * * *', provider: 'claude' }] })
+    const env1 = setup({ existing: [{ id: 'auto-1', name: 'loop-my-project-tick', enabled: true, trigger: '*/5 * * * *', provider: 'claude' }] })
     env1.runner.run = async (argv) => {
       const key = argv.join(' ')
       if (key.startsWith('orca automations list')) return okResult({ automations: env1.automations, items: env1.automations })
@@ -199,7 +199,7 @@ describe('loopStatus edge cases', () => {
   })
 
   it('treats a failing runs lookup as an empty run history rather than failing the whole status', async () => {
-    const env1 = setup({ existing: [{ id: 'auto-1', name: 'loop-tick', enabled: true, trigger: '*/5 * * * *', provider: 'claude' }] })
+    const env1 = setup({ existing: [{ id: 'auto-1', name: 'loop-my-project-tick', enabled: true, trigger: '*/5 * * * *', provider: 'claude' }] })
     env1.runner.run = async (argv) => {
       const key = argv.join(' ')
       if (key.startsWith('orca automations list')) return okResult({ automations: env1.automations, items: env1.automations })

@@ -4,7 +4,10 @@ import { readFileSync, writeFileSync } from 'node:fs'
 
 const packageJson = JSON.parse(readFileSync('package.json', 'utf8'))
 const entryPoint = 'src/index.ts'
-const source = readFileSync(entryPoint, 'utf8')
+// Normalize line endings before hashing: a Windows checkout with core.autocrlf=true reads this file back as
+// CRLF, which would otherwise make sourceDigest (and the manifest digest built from it) differ from a Linux
+// CI checkout of the exact same committed content.
+const source = readFileSync(entryPoint, 'utf8').replace(/\r\n/g, '\n')
 const sourceDigest = createHash('sha256').update(source).digest('hex')
 const groups = new Map()
 

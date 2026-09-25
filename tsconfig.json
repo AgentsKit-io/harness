@@ -31,5 +31,5 @@
     "types": ["node"]
   },
   "include": ["src"],
-  "exclude": ["dist", "test"]
+  "exclude": ["dist", "test", "src/ui/app"]
 }

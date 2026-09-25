@@ -4,7 +4,7 @@
   "package": "@agentskit/harness",
   "packageVersion": "0.19.0",
   "entryPoint": "src/index.ts",
-  "sourceDigest": "0aefa132a0c325c2992470f556dfd1beb60f083d70053da2c13b8c03bb6cbf02",
+  "sourceDigest": "cdb8e7b48daf6909f0dc16fe7187937450b7416b5324818354cce75f25b8fd57",
   "capabilities": [
     {
       "id": "public-surface:adapters/agent",
@@ -32,9 +32,11 @@
         "ReviewFinding",
         "ReviewSeverity",
         "ReviewUsage",
+        "StructuredReviewHitl",
         "atLeast",
         "buildReviewArgv",
         "parseReviewEvidence",
+        "parseReviewHitl",
         "parseReviewResult",
         "renderFindingsForWorker",
         "runCodeReview",
@@ -107,6 +109,7 @@
         "githubPreflight",
         "githubPullRequest",
         "githubPullRequestsForBranch",
+        "githubPullRequestsForIssue",
         "parseGitHubIssue",
         "parseGitHubIssueDetail",
         "parsePullRequest",
@@ -1280,23 +1283,25 @@
       ]
     },
     {
-      "id": "public-surface:loop/inbox",
+      "id": "public-surface:loop/hitl",
       "version": "0.19.0",
       "kind": "composition",
       "entryPoint": "src/index.ts",
       "exports": [
-        "INBOX_SCHEMA_VERSION",
-        "InboxAction",
-        "InboxGate",
-        "InboxItem",
-        "InboxStatus",
-        "InboxStore",
-        "InboxSuppression",
-        "InboxUpsertInput",
-        "createInboxStore",
-        "deleteInboxItem",
-        "inboxPath",
-        "suppressInboxItem"
+        "HITL_ANCHOR_ID",
+        "HITL_ANCHOR_TITLE",
+        "HITL_FREE_TEXT_MAX",
+        "HITL_SCHEMA_VERSION",
+        "HitlAnswer",
+        "HitlOption",
+        "HitlRequest",
+        "HitlRequestInput",
+        "HitlRole",
+        "HitlStatus",
+        "HitlStore",
+        "allHitlOptions",
+        "createHitlStore",
+        "hitlRequestPath"
       ]
     },
     {
@@ -1337,6 +1342,7 @@
         "loopStatus",
         "parseAutomationRuns",
         "precheckCommand",
+        "sanitizeAutomationSuffix",
         "shellQuote",
         "uninstallLoopAutomations"
       ]
@@ -1725,6 +1731,7 @@
         "isStagePaused",
         "issueFailurePath",
         "listPausedIssues",
+        "markPauseLabelApplied",
         "pauseIssue",
         "readIssueFailures",
         "readLastConfigHash",
@@ -1939,20 +1946,31 @@
       ]
     },
     {
-      "id": "public-surface:ui/actions",
+      "id": "public-surface:ui/api/actions",
       "version": "0.19.0",
       "kind": "kernel",
       "entryPoint": "src/index.ts",
       "exports": [
-        "UiAction",
-        "UiActionContext",
-        "UiActionEvent",
-        "executeUiAction",
-        "parseUiAction"
+        "ActionContext",
+        "AnswerDecisionInput",
+        "AnswerDecisionResult",
+        "ContractResult",
+        "EnqueueRunInput",
+        "IssueDecision",
+        "answerDecision",
+        "archiveRun",
+        "cancelRun",
+        "cleanupRun",
+        "decideIssue",
+        "enqueueRun",
+        "generateOrReuseContract",
+        "restoreRun",
+        "resumePausedIssue",
+        "retryRun"
       ]
     },
     {
-      "id": "public-surface:ui/board",
+      "id": "public-surface:ui/api/board",
       "version": "0.19.0",
       "kind": "kernel",
       "entryPoint": "src/index.ts",
@@ -1971,7 +1989,7 @@
       ]
     },
     {
-      "id": "public-surface:ui/jobs",
+      "id": "public-surface:ui/api/jobs",
       "version": "0.19.0",
       "kind": "kernel",
       "entryPoint": "src/index.ts",
@@ -1981,32 +1999,58 @@
         "UiJobManager",
         "UiJobManagerOptions",
         "UiJobRecord",
+        "UiJobRunContext",
         "UiJobStatus",
+        "UiJobSubmitInput",
         "createUiJobManager"
       ]
     },
     {
-      "id": "public-surface:ui/server",
+      "id": "public-surface:ui/api/projection",
       "version": "0.19.0",
       "kind": "kernel",
       "entryPoint": "src/index.ts",
       "exports": [
-        "UiEventSnapshot",
-        "UiInboxResolutionRequest",
-        "UiIssueSnapshot",
-        "UiRunCancelRequest",
+        "Decision",
+        "DecisionOption",
+        "DispatchRef",
+        "IssuePhase",
+        "IssueRecord",
+        "ProjectionState",
+        "PullRequestRef",
+        "ReviewSubstatus",
+        "RunRecord",
+        "RunStatus",
+        "applyBoardMetadata",
+        "emptyProjection",
+        "overlayLiveState",
+        "reduce"
+      ]
+    },
+    {
+      "id": "public-surface:ui/api/server",
+      "version": "0.19.0",
+      "kind": "kernel",
+      "entryPoint": "src/index.ts",
+      "exports": [
         "UiServerHandle",
         "UiServerOptions",
         "UiSnapshot",
-        "UiSnapshotInput",
-        "UiStartIssueRequest",
-        "createUiSnapshot",
-        "renderUiHtml",
         "startUiServer"
       ]
     },
     {
-      "id": "public-surface:ui/wizard",
+      "id": "public-surface:ui/api/store",
+      "version": "0.19.0",
+      "kind": "kernel",
+      "entryPoint": "src/index.ts",
+      "exports": [
+        "readCurrentProjection",
+        "syncProjection"
+      ]
+    },
+    {
+      "id": "public-surface:ui/api/wizard",
       "version": "0.19.0",
       "kind": "kernel",
       "entryPoint": "src/index.ts",
@@ -2021,5 +2065,5 @@
       ]
     }
   ],
-  "digest": "4c2540e826ca1c422a7204e716875d349cae481da7813f3c7c546f0d79fa5e6e"
+  "digest": "4bc372869cbc26105e9a217da99df271f416e74985d1d984a4bbac403151d8a0"
 }
