@@ -9,12 +9,13 @@
 import { writeFileSync, readFileSync, mkdirSync, existsSync } from 'node:fs'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { pathToFileURL } from 'node:url'
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 const target = join(root, 'apps/docs/content/docs/reference/cli.mdx')
 
 process.env['AK_HARNESS_CLI_INTROSPECT'] = '1'
-const { cliProgram } = await import(join(root, 'dist/cli.js'))
+const { cliProgram } = await import(pathToFileURL(join(root, 'dist/cli.js')).href)
 if (!cliProgram) { console.error('dist/cli.js does not export cliProgram — run `pnpm build` first.'); process.exit(1) }
 
 // MDX reads `<decision>` as a JSX tag and fails the build; angle brackets only survive escaped.

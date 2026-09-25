@@ -91,7 +91,7 @@ describe('the runner connector, twice', () => {
     const runner = recording()
     const local = createLocalRunner({ loaded, runner })
     const workspace = await local.createWorkspace({ name: 'eng-1', branch: 'person/eng-1', baseBranch: 'main' })
-    expect(workspace.path.endsWith('/eng-1')).toBe(true)
+    expect(workspace.path.replaceAll('\\', '/').endsWith('/eng-1')).toBe(true)
     expect(runner.calls.some((argv) => argv.includes('worktree') && argv.includes('add'))).toBe(true)
 
     const session = await local.launchAgent({ workspace, command: 'claude --model opus' })

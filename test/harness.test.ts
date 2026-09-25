@@ -87,6 +87,18 @@ it('executes every configured check and blocks on structured failure', async () 
   expect((await retryRun({ configPath: fixture.configPath })).state).toBe('IMPLEMENTING')
 })
 
+it('plans a new run over a completed one whose contract has since changed, without a status call first', async () => {
+  const fixture = project([{ id: 'logic', category: 'logic', command: evidenceCommand({ status: 'passed', criteria: ['outcome-0'] }), evidence: 'structured' }], [], { required: false, reason: 'fixture only' }, 'yolo')
+  const completed = await runToVerify(fixture)
+  expect(completed.state).toBe('COMPLETE')
+  // Unchanged: a fresh completed run is still active.
+  await expect(planRun({ configPath: fixture.configPath, decision: 'approved' })).rejects.toMatchObject({ code: 'ACTIVE_RUN' })
+  writeFileSync(fixture.configPath, `${JSON.stringify({ ...fixture.config, contract: { ...fixture.config.contract, intent: 'Next change.' } }, null, 2)}\n`)
+  const next = await planRun({ configPath: fixture.configPath, decision: 'approved' })
+  expect(next.state).toBe('PLANNED')
+  expect(next.supersedes).toBe(completed.runId)
+})
+
 it('invalidates approval when the frozen contract changes', async () => {
   const fixture = project([{ id: 'logic', category: 'logic', command: evidenceCommand({ status: 'passed', criteria: ['outcome-0'] }), evidence: 'structured' }])
   await runToVerify(fixture)

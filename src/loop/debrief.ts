@@ -49,6 +49,7 @@ export interface DebriefIssueRow {
 export interface DebriefReport {
   readonly generatedAt: string
   readonly project: string
+  readonly tracker: 'linear' | 'github'
   readonly person: string
   readonly repo: string
   readonly windowHours: number
@@ -234,6 +235,7 @@ export const buildDebriefReport = (input: DebriefInput): DebriefReport => {
   return {
     generatedAt: now.toISOString(),
     project: config.project.name,
+    tracker: config.connectors.tracker,
     person,
     repo: config.project.repo,
     windowHours,
@@ -268,7 +270,7 @@ export const renderDebriefMarkdown = (report: DebriefReport): string => {
       if (row.worktree) lines.push(`- Worktree: \`${row.worktree}\``)
       if (row.branch) lines.push(`- Branch: \`${row.branch}\``)
       if (row.prUrl) lines.push(`- PR: ${row.prUrl}${row.reviewStatus ? ` · review ${row.reviewStatus}` : ''}`)
-      if (row.url) lines.push(`- Linear: ${row.url}`)
+      if (row.url) lines.push(`- ${report.tracker === 'github' ? 'GitHub' : 'Linear'}: ${row.url}`)
       lines.push('')
     }
   }

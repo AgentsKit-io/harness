@@ -4,7 +4,7 @@
   "package": "@agentskit/harness",
   "packageVersion": "0.19.0",
   "entryPoint": "src/index.ts",
-  "sourceDigest": "0102200567727bb77acc8fbffc9406834034d838dca510f44f41ca8a78c82bbf",
+  "sourceDigest": "7d2f183dc8ce4f7825dc12a6a2969667511f398747af9e140179815967c9f73c",
   "capabilities": [
     {
       "id": "public-surface:adapters/agent",
@@ -75,6 +75,11 @@
         "ChecksAssessment",
         "DiffStat",
         "GitHubCliOptions",
+        "GitHubIssueComment",
+        "GitHubIssueDetail",
+        "GitHubIssueSnapshot",
+        "ISSUE_DETAIL_FIELDS",
+        "ISSUE_FIELDS",
         "PR_FIELDS",
         "PullRequestCheck",
         "PullRequestSnapshot",
@@ -83,12 +88,27 @@
         "githubCommentArgv",
         "githubCommentExists",
         "githubCompare",
+        "githubCurrentUser",
+        "githubIssue",
+        "githubIssueClose",
+        "githubIssueComment",
+        "githubIssueCommentArgv",
+        "githubIssueCommentExists",
+        "githubIssueCreate",
+        "githubIssueEdit",
+        "githubIssueEditArgv",
+        "githubIssueNumber",
+        "githubIssueReopen",
         "githubLabelRemove",
         "githubMerge",
         "githubMergeArgv",
+        "githubOpenIssues",
         "githubOpenPullRequests",
+        "githubPreflight",
         "githubPullRequest",
         "githubPullRequestsForBranch",
+        "parseGitHubIssue",
+        "parseGitHubIssueDetail",
         "parsePullRequest",
         "touchesProtectedPaths"
       ]
@@ -1045,7 +1065,9 @@
         "ScmConnector",
         "TrackerConnector",
         "createGitHubScm",
+        "createGitHubTracker",
         "createLinearTracker",
+        "requireWritableTracker",
         "resolveConnectors"
       ]
     },
@@ -1254,6 +1276,21 @@
         "GuidedInstallReport",
         "installPreflight",
         "runGuidedInstall"
+      ]
+    },
+    {
+      "id": "public-surface:loop/inbox",
+      "version": "0.19.0",
+      "kind": "composition",
+      "entryPoint": "src/index.ts",
+      "exports": [
+        "InboxGate",
+        "InboxItem",
+        "InboxStatus",
+        "InboxStore",
+        "InboxUpsertInput",
+        "createInboxStore",
+        "inboxPath"
       ]
     },
     {
@@ -1602,6 +1639,27 @@
       ]
     },
     {
+      "id": "public-surface:loop/queue",
+      "version": "0.19.0",
+      "kind": "composition",
+      "entryPoint": "src/index.ts",
+      "exports": [
+        "EnqueueIssueRunInput",
+        "IssueQueue",
+        "IssueQueueOptions",
+        "IssueQueueProjection",
+        "IssueRun",
+        "IssueRunConfigSnapshot",
+        "IssueRunContractSnapshot",
+        "IssueRunPatch",
+        "IssueRunPreflightSnapshot",
+        "IssueRunProjection",
+        "IssueRunStatus",
+        "createIssueQueue",
+        "issueQueuePath"
+      ]
+    },
+    {
       "id": "public-surface:loop/release",
       "version": "0.19.0",
       "kind": "composition",
@@ -1776,6 +1834,17 @@
       ]
     },
     {
+      "id": "public-surface:loop/tracker",
+      "version": "0.19.0",
+      "kind": "composition",
+      "entryPoint": "src/index.ts",
+      "exports": [
+        "TrackerComment",
+        "TrackerIssue",
+        "TrackerIssueDetail"
+      ]
+    },
+    {
       "id": "public-surface:loop/tuning",
       "version": "0.19.0",
       "kind": "composition",
@@ -1838,7 +1907,74 @@
         "installWorkerGuard",
         "runWorkerGuard"
       ]
+    },
+    {
+      "id": "public-surface:ui/actions",
+      "version": "0.19.0",
+      "kind": "kernel",
+      "entryPoint": "src/index.ts",
+      "exports": [
+        "UiAction",
+        "UiActionContext",
+        "UiActionEvent",
+        "executeUiAction",
+        "parseUiAction"
+      ]
+    },
+    {
+      "id": "public-surface:ui/board",
+      "version": "0.19.0",
+      "kind": "kernel",
+      "entryPoint": "src/index.ts",
+      "exports": [
+        "BoardIssue",
+        "BoardLane",
+        "BoardProvider",
+        "BoardReadResult",
+        "BoardSnapshot",
+        "BoardStatus",
+        "IssueBoardCache",
+        "IssueBoardCacheOptions",
+        "IssueBoardReader",
+        "createIssueBoardCache",
+        "createIssueBoardReader"
+      ]
+    },
+    {
+      "id": "public-surface:ui/jobs",
+      "version": "0.19.0",
+      "kind": "kernel",
+      "entryPoint": "src/index.ts",
+      "exports": [
+        "UiJobConflictError",
+        "UiJobEvent",
+        "UiJobManager",
+        "UiJobManagerOptions",
+        "UiJobRecord",
+        "UiJobStatus",
+        "createUiJobManager"
+      ]
+    },
+    {
+      "id": "public-surface:ui/server",
+      "version": "0.19.0",
+      "kind": "kernel",
+      "entryPoint": "src/index.ts",
+      "exports": [
+        "UiEventSnapshot",
+        "UiInboxResolutionRequest",
+        "UiIssueSnapshot",
+        "UiRunCancelRequest",
+        "UiServerHandle",
+        "UiServerOptions",
+        "UiSnapshot",
+        "UiSnapshotInput",
+        "UiStartIssueRequest",
+        "createUiSnapshot",
+        "renderUiHtml",
+        "startUiServer"
+      ]
     }
   ],
-  "digest": "6c0181fcfd0667131ee7064f4a9e79b2997d133274653518380e2f280f9f5887"
+  "digest": "f006e16d400227dee533748d1f697845cf83031a8c08748345c12c81fb23bd83"
 }
