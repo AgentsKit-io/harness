@@ -163,7 +163,7 @@ describe('contract', () => {
   it('tells the worker which suites are already red on the base, with the tracking issue', () => {
     const env = makeEnv({
       knownFailures: [
-        { path: 'packages/os-headless/tests/property/file-secret-store-race.property.test.ts', issue: 'AGE-1757', reason: 'escrita paralela perde chaves' },
+        { path: 'packages/store/tests/property/file-store-race.property.test.ts', issue: 'ABC-123', reason: 'parallel writes lose keys' },
       ],
     })
     const loaded = loadLoopConfig(env.configPath)
@@ -171,9 +171,9 @@ describe('contract', () => {
     const stored: StoredContract = { schemaVersion: 1, issue: issue.identifier, issueUpdatedAt: issue.updatedAt, generatedAt: 'now', provider: 'codex', model: 'gpt-5.6-sol', contract: goodContract, digest: 'abcdef123456ffff', assessment: assessContract(goodContract), source: 'llm' }
     const brief = renderWorkerBrief({ issue, contract: stored, config: loaded.config, branch: 'person/eng-10-demo', provider: 'claude', model: 'sonnet' })
     expect(brief).toContain('Já vermelho na base')
-    expect(brief).toContain('file-secret-store-race.property.test.ts')
+    expect(brief).toContain('file-store-race.property.test.ts')
     // A issue de rastreamento viaja junto: quarentena sem dono vira permanente.
-    expect(brief).toContain('AGE-1757')
+    expect(brief).toContain('ABC-123')
     // E a regra 3 passa a admitir a exceção, em vez de exigir o impossível.
     expect(brief).toContain('except the suites listed under "Já vermelho na base"')
   })
@@ -590,7 +590,7 @@ describe('tick', () => {
     expect(new Date(cooldowns['claude']?.until ?? '').getMinutes()).toBe(40)
   })
 
-  it('pauses an issue after resilience.maxConsecutiveFailures consecutive contract failures, notifies Linear once, and stops retrying it (regression: 2026-09-11 pilot — 5 contract failures on AGE-1555 alone, retried every tick with no ceiling)', async () => {
+  it('pauses an issue after resilience.maxConsecutiveFailures consecutive contract failures, notifies Linear once, and stops retrying it (regression: 5 contract failures on one issue, retried every tick with no ceiling)', async () => {
     const env = makeEnv({ failAllContracts: true })
     const loaded = loadLoopConfig(env.configPath)
     const first = await runTick({ ...tickOptions(env), onlyIssue: 'ENG-10' })

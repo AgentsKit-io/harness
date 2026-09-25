@@ -20,7 +20,7 @@ it('blocks preflight on failed evidence, self-review, or more than two repairs',
 })
 
 it('creates a structured PR once and blocks uncertain or mismatched remote state', () => {
-  const draft = { issueId: 'AGE-1', candidateRevision: 'abc', contractHash: 'contract', configHash: 'config', g2Digest: preflight().digest, evidence: ['tests: passed'], documentation: ['README'], risk: 'low', rollback: 'revert', pendingCriteria: ['G4 production-flow'] }
+  const draft = { issueId: 'ABC-1', candidateRevision: 'abc', contractHash: 'contract', configHash: 'config', g2Digest: preflight().digest, evidence: ['tests: passed'], documentation: ['README'], risk: 'low', rollback: 'revert', pendingCriteria: ['G4 production-flow'] }
   expect(composePullRequest({ draft, g2: preflight() })).toMatchObject({ decision: 'create', body: expect.stringContaining('## G2 evidence') })
   expect(composePullRequest({ draft: { ...draft, candidateRevision: 'changed' }, g2: preflight() })).toMatchObject({ decision: 'blocked' })
   expect(composePullRequest({ draft, g2: preflight(), remote: { state: 'confirmed', url: 'https://example.test/pr/1', candidateRevision: 'abc' } })).toMatchObject({ decision: 'reuse' })
@@ -34,8 +34,8 @@ it('requires current candidate CI before G3', () => {
 
 it('preserves worktree state until remote branch SHA, PR, and G3 agree', () => {
   const g3 = assessIntegration({ g2: preflight(), candidateRevision: 'abc', evidenceRevision: 'abc', ...current, ci: 'passed' })
-  expect(assessWorktreeCleanup({ branch: 'age-1', ...current, remoteBranchRevision: 'old', remotePr: 'confirmed', integration: g3 })).toMatchObject({ decision: 'preserve' })
-  expect(assessWorktreeCleanup({ branch: 'age-1', ...current, remoteBranchRevision: 'abc', remotePr: 'confirmed', integration: g3 })).toMatchObject({ decision: 'clean' })
+  expect(assessWorktreeCleanup({ branch: 'abc-1', ...current, remoteBranchRevision: 'old', remotePr: 'confirmed', integration: g3 })).toMatchObject({ decision: 'preserve' })
+  expect(assessWorktreeCleanup({ branch: 'abc-1', ...current, remoteBranchRevision: 'abc', remotePr: 'confirmed', integration: g3 })).toMatchObject({ decision: 'clean' })
 })
 
 it('denies unisolated production exposure and keeps G5 awaiting acceptance', () => {

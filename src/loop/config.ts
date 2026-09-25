@@ -246,7 +246,7 @@ export const LoopConfigSchema = z.object({
         anyLabels: z.array(nonEmpty).min(1),
         votes: z.number().int().positive().max(5).optional(),
         minSeverity: z.enum(['nit', 'med', 'high', 'blocker']).optional(),
-        /** Mesmo enum de `delivery.review.profile` — um perfil inventado aqui só falharia no CLI. */
+        /** Same enum as `delivery.review.profile` — a profile invented here would only fail in the CLI. */
         profile: z.enum(['fast', 'full']).optional(),
         /** Why this slice is stricter — read by whoever wonders about the cost. */
         reason: nonEmpty.optional(),

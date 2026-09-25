@@ -101,9 +101,9 @@ describe('validateMemoryRecord', () => {
 describe('createInMemoryMemoryAdapter', () => {
   it('matches issue and project scoped records by source substring and reports telemetry', async () => {
     const adapter = createInMemoryMemoryAdapter()
-    await adapter.remember(record({ id: 'issue-rec', scope: 'issue', source: 'linear:AGE-1' }))
+    await adapter.remember(record({ id: 'issue-rec', scope: 'issue', source: 'linear:ABC-1' }))
     await adapter.remember(record({ id: 'project-rec', scope: 'project', source: 'project:harness' }))
-    expect((await adapter.recall({ query: '', issueId: 'AGE-1' })).map((hit) => hit.record.id)).toEqual(['issue-rec'])
+    expect((await adapter.recall({ query: '', issueId: 'ABC-1' })).map((hit) => hit.record.id)).toEqual(['issue-rec'])
     expect((await adapter.recall({ query: '', issueId: 'no-match' }))).toEqual([])
     expect((await adapter.recall({ query: '', project: 'harness' })).map((hit) => hit.record.id)).toEqual(['project-rec'])
     expect((await adapter.recall({ query: '', project: 'no-match' }))).toEqual([])
@@ -134,11 +134,11 @@ describe('createKvMemoryAdapter', () => {
 
   it('matches issue and project scoped records and marks stale recalls', async () => {
     const adapter = createKvMemoryAdapter(kv())
-    await adapter.remember(record({ id: 'issue-rec', scope: 'issue', source: 'linear:AGE-1', sourceRevision: 'rev-1' }))
+    await adapter.remember(record({ id: 'issue-rec', scope: 'issue', source: 'linear:ABC-1', sourceRevision: 'rev-1' }))
     await adapter.remember(record({ id: 'project-rec', scope: 'project', source: 'project:harness' }))
-    expect((await adapter.recall({ query: '', issueId: 'AGE-1' })).map((hit) => hit.record.id)).toEqual(['issue-rec'])
+    expect((await adapter.recall({ query: '', issueId: 'ABC-1' })).map((hit) => hit.record.id)).toEqual(['issue-rec'])
     expect((await adapter.recall({ query: '', issueId: 'no-match' }))).toEqual([])
     expect((await adapter.recall({ query: '', project: 'harness' })).map((hit) => hit.record.id)).toEqual(['project-rec'])
-    expect((await adapter.recall({ query: '', issueId: 'AGE-1', sourceRevision: 'rev-2' }))[0]).toMatchObject({ stale: true })
+    expect((await adapter.recall({ query: '', issueId: 'ABC-1', sourceRevision: 'rev-2' }))[0]).toMatchObject({ stale: true })
   })
 })

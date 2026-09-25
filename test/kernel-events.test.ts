@@ -32,9 +32,9 @@ describe('event envelope', () => {
   })
 
   it('honours an explicit idempotencyKey and optional issueRef/actor', () => {
-    const envelope = createHarnessEventEnvelope({ ...envelopeInput, issueRef: 'linear:AGE-1', idempotencyKey: hash, provenance: { ...envelopeInput.provenance, actor: 'human' } })
+    const envelope = createHarnessEventEnvelope({ ...envelopeInput, issueRef: 'linear:ABC-1', idempotencyKey: hash, provenance: { ...envelopeInput.provenance, actor: 'human' } })
     expect(envelope.idempotencyKey).toBe(hash)
-    expect(envelope.issueRef).toBe('linear:AGE-1')
+    expect(envelope.issueRef).toBe('linear:ABC-1')
     expect(envelope.provenance.actor).toBe('human')
   })
 
