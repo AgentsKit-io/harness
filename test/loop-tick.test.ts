@@ -256,9 +256,22 @@ describe('tick', () => {
     expect(worktreeNameFor({ identifier: 'ENG-7', branchName: 'person/eng-7-Some Title!!' })).toBe('eng-7-some-title')
     expect(worktreeNameFor({ identifier: 'ENG-7', branchName: null })).toBe('eng-7')
     const queue = [{ identifier: 'A', url: 'https://l/issue/A', branchName: 'p/a' }, { identifier: 'B', url: 'https://l/issue/B', branchName: 'p/b' }, { identifier: 'C', url: 'https://l/issue/C', branchName: null }, { identifier: 'D', url: 'https://l/issue/D/x', branchName: 'p/d' }] as unknown as Parameters<typeof busyIssues>[0]
-    const worktrees = [{ id: '1', branch: 'p/b', isArchived: false, linkedLinearIssue: null }, { id: '2', branch: 'other', isArchived: false, linkedLinearIssue: 'https://l/issue/D/x' }, { id: '3', branch: 'p/c', isArchived: true, linkedLinearIssue: 'C' }] as unknown as Parameters<typeof busyIssues>[2]
+    const worktrees = [{ id: '1', branch: 'p/b', isArchived: false, linkedLinearIssue: null, workspaceStatus: 'in-progress', activeAgentCount: 1 }, { id: '2', branch: 'other', isArchived: false, linkedLinearIssue: 'https://l/issue/D/x', workspaceStatus: 'in-progress', activeAgentCount: 1 }, { id: '3', branch: 'p/c', isArchived: true, linkedLinearIssue: 'C' }] as unknown as Parameters<typeof busyIssues>[2]
     const leases = [{ issue: 'A' }] as unknown as Parameters<typeof busyIssues>[1]
     expect([...busyIssues(queue, leases, worktrees, 'person')].sort()).toEqual(['A', 'B', 'D'])
+  })
+
+  it('busyIssues does not treat a worktree a circuit-breaker or escalation left idle as still busy, but keeps in-review/completed and unknown-activity ones busy', () => {
+    const queue = [{ identifier: 'ORPHAN', url: 'https://l/issue/ORPHAN', branchName: 'p/orphan' }, { identifier: 'REVIEW', url: 'https://l/issue/REVIEW', branchName: 'p/review' }, { identifier: 'UNKNOWN', url: 'https://l/issue/UNKNOWN', branchName: 'p/unknown' }] as unknown as Parameters<typeof busyIssues>[0]
+    const worktrees = [
+      // preserved for inspection after a cost-guard trip / escalation: in-progress, no working agent — must free the issue up for redispatch.
+      { id: '1', branch: 'p/orphan', isArchived: false, linkedLinearIssue: 'ORPHAN', workspaceStatus: 'in-progress', activeAgentCount: 0 },
+      // has an open PR: still busy even with no live agent right now — must not duplicate it with a second worker.
+      { id: '2', branch: 'p/review', isArchived: false, linkedLinearIssue: 'REVIEW', workspaceStatus: 'in-review', activeAgentCount: 0 },
+      // older Orca / no agents array reported at all: fail closed, stays busy.
+      { id: '3', branch: 'p/unknown', isArchived: false, linkedLinearIssue: 'UNKNOWN', workspaceStatus: 'in-progress', activeAgentCount: null },
+    ] as unknown as Parameters<typeof busyIssues>[2]
+    expect([...busyIssues(queue, [], worktrees, 'person')].sort()).toEqual(['REVIEW', 'UNKNOWN'])
   })
 
   it('dry-run plans a dispatch without side effects and reports the exact argv', async () => {

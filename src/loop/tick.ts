@@ -225,11 +225,23 @@ export const worktreeNameFor = (issue: Pick<LoopIssue, 'identifier' | 'branchNam
 
 export const branchFor = (issue: Pick<LoopIssue, 'identifier' | 'branchName'>, person: string): string => issue.branchName ?? `${person}/${issue.identifier.toLowerCase()}`
 
-/** Issues the loop must not touch: active leases, worktrees already linked to the issue, or a worktree sitting on the issue's branch. */
+/**
+ * Issues the loop must not touch: active leases, or a worktree that still represents live or delivered work on the
+ * issue — genuinely running (or unknown, fail-closed), or `in-review`/`completed` (a real PR or merged artifact we
+ * must not duplicate by dispatching a second worker). A worktree a circuit-breaker trip or an escalation preserved
+ * idle for inspection (`in-progress`, `activeAgentCount === 0`, no PR yet) does NOT make the issue busy — otherwise
+ * it can never be dispatched again once resumed, the exact deadlock a real run hit (6 issues stuck for hours with
+ * a free slot and a resumed queue entry, each still "busy" from a dead retry attempt's leftover worktree).
+ */
 export const busyIssues = (queue: readonly LoopIssue[], leases: readonly DispatchLease[], worktrees: readonly OrcaWorktree[], person: string): ReadonlySet<string> => {
   const busy = new Set<string>(leases.map((lease) => lease.issue))
-  const linked = new Set(worktrees.filter((item) => !item.isArchived).map((item) => item.linkedLinearIssue).filter((value): value is string => Boolean(value)))
-  const branches = new Set(worktrees.filter((item) => !item.isArchived).map((item) => item.branch))
+  const stillBusy = (item: OrcaWorktree): boolean => {
+    const status = item.workspaceStatus.trim().toLowerCase()
+    if (status === 'in-review' || status === 'completed') return true
+    return item.activeAgentCount === null || item.activeAgentCount > 0
+  }
+  const linked = new Set(worktrees.filter((item) => !item.isArchived && stillBusy(item)).map((item) => item.linkedLinearIssue).filter((value): value is string => Boolean(value)))
+  const branches = new Set(worktrees.filter((item) => !item.isArchived && stillBusy(item)).map((item) => item.branch))
   for (const issue of queue) {
     if ([...linked].some((link) => link === issue.identifier || link === issue.url || link.endsWith(`/${issue.identifier}`) || link.includes(`/${issue.identifier}/`))) busy.add(issue.identifier)
     if (branches.has(branchFor(issue, person))) busy.add(issue.identifier)
