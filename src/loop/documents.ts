@@ -1,5 +1,6 @@
 import { mkdirSync, writeFileSync } from 'node:fs'
 import { dirname, join, resolve } from 'node:path'
+import type { CommandRunner } from '../adapters/command.js'
 import type { LoadedLoopConfig } from './config.js'
 import type { Design, PlanStageState, Prd } from './plan-stage.js'
 
@@ -10,10 +11,40 @@ import type { Design, PlanStageState, Prd } from './plan-stage.js'
  * reviewer diffs a document the same way they diff code. The state directory keeps the machine's copy; this is
  * the one people read.
  */
-export interface WrittenDocument { readonly kind: 'prd' | 'design'; readonly path: string }
+export interface WrittenDocument { readonly kind: 'prd' | 'design'; readonly path: string; readonly note?: string }
 
-export const prdPathFor = (loaded: LoadedLoopConfig, id: string): string => resolve(loaded.root, join(loaded.config.documents.prdPath, `${id}.md`))
-export const designPathFor = (loaded: LoadedLoopConfig, id: string): string => resolve(loaded.root, join(loaded.config.documents.designPath, `${id}.md`))
+export const prdPathFor = (loaded: LoadedLoopConfig, id: string, root: string = loaded.root): string => resolve(root, join(loaded.config.documents.prdPath, `${id}.md`))
+export const designPathFor = (loaded: LoadedLoopConfig, id: string, root: string = loaded.root): string => resolve(root, join(loaded.config.documents.designPath, `${id}.md`))
+
+/** The operator's checkout as git reports it; null where `project.root` is not a git work tree. */
+export interface CheckoutState { readonly branch: string | null; readonly dirty: boolean }
+
+export const readCheckoutState = async (runner: CommandRunner, root: string): Promise<CheckoutState | null> => {
+  try {
+    const branch = await runner.run(['git', 'rev-parse', '--abbrev-ref', 'HEAD'], { cwd: root, timeoutMs: 10_000 })
+    if (branch.code !== 0) return null
+    const status = await runner.run(['git', 'status', '--porcelain'], { cwd: root, timeoutMs: 30_000 })
+    const name = branch.stdout.trim()
+    return { branch: name && name !== 'HEAD' ? name : null, dirty: status.code !== 0 || status.stdout.trim().length > 0 }
+  } catch { return null }
+}
+
+/**
+ * Where an approved document is written: the repository when its checkout is the clean base branch, the state
+ * directory otherwise.
+ *
+ * `project.root` is the operator's own checkout. Observed: a PRD approved while it sat on an unrelated, dirty
+ * branch landed silently among that branch's uncommitted changes, where it either rides along in the wrong PR or
+ * gets lost with the branch. Kept under the state directory instead, with a note saying so, it waits for a person
+ * to carry it to the base branch in a PR of its own.
+ */
+export const documentRoot = (loaded: LoadedLoopConfig, checkout: CheckoutState | null): { readonly root: string; readonly note?: string } => {
+  if (!checkout) return { root: loaded.root }
+  const base = loaded.config.project.baseBranch
+  const reason = checkout.branch !== base ? `the checkout is on ${checkout.branch ?? 'a detached HEAD'}, not ${base}` : checkout.dirty ? 'the checkout has uncommitted changes' : null
+  if (!reason) return { root: loaded.root }
+  return { root: join(loaded.stateDir, 'documents'), note: `written under the loop's state directory because ${reason}; commit it to ${base} in a PR of its own` }
+}
 
 const list = (items: readonly string[]): string => items.length ? items.map((item) => `- ${item}`).join('\n') : '- _none declared_'
 
@@ -66,21 +97,21 @@ export const renderDesignMarkdown = (state: PlanStageState, design: Design, appr
 const write = (path: string, text: string): void => { mkdirSync(dirname(path), { recursive: true }); writeFileSync(path, text, 'utf8') }
 
 /** Write the PRD once a human approves it. A no-op under `documents.backend: none`. */
-export const writePrdDocument = (loaded: LoadedLoopConfig, state: PlanStageState): WrittenDocument | null => {
+export const writePrdDocument = (loaded: LoadedLoopConfig, state: PlanStageState, target: { readonly root: string; readonly note?: string } = { root: loaded.root }): WrittenDocument | null => {
   if (loaded.config.documents.backend !== 'file') return null
   const prd = state.prd
   if (!prd.objective) return null
-  const path = prdPathFor(loaded, state.id)
+  const path = prdPathFor(loaded, state.id, target.root)
   write(path, renderPrdMarkdown(state, prd as Prd, state.approvals.plan))
-  return { kind: 'prd', path }
+  return { kind: 'prd', path, ...(target.note ? { note: target.note } : {}) }
 }
 
 /** Write the design once a human approves it. A no-op under `documents.backend: none`. */
-export const writeDesignDocument = (loaded: LoadedLoopConfig, state: PlanStageState): WrittenDocument | null => {
+export const writeDesignDocument = (loaded: LoadedLoopConfig, state: PlanStageState, target: { readonly root: string; readonly note?: string } = { root: loaded.root }): WrittenDocument | null => {
   if (loaded.config.documents.backend !== 'file' || !state.design) return null
-  const path = designPathFor(loaded, state.id)
+  const path = designPathFor(loaded, state.id, target.root)
   write(path, renderDesignMarkdown(state, state.design, state.approvals.design))
-  return { kind: 'design', path }
+  return { kind: 'design', path, ...(target.note ? { note: target.note } : {}) }
 }
 
 /**

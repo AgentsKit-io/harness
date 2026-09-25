@@ -3,28 +3,18 @@ import { hashJson } from '../kernel/hash.js'
 import { orcaJson, type OrcaCliOptions } from './orca-cli.js'
 import { createTrackingAdapter, type TrackingAdapter } from './tracking.js'
 import type { CommandRunner } from './command.js'
+import type { TrackerComment, TrackerIssue, TrackerIssueDetail } from '../loop/tracker.js'
 
-export interface LoopIssue {
-  readonly id: string
-  readonly identifier: string
-  readonly title: string
-  readonly url: string
-  readonly state: string
-  readonly stateType: string
-  readonly assignee: string | null
-  readonly assigneeId: string | null
-  readonly labels: readonly string[]
-  readonly priority: number
-  readonly priorityLabel: string
-  readonly project: string | null
-  readonly branchName: string | null
-  readonly createdAt: string
-  readonly updatedAt: string
-}
+export type { TrackerComment, TrackerIssue, TrackerIssueDetail } from '../loop/tracker.js'
+
+/** @deprecated Use TrackerIssue at the provider-neutral seam. */
+export type LoopIssue = TrackerIssue
 
 export interface LinearQueueFilter {
   readonly states: readonly string[]
   readonly excludeLabels: readonly string[]
+  /** Work the loop cannot deliver as a PR to its own repository; never dispatched, like `excludeLabels`. */
+  readonly outsideLabel?: string
   /** Every one of these must be present on the issue (AND). Empty = no constraint. */
   readonly requireLabels: readonly string[]
   /**
@@ -107,7 +97,7 @@ const priorityRank = (priority: number): number => priority === 0 ? Number.MAX_S
 
 export const filterAndOrderQueue = (issues: readonly LoopIssue[], filter: LinearQueueFilter): readonly LoopIssue[] => {
   const states = new Set(filter.states)
-  const exclude = new Set(filter.excludeLabels)
+  const exclude = new Set([...filter.excludeLabels, ...(filter.outsideLabel ? [filter.outsideLabel] : [])])
   const seen = new Set<string>()
   const eligible = issues.filter((issue) => {
     if (seen.has(issue.identifier)) return false
@@ -150,13 +140,10 @@ export const fetchLinearQueue = async (runner: CommandRunner, input: FetchQueueI
 
 // ---- issue detail and writes ------------------------------------------------------------------
 
-export interface LinearIssueDetail extends LoopIssue {
-  readonly description: string
-  readonly comments: readonly { readonly author: string | null; readonly body: string; readonly createdAt: string }[]
-  readonly raw: unknown
-}
+/** @deprecated Use TrackerIssueDetail at the provider-neutral seam. */
+export interface LinearIssueDetail extends TrackerIssueDetail {}
 
-const commentsOf = (result: Record<string, unknown>): LinearIssueDetail['comments'] => {
+const commentsOf = (result: Record<string, unknown>): TrackerComment[] => {
   const list = Array.isArray(result['comments']) ? result['comments'] : []
   return list.filter(isRecord).map((item) => ({ author: isRecord(item['user']) ? str(item['user']['displayName'], str(item['user']['name'])) || null : str(item['author']) || null, body: str(item['body']), createdAt: str(item['createdAt']) }))
 }
@@ -189,18 +176,19 @@ export const linearCommentAddArgv = (input: { readonly issue: string; readonly b
 export const linearLabelArgv = (input: { readonly issue: string; readonly labels: readonly string[]; readonly workspaceId: string; readonly action: 'add' | 'remove' }, bin = 'orca'): readonly string[] => [bin, 'linear', 'label', input.action, input.issue, ...input.labels.flatMap((label) => ['--label', label]), '--workspace', input.workspaceId, '--json']
 export const linearAttachArgv = (input: { readonly issue: string; readonly url: string; readonly title?: string; readonly workspaceId: string; readonly writeId?: string }, bin = 'orca'): readonly string[] => [bin, 'linear', 'attach', input.issue, '--url', input.url, ...(input.title ? ['--title', input.title] : []), '--workspace', input.workspaceId, ...(input.writeId ? ['--write-id', input.writeId] : []), '--json']
 
-export const linearSaveIssueArgv = (input: { readonly team: string; readonly title: string; readonly description?: string; readonly state?: string; readonly labels?: readonly string[]; readonly priority?: string; readonly project?: string; readonly workspaceId: string; readonly writeId?: string }, bin = 'orca'): readonly string[] => [bin, 'linear', 'save-issue', '--team', input.team, '--title', input.title,
+export const linearSaveIssueArgv = (input: { readonly team: string; readonly title: string; readonly description?: string; readonly state?: string; readonly labels?: readonly string[]; readonly priority?: string; readonly project?: string; readonly parentId?: string; readonly workspaceId: string; readonly writeId?: string }, bin = 'orca'): readonly string[] => [bin, 'linear', 'save-issue', '--team', input.team, '--title', input.title,
   ...(input.description ? ['--description', input.description] : []),
   ...(input.state ? ['--state', input.state] : []),
   ...(input.priority ? ['--priority', input.priority] : []),
   ...(input.project ? ['--project', input.project] : []),
+  ...(input.parentId ? ['--parent-id', input.parentId] : []),
   ...(input.labels ?? []).flatMap((label) => ['--label', label]),
   '--workspace', input.workspaceId,
   ...(input.writeId ? ['--write-id', input.writeId] : []),
   '--json']
 
 /** Create one issue. `dedupeKey` becomes Orca's `--write-id`, so a retried decompose cannot create the same issue twice. */
-export const linearSaveIssue = async (runner: CommandRunner, input: { readonly team: string; readonly title: string; readonly description?: string; readonly state?: string; readonly labels?: readonly string[]; readonly priority?: string; readonly project?: string; readonly dedupeKey?: string }, options: LinearWriteOptions): Promise<{ readonly identifier: string | null; readonly url: string | null }> => {
+export const linearSaveIssue = async (runner: CommandRunner, input: { readonly team: string; readonly title: string; readonly description?: string; readonly state?: string; readonly labels?: readonly string[]; readonly priority?: string; readonly project?: string; readonly parentId?: string; readonly dedupeKey?: string }, options: LinearWriteOptions): Promise<{ readonly identifier: string | null; readonly url: string | null }> => {
   const result = await orcaJson(runner, linearSaveIssueArgv({ ...input, workspaceId: options.workspaceId, ...(input.dedupeKey ? { writeId: writeIdFor(input.dedupeKey) } : {}) }).slice(1), scoped(options))
   const record = isRecord(result) ? (isRecord(result['issue']) ? result['issue'] : result) : {}
   return { identifier: typeof record['identifier'] === 'string' ? record['identifier'] : null, url: typeof record['url'] === 'string' ? record['url'] : null }

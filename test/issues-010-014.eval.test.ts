@@ -3,13 +3,13 @@ import { createInMemoryMemoryAdapter, createKvMemoryAdapter, createLlmCache, cre
 
 it('010 evaluates the context contribution seam (with-context beats control)', async () => {
   const memory = createInMemoryMemoryAdapter()
-  await memory.remember({ id: 'd1', scope: 'issue', summary: 'approved decision', source: 'linear:AGE-10', sourceRevision: 'rev', contentHash: 'hash', approved: true })
-  expect((await memory.recall({ query: 'decision', issueId: 'AGE-10', sourceRevision: 'rev' }))[0]).toMatchObject({ relevant: true, stale: false })
-  expect((await memory.recall({ query: 'decision', issueId: 'AGE-10', sourceRevision: 'changed' }))[0]).toMatchObject({ stale: true })
+  await memory.remember({ id: 'd1', scope: 'issue', summary: 'approved decision', source: 'linear:ABC-10', sourceRevision: 'rev', contentHash: 'hash', approved: true })
+  expect((await memory.recall({ query: 'decision', issueId: 'ABC-10', sourceRevision: 'rev' }))[0]).toMatchObject({ relevant: true, stale: false })
+  expect((await memory.recall({ query: 'decision', issueId: 'ABC-10', sourceRevision: 'changed' }))[0]).toMatchObject({ stale: true })
   const kv = new Map<string, unknown>()
   const bridged = createKvMemoryAdapter({ get: async (key) => kv.get(key), set: async (key, value) => { kv.set(key, value) } })
-  await bridged.remember({ id: 'd2', scope: 'issue', summary: 'approved bridge decision', source: 'linear:AGE-10', sourceRevision: 'rev', contentHash: 'hash2', approved: true })
-  expect((await bridged.recall({ query: 'bridge', issueId: 'AGE-10' }))[0].record.id).toBe('d2')
+  await bridged.remember({ id: 'd2', scope: 'issue', summary: 'approved bridge decision', source: 'linear:ABC-10', sourceRevision: 'rev', contentHash: 'hash2', approved: true })
+  expect((await bridged.recall({ query: 'bridge', issueId: 'ABC-10' }))[0].record.id).toBe('d2')
   const withContext = await runAgentEval({
     suite: { name: 'issue-010-doc-bridge-ab', cases: [{ id: 'decision', input: 'context:approved', expected: 'ready' }] },
     agent: async (input) => input.includes('approved') ? 'ready' : 'blocked',

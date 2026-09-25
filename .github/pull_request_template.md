@@ -11,9 +11,16 @@
 - [ ] `pnpm test`
 - [ ] `pnpm build`
 - [ ] `pnpm pack --pack-destination /tmp/agentskit-harness-pack`
-- [ ] `ak-verify run --config .ak-harness/verification.json --json`
+- [ ] Narrow `test:*` script for each touched criterion (see AGENTS.md `scope:`)
+- [ ] Closing PR only: `ak-verify run --config .ak-harness/verification.json --json`
 
-Verification run ID:
+Verification run ID (closing PR only):
+
+## Reuse
+
+- Existing ecosystem package or module checked:
+- Established library or service considered:
+- Why new code or a new dependency is needed (or "none added"):
 
 ## Risk and compatibility
 

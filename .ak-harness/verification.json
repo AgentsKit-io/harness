@@ -5,14 +5,14 @@
   "stateDir": ".ak-harness/verification",
   "autonomy": "yolo",
   "contract": {
-    "intent": "Validate the 0.13.0 modular SDLC engine with explicit capability boundaries, deterministic phase execution, provenance-bound artifacts, replaceable real-execution adapters, and read-only loop observability with measured assurance.",
+    "intent": "Validate the modular SDLC engine with explicit capability boundaries, deterministic phase execution, provenance-bound artifacts, replaceable real-execution adapters, and read-only loop observability with measured assurance.",
     "scope": {
       "inScope": ["package source", "public CLI", "tests", "release workflow", "repository governance docs", "coordination ledger", "quota recovery", "machine guard policy", "file-scoped preflight", "block/status/retro records", "provider-neutral Orca and tracking adapters", "capability-boundary module organization", "public API compatibility", "versioned artifact envelopes", "decision log artifact records", "idempotent phase resume", "coding-agent adapter", "adapter assurance and telemetry", "dry-run external effects"],
       "outOfScope": ["GitHub repository creation", "npm publication", "external Linear/GitHub/Orca mutations", "dashboard hosting", "product decisions", "provider credentials"]
     },
     "ambiguities": [],
     "outcomes": [
-      { "id": "package", "statement": "The package typechecks, tests, builds, and packs as @agentskit/harness 0.13.0.", "checks": ["package-tests", "package-build", "package-pack"] },
+      { "id": "package", "statement": "The package typechecks, tests, builds, and packs as @agentskit/harness at the version in package.json.", "checks": ["package-tests", "package-build", "package-pack"] },
       { "id": "cli", "statement": "The real CLI is runnable and exposes both ak-harness and ak-verify.", "checks": ["cli"] },
       { "id": "governance", "statement": "Repository governance and release documentation are complete and internally consistent.", "checks": ["repository-docs", "workflow"] }
       ,{ "id": "coordination", "statement": "Issue/worktree claims and dispatch records are atomic, idempotent, and human-recoverable.", "checks": ["coordination"] }
@@ -23,13 +23,14 @@
       ,{ "id": "eval-battery", "statement": "A versioned eval battery covers all execution layers and supported components, repeats deterministically, reports min/median/max, and blocks unknown, stale, critical, subjective, or unapproved regression evidence.", "checks": ["eval-battery"] }
       ,{ "id": "compatibility-contract", "statement": "AgentsKit ecosystem compatibility is represented by pinned revisions, real-adapter commands, baseline bindings, and fail-closed evidence assessment.", "checks": ["compatibility-contract"] }
       ,{ "id": "adoption", "statement": "A new consumer can run the documented minimum profile and adapter example without importing internal modules, with troubleshooting and organization guidance available.", "checks": ["adoption"] }
-      ,{ "id": "release-manifest", "statement": "The 0.13.0 release candidate has a versioned manifest, current package metadata, and a main-only Trusted Publishing path with explicit unresolved blockers.", "checks": ["release-manifest"] }
+      ,{ "id": "release-manifest", "statement": "The release candidate has a versioned manifest, current package metadata, and a main-only Trusted Publishing path with explicit unresolved blockers.", "checks": ["release-manifest"] }
       ,{ "id": "records", "statement": "Portable block, status, retro/learning, model-policy, and machine-policy records validate deterministically.", "checks": ["records"] }
       ,{ "id": "adapters", "statement": "Coding-agent, Orca, Doc Bridge, memory, cache, runtime, and tracking adapters expose provider-neutral contracts with explicit assurance, telemetry, bounded failures, and idempotent dry-run behavior.", "checks": ["adapters"] }
       ,{ "id": "module-boundaries", "statement": "Capability modules are organized under explicit boundaries and forbidden kernel/provider imports fail deterministically.", "checks": ["boundaries"] }
       ,{ "id": "phase-executor", "statement": "Phase profiles declare inputs, outputs, dependencies, gates, bounded retries, budgets, effects, and deterministic pass/block/escalate/retry/cancel/resume routing.", "checks": ["phase-executor"] }
       ,{ "id": "artifacts", "statement": "Versioned artifacts bind run provenance, render as JSON and Markdown, record decisions in the event log, reject stale bindings, and resume completed phases without replaying handlers.", "checks": ["artifacts", "artifact-cli"] }
       ,{ "id": "observability", "statement": "The loop exposes a deterministic, read-only observability report with actionable anomaly detection and operating metrics.", "checks": ["observability"] }
+      ,{ "id": "ui", "statement": "The local UI exposes a protected, live operational projection of loop tasks and events without duplicating execution logic.", "checks": ["ui"] }
     ]
   },
   "surfaces": {
@@ -39,7 +40,7 @@
     "endpoint": { "required": false, "reason": "Local CLI/library package." },
     "database": { "required": false, "reason": "No database in scope." },
     "mcp": { "required": false, "reason": "Optional integration, not kernel scope." },
-    "ui": { "required": false, "reason": "No UI shipped." }
+    "ui": { "required": false, "reason": "The local operational UI is covered by the ui criterion; browser-backed screenshot evidence remains outside this CLI contract." }
   },
   "checks": [
     { "id": "package-tests", "category": "logic", "command": "pnpm test && node -e 'console.log(JSON.stringify({status:\"passed\",criteria:[\"package\"]}))'", "evidence": "structured", "timeoutMs": 180000 },
@@ -64,6 +65,7 @@
     ,{ "id": "artifacts", "category": "logic", "command": "pnpm vitest run --config vitest.config.ts test/artifacts.test.ts && node -e 'console.log(JSON.stringify({status:\"passed\",criteria:[\"artifacts\"]}))'", "evidence": "structured", "timeoutMs": 60000 }
     ,{ "id": "artifact-cli", "category": "cli", "execution": "real", "command": "node scripts/verify-artifact-cli.mjs", "evidence": "structured", "timeoutMs": 60000 }
     ,{ "id": "observability", "category": "logic", "execution": "real", "dependsOn": ["package-tests"], "command": "pnpm vitest run --config vitest.config.ts test/loop-observability.test.ts && node dist/cli.js loop observe --help >/dev/null && node -e 'console.log(JSON.stringify({status:\"passed\",criteria:[\"observability\"]}))'", "evidence": "structured", "timeoutMs": 120000 }
+    ,{ "id": "ui", "category": "logic", "execution": "real", "command": "pnpm vitest run --config vitest.config.ts test/ui.test.ts test/github-board.test.ts && pnpm build && node dist/cli.js ui --help >/dev/null && node -e 'console.log(JSON.stringify({status:\"passed\",criteria:[\"ui\"]}))'", "evidence": "structured", "timeoutMs": 120000 }
   ],
   "tracking": { "required": false, "reason": "Repository bootstrap is local; GitHub and npm publication are separate authorized actions." },
   "budget": { "maxDurationMs": 600000 },

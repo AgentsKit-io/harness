@@ -9,7 +9,7 @@ The four layers that produce this configuration — the machine's global file, t
 machine's overlay — are described in [ADR-0033](https://github.com/AgentsKit-io/harness/blob/main/docs/ADR-0033-four-config-layers-and-presets.md).
 `ak-harness loop validate` prints the effective result, which is the only one that decides anything.
 
-212 of 367 paths carry no description yet.
+221 of 387 paths carry no description yet.
 
 ## `schemaVersion`
 
@@ -31,6 +31,7 @@ Type: string
 | `project.root` | string | `"."` |  |
 | `project.stateDir` | string | `".ak-loop"` | Where the loop keeps everything that is NOT the project's configuration: dispatch ledger, delivery state, contracts, events, agent memory, plans. Meant to be gitignored — the configuration lives at the repo root as `loop.config.yaml`, versioned; this directory is runtime state, per machine. |
 | `project.team` | string |  | Selects the `loop.config.team.&lt;key&gt;.yaml` layer. `$AK_LOOP_TEAM` overrides it; a declared team whose file is missing fails loudly. |
+| `project.orchestratorView` | `base` · `root` | `"base"` | The tree the orchestrator's headless calls (contract, plan interview, architect, votes, decompose) read. `base` (default): a harness-owned detached worktree of `origin/&lt;baseBranch&gt;`, fetched before each use. `root`: `project.root` as it is — whatever branch and age the operator's checkout has. |
 | `project.setup` | object | `{}` |  |
 | `project.setup.command` | string[] |  | Argv (no shell — one element per arg, e.g. `[pnpm, install, --frozen-lockfile]`) run once in a freshly created worktree before the worker terminal opens. Unset/empty = skip. |
 | `project.setup.timeoutSec` | integer | `600` |  |
@@ -61,6 +62,7 @@ Type: string
 | `linear.rotation.advanceWhenEmpty` | boolean | `true` |  |
 | `linear.queueOwnership` | `person` · `unassigned` | `"person"` | Whose queue this machine drains. `person` (default) keeps the historical behaviour: the issues assigned to `linear.person`. `unassigned` drains the issues with NO assignee and turns the assignee into a transient claim — written on dispatch, cleared when the item returns — so several machines can share one priority-ordered queue without colliding. Note when switching to `unassigned`: clearing the assignees is then REQUIRED, not cosmetic. With `person` and an emptied backlog the queue comes back empty and the loop looks healthy while doing nothing. |
 | `linear.states` | string[] | `["Todo","Ready"]` |  |
+| `linear.entryState` | string | `"Backlog"` | Where `loop plan decompose --create` puts new issues. It must NOT be one of `states`: those are the queue, and an issue the planner just wrote is not work anyone approved yet. Moving it into `states` is the human gate. |
 | `linear.excludeLabels` | string[] | `["blocked","needs-info"]` |  |
 | `linear.requireLabels` | string[] | `[]` | ALL of these must be on the issue (AND). |
 | `linear.anyLabels` | string[] | `[]` | At least ONE of these must be on the issue (OR) — how a machine declares the slices of the board it drains, e.g. `[layer:L2, layer:L3]`. `requireLabels` cannot say this: it demands every label on the same issue, so two layers there match nothing and the queue comes back silently empty. |
@@ -72,6 +74,16 @@ Type: string
 | `linear.doneState` | string | `"Done"` |  |
 | `linear.blockedLabel` | string | `"blocked"` |  |
 | `linear.needsInfoLabel` | string | `"needs-info"` |  |
+| `linear.outsideLabel` | string | `"outside-loop"` | Marks work the loop cannot deliver as a pull request to `project.repo` — another repository, a deploy, a setting in an external service. Decompose puts it on such issues and the queue never dispatches them, whatever state they are moved to: a worker given one opens a PR here that does not do the work, or none. |
+
+## `queue`
+
+Source of dispatchable work. `backlog` preserves the historical tracker drain; `explicit` consumes only requests confirmed through the durable issue queue (the UI and future scheduler integrations share it).
+
+| Path | Type | Default | Description |
+|---|---|---|---|
+| `queue.mode` | `backlog` · `explicit` | `"backlog"` |  |
+| `queue.order` | string | `"fifo"` |  |
 
 ## `knownFailures`
 
@@ -92,7 +104,7 @@ Stricter review for the slices of the board that deserve it, keyed by label. The
 | `reviewOverrides.anyLabels` | string[] | **required** | Matches when the issue carries at least ONE of these labels. |
 | `reviewOverrides.votes` | integer |  |  |
 | `reviewOverrides.minSeverity` | `nit` · `med` · `high` · `blocker` |  |  |
-| `reviewOverrides.profile` | `fast` · `full` |  | Mesmo enum de `delivery.review.profile` — um perfil inventado aqui só falharia no CLI. |
+| `reviewOverrides.profile` | `fast` · `full` |  | Same enum as `delivery.review.profile` — a profile invented here would only fail in the CLI. |
 | `reviewOverrides.reason` | string |  | Why this slice is stricter — read by whoever wonders about the cost. |
 
 ## `models`
@@ -156,10 +168,10 @@ Stricter review for the slices of the board that deserve it, keyed by label. The
 | `models.providers.effortFlag` | string |  |  |
 | `models.providers.structuredOutputFlag` | string[] |  |  |
 | `models.providers.subagents` | boolean | `false` |  |
-| `models.effort` | object | `{}` | Reasoning effort requested per role; only applied for providers whose `effortFlag` is set. |
-| `models.effort.orchestrator` | `low` · `medium` · `high` · `xhigh` | `"high"` |  |
-| `models.effort.reviewer` | `low` · `medium` · `high` · `xhigh` | `"high"` |  |
-| `models.effort.builder` | `low` · `medium` · `high` · `xhigh` | `"medium"` |  |
+| `models.effort` | object | `{}` | Reasoning effort requested per role; only applied for providers whose `effortFlag` is set. cheapest-sufficient, the same rule `routing.roles.*.quality` already follows: effort tracks the difficulty of what a role does. `builder` writes and debugs the code — open-ended, the hardest thing here — while `reviewer` reads a finished diff against stated criteria and `orchestrator` turns an issue into a contract; both are bounded. Giving the writer `medium` while the readers got `high` was the inversion the rule exists to stop, and it was paying more for the cheaper problem. |
+| `models.effort.orchestrator` | `low` · `medium` · `high` · `xhigh` | `"medium"` |  |
+| `models.effort.reviewer` | `low` · `medium` · `high` · `xhigh` | `"medium"` |  |
+| `models.effort.builder` | `low` · `medium` · `high` · `xhigh` | `"high"` |  |
 | `models.effort.watcher` | `low` · `medium` · `high` · `xhigh` | `"low"` |  |
 
 ## `machine`
@@ -218,6 +230,8 @@ Stricter review for the slices of the board that deserve it, keyed by label. The
 | `delivery.handoff.onlyWhenProviderUnavailable` | boolean | `true` | Only hand off when the current provider is unavailable (exhausted/cooldown/missing). |
 | `delivery.selfEditPaths` | string[] | `["loop.config.yaml",".github/**"]` |  |
 | `delivery.secretFilePatterns` | string[] | `["**/.env","**/.env.*","**/*.pem","**/*.key","**/id_rsa","**/id_rsa.*","**/credentials.json","**/*.p12","**/*.pfx"]` | Glob patterns (same matcher as `selfEditPaths`) for filenames that should never enter a PR the loop reviews or merges, regardless of the diff content — the loop cannot fetch a PR's actual diff content today, so this is a filename-shaped guardrail, not a secret-content scan. A PR touching one of these is held exactly like `selfEditPaths`, with a distinct reason. Defaults cover the most common accidentally-committed secret files. |
+| `delivery.workerGuard` | object | `{}` | Real-time enforcement of `selfEditPaths`/`secretFilePatterns` inside the worker's own session, not just at PR-review time. Where the dispatched provider supports it (`claude`, `grok`; `codex` is deliberately left out — its `PreToolUse` hooks have open upstream bugs, see ADR-0038 — and `opencode` gets static deny rules instead of a live hook, also ADR-0038), the loop writes a provider-native permission config into the fresh worktree before the terminal opens, so a write to a protected or secret-shaped path is refused as it happens. This is additive: the PR-time gate stays the only enforcement for a provider it does not cover, and a worker whose hook itself fails (crash/timeout) falls back to that same PR-time gate — see ADR-0038 for the fail-open caveats this cannot close. |
+| `delivery.workerGuard.enabled` | boolean | `true` |  |
 | `delivery.ignoreChecks` | string[] | `[]` | Check names ignored when deciding CI is green (e.g. advisory bots). |
 | `delivery.requiredChecks` | string[] | `[]` | Check names that must be observed and green; empty = every reported check must pass. |
 | `delivery.cleanupWorktree` | boolean | `true` | Remove the Orca worktree after a successful merge. |
@@ -301,6 +315,17 @@ Stricter review for the slices of the board that deserve it, keyed by label. The
 |---|---|---|---|
 | `github.intakeLabel` | string | null | `"loop:review"` | A PR labeled with this on GitHub is picked up by deliver even though the loop never dispatched it. Set null to disable intake entirely. |
 | `github.reviewOnly` | boolean | `true` | Intake PRs are always review + comment only; this loop never merges a PR it did not dispatch, regardless of a clean review. |
+| `github.issues` | object | `{}` |  |
+| `github.issues.state` | string | `"open"` | Active board reads are deliberately limited to open GitHub Issues; closed issues remain addressable by detail. |
+| `github.issues.maxIssues` | integer | `500` | Fetch one extra row to detect truncation while keeping the retained board bounded. |
+| `github.issues.refreshSeconds` | integer | `60` | Remote board reads are cached; this is the minimum age before another `gh` call. |
+| `github.issues.assignee` | string |  | Optional machine override. When absent, the authenticated `gh` user owns the loop queue. |
+| `github.issues.labels` | object | `{}` | Exactly one lifecycle label is applied to a GitHub issue at a time. |
+| `github.issues.labels.todo` | string | `"loop:todo"` |  |
+| `github.issues.labels.inProgress` | string | `"loop:in-progress"` |  |
+| `github.issues.labels.review` | string | `"loop:review"` |  |
+| `github.issues.labels.done` | string | `"loop:done"` |  |
+| `github.issues.labels.blocked` | string | `"loop:blocked"` |  |
 
 ## `resilience`
 
@@ -374,7 +399,7 @@ Which implementation of each connector this project uses. The engine speaks only
 
 | Path | Type | Default | Description |
 |---|---|---|---|
-| `connectors.tracker` | `linear` | `"linear"` |  |
+| `connectors.tracker` | `linear` · `github` | `"linear"` |  |
 | `connectors.scm` | `github` | `"github"` |  |
 | `connectors.runner` | `orca` · `local` | `"orca"` | `orca` drives Orca's worktrees and terminals; `local` is git worktree + tmux + the system crontab. |
 | `connectors.local` | object | `{}` |  |
@@ -410,6 +435,7 @@ The roles that run per issue, and the plan the worker starts from. The planner a
 | `worker.plan.approvals` | integer | `2` | How many of them must approve. Default 2 of 3. |
 | `worker.plan.maxCycles` | integer | `3` | Planner → vote → replan cycles before the item becomes a human's problem. Three models disagreeing three times is an ambiguous requirement. |
 | `worker.plan.timeoutMs` | integer | `300000` |  |
+| `worker.plan.stageTimeoutMs` | integer | `900000` | Per-call budget for `loop plan` (interview, architect, design vote, decompose). Separate from `timeoutMs` because the architect designs a whole PRD against the whole repository, not one issue — and it runs from a human's shell, not inside a scheduler stage capped at 600 s. At 300 s `glm-5.3` never finished a design. |
 | `worker.roles` | `planner` · `vote` · `builder` · `verify` · `review` · `dod`[] |  | The phases that run for one issue, in order. Unset (the default) means every phase answers for itself, from its own block — `worker.plan.enabled`, `delivery.verify.argv`, `delivery.review`, `dod.items` — which in practice is `['builder', 'review']` and is exactly what a project that never opted in already has. **Declaring the list makes it the answer**: a phase not named here does not run, however well configured its own block is. That is the point of declaring it. |
 
 ## `layers`

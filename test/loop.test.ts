@@ -102,6 +102,19 @@ describe('loop config', () => {
     expect(mergeLoopConfig({ a: { b: 1, c: [1, 2] }, d: 1 }, { a: { c: [3] }, e: 2 })).toEqual({ a: { b: 1, c: [3] }, d: 1, e: 2 })
   })
 
+  it('never lets an overlay silently drop a gate the project added — gate lists accumulate, and shrink only by !entry', () => {
+    const project = { delivery: { selfEditPaths: ['loop.config.yaml', '.github/**', 'packages/**'], requiredChecks: ['verify'], ignoreChecks: ['bot'] } }
+    // The overlay was written before `packages/**` existed and only meant to free `.github/**`.
+    const overlay = { delivery: { selfEditPaths: ['!.github/**', '.github/workflows/**', 'CODEOWNERS'], requiredChecks: ['e2e'], ignoreChecks: ['other'] } }
+    expect(mergeLoopConfig(project, overlay)).toEqual({ delivery: {
+      selfEditPaths: ['loop.config.yaml', 'packages/**', '.github/workflows/**', 'CODEOWNERS'],
+      requiredChecks: ['verify', 'e2e'],
+      ignoreChecks: ['other'],
+    } })
+    // A negation of something the base never had is dropped, not kept as a literal glob.
+    expect(mergeLoopConfig({}, { delivery: { selfEditPaths: ['!x', 'y'] } })).toEqual({ delivery: { selfEditPaths: ['y'] } })
+  })
+
   it('advances the configured queue owner once the dispatchable queue and leases are empty', () => {
     const dir = mkdtempSync(join(tmpdir(), 'agentskit-loop-rotation-')); cleanups.push(dir)
     writeFileSync(join(dir, 'loop.config.yaml'), exampleYaml.replace('person: my-linear-display-name', 'person: person').replace('    my-linear-display-name: <linear-user-id>', '    person: u1\n    teammate: u2').replace('    owners: [my-linear-display-name]', '    owners: [person, teammate]').replace('    enabled: false', '    enabled: true'))

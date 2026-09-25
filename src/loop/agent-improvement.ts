@@ -1,4 +1,5 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
+import { z } from 'zod'
 import { dirname, join, resolve } from 'node:path'
 import type { CommandRunner } from '../adapters/command.js'
 import { hashJson } from '../kernel/hash.js'
@@ -6,6 +7,7 @@ import { loadAgentRegistry, resolveAgentForRole, type AgentRegistry } from './ag
 import type { LoadedLoopConfig, LoopConfig } from './config.js'
 import { writeJsonAtomic } from './fs-atomic.js'
 import { readLoopEvents } from './retro.js'
+import { readJsonFile } from '../kernel/json-file.js'
 
 /** Roles whose instructions a machine may not change on its own, whatever the evidence. */
 export const CRITICAL_ROLES: readonly string[] = ['architect', 'reviewer']
@@ -86,7 +88,8 @@ export interface ImprovementState { readonly history: readonly ImprovementRecord
 export const improvementStatePath = (stateDir: string): string => join(stateDir, 'agent-improvements.json')
 
 export const readImprovementState = (stateDir: string): ImprovementState => {
-  try { return { history: (JSON.parse(readFileSync(improvementStatePath(stateDir), 'utf8')) as ImprovementState).history ?? [] } } catch { return { history: [] } }
+  const parsed = readJsonFile(improvementStatePath(stateDir), z.object({ history: z.array(z.unknown()) }).loose()) as ImprovementState | null
+  return { history: parsed?.history ?? [] }
 }
 
 /** Build the proposal: the agent's current instructions plus one dated note naming what the evidence showed. */

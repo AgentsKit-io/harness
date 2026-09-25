@@ -271,6 +271,13 @@ use, plus a commented-out notification channel. Models live there on purpose —
 logged in is a fact about you and this machine, not about the repository. A project file alone is therefore not a
 complete config, and that is by design.
 
+## What the orchestrator reads
+
+Contract generation, the plan interview, the architect, the design votes and decompose all run a model that reads
+the repository. They run in `<stateDir>/base-view`, a detached worktree of `origin/<baseBranch>` the harness owns,
+fetches and resets before each use — never in `project.root`, which is the operator's checkout and can be on any
+branch, at any age. A failed fetch fails the stage. `project.orchestratorView: root` opts back into the checkout.
+
 ## Configuration in four layers
 
 | # | File | Owner | Typically holds |
@@ -285,6 +292,10 @@ the global file is never written to by a project.** The team key comes from `pro
 `$AK_LOOP_TEAM`; a declared team whose file is missing fails loudly rather than silently running the project
 defaults. `$AK_HARNESS_CONFIG` moves the global file, and `$AK_HARNESS_NO_GLOBAL=1` loads a project without the
 user layer — what CI sees.
+
+Lists replace, with one exception: the gate lists `delivery.selfEditPaths`, `delivery.secretFilePatterns` and
+`delivery.requiredChecks` **accumulate** across layers. A later layer removes an entry only by naming it,
+`"!.github/**"`, so a machine overlay written last week cannot silently undo a freeze the project added today.
 
 ## Flow profiles: one motor, several kinds of demand
 

@@ -1,0 +1,35 @@
+schemaVersion: 1
+
+project:
+  name: my-project
+  repo: my-org/my-project
+  baseBranch: main
+
+# GitHub Issues is the active tracker for both the UI and the loop. Mutations require gh write permission.
+connectors:
+  tracker: github
+
+github:
+  issues:
+    state: open
+    maxIssues: 500
+    refreshSeconds: 60
+    labels:
+      todo: loop:todo
+      inProgress: loop:in-progress
+      review: loop:review
+      done: loop:done
+      blocked: loop:blocked
+
+models:
+  orchestrator: [[codex/gpt-5.6-sol]]
+  reviewer: [[codex/gpt-5.6-sol]]
+  builder: [[codex/gpt-5.6-sol]]
+  watcher: [[codex/gpt-5.6-sol]]
+  providers:
+    codex:
+      bin: codex
+      tui: codex -m {model} --full-auto
+
+delivery:
+  verifyCommand: pnpm test

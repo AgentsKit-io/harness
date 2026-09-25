@@ -25,7 +25,7 @@ export const LOOP_EVENT_TYPES = {
   'plan.escalated': ['issue', 'cycles', 'unresolved'],
 
   /** A worker was launched in its own worktree. Carries the whole dispatch record plus the command that ran. */
-  'worker.dispatched': ['issue', 'worktree', 'worktreeId', 'branch', 'terminal', 'provider', 'model', 'effort', 'contractDigest', 'briefDigest', 'command', 'briefAccepted', 'tuiIdle'],
+  'worker.dispatched': ['issue', 'worktree', 'worktreeId', 'branch', 'terminal', 'provider', 'model', 'effort', 'contractDigest', 'briefDigest', 'command', 'briefAccepted', 'tuiIdle', 'workerGuardInstalled'],
   /** The dispatch itself failed — worktree, terminal or brief — before any work started. */
   'worker.dispatch-failed': ['issue', 'error'],
   /** `project.setup.command` ran in the fresh worktree. */
@@ -35,6 +35,8 @@ export const LOOP_EVENT_TYPES = {
    * pass on the same issue. Two emissions, one name: `kind` is present on the first, `reason` on the second.
    */
   'worker.nudged': ['issue', 'kind', 'reason', 'worktreeId'],
+  /** The worker stopped at a tool-permission prompt: held for a person, never typed into. Once per idle window. */
+  'worker.permission-wait': ['issue', 'terminal', 'reason'],
   /** A stale terminal was relaunched for a worker that was still supposed to be working. */
   'worker.reactivated': ['issue', 'terminal', 'previousTerminal'],
   /** A finished issue came back: a new head on a PR the loop had already closed out. */
@@ -77,8 +79,14 @@ export const LOOP_EVENT_TYPES = {
   'pr.reviewed': ['issue', 'pr', 'head', 'status', 'blocking', 'provider', 'model', 'profile', 'votes', 'minSeverity', 'source', 'calls', 'inputTokens', 'outputTokens', 'totalTokens'],
   /** The PR was squash-merged by the loop. */
   'pr.merged': ['issue', 'pr', 'head', 'sha'],
+  /** A tracked PR closed without merge; the issue waits for a close-or-reopen decision. */
+  'pr.closed': ['issue', 'pr', 'head', 'reason'],
+  /** A remote tracker write failed; local lifecycle remains authoritative until a human retries synchronization. */
+  'tracker.sync-failed': ['issue', 'operation', 'error'],
   /** GitHub refused the merge — branch protection, a required check, a race with another merge. */
   'pr.merge-refused': ['issue', 'pr', 'head', 'message'],
+  /** A person attested a PR held for protected paths, for exactly this head. */
+  'pr.human-approved': ['issue', 'head', 'by', 'pr'],
   /** The optional post-merge smoke failed. */
   'pr.smoke-failed': ['issue', 'pr', 'head', 'detail'],
 

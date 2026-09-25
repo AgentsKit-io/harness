@@ -13,7 +13,7 @@ timestamp) and `type` on top of the fields below. A plugin subscribes with
 The vocabulary is enforced by the compiler: `appendLoopEvent` accepts only these names, so an event that is not
 here cannot be emitted — and a name here that nothing emits fails the test suite.
 
-70 loop events.
+74 loop events.
 
 ## `contract.*`
 
@@ -35,10 +35,11 @@ here cannot be emitted — and a name here that nothing emits fails the test sui
 
 | Event | Carries | What it means |
 |---|---|---|
-| `worker.dispatched` | `issue`, `worktree`, `worktreeId`, `branch`, `terminal`, `provider`, `model`, `effort`, `contractDigest`, `briefDigest`, `command`, `briefAccepted`, `tuiIdle` | A worker was launched in its own worktree. Carries the whole dispatch record plus the command that ran. |
+| `worker.dispatched` | `issue`, `worktree`, `worktreeId`, `branch`, `terminal`, `provider`, `model`, `effort`, `contractDigest`, `briefDigest`, `command`, `briefAccepted`, `tuiIdle`, `workerGuardInstalled` | A worker was launched in its own worktree. Carries the whole dispatch record plus the command that ran. |
 | `worker.dispatch-failed` | `issue`, `error` | The dispatch itself failed — worktree, terminal or brief — before any work started. |
 | `worker.setup` | `issue`, `worktreeId`, `ok` | `project.setup.command` ran in the fresh worktree. |
 | `worker.nudged` | `issue`, `kind`, `reason`, `worktreeId` | An idle worker was nudged in its own terminal — and also the terminal outcome `nudged`, which ends a delivery pass on the same issue. Two emissions, one name: `kind` is present on the first, `reason` on the second. |
+| `worker.permission-wait` | `issue`, `terminal`, `reason` | The worker stopped at a tool-permission prompt: held for a person, never typed into. Once per idle window. |
 | `worker.reactivated` | `issue`, `terminal`, `previousTerminal` | A stale terminal was relaunched for a worker that was still supposed to be working. |
 | `worker.reopened` | `issue`, `pr`, `previousHead`, `head`, `previousOutcome` | A finished issue came back: a new head on a PR the loop had already closed out. |
 | `worker.handed-off` | `issue`, `from`, `to`, `worktreeId`, `branch`, `reason`, `briefAccepted` | The task was handed to another provider in the same worktree, on the same branch — and also the terminal outcome `handed-off` that ends the delivery pass which did it. |
@@ -61,8 +62,16 @@ here cannot be emitted — and a name here that nothing emits fails the test sui
 |---|---|---|
 | `pr.reviewed` | `issue`, `pr`, `head`, `status`, `blocking`, `provider`, `model`, `profile`, `votes`, `minSeverity`, `source`, `calls`, `inputTokens`, `outputTokens`, `totalTokens` | A review ran against a PR, with the verdict, who gave it, how it was configured (profile/votes/severity floor) and what it cost (`calls`/token fields, from `agentskit-review`'s own usage tracking) — what a study comparing review thoroughness and spend across models needs. `source` marks a PR that came from GitHub intake. |
 | `pr.merged` | `issue`, `pr`, `head`, `sha` | The PR was squash-merged by the loop. |
+| `pr.closed` | `issue`, `pr`, `head`, `reason` | A tracked PR closed without merge; the issue waits for a close-or-reopen decision. |
 | `pr.merge-refused` | `issue`, `pr`, `head`, `message` | GitHub refused the merge — branch protection, a required check, a race with another merge. |
+| `pr.human-approved` | `issue`, `head`, `by`, `pr` | A person attested a PR held for protected paths, for exactly this head. |
 | `pr.smoke-failed` | `issue`, `pr`, `head`, `detail` | The optional post-merge smoke failed. |
+
+## `tracker.*`
+
+| Event | Carries | What it means |
+|---|---|---|
+| `tracker.sync-failed` | `issue`, `operation`, `error` | A remote tracker write failed; local lifecycle remains authoritative until a human retries synchronization. |
 
 ## `github-intake.*`
 

@@ -3,13 +3,14 @@ import { join } from 'node:path'
 import { z } from 'zod'
 import type { CommandRunner } from '../adapters/command.js'
 import { hashJson } from '../kernel/hash.js'
-import { resolveConnectors, type TrackerConnector } from './connectors.js'
+import { requireWritableTracker, resolveConnectors, type TrackerConnector } from './connectors.js'
 import type { LoadedLoopConfig, LoopConfig } from './config.js'
 import { untrusted } from './contract.js'
 import { writeJsonAtomic } from './fs-atomic.js'
 import { appendLoopEvent } from './tick.js'
 import { createLoopEventBus, loadLoopPlugins, type LoopEventBus } from './event-bus.js'
 import { attachNotifier } from './notify.js'
+import { readJsonFile } from '../kernel/json-file.js'
 
 export const AlertSchema = z.object({
   /** The source's own id, when it has one. Without it the fingerprint comes from the title. */
@@ -30,10 +31,8 @@ export const intakeStatePath = (stateDir: string): string => join(stateDir, 'int
 export const readIntakeState = (stateDir: string): IntakeState => {
   const path = intakeStatePath(stateDir)
   if (!existsSync(path)) return { filed: [] }
-  try {
-    const value = JSON.parse(readFileSync(path, 'utf8')) as Partial<IntakeState>
-    return { filed: Array.isArray(value.filed) ? value.filed : [] }
-  } catch { return { filed: [] } }
+  const value = readJsonFile(path, z.object({ filed: z.array(z.unknown()) }).loose()) as Partial<IntakeState> | null
+  return { filed: value?.filed ?? [] }
 }
 
 /** Same source, same alert identity — not the same numbers. A count going from 11 to 12 is not a new incident. */
@@ -84,6 +83,7 @@ export interface IntakeReport { readonly status: 'ok' | 'idle' | 'failed'; reado
 export const runIntakeStage = async (input: { readonly loaded: LoadedLoopConfig; readonly runner: CommandRunner; readonly tracker?: TrackerConnector; readonly now?: () => Date; readonly dryRun?: boolean; readonly bus?: LoopEventBus }): Promise<IntakeReport> => {
   const { loaded } = input
   const { config } = loaded
+  requireWritableTracker(config)
   const now = (input.now ?? (() => new Date()))()
   if (!config.intake.enabled) return { status: 'idle', results: [], notes: ['intake.enabled is false'] }
   if (!config.intake.sources.length) return { status: 'idle', results: [], notes: ['no intake.sources declared'] }
@@ -154,6 +154,7 @@ export interface MaintainReport { readonly status: 'ok' | 'idle' | 'failed'; rea
 export const runMaintainStage = async (input: { readonly loaded: LoadedLoopConfig; readonly runner: CommandRunner; readonly tracker?: TrackerConnector; readonly now?: () => Date; readonly dryRun?: boolean; readonly bus?: LoopEventBus }): Promise<MaintainReport> => {
   const { loaded } = input
   const { config } = loaded
+  requireWritableTracker(config)
   const now = (input.now ?? (() => new Date()))()
   if (!config.maintain.enabled || !config.maintain.checks.length) return { status: 'idle', results: [] }
   const tracker = input.tracker ?? resolveConnectors({ runner: input.runner, config, dryRun: input.dryRun ?? false }).tracker

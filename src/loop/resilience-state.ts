@@ -1,5 +1,7 @@
 import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs'
+import { z } from 'zod'
 import { dirname, join } from 'node:path'
+import { readJsonFile } from '../kernel/json-file.js'
 
 /** One recorded failure for an issue, kept for diagnostics (`loop retro`, `loop status`). */
 export interface IssueFailureRecord {
@@ -36,10 +38,8 @@ export const issueFailurePath = (stateDir: string, issue: string): string => joi
 export const readIssueFailures = (stateDir: string, issue: string): IssueFailureState => {
   const path = issueFailurePath(stateDir, issue)
   if (!existsSync(path)) return emptyIssueState(issue)
-  try {
-    const parsed = JSON.parse(readFileSync(path, 'utf8')) as Partial<IssueFailureState>
-    return { ...emptyIssueState(issue), ...parsed, issue }
-  } catch { return emptyIssueState(issue) }
+  const parsed = readJsonFile(path, z.object({}).loose()) as Partial<IssueFailureState> | null
+  return parsed ? { ...emptyIssueState(issue), ...parsed, issue } : emptyIssueState(issue)
 }
 
 const writeIssueFailures = (stateDir: string, state: IssueFailureState): void => {
