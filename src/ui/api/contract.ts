@@ -135,6 +135,8 @@ export interface MetricsReport {
   readonly memorySavedChars: number
   /** Last 24h in 12 buckets, for the home sparklines. */
   readonly sparks: { readonly merged: readonly number[]; readonly failed: readonly number[]; readonly tokens: readonly number[] }
+  /** Window totals: `merged`/`failed` sum `throughput`; `escalated` counts `contract.escalated` (same as the retro). */
+  readonly totals?: { readonly merged: number; readonly failed: number; readonly escalated: number }
 }
 
 // ---- search (Explore) ------------------------------------------------------------------------------------------
