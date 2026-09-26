@@ -3,6 +3,7 @@ import { join } from 'node:path'
 import type { CommandRunner } from '../../adapters/command.js'
 import { orcaAutomationsList, orcaTerminalList, orcaWorktrees, type OrcaTerminal } from '../../adapters/orca-cli.js'
 import { readActiveClaims } from '../../execution/coordination.js'
+import { resolveConnectors } from '../../loop/connectors.js'
 import { automationSpecs, reconcileAutomations } from '../../loop/automations.js'
 import type { LoadedLoopConfig } from '../../loop/config.js'
 import { activeCooldowns, readCooldowns } from '../../loop/cooldown.js'
@@ -136,6 +137,30 @@ const createAutomationsCache = (loaded: LoadedLoopConfig, runner: CommandRunner)
   }
 }
 
+// ---- tracker state for issues off the board ---------------------------------------------------------------------
+
+const TRACKER_TTL_MS = 10 * 60_000
+const TRACKER_LOOKUPS_PER_CYCLE = 8
+
+/**
+ * The board lists only the queue's open states, so an issue the loop still shows as blocked or running but that
+ * someone closed in the tracker has no tracker state at all — the "26 blocked, half of them cancelled" bug. This
+ * looks those issues up one by one in the background (bounded per cycle, cached for 10 min) so reconciliation and
+ * attention can see they are closed. Reads never wait on it; an unknown state stays unknown, never "closed".
+ */
+export const createTrackerStateCache = (lookup: (issue: string) => Promise<string>, now: () => number = Date.now) => {
+  const states = new Map<string, { readonly state: string; readonly at: number }>()
+  const pending = new Set<string>()
+  return (issues: readonly string[]): Readonly<Record<string, string>> => {
+    const due = issues.filter((issue) => !pending.has(issue) && (now() - (states.get(issue)?.at ?? -Infinity)) > TRACKER_TTL_MS).slice(0, TRACKER_LOOKUPS_PER_CYCLE)
+    for (const issue of due) {
+      pending.add(issue)
+      void lookup(issue).then((state) => { states.set(issue, { state, at: now() }) }).catch(() => { /* unknown stays unknown */ }).finally(() => pending.delete(issue))
+    }
+    return Object.fromEntries(issues.flatMap((issue) => { const hit = states.get(issue); return hit ? [[issue, hit.state]] : [] }))
+  }
+}
+
 // ---- the builder ------------------------------------------------------------------------------------------
 
 export interface ExtrasInput {
@@ -150,16 +175,21 @@ export interface ExtrasBuilder {
   readonly build: (input: ExtrasInput) => Promise<SnapshotExtras>
 }
 
-export const createExtrasBuilder = (loaded: LoadedLoopConfig, runner: CommandRunner, options: { readonly now?: () => Date; readonly orca?: OrcaCache } = {}): ExtrasBuilder => {
+export const createExtrasBuilder = (loaded: LoadedLoopConfig, runner: CommandRunner, options: { readonly now?: () => Date; readonly orca?: OrcaCache; readonly trackerState?: (issues: readonly string[]) => Readonly<Record<string, string>> } = {}): ExtrasBuilder => {
   const now = options.now ?? (() => new Date())
   const orca = options.orca ?? orcaCacheFor(loaded, runner)
   const tail = createEventTail(loaded.stateDir)
   const automations = createAutomationsCache(loaded, runner)
+  const trackerStates = options.trackerState ?? createTrackerStateCache(async (issue) => (await resolveConnectors({ runner, config: loaded.config }).tracker.issue(issue)).state)
   const { stateDir, config } = loaded
 
   return {
-    build: async (input) => {
+    build: async (raw) => {
       const at = now()
+      const onBoard = new Set((raw.board?.issues ?? []).map((issue) => issue.identifier))
+      const offBoard = raw.issues.filter((record) => !record.trackerState && !onBoard.has(record.issue) && record.phase !== 'available' && record.phase !== 'completed' && !record.run?.archived).map((record) => record.issue)
+      const known = trackerStates(offBoard)
+      const input: ExtrasInput = { ...raw, issues: raw.issues.map((record) => known[record.issue] ? { ...record, trackerState: known[record.issue]! } : record) }
       const staleAfterMs = staleAfterMsFor(loaded)
       const orcaView = await orca.read()
       const { drift, freshness } = reconcile({

@@ -100,3 +100,21 @@ describe('reconciliation between the loop and the outside world', () => {
     expect(readActiveClaims(stateDir).map((claim) => claim.issue)).toEqual(['ENG-2'])
   })
 })
+
+describe('tracker state for issues off the board', () => {
+  it('looks issues up in the background, bounded per cycle, and never reports an unknown state', async () => {
+    const { createTrackerStateCache } = await import('../src/ui/api/extras.js')
+    const asked: string[] = []
+    let clock = 0
+    const read = createTrackerStateCache(async (issue) => { asked.push(issue); return issue === 'ISSUE-1' ? 'Canceled' : 'In Progress' }, () => clock)
+    const ids = Array.from({ length: 10 }, (_, index) => `ISSUE-${index + 1}`)
+    expect(read(ids)).toEqual({})
+    expect(asked).toHaveLength(8)
+    await new Promise((resolve) => setTimeout(resolve, 0))
+    expect(read(ids)['ISSUE-1']).toBe('Canceled')
+    expect(asked).toHaveLength(10)
+    clock += 11 * 60_000
+    read(['ISSUE-1'])
+    expect(asked).toHaveLength(11)
+  })
+})
