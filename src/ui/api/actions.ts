@@ -33,7 +33,9 @@ export interface ActionContext {
   readonly runner: CommandRunner
 }
 
-const cleanupAlreadyGone = (error: unknown): boolean => (error instanceof Error ? error.message : String(error)).includes('selector_not_found')
+/** What cleanup wanted to remove is already gone: `selector_not_found` (no such worktree/terminal) or
+ * `terminal_handle_stale` (the handle outlived its terminal — the worker exited or Orca restarted). */
+const cleanupAlreadyGone = (error: unknown): boolean => /selector_not_found|terminal_handle_stale/.test(error instanceof Error ? error.message : String(error))
 const nowIso = (): string => new Date().toISOString()
 
 // ---- contract (wizard step) -------------------------------------------------------------------------------
