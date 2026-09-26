@@ -148,10 +148,10 @@ const TRACKER_LOOKUPS_PER_CYCLE = 8
  * looks those issues up one by one in the background (bounded per cycle, cached for 10 min) so reconciliation and
  * attention can see they are closed. Reads never wait on it; an unknown state stays unknown, never "closed".
  */
-export const createTrackerStateCache = (lookup: (issue: string) => Promise<string>, now: () => number = Date.now) => {
-  const states = new Map<string, { readonly state: string; readonly at: number }>()
+export const createTrackerStateCache = <T>(lookup: (issue: string) => Promise<T>, now: () => number = Date.now) => {
+  const states = new Map<string, { readonly state: T; readonly at: number }>()
   const pending = new Set<string>()
-  return (issues: readonly string[]): Readonly<Record<string, string>> => {
+  return (issues: readonly string[]): Readonly<Record<string, T>> => {
     const due = issues.filter((issue) => !pending.has(issue) && (now() - (states.get(issue)?.at ?? -Infinity)) > TRACKER_TTL_MS).slice(0, TRACKER_LOOKUPS_PER_CYCLE)
     for (const issue of due) {
       pending.add(issue)
@@ -171,25 +171,36 @@ export interface ExtrasInput {
   readonly maxAgents: number
 }
 
+export interface TrackerFacts { readonly state: string; readonly title: string }
+
 export interface ExtrasBuilder {
+  /** Fills titles and tracker states the board does not carry (cached, background, bounded). */
+  readonly enrich: (issues: readonly IssueRecord[], board: BoardSnapshot | null) => readonly IssueRecord[]
   readonly build: (input: ExtrasInput) => Promise<SnapshotExtras>
 }
 
-export const createExtrasBuilder = (loaded: LoadedLoopConfig, runner: CommandRunner, options: { readonly now?: () => Date; readonly orca?: OrcaCache; readonly trackerState?: (issues: readonly string[]) => Readonly<Record<string, string>> } = {}): ExtrasBuilder => {
+export const createExtrasBuilder = (loaded: LoadedLoopConfig, runner: CommandRunner, options: { readonly now?: () => Date; readonly orca?: OrcaCache; readonly trackerState?: (issues: readonly string[]) => Readonly<Record<string, TrackerFacts>> } = {}): ExtrasBuilder => {
   const now = options.now ?? (() => new Date())
   const orca = options.orca ?? orcaCacheFor(loaded, runner)
   const tail = createEventTail(loaded.stateDir)
   const automations = createAutomationsCache(loaded, runner)
-  const trackerStates = options.trackerState ?? createTrackerStateCache(async (issue) => (await resolveConnectors({ runner, config: loaded.config }).tracker.issue(issue)).state)
+  const trackerFacts = options.trackerState ?? createTrackerStateCache(async (issue): Promise<TrackerFacts> => { const detail = await resolveConnectors({ runner, config: loaded.config }).tracker.issue(issue); return { state: detail.state, title: detail.title } })
   const { stateDir, config } = loaded
 
   return {
-    build: async (raw) => {
+    enrich: (issues, board) => {
+      // Issues off the board (closed, archived, or just outside the queue's states) get their title and tracker state
+      // from a cached one-by-one lookup; the board already carries both for the rest.
+      const onBoard = new Set((board?.issues ?? []).map((issue) => issue.identifier))
+      const missing = issues.filter((record) => !onBoard.has(record.issue) && (!record.title || !record.trackerState)).map((record) => record.issue)
+      const known = trackerFacts(missing)
+      return issues.map((record) => {
+        const facts = known[record.issue]
+        return facts ? { ...record, title: record.title ?? facts.title, trackerState: record.trackerState ?? facts.state } : record
+      })
+    },
+    build: async (input) => {
       const at = now()
-      const onBoard = new Set((raw.board?.issues ?? []).map((issue) => issue.identifier))
-      const offBoard = raw.issues.filter((record) => !record.trackerState && !onBoard.has(record.issue) && record.phase !== 'available' && record.phase !== 'completed' && !record.run?.archived).map((record) => record.issue)
-      const known = trackerStates(offBoard)
-      const input: ExtrasInput = { ...raw, issues: raw.issues.map((record) => known[record.issue] ? { ...record, trackerState: known[record.issue]! } : record) }
       const staleAfterMs = staleAfterMsFor(loaded)
       const orcaView = await orca.read()
       const { drift, freshness } = reconcile({

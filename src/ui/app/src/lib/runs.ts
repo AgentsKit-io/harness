@@ -7,6 +7,8 @@ export type RunBucket = 'running' | 'blocked' | 'held' | 'review' | 'queued' | '
 export const runBucket = (record: IssueRecord): RunBucket => {
   if (record.run?.archived) return 'archived'
   if (record.phase === 'completed') return 'done'
+  // Closed in the tracker (done, cancelled, duplicate): history, whatever the loop last recorded.
+  if (record.trackerState && /^(done|completed|closed|cancell?ed|canceled|duplicate|won'?t ?(do|fix))$/i.test(record.trackerState.trim())) return 'done'
   if (record.reviewState === 'human-approval') return 'held'
   if (record.phase === 'blocked' || record.phase === 'needs-input' || record.phase === 'needs-decision' || record.run?.status === 'failed') return 'blocked'
   if (record.phase === 'review') return 'review'

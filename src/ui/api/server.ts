@@ -251,13 +251,14 @@ const buildSnapshot = async (context: ActionContext, sources: SnapshotSources, e
   const running = dispatches.filter((dispatch) => !deliveries.get(dispatch.issue)?.finishedAt).length
   const maxAgents = loaded.config.machine.ceiling ?? loaded.config.machine.floor
   const issues = Object.values(projection.issues).map((record) => overlayRunnerObservation(record, record.dispatch?.worktreeId ? workspaces.get(record.dispatch.worktreeId) ?? null : null))
-  const snapshotExtras = await extras.build({ issues, board: boardSnapshot, dispatches, deliveries, maxAgents })
+  const enriched = extras.enrich(issues, boardSnapshot)
+  const snapshotExtras = await extras.build({ issues: enriched, board: boardSnapshot, dispatches, deliveries, maxAgents })
   void alerts.observe(snapshotExtras.attention)
   return {
     schemaVersion: UI_SNAPSHOT_SCHEMA_VERSION, generatedAt: new Date().toISOString(),
     project: { name: loaded.config.project.name, repo: loaded.config.project.repo, baseBranch: loaded.config.project.baseBranch, root: loaded.root, stateDir: loaded.stateDir, configHash: loaded.configHash },
     capacity: { maxAgents, running, free: Math.max(0, maxAgents - running) },
-    board: boardSnapshot, issues, automations, extras: snapshotExtras,
+    board: boardSnapshot, issues: enriched, automations, extras: snapshotExtras,
   }
 }
 
