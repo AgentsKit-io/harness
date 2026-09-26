@@ -4,6 +4,7 @@ dist/
 .turbo/
 .ak-harness/verification/
 .ak-harness/verification/tmp/
+.codex/verification/
 *.log
 *.tsbuildinfo
 .DS_Store
