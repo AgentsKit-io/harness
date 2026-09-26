@@ -28,9 +28,24 @@ export interface BaseView {
  * each use and resets it hard — it is the harness's own, nobody edits it. Failing to fetch is a failure, not a
  * silent fallback to the stale tree; `project.orchestratorView: root` restores the old behaviour on purpose.
  */
-export const ensureBaseView = async (runner: CommandRunner, loaded: LoadedLoopConfig): Promise<BaseView> => {
+const pending = new Map<string, Promise<unknown>>()
+
+/**
+ * One git operation at a time per base view: a batch generates several contracts at once, and two concurrent
+ * `checkout`s on the same worktree collide on its `index.lock` (observed: 1 of 3 batch contracts failed).
+ * ponytail: in-process queue only; a scheduled tick (another process) can still overlap a UI contract — file lock if seen.
+ */
+export const ensureBaseView = (runner: CommandRunner, loaded: LoadedLoopConfig): Promise<BaseView> => {
+  if (loaded.config.project.orchestratorView === 'root') return Promise.resolve({ path: loaded.root, revision: null })
+  const key = baseViewPath(loaded)
+  const next = (pending.get(key) ?? Promise.resolve()).catch(() => undefined).then(() => refreshBaseView(runner, loaded))
+  pending.set(key, next)
+  void next.finally(() => { if (pending.get(key) === next) pending.delete(key) }).catch(() => undefined)
+  return next
+}
+
+const refreshBaseView = async (runner: CommandRunner, loaded: LoadedLoopConfig): Promise<BaseView> => {
   const { project } = loaded.config
-  if (project.orchestratorView === 'root') return { path: loaded.root, revision: null }
   const git = async (args: readonly string[], cwd: string, what: string): Promise<string> => {
     const outcome = await runner.run(['git', ...args], { cwd, timeoutMs: 120_000 })
     if (outcome.timedOut || outcome.code !== 0) {
