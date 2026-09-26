@@ -10,6 +10,7 @@ import { ExplorePage } from '@/pages/Explore'
 import { SettingsPage } from '@/pages/Settings'
 import { BatchPage } from '@/pages/Batch'
 import { WizardPage } from '@/pages/Wizard'
+import { NotFoundPage } from '@/pages/NotFound'
 
 /** Issue detail is a side panel, not a route: any page opens it with `?issue=<id>` (see `useIssuePanel`). */
 export const App = (): React.ReactElement => (
@@ -25,6 +26,7 @@ export const App = (): React.ReactElement => (
         <Route path="/settings" element={<SettingsPage />} />
         <Route path="/batch" element={<BatchPage />} />
         <Route path="/wizard/:issue" element={<WizardPage />} />
+        <Route path="*" element={<NotFoundPage />} />
       </Routes>
     </BrowserRouter>
   </SnapshotProvider>

@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
-  "contentHash": "e8d8da508aaffbc7f5761ef4585c610fc6f42f1c85e2cef1d1874656c8efc417",
+  "contentHash": "13bc4872dc94d58fadea39da60a86edea53cb5725acca6c52cb1479f1f53fce2",
   "contentHashAlgo": "sha256-normalized-v1",
-  "generatedAt": "2026-09-26T11:57:00.391Z",
+  "generatedAt": "2026-09-26T12:10:03.522Z",
   "project": {
     "name": "AgentsKit Harness",
     "root": "."
@@ -5850,7 +5850,7 @@
         "tsx",
         "src"
       ],
-      "contentHash": "dfbff703d6e45245162e9270bb3226473c0863aeb1867b3f931fc6a925c55ff8"
+      "contentHash": "17161faf0241c52be816e7d41bf5fc1e3016b08828e7fd2bf10c5ff11ca89ce3"
     },
     {
       "id": "module:src/ui/app/src/components/charts/Bars.tsx",
@@ -6454,6 +6454,21 @@
         "pages"
       ],
       "contentHash": "ea1f59ac3a6ad47f0cc90ad0104c49fd2c191250944c91ef34d2216b5054dec3"
+    },
+    {
+      "id": "module:src/ui/app/src/pages/NotFound.tsx",
+      "type": "module",
+      "title": "NotFound.tsx",
+      "path": "src/ui/app/src/pages/NotFound.tsx",
+      "symbols": [
+        "NotFoundPage"
+      ],
+      "tags": [
+        "module",
+        "tsx",
+        "pages"
+      ],
+      "contentHash": "03cdb2c0b6800c535a69b2c630186591782755a4783160e67902f5f12f2b89db"
     },
     {
       "id": "module:src/ui/app/src/pages/Runs.tsx",
@@ -8740,8 +8755,8 @@
     }
   },
   "inputs": {
-    "hash": "fcc71e8db7195305ebc36c06082c77578e71e69b0046516aeddcb6700e7e3c3a",
-    "fileCount": 530,
+    "hash": "643f0bb8a29d931001b34366f37a123329d1cad93c2d6f1284cd2bdc87f16257",
+    "fileCount": 531,
     "projectionVersion": 2
   },
   "retrieval": {
@@ -8763,9 +8778,9 @@
   "projection": {
     "type": "retrieval-index",
     "schemaVersion": 1,
-    "contentHash": "33ddcf57d07b087bbf7bd809a9e97116b5d76115c90345ce85abe3338b5081eb",
+    "contentHash": "41ce81d73245ab90cd9a4cebe9f051369ba7c78dbaba4ec50e4c93548ec6eae0",
     "contentHashAlgo": "sha256-normalized-v1",
-    "snapshotHash": "d290ef575b2252dbec8189403af53247ae87c65b9f9bb06daa2684cbd827a673",
+    "snapshotHash": "5be85458b93f9297e5087fa10eb9112ae8399643ff19c067bd235fdadc361c82",
     "overlayHash": "f99666ff9119084dd25c2974ae64eb6935ec2aa785ff5ad478fb9d541f7a5e94",
     "configurationHash": "816afaf6a7dc09767f7594d8fd80024612ca0f33becf0e44dde0107fcf2782df",
     "lexiconVersion": 1,
@@ -8785,7 +8800,7 @@
     },
     "lexical": {
       "version": 1,
-      "documentCount": 539,
+      "documentCount": 540,
       "fieldNames": [
         "aliases",
         "body",
@@ -8796,13 +8811,13 @@
         "title"
       ],
       "averageFieldLength": {
-        "aliases": 2.9257884972170687,
-        "body": 43.92578849721707,
-        "headings": 3.8849721706864564,
-        "path": 6.109461966604823,
-        "summary": 2.6697588126159553,
-        "symbols": 14.03896103896104,
-        "title": 3.935064935064935
+        "aliases": 2.925925925925926,
+        "body": 43.84444444444444,
+        "headings": 3.8777777777777778,
+        "path": 6.111111111111111,
+        "summary": 2.664814814814815,
+        "symbols": 14.018518518518519,
+        "title": 3.933333333333333
       }
     },
     "entries": [
@@ -9397,7 +9412,7 @@
           ],
           "outbound": []
         },
-        "contentHash": "7c21fdf59e1bddbf6718549ad0d6032cce95fee559059a66b3d25c3d2d717021",
+        "contentHash": "ee5a38d994de118ab70a4e302907a03c2e80e105a72aa39305394a73a1ccaac9",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -34955,7 +34970,7 @@
           ],
           "outbound": []
         },
-        "contentHash": "dfbff703d6e45245162e9270bb3226473c0863aeb1867b3f931fc6a925c55ff8",
+        "contentHash": "17161faf0241c52be816e7d41bf5fc1e3016b08828e7fd2bf10c5ff11ca89ce3",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -36481,6 +36496,43 @@
           "outbound": []
         },
         "contentHash": "ea1f59ac3a6ad47f0cc90ad0104c49fd2c191250944c91ef34d2216b5054dec3",
+        "provenance": "observed",
+        "confidence": "observed"
+      },
+      {
+        "id": "module:src/ui/app/src/pages/NotFound.tsx",
+        "kind": "module",
+        "path": "src/ui/app/src/pages/NotFound.tsx",
+        "title": "NotFound.tsx",
+        "aliases": [],
+        "symbols": [
+          "NotFoundPage"
+        ],
+        "tags": [
+          "module",
+          "tsx",
+          "pages"
+        ],
+        "fields": {
+          "title": "NotFound.tsx",
+          "headings": "",
+          "path": "src/ui/app/src/pages/NotFound.tsx",
+          "symbols": "NotFoundPage",
+          "summary": "",
+          "body": "",
+          "aliases": "module tsx pages"
+        },
+        "graph": {
+          "pagerank": 0,
+          "inboundLinks": 0,
+          "coveredBy": [],
+          "mentionedBy": [],
+          "areaId": "area:src/ui",
+          "packageId": "package:@agentskit/harness",
+          "inbound": [],
+          "outbound": []
+        },
+        "contentHash": "03cdb2c0b6800c535a69b2c630186591782755a4783160e67902f5f12f2b89db",
         "provenance": "observed",
         "confidence": "observed"
       },
