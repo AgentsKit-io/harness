@@ -30,6 +30,8 @@ export interface OrcaWorktree {
   readonly liveTerminalCount: number
   readonly lastActivityAt: number | null
   readonly linkedLinearIssue: string | null
+  /** The pull request Orca detected for this worktree's branch. `state` is null when Orca reported only a number. */
+  readonly linkedPR: OrcaLinkedPullRequest | null
   readonly comment: string
   /**
    * Orca's live activity for the worktree (`worktree ps`): `working`, `active`, `inactive`, … and `permission` when
@@ -45,6 +47,8 @@ export interface OrcaWorktree {
    */
   readonly activeAgentCount: number | null
 }
+
+export interface OrcaLinkedPullRequest { readonly number: number; readonly state: 'OPEN' | 'CLOSED' | 'MERGED' | null }
 
 export type OrcaAgentHookState = 'installed' | 'not_installed' | 'unknown'
 
@@ -83,6 +87,14 @@ const linkedLinear = (value: unknown): string | null => {
   return null
 }
 
+/** `worktree ps` reports `{ number, state: "open" }`; `worktree show` reports a bare number. */
+const linkedPullRequest = (value: unknown): OrcaLinkedPullRequest | null => {
+  const number = typeof value === 'number' ? value : isRecord(value) ? num(value['number']) : null
+  if (number === null || !Number.isInteger(number) || number < 1) return null
+  const raw = isRecord(value) ? str(value['state']).toUpperCase() : ''
+  return { number, state: raw === 'OPEN' || raw === 'CLOSED' || raw === 'MERGED' ? raw : null }
+}
+
 const activeAgentCount = (value: unknown): number | null => {
   if (!Array.isArray(value)) return null
   return value.filter(isRecord).filter((agent) => agent['state'] === 'working' || agent['state'] === 'permission').length
@@ -103,6 +115,7 @@ export const parseOrcaWorktrees = (result: unknown): readonly OrcaWorktree[] => 
     liveTerminalCount: num(item['liveTerminalCount']) ?? 0,
     lastActivityAt: num(item['lastActivityAt']),
     linkedLinearIssue: linkedLinear(item['linkedLinearIssue']),
+    linkedPR: linkedPullRequest(item['linkedPR']),
     comment: str(item['comment']),
     activity: str(item['status'], 'unknown'),
     activeAgentCount: activeAgentCount(item['agents']),

@@ -1,4 +1,4 @@
-import { compareVersions, orcaAccountList, orcaAgentHooks, orcaAutomationsList, orcaDiagnosticsMemory, orcaStatus, orcaVersion, orcaWorktrees, type OrcaStatus, type OrcaWorktree } from '../adapters/orca-cli.js'
+import { compareVersions, orcaAccountList, orcaAgentHooks, orcaAutomationRuns, orcaAutomationsList, orcaDiagnosticsMemory, orcaStatus, orcaVersion, orcaWorktrees, type OrcaStatus, type OrcaWorktree } from '../adapters/orca-cli.js'
 import { detectProviders, remainingUsagePercent, undeclaredOrcaProviders, type ProviderAvailability, type ProviderSpec } from '../adapters/providers.js'
 import type { LoopIssue } from '../adapters/linear-orca.js'
 import { findExecutable, type CommandRunner } from '../adapters/command.js'
@@ -7,7 +7,7 @@ import { existsSync, readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { HarnessError } from '../kernel/errors.js'
 import { MODEL_ROLES } from '../kernel/model-policy.js'
-import { automationSpecs, reconcileAutomations } from './automations.js'
+import { automationSpecs, parseAutomationRuns, reconcileAutomations } from './automations.js'
 import { loadAgentRegistry } from './agent-registry.js'
 import { unknownFlowReferences } from './flows.js'
 import { notificationsConfigured } from './notify.js'
@@ -283,6 +283,16 @@ export const runLoopDoctor = async (input: LoopDoctorInput): Promise<LoopDoctorR
     const drifted = rows.filter((row) => row.state !== 'in-sync')
     if (!drifted.length) push('automations.drift', 'passed', `${rows.length} automation(s) match the config`)
     else push('automations.drift', 'warning', `${drifted.map((row) => `${row.name}: ${row.state}${row.fields.length ? ` (${row.fields.join(', ')})` : ''}`).join('; ')} — reconcile with "${config.schedule.harnessCommand} loop install -f ${loaded.path}"`)
+    // In sync is not the same as working: an automation can match the config and still crash on every run.
+    const broken: string[] = []
+    for (const row of rows) {
+      const current = automations.find((item) => item.name === row.name)
+      if (!current || row.state === 'undeclared') continue
+      const last = (await orcaAutomationRuns(input.runner, current.id, orcaOptions).then(parseAutomationRuns).catch(() => []))[0]
+      if (last?.error) broken.push(`${row.name} (${last.at ?? 'last run'}): ${last.error}`)
+    }
+    if (broken.length) push('automations.precheck-failing', 'failed', `${broken.join('; ')} — the stage never ran; check which "${config.schedule.harnessCommand}" Orca resolves`)
+    else if (rows.length) push('automations.precheck-failing', 'passed', 'the latest run of every automation produced a stage report')
   } catch (error) { push('automations.drift', 'warning', `automation list unavailable: ${message(error)}`) }
 
   const failed = checks.some((check) => check.status === 'failed')

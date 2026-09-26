@@ -257,6 +257,17 @@ export const applyBoardMetadata = (state: ProjectionState, issue: string, meta: 
  * `needs-input`, whichever the reducer landed on (mirrors the old `materializeContractHitl`/`materializePlanHitl`
  * rule that a HITL request blocks dispatch until answered).
  */
+/**
+ * The runner's own observation of a workspace (Orca's `linkedPR`) closes the gap between "the worker opened a PR"
+ * and "deliver saw it": without it, an issue shows `running` until the next deliver pass emits an event — forever,
+ * if deliver is not running. It only ever moves `running` to `review`: it never lowers a phase, never completes an
+ * issue (a merge is deliver's decision, backed by the SCM), and never overrides a PR deliver already recorded.
+ */
+export const overlayRunnerObservation = (record: IssueRecord, observedPullRequest: { readonly number: number; readonly state: 'OPEN' | 'CLOSED' | 'MERGED' | null } | null): IssueRecord => {
+  if (record.phase !== 'running' || record.pullRequest !== null || observedPullRequest?.state !== 'OPEN') return record
+  return { ...record, phase: 'review', reviewState: null, pullRequest: { number: observedPullRequest.number, state: 'OPEN', head: null } }
+}
+
 export const overlayLiveState = (record: IssueRecord, run: RunRecord | null, pendingDecisions: readonly Decision[]): IssueRecord => ({
   ...record, run, pendingDecisions,
   phase: pendingDecisions.length > 0 && record.dispatch === null ? 'needs-input' : record.phase,

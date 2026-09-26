@@ -1,5 +1,5 @@
 import { randomBytes } from 'node:crypto'
-import { existsSync, readFileSync, statSync } from 'node:fs'
+import { existsSync, readFileSync, realpathSync, statSync } from 'node:fs'
 import { createServer, request as httpRequest, type IncomingMessage, type Server, type ServerResponse } from 'node:http'
 import { extname, join, normalize, sep } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -19,8 +19,9 @@ import { createIssueBoardCache, createIssueBoardReader, type BoardSnapshot, type
 import { createUiWizardStore, parseUiWizardDraftPatch, type UiWizardStore } from './wizard.js'
 import { createUiJobManager, type UiJobManager } from './jobs.js'
 import { readCurrentProjection, syncProjection } from './store.js'
-import type { IssueRecord } from './projection.js'
-import { installLoopAutomations } from '../../loop/install.js'
+import { overlayRunnerObservation, type IssueRecord } from './projection.js'
+import { installLoopAutomations, loopStatus, shellQuote } from '../../loop/install.js'
+import { createRunnerConnector, type WorkspaceObservation } from '../../loop/runner-connector.js'
 import {
   answerDecision, archiveRun, cancelRun, decideIssue, enqueueRun, generateOrReuseContract, resumePausedIssue,
   restoreRun, retryRun, type ActionContext,
@@ -41,6 +42,9 @@ const SAFE_IDENTIFIER = /^[A-Za-z0-9][A-Za-z0-9._:/#-]{0,127}$/
 
 export const UI_SNAPSHOT_SCHEMA_VERSION = 1 as const
 
+/** Whether each scheduled stage actually ran last time. `error` means the precheck crashed before the stage did. */
+export interface UiAutomationHealth { readonly name: string; readonly stage: string; readonly installed: boolean; readonly lastRunAt: string | null; readonly error: string | null }
+
 export interface UiSnapshot {
   readonly schemaVersion: typeof UI_SNAPSHOT_SCHEMA_VERSION
   readonly generatedAt: string
@@ -48,11 +52,14 @@ export interface UiSnapshot {
   readonly capacity: { readonly maxAgents: number; readonly running: number; readonly free: number }
   readonly board: BoardSnapshot | null
   readonly issues: readonly IssueRecord[]
+  readonly automations: readonly UiAutomationHealth[]
 }
 
 export interface UiServerOptions {
   readonly configPath?: string
   readonly loaded?: LoadedLoopConfig
+  /** Test seam: every external command (Orca, gh, git) the server runs goes through this runner. */
+  readonly runner?: CommandRunner
   readonly host?: string
   readonly port?: number
   /** Vite dev server origin (e.g. `http://127.0.0.1:5173`) — when set, every non-API request is proxied there
@@ -227,19 +234,58 @@ const parseEnqueueBody = (body: unknown, loaded: LoadedLoopConfig): EnqueueBody 
 
 // ---- snapshot -----------------------------------------------------------------------------------------------
 
-const buildSnapshot = async (context: ActionContext, board: IssueBoardCache, force = false): Promise<UiSnapshot> => {
+/** Memoizes an async read that is too costly for the 1 s poll. A failed read yields `fallback` for one TTL — a
+ * broken Orca must degrade the page to "no observation", never fail the snapshot. */
+const memo = <T>(ttlMs: number, read: () => Promise<T>, fallback: T): ((force?: boolean) => Promise<T>) => {
+  let value: { readonly at: number; readonly data: T } | null = null
+  let inFlight: Promise<T> | null = null
+  return async (force = false) => {
+    if (!force && value && Date.now() - value.at < ttlMs) return value.data
+    inFlight ??= read().catch(() => fallback).then((data) => { value = { at: Date.now(), data }; inFlight = null; return data })
+    return inFlight
+  }
+}
+
+interface SnapshotSources {
+  readonly board: IssueBoardCache
+  readonly workspaces: (force?: boolean) => Promise<ReadonlyMap<string, WorkspaceObservation['pullRequest']>>
+  readonly automations: (force?: boolean) => Promise<readonly UiAutomationHealth[]>
+}
+
+const snapshotSources = (context: ActionContext, board: IssueBoardCache): SnapshotSources => ({
+  board,
+  workspaces: memo(10_000, async () => new Map((await createRunnerConnector(context).observeWorkspaces()).map((workspace) => [workspace.id, workspace.pullRequest])), new Map()),
+  automations: memo(60_000, async () => (await loopStatus(context)).automations.map((automation) => ({ name: automation.name, stage: automation.stage, installed: automation.installed && automation.enabled, lastRunAt: automation.lastRun?.at ?? null, error: automation.lastRun?.error ?? null })), []),
+})
+
+const buildSnapshot = async (context: ActionContext, sources: SnapshotSources, force = false): Promise<UiSnapshot> => {
   const { loaded } = context
   const projection = syncProjection(loaded.stateDir)
-  const boardSnapshot = await board.read(force)
+  const [boardSnapshot, workspaces, automations] = await Promise.all([sources.board.read(force), sources.workspaces(force), sources.automations(force)])
   const dispatches = listDispatched(loaded.stateDir)
   const running = dispatches.filter((dispatch) => !readDeliveryState(loaded.stateDir, dispatch.issue).finishedAt).length
   const maxAgents = loaded.config.machine.ceiling ?? loaded.config.machine.floor
+  const issues = Object.values(projection.issues).map((record) => overlayRunnerObservation(record, record.dispatch?.worktreeId ? workspaces.get(record.dispatch.worktreeId) ?? null : null))
   return {
     schemaVersion: UI_SNAPSHOT_SCHEMA_VERSION, generatedAt: new Date().toISOString(),
     project: { name: loaded.config.project.name, repo: loaded.config.project.repo, baseBranch: loaded.config.project.baseBranch, root: loaded.root, stateDir: loaded.stateDir, configHash: loaded.configHash },
     capacity: { maxAgents, running, free: Math.max(0, maxAgents - running) },
-    board: boardSnapshot, issues: Object.values(projection.issues),
+    board: boardSnapshot, issues, automations,
   }
+}
+
+/**
+ * Orca runs a scheduled stage by the command name in `schedule.harnessCommand`, resolved on Orca's own PATH — which
+ * can be a different (older) harness than the one serving this page: a global npm install from last week will
+ * reject a config the repository build accepts, and every scheduled deliver then crashes on load. When the config
+ * leaves the default, pin the automations to the binary that is running right now.
+ */
+export const withRunningHarness = (loaded: LoadedLoopConfig): LoadedLoopConfig => {
+  const script = process.argv[1]
+  // ponytail: an explicit `harnessCommand: ak-harness` is indistinguishable from the default; both get pinned.
+  if (loaded.config.schedule.harnessCommand !== 'ak-harness' || !script || !existsSync(script)) return loaded
+  // `node` by name, not `process.execPath`: a quoted path first on the line is mangled by cmd.exe's /c quote rule.
+  return { ...loaded, config: { ...loaded.config, schedule: { ...loaded.config.schedule, harnessCommand: `node ${shellQuote(realpathSync(script))}` } } }
 }
 
 /** Fire-and-forget: the wizard confirming a run should not wait out a whole tick before the page can navigate
@@ -259,16 +305,17 @@ export const startUiServer = async (options: UiServerOptions = {}): Promise<UiSe
   if (!isLoopback(host)) throw new Error('Harness UI only binds to loopback addresses.')
   if (!Number.isInteger(port) || port < 0 || port > 65_535) throw new Error('Harness UI port must be an integer between 0 and 65535.')
   const token = randomBytes(24).toString('hex')
-  const runner = createProcessRunner()
+  const runner = options.runner ?? createProcessRunner()
   const loaded = options.loaded ?? (options.snapshot ? undefined : loadLoopConfig(options.configPath ?? 'loop.config.yaml'))
   const context: ActionContext | null = loaded ? { loaded, runner } : null
   const board = options.board ?? (loaded ? createIssueBoardCache({ loaded, reader: createIssueBoardReader({ loaded, runner }) }) : null)
+  const sources = context && board ? snapshotSources(context, board) : null
   const jobs = options.jobs ?? (loaded ? createUiJobManager({ stateDir: loaded.stateDir }) : null)
   const wizard = options.wizard ?? (loaded ? createUiWizardStore(loaded.stateDir) : null)
   const appDir = options.appDir ?? fileURLToPath(new URL('./app', import.meta.url))
   const ownsJobs = options.jobs === undefined && jobs !== null
 
-  const snapshot = options.snapshot ?? (async (force = false) => context && board ? buildSnapshot(context, board, force) : (() => { throw new Error('UI snapshot unavailable without a loaded config.') })())
+  const snapshot = options.snapshot ?? (async (force = false) => context && sources ? buildSnapshot(context, sources, force) : (() => { throw new Error('UI snapshot unavailable without a loaded config.') })())
 
   const clients = new Set<ServerResponse>()
   const server = createServer((request, response) => {
@@ -443,7 +490,7 @@ export const startUiServer = async (options: UiServerOptions = {}): Promise<UiSe
   // (`installLoopAutomations` reconciles drift) and runs fire-and-forget: a failed Orca call never blocks the UI.
   // Test seam: `options.skipAutoInstall` keeps the suite deterministic.
   if (loaded && options.skipAutoInstall !== true) {
-    void installLoopAutomations({ loaded, runner }).catch((error: unknown) => {
+    void Promise.resolve().then(() => installLoopAutomations({ loaded: withRunningHarness(loaded), runner })).catch((error: unknown) => {
       const detail = error instanceof Error ? error.message : String(error)
       // eslint-disable-next-line no-console -- surface the bootstrap failure to the operator's terminal
       console.warn(`ak-harness ui: failed to bootstrap delivery for ${loaded.path}: ${detail}`)
