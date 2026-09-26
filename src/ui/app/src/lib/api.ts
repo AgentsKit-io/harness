@@ -42,6 +42,7 @@ export const getWizard = (issue: string): Promise<Record<string, unknown>> => ap
 export const saveWizardDraft = (issue: string, patch: Record<string, unknown>): Promise<Record<string, unknown>> => api(`wizard/${encodeURIComponent(issue)}`, { method: 'PUT', body: JSON.stringify(patch) })
 export const generateContract = (issue: string, refresh: boolean): Promise<{ readonly job: UiJobRecord }> => api(`wizard/${encodeURIComponent(issue)}/contract`, { method: 'POST', body: JSON.stringify({ refresh }) })
 export const getJob = (id: string): Promise<{ readonly job: UiJobRecord }> => api(`jobs/${encodeURIComponent(id)}`)
+export const getJobs = (): Promise<{ readonly jobs: readonly UiJobRecord[] }> => api('jobs')
 
 export interface TimelineEvent { readonly at: string; readonly type: string; readonly [key: string]: unknown }
 export const getTimeline = (issue: string): Promise<{ readonly events: readonly TimelineEvent[] }> => api(`issues/${encodeURIComponent(issue)}/timeline`)
