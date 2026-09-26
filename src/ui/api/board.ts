@@ -81,7 +81,7 @@ const linearLane = (state: string): BoardLane => {
   if (normalized === 'todo' || normalized === 'ready' || normalized === 'backlog') return 'todo'
   if (normalized === 'in progress' || normalized === 'in-progress' || normalized === 'started') return 'in-progress'
   if (normalized === 'in review' || normalized === 'review') return 'review'
-  if (normalized === 'done' || normalized === 'completed' || normalized === 'cancelled') return 'done'
+  if (normalized === 'done' || normalized === 'completed' || normalized === 'cancelled' || normalized === 'canceled') return 'done'
   if (normalized === 'blocked') return 'blocked'
   return 'unclassified'
 }

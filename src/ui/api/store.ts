@@ -160,7 +160,8 @@ const overlayLiveStores = (state: ProjectionState, stateDir: string): Projection
   for (const issue of issues) {
     const record = state.issues[issue] ?? { issue, title: null, url: null, trackerState: null, phase: 'available', reviewState: null, run: null, dispatch: null, pullRequest: null, pendingDecisions: [], error: null, updatedAt: new Date(0).toISOString() }
     const latestRun = runsByIssue.get(issue)
-    merged[issue] = overlayLiveState(record, latestRun ? runRecordFrom(latestRun) : null, decisionsByIssue.get(issue) ?? [])
+    const live = overlayLiveState(record, latestRun ? runRecordFrom(latestRun) : null, decisionsByIssue.get(issue) ?? [])
+    merged[issue] = record.dispatch || record.pullRequest ? { ...live, fixRoundsUsed: readDeliveryState(stateDir, issue).fixRounds } : live
   }
   return { issues: merged }
 }

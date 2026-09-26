@@ -1,4 +1,4 @@
-import { closeSync, existsSync, mkdirSync, openSync, readFileSync, unlinkSync, writeFileSync, appendFileSync } from 'node:fs'
+import { closeSync, existsSync, mkdirSync, openSync, readdirSync, readFileSync, unlinkSync, writeFileSync, appendFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { randomUUID } from 'node:crypto'
 import { fail } from '../kernel/errors.js'
@@ -146,4 +146,17 @@ export const createDispatchLedger = (stateDir: string): DispatchLedger => {
     active,
     records,
   }
+}
+
+/**
+ * The leases held right now, read from the claim files themselves (the lock `claim` takes), not replayed from the
+ * append-only ledger — so a reader polling every second never rereads the whole dispatch history, and never
+ * creates the directory as a side effect. An unreadable claim file is skipped, not fatal.
+ */
+export const readActiveClaims = (stateDir: string): readonly DispatchLease[] => {
+  const claimsDir = join(stateDir, 'coordination', 'claims')
+  if (!existsSync(claimsDir)) return []
+  return readdirSync(claimsDir).filter((name) => name.endsWith('.json')).flatMap((name) => {
+    try { return [parse(readFileSync(join(claimsDir, name), 'utf8'), 'claim')] } catch { return [] }
+  })
 }

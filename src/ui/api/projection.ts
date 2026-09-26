@@ -90,6 +90,8 @@ export interface IssueRecord {
   readonly pendingDecisions: readonly Decision[]
   readonly error: string | null
   readonly updatedAt: string
+  /** Fix rounds spent so far (`delivery.json`), overlaid live by `store.ts`; absent when the issue never reached a PR. */
+  readonly fixRoundsUsed?: number
 }
 
 export interface ProjectionState {
