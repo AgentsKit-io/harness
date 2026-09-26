@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
-  "contentHash": "b24c399cf867c5394c9a477ecdb6d981c18a05e064b9407e11e063bf949b0d2d",
+  "contentHash": "67da2c0b8295f7ff01c729497686200316e33a57ef16e13300c9e85547e9345e",
   "contentHashAlgo": "sha256-normalized-v1",
-  "generatedAt": "2026-09-26T02:40:00.608Z",
+  "generatedAt": "2026-09-26T04:06:13.805Z",
   "project": {
     "name": "AgentsKit Harness",
     "root": "."
@@ -298,12 +298,12 @@
       "type": "document",
       "title": "Changelog",
       "path": "CHANGELOG.md",
-      "description": "Control plane v2, and the fixes found running the loop against a real repository in the week since 0.19.0.",
+      "description": "The four gaps left in the control plane v2, closed.",
       "tags": [
         "document",
         "project"
       ],
-      "contentHash": "33d5dc30caefbd2d376787f6f0686ed2b8ebf037747df2534c98ace60057c513"
+      "contentHash": "116798e20b9053537be2cbc87db55fda22adb0327c519b61e0bf7a595236ed9f"
     },
     {
       "id": "document:CLAUDE.md",
@@ -980,14 +980,14 @@
     {
       "id": "document:release/notes.md",
       "type": "document",
-      "title": "0.20.0 release candidate",
+      "title": "0.21.0 release candidate",
       "path": "release/notes.md",
       "description": "The control plane (ak-harness ui) becomes the operator's single place to see what needs them and act on it safely, plus the loop fixes found running it against a real repository since 0.19.0. CHANGELOG.md has the full list; docs/ADR-0040 records the decisions.",
       "tags": [
         "document",
         "unclassified"
       ],
-      "contentHash": "cdfe23a65409ec483f87aa2c371f08aec9eee6e9cb7ff823a34c94f6782a3238"
+      "contentHash": "8313116e4c10739632b6700d531698a2c9e94171d1cafe671109c59d93a64bde"
     },
     {
       "id": "document:SECURITY.md",
@@ -5431,6 +5431,7 @@
         "AttentionKind",
         "BatchRequest",
         "BatchRunSettings",
+        "CachedContract",
         "CheckStatus",
         "ConfigChange",
         "ConfigField",
@@ -5447,6 +5448,7 @@
         "IssueDetail",
         "MetricsReport",
         "MetricsWindow",
+        "RecentEvent",
         "SearchHit",
         "SearchResult",
         "SearchType",
@@ -5460,7 +5462,7 @@
         "ts",
         "api"
       ],
-      "contentHash": "e32f05f844591d945d967a0e22f2b8b8b9c8c77fd389de376e54ce20296ee011"
+      "contentHash": "a54aa8127e2390d1127985d710b5f6bf98a210c848c4eae2952c2e4f68bb2858"
     },
     {
       "id": "module:src/ui/api/extras.ts",
@@ -5472,19 +5474,22 @@
         "ExtrasInput",
         "OrcaCache",
         "OrcaView",
+        "TrackerCacheStore",
         "TrackerFacts",
+        "createEventTail",
         "createExtrasBuilder",
         "createOrcaCache",
         "createTrackerStateCache",
         "orcaCacheFor",
-        "staleAfterMsFor"
+        "staleAfterMsFor",
+        "trackerFactsStore"
       ],
       "tags": [
         "module",
         "ts",
         "api"
       ],
-      "contentHash": "38ecab7bc4f3c95e1b541241f4394b0e8ca1f914da144b77b9a1b5ebb476a42d"
+      "contentHash": "c2f454f5c20fd63e2af8a88c184bce5a6c7ee2b24451dd7372ebd6deab285fae"
     },
     {
       "id": "module:src/ui/api/http.ts",
@@ -5582,7 +5587,7 @@
         "ts",
         "api"
       ],
-      "contentHash": "16e357cabf57d2a59117fadc0852d6e591cb76c63aad736d0d87b702df0070e7"
+      "contentHash": "c11bc034bcbdebab46e80f0da68a092c2cb87af46e28331bf954cced86136c6e"
     },
     {
       "id": "module:src/ui/api/reconcile.ts",
@@ -5620,7 +5625,7 @@
         "ts",
         "api"
       ],
-      "contentHash": "81970694025f3e4ffbb95fb4b7e621370ad8c592e5793b93cbc2825794ec518d"
+      "contentHash": "878a5b0a65534ec268e9a664355cbf1e9cefe26dd2d0d7a1bafbd1e34af14edf"
     },
     {
       "id": "module:src/ui/api/routes-actions.ts",
@@ -5671,6 +5676,23 @@
         "api"
       ],
       "contentHash": "ef6fbcaad3ce9ce3a68d7efcb24b2e847be275e96863a80f8663400d082c9dc5"
+    },
+    {
+      "id": "module:src/ui/api/routes-feed.ts",
+      "type": "module",
+      "title": "routes-feed.ts",
+      "path": "src/ui/api/routes-feed.ts",
+      "symbols": [
+        "feedRoutes",
+        "recentEvents",
+        "summarizeEvent"
+      ],
+      "tags": [
+        "module",
+        "ts",
+        "api"
+      ],
+      "contentHash": "b0d18d60d15c8b860d563f3500304d71d454e2f124c909f8250a416beb8164b5"
     },
     {
       "id": "module:src/ui/api/routes-insights.ts",
@@ -6026,7 +6048,7 @@
         "tsx",
         "components"
       ],
-      "contentHash": "1d9a4ef6fe2695465289ad611f09b6c290dc48d8b035ee4ac1e19552c6f5a5be"
+      "contentHash": "56b8e6fb434d7eb9ff8ffd5271d4089cd1946bed0760f99975b9958a8a506a6f"
     },
     {
       "id": "module:src/ui/app/src/components/Shell.tsx",
@@ -6209,10 +6231,12 @@
         "enqueueBatch",
         "enqueueRun",
         "generateContract",
+        "getCachedContracts",
         "getConfig",
         "getIssueDetail",
         "getJob",
         "getMetrics",
+        "getRecentEvents",
         "getState",
         "getSystem",
         "getTimeline",
@@ -6240,7 +6264,7 @@
         "ts",
         "lib"
       ],
-      "contentHash": "c0a1c81ecbdf73737838d1ae4339d1b699624d0efb3e3ca377770ee2ea0fc401"
+      "contentHash": "bc50c32094cbef96f595b4d0532317f31f80993e22b7ddc1fc9af2e9a3878274"
     },
     {
       "id": "module:src/ui/app/src/lib/format.ts",
@@ -6278,7 +6302,6 @@
       "path": "src/ui/app/src/lib/runs.ts",
       "symbols": [
         "BUCKET_COLOR",
-        "FeedRow",
         "RunBucket",
         "SEGMENT_CLASS",
         "STAGES",
@@ -6286,11 +6309,13 @@
         "ageMs",
         "availableIssues",
         "capTone",
+        "fixRoundsAtCap",
+        "fixRoundsLabel",
         "formatTokens",
         "matchesSearch",
         "modelOf",
+        "phaseAgeMs",
         "phaseLabel",
-        "recentChanges",
         "runBucket",
         "segments",
         "stageIndex",
@@ -6301,7 +6326,7 @@
         "ts",
         "lib"
       ],
-      "contentHash": "981b80bbf36af6076041d4f22030624fcb710483aa79f371c8370b8b304ff42d"
+      "contentHash": "9b4639670b66008f61160e2afb89adb5614a0ac2be0c8212c5ed8838adecc243"
     },
     {
       "id": "module:src/ui/app/src/lib/snapshot.tsx",
@@ -6382,7 +6407,7 @@
         "tsx",
         "pages"
       ],
-      "contentHash": "4b04a8b84d17e97063c39c057be98b3e957a52794917e4d7619ff514eeb0c1a4"
+      "contentHash": "56337685cda5d8494bb0c7ca610ec45299dbc8fc4dbe0f3b08095ee4c41dfce3"
     },
     {
       "id": "module:src/ui/app/src/pages/Batch.tsx",
@@ -6398,7 +6423,7 @@
         "tsx",
         "pages"
       ],
-      "contentHash": "d6e0163ea499db1148aae9038603a080b0f3e2c5c4df6ffc434654ce8a57d49a"
+      "contentHash": "1b2cf29857177918c382b6988e6deb130ff07038266c347e4b8dd7c8297845d6"
     },
     {
       "id": "module:src/ui/app/src/pages/Costs.tsx",
@@ -6448,7 +6473,7 @@
         "tsx",
         "pages"
       ],
-      "contentHash": "c44dc3837b2734524bffd23d698e2c93fa264dbf59c0b3cac269c64c70e11439"
+      "contentHash": "0b73daf9cd1b396ca0ea3a2e69bab3d80435ed8b3a32dfa7cd06d1c599fccfe9"
     },
     {
       "id": "module:src/ui/app/src/pages/Settings.tsx",
@@ -8447,7 +8472,7 @@
         "tsx",
         "test"
       ],
-      "contentHash": "6c44e4b25781e50a9645fef71ae183ca87895f935a62bb6b984112f7c80e9d7f"
+      "contentHash": "86f6c600cbaf7aad67414dbe50ec6b08519a09463265e1c8f0f822a7b501c30f"
     },
     {
       "id": "module:test/ui-config.test.ts",
@@ -8496,6 +8521,18 @@
         "test"
       ],
       "contentHash": "8d69ecac4dfc039cce53127d1fc38636cb97a88d422043c9d4019aaf5af6c147"
+    },
+    {
+      "id": "module:test/ui-feed.test.ts",
+      "type": "module",
+      "title": "ui-feed.test.ts",
+      "path": "test/ui-feed.test.ts",
+      "tags": [
+        "module",
+        "ts",
+        "test"
+      ],
+      "contentHash": "7ac10d4f3f66d2876e7ef83f05426d6bd43224d2f0565e5a48e176fe3e192d72"
     },
     {
       "id": "module:test/ui-insights.test.ts",
@@ -8703,8 +8740,8 @@
     }
   },
   "inputs": {
-    "hash": "97d981789115dc2581860c85864dfa2c889097f8b8d8d601f939c7a00c1eb1fc",
-    "fileCount": 528,
+    "hash": "614f26f300ba1abd9fe58394a6d924bbbff0ac71490c100c1512ccce7b22d9f4",
+    "fileCount": 530,
     "projectionVersion": 2
   },
   "retrieval": {
@@ -8726,9 +8763,9 @@
   "projection": {
     "type": "retrieval-index",
     "schemaVersion": 1,
-    "contentHash": "a4c69cb72e9ce7e92702489e1087ceca5b54353974ce4109e107d3a1e43009a8",
+    "contentHash": "48c1b9a7c4a5b8bdffd2c951984fd6b7d3883888c0bb02ad54fd7a5c074d21f3",
     "contentHashAlgo": "sha256-normalized-v1",
-    "snapshotHash": "f2a694e0a05e4f2261dc86d1c407375597afcb982bf82bf5616501243a4a3d15",
+    "snapshotHash": "bb12354523b76d600c8a79a67f97010479f3cc7a7ecb5870d3856372f0e3e079",
     "overlayHash": "f99666ff9119084dd25c2974ae64eb6935ec2aa785ff5ad478fb9d541f7a5e94",
     "configurationHash": "816afaf6a7dc09767f7594d8fd80024612ca0f33becf0e44dde0107fcf2782df",
     "lexiconVersion": 1,
@@ -8748,7 +8785,7 @@
     },
     "lexical": {
       "version": 1,
-      "documentCount": 537,
+      "documentCount": 539,
       "fieldNames": [
         "aliases",
         "body",
@@ -8759,13 +8796,13 @@
         "title"
       ],
       "averageFieldLength": {
-        "aliases": 2.925512104283054,
-        "body": 43.98510242085661,
-        "headings": 3.897579143389199,
-        "path": 6.1080074487895715,
-        "summary": 2.6908752327746743,
-        "symbols": 14.014897579143389,
-        "title": 3.9329608938547485
+        "aliases": 2.9257884972170687,
+        "body": 43.92578849721707,
+        "headings": 3.8849721706864564,
+        "path": 6.109461966604823,
+        "summary": 2.6697588126159553,
+        "symbols": 14.03896103896104,
+        "title": 3.935064935064935
       }
     },
     "entries": [
@@ -9360,7 +9397,7 @@
           ],
           "outbound": []
         },
-        "contentHash": "47328b558623e2c1a8db2b94fbd0e205b6b11b08754066eac4cb15745b476bd0",
+        "contentHash": "7c21fdf59e1bddbf6718549ad0d6032cce95fee559059a66b3d25c3d2d717021",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -9405,7 +9442,7 @@
           ],
           "outbound": []
         },
-        "contentHash": "8642d178bdd4338e750f82a61e2df05b5bd1ee89c888d3d9b2dd3c482a8f3daa",
+        "contentHash": "5496611b904d90ec12bd229cc261538b7b5e876603f3cd2e5cd37994bf0ee4ba",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -11068,7 +11105,7 @@
         "kind": "document",
         "path": "CHANGELOG.md",
         "title": "Changelog",
-        "summary": "Control plane v2, and the fixes found running the loop against a real repository in the week since 0.19.0.",
+        "summary": "The four gaps left in the control plane v2, closed.",
         "audience": "human",
         "aliases": [],
         "tags": [
@@ -11077,11 +11114,11 @@
         ],
         "fields": {
           "title": "Changelog",
-          "headings": "Changelog [Unreleased] [0.20.0] — 2026-09-25 [0.19.0] — 2026-09-23 [0.18.0] - 2026-09-22 Release Hygiene Boundaries Token and time economy Breaking Gates [0.17.0] - 2026-09-22 Worker guard Release can no longer publish past a red gate [0.16.0] - 2026-09-22 Verification and token waste Observability: every deterministic phase, timestamped and attributed Event bus, unified House conventions [0.15.0] - 2026-09-20 The phases of an issue leave evidence behind layers: and documents: — where the work belongs, and where the decisions live Per-role settings, and which phases run at all The four cost levers, finished release.waiting, once per head The event vocabulary, and the compiler that guards it The installed agent is code, not a markdown file to append to Documentation Windows stops being a second-class platform The licence, and a surface for the numbers The harness has a folder of its own The documentation site The twelve steps of the roadmap, in the order they landed loop install reconciles instead of rewriting loop stage observe — the health scan comes into the repository Configuration in four layers, and the loop learns to call a human The roles become installed agents, and the retro can improve them Presets and a grilled loop init intake, maintain, and release notes — the cycle closes Cost: a routing policy, two ceilings, and two of the four levers Connectors: the engine stops naming vendors release — promotion and deploy, with a human in front loop plan — a vague objective becomes issues A plan, voted on, before any worker starts The Definition of Done becomes two lists, both proven on the PR The retro starts improving the loop, within declared limits [0.14.0] - 2026-09-19 The queue stops being \"my issues\" Review strictness that matches the risk Telling the worker the truth about the base branch Memory: recurrence instead of guesswork One human approval covers the goal's own effects Fixes that had never shipped [0.13.0] - 2026-09-14 [0.12.0] - 2026-09-13 [0.11.0] - 2026-09-13 [0.10.0] - 2026-09-12 [0.9.0] - 2026-09-12 [0.8.0] - 2026-09-12 [0.7.0] - 2026-09-12 [0.6.0] - 2026-09-12 [0.5.0] - 2026-09-11 [0.4.0] - 2026-09-10 [0.3.0] - 2026-09-10",
+          "headings": "Changelog [Unreleased] [0.21.0] — 2026-09-26 [0.20.0] — 2026-09-25 [0.19.0] — 2026-09-23 [0.18.0] - 2026-09-22 Release Hygiene Boundaries Token and time economy Breaking Gates [0.17.0] - 2026-09-22 Worker guard Release can no longer publish past a red gate [0.16.0] - 2026-09-22 Verification and token waste Observability: every deterministic phase, timestamped and attributed Event bus, unified House conventions [0.15.0] - 2026-09-20 The phases of an issue leave evidence behind layers: and documents: — where the work belongs, and where the decisions live Per-role settings, and which phases run at all The four cost levers, finished release.waiting, once per head The event vocabulary, and the compiler that guards it The installed agent is code, not a markdown file to append to Documentation Windows stops being a second-class platform The licence, and a surface for the numbers The harness has a folder of its own The documentation site The twelve steps of the roadmap, in the order they landed loop install reconciles instead of rewriting loop stage observe — the health scan comes into the repository Configuration in four layers, and the loop learns to call a human The roles become installed agents, and the retro can improve them Presets and a grilled loop init intake, maintain, and release notes — the cycle closes Cost: a routing policy, two ceilings, and two of the four levers Connectors: the engine stops naming vendors release — promotion and deploy, with a human in front loop plan — a vague objective becomes issues A plan, voted on, before any worker starts The Definition of Done becomes two lists, both proven on the PR The retro starts improving the loop, within declared limits [0.14.0] - 2026-09-19 The queue stops being \"my issues\" Review strictness that matches the risk Telling the worker the truth about the base branch Memory: recurrence instead of guesswork One human approval covers the goal's own effects Fixes that had never shipped [0.13.0] - 2026-09-14 [0.12.0] - 2026-09-13 [0.11.0] - 2026-09-13 [0.10.0] - 2026-09-12 [0.9.0] - 2026-09-12 [0.8.0] - 2026-09-12 [0.7.0] - 2026-09-12 [0.6.0] - 2026-09-12 [0.5.0] - 2026-09-11 [0.4.0] - 2026-09-10",
           "path": "CHANGELOG.md",
           "symbols": "",
-          "summary": "Control plane v2, and the fixes found running the loop against a real repository in the week since 0.19.0.",
-          "body": "Changelog [Unreleased] [0.20.0] — 2026-09-25 Control plane v2, and the fixes found running the loop against a real repository in the week since 0.19.0. - Control plane v2 ( ak-harness ui ). The home page is now an attention queue — human decisions, stuck or failed runs, state out of sync with the tracker or Orca, and system problems — each with the reason and the next action. The page reconciles the loop against the tracker and Orca on every refresh, resolves titles and states for issues the board does not list, and refuses destructive actions (409) while an issue is out of sync or its data is stale. Observed on a real loop: 24 \"blocked\" issues shrank to 4 once the cancelled ones were recognised. New screens: Runs (filters, search, paging, issue side panel with per-criterion evidence, review, worker, timeline and cost), Trends, Costs (tokens and plan usage, no dollar estimates), Explore (windowed search over events, contracts, evidence, reviews and learnings), System (doctor, routing, cooldowns, automations, stages, learnings) and Settings (effective config with provenance, personal overrides, team diffs, tuning freeze). CLI-only actions are now in the UI and call the same kernel functions: approve a held PR, plan/design/release approval, learning promotion, stage pause/resume, tick/deliver/doctor, automation reinstall, batch enqueue. See ADR-0040. - The UI no longer installs Orca automations on start. Missing or drifted automations show up as system items and reinstall on request, pinned to the running harness binary. - Weakening a gate is a personal, recorded choice. Settings writes only loop.config.local.yaml ; lowering a gate there needs explicit confirmation, and every run queued under it records weakenedGates and shows a badge. Team values come back as a diff to commit, never written by the UI. - Attention alerts reuse notifications . A new human-decision or failure item posts attention.entered through the existing webhook or command channel, once per item. - The ui verification check runs the real UI suites. It pointed at test/ui.test.ts , which 111 removed. - UI copy is English. - plan approved supersedes a stale finished run by itself. A COMPLETE (or approval-pending) run whose source or contract had moved on still blocked a new plan with ACTIVE RUN until someone ran status , which only reconciles. Planning now marks it STALE and supersedes it; a fresh finished run still blocks. - An idle worker with committed but unpushed work is told exactly that. Observed: a worker committed the whole change and stopped before pushing; the generic idle check-in did not see it and the dispatch was marked stuck 40 minutes later with the work sitting in the worktree. Deliver now counts local commits no remote has and asks the worker to push and open the PR. - Control plane rewrite ( 111). One projection over the loop's event log replaced the lifecycle guesses the old page made from free text; the frontend is a React app shipped in the package. - A worktree left for inspection no longer marks its issue busy forever ( 112). After a cost-guard trip or an escalation the preserved worktree kept the issue out of dispatch even once resumed; only a live agent, an open PR or a merged artifact now counts as busy, and unknown activity still fails closed. - Scheduled stages run the harness that installed them ( 114). Orca resolved ak-harness on its own PATH — an older global install that rejected the config — so every scheduled deliver crashed on load. Installs pin the running binary; doctor fails automations.precheck-failing ; the UI shows a stopped stage; Orca's linked PR moves a running issue to review as a read-only overlay. [0.19.0] — 2026-09-23 Found by running the loop on a real repository migration with a single, non-default provider. - A brief the terminal never confirmed is sent again at once. The dispatch (and a handoff) recorded that the brief was not confirmed, and then nothing acted on it until the 45-minute idle timeout — observed ",
+          "summary": "The four gaps left in the control plane v2, closed.",
+          "body": "Changelog [Unreleased] [0.21.0] — 2026-09-26 The four gaps left in the control plane v2, closed. - Runs shows fix rounds used. The table reads used/max (or the used count when the run was dispatched without the wizard) instead of —/max . - Time in phase is time in phase. The projection stamps phaseSince when an issue's phase changes; the table, the running cards and the side panel use it instead of the last event's time. - A real event stream on the home page. GET /api/v1/events/recent serves the loop's last 24 h of events, newest first, each summarised from its typed fields; the home stream uses it instead of per-issue changes. - New batch shows contract status. GET /api/v1/contracts?issues= reports each stored contract and whether it is still inside contract.reuseHours ; the list marks issues as cached, expired, needing input or without a contract. - Tracker titles and states survive a restart. The off-board lookup cache is persisted (bounded to 1000 entries), so a restarted UI does not show cancelled work as blocked while it re-learns it. [0.20.0] — 2026-09-25 Control plane v2, and the fixes found running the loop against a real repository in the week since 0.19.0. - Control plane v2 ( ak-harness ui ). The home page is now an attention queue — human decisions, stuck or failed runs, state out of sync with the tracker or Orca, and system problems — each with the reason and the next action. The page reconciles the loop against the tracker and Orca on every refresh, resolves titles and states for issues the board does not list, and refuses destructive actions (409) while an issue is out of sync or its data is stale. Observed on a real loop: 24 \"blocked\" issues shrank to 4 once the cancelled ones were recognised. New screens: Runs (filters, search, paging, issue side panel with per-criterion evidence, review, worker, timeline and cost), Trends, Costs (tokens and plan usage, no dollar estimates), Explore (windowed search over events, contracts, evidence, reviews and learnings), System (doctor, routing, cooldowns, automations, stages, learnings) and Settings (effective config with provenance, personal overrides, team diffs, tuning freeze). CLI-only actions are now in the UI and call the same kernel functions: approve a held PR, plan/design/release approval, learning promotion, stage pause/resume, tick/deliver/doctor, automation reinstall, batch enqueue. See ADR-0040. - The UI no longer installs Orca automations on start. Missing or drifted automations show up as system items and reinstall on request, pinned to the running harness binary. - Weakening a gate is a personal, recorded choice. Settings writes only loop.config.local.yaml ; lowering a gate there needs explicit confirmation, and every run queued under it records weakenedGates and shows a badge. Team values come back as a diff to commit, never written by the UI. - Attention alerts reuse notifications . A new human-decision or failure item posts attention.entered through the existing webhook or command channel, once per item. - The ui verification check runs the real UI suites. It pointed at test/ui.test.ts , which 111 removed. - UI copy is English. - plan approved supersedes a stale finished run by itself. A COMPLETE (or approval-pending) run whose source or contract had moved on still blocked a new plan with ACTIVE RUN until someone ran status , which only reconciles. Planning now marks it STALE and supersedes it; a fresh finished run still blocks. - An idle worker with committed but unpushed work is told exactly that. Observed: a worker committed the whole change and stopped before pushing; the generic idle check-in did not see it and the dispatch was marked stuck 40 minutes later with the work sitting in the worktree. Deliver now counts local commits no remote has and asks the worker to push and open the PR. - Control plane rewrite ( 111). One projection over the loop's event log replaced the lifecycle guesses the old page made from free text; the frontend is a React app",
           "aliases": "document project"
         },
         "graph": {
@@ -11352,7 +11389,7 @@
             }
           ]
         },
-        "contentHash": "33d5dc30caefbd2d376787f6f0686ed2b8ebf037747df2534c98ace60057c513",
+        "contentHash": "116798e20b9053537be2cbc87db55fda22adb0327c519b61e0bf7a595236ed9f",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -14531,7 +14568,7 @@
         "id": "document:release/notes.md",
         "kind": "document",
         "path": "release/notes.md",
-        "title": "0.20.0 release candidate",
+        "title": "0.21.0 release candidate",
         "summary": "The control plane (ak-harness ui) becomes the operator's single place to see what needs them and act on it safely, plus the loop fixes found running it against a real repository since 0.19.0. CHANGELOG.md has the full list; docs/ADR-0040 records the decisions.",
         "aliases": [],
         "tags": [
@@ -14539,12 +14576,12 @@
           "unclassified"
         ],
         "fields": {
-          "title": "0.20.0 release candidate",
-          "headings": "0.20.0 release candidate",
+          "title": "0.21.0 release candidate",
+          "headings": "0.21.0 release candidate",
           "path": "release/notes.md",
           "symbols": "",
           "summary": "The control plane (ak-harness ui) becomes the operator's single place to see what needs them and act on it safely, plus the loop fixes found running it against a real repository since 0.19.0. CHANGELOG.md has the full list; docs/ADR-0040 records the decisions.",
-          "body": "0.20.0 release candidate The control plane ( ak-harness ui ) becomes the operator's single place to see what needs them and act on it safely, plus the loop fixes found running it against a real repository since 0.19.0. CHANGELOG.md has the full list; docs/ADR-0040 records the decisions. Attention first. The home page is a queue of what needs a person — decisions, stuck or failed runs, state out of sync, system problems — each with its reason and next action. Empty means nothing does. Reconciled, then locked. Every refresh compares the loop with the tracker and Orca, including issues the board does not list. Drift is shown and reconciled explicitly; destructive actions refuse (409) while their issue is out of sync or its data is stale. On a real loop, 24 \"blocked\" issues were 4 once cancelled work was recognised. Every operator action, same kernel. Held-PR approval (pinned to the head), plan, design and release approval, learnings, stage pause and resume, tick/deliver/doctor, automation reinstall and batch enqueue call the functions the CLI calls. There is no deploy from the UI. Insights and configuration. Trends, Costs (tokens and plan usage, no dollar figures) and Explore read at most 30 days of events. Settings shows each value's layer, writes only the personal overlay, returns team changes as a diff, and records every run queued under a weakened gate. Loop. A worktree kept for inspection no longer blocks its issue forever ( 112); scheduled stages run the harness that installed them and a crashed precheck is reported ( 114). Behaviour change. The UI no longer installs Orca automations when it starts; missing or drifted automations appear as system items and reinstall on request. The blockers in release/manifest.json ( ecosystem-compatibility , pilot-benchmark ) are unchanged.",
+          "body": "0.21.0 release candidate The control plane ( ak-harness ui ) becomes the operator's single place to see what needs them and act on it safely, plus the loop fixes found running it against a real repository since 0.19.0. CHANGELOG.md has the full list; docs/ADR-0040 records the decisions. Attention first. The home page is a queue of what needs a person — decisions, stuck or failed runs, state out of sync, system problems — each with its reason and next action. Empty means nothing does. Reconciled, then locked. Every refresh compares the loop with the tracker and Orca, including issues the board does not list. Drift is shown and reconciled explicitly; destructive actions refuse (409) while their issue is out of sync or its data is stale. On a real loop, 24 \"blocked\" issues were 4 once cancelled work was recognised. Every operator action, same kernel. Held-PR approval (pinned to the head), plan, design and release approval, learnings, stage pause and resume, tick/deliver/doctor, automation reinstall and batch enqueue call the functions the CLI calls. There is no deploy from the UI. Insights and configuration. Trends, Costs (tokens and plan usage, no dollar figures) and Explore read at most 30 days of events. Settings shows each value's layer, writes only the personal overlay, returns team changes as a diff, and records every run queued under a weakened gate. Loop. A worktree kept for inspection no longer blocks its issue forever ( 112); scheduled stages run the harness that installed them and a crashed precheck is reported ( 114). Behaviour change. The UI no longer installs Orca automations when it starts; missing or drifted automations appear as system items and reinstall on request. 0.21.0. Runs shows fix rounds used and real time in phase; the home event stream reads the loop's event log ( GET /api/v1/events/recent ); New batch shows which issues already have a fresh contract ( GET /api/v1/contracts ); tracker titles and states survive a UI restart. The blockers in release/manifest.json ( ecosystem-compatibility , pilot-benchmark ) are unchanged.",
           "aliases": "document unclassified"
         },
         "graph": {
@@ -14574,7 +14611,7 @@
             }
           ]
         },
-        "contentHash": "cdfe23a65409ec483f87aa2c371f08aec9eee6e9cb7ff823a34c94f6782a3238",
+        "contentHash": "8313116e4c10739632b6700d531698a2c9e94171d1cafe671109c59d93a64bde",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -22661,6 +22698,11 @@
             },
             {
               "kind": "imports",
+              "id": "module:src/ui/api/extras.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
               "id": "module:src/ui/api/jobs.ts",
               "confidence": "observed"
             },
@@ -25588,6 +25630,11 @@
             },
             {
               "kind": "imports",
+              "id": "module:src/ui/api/routes-feed.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
               "id": "module:src/ui/api/search.ts",
               "confidence": "observed"
             },
@@ -25604,6 +25651,11 @@
             {
               "kind": "imports",
               "id": "module:test/ui-core-server.test.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
+              "id": "module:test/ui-feed.test.ts",
               "confidence": "observed"
             },
             {
@@ -27086,6 +27138,11 @@
             {
               "kind": "imports",
               "id": "module:src/ui/api/alerts.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
+              "id": "module:src/ui/api/extras.ts",
               "confidence": "observed"
             },
             {
@@ -30267,6 +30324,11 @@
             },
             {
               "kind": "imports",
+              "id": "module:src/ui/api/routes-feed.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
               "id": "module:src/ui/api/routes-system.ts",
               "confidence": "observed"
             },
@@ -30288,6 +30350,11 @@
             {
               "kind": "imports",
               "id": "module:test/ui-actions.test.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
+              "id": "module:test/ui-feed.test.ts",
               "confidence": "observed"
             },
             {
@@ -32625,6 +32692,7 @@
           "AttentionKind",
           "BatchRequest",
           "BatchRunSettings",
+          "CachedContract",
           "CheckStatus",
           "ConfigChange",
           "ConfigField",
@@ -32641,6 +32709,7 @@
           "IssueDetail",
           "MetricsReport",
           "MetricsWindow",
+          "RecentEvent",
           "SearchHit",
           "SearchResult",
           "SearchType",
@@ -32658,7 +32727,7 @@
           "title": "contract.ts",
           "headings": "",
           "path": "src/ui/api/contract.ts",
-          "symbols": "AttentionAction AttentionActionId AttentionGroup AttentionItem AttentionKind BatchRequest BatchRunSettings CheckStatus ConfigChange ConfigField ConfigLayer ConfigProposal ConfigWriteRequest CriterionStatus Drift DriftKind EffectiveConfig FieldClass Freshness FreshnessSource IssueDetail MetricsReport MetricsWindow SearchHit SearchResult SearchType SnapshotExtras SystemReport TimePoint TuningRevertResult",
+          "symbols": "AttentionAction AttentionActionId AttentionGroup AttentionItem AttentionKind BatchRequest BatchRunSettings CachedContract CheckStatus ConfigChange ConfigField ConfigLayer ConfigProposal ConfigWriteRequest CriterionStatus Drift DriftKind EffectiveConfig FieldClass Freshness FreshnessSource IssueDetail MetricsReport MetricsWindow RecentEvent SearchHit SearchResult SearchType SnapshotExtras SystemReport TimePoint TuningRevertResult",
           "summary": "",
           "body": "",
           "aliases": "module ts api"
@@ -32728,6 +32797,11 @@
             },
             {
               "kind": "imports",
+              "id": "module:src/ui/api/routes-feed.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
               "id": "module:src/ui/api/routes-insights.ts",
               "confidence": "observed"
             },
@@ -32785,7 +32859,7 @@
             }
           ]
         },
-        "contentHash": "e32f05f844591d945d967a0e22f2b8b8b9c8c77fd389de376e54ce20296ee011",
+        "contentHash": "a54aa8127e2390d1127985d710b5f6bf98a210c848c4eae2952c2e4f68bb2858",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -32800,12 +32874,15 @@
           "ExtrasInput",
           "OrcaCache",
           "OrcaView",
+          "TrackerCacheStore",
           "TrackerFacts",
+          "createEventTail",
           "createExtrasBuilder",
           "createOrcaCache",
           "createTrackerStateCache",
           "orcaCacheFor",
-          "staleAfterMsFor"
+          "staleAfterMsFor",
+          "trackerFactsStore"
         ],
         "tags": [
           "module",
@@ -32816,7 +32893,7 @@
           "title": "extras.ts",
           "headings": "",
           "path": "src/ui/api/extras.ts",
-          "symbols": "ExtrasBuilder ExtrasInput OrcaCache OrcaView TrackerFacts createExtrasBuilder createOrcaCache createTrackerStateCache orcaCacheFor staleAfterMsFor",
+          "symbols": "ExtrasBuilder ExtrasInput OrcaCache OrcaView TrackerCacheStore TrackerFacts createEventTail createExtrasBuilder createOrcaCache createTrackerStateCache orcaCacheFor staleAfterMsFor trackerFactsStore",
           "summary": "",
           "body": "",
           "aliases": "module ts api"
@@ -32836,12 +32913,22 @@
             },
             {
               "kind": "imports",
+              "id": "module:src/ui/api/routes-feed.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
               "id": "module:src/ui/api/server.ts",
               "confidence": "observed"
             },
             {
               "kind": "imports",
               "id": "module:test/ui-core-reconcile.test.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
+              "id": "module:test/ui-feed.test.ts",
               "confidence": "observed"
             }
           ],
@@ -32859,6 +32946,11 @@
             {
               "kind": "imports",
               "id": "module:src/execution/coordination.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
+              "id": "module:src/kernel/json-file.ts",
               "confidence": "observed"
             },
             {
@@ -32884,6 +32976,11 @@
             {
               "kind": "imports",
               "id": "module:src/loop/deliver.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
+              "id": "module:src/loop/fs-atomic.ts",
               "confidence": "observed"
             },
             {
@@ -32938,7 +33035,7 @@
             }
           ]
         },
-        "contentHash": "38ecab7bc4f3c95e1b541241f4394b0e8ca1f914da144b77b9a1b5ebb476a42d",
+        "contentHash": "c2f454f5c20fd63e2af8a88c184bce5a6c7ee2b24451dd7372ebd6deab285fae",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -32997,6 +33094,11 @@
             {
               "kind": "imports",
               "id": "module:src/ui/api/routes-core.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
+              "id": "module:src/ui/api/routes-feed.ts",
               "confidence": "observed"
             },
             {
@@ -33314,6 +33416,11 @@
             },
             {
               "kind": "imports",
+              "id": "module:test/ui-feed.test.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
               "id": "module:test/ui-projection.test.ts",
               "confidence": "observed"
             },
@@ -33336,7 +33443,7 @@
             }
           ]
         },
-        "contentHash": "16e357cabf57d2a59117fadc0852d6e591cb76c63aad736d0d87b702df0070e7",
+        "contentHash": "c11bc034bcbdebab46e80f0da68a092c2cb87af46e28331bf954cced86136c6e",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -33472,6 +33579,11 @@
             },
             {
               "kind": "imports",
+              "id": "module:src/ui/api/routes-feed.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
               "id": "module:src/ui/api/routes-insights.ts",
               "confidence": "observed"
             },
@@ -33487,7 +33599,7 @@
             }
           ]
         },
-        "contentHash": "81970694025f3e4ffbb95fb4b7e621370ad8c592e5793b93cbc2825794ec518d",
+        "contentHash": "878a5b0a65534ec268e9a664355cbf1e9cefe26dd2d0d7a1bafbd1e34af14edf",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -33844,6 +33956,87 @@
         "confidence": "observed"
       },
       {
+        "id": "module:src/ui/api/routes-feed.ts",
+        "kind": "module",
+        "path": "src/ui/api/routes-feed.ts",
+        "title": "routes-feed.ts",
+        "aliases": [],
+        "symbols": [
+          "feedRoutes",
+          "recentEvents",
+          "summarizeEvent"
+        ],
+        "tags": [
+          "module",
+          "ts",
+          "api"
+        ],
+        "fields": {
+          "title": "routes-feed.ts",
+          "headings": "",
+          "path": "src/ui/api/routes-feed.ts",
+          "symbols": "feedRoutes recentEvents summarizeEvent",
+          "summary": "",
+          "body": "",
+          "aliases": "module ts api"
+        },
+        "graph": {
+          "pagerank": 0,
+          "inboundLinks": 0,
+          "coveredBy": [],
+          "mentionedBy": [],
+          "areaId": "area:src/ui",
+          "packageId": "package:@agentskit/harness",
+          "inbound": [
+            {
+              "kind": "imports",
+              "id": "module:src/ui/api/route-modules.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
+              "id": "module:test/ui-feed.test.ts",
+              "confidence": "observed"
+            }
+          ],
+          "outbound": [
+            {
+              "kind": "imports",
+              "id": "module:src/loop/contract.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
+              "id": "module:src/loop/retro.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
+              "id": "module:src/ui/api/contract.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
+              "id": "module:src/ui/api/extras.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
+              "id": "module:src/ui/api/http.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
+              "id": "module:src/ui/api/routes.ts",
+              "confidence": "observed"
+            }
+          ]
+        },
+        "contentHash": "b0d18d60d15c8b860d563f3500304d71d454e2f124c909f8250a416beb8164b5",
+        "provenance": "observed",
+        "confidence": "observed"
+      },
+      {
         "id": "module:src/ui/api/routes-insights.ts",
         "kind": "module",
         "path": "src/ui/api/routes-insights.ts",
@@ -34110,6 +34303,11 @@
             },
             {
               "kind": "imports",
+              "id": "module:src/ui/api/routes-feed.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
               "id": "module:src/ui/api/routes-insights.ts",
               "confidence": "observed"
             },
@@ -34126,6 +34324,11 @@
             {
               "kind": "imports",
               "id": "module:test/ui-actions.test.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
+              "id": "module:test/ui-feed.test.ts",
               "confidence": "observed"
             },
             {
@@ -35287,7 +35490,7 @@
           "inbound": [],
           "outbound": []
         },
-        "contentHash": "1d9a4ef6fe2695465289ad611f09b6c290dc48d8b035ee4ac1e19552c6f5a5be",
+        "contentHash": "56b8e6fb434d7eb9ff8ffd5271d4089cd1946bed0760f99975b9958a8a506a6f",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -35687,10 +35890,12 @@
           "enqueueBatch",
           "enqueueRun",
           "generateContract",
+          "getCachedContracts",
           "getConfig",
           "getIssueDetail",
           "getJob",
           "getMetrics",
+          "getRecentEvents",
           "getState",
           "getSystem",
           "getTimeline",
@@ -35722,7 +35927,7 @@
           "title": "api.ts",
           "headings": "",
           "path": "src/ui/app/src/lib/api.ts",
-          "symbols": "ApiError BoardIssue BoardSnapshot Decision DispatchRef EnqueueRunInput IssuePhase IssueRecord PullRequestRef ReviewSubstatus RunRecord TimelineEvent UiJobRecord UiSnapshot UiWizardDraft UiWizardDraftPatch answerDecision approveDesign approveHeldPr approvePlan approveRelease archiveRun cancelRun decideIssue enqueueBatch enqueueRun generateContract getConfig getIssueDetail getJob getMetrics getState getSystem getTimeline getWizard pauseStage promoteLearnings proposeConfig reconcileIssue reinstallAutomations rejectLearnings restoreRun resumePausedIssue resumeStage retryRun runDoctor runStage saveWizardDraft searchRecords tuning useSnapshot writeLocalConfig",
+          "symbols": "ApiError BoardIssue BoardSnapshot Decision DispatchRef EnqueueRunInput IssuePhase IssueRecord PullRequestRef ReviewSubstatus RunRecord TimelineEvent UiJobRecord UiSnapshot UiWizardDraft UiWizardDraftPatch answerDecision approveDesign approveHeldPr approvePlan approveRelease archiveRun cancelRun decideIssue enqueueBatch enqueueRun generateContract getCachedContracts getConfig getIssueDetail getJob getMetrics getRecentEvents getState getSystem getTimeline getWizard pauseStage promoteLearnings proposeConfig reconcileIssue reinstallAutomations rejectLearnings restoreRun resumePausedIssue resumeStage retryRun runDoctor runStage saveWizardDraft searchRecords tuning useSnapshot writeLocalConfig",
           "summary": "",
           "body": "",
           "aliases": "module ts lib"
@@ -35818,7 +36023,7 @@
             }
           ]
         },
-        "contentHash": "c0a1c81ecbdf73737838d1ae4339d1b699624d0efb3e3ca377770ee2ea0fc401",
+        "contentHash": "bc50c32094cbef96f595b4d0532317f31f80993e22b7ddc1fc9af2e9a3878274",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -35893,7 +36098,6 @@
         "aliases": [],
         "symbols": [
           "BUCKET_COLOR",
-          "FeedRow",
           "RunBucket",
           "SEGMENT_CLASS",
           "STAGES",
@@ -35901,11 +36105,13 @@
           "ageMs",
           "availableIssues",
           "capTone",
+          "fixRoundsAtCap",
+          "fixRoundsLabel",
           "formatTokens",
           "matchesSearch",
           "modelOf",
+          "phaseAgeMs",
           "phaseLabel",
-          "recentChanges",
           "runBucket",
           "segments",
           "stageIndex",
@@ -35920,7 +36126,7 @@
           "title": "runs.ts",
           "headings": "",
           "path": "src/ui/app/src/lib/runs.ts",
-          "symbols": "BUCKET_COLOR FeedRow RunBucket SEGMENT_CLASS STAGES Segment ageMs availableIssues capTone formatTokens matchesSearch modelOf phaseLabel recentChanges runBucket segments stageIndex tokensByIssue",
+          "symbols": "BUCKET_COLOR RunBucket SEGMENT_CLASS STAGES Segment ageMs availableIssues capTone fixRoundsAtCap fixRoundsLabel formatTokens matchesSearch modelOf phaseAgeMs phaseLabel runBucket segments stageIndex tokensByIssue",
           "summary": "",
           "body": "",
           "aliases": "module ts lib"
@@ -35932,7 +36138,13 @@
           "mentionedBy": [],
           "areaId": "area:src/ui",
           "packageId": "package:@agentskit/harness",
-          "inbound": [],
+          "inbound": [
+            {
+              "kind": "imports",
+              "id": "module:test/ui-feed.test.ts",
+              "confidence": "observed"
+            }
+          ],
           "outbound": [
             {
               "kind": "imports",
@@ -35941,7 +36153,7 @@
             }
           ]
         },
-        "contentHash": "981b80bbf36af6076041d4f22030624fcb710483aa79f371c8370b8b304ff42d",
+        "contentHash": "9b4639670b66008f61160e2afb89adb5614a0ac2be0c8212c5ed8838adecc243",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -36156,7 +36368,7 @@
           "inbound": [],
           "outbound": []
         },
-        "contentHash": "4b04a8b84d17e97063c39c057be98b3e957a52794917e4d7619ff514eeb0c1a4",
+        "contentHash": "56337685cda5d8494bb0c7ca610ec45299dbc8fc4dbe0f3b08095ee4c41dfce3",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -36194,7 +36406,7 @@
           "inbound": [],
           "outbound": []
         },
-        "contentHash": "d6e0163ea499db1148aae9038603a080b0f3e2c5c4df6ffc434654ce8a57d49a",
+        "contentHash": "1b2cf29857177918c382b6988e6deb130ff07038266c347e4b8dd7c8297845d6",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -36310,7 +36522,7 @@
           "inbound": [],
           "outbound": []
         },
-        "contentHash": "c44dc3837b2734524bffd23d698e2c93fa264dbf59c0b3cac269c64c70e11439",
+        "contentHash": "0b73daf9cd1b396ca0ea3a2e69bab3d80435ed8b3a32dfa7cd06d1c599fccfe9",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -43183,7 +43395,7 @@
           "inbound": [],
           "outbound": []
         },
-        "contentHash": "6c44e4b25781e50a9645fef71ae183ca87895f935a62bb6b984112f7c80e9d7f",
+        "contentHash": "86f6c600cbaf7aad67414dbe50ec6b08519a09463265e1c8f0f822a7b501c30f",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -43479,6 +43691,76 @@
           ]
         },
         "contentHash": "8d69ecac4dfc039cce53127d1fc38636cb97a88d422043c9d4019aaf5af6c147",
+        "provenance": "observed",
+        "confidence": "observed"
+      },
+      {
+        "id": "module:test/ui-feed.test.ts",
+        "kind": "module",
+        "path": "test/ui-feed.test.ts",
+        "title": "ui-feed.test.ts",
+        "aliases": [],
+        "tags": [
+          "module",
+          "ts",
+          "test"
+        ],
+        "fields": {
+          "title": "ui-feed.test.ts",
+          "headings": "",
+          "path": "test/ui-feed.test.ts",
+          "symbols": "",
+          "summary": "",
+          "body": "",
+          "aliases": "module ts test"
+        },
+        "graph": {
+          "pagerank": 0,
+          "inboundLinks": 0,
+          "coveredBy": [],
+          "mentionedBy": [],
+          "areaId": "area:test",
+          "packageId": "package:@agentskit/harness",
+          "inbound": [],
+          "outbound": [
+            {
+              "kind": "imports",
+              "id": "module:src/loop/contract.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
+              "id": "module:src/loop/retro.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
+              "id": "module:src/ui/api/extras.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
+              "id": "module:src/ui/api/projection.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
+              "id": "module:src/ui/api/routes-feed.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
+              "id": "module:src/ui/api/routes.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
+              "id": "module:src/ui/app/src/lib/runs.ts",
+              "confidence": "observed"
+            }
+          ]
+        },
+        "contentHash": "7ac10d4f3f66d2876e7ef83f05426d6bd43224d2f0565e5a48e176fe3e192d72",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -44014,7 +44296,7 @@
           ],
           "outbound": []
         },
-        "contentHash": "c55e20a388e0aa3fb658f8fca1de52cce8ed82616a6657c05bdf671f2cc796c7",
+        "contentHash": "dbd05c84e328273b5d81c506dd8402dc2807d5b527f8d366e3e70f3c016707b2",
         "provenance": "observed",
         "confidence": "observed"
       },
