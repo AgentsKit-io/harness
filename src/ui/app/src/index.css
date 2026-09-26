@@ -1,32 +1,45 @@
 @import "tailwindcss";
 
-/* Same dark palette the old control plane used — carried over deliberately, not redesigned: this is an
-   operational tool the user already reads by these colors, and the rewrite's job was stability, not a new look. */
+/* Mission-control palette from the v2 design: dark, dense, color only for status. System font stacks only —
+   the panel is a local tool and must render offline, so no web-font fetch. */
 @theme {
-  --font-sans: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+  --font-sans: "IBM Plex Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 
-  --color-surface: #08090b;
-  --color-surface-dim: #0c0d11;
-  --color-panel: #15161b;
-  --color-panel-alt: #1b1c22;
-  --color-line: rgba(255, 255, 255, 0.12);
-  --color-line-soft: rgba(255, 255, 255, 0.08);
-  --color-line-ghost: rgba(255, 255, 255, 0.05);
-  --color-ink: #f5f5f7;
-  --color-ink-muted: #a1a1aa;
-  --color-ink-subtle: #8a8a92;
-  --color-accent: #34d399;
-  --color-accent-dim: rgba(52, 211, 153, 0.14);
-  --color-ink-on-accent: #0a0a0a;
-  --color-success: #30d158;
-  --color-success-dim: rgba(48, 209, 88, 0.14);
-  --color-warning: #ffd60a;
-  --color-warning-dim: rgba(255, 214, 10, 0.14);
-  --color-danger: #ff453a;
-  --color-danger-dim: rgba(255, 69, 58, 0.14);
-  --color-info: #0a84ff;
+  --color-surface: #0b0e13;
+  --color-surface-dim: #080b0f;
+  --color-panel: #10151c;
+  --color-panel-alt: #0e1319;
+  --color-raised: #141a23;
+  --color-line: #2a3340;
+  --color-line-soft: #1c232e;
+  --color-line-ghost: #151b23;
+  --color-ink: #e6e9ee;
+  --color-ink-muted: #aeb6c4;
+  --color-ink-subtle: #8a94a6;
+  --color-accent: #38bdf8;
+  --color-accent-strong: #7dd3fc;
+  --color-accent-dim: rgba(56, 189, 248, 0.14);
+  --color-ink-on-accent: #04121c;
+  --color-success: #4ade80;
+  --color-success-dim: rgba(74, 222, 128, 0.14);
+  --color-warning: #f5b544;
+  --color-warning-dim: rgba(245, 181, 68, 0.14);
+  --color-danger: #f87171;
+  --color-danger-dim: rgba(248, 113, 113, 0.14);
+  --color-drift: #b794f6;
+  --color-drift-dim: rgba(183, 148, 246, 0.14);
+  --color-system: #2dd4bf;
+  --color-info: #38bdf8;
 }
+
+@keyframes pulse-ring { 0% { box-shadow: 0 0 0 0 rgba(56, 189, 248, .55) } 70% { box-shadow: 0 0 0 7px rgba(56, 189, 248, 0) } 100% { box-shadow: 0 0 0 0 rgba(56, 189, 248, 0) } }
+@keyframes flow { from { background-position: 200% 0 } to { background-position: 0 0 } }
+@keyframes tick-in { from { opacity: 0; transform: translateY(-6px) } to { opacity: 1; transform: none } }
+.pulse { animation: pulse-ring 1.8s ease-out infinite }
+.seg-active { background: linear-gradient(90deg, #38bdf8 0%, #bae6fd 50%, #38bdf8 100%); background-size: 200% 100%; animation: flow 1.6s linear infinite }
+.tick-in { animation: tick-in .7s ease-out }
+@media (prefers-reduced-motion: reduce) { .pulse, .seg-active, .tick-in { animation: none } }
 
 body {
   background: var(--color-surface);

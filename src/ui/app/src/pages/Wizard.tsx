@@ -75,13 +75,13 @@ export const WizardPage = (): React.ReactElement => {
       .catch((cause: unknown) => setError(cause instanceof Error ? cause.message : String(cause)))
   }
 
-  if (!data) return <Shell title="Wizard" inboxCount={0} error={error}><p className="text-ink-muted">Carregando…</p><Button variant="outline" size="sm" className="mt-3" onClick={() => navigate('/')}>← Voltar para a Operação</Button></Shell>
+  if (!data) return <Shell title="Wizard" error={error}><p className="text-ink-muted">Carregando…</p><Button variant="outline" size="sm" className="mt-3" onClick={() => navigate('/')}>← Voltar para a Operação</Button></Shell>
 
   const contractValid = data.contract.status === 'valid' && Boolean(contractDigest)
   const stepValid = [true, contractValid, true, Boolean(builder), maxFixRounds >= 0 && perIssueTokens >= 0, true][step]
 
   return (
-    <Shell title={`Configurar ${data.issue.identifier}`} inboxCount={0} error={error}>
+    <Shell title={`Configurar ${data.issue.identifier}`} error={error}>
       <div className="mb-5 grid grid-cols-6 gap-1">
         {STEPS.map((name, index) => (
           <div key={name} className={`border-b-2 pb-2 text-center text-[11px] ${index === step ? 'border-accent text-accent' : index < step ? 'border-success text-success' : 'border-line text-ink-subtle'}`}>{index + 1}. {name}</div>

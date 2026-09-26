@@ -19,6 +19,10 @@ import { createIssueBoardCache, createIssueBoardReader, type BoardSnapshot, type
 import { createUiWizardStore, parseUiWizardDraftPatch, type UiWizardStore } from './wizard.js'
 import { createUiJobManager, type UiJobManager } from './jobs.js'
 import { readCurrentProjection, syncProjection } from './store.js'
+import { json, readRequestBody, recordOf, SAFE_IDENTIFIER, sendJson, sendText, stringOf } from './http.js'
+import { ROUTE_MODULES } from './route-modules.js'
+import type { RouteContext } from './routes.js'
+import type { SnapshotExtras } from './contract.js'
 import type { IssueRecord } from './projection.js'
 import { installLoopAutomations } from '../../loop/install.js'
 import {
@@ -37,7 +41,6 @@ const DEFAULT_HOST = '127.0.0.1'
 const DEFAULT_PORT = 4321
 const POLL_INTERVAL_MS = 1_000
 const SESSION_HEADER = 'x-harness-session'
-const SAFE_IDENTIFIER = /^[A-Za-z0-9][A-Za-z0-9._:/#-]{0,127}$/
 
 export const UI_SNAPSHOT_SCHEMA_VERSION = 1 as const
 
@@ -48,6 +51,8 @@ export interface UiSnapshot {
   readonly capacity: { readonly maxAgents: number; readonly running: number; readonly free: number }
   readonly board: BoardSnapshot | null
   readonly issues: readonly IssueRecord[]
+  /** Attention, reconciliation and freshness — see `contract.ts`. Absent only from test snapshots. */
+  readonly extras?: SnapshotExtras
 }
 
 export interface UiServerOptions {
@@ -90,28 +95,6 @@ const authorized = (request: IncomingMessage, token: string, expectedOrigin: str
   if (origin && origin !== expectedOrigin && !sameLoopbackOrigin(origin, expectedOrigin)) return false
   return request.headers[SESSION_HEADER] === token || url.searchParams.get('session') === token
 }
-
-const json = (value: unknown): string => JSON.stringify(value)
-const sendJson = (response: ServerResponse, status: number, body: unknown): void => {
-  const payload = json(body)
-  response.writeHead(status, { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store', 'content-length': Buffer.byteLength(payload) })
-  response.end(payload)
-}
-const sendText = (response: ServerResponse, status: number, body: string, contentType = 'text/html; charset=utf-8'): void => {
-  response.writeHead(status, { 'content-type': contentType, 'cache-control': 'no-store', 'content-length': Buffer.byteLength(body) })
-  response.end(body)
-}
-
-const readRequestBody = (request: IncomingMessage, maxBytes = 64 * 1024): Promise<unknown> => new Promise((resolve, reject) => {
-  let body = ''
-  request.setEncoding('utf8')
-  request.on('data', (chunk: string) => { body += chunk; if (Buffer.byteLength(body) > maxBytes) reject(new Error('Request body is too large.')) })
-  request.on('end', () => { if (!body.trim()) return resolve({}); try { resolve(JSON.parse(body) as unknown) } catch { reject(new Error('Request body must be valid JSON.')) } })
-  request.on('error', reject)
-})
-
-const recordOf = (value: unknown): Record<string, unknown> => typeof value === 'object' && value !== null && !Array.isArray(value) ? value as Record<string, unknown> : {}
-const stringOf = (value: unknown): string | null => typeof value === 'string' && value.trim() ? value.trim() : null
 
 // ---- static frontend / dev proxy -----------------------------------------------------------------------------
 
@@ -270,6 +253,7 @@ export const startUiServer = async (options: UiServerOptions = {}): Promise<UiSe
 
   const snapshot = options.snapshot ?? (async (force = false) => context && board ? buildSnapshot(context, board, force) : (() => { throw new Error('UI snapshot unavailable without a loaded config.') })())
 
+  const routeContext: RouteContext | null = context && board ? { ...context, board, jobs, snapshot } : null
   const clients = new Set<ServerResponse>()
   const server = createServer((request, response) => {
     void (async () => {
@@ -306,7 +290,7 @@ export const startUiServer = async (options: UiServerOptions = {}): Promise<UiSe
             return sendJson(response, 202, { job })
           }
         } catch (error) { return sendJson(response, 400, { error: error instanceof Error ? error.message : String(error) }) }
-        return sendJson(response, 404, { error: 'not_found' })
+        // unmatched here: fall through to the route modules
       }
 
       if (url.pathname === '/api/v1/runs' && request.method === 'POST') {
@@ -379,7 +363,7 @@ export const startUiServer = async (options: UiServerOptions = {}): Promise<UiSe
             return sendJson(response, 200, { issue, ...result })
           }
         } catch (error) { return sendJson(response, 400, { error: error instanceof Error ? error.message : String(error) }) }
-        return sendJson(response, 404, { error: 'not_found' })
+        // unmatched here: fall through to the route modules
       }
 
       if (url.pathname.startsWith('/api/v1/jobs/')) {
@@ -389,7 +373,7 @@ export const startUiServer = async (options: UiServerOptions = {}): Promise<UiSe
         if (!id || !jobs) return sendJson(response, 404, { error: 'job_not_found' })
         if (request.method === 'GET' && !operation) { const job = jobs.get(id); return job ? sendJson(response, 200, { job }) : sendJson(response, 404, { error: 'job_not_found' }) }
         if (request.method === 'POST' && operation === 'cancel') return sendJson(response, 200, jobs.cancel(id))
-        return sendJson(response, 404, { error: 'not_found' })
+        // unmatched here: fall through to the route modules
       }
       if (url.pathname === '/api/v1/jobs' && request.method === 'GET') return sendJson(response, 200, { jobs: jobs?.list() ?? [] })
 
@@ -400,6 +384,12 @@ export const startUiServer = async (options: UiServerOptions = {}): Promise<UiSe
         try { response.write(`event: snapshot\ndata: ${json(await snapshot())}\n\n`) }
         catch (error) { response.write(`event: error\ndata: ${json({ error: error instanceof Error ? error.message : String(error) })}\n\n`) }
         return
+      }
+      if (routeContext) {
+        for (const route of ROUTE_MODULES) {
+          try { if (await route(routeContext, request, response, url)) return }
+          catch (error) { return sendJson(response, 400, { error: error instanceof Error ? error.message : String(error) }) }
+        }
       }
       return sendJson(response, 404, { error: 'not_found' })
     })().catch(() => { try { response.destroy() } catch { /* client disconnected */ } })

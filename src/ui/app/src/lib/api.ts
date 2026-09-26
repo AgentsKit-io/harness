@@ -1,6 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { UiSnapshot } from '../../../api/server'
 import type { UiJobRecord } from '../../../api/jobs'
+import type {
+  BatchRequest, ConfigChange, ConfigProposal, ConfigWriteRequest, EffectiveConfig, MetricsReport, MetricsWindow,
+  SearchResult, SearchType, SystemReport,
+} from '../../../api/contract'
+
+export type * from '../../../api/contract'
 
 export type { UiSnapshot } from '../../../api/server'
 export type { IssueRecord, Decision, RunRecord, DispatchRef, PullRequestRef, IssuePhase, ReviewSubstatus } from '../../../api/projection'
@@ -84,3 +90,31 @@ export const useSnapshot = (): { readonly snapshot: UiSnapshot | null; readonly 
 
   return { snapshot, error, refresh }
 }
+
+// ---- control plane v2 (types in src/ui/api/contract.ts) -------------------------------------------------------
+
+
+const post = <T>(path: string, body: unknown = {}): Promise<T> => api(path, { method: 'POST', body: JSON.stringify(body) })
+const enc = encodeURIComponent
+
+export const getMetrics = (window: MetricsWindow): Promise<MetricsReport> => api(`metrics?window=${window}`)
+export const searchRecords = (input: { readonly q: string; readonly window: MetricsWindow; readonly types?: readonly SearchType[]; readonly issue?: string | null }): Promise<SearchResult> =>
+  api(`search?q=${enc(input.q)}&window=${input.window}${input.types?.length ? `&types=${input.types.join(',')}` : ''}${input.issue ? `&issue=${enc(input.issue)}` : ''}`)
+export const getSystem = (): Promise<SystemReport> => api('system')
+export const runDoctor = (): Promise<{ readonly job: UiJobRecord }> => post('system/doctor')
+export const runStage = (stage: 'tick' | 'deliver'): Promise<{ readonly job: UiJobRecord }> => post(`stages/${stage}/run`)
+export const pauseStage = (stage: string, reason: string): Promise<unknown> => post(`stages/${enc(stage)}/pause`, { reason })
+export const resumeStage = (stage: string): Promise<unknown> => post(`stages/${enc(stage)}/resume`)
+export const reinstallAutomations = (): Promise<unknown> => post('automations/reinstall')
+export const reconcileIssue = (issue: string): Promise<unknown> => post(`issues/${enc(issue)}/reconcile`)
+export const approveHeldPr = (issue: string, head: string): Promise<unknown> => post(`issues/${enc(issue)}/approve`, { head })
+export const approvePlan = (planId: string): Promise<unknown> => post(`plans/${enc(planId)}/approve`)
+export const approveDesign = (planId: string): Promise<unknown> => post(`plans/${enc(planId)}/approve-design`)
+export const approveRelease = (): Promise<unknown> => post('release/approve')
+export const promoteLearnings = (ids: readonly string[]): Promise<unknown> => post('learnings/promote', { ids })
+export const rejectLearnings = (ids: readonly string[]): Promise<unknown> => post('learnings/reject', { ids })
+export const enqueueBatch = (request: BatchRequest): Promise<{ readonly jobs: readonly UiJobRecord[] }> => post('batch', request)
+export const getConfig = (): Promise<EffectiveConfig> => api('config')
+export const writeLocalConfig = (request: ConfigWriteRequest): Promise<EffectiveConfig> => api('config/local', { method: 'PUT', body: JSON.stringify(request) })
+export const proposeConfig = (changes: readonly ConfigChange[]): Promise<ConfigProposal> => post('config/proposal', { changes })
+export const tuning = (action: 'revert' | 'freeze' | 'unfreeze', path: string): Promise<unknown> => post(`tuning/${action}`, { path })
