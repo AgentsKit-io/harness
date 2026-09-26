@@ -3,9 +3,12 @@ import { fileURLToPath } from 'node:url'
 
 export default defineConfig({
   resolve: {
-    alias: {
-      '@': fileURLToPath(new URL('.', import.meta.url)),
-    },
+    // `@/…` is the UI app's own alias (see src/ui/app/vite.config.ts), so its components can be rendered in tests;
+    // a bare `@` keeps pointing at the repo root.
+    alias: [
+      { find: /^@\//, replacement: fileURLToPath(new URL('./src/ui/app/src/', import.meta.url)) },
+      { find: '@', replacement: fileURLToPath(new URL('.', import.meta.url)) },
+    ],
   },
   test: {
     // `apps/**` is the documentation site: its own package, its own dependencies, and Next ships test files
