@@ -4,7 +4,7 @@ import { Lock, Plus } from 'lucide-react'
 import { Shell, SectionTitle } from '@/components/Shell'
 import { Button } from '@/components/ui/button'
 import { Sparkline } from '@/components/Sparkline'
-import { CapBar, IssuePanel, PhaseBar } from '@/components/IssuePanel'
+import { CapBar, PhaseBar } from '@/components/IssuePanel'
 import { cn } from '@/lib/utils'
 import { answerDecision, getMetrics, type AttentionAction, type AttentionGroup, type AttentionItem, type IssueRecord, type MetricsReport, type UiSnapshot } from '@/lib/api'
 import { useActionRunner, type ActionTarget } from '@/lib/actions'
@@ -228,7 +228,6 @@ export const AttentionPage = (): React.ReactElement => {
         {snapshot && <LiveColumn snapshot={snapshot} metrics={metrics} now={now} onOpen={panel.open} />}
       </div>
       {actions.dialog}
-      <IssuePanel />
     </Shell>
   )
 }

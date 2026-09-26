@@ -19,9 +19,8 @@ const LAYER_LABEL: Readonly<Record<ConfigLayer, string>> = { default: 'default',
 interface Pending { readonly field: ConfigField; readonly value: unknown }
 
 const errorText = (cause: unknown): string => cause instanceof Error ? cause.message : String(cause)
-/** ponytail: the refusal's shape isn't pinned in the contract; any 4xx that mentions weakening counts. */
-const refusedForWeakening = (cause: unknown): boolean =>
-  cause instanceof ApiError && cause.status >= 400 && cause.status < 500 && /weaken|confirmWeakening|gate/i.test(`${cause.message} ${JSON.stringify(cause.body)}`)
+/** The server answers 409 when a change weakens a gate and `confirmWeakening` was not set. */
+const refusedForWeakening = (cause: unknown): boolean => cause instanceof ApiError && cause.status === 409
 const shortDate = (iso: string): string => new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
 
 const DiffLines = ({ lines }: { readonly lines: readonly string[] }): React.ReactElement => (
@@ -181,7 +180,16 @@ const SettingsBody = ({ config, onConfig, reload, setError }: {
     })
   }
   const drop = (kind: 'personal' | 'propose'): void => setPending((prev) => new Map([...prev].filter(([, change]) => change.field.editable !== kind)))
-  const onTuning = (action: 'revert' | 'freeze' | 'unfreeze', path: string): void => { tuning(action, path).then(() => { setError(null); reload() }).catch((cause: unknown) => setError(errorText(cause))) }
+  const onTuning = (action: 'revert' | 'freeze' | 'unfreeze', path: string): void => {
+    // Revert freezes the knob server-side; the undo itself is a team change (the UI never writes loop.config.yaml),
+    // so it lands in the team proposal panel as the previous value.
+    const field = config?.fields.find((item) => item.path === path)
+    tuning(action, path).then(() => {
+      setError(null)
+      if (action === 'revert' && field?.tuning) stage(field, field.tuning.from)
+      reload()
+    }).catch((cause: unknown) => setError(errorText(cause)))
+  }
   const running = snapshot?.capacity.running ?? 0
 
   return (

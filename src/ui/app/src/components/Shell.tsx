@@ -3,6 +3,7 @@ import { NavLink } from 'react-router-dom'
 import { AlertTriangle, Cpu, Gauge, List, Search, SlidersHorizontal, Activity } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { formatAge, useLiveSnapshot, useSnapshotAge } from '@/lib/snapshot'
+import { IssuePanel } from '@/components/IssuePanel'
 
 export interface ShellProps {
   readonly title: string
@@ -80,6 +81,8 @@ export const Shell = ({ title, subtitle, actions, error, children, bare = false 
         {shown && <div role="alert" className="mx-8 mt-4 rounded-md border border-danger/40 bg-danger-dim px-4 py-3 text-sm text-red-200">{shown}</div>}
         {bare ? children : <div className="min-h-0 grow overflow-auto px-8 py-6">{children}</div>}
       </main>
+      {/* One side panel for every page: `?issue=<id>` opens it anywhere. */}
+      <IssuePanel />
     </div>
   )
 }

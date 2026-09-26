@@ -4,7 +4,7 @@ import { Plus, Search } from 'lucide-react'
 import { Shell } from '@/components/Shell'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { CapBar, IssuePanel, PhaseBar } from '@/components/IssuePanel'
+import { CapBar, PhaseBar } from '@/components/IssuePanel'
 import { cn } from '@/lib/utils'
 import { getMetrics, type IssueRecord, type MetricsReport } from '@/lib/api'
 import { formatAge, useLiveSnapshot, useSnapshotAge } from '@/lib/snapshot'
@@ -135,7 +135,6 @@ export const RunsPage = (): React.ReactElement => {
           )}
         </div>
       </div>
-      <IssuePanel />
     </Shell>
   )
 }

@@ -1,5 +1,5 @@
 import * as React from 'react'
-import { useSearchParams } from 'react-router-dom'
+import { useIssuePanel } from '@/lib/useIssuePanel'
 import { cn } from '@/lib/utils'
 
 /** Load once per `deps` change; keeps the previous data while reloading so charts don't flash empty. */
@@ -20,11 +20,8 @@ export const useFetched = <T,>(load: () => Promise<T>, deps: React.DependencyLis
   return { data, error, loading, reload: React.useCallback(() => setNonce((value) => value + 1), []) }
 }
 
-/** Opens the issue side panel (owned by the runs slice) by setting `?issue=` on the current page. */
-export const useOpenIssue = (): ((issue: string) => void) => {
-  const [, setParams] = useSearchParams()
-  return React.useCallback((issue: string) => setParams((params) => { const next = new URLSearchParams(params); next.set('issue', issue); return next }), [setParams])
-}
+/** Opens the issue side panel (rendered once by `Shell`). */
+export const useOpenIssue = (): ((issue: string) => void) => useIssuePanel().open
 
 export const RangeChips = <V extends string>({ options, value, onChange, label }: {
   readonly options: readonly { readonly value: V; readonly label: string }[]
