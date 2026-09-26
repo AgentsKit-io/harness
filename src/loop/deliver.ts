@@ -924,8 +924,14 @@ ${marker}` }); actions.push('secret-file hold commented') } catch (error) { acti
       if (review.blocking.length) return fixRound(ctx, record, lease, state, pr, 'review', `Loop: the review of PR #${pr.number} is incomplete, but it found ${review.blocking.length} blocking issue(s). Address the findings below, re-run \`${closes}\`, commit and push; the loop will require a complete review before merge. Findings:\n${renderFindingsForWorker(review.blocking)}\nThe full (incomplete) review is on the PR.`, `review incomplete with ${review.blocking.length} blocking finding(s)`, actions, review.blocking)
       return { issue: record.issue, outcome: 'waiting', reason: review.summary, pr: pr.number, head: pr.headSha, review, actions }
     }
-    if (review.status === 'findings') return fixRound(ctx, record, lease, state, pr, 'review', `Loop: the code review of PR #${pr.number} (head ${pr.headSha.slice(0, 7)}) found ${review.blocking.length} issue(s) at or above "${reviewSettings.minSeverity}". Address each one (or explain in the PR why it is not applicable), re-run \`${closes}\`, commit and push. Findings:\n${renderFindingsForWorker(review.blocking)}\nThe full review is on the PR. Reply here when pushed.`, `review found ${review.blocking.length} blocking finding(s)`, actions, review.blocking)
-  } else if (reviewPhase && prior?.status === 'findings') return { issue: record.issue, outcome: 'waiting', reason: `review findings pending a new push (head ${pr.headSha.slice(0, 7)})`, pr: pr.number, head: pr.headSha, actions }
+    // `status === 'findings'` alone is not "has blocking work" — the review CLI can exit 1 (or set the
+    // parsed `blocking` flag) on nit-only output that the harness's own severity floor filters down to zero
+    // `review.blocking` items. Gating on `blocking.length` too is what `state.reviews[...].blocking` (a plain
+    // count) already lets us check on the cached `prior` path below, and it is what stopped AGE-1871/AGE-1874
+    // from being stuck forever in "waiting: review findings pending a new push" — a push that never comes
+    // because there is nothing left to fix.
+    if (review.status === 'findings' && review.blocking.length) return fixRound(ctx, record, lease, state, pr, 'review', `Loop: the code review of PR #${pr.number} (head ${pr.headSha.slice(0, 7)}) found ${review.blocking.length} issue(s) at or above "${reviewSettings.minSeverity}". Address each one (or explain in the PR why it is not applicable), re-run \`${closes}\`, commit and push. Findings:\n${renderFindingsForWorker(review.blocking)}\nThe full review is on the PR. Reply here when pushed.`, `review found ${review.blocking.length} blocking finding(s)`, actions, review.blocking)
+  } else if (reviewPhase && prior?.status === 'findings' && prior.blocking > 0) return { issue: record.issue, outcome: 'waiting', reason: `review findings pending a new push (head ${pr.headSha.slice(0, 7)})`, pr: pr.number, head: pr.headSha, actions }
 
   // The phase artifacts are the contract between the worker and the harness: the machine advances on files it can
   // check, never on what a terminal said. A missing one comes back as a fix round **naming the file** — "which
@@ -1066,7 +1072,10 @@ const handleIntakePullRequest = async (ctx: Context, identifier: string, pr: Pul
   if (checks.status !== 'green') return { issue: identifier, outcome: 'waiting', reason: checks.status === 'missing' ? `required checks not reported yet: ${checks.missingRequired.join(', ')}` : `checks pending: ${checks.pending.join(', ')}`, pr: pr.number, head: pr.headSha, actions }
 
   const prior = state.reviews[pr.headSha]
-  if (prior?.status === 'findings') return { issue: identifier, outcome: 'waiting', reason: `review findings pending a new push (head ${pr.headSha.slice(0, 7)})`, pr: pr.number, head: pr.headSha, actions }
+  // Gate on `blocking` (a plain count), not just `status === 'findings'` — the review CLI can exit 1 on
+  // nit-only output the harness's own severity floor filters down to zero blocking items, and that should
+  // not wait forever for a push that has nothing left to fix. See the matching guard in handlePullRequest.
+  if (prior?.status === 'findings' && prior.blocking > 0) return { issue: identifier, outcome: 'waiting', reason: `review findings pending a new push (head ${pr.headSha.slice(0, 7)})`, pr: pr.number, head: pr.headSha, actions }
   if (!prior || prior.status === 'incomplete') {
     if (prior && prior.attempts >= 2) return { issue: identifier, outcome: 'held', reason: `review incomplete twice at this head; needs a human look${prior.reason ? ` (${prior.reason})` : ''}`, pr: pr.number, head: pr.headSha, actions }
     if (!ctx.reviewer) return { issue: identifier, outcome: 'waiting', reason: 'no reviewer provider available', pr: pr.number, head: pr.headSha, actions }
@@ -1094,7 +1103,7 @@ const handleIntakePullRequest = async (ctx: Context, identifier: string, pr: Pul
       }
       return { issue: identifier, outcome: 'waiting', reason: review.summary, pr: pr.number, head: pr.headSha, review, actions }
     }
-    if (review.status === 'findings') {
+    if (review.status === 'findings' && review.blocking.length) {
       const kind = 'review'
       await commentOnIntakePr(ctx, pr, `**Loop review**: found ${review.blocking.length} issue(s) at or above "${config.delivery.review.minSeverity}" on PR #${pr.number} (head ${pr.headSha.slice(0, 7)}). Address each one (or explain why it does not apply) and push.
 ${renderFindingsForWorker(review.blocking)}`, actions)

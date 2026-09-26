@@ -295,6 +295,19 @@ describe('deliver', () => {
     expect(env.runner.calls.some((argv) => argv[1] === 'worktree' && argv[2] === 'rm')).toBe(false)
   })
 
+  it('treats a review that exits with findings but zero items at/above the severity floor as clean, not a stuck fix round', async () => {
+    // agentskit-review can exit 1 (or set the parsed `blocking` flag) on nit-only output; the harness's own
+    // severity floor still filters that down to zero `review.blocking` items. Before this fix, `status ===
+    // 'findings'` alone sent this to a fix round asking the worker to "address" zero findings, then every
+    // later tick returned `waiting: review findings pending a new push` forever — a push that never comes
+    // because nothing is left to fix (this is what happened live to AGE-1871 and AGE-1874).
+    const env = setup({ review: { code: 1, findings: [] } })
+    const first = await deliver(env)
+    expect(first.results[0]).toMatchObject({ outcome: 'merged', pr: 42 })
+    expect(readDeliveryState(env.loaded.stateDir, 'ENG-10')).toMatchObject({ finalOutcome: 'merged' })
+    expect(env.runner.calls.some((argv) => argv[1] === 'terminal' && argv[2] === 'send')).toBe(false)
+  })
+
   it('reopens a blocked delivery when a new PR head is pushed', async () => {
     const env = setup({ review: { code: 1, findings: [{ severity: 'high', title: 'Bug', file: 'a.ts', line: 2, rationale: 'wrong' }] } })
     await deliver(env)
