@@ -139,6 +139,8 @@ export interface TickInput {
   readonly owner?: string
   /** Test seam: override live machine sampling. */
   readonly machine?: Pick<SlotInput, 'sample' | 'freeBytes' | 'totalBytes' | 'osRelease'>
+  /** Test seam: base delay between worktree-create retries (see `createWorktreeWithRetry`); production default 5000ms. */
+  readonly worktreeCreateRetryDelayMs?: number
   /** Wall-clock budget for this tick; candidates that would not fit are left for the next tick. */
   readonly budgetMs?: number
   /** An externally-owned event bus (e.g. `loop stage`, unifying every stage's events on one bus for that
@@ -215,6 +217,29 @@ export const launchWorkerTerminal = async (input: { readonly runner: CommandRunn
 }
 
 const message = (error: unknown): string => error instanceof HarnessError ? `${error.code}: ${error.message}` : error instanceof Error ? error.message : String(error)
+
+// Orca's own worktree-create IPC intermittently drops mid-call under concurrent load — reproduced live against a
+// real project (agentskit-os) under 3 simultaneous dispatches: "The Orca runtime closed the connection before
+// responding." Not this issue's fault, and a bounded retry costs nothing tick can no longer afford — the
+// detached-worker architecture (see cli.ts's `stage`/`tick-worker`) gives this tick minutes, not the ~2s an Orca
+// precheck once had. Retrying here means the loop self-heals instead of spending one of
+// resilience.maxConsecutiveFailures on Orca's own transient hiccup.
+const isTransientOrcaConnectionError = (error: unknown): boolean =>
+  error instanceof Error && error.message.includes('closed the connection before responding')
+const createWorktreeWithRetry = async (runner: CommandRunner, argv: readonly string[], options: { readonly timeoutMs: number }, baseDelayMs = 5_000): ReturnType<typeof orcaWorktreeCreate> => {
+  const attempts = 3
+  let lastError: unknown
+  for (let attempt = 1; attempt <= attempts; attempt += 1) {
+    try {
+      return await orcaWorktreeCreate(runner, argv, options)
+    } catch (error) {
+      lastError = error
+      if (!isTransientOrcaConnectionError(error)) throw error
+      if (attempt < attempts) await new Promise((resolve) => setTimeout(resolve, attempt * baseDelayMs))
+    }
+  }
+  throw lastError
+}
 
 /** Worktree name: last branch segment, lowercase, safe charset, ≤ 60 chars. */
 export const worktreeNameFor = (issue: Pick<LoopIssue, 'identifier' | 'branchName'>): string => {
@@ -846,7 +871,7 @@ export const runTick = async (input: TickInput): Promise<TickReport> => {
     try {
       const fetched = await input.runner.run(['git', 'fetch', '--quiet', 'origin', config.project.baseBranch], { cwd: loaded.root, timeoutMs: 120_000 })
       if (fetched.timedOut || fetched.code !== 0) throw new Error(`git fetch origin ${config.project.baseBranch} failed before creating the worktree; a worker must not start from a stale base: ${`${fetched.stderr}${fetched.stdout}`.trim().slice(0, 200)}`)
-      created = await orcaWorktreeCreate(input.runner, plan.argv, { timeoutMs: Math.max(config.orca.timeoutMs, 120_000) })
+      created = await createWorktreeWithRetry(input.runner, plan.argv, { timeoutMs: Math.max(config.orca.timeoutMs, 120_000) }, input.worktreeCreateRetryDelayMs)
       // Orca names the branch `<git user>/<worktree>`; the Linear branchName is only a hint. Record and brief the real one.
       const actualBranch = created.branch || branch
       // Real-time enforcement, before the worker's own setup command (let alone the worker itself) ever runs —

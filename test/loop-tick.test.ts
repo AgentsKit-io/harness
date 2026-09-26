@@ -19,7 +19,7 @@ interface Env { readonly dir: string; readonly bin: string; readonly runner: Com
 const cleanups: string[] = []
 afterEach(() => { for (const dir of cleanups.splice(0)) rmSync(dir, { recursive: true, force: true }) })
 
-const makeEnv = (options: { readonly contract?: TaskContract | 'garbage'; readonly worktrees?: unknown; readonly failCreate?: boolean; readonly claudeAuthFails?: boolean; readonly claudeSessionLimit?: boolean; readonly failAllContracts?: boolean; readonly accountList?: unknown; readonly briefSkills?: readonly string[]; readonly setup?: { readonly exitCode?: number; readonly timedOut?: boolean }; readonly setupRequired?: boolean; readonly pluginSource?: string; readonly issueDescription?: string; readonly securityPii?: { readonly action?: 'redact' | 'warn' | 'block' }; readonly catalogMode?: boolean; readonly queueOwnership?: 'person' | 'unassigned'; readonly queueMode?: 'backlog' | 'explicit'; readonly tracker?: 'linear' | 'github'; readonly hideIssuesFromQueue?: boolean; readonly knownFailures?: readonly { readonly path: string; readonly issue: string; readonly reason: string }[] } = {}): Env => {
+const makeEnv = (options: { readonly contract?: TaskContract | 'garbage'; readonly worktrees?: unknown; readonly failCreate?: boolean; readonly failCreateTransientTimes?: number; readonly claudeAuthFails?: boolean; readonly claudeSessionLimit?: boolean; readonly failAllContracts?: boolean; readonly accountList?: unknown; readonly briefSkills?: readonly string[]; readonly setup?: { readonly exitCode?: number; readonly timedOut?: boolean }; readonly setupRequired?: boolean; readonly pluginSource?: string; readonly issueDescription?: string; readonly securityPii?: { readonly action?: 'redact' | 'warn' | 'block' }; readonly catalogMode?: boolean; readonly queueOwnership?: 'person' | 'unassigned'; readonly queueMode?: 'backlog' | 'explicit'; readonly tracker?: 'linear' | 'github'; readonly hideIssuesFromQueue?: boolean; readonly knownFailures?: readonly { readonly path: string; readonly issue: string; readonly reason: string }[] } = {}): Env => {
   const dir = mkdtempSync(join(tmpdir(), 'agentskit-loop-tick-')); cleanups.push(dir)
   const bin = join(dir, 'bin'); rmSync(bin, { recursive: true, force: true })
   let yaml = options.briefSkills?.length ? exampleYaml.replace('skills: []', `skills: [${options.briefSkills.join(', ')}]`) : exampleYaml
@@ -56,6 +56,7 @@ const makeEnv = (options: { readonly contract?: TaskContract | 'garbage'; readon
   const binDir = mkdtempSync(join(tmpdir(), 'agentskit-loop-tick-bin-')); cleanups.push(binDir)
   for (const name of ['claude', 'codex', 'opencode', 'grok']) writeFileSync(join(binDir, name), '#!/bin/sh\nexit 0\n', { mode: 0o755 })
   const calls: string[][] = []
+  let createAttempts = 0
   const contract = options.contract ?? goodContract
   // Tracks labels added/removed via `orca linear label add|remove` so a later `list-issues` reflects them — the static
   // JSON fixtures otherwise never show a label our own mocked write calls just applied, which would make it
@@ -101,7 +102,14 @@ const makeEnv = (options: { readonly contract?: TaskContract | 'garbage'; readon
       // The orchestrator's base view (`ensureBaseView`): fetch / worktree add / rev-parse.
       if (argv[0] === 'git') return { code: 0, stdout: argv[1] === 'rev-parse' ? 'basesha\n' : '', stderr: '', timedOut: false, durationMs: 1 }
       if (argv[0] === 'setup-check') return { code: options.setup?.exitCode ?? 0, stdout: 'installed', stderr: options.setup?.exitCode ? 'boom' : '', timedOut: options.setup?.timedOut ?? false, durationMs: 5 }
-      if (key.startsWith('orca worktree create')) return options.failCreate ? { code: 1, stdout: JSON.stringify({ ok: false, error: { message: 'repo busy' } }), stderr: '', timedOut: false, durationMs: 1 } : okResult({ worktreeId: `repo-1::${dir}/w/${argv[argv.indexOf('--name') + 1]}`, path: `${dir}/w`, branch: `refs/heads/gituser/${argv[argv.indexOf('--name') + 1]}`, agentTerminalHandle: 'term_new' })
+      if (key.startsWith('orca worktree create')) {
+        if (options.failCreate) return { code: 1, stdout: JSON.stringify({ ok: false, error: { message: 'repo busy' } }), stderr: '', timedOut: false, durationMs: 1 }
+        if (options.failCreateTransientTimes) {
+          createAttempts += 1
+          if (createAttempts <= options.failCreateTransientTimes) return { code: 1, stdout: JSON.stringify({ ok: false, error: { message: 'The Orca runtime closed the connection before responding. Restart Orca and try again.' } }), stderr: '', timedOut: false, durationMs: 1 }
+        }
+        return okResult({ worktreeId: `repo-1::${dir}/w/${argv[argv.indexOf('--name') + 1]}`, path: `${dir}/w`, branch: `refs/heads/gituser/${argv[argv.indexOf('--name') + 1]}`, agentTerminalHandle: 'term_new' })
+      }
       if (key.startsWith('orca linear status set') || key.startsWith('orca linear comment add') || key.startsWith('orca linear label add') || key.startsWith('orca linear assignee set') || key.startsWith('orca linear assignee clear')) return okResult({ ok: true })
       return { code: 127, stdout: '', stderr: `no fixture for ${key}`, timedOut: false, durationMs: 1 }
     },
@@ -561,6 +569,20 @@ describe('tick', () => {
     expect(comment).toContain('--write-id')
     expect(comment?.[comment.indexOf('--body') + 1]).toContain('needs information')
     expect(createDispatchLedger(loadLoopConfig(env.configPath).stateDir).active()).toEqual([])
+  })
+
+  it('retries worktree creation through a transient Orca connection drop and still dispatches', async () => {
+    const env = makeEnv({ failCreateTransientTimes: 2 })
+    const report = await runTick({ ...tickOptions(env), maxDispatch: 1, worktreeCreateRetryDelayMs: 1 })
+    expect(report.results[0]).toMatchObject({ outcome: 'dispatched' })
+    expect(env.runner.calls.filter((argv) => argv.join(' ').startsWith('orca worktree create'))).toHaveLength(3)
+  })
+
+  it('gives up after 3 worktree-create attempts against a persistent Orca connection drop', async () => {
+    const env = makeEnv({ failCreateTransientTimes: 3 })
+    const report = await runTick({ ...tickOptions(env), maxDispatch: 1, onlyIssue: 'ENG-20', worktreeCreateRetryDelayMs: 1 })
+    expect(report.results[0]).toMatchObject({ outcome: 'failed', reason: expect.stringContaining('closed the connection before responding') })
+    expect(env.runner.calls.filter((argv) => argv.join(' ').startsWith('orca worktree create'))).toHaveLength(3)
   })
 
   it('releases the lease when worktree creation fails and reports garbage orchestrator output', async () => {
