@@ -34,24 +34,33 @@ export function ProductWordmark() {
   )
 }
 
-/** Shared ecosystem footer. The static fallback keeps links in server HTML (SEO / no-JS); v1.js replaces it. */
+const LOCAL_COLUMNS = [
+  { title: 'Start', links: [{ text: 'Documentation', href: '/docs' }, { text: 'Human gates', href: '#gates' }, { text: 'Example run', href: '#run' }] },
+  { title: 'Build', links: [{ text: 'Flow profiles', href: '#profiles' }, { text: 'Connectors', href: '#seams' }, { text: 'llms.txt', href: '/llms.txt' }] },
+] as const
+
+/**
+ * Shared ecosystem footer. Harness-owned columns project into the upgraded footer through the `local` slot; the
+ * plain product, repository and license links are the server-rendered fallback (SEO / no-JS) that v1.js replaces.
+ */
 export function SiteFooter() {
   return (
-    <agentskit-footer current={SHELL_PRODUCT_ID} repo={SHELL_PRODUCT_REPO}>
-      <footer className="harness-footer-fallback">
-        <nav aria-label="AgentsKit ecosystem">
-          <ul>
-            {ECOSYSTEM_PRODUCTS.map(product => (
-              <li key={product.id}>
-                <a href={product.id === SHELL_PRODUCT_ID ? '/' : product.href} aria-current={product.id === SHELL_PRODUCT_ID ? 'page' : undefined}>{product.name}</a>
-              </li>
-            ))}
-          </ul>
-        </nav>
-        <p>
-          <a href={SHELL_PRODUCT_GITHUB}>GitHub · {SHELL_PRODUCT_REPO}</a> · <a href={`${SHELL_PRODUCT_GITHUB}/blob/main/LICENSE`}>MIT License</a>
-        </p>
-      </footer>
+    <agentskit-footer current={SHELL_PRODUCT_ID} repo={SHELL_PRODUCT_REPO} description="The configurable loop that takes software work from objective to release.">
+      <div slot="local" className="ak-footer-local">
+        {LOCAL_COLUMNS.map(column => (
+          <div key={column.title} className="ak-footer-col">
+            <h2 className="ak-footer-col__title">{column.title}</h2>
+            <ul>{column.links.map(link => <li key={link.href}><a href={link.href}>{link.text}</a></li>)}</ul>
+          </div>
+        ))}
+      </div>
+      <nav aria-label="AgentsKit ecosystem" className="ak-footer-fallback">
+        {ECOSYSTEM_PRODUCTS.map(product => (
+          <a key={product.id} href={product.id === SHELL_PRODUCT_ID ? '/' : product.href} aria-current={product.id === SHELL_PRODUCT_ID ? 'page' : undefined}>{product.name}</a>
+        ))}
+        <a href={SHELL_PRODUCT_GITHUB}>GitHub</a>
+        <a href={`${SHELL_PRODUCT_GITHUB}/blob/main/LICENSE`}>MIT License</a>
+      </nav>
     </agentskit-footer>
   )
 }

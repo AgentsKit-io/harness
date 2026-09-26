@@ -146,6 +146,13 @@ interface HarnessHomeProps {
 }
 
 export function HarnessHome({ counts }: HarnessHomeProps) {
+  // The home is always dark; shell v1's aurora picks its dark shader from <html data-theme="dark">. Docs keep their theme.
+  useEffect(() => {
+    const root = document.documentElement
+    const previous = root.getAttribute('data-theme')
+    root.setAttribute('data-theme', 'dark')
+    return () => { if (previous === null) root.removeAttribute('data-theme'); else root.setAttribute('data-theme', previous) }
+  }, [])
   const [playing, setPlaying] = useState(true)
   const [typed, setTyped] = useState(OBJECTIVES[0]!)
   const [replaying, setReplaying] = useState(false)

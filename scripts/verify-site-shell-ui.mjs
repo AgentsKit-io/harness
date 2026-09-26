@@ -24,7 +24,7 @@ const finish = () => {
 let chromium
 try {
   const require = createRequire(join(resolve(process.env.PLAYWRIGHT_RESOLVE_FROM ?? root), 'package.json'))
-  chromium = (await import(require.resolve('@playwright/test'))).chromium
+  chromium = require('@playwright/test').chromium
 } catch (error) {
   check('playwright', false, `cannot load @playwright/test (set PLAYWRIGHT_RESOLVE_FROM): ${error.message}`)
   finish()
@@ -33,10 +33,20 @@ try {
 
 mkdirSync(outDir, { recursive: true })
 if (copyDir) mkdirSync(copyDir, { recursive: true })
-const browser = await chromium.launch({ headless: true })
+let browser
+try {
+  // PLAYWRIGHT_CHANNEL=chrome uses the installed Chrome when Playwright's own browser build is missing.
+  browser = await chromium.launch({ headless: true, ...(process.env.PLAYWRIGHT_CHANNEL ? { channel: process.env.PLAYWRIGHT_CHANNEL } : {}) })
+} catch (error) {
+  check('browser', false, `cannot launch Chromium: ${error.message.split('\n')[0]}`)
+  finish()
+  process.exit()
+}
 try {
   for (const [name, viewport] of [['desktop', { width: 1440, height: 960 }], ['mobile', { width: 390, height: 844 }]]) {
     const page = await browser.newPage({ viewport, reducedMotion: 'no-preference' })
+    // HARNESS_SHELL_DIR serves /shell/v1.* from a local checkout (agentskit/apps/docs-next/public/shell) before it is hosted.
+    if (process.env.HARNESS_SHELL_DIR) await page.route(/\/shell\/v1\.(js|css)(\?.*)?$/, route => route.fulfill({ path: join(resolve(process.env.HARNESS_SHELL_DIR), new URL(route.request().url()).pathname.split('/').pop()), headers: { 'access-control-allow-origin': '*' } }))
     const errors = []
     page.on('console', message => { if (message.type() === 'error') errors.push(message.text()) })
     page.on('pageerror', error => errors.push(error.message))
@@ -71,7 +81,7 @@ try {
         tourUpgraded: upgraded(tour, '.harness-ecosystem-fallback'),
         tourCurrent: tour?.getAttribute('current'),
         tourHasPlaybook: /Playbook/.test(text(tour)),
-        footerUpgraded: upgraded(footer, '.harness-footer-fallback'),
+        footerUpgraded: upgraded(footer, '.ak-footer-fallback'),
         footerLinks: links(footer).length,
         aurora: Boolean(aurora) && auroraStyle?.position === 'fixed' && auroraStyle.pointerEvents === 'none' && aurora.getAttribute('aria-hidden') === 'true',
         overflow: document.documentElement.scrollWidth - window.innerWidth,

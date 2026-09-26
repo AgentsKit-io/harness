@@ -1,6 +1,6 @@
 import type { DetailedHTMLProps, HTMLAttributes } from 'react'
 
-type ShellElement = DetailedHTMLProps<HTMLAttributes<HTMLElement>, HTMLElement> & { current?: string; repo?: string; 'data-visual'?: string }
+type ShellElement = DetailedHTMLProps<HTMLAttributes<HTMLElement>, HTMLElement> & { current?: string; repo?: string; description?: string; 'data-visual'?: string }
 
 declare module 'react' {
   namespace JSX {
