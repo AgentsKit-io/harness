@@ -186,4 +186,15 @@ describe('action routes', () => {
     expect(runs.map((run) => run.issue)).toEqual(['ENG-1'])
     expect(runs[0]?.config).toMatchObject({ maxFixRounds: ceiling, builder: { provider: builder.slice(0, builder.indexOf('/')) } })
   })
+
+  it('batch: accepts a GitHub-tracker id (owner/repo#N) and still refuses path traversal', async () => {
+    const contract = async (_context: unknown, issue: string): Promise<ContractResult> => ({ status: 'valid', contract: { digest: `digest-${issue}` } as ContractResult['contract'] })
+    const { loaded, post, jobs } = await harness({ contract: contract as ActionRouteDeps['contract'] })
+    const builder = loaded.config.models.builder.flat()[0]!
+    expect((await post('batch', { defaults: { builder }, issues: [{ issue: 'acme/app/../../x#1' }] })).status).toBe(400)
+    const response = await post('batch', { defaults: { builder }, issues: [{ issue: 'acme/app#77' }] })
+    expect(response.status).toBe(202)
+    const [job] = response.body['jobs'] as UiJobRecord[]
+    expect(await settled(jobs, job!.id)).toMatchObject({ status: 'succeeded', result: { status: 'queued', issue: 'acme/app#77' } })
+  })
 })

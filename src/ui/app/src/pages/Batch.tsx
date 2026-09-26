@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 import { Shell } from '@/components/Shell'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
-import { enqueueBatch, getJob, getWizard, type BatchRunSettings, type UiJobRecord, getCachedContracts, type CachedContract } from '@/lib/api'
+import { enqueueBatch, getJob, getJobs, getWizard, type BatchRunSettings, type UiJobRecord, getCachedContracts, type CachedContract } from '@/lib/api'
 import { formatAge, useLiveSnapshot } from '@/lib/snapshot'
 import { availableIssues } from '@/lib/runs'
 import type { WizardData } from '@/pages/Wizard'
@@ -92,6 +92,17 @@ export const BatchPage = (): React.ReactElement => {
       setDefaults({ flow: data.defaultFlow, builder: data.builderModels[0] ? builderId(data.builderModels[0]) : undefined, maxFixRounds: data.limits.maxFixRounds, perIssueTokens: data.limits.perIssueTokens })
     }).catch((cause: unknown) => setError(cause instanceof Error ? cause.message : String(cause)))
   }, [first, options])
+
+  // The server owns the jobs; leaving this page must not lose a batch still generating contracts. Returning resumes
+  // the latest batch while any of its jobs is unsettled (a batch submits all its jobs within the same second).
+  React.useEffect(() => {
+    getJobs().then(({ jobs: all }) => {
+      const batch = all.filter((job) => job.kind.startsWith('batch:'))
+      const latest = batch.reduce<string | null>((max, job) => !max || job.acceptedAt > max ? job.acceptedAt : max, null)
+      const recent = latest ? batch.filter((job) => Date.parse(latest) - Date.parse(job.acceptedAt) < 5_000) : []
+      if (recent.some((job) => !settled(job))) setJobs((current) => current ?? recent)
+    }).catch(() => { /* nothing to resume */ })
+  }, [])
 
   React.useEffect(() => {
     if (!jobs || jobs.every(settled)) return
