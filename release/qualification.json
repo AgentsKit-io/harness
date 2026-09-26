@@ -2,13 +2,13 @@
   "type": "agentskit-harness-release-qualification",
   "schemaVersion": 1,
   "package": "@agentskit/harness",
-  "version": "0.19.0",
-  "sourceRevision": "6d2f6b359ad15c23e3aa6d51ec55d8127dfff42d",
+  "version": "0.20.0",
+  "sourceRevision": "047c9189ce4d4af8e6177359e34db786f2979496",
   "status": "blocked",
   "harnessVerification": {
     "runId": null,
     "decision": "NOT_RECORDED",
-    "note": "The contract runs in CI on every commit (ci.yml, verify job: dist/cli.js run --config .ak-harness/verification.json). No run id is captured into this file yet, so this records that it was not captured \u2014 not that it passed."
+    "note": "The contract runs in CI on every commit (ci.yml, verify job: dist/cli.js run --config .ak-harness/verification.json). No run id is captured into this file yet, so this records that it was not captured — not that it passed."
   },
   "upstreamCompatibility": {
     "report": "compatibility/report.json",
