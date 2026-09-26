@@ -10,67 +10,56 @@
   isolation: isolate;
   margin: 0;
   background: #0D1117;
-  background-image:
-    radial-gradient(ellipse 58vw 72vh at 12% 8%, rgb(88 166 255 / 10%), transparent 72%),
-    radial-gradient(ellipse 52vw 76vh at 92% 54%, rgb(46 160 67 / 8%), transparent 76%),
-    radial-gradient(ellipse 48vw 62vh at 36% 100%, rgb(88 166 255 / 6%), transparent 76%);
   color: #E6EDF3;
   font-family: var(--ak-font-body), Inter, system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
 }
 
 .harness-home > [data-home-content] { position: relative; z-index: 1; }
+/* Dark by design (as on main), scoped to the home only: shell v1's aurora reads these; docs follow the page theme. */
+.harness-home { --ak-bg: #0D1117; --ak-surface: #161B22; --ak-border: #30363D; --ak-fg: #E6EDF3; --ak-muted: #8B949E; --ak-blue: #58A6FF; --ak-accent: #56D364; }
 
-.harness-liquid-cursor {
-  position: fixed;
-  z-index: -1;
-  inset: 0;
-  overflow: hidden;
-  pointer-events: none;
-  opacity: .48;
-  transition: opacity 500ms ease;
-  background:
-    radial-gradient(ellipse 58% 92% at 78% 22%, rgb(88 166 255 / 14%), transparent 74%),
-    radial-gradient(ellipse 48% 72% at 18% 86%, rgb(46 160 67 / 10%), transparent 76%);
-}
-.harness-liquid-cursor[data-active='true'] { opacity: .68; }
-.harness-liquid-cursor__orb {
-  position: absolute;
-  left: 0;
-  top: 0;
-  width: min(48rem, 92vw);
-  aspect-ratio: 1;
-  border-radius: 50%;
-  transform: translate3d(var(--cursor-x, 50vw), var(--cursor-y, 15rem), 0) translate(-50%, -50%);
-  transition: transform 760ms cubic-bezier(.16, 1, .3, 1);
-  will-change: transform;
-}
-.harness-liquid-cursor__orb--blue {
-  background: radial-gradient(ellipse, rgb(88 166 255 / 18%), transparent 68%);
-}
-.harness-liquid-cursor__orb--green {
-  width: min(36rem, 74vw);
-  transform: translate3d(calc(var(--cursor-x, 50vw) - 5rem), calc(var(--cursor-y, 15rem) + 3rem), 0) translate(-50%, -50%);
-  background: radial-gradient(ellipse, rgb(46 160 67 / 15%), transparent 68%);
-  transition-duration: 1100ms;
-}
 
 .harness-home a { color: #56D364; text-decoration: none; }
 .harness-home a:hover { color: #A2F2AD; }
 .harness-home ::selection { background: #56D364; color: #0D1117; }
 .harness-home :focus-visible { outline: 2px solid #58A6FF; outline-offset: 3px; border-radius: 6px; }
-.harness-home header {
-  background: rgb(13 17 23 / 56%) !important;
-  border-color: rgb(48 54 61 / 78%) !important;
+.harness-home-header {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 14px 28px;
+  border-bottom: 1px solid rgb(48 54 61 / 78%);
+  background: rgb(13 17 23 / 56%);
   -webkit-backdrop-filter: blur(18px) saturate(115%);
   backdrop-filter: blur(18px) saturate(115%);
 }
-.harness-home footer {
-  background: transparent;
-  border-top: 0;
-  -webkit-backdrop-filter: none;
-  backdrop-filter: none;
+.harness-home-header > a { display: inline-flex; align-items: center; color: #E6EDF3; }
+.harness-home-header nav {
+  display: flex;
+  align-items: center;
+  gap: 22px;
+  font-family: var(--ak-font-mono), monospace;
+  font-size: 11px;
+  letter-spacing: .2em;
+  text-transform: uppercase;
 }
+.harness-home .harness-home-header nav a { color: #8B949E; white-space: nowrap; }
+.harness-home .harness-home-header nav a:hover { color: #E6EDF3; }
+
+/* No-JS fallback for the shell's tour (the footer fallback is styled by v1.css); v1.js replaces it on upgrade. */
+.harness-ecosystem-fallback { max-width: 1180px; margin: 0 auto; padding: 72px 28px; border-top: 1px solid #30363D; }
+.harness-ecosystem-fallback__eyebrow { font-family: var(--ak-font-mono), monospace; font-size: 11px; letter-spacing: .2em; text-transform: uppercase; color: #8B949E; }
+.harness-ecosystem-fallback h2 { margin: 16px 0 28px; font-family: var(--ak-font-display); letter-spacing: -.02em; font-size: clamp(28px, 3.4vw, 40px); line-height: 1.1; font-weight: 600; }
+.harness-ecosystem-fallback nav { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(170px, 100%), 1fr)); gap: 12px; }
+.harness-home .harness-ecosystem-fallback a { display: flex; flex-direction: column; gap: 6px; padding: 16px; border: 1px solid #30363D; border-radius: .5rem; color: #E6EDF3; font-size: 14px; }
+.harness-ecosystem-fallback a > span:first-child { font-family: var(--ak-font-mono), monospace; font-size: 10px; letter-spacing: .2em; text-transform: uppercase; color: #8B949E; }
+.harness-home .harness-ecosystem-fallback a[aria-current] { border-color: #56D364; }
+.harness-ecosystem-fallback a[aria-current] > span:first-child { color: #56D364; }
 .harness-home [style*="border: 1px solid #30363D"] {
   border-color: rgb(139 148 158 / 22%) !important;
   border-radius: 18px !important;
@@ -92,23 +81,6 @@
 .harness-home button, .harness-home a { transition: color 180ms ease, border-color 180ms ease, background-color 180ms ease; }
 .harness-home button { min-height: 40px; }
 .harness-profile-content { animation: harness-profile-enter 420ms cubic-bezier(.16, 1, .3, 1) both; }
-.harness-footer-grid {
-  display: grid;
-  grid-template-columns: 1.4fr repeat(4, minmax(0, 1fr));
-  gap: 32px 24px;
-}
-.harness-footer-grid > div:not(:first-child) { display: flex; flex-direction: column; align-items: flex-start; gap: 10px; }
-.harness-footer-grid a { color: #8B949E; font-size: 14px; transition: color 180ms ease; }
-.harness-footer-grid a:hover { color: #E6EDF3; }
-.harness-footer-grid .harness-footer-current { color: #E6EDF3; font-weight: 600; }
-.harness-footer-grid .harness-footer-current span { color: #56D364; font-size: 8px; margin-left: 3px; }
-.harness-footer-title {
-  margin: 0 0 2px;
-  color: #8B949E;
-  font: 11px var(--ak-font-mono), monospace;
-  letter-spacing: .18em;
-  text-transform: uppercase;
-}
 
 @keyframes harness-profile-enter { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
 @keyframes harness-timeline-travel { to { transform: translateX(800px); } }
@@ -152,29 +124,19 @@
 
 @media (max-width: 860px) {
   .harness-home section { padding-top: 60px !important; padding-bottom: 60px !important; padding-left: 20px !important; padding-right: 20px !important; }
-  .harness-home header { padding-left: 20px !important; padding-right: 20px !important; }
-  .harness-home footer { padding-left: 20px !important; padding-right: 20px !important; }
+  .harness-home-header { padding-left: 20px; padding-right: 20px; }
 }
 
 @media (max-width: 620px) {
-  .harness-home { background-size: 140% 42rem, 130% 46rem, 120% 38rem; }
-  .harness-liquid-cursor { opacity: .4; }
   .harness-home [style*="border: 1px solid #30363D"] { border-radius: 16px !important; }
   .harness-home section { padding-top: 52px !important; padding-bottom: 52px !important; }
-  .harness-home header { gap: 12px !important; }
-  .harness-home header > a span { white-space: nowrap; font-size: 13px !important; }
-  .harness-home header nav { gap: 10px !important; font-size: 9px !important; letter-spacing: .14em !important; white-space: nowrap; }
-  .harness-home header nav a { white-space: nowrap; }
-}
-
-@media (max-width: 900px) {
-  .harness-footer-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .harness-footer-grid > div:first-child { grid-column: 1 / -1; }
+  .harness-home-header { gap: 12px; }
+  .harness-home-header nav { gap: 10px; font-size: 9px; letter-spacing: .14em; }
 }
 
 @media (max-width: 620px) {
-  .harness-home header nav { gap: 14px !important; }
-  .harness-home header nav a:nth-child(2), .harness-home header nav a:nth-child(3) { display: none; }
+  .harness-home-header nav { gap: 14px; }
+  .harness-home-header nav a:nth-child(2), .harness-home-header nav a:nth-child(3) { display: none; }
   .harness-home [data-col="time"] { display: none; }
   .harness-home h2 { font-size: 26px !important; }
 }
@@ -183,7 +145,6 @@
 @media (max-width: 520px) { .harness-home [data-branch="3"] { display: none; } }
 
 @media (prefers-reduced-motion: reduce) {
-  .harness-liquid-cursor, .harness-liquid-cursor__orb { transition: none !important; }
   .harness-home button, .harness-home a { transition-duration: 0.01ms !important; }
   .harness-profile-content { animation: none !important; }
 }

@@ -1,0 +1,136 @@
+{
+  "schemaVersion": 1,
+  "project": "agentskit-harness-ecosystem-shell-v1",
+  "root": "..",
+  "stateDir": ".codex/verification",
+  "profile": "strict",
+  "contract": {
+    "intent": "Adopt AgentsKit shell v1 on the public Harness site (bar, tour, footer, aurora, product wordmark) against the canonical six-product ecosystem, and dogfood Doc Bridge in CI, without changing the Harness product loop.",
+    "scope": {
+      "inScope": [
+        "apps/docs/app/layout.tsx",
+        "apps/docs/app/docs/layout.tsx",
+        "apps/docs/app/(home)/home.css",
+        "apps/docs/components/agentskit-shell.tsx",
+        "apps/docs/components/home/**",
+        "apps/docs/lib/shell.ts",
+        "apps/docs/types/agentskit-shell.d.ts",
+        "ecosystem.json",
+        "ecosystem-claims.json",
+        "README.md (AgentsKit ecosystem links section)",
+        "HOME-BRIEF.md",
+        "doc-bridge.config.json",
+        ".doc-bridge/**",
+        "scripts/generate-doc-bridge-config.mjs",
+        "scripts/verify-ecosystem-public-outputs.mjs",
+        "scripts/verify-site-shell-ui.mjs",
+        ".github/workflows/release-harness.yml (docs job Doc Bridge steps)",
+        "package.json (docs:bridge:* scripts, @agentskit/doc-bridge devDependency)",
+        "pnpm-lock.yaml",
+        ".codex/verification.json",
+        ".gitignore"
+      ],
+      "outOfScope": [
+        "Harness product loop: running, activating or configuring it (.ak-harness, loop.config*)",
+        "Harness runtime behavior, public API, CLI and local operational UI (src/**)",
+        "the shared shell implementation (agentskit/apps/docs-next/public/shell/*)",
+        "documentation page content under apps/docs/content",
+        "Playbook as a seventh product in the bar or tour",
+        "push, pull request, release, npm publication, deployment, Vercel and DNS"
+      ]
+    },
+    "ambiguities": [],
+    "outcomes": [
+      {
+        "id": "harness-site-shell",
+        "statement": "Every page loads shell v1 from NEXT_PUBLIC_AGENTSKIT_SHELL_ORIGIN (default https://www.agentskit.io) with data-current=harness and data-current-repo=AgentsKit-io/harness; the bar lists exactly the six products and is the only place with a GitHub Star (targeting AgentsKit-io/harness); the home keeps its flow hero, renders <agentskit-aurora>, <agentskit-ecosystem current=\"harness\"> and <agentskit-footer> with six-product static fallbacks; docs use the .ak-product-wordmark nav title; no console errors or horizontal overflow at 1440x960 and 390x844.",
+        "checks": ["site-shell-ui", "docs-build"]
+      },
+      {
+        "id": "ecosystem-catalog",
+        "statement": "ecosystem.json matches the canonical AgentsKit catalog: six products shown in fixed order (AgentsKit, Registry, Chat, Doc Bridge, Code Review, Harness) and Playbook catalogued with showInBar=false; no retired public references.",
+        "checks": ["ecosystem-catalog"]
+      },
+      {
+        "id": "doc-bridge-dogfooding",
+        "statement": "doc-bridge.config.json is generated and valid, the committed .doc-bridge index is current, and the standard gate plus Documentation Standard v1 pass; CI runs the same commands.",
+        "checks": ["docs-config", "docs-index", "docs-gate", "docs-conformance"]
+      }
+    ]
+  },
+  "surfaces": {
+    "logic": { "required": false, "reason": "No Harness runtime or business logic changes are in scope." },
+    "endpoint": { "required": false, "reason": "The public site is a static export; no service endpoint changes." },
+    "database": { "required": false, "reason": "No database-backed behavior is in scope." },
+    "cli": { "required": false, "reason": "No ak-harness or ak-verify command behavior changes." },
+    "mcp": { "required": false, "reason": "No MCP runtime behavior is in scope." },
+    "ui": true,
+    "docs": true
+  },
+  "tracking": {
+    "required": false,
+    "reason": "No issue, PR, release or external tracking mutation is authorized for this task."
+  },
+  "cleanup": {
+    "roots": [".codex/verification/site-shell"]
+  },
+  "checks": [
+    {
+      "id": "docs-config",
+      "category": "docs",
+      "command": "pnpm -s docs:bridge:config:check && pnpm -s exec ak-docs validate-config >/dev/null && node -e 'console.log(JSON.stringify({status:\"passed\",criteria:[\"doc-bridge-dogfooding\"]}))'",
+      "execution": "real",
+      "timeoutMs": 60000,
+      "evidence": "structured"
+    },
+    {
+      "id": "docs-index",
+      "category": "docs",
+      "command": "pnpm -s exec ak-docs gate run index-freshness >/dev/null && node -e 'console.log(JSON.stringify({status:\"passed\",criteria:[\"doc-bridge-dogfooding\"]}))'",
+      "execution": "real",
+      "timeoutMs": 180000,
+      "evidence": "structured"
+    },
+    {
+      "id": "docs-gate",
+      "category": "docs",
+      "command": "pnpm -s docs:bridge:gate >/dev/null && node -e 'console.log(JSON.stringify({status:\"passed\",criteria:[\"doc-bridge-dogfooding\"]}))'",
+      "execution": "real",
+      "timeoutMs": 360000,
+      "evidence": "structured"
+    },
+    {
+      "id": "docs-conformance",
+      "category": "docs",
+      "command": "pnpm -s docs:bridge:conformance && node -e 'console.log(JSON.stringify({status:\"passed\",criteria:[\"doc-bridge-dogfooding\"]}))'",
+      "execution": "real",
+      "timeoutMs": 180000,
+      "evidence": "structured"
+    },
+    {
+      "id": "ecosystem-catalog",
+      "category": "docs",
+      "command": "node scripts/verify-ecosystem-public-outputs.mjs >/dev/null && node -e 'console.log(JSON.stringify({status:\"passed\",criteria:[\"ecosystem-catalog\"]}))'",
+      "execution": "real",
+      "timeoutMs": 60000,
+      "evidence": "structured"
+    },
+    {
+      "id": "docs-build",
+      "category": "build",
+      "command": "pnpm docs:typecheck && pnpm docs:build && node -e 'console.log(JSON.stringify({status:\"passed\",criteria:[\"harness-site-shell\"]}))'",
+      "execution": "real",
+      "timeoutMs": 600000,
+      "evidence": "structured"
+    },
+    {
+      "id": "site-shell-ui",
+      "category": "ui",
+      "command": "node scripts/verify-site-shell-ui.mjs",
+      "execution": "real",
+      "capabilities": ["real-browser", "screenshot"],
+      "timeoutMs": 180000,
+      "evidence": "structured"
+    }
+  ]
+}
