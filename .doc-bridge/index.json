@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
-  "contentHash": "9e93c1e862d6b6fb3f7772506acb3f049a805ae9e01829a1276568e61658e0a8",
+  "contentHash": "813f6f98b0f4cfd04a5fbe98d01030a6445417732b4cbff26ba4d962c9871245",
   "contentHashAlgo": "sha256-normalized-v1",
-  "generatedAt": "2026-09-26T00:45:48.134Z",
+  "generatedAt": "2026-09-26T01:05:17.368Z",
   "project": {
     "name": "AgentsKit Harness",
     "root": "."
@@ -1494,7 +1494,7 @@
         "ts",
         ".source"
       ],
-      "contentHash": "9c6950b56e580caa3a02c2c0bc5de59a426c8c9062f5f3d53d5ece07ec64ecdf"
+      "contentHash": "25714256405347c2c22ec7b366e0c083cd01c5dae34e937a187b27d5fab836d7"
     },
     {
       "id": "module:apps/docs/.source/dynamic.ts",
@@ -1521,7 +1521,7 @@
         "ts",
         ".source"
       ],
-      "contentHash": "ad576f9fdcf04200759fec5aa25b43ba3bcbba32fb6acd26ba3883cf15f846b1"
+      "contentHash": "24c519a5eb693b1174f844444b75bb1a1748294bdfb791b678f055f9838451d3"
     },
     {
       "id": "module:apps/docs/.source/source.config.mjs",
@@ -1699,7 +1699,7 @@
         "tsx",
         "home"
       ],
-      "contentHash": "6fa1fa4cbf05c80eeb03149229f73ccf4597129fe7f5b2a1c9658046a555e42c"
+      "contentHash": "c056f5ce5677ea8d3a768e9db643b215d9d956075ab2e63cb0d6425cdaae6d5d"
     },
     {
       "id": "module:apps/docs/components/loop-factory.tsx",
@@ -2331,7 +2331,7 @@
         "mjs",
         "scripts"
       ],
-      "contentHash": "cf2d23e3711995e82bd1d458390a11790d98b634c96b1d4974e55c8db5aacf99"
+      "contentHash": "d10c824bccdbbde2c81c6175b9a1d4b2f1464803f68ced6334eeff81b4475815"
     },
     {
       "id": "module:src/adapters/agent.ts",
@@ -2553,6 +2553,7 @@
         "OrcaAutomationSpec",
         "OrcaCliOptions",
         "OrcaCreatedWorktree",
+        "OrcaLinkedPullRequest",
         "OrcaMemorySample",
         "OrcaSendReceipt",
         "OrcaStatus",
@@ -2600,7 +2601,7 @@
         "ts",
         "adapters"
       ],
-      "contentHash": "9a9142a3529579441d672c040b814173925ab796f7d7bc2b0b86914aa9b6a387"
+      "contentHash": "6056307b7824c298459f8842b59ab004bec9ca10277b116c930c0b102c88e581"
     },
     {
       "id": "module:src/adapters/orca.ts",
@@ -4164,6 +4165,7 @@
       "symbols": [
         "AutomationDriftRow",
         "AutomationFields",
+        "AutomationRun",
         "AutomationSpec",
         "LOOP_STAGES",
         "LoopStage",
@@ -4175,6 +4177,7 @@
         "automationSpecs",
         "declaredStages",
         "effectiveAutomationPrefix",
+        "parseAutomationRuns",
         "precheckCommand",
         "reconcileAutomations",
         "sanitizeAutomationSuffix",
@@ -4185,7 +4188,7 @@
         "ts",
         "loop"
       ],
-      "contentHash": "0bd36cc7a73d8902c2ffd7a48d30ebbde08a65c188868eee21cddbcfa0b61a08"
+      "contentHash": "e6ab23de5d74a7e5e6470f09cd7fa732a7fb092f0deebd941a506a5e04d9194a"
     },
     {
       "id": "module:src/loop/base-view.ts",
@@ -4439,7 +4442,7 @@
         "ts",
         "loop"
       ],
-      "contentHash": "585fedb969e839390153eba9d33611a49d82b2dee7e746c52f36e363ae3a6413"
+      "contentHash": "846c12eb5427d8ea2e5f3d9c0a592cebca9571bbf467ba30898e13a6d343c1bc"
     },
     {
       "id": "module:src/loop/documents.ts",
@@ -4938,6 +4941,7 @@
       "title": "install.ts",
       "path": "src/loop/install.ts",
       "symbols": [
+        "AutomationRun",
         "AutomationSpec",
         "AutomationStatus",
         "InstallAction",
@@ -4964,7 +4968,7 @@
         "ts",
         "loop"
       ],
-      "contentHash": "a27e6af18ee3131733160577b1ee2baf57dd498e2ce2c0873b91199cc65c0194"
+      "contentHash": "a7f18d174e08ca77b77e69c60cad33ea5e02500fac24f8e24b36441e928da116"
     },
     {
       "id": "module:src/loop/intake.ts",
@@ -5560,6 +5564,7 @@
         "RunnerInput",
         "RunnerWorkspace",
         "ScheduledJob",
+        "WorkspaceObservation",
         "createLocalRunner",
         "createOrcaRunner",
         "createRunnerConnector",
@@ -5570,7 +5575,7 @@
         "ts",
         "loop"
       ],
-      "contentHash": "5d38c09cdc9d89329748f76863445171944193180611de015e71846033d15991"
+      "contentHash": "f464150494685c220939628dc7d51b0b0348bdbc148de790255033f9f8bded94"
     },
     {
       "id": "module:src/loop/skills.ts",
@@ -5661,7 +5666,7 @@
         "ts",
         "loop"
       ],
-      "contentHash": "798026638d8915a91cbade9d0240dc0c9009ec33394922e761480b541d4a1339"
+      "contentHash": "778c5c7fbd320e390295ed64832212348565400945595abfff1ba36e2c17f7dc"
     },
     {
       "id": "module:src/loop/tracker.ts",
@@ -5913,6 +5918,7 @@
         "applyBoardMetadata",
         "emptyProjection",
         "overlayLiveState",
+        "overlayRunnerObservation",
         "reduce"
       ],
       "tags": [
@@ -5920,7 +5926,7 @@
         "ts",
         "api"
       ],
-      "contentHash": "af09b1742d07d5e74620152c39767958c61f9aed9fa9d6e155ab95d45b855f9f"
+      "contentHash": "baea031fb772c177706731a4b8c114d1b0658396a1cdf4773a8daa8e0ce2f28d"
     },
     {
       "id": "module:src/ui/api/server.ts",
@@ -5929,17 +5935,19 @@
       "path": "src/ui/api/server.ts",
       "symbols": [
         "UI_SNAPSHOT_SCHEMA_VERSION",
+        "UiAutomationHealth",
         "UiServerHandle",
         "UiServerOptions",
         "UiSnapshot",
-        "startUiServer"
+        "startUiServer",
+        "withRunningHarness"
       ],
       "tags": [
         "module",
         "ts",
         "api"
       ],
-      "contentHash": "e2768e6c27f09960cd66e8e22f968a131669ac394ccb61d6905d52dca6230295"
+      "contentHash": "4f9eae376bbac7efd6573970decab42eae0b06fa1a8a1cc9789107fa7482feca"
     },
     {
       "id": "module:src/ui/api/store.ts",
@@ -6250,7 +6258,7 @@
         "tsx",
         "pages"
       ],
-      "contentHash": "99c743a893b06945906fe709ee44bceb7bb6164ba1e7540360a9d2a9b86b08cb"
+      "contentHash": "9c749182f1ff3b675ff048319bdd3ec2207e05681fa4cdce737e0b0de720e665"
     },
     {
       "id": "module:src/ui/app/src/pages/RunDetail.tsx",
@@ -6265,7 +6273,7 @@
         "tsx",
         "pages"
       ],
-      "contentHash": "51caba787feb02c4cbc51f4905dd7f588f6c60c5cc09609a7bce693a07c2a0f5"
+      "contentHash": "bbf38f7deb8eeefc609cbb418ccb7c057934121d273760a3fb6d6e44546f1cb6"
     },
     {
       "id": "module:src/ui/app/src/pages/Wizard.tsx",
@@ -6280,7 +6288,7 @@
         "tsx",
         "pages"
       ],
-      "contentHash": "9ff4c683446b07c55f5214cbdd3e6ee264d16e9f3316ab7d79c9a30dc0bfa855"
+      "contentHash": "51021eed1131c39af789310e7b565d77f259192fdee05feff22fe5080923d971"
     },
     {
       "id": "module:src/ui/app/vite.config.ts",
@@ -6379,7 +6387,7 @@
         "ts",
         "test"
       ],
-      "contentHash": "bd61a0194b1ee60de0f8a9807306ba93cb33fad59338eb518c8bab79cd4fc2fd"
+      "contentHash": "9b920255c8d71f2fa081788aa9adc0eb32f3bff9552c6001d0a7ab33042aae8a"
     },
     {
       "id": "module:test/adapters-orca.test.ts",
@@ -7354,7 +7362,7 @@
         "ts",
         "test"
       ],
-      "contentHash": "6f98e4bf45d9d2c1afcc2b7adc860fcd1131f6e4e6486d51b6e525a7a8cec69f"
+      "contentHash": "e66a39e33838ae4e0cf4435c673f567ba04558191ffdfa0becf565e2ff900752"
     },
     {
       "id": "module:test/loop-documents.test.ts",
@@ -7510,7 +7518,7 @@
         "ts",
         "test"
       ],
-      "contentHash": "d4dd8d9514298a11aabb7c8c329d19cac4f1fef643b9a80db8b38ca1a72b5b73"
+      "contentHash": "e2654e515135f250381ccd2f7b7bb9d4cac7d9c6ae6338f5d8490e15d7eb65f7"
     },
     {
       "id": "module:test/loop-install.test.ts",
@@ -7858,7 +7866,7 @@
         "ts",
         "test"
       ],
-      "contentHash": "d69e0a7cbd0a090d3cbd53d3e96e20fa1f3c0b5e4c604239e98d63c586588f96"
+      "contentHash": "8692c0fffccd303de1fb4d07fb0b593e394344a54b8c9d2afd059e57d5e1e906"
     },
     {
       "id": "module:test/loop-tuning.test.ts",
@@ -8194,7 +8202,7 @@
         "ts",
         "test"
       ],
-      "contentHash": "142b74490b020f05f82b4355ec10b8aa6856799585e1ffe35440d87adad4aec1"
+      "contentHash": "4bc1e6a2ac3018393ab10a953246a629447765b542dc76d34ab80a71bfa0f58f"
     },
     {
       "id": "module:test/ui-projection.test.ts",
@@ -8206,7 +8214,7 @@
         "ts",
         "test"
       ],
-      "contentHash": "0beb25d05d479a2bac4e887a1d5ff6794a2356e15e7b58ce75c6edaa8cc01900"
+      "contentHash": "3c316085d0bc560520893603f5bb0e477945322b1ca058c3b19cc85d2a819653"
     },
     {
       "id": "module:test/ui-store.test.ts",
@@ -8366,7 +8374,7 @@
     }
   },
   "inputs": {
-    "hash": "a963975adc3d81a74e52bb3f2701dccc3446601617804a452af9731351efcbdc",
+    "hash": "a4fde0fa1751611f9b17604c078bf0f4e3a889004f7b6c17b33bc61f70e56d06",
     "fileCount": 526,
     "projectionVersion": 2
   },
@@ -8389,9 +8397,9 @@
   "projection": {
     "type": "retrieval-index",
     "schemaVersion": 1,
-    "contentHash": "275158f5f04f5d8bbeb62e71aba1532920932b9d56bbb2b3e66ad1f0f2c96950",
+    "contentHash": "a10fab486781c003e26657880f7aa8597a270baf31d17452a5ae8fc865a34c59",
     "contentHashAlgo": "sha256-normalized-v1",
-    "snapshotHash": "d42a821d48d09128949a10c4fee93e37260c26bc57c9fb6e6ac5b79b077fce3d",
+    "snapshotHash": "ca9117a1c8caf9154381f62f2022bfa5082eeb647f9aa7f63af44137071cea63",
     "overlayHash": "f99666ff9119084dd25c2974ae64eb6935ec2aa785ff5ad478fb9d541f7a5e94",
     "configurationHash": "816afaf6a7dc09767f7594d8fd80024612ca0f33becf0e44dde0107fcf2782df",
     "lexiconVersion": 1,
@@ -8427,7 +8435,7 @@
         "headings": 5.1809701492537314,
         "path": 6.197761194029851,
         "summary": 4.095149253731344,
-        "symbols": 12.701492537313433,
+        "symbols": 12.755597014925373,
         "title": 3.873134328358209
       }
     },
@@ -15792,7 +15800,7 @@
             }
           ]
         },
-        "contentHash": "9c6950b56e580caa3a02c2c0bc5de59a426c8c9062f5f3d53d5ece07ec64ecdf",
+        "contentHash": "25714256405347c2c22ec7b366e0c083cd01c5dae34e937a187b27d5fab836d7",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -15875,7 +15883,7 @@
             }
           ]
         },
-        "contentHash": "ad576f9fdcf04200759fec5aa25b43ba3bcbba32fb6acd26ba3883cf15f846b1",
+        "contentHash": "24c519a5eb693b1174f844444b75bb1a1748294bdfb791b678f055f9838451d3",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -16345,7 +16353,7 @@
             }
           ]
         },
-        "contentHash": "6fa1fa4cbf05c80eeb03149229f73ccf4597129fe7f5b2a1c9658046a555e42c",
+        "contentHash": "c056f5ce5677ea8d3a768e9db643b215d9d956075ab2e63cb0d6425cdaae6d5d",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -18142,7 +18150,7 @@
           "inbound": [],
           "outbound": []
         },
-        "contentHash": "cf2d23e3711995e82bd1d458390a11790d98b634c96b1d4974e55c8db5aacf99",
+        "contentHash": "d10c824bccdbbde2c81c6175b9a1d4b2f1464803f68ced6334eeff81b4475815",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -19085,6 +19093,7 @@
           "OrcaAutomationSpec",
           "OrcaCliOptions",
           "OrcaCreatedWorktree",
+          "OrcaLinkedPullRequest",
           "OrcaMemorySample",
           "OrcaSendReceipt",
           "OrcaStatus",
@@ -19136,7 +19145,7 @@
           "title": "orca-cli.ts",
           "headings": "",
           "path": "src/adapters/orca-cli.ts",
-          "symbols": "OrcaAgentHookState OrcaAutomation OrcaAutomationSpec OrcaCliOptions OrcaCreatedWorktree OrcaMemorySample OrcaSendReceipt OrcaStatus OrcaTerminal OrcaWorktree compareVersions orcaAccountList orcaAgentHooks orcaAutomationCreateArgv orcaAutomationDisableArgv orcaAutomationEditArgv orcaAutomationRemove orcaAutomationRun orcaAutomationRuns orcaAutomationsList orcaDiagnosticsMemory orcaJson orcaRetryRequestId orcaStatus orcaTerminalClose orcaTerminalCreate orcaTerminalEnter orcaTerminalList orcaTerminalScreen orcaTerminalSend orcaTerminalWait orcaTurnStarted orcaVersion orcaWorktreeCreate orcaWorktreeRemove orcaWorktreeSet orcaWorktreeSetArgv orcaWorktrees parseOrcaAgentHooks parseOrcaAutomations parseOrcaSendReceipt parseOrcaStatus parseOrcaTerminals parseOrcaVersion parseOrcaWorktreeCreate parseOrcaWorktrees",
+          "symbols": "OrcaAgentHookState OrcaAutomation OrcaAutomationSpec OrcaCliOptions OrcaCreatedWorktree OrcaLinkedPullRequest OrcaMemorySample OrcaSendReceipt OrcaStatus OrcaTerminal OrcaWorktree compareVersions orcaAccountList orcaAgentHooks orcaAutomationCreateArgv orcaAutomationDisableArgv orcaAutomationEditArgv orcaAutomationRemove orcaAutomationRun orcaAutomationRuns orcaAutomationsList orcaDiagnosticsMemory orcaJson orcaRetryRequestId orcaStatus orcaTerminalClose orcaTerminalCreate orcaTerminalEnter orcaTerminalList orcaTerminalScreen orcaTerminalSend orcaTerminalWait orcaTurnStarted orcaVersion orcaWorktreeCreate orcaWorktreeRemove orcaWorktreeSet orcaWorktreeSetArgv orcaWorktrees parseOrcaAgentHooks parseOrcaAutomations parseOrcaSendReceipt parseOrcaStatus parseOrcaTerminals parseOrcaVersion parseOrcaWorktreeCreate parseOrcaWorktrees",
           "summary": "",
           "body": "",
           "aliases": "module ts adapters"
@@ -19252,7 +19261,7 @@
             }
           ]
         },
-        "contentHash": "9a9142a3529579441d672c040b814173925ab796f7d7bc2b0b86914aa9b6a387",
+        "contentHash": "6056307b7824c298459f8842b59ab004bec9ca10277b116c930c0b102c88e581",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -25689,6 +25698,7 @@
         "symbols": [
           "AutomationDriftRow",
           "AutomationFields",
+          "AutomationRun",
           "AutomationSpec",
           "LOOP_STAGES",
           "LoopStage",
@@ -25700,6 +25710,7 @@
           "automationSpecs",
           "declaredStages",
           "effectiveAutomationPrefix",
+          "parseAutomationRuns",
           "precheckCommand",
           "reconcileAutomations",
           "sanitizeAutomationSuffix",
@@ -25714,7 +25725,7 @@
           "title": "automations.ts",
           "headings": "",
           "path": "src/loop/automations.ts",
-          "symbols": "AutomationDriftRow AutomationFields AutomationSpec LOOP_STAGES LoopStage MANAGED_STAGES automationDrift automationFields automationName automationPrompt automationSpecs declaredStages effectiveAutomationPrefix precheckCommand reconcileAutomations sanitizeAutomationSuffix shellQuote",
+          "symbols": "AutomationDriftRow AutomationFields AutomationRun AutomationSpec LOOP_STAGES LoopStage MANAGED_STAGES automationDrift automationFields automationName automationPrompt automationSpecs declaredStages effectiveAutomationPrefix parseAutomationRuns precheckCommand reconcileAutomations sanitizeAutomationSuffix shellQuote",
           "summary": "",
           "body": "",
           "aliases": "module ts loop"
@@ -25776,7 +25787,7 @@
             }
           ]
         },
-        "contentHash": "0bd36cc7a73d8902c2ffd7a48d30ebbde08a65c188868eee21cddbcfa0b61a08",
+        "contentHash": "e6ab23de5d74a7e5e6470f09cd7fa732a7fb092f0deebd941a506a5e04d9194a",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -27580,7 +27591,7 @@
             }
           ]
         },
-        "contentHash": "585fedb969e839390153eba9d33611a49d82b2dee7e746c52f36e363ae3a6413",
+        "contentHash": "846c12eb5427d8ea2e5f3d9c0a592cebca9571bbf467ba30898e13a6d343c1bc",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -29155,6 +29166,7 @@
         "title": "install.ts",
         "aliases": [],
         "symbols": [
+          "AutomationRun",
           "AutomationSpec",
           "AutomationStatus",
           "InstallAction",
@@ -29185,7 +29197,7 @@
           "title": "install.ts",
           "headings": "",
           "path": "src/loop/install.ts",
-          "symbols": "AutomationSpec AutomationStatus InstallAction InstallInput InstallReport LOOP_STAGES LoopStage LoopStatusReport MANAGED_STAGES automationName automationPrompt automationSpecs declaredStages installLoopAutomations loopStatus parseAutomationRuns precheckCommand sanitizeAutomationSuffix shellQuote uninstallLoopAutomations",
+          "symbols": "AutomationRun AutomationSpec AutomationStatus InstallAction InstallInput InstallReport LOOP_STAGES LoopStage LoopStatusReport MANAGED_STAGES automationName automationPrompt automationSpecs declaredStages installLoopAutomations loopStatus parseAutomationRuns precheckCommand sanitizeAutomationSuffix shellQuote uninstallLoopAutomations",
           "summary": "",
           "body": "",
           "aliases": "module ts loop"
@@ -29282,7 +29294,7 @@
             }
           ]
         },
-        "contentHash": "a27e6af18ee3131733160577b1ee2baf57dd498e2ce2c0873b91199cc65c0194",
+        "contentHash": "a7f18d174e08ca77b77e69c60cad33ea5e02500fac24f8e24b36441e928da116",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -31584,6 +31596,7 @@
           "RunnerInput",
           "RunnerWorkspace",
           "ScheduledJob",
+          "WorkspaceObservation",
           "createLocalRunner",
           "createOrcaRunner",
           "createRunnerConnector",
@@ -31598,7 +31611,7 @@
           "title": "runner-connector.ts",
           "headings": "",
           "path": "src/loop/runner-connector.ts",
-          "symbols": "RunnerConnector RunnerInput RunnerWorkspace ScheduledJob createLocalRunner createOrcaRunner createRunnerConnector scheduledJobs",
+          "symbols": "RunnerConnector RunnerInput RunnerWorkspace ScheduledJob WorkspaceObservation createLocalRunner createOrcaRunner createRunnerConnector scheduledJobs",
           "summary": "",
           "body": "",
           "aliases": "module ts loop"
@@ -31623,6 +31636,11 @@
           "areaId": "area:src/loop",
           "packageId": "package:@agentskit/harness",
           "inbound": [
+            {
+              "kind": "imports",
+              "id": "module:src/ui/api/server.ts",
+              "confidence": "observed"
+            },
             {
               "kind": "mentions-symbol",
               "id": "document:apps/docs/content/docs/concepts/connectors.mdx",
@@ -31722,7 +31740,7 @@
             }
           ]
         },
-        "contentHash": "5d38c09cdc9d89329748f76863445171944193180611de015e71846033d15991",
+        "contentHash": "f464150494685c220939628dc7d51b0b0348bdbc148de790255033f9f8bded94",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -32310,7 +32328,7 @@
             }
           ]
         },
-        "contentHash": "798026638d8915a91cbade9d0240dc0c9009ec33394922e761480b541d4a1339",
+        "contentHash": "778c5c7fbd320e390295ed64832212348565400945595abfff1ba36e2c17f7dc",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -33198,6 +33216,7 @@
           "applyBoardMetadata",
           "emptyProjection",
           "overlayLiveState",
+          "overlayRunnerObservation",
           "reduce"
         ],
         "tags": [
@@ -33209,7 +33228,7 @@
           "title": "projection.ts",
           "headings": "",
           "path": "src/ui/api/projection.ts",
-          "symbols": "Decision DecisionOption DispatchRef IssuePhase IssueRecord ProjectionState PullRequestRef ReviewSubstatus RunRecord RunStatus applyBoardMetadata emptyProjection overlayLiveState reduce",
+          "symbols": "Decision DecisionOption DispatchRef IssuePhase IssueRecord ProjectionState PullRequestRef ReviewSubstatus RunRecord RunStatus applyBoardMetadata emptyProjection overlayLiveState overlayRunnerObservation reduce",
           "summary": "",
           "body": "",
           "aliases": "module ts api"
@@ -33256,7 +33275,7 @@
             }
           ]
         },
-        "contentHash": "af09b1742d07d5e74620152c39767958c61f9aed9fa9d6e155ab95d45b855f9f",
+        "contentHash": "baea031fb772c177706731a4b8c114d1b0658396a1cdf4773a8daa8e0ce2f28d",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -33268,10 +33287,12 @@
         "aliases": [],
         "symbols": [
           "UI_SNAPSHOT_SCHEMA_VERSION",
+          "UiAutomationHealth",
           "UiServerHandle",
           "UiServerOptions",
           "UiSnapshot",
-          "startUiServer"
+          "startUiServer",
+          "withRunningHarness"
         ],
         "tags": [
           "module",
@@ -33282,7 +33303,7 @@
           "title": "server.ts",
           "headings": "",
           "path": "src/ui/api/server.ts",
-          "symbols": "UI_SNAPSHOT_SCHEMA_VERSION UiServerHandle UiServerOptions UiSnapshot startUiServer",
+          "symbols": "UI_SNAPSHOT_SCHEMA_VERSION UiAutomationHealth UiServerHandle UiServerOptions UiSnapshot startUiServer withRunningHarness",
           "summary": "",
           "body": "",
           "aliases": "module ts api"
@@ -33384,6 +33405,11 @@
             },
             {
               "kind": "imports",
+              "id": "module:src/loop/runner-connector.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
               "id": "module:src/loop/tick.ts",
               "confidence": "observed"
             },
@@ -33419,7 +33445,7 @@
             }
           ]
         },
-        "contentHash": "e2768e6c27f09960cd66e8e22f968a131669ac394ccb61d6905d52dca6230295",
+        "contentHash": "4f9eae376bbac7efd6573970decab42eae0b06fa1a8a1cc9789107fa7482feca",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -34263,7 +34289,7 @@
           "inbound": [],
           "outbound": []
         },
-        "contentHash": "99c743a893b06945906fe709ee44bceb7bb6164ba1e7540360a9d2a9b86b08cb",
+        "contentHash": "9c749182f1ff3b675ff048319bdd3ec2207e05681fa4cdce737e0b0de720e665",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -34300,7 +34326,7 @@
           "inbound": [],
           "outbound": []
         },
-        "contentHash": "51caba787feb02c4cbc51f4905dd7f588f6c60c5cc09609a7bce693a07c2a0f5",
+        "contentHash": "bbf38f7deb8eeefc609cbb418ccb7c057934121d273760a3fb6d6e44546f1cb6",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -34337,7 +34363,7 @@
           "inbound": [],
           "outbound": []
         },
-        "contentHash": "9ff4c683446b07c55f5214cbdd3e6ee264d16e9f3316ab7d79c9a30dc0bfa855",
+        "contentHash": "51021eed1131c39af789310e7b565d77f259192fdee05feff22fe5080923d971",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -34654,7 +34680,7 @@
             }
           ]
         },
-        "contentHash": "bd61a0194b1ee60de0f8a9807306ba93cb33fad59338eb518c8bab79cd4fc2fd",
+        "contentHash": "9b920255c8d71f2fa081788aa9adc0eb32f3bff9552c6001d0a7ab33042aae8a",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -37995,7 +38021,7 @@
             }
           ]
         },
-        "contentHash": "6f98e4bf45d9d2c1afcc2b7adc860fcd1131f6e4e6486d51b6e525a7a8cec69f",
+        "contentHash": "e66a39e33838ae4e0cf4435c673f567ba04558191ffdfa0becf565e2ff900752",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -38515,7 +38541,7 @@
             }
           ]
         },
-        "contentHash": "d4dd8d9514298a11aabb7c8c329d19cac4f1fef643b9a80db8b38ca1a72b5b73",
+        "contentHash": "e2654e515135f250381ccd2f7b7bb9d4cac7d9c6ae6338f5d8490e15d7eb65f7",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -39719,7 +39745,7 @@
             }
           ]
         },
-        "contentHash": "d69e0a7cbd0a090d3cbd53d3e96e20fa1f3c0b5e4c604239e98d63c586588f96",
+        "contentHash": "8692c0fffccd303de1fb4d07fb0b593e394344a54b8c9d2afd059e57d5e1e906",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -40917,7 +40943,7 @@
             }
           ]
         },
-        "contentHash": "142b74490b020f05f82b4355ec10b8aa6856799585e1ffe35440d87adad4aec1",
+        "contentHash": "4bc1e6a2ac3018393ab10a953246a629447765b542dc76d34ab80a71bfa0f58f",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -40962,7 +40988,7 @@
             }
           ]
         },
-        "contentHash": "0beb25d05d479a2bac4e887a1d5ff6794a2356e15e7b58ce75c6edaa8cc01900",
+        "contentHash": "3c316085d0bc560520893603f5bb0e477945322b1ca058c3b19cc85d2a819653",
         "provenance": "observed",
         "confidence": "observed"
       },
