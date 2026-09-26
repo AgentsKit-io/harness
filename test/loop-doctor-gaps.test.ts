@@ -230,6 +230,15 @@ describe('review.cli and memory checks', () => {
 
     // Orca unreachable is a warning about the check, never a silent pass.
     expect((await runLoopDoctor({ ...shared, runner: fakeRunner({}, { 'orca automations list': 'orca is down' }), configPath })).checks.find((check) => check.id === 'automations.drift')).toMatchObject({ status: 'warning', detail: expect.stringContaining('orca is down') })
+
+    // In sync, yet crashing on load every run: an older global ak-harness rejecting the config. Blocking.
+    const crashed = { ok: true, result: { runs: [{ createdAt: 1790376028201, status: 'skipped_precheck', precheckResult: { exitCode: 1, stdout: '', stderr: 'INVALID_CONFIG: Invalid loop.config.yaml: connectors.tracker: Invalid input: expected "linear"\n' } }] } }
+    const report = { ok: true, result: { runs: [{ createdAt: 1790376028201, status: 'skipped_precheck', precheckResult: { exitCode: 1, stdout: JSON.stringify({ status: 'idle', results: [] }), stderr: '' } }] } }
+    const brokenDeliver = fakeRunner({ 'orca automations list --json': ok({ ok: true, result: { automations: [automation('tick', '*/5 * * * *'), automation('deliver', '*/10 * * * *')] } }), 'orca automations runs --id id-loop-my-project-tick --json': ok(report), 'orca automations runs --id id-loop-my-project-deliver --json': ok(crashed) })
+    const broken = (await runLoopDoctor({ ...shared, runner: brokenDeliver, configPath })).checks.find((check) => check.id === 'automations.precheck-failing')
+    expect(broken).toMatchObject({ status: 'failed', detail: expect.stringContaining('loop-my-project-deliver') })
+    expect(broken?.detail).toContain('expected "linear"')
+    expect(broken?.detail).not.toContain('loop-my-project-tick')
   })
 })
 

@@ -3,14 +3,14 @@ import { findExecutable } from '../adapters/command.js'
 import { orcaAccountList, orcaAgentHooks, orcaAutomationCreateArgv, orcaAutomationDisableArgv, orcaAutomationEditArgv, orcaAutomationRemove, orcaAutomationRuns, orcaAutomationsList, orcaJson, type OrcaAutomation } from '../adapters/orca-cli.js'
 import { detectProviders } from '../adapters/providers.js'
 import { fail } from '../kernel/errors.js'
-import { automationName, automationSpecs, declaredStages, MANAGED_STAGES, reconcileAutomations, shellQuote, type LoopStage } from './automations.js'
+import { automationName, automationSpecs, declaredStages, MANAGED_STAGES, parseAutomationRuns, reconcileAutomations, shellQuote, type AutomationRun, type LoopStage } from './automations.js'
 import { loadLoopConfig, providerIdentity, type LoadedLoopConfig } from './config.js'
 import { activeCooldowns, readCooldowns } from './cooldown.js'
 import { providerSpecs } from './doctor.js'
 import { rankModels } from './routing.js'
 
-export { automationName, automationPrompt, automationSpecs, declaredStages, LOOP_STAGES, MANAGED_STAGES, precheckCommand, sanitizeAutomationSuffix, shellQuote } from './automations.js'
-export type { AutomationSpec, LoopStage } from './automations.js'
+export { automationName, automationPrompt, automationSpecs, declaredStages, LOOP_STAGES, MANAGED_STAGES, parseAutomationRuns, precheckCommand, sanitizeAutomationSuffix, shellQuote } from './automations.js'
+export type { AutomationRun, AutomationSpec, LoopStage } from './automations.js'
 
 export interface InstallInput {
   readonly configPath?: string
@@ -102,23 +102,9 @@ export const uninstallLoopAutomations = async (input: InstallInput): Promise<Ins
   return { status: failed ? 'failed' : input.dryRun ? 'dry-run' : 'ok', provider: '', workspace: config.orca.workspaceSelector ?? `path:${loaded.root}`, actions, notes: [] }
 }
 
-export interface AutomationStatus { readonly stage: LoopStage; readonly name: string; readonly installed: boolean; readonly enabled: boolean; readonly id: string | null; readonly trigger: string | null; readonly provider: string | null; readonly lastRun: { readonly at: string | null; readonly status: string | null; readonly summary?: string } | null; readonly runs: number }
+export interface AutomationStatus { readonly stage: LoopStage; readonly name: string; readonly installed: boolean; readonly enabled: boolean; readonly id: string | null; readonly trigger: string | null; readonly provider: string | null; readonly lastRun: AutomationRun | null; readonly runs: number }
 export interface LoopStatusReport { readonly installed: number; readonly total: number; readonly automations: readonly AutomationStatus[]; readonly summary: string }
 
-const isRecord = (value: unknown): value is Record<string, unknown> => typeof value === 'object' && value !== null && !Array.isArray(value)
-
-export const parseAutomationRuns = (result: unknown): readonly { readonly at: string | null; readonly status: string | null; readonly summary?: string }[] => {
-  const list = isRecord(result) && Array.isArray(result['runs']) ? result['runs'] : Array.isArray(result) ? result : []
-  return list.filter(isRecord).map((run) => {
-    const raw = run['startedAt'] ?? run['createdAt'] ?? run['at'] ?? run['finishedAt']
-    const at = typeof raw === 'number' ? new Date(raw).toISOString() : typeof raw === 'string' && !Number.isNaN(Date.parse(raw)) ? new Date(raw).toISOString() : null
-    const precheck = isRecord(run['precheckResult']) ? run['precheckResult'] : null
-    const stdout = precheck && typeof precheck['stdout'] === 'string' ? precheck['stdout'] : ''
-    let summary: string | null = null
-    try { const parsed = JSON.parse(stdout) as Record<string, unknown>; summary = typeof parsed['status'] === 'string' ? `${parsed['status']}${Array.isArray(parsed['results']) ? ` · ${parsed['results'].length} result(s)` : ''}${typeof parsed['reason'] === 'string' ? ` · ${parsed['reason']}` : ''}` : null } catch { summary = null }
-    return { at, status: typeof run['status'] === 'string' ? run['status'] : typeof run['outcome'] === 'string' ? run['outcome'] : null, ...(summary === null ? {} : { summary }) }
-  }).sort((left, right) => (right.at ?? '').localeCompare(left.at ?? ''))
-}
 
 export const loopStatus = async (input: Pick<InstallInput, 'configPath' | 'loaded' | 'runner'>): Promise<LoopStatusReport> => {
   const loaded = input.loaded ?? loadLoopConfig(input.configPath)

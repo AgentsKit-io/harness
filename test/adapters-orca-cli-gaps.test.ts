@@ -53,6 +53,16 @@ describe('parseOrcaWorktrees: linkedLinear and defaults', () => {
     expect(of(null)).toBeNull()
   })
 
+  it('reads linkedPR from worktree ps ({ number, state }) and worktree show (bare number), else null', () => {
+    const of = (linkedPR: unknown) => parseOrcaWorktrees({ worktrees: [{ worktreeId: 'w1', linkedPR }] })[0]?.linkedPR
+    expect(of({ number: 226, state: 'open' })).toEqual({ number: 226, state: 'OPEN' })
+    expect(of({ number: 12, state: 'merged' })).toEqual({ number: 12, state: 'MERGED' })
+    expect(of(226)).toEqual({ number: 226, state: null })
+    expect(of({ number: 7, state: 'draft' })).toEqual({ number: 7, state: null })
+    expect(of(null)).toBeNull()
+    expect(of({ number: 0 })).toBeNull()
+  })
+
   it('strips a refs/heads/ prefix from branch, and drops entries with no id', () => {
     expect(parseOrcaWorktrees({ worktrees: [{ worktreeId: 'w1', branch: 'refs/heads/main' }] })[0]?.branch).toBe('main')
     expect(parseOrcaWorktrees({ worktrees: [{}] })).toEqual([])

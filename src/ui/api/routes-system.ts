@@ -9,6 +9,7 @@ import { activeCooldowns, readCooldowns } from '../../loop/cooldown.js'
 import { providerSpecs, runLoopDoctor, type LoopDoctorReport } from '../../loop/doctor.js'
 import { writeJsonAtomic } from '../../loop/fs-atomic.js'
 import { installLoopAutomations, loopStatus, type AutomationStatus } from '../../loop/install.js'
+import { withRunningHarness } from './running-harness.js'
 import { readLearningsLedger } from '../../loop/memory.js'
 import { stageEntry, type LoopStageName } from '../../loop/resilience-state.js'
 import { buildRetroReport, readLoopEvents } from '../../loop/retro.js'
@@ -146,7 +147,8 @@ export const createSystemRoutes = (deps: SystemRouteDeps = { doctor: runLoopDoct
       return true
     }
     if (url.pathname === '/api/v1/automations/reinstall' && request.method === 'POST') {
-      const report = await deps.install({ loaded, runner })
+      // Pin the scheduled stages to the harness serving this page, not whatever `ak-harness` is on Orca's PATH (#114).
+      const report = await deps.install({ loaded: withRunningHarness(loaded), runner })
       orca.clear(loaded.stateDir)
       sendJson(response, 200, report)
       return true

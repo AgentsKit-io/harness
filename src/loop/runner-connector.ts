@@ -2,7 +2,7 @@ import { mkdirSync, writeFileSync } from 'node:fs'
 import { basename, isAbsolute, join, resolve } from 'node:path'
 import type { CommandRunner } from '../adapters/command.js'
 import { createOrcaDispatchPlan } from '../adapters/orca.js'
-import { orcaTerminalCreate, orcaTerminalScreen, orcaTerminalSend, orcaWorktreeCreate, orcaWorktreeRemove } from '../adapters/orca-cli.js'
+import { orcaTerminalCreate, orcaTerminalScreen, orcaTerminalSend, orcaWorktreeCreate, orcaWorktreeRemove, orcaWorktrees } from '../adapters/orca-cli.js'
 import { fail } from '../kernel/errors.js'
 import type { LoadedLoopConfig } from './config.js'
 import { automationName, precheckCommand, type LoopStage } from './automations.js'
@@ -11,6 +11,10 @@ import { automationName, precheckCommand, type LoopStage } from './automations.j
 export interface RunnerWorkspace { readonly id: string; readonly path: string; readonly branch: string; readonly terminal: string | null }
 
 export interface ScheduledJob { readonly name: string; readonly cron: string; readonly command: string }
+
+/** What the runner itself observed about a workspace — an observation for display, never a gate: CI, review and
+ * the merge sha still come from the SCM, which is the only source that knows them. */
+export interface WorkspaceObservation { readonly id: string; readonly pullRequest: { readonly number: number; readonly state: 'OPEN' | 'CLOSED' | 'MERGED' | null } | null }
 
 /**
  * Where the loop puts work. Orca is the first implementation; `local` — git worktree, tmux, the system crontab —
@@ -27,6 +31,8 @@ export interface RunnerConnector {
   readScreen(input: { readonly terminal: string; readonly lines?: number }): Promise<string>
   /** Reconcile the scheduled jobs this runner owns with the ones declared. Returns what it changed. */
   schedule(jobs: readonly ScheduledJob[]): Promise<readonly string[]>
+  /** Every workspace the runner knows, with the pull request it detected on its own (none, for a runner that cannot). */
+  observeWorkspaces(): Promise<readonly WorkspaceObservation[]>
 }
 
 export interface RunnerInput { readonly loaded: LoadedLoopConfig; readonly runner: CommandRunner }
@@ -51,6 +57,7 @@ export const createOrcaRunner = ({ loaded, runner }: RunnerInput): RunnerConnect
     // Orca owns its own automations; `loop install` reconciles them and this method is the seam that keeps the
     // engine from having to know that.
     schedule: async () => ['orca automations are reconciled by `loop install`'],
+    observeWorkspaces: async () => (await orcaWorktrees(runner, orca)).map((worktree) => ({ id: worktree.id, pullRequest: worktree.linkedPR })),
   }
 }
 
@@ -119,6 +126,8 @@ export const createLocalRunner = ({ loaded, runner }: RunnerInput): RunnerConnec
       if (write.code !== 0) fail(`crontab failed: ${write.stderr.trim() || `exit ${write.code ?? 'null'}`}`, 'HARNESS_ERROR')
       return wanted
     },
+    // ponytail: git worktree + tmux know nothing about pull requests; the SCM-driven deliver stage is the only PR source here.
+    observeWorkspaces: async () => [],
   }
 }
 

@@ -25,7 +25,10 @@ import type { RouteContext } from './routes.js'
 import type { SnapshotExtras } from './contract.js'
 import { createExtrasBuilder, type ExtrasBuilder } from './extras.js'
 import { createAlertSender, type AlertSender } from './alerts.js'
-import type { IssueRecord } from './projection.js'
+import { overlayRunnerObservation, type IssueRecord } from './projection.js'
+import { loopStatus } from '../../loop/install.js'
+export { withRunningHarness } from './running-harness.js'
+import { createRunnerConnector, type WorkspaceObservation } from '../../loop/runner-connector.js'
 import {
   answerDecision, archiveRun, cancelRun, decideIssue, enqueueRun, generateOrReuseContract, resumePausedIssue,
   restoreRun, retryRun, type ActionContext,
@@ -45,6 +48,9 @@ const SESSION_HEADER = 'x-harness-session'
 
 export const UI_SNAPSHOT_SCHEMA_VERSION = 1 as const
 
+/** Whether each scheduled stage actually ran last time. `error` means the precheck crashed before the stage did. */
+export interface UiAutomationHealth { readonly name: string; readonly stage: string; readonly installed: boolean; readonly lastRunAt: string | null; readonly error: string | null }
+
 export interface UiSnapshot {
   readonly schemaVersion: typeof UI_SNAPSHOT_SCHEMA_VERSION
   readonly generatedAt: string
@@ -52,6 +58,7 @@ export interface UiSnapshot {
   readonly capacity: { readonly maxAgents: number; readonly running: number; readonly free: number }
   readonly board: BoardSnapshot | null
   readonly issues: readonly IssueRecord[]
+  readonly automations: readonly UiAutomationHealth[]
   /** Attention, reconciliation and freshness — see `contract.ts`. Absent only from test snapshots. */
   readonly extras?: SnapshotExtras
 }
@@ -59,6 +66,8 @@ export interface UiSnapshot {
 export interface UiServerOptions {
   readonly configPath?: string
   readonly loaded?: LoadedLoopConfig
+  /** Test seam: every external command (Orca, gh, git) the server runs goes through this runner. */
+  readonly runner?: CommandRunner
   readonly host?: string
   readonly port?: number
   /** Vite dev server origin (e.g. `http://127.0.0.1:5173`) — when set, every non-API request is proxied there
@@ -70,8 +79,6 @@ export interface UiServerOptions {
   readonly board?: IssueBoardCache
   readonly jobs?: UiJobManager
   readonly wizard?: UiWizardStore
-  /** Test seam: the command runner every Orca/tracker/git call goes through (default: real processes). */
-  readonly runner?: CommandRunner
   /** Test seam: replaces the real snapshot builder. */
   readonly snapshot?: (force?: boolean) => UiSnapshot | Promise<UiSnapshot>
 }
@@ -211,24 +218,49 @@ const parseEnqueueBody = (body: unknown, loaded: LoadedLoopConfig): EnqueueBody 
 
 // ---- snapshot -----------------------------------------------------------------------------------------------
 
-const buildSnapshot = async (context: ActionContext, board: IssueBoardCache, extras: ExtrasBuilder, alerts: AlertSender, force = false): Promise<UiSnapshot> => {
+/** Memoizes an async read that is too costly for the 1 s poll. A failed read yields `fallback` for one TTL — a
+ * broken Orca must degrade the page to "no observation", never fail the snapshot. */
+const memo = <T>(ttlMs: number, read: () => Promise<T>, fallback: T): ((force?: boolean) => Promise<T>) => {
+  let value: { readonly at: number; readonly data: T } | null = null
+  let inFlight: Promise<T> | null = null
+  return async (force = false) => {
+    if (!force && value && Date.now() - value.at < ttlMs) return value.data
+    inFlight ??= read().catch(() => fallback).then((data) => { value = { at: Date.now(), data }; inFlight = null; return data })
+    return inFlight
+  }
+}
+
+interface SnapshotSources {
+  readonly board: IssueBoardCache
+  readonly workspaces: (force?: boolean) => Promise<ReadonlyMap<string, WorkspaceObservation['pullRequest']>>
+  readonly automations: (force?: boolean) => Promise<readonly UiAutomationHealth[]>
+}
+
+const snapshotSources = (context: ActionContext, board: IssueBoardCache): SnapshotSources => ({
+  board,
+  workspaces: memo(10_000, async () => new Map((await createRunnerConnector(context).observeWorkspaces()).map((workspace) => [workspace.id, workspace.pullRequest])), new Map()),
+  automations: memo(60_000, async () => (await loopStatus(context)).automations.map((automation) => ({ name: automation.name, stage: automation.stage, installed: automation.installed && automation.enabled, lastRunAt: automation.lastRun?.at ?? null, error: automation.lastRun?.error ?? null })), []),
+})
+
+const buildSnapshot = async (context: ActionContext, sources: SnapshotSources, extras: ExtrasBuilder, alerts: AlertSender, force = false): Promise<UiSnapshot> => {
   const { loaded } = context
   const projection = syncProjection(loaded.stateDir)
-  const boardSnapshot = await board.read(force)
+  const [boardSnapshot, workspaces, automations] = await Promise.all([sources.board.read(force), sources.workspaces(force), sources.automations(force)])
   const dispatches = listDispatched(loaded.stateDir)
   const deliveries = new Map(dispatches.map((dispatch) => [dispatch.issue, readDeliveryState(loaded.stateDir, dispatch.issue)]))
   const running = dispatches.filter((dispatch) => !deliveries.get(dispatch.issue)?.finishedAt).length
   const maxAgents = loaded.config.machine.ceiling ?? loaded.config.machine.floor
-  const issues = Object.values(projection.issues)
+  const issues = Object.values(projection.issues).map((record) => overlayRunnerObservation(record, record.dispatch?.worktreeId ? workspaces.get(record.dispatch.worktreeId) ?? null : null))
   const snapshotExtras = await extras.build({ issues, board: boardSnapshot, dispatches, deliveries, maxAgents })
   void alerts.observe(snapshotExtras.attention)
   return {
     schemaVersion: UI_SNAPSHOT_SCHEMA_VERSION, generatedAt: new Date().toISOString(),
     project: { name: loaded.config.project.name, repo: loaded.config.project.repo, baseBranch: loaded.config.project.baseBranch, root: loaded.root, stateDir: loaded.stateDir, configHash: loaded.configHash },
     capacity: { maxAgents, running, free: Math.max(0, maxAgents - running) },
-    board: boardSnapshot, issues, extras: snapshotExtras,
+    board: boardSnapshot, issues, automations, extras: snapshotExtras,
   }
 }
+
 
 /** Fire-and-forget: the wizard confirming a run should not wait out a whole tick before the page can navigate
  * to the run. Failure just leaves the issue queued for the next scheduled tick — never surfaced as an error
@@ -251,6 +283,7 @@ export const startUiServer = async (options: UiServerOptions = {}): Promise<UiSe
   const loaded = options.loaded ?? (options.snapshot ? undefined : loadLoopConfig(options.configPath ?? 'loop.config.yaml'))
   const context: ActionContext | null = loaded ? { loaded, runner } : null
   const board = options.board ?? (loaded ? createIssueBoardCache({ loaded, reader: createIssueBoardReader({ loaded, runner }) }) : null)
+  const sources = context && board ? snapshotSources(context, board) : null
   const jobs = options.jobs ?? (loaded ? createUiJobManager({ stateDir: loaded.stateDir }) : null)
   const wizard = options.wizard ?? (loaded ? createUiWizardStore(loaded.stateDir) : null)
   const appDir = options.appDir ?? fileURLToPath(new URL('./app', import.meta.url))
@@ -258,7 +291,7 @@ export const startUiServer = async (options: UiServerOptions = {}): Promise<UiSe
 
   const extras = context ? createExtrasBuilder(context.loaded, runner) : null
   const alerts = context ? createAlertSender(context.loaded, runner) : null
-  const snapshot = options.snapshot ?? (async (force = false) => context && board && extras && alerts ? buildSnapshot(context, board, extras, alerts, force) : (() => { throw new Error('UI snapshot unavailable without a loaded config.') })())
+  const snapshot = options.snapshot ?? (async (force = false) => context && sources && extras && alerts ? buildSnapshot(context, sources, extras, alerts, force) : (() => { throw new Error('UI snapshot unavailable without a loaded config.') })())
   /** Server-side half of the UI's action locks: a destructive call on a locked issue is refused, whatever the client shows. */
   const lockFor = async (issue: string): Promise<string | null> => (await snapshot()).extras?.locks[issue] ?? null
 

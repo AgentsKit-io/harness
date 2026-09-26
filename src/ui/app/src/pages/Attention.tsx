@@ -215,6 +215,14 @@ export const AttentionPage = (): React.ReactElement => {
       <div className="flex min-h-0 grow gap-6 px-8 py-6">
         <section aria-label="Attention queue" className="flex min-w-0 grow flex-col gap-[22px] overflow-auto">
           {!snapshot && <p className="text-sm text-ink-subtle">Loading…</p>}
+          {/* A scheduled stage whose precheck crashed never ran at all (#114): louder than any single issue. */}
+          {(snapshot?.automations ?? []).filter((automation) => automation.error).map((automation) => (
+            <div key={automation.name} role="alert" className="rounded-[10px] border border-danger/40 bg-danger-dim p-4 text-sm">
+              <div className="font-semibold text-danger">Stage “{automation.stage}” is stopped — its last scheduled run failed before the stage ran</div>
+              <div className="mt-1 font-mono text-xs text-ink-muted">{automation.name}{automation.lastRunAt ? ` · ${new Date(automation.lastRunAt).toLocaleString('en-US')}` : ''}</div>
+              <div className="mt-2 whitespace-pre-wrap font-mono text-xs">{automation.error}</div>
+            </div>
+          ))}
           {snapshot && !snapshot.extras && <p className="text-sm text-ink-subtle">This server does not report an attention queue. Upgrade the harness to see what needs you.</p>}
           {snapshot?.extras && items.length === 0 && (
             <div className="flex flex-col items-center gap-1.5 py-16 text-center">
