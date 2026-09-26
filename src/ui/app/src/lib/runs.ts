@@ -84,15 +84,12 @@ export const matchesSearch = (record: IssueRecord, query: string): boolean => {
 
 export const ageMs = (at: string | null | undefined, now: number): number | null => at ? Math.max(0, now - Date.parse(at)) : null
 
-export interface FeedRow { readonly key: string; readonly at: string; readonly issue: string; readonly label: string; readonly bucket: RunBucket; readonly text: string }
+/** Time in the current phase; records projected before `phaseSince` existed fall back to their last change. */
+export const phaseAgeMs = (record: IssueRecord, now: number): number | null => ageMs(record.phaseSince ?? record.updatedAt, now)
 
-/** ponytail: there is no global event feed endpoint; this is "latest change per issue" from the snapshot, which
- * is enough for a glanceable stream and costs no request. The issue panel's Timeline tab has the real events. */
-export const recentChanges = (snapshot: UiSnapshot, limit = 8): readonly FeedRow[] =>
-  [...snapshot.issues].sort((a, b) => b.updatedAt.localeCompare(a.updatedAt)).slice(0, limit).map((record) => ({
-    key: `${record.issue}:${record.updatedAt}`, at: record.updatedAt, issue: record.issue, label: phaseLabel(record), bucket: runBucket(record),
-    text: `${record.issue}${record.title ? ` ${record.title}` : ''}${record.pullRequest ? ` · #${record.pullRequest.number}` : ''}`,
-  }))
+/** `used/max` fix rounds, or `—` before the issue was ever dispatched. */
+export const fixRoundsLabel = (record: IssueRecord): string => !(record.dispatch || record.pullRequest || record.run) ? '—' : record.run ? `${record.fixRoundsUsed ?? 0}/${record.run.maxFixRounds}` : String(record.fixRoundsUsed ?? 0)
+export const fixRoundsAtCap = (record: IssueRecord): boolean => record.run !== null && (record.fixRoundsUsed ?? 0) >= record.run.maxFixRounds && record.run.maxFixRounds > 0
 
 /** A board issue can be queued when the control plane never touched it, or did and it settled back to available. */
 export const availableIssues = (snapshot: UiSnapshot): readonly BoardIssue[] => {

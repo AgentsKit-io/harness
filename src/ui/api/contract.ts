@@ -271,3 +271,17 @@ export interface IssueDetail {
   readonly nextStep: { readonly reason: string; readonly detail: string | null; readonly actions: readonly AttentionAction[] } | null
   readonly fixRounds: { readonly used: number; readonly max: number | null }
 }
+
+// ---- recent events & cached contracts ---------------------------------------------------------------------------
+
+/** `GET /api/v1/events/recent?limit=` — newest first, last 24 h only. */
+export interface RecentEvent {
+  readonly at: string
+  readonly type: string
+  readonly issue: string | null
+  /** The event's most telling typed field (reason, status, round, pr, provider…), human-readable. */
+  readonly summary: string
+}
+
+/** `GET /api/v1/contracts?issues=A,B` — a stored contract per issue, `fresh` when inside `contract.reuseHours`. */
+export interface CachedContract { readonly digest: string; readonly generatedAt: string; readonly fresh: boolean; readonly dispatchable: boolean }

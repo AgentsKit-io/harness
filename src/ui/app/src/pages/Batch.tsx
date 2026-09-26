@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 import { Shell } from '@/components/Shell'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
-import { enqueueBatch, getJob, getWizard, type BatchRunSettings, type UiJobRecord } from '@/lib/api'
+import { enqueueBatch, getJob, getWizard, type BatchRunSettings, type UiJobRecord, getCachedContracts, type CachedContract } from '@/lib/api'
 import { formatAge, useLiveSnapshot } from '@/lib/snapshot'
 import { availableIssues } from '@/lib/runs'
 import type { WizardData } from '@/pages/Wizard'
@@ -49,6 +49,25 @@ export const diffFrom = (defaults: BatchRunSettings, next: BatchRunSettings): Ba
 const JOB_TONE: Readonly<Record<string, string>> = { succeeded: 'text-success', running: 'text-accent-strong', 'needs-input': 'text-warning', blocked: 'text-warning', failed: 'text-danger' }
 const settled = (job: UiJobRecord): boolean => job.status !== 'running' && job.status !== 'cancel-pending'
 
+/** Which listed issues already have a stored contract; a fresh one is reused instead of generated. */
+const useCachedContracts = (ids: readonly string[]): Readonly<Record<string, CachedContract>> => {
+  const [contracts, setContracts] = React.useState<Readonly<Record<string, CachedContract>>>({})
+  const key = ids.slice(0, 100).join(',')
+  React.useEffect(() => {
+    if (!key) return
+    getCachedContracts(key.split(',')).then((value) => setContracts(value.contracts)).catch(() => { /* column stays empty */ })
+  }, [key])
+  return contracts
+}
+
+const ContractTag = ({ contract }: { readonly contract: CachedContract | undefined }): React.ReactElement | null => {
+  if (!contract) return <span className="font-mono text-xs text-ink-subtle">no contract</span>
+  if (!contract.dispatchable) return <span className="font-mono text-xs text-warning" title="The stored contract has open ambiguities">contract needs input</span>
+  return contract.fresh
+    ? <span className="font-mono text-xs text-success" title={`Frozen ${new Date(contract.generatedAt).toLocaleString('en-US')}`}>contract cached</span>
+    : <span className="font-mono text-xs text-ink-subtle" title="Older than contract.reuseHours; it will be regenerated">contract expired</span>
+}
+
 export const BatchPage = (): React.ReactElement => {
   const { snapshot } = useLiveSnapshot()
   const [selected, setSelected] = React.useState<readonly string[]>([])
@@ -61,6 +80,7 @@ export const BatchPage = (): React.ReactElement => {
   const [error, setError] = React.useState<string | null>(null)
 
   const issues = snapshot ? availableIssues(snapshot) : []
+  const contracts = useCachedContracts(issues.map((issue) => issue.identifier))
   const first = selected[0] ?? null
 
   // Flows, builders and limits are project-wide; the wizard endpoint of any one issue carries them.
@@ -116,6 +136,7 @@ export const BatchPage = (): React.ReactElement => {
                     <input type="checkbox" checked={on} onChange={() => toggle(issue.identifier)} className="size-[18px] accent-accent" />
                     <span className="w-24 shrink-0 font-mono text-[13px] font-semibold text-accent-strong">{issue.identifier}</span>
                     <span className="grow truncate text-sm">{issue.title}</span>
+                    <ContractTag contract={contracts[issue.identifier]} />
                     <span className="font-mono text-xs text-ink-subtle">{issue.state}</span>
                     {issue.labels.length > 0 && <span className="max-w-[160px] truncate font-mono text-xs text-ink-subtle">{issue.labels.join(', ')}</span>}
                   </label>

@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import type { UiSnapshot } from '../../../api/server'
 import type { UiJobRecord } from '../../../api/jobs'
 import type {
-  BatchRequest, ConfigChange, IssueDetail, ConfigProposal, ConfigWriteRequest, EffectiveConfig, MetricsReport, MetricsWindow,
+  BatchRequest, CachedContract, ConfigChange, IssueDetail, RecentEvent, ConfigProposal, ConfigWriteRequest, EffectiveConfig, MetricsReport, MetricsWindow,
   SearchResult, SearchType, SystemReport,
 } from '../../../api/contract'
 
@@ -119,3 +119,5 @@ export const writeLocalConfig = (request: ConfigWriteRequest): Promise<Effective
 export const proposeConfig = (changes: readonly ConfigChange[]): Promise<ConfigProposal> => post('config/proposal', { changes })
 export const tuning = (action: 'revert' | 'freeze' | 'unfreeze', path: string): Promise<unknown> => post(`tuning/${action}`, { path })
 export const getIssueDetail = (issue: string): Promise<IssueDetail> => api(`issues/${enc(issue)}/detail`)
+export const getRecentEvents = (limit = 30): Promise<{ readonly events: readonly RecentEvent[] }> => api(`events/recent?limit=${limit}`)
+export const getCachedContracts = (issues: readonly string[]): Promise<{ readonly contracts: Readonly<Record<string, CachedContract>> }> => api(`contracts?issues=${issues.map(enc).join(',')}`)

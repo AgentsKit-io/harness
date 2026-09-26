@@ -2,6 +2,17 @@
 
 ## [Unreleased]
 
+- **Runs shows fix rounds used.** The table reads `used/max` (or the used count when the run was dispatched without
+  the wizard) instead of `—/max`.
+- **Time in phase is time in phase.** The projection stamps `phaseSince` when an issue's phase changes; the table,
+  the running cards and the side panel use it instead of the last event's time.
+- **A real event stream on the home page.** `GET /api/v1/events/recent` serves the loop's last 24 h of events,
+  newest first, each summarised from its typed fields; the home stream uses it instead of per-issue changes.
+- **New batch shows contract status.** `GET /api/v1/contracts?issues=` reports each stored contract and whether it is
+  still inside `contract.reuseHours`; the list marks issues as cached, expired, needing input or without a contract.
+- **Tracker titles and states survive a restart.** The off-board lookup cache is persisted (bounded to 1000 entries),
+  so a restarted UI does not show cancelled work as blocked while it re-learns it.
+
 ## [0.20.0] — 2026-09-25
 
 Control plane v2, and the fixes found running the loop against a real repository in the week since 0.19.0.

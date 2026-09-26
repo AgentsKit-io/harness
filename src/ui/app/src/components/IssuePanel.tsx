@@ -163,7 +163,7 @@ export const StatusBox = ({ record, detail, locked, onAction, busy }: {
       <div className="flex items-center gap-2 text-[13px]">
         {stopped && <AlertTriangle className="size-4 text-danger" aria-hidden />}
         <span className={cn('font-semibold', stopped ? 'text-red-200' : BUCKET_COLOR[runBucket(record)])}>{phaseLabel(record)}</span>
-        <span className="ml-auto font-mono text-xs text-ink-subtle">{formatAge(ageMs(record.updatedAt, Date.now()))} ago</span>
+        <span className="ml-auto font-mono text-xs text-ink-subtle">{formatAge(ageMs(record.phaseSince ?? record.updatedAt, Date.now()))} ago</span>
       </div>
       {next && <div className="text-[13px] text-[#e8c4c4]">{next.reason}{next.detail && <span className="mt-1 block font-mono text-[11px] text-ink-subtle">{next.detail}</span>}</div>}
       {!next && record.error && <div className="text-[13px] text-ink-muted">{record.error}</div>}

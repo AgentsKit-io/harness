@@ -9,7 +9,7 @@ import { cn } from '@/lib/utils'
 import { getMetrics, type IssueRecord, type MetricsReport } from '@/lib/api'
 import { formatAge, useLiveSnapshot, useSnapshotAge } from '@/lib/snapshot'
 import { useIssuePanel } from '@/lib/useIssuePanel'
-import { BUCKET_COLOR, ageMs, formatTokens, matchesSearch, modelOf, phaseLabel, runBucket, tokensByIssue, type RunBucket } from '@/lib/runs'
+import { BUCKET_COLOR, fixRoundsAtCap, fixRoundsLabel, formatTokens, phaseAgeMs, matchesSearch, modelOf, phaseLabel, runBucket, tokensByIssue, type RunBucket } from '@/lib/runs'
 
 export type RunFilter = 'all' | Exclude<RunBucket, 'available'>
 
@@ -60,10 +60,9 @@ export const RunsTable = ({ rows, tokens, now, selected, onOpen }: {
             <span className={cn('truncate font-mono text-xs', color)}>{phaseLabel(record)}</span>
             <PhaseBar record={record} height="h-1" gap="gap-[3px]" />
           </span>
-          <span role="cell" className="font-mono text-xs text-ink-muted">{formatAge(ageMs(record.updatedAt, now))}</span>
+          <span role="cell" className="font-mono text-xs text-ink-muted">{formatAge(phaseAgeMs(record, now))}</span>
           <span role="cell" className="truncate font-mono text-xs text-ink-muted">{modelOf(record)}</span>
-          {/* ponytail: the snapshot has no used-rounds count; the panel's Review tab shows used/max from the detail endpoint. */}
-          <span role="cell" className="font-mono text-xs text-ink-muted">{record.run ? `—/${record.run.maxFixRounds}` : '—'}</span>
+          <span role="cell" className={cn('font-mono text-xs', fixRoundsAtCap(record) ? 'text-danger' : 'text-ink-muted')}>{fixRoundsLabel(record)}</span>
           <span role="cell" className="flex flex-col gap-1">
             <span className="font-mono text-[11px] text-ink-muted">{used !== undefined ? formatTokens(used) : '—'}{cap ? `/${formatTokens(cap)}` : ''}</span>
             <CapBar used={used ?? 0} cap={cap} />
