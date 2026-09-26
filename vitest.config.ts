@@ -15,6 +15,9 @@ export default defineConfig({
     // of its own inside them. The harness suite has no business running those.
     // `apps/**` is the documentation site (its own package; Next ships test files inside its dependencies) and
     // `scripts/*.test.mjs` are `node --test` contract checks with their own npm scripts.
-    exclude: ['tests/e2e/**', 'packages/playbook/test/**', 'node_modules/**', '**/node_modules/**', 'apps/**', 'scripts/**', '.next/**'],
+    // `.ak-loop/**` is a gitignored, runtime-generated directory (base-view snapshots, dispatch state) this
+    // repo's own loop tooling creates when dogfooding itself — its `base-view` can carry its own nested
+    // `test/*.test.ts` files from whatever commit it snapshotted, unrelated to the current source tree.
+    exclude: ['tests/e2e/**', 'packages/playbook/test/**', 'node_modules/**', '**/node_modules/**', 'apps/**', 'scripts/**', '.next/**', '.ak-loop/**'],
   },
 })
