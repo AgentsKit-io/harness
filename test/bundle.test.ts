@@ -5,8 +5,7 @@ import { join } from 'node:path'
 import { expect, it } from 'vitest'
 import { approveRun, exportEvidenceBundle, loadConfig, planRun, startRun, verifyEvidenceBundle, verifyRun } from '../src/index.js'
 import { initializeGitRepository } from './git.js'
-
-const quote = (value: string): string => `'${value.replaceAll("'", "'\"'\"'")}'`
+import { evidenceCommand } from './helpers/evidence-command.js'
 
 it('exports a complete run, verifies a trust store, rejects revoked keys, and supports rotation', async () => {
   const root = mkdtempSync(join(tmpdir(), 'agentskit-harness-bundle-test-'))
@@ -15,8 +14,7 @@ it('exports a complete run, verifies a trust store, rejects revoked keys, and su
   const stateDir = join(root, '.ak-harness', 'verification')
   const configPath = join(root, '.ak-harness', 'verification.json')
   mkdirSync(join(root, '.ak-harness'), { recursive: true })
-  const output = JSON.stringify({ status: 'passed', criteria: ['outcome'] })
-  const command = `${quote(process.execPath)} -e ${quote(`console.log(${JSON.stringify(output)})`)}`
+  const command = evidenceCommand({ status: 'passed', criteria: ['outcome'] })
   writeFileSync(configPath, JSON.stringify({ schemaVersion: 1, project: 'bundle-fixture', root: '..', profile: 'strict', contract: { intent: 'Export evidence.', scope: { inScope: ['fixture'], outOfScope: [] }, ambiguities: [], outcomes: [{ id: 'outcome', statement: 'Fixture passes.', checks: ['logic'] }] }, surfaces: { logic: true, endpoint: false, database: false, cli: false, mcp: false, ui: false, docs: false }, checks: [{ id: 'logic', category: 'logic', command, evidence: 'structured' }], tracking: { required: false, reason: 'fixture' } }))
   const { privateKey, publicKey } = generateKeyPairSync('ed25519')
   const privateKeyPath = join(keyRoot, 'private.pem')
