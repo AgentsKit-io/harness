@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+## [0.21.0] — 2026-09-26
+
+The four gaps left in the control plane v2, closed.
+
 - **Runs shows fix rounds used.** The table reads `used/max` (or the used count when the run was dispatched without
   the wizard) instead of `—/max`.
 - **Time in phase is time in phase.** The projection stamps `phaseSince` when an issue's phase changes; the table,
