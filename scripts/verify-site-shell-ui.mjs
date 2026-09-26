@@ -129,16 +129,27 @@ try {
     await page.screenshot({ path, fullPage: true })
     artifacts.push({ path: relative(root, path), sha256: createHash('sha256').update(readFileSync(path)).digest('hex'), type: 'screenshot', viewport })
     if (copyDir) copyFileSync(path, join(copyDir, `home-${name}.png`))
-    if (device === 'desktop') {
-      const docs = await page.goto(`${baseURL}/docs/`, { waitUntil: 'networkidle', timeout: 45000 })
-      await page.waitForTimeout(800)
-      const wordmark = await page.evaluate(() => Boolean(document.querySelector('.ak-product-wordmark')))
-      check(`docs-${colorScheme}:wordmark`, docs?.status() === 200 && wordmark, `HTTP ${docs?.status()} wordmark=${wordmark}`)
-      const docsPath = join(outDir, `docs-${name}.png`)
-      await page.screenshot({ path: docsPath })
-      artifacts.push({ path: relative(root, docsPath), sha256: createHash('sha256').update(readFileSync(docsPath)).digest('hex'), type: 'screenshot', viewport })
-      if (copyDir) copyFileSync(docsPath, join(copyDir, `docs-${name}.png`))
-    }
+    const docs = await page.goto(`${baseURL}/docs/`, { waitUntil: 'networkidle', timeout: 45000 })
+    await page.waitForTimeout(800)
+    const docsData = await page.evaluate(() => {
+      const footer = document.querySelector('agentskit-footer')
+      const main = document.querySelector('article') ?? document.querySelector('main')
+      return {
+        wordmark: Boolean(document.querySelector('.ak-product-wordmark')),
+        footerUpgraded: Boolean(footer?.shadowRoot),
+        footerLocal: footer ? footer.querySelectorAll('[slot="local"] a').length : 0,
+        footerBelow: Boolean(footer && main) && footer.getBoundingClientRect().top >= main.getBoundingClientRect().bottom - 1,
+        overflow: document.documentElement.scrollWidth - window.innerWidth,
+      }
+    })
+    check(`docs-${name}:wordmark`, docs?.status() === 200 && docsData.wordmark, `HTTP ${docs?.status()} wordmark=${docsData.wordmark}`)
+    check(`docs-${name}:footer`, docsData.footerUpgraded && docsData.footerLocal > 0 && docsData.footerBelow, `upgraded=${docsData.footerUpgraded} local=${docsData.footerLocal} below=${docsData.footerBelow}`)
+    check(`docs-${name}:overflow`, docsData.overflow <= 0, `horizontal overflow ${docsData.overflow}px`)
+    check(`docs-${name}:console`, errors.length === 0, errors.join(' | ') || 'no console errors')
+    const docsPath = join(outDir, `docs-${name}.png`)
+    await page.screenshot({ path: docsPath, fullPage: true })
+    artifacts.push({ path: relative(root, docsPath), sha256: createHash('sha256').update(readFileSync(docsPath)).digest('hex'), type: 'screenshot', viewport })
+    if (copyDir) copyFileSync(docsPath, join(copyDir, `docs-${name}.png`))
     await page.close()
   }
 } finally {
