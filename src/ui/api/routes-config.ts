@@ -1,5 +1,6 @@
 import { loadLoopConfig, type LoadedLoopConfig } from '../../loop/config.js'
-import { revertTuning, setTuningFrozen } from '../../loop/tuning.js'
+import type { TuningRevertResult } from './contract.js'
+import { readTuningState, setTuningFrozen } from '../../loop/tuning.js'
 import { ConfigRefused, effectiveConfig, proposeTeamChange, writePersonalConfig } from './config-view.js'
 import { readRequestBody, recordOf, sendJson, stringOf } from './http.js'
 import type { RouteModule } from './routes.js'
@@ -30,7 +31,16 @@ export const configRoutes: RouteModule = async (context, request, response, url)
     if (tuning && request.method === 'POST') {
       const path = stringOf(recordOf(await readRequestBody(request))['path'])
       if (!path) { sendJson(response, 400, { error: 'path is required.' }); return true }
-      if (tuning[1] === 'revert') { revertTuning(loaded, path); refreshLoaded(loaded) } else setTuningFrozen(loaded.stateDir, path, tuning[1] === 'freeze')
+      if (tuning[1] === 'revert') {
+        // The tuned value lives in the team file, which the UI never writes: freeze the knob so the tuner stops, and
+        // hand back the undo as a team proposal to commit or open as a PR.
+        const last = [...readTuningState(loaded.stateDir).history].reverse().find((record) => record.path === path)
+        if (!last || last.status !== 'applied') { sendJson(response, 400, { error: `${path} has no applied tuning change to revert.` }); return true }
+        setTuningFrozen(loaded.stateDir, path, true)
+        const result: TuningRevertResult = { config: effectiveConfig(loaded), proposal: proposeTeamChange(loaded, { changes: [{ path, value: last.from }] }) }
+        sendJson(response, 200, result); return true
+      }
+      setTuningFrozen(loaded.stateDir, path, tuning[1] === 'freeze')
       sendJson(response, 200, effectiveConfig(loaded)); return true
     }
     return false

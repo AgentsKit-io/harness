@@ -230,6 +230,9 @@ export interface ConfigWriteRequest {
 
 export interface ConfigProposal { readonly file: string; readonly diff: string }
 
+/** `POST /tuning/revert`: the knob is frozen and the undo comes back as a team proposal (the UI never writes the team file). */
+export interface TuningRevertResult { readonly config: EffectiveConfig; readonly proposal: ConfigProposal }
+
 // ---- batch enqueue ---------------------------------------------------------------------------------------------
 
 export interface BatchRunSettings {

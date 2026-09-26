@@ -6,7 +6,7 @@ import type { CommandResult, CommandRunner } from '../src/adapters/command.js'
 import { loadLoopConfig, type LoadedLoopConfig } from '../src/loop/config.js'
 import { editYaml } from '../src/loop/local-config.js'
 import { createIssueQueue } from '../src/loop/queue.js'
-import { readTuningState, revertTuning, setTuningFrozen, tuningStatePath } from '../src/loop/tuning.js'
+import { readTuningState, setTuningFrozen, tuningStatePath } from '../src/loop/tuning.js'
 import type { IssueBoardCache } from '../src/ui/api/board.js'
 import { fieldMeta, isWeaker } from '../src/ui/api/config-fields.js'
 import { ConfigRefused, effectiveConfig, proposeTeamChange, unifiedDiff, weakenedGates, writePersonalConfig } from '../src/ui/api/config-view.js'
@@ -168,12 +168,6 @@ describe('team proposals', () => {
 })
 
 describe('tuning controls', () => {
-  const tuned = (): LoadedLoopConfig => {
-    const loaded = setup()
-    writeFileSync(loaded.path, editYaml(readFileSync(loaded.path, 'utf8'), [{ path: ['delivery', 'workerIdleTimeoutMin'], value: 50 }]))
-    writeFileSync(tuningStatePath(loaded.stateDir), JSON.stringify({ history: [{ path: 'delivery.workerIdleTimeoutMin', metric: 'stuck-count', from: 45, to: 50, at: '2026-09-20T00:00:00.000Z', reason: 'r', metricBefore: 2, evidence: {}, status: 'applied' }], frozen: [] }))
-    return loaded
-  }
 
   it('freezes and unfreezes a knob atomically', () => {
     const loaded = setup()
@@ -183,15 +177,14 @@ describe('tuning controls', () => {
     expect(setTuningFrozen(loaded.stateDir, 'delivery.workerIdleTimeoutMin', false).frozen).toEqual([])
   })
 
-  it('reverts the last applied change, records it and freezes the knob', () => {
-    const loaded = tuned()
-    const record = revertTuning(loaded, 'delivery.workerIdleTimeoutMin', new Date('2026-09-21T00:00:00.000Z'))
-    expect(record).toMatchObject({ from: 50, to: 45, status: 'reverted' })
-    expect(loadLoopConfig(loaded.path).config.delivery.workerIdleTimeoutMin).toBe(45)
-    expect(readTuningState(loaded.stateDir)).toMatchObject({ frozen: ['delivery.workerIdleTimeoutMin'], history: [{ status: 'reverted', at: '2026-09-21T00:00:00.000Z' }] })
-    expect(() => revertTuning(loaded, 'delivery.workerIdleTimeoutMin')).toThrow(/no applied change/)
-  })
 })
+
+const tuned = (): LoadedLoopConfig => {
+  const loaded = setup()
+  writeFileSync(loaded.path, editYaml(readFileSync(loaded.path, 'utf8'), [{ path: ['delivery', 'workerIdleTimeoutMin'], value: 50 }]))
+  writeFileSync(tuningStatePath(loaded.stateDir), JSON.stringify({ history: [{ path: 'delivery.workerIdleTimeoutMin', metric: 'stuck-count', from: 45, to: 50, at: '2026-09-20T00:00:00.000Z', reason: 'r', metricBefore: 2, evidence: {}, status: 'applied' }], frozen: [] }))
+  return loaded
+}
 
 describe('config HTTP routes', () => {
   const board: IssueBoardCache = { read: async () => ({ provider: 'github', repo: 'acme/app', status: 'fresh', fetchedAt: new Date().toISOString(), issues: [], truncated: false, error: null }) }
@@ -228,5 +221,17 @@ describe('config HTTP routes', () => {
     expect((await api('api/v1/tuning/freeze', { method: 'POST', body: JSON.stringify({ path: 'delivery.workerIdleTimeoutMin' }) })).status).toBe(200)
     expect(readTuningState(loaded.stateDir).frozen).toEqual(['delivery.workerIdleTimeoutMin'])
     expect((await api('api/v1/tuning/revert', { method: 'POST', body: JSON.stringify({ path: 'delivery.workerIdleTimeoutMin' }) })).status).toBe(400)
+  })
+
+  it('reverts a tuned knob as a frozen knob plus a team proposal, leaving the team file untouched', async () => {
+    const loaded = tuned()
+    const before = readFileSync(loaded.path, 'utf8')
+    const api = await start(loaded)
+    const response = await api('api/v1/tuning/revert', { method: 'POST', body: JSON.stringify({ path: 'delivery.workerIdleTimeoutMin' }) })
+    expect(response.status).toBe(200)
+    const result = await response.json() as { proposal: ConfigProposal }
+    expect(result.proposal.diff).toContain('+  workerIdleTimeoutMin: 45')
+    expect(readFileSync(loaded.path, 'utf8')).toBe(before)
+    expect(readTuningState(loaded.stateDir).frozen).toContain('delivery.workerIdleTimeoutMin')
   })
 })

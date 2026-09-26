@@ -216,21 +216,3 @@ export const setTuningFrozen = (stateDir: string, path: string, frozen: boolean)
   writeJsonAtomic(tuningStatePath(stateDir), next)
   return next
 }
-
-/**
- * A human undoes the tuner's last change to `path`: the pre-tuning value goes back into `loop.config.yaml` the same
- * way the tuner wrote it (in place, validated before it is kept), the revert is recorded, and the knob is frozen.
- */
-export const revertTuning = (loaded: LoadedLoopConfig, path: string, now: Date = new Date()): TuningRecord => {
-  const state = readTuningState(loaded.stateDir)
-  const last = [...state.history].reverse().find((record) => record.path === path)
-  if (!last || last.status !== 'applied') return fail(`tuning: ${path} has no applied change to revert.`, 'INVALID_INPUT')
-  const text = applyToYaml(readFileSync(loaded.path, 'utf8'), path, last.from)
-  const parsed = LoopConfigSchema.safeParse(parseDocument(text).toJS() as unknown)
-  if (!parsed.success) return fail(`tuning: reverting ${path} produced an invalid config: ${parsed.error.issues.map((issue) => issue.path.join('.')).join(', ')}`, 'INVALID_CONFIG')
-  writeFileSync(loaded.path, text, 'utf8')
-  // ponytail: no commit here even with tuning.commit; the UI leaves the reverted loop.config.yaml for the human to commit.
-  const record: TuningRecord = { ...last, from: last.to, to: last.from, at: now.toISOString(), reason: 'reverted by a human', evidence: { by: 'human' }, status: 'reverted' }
-  writeJsonAtomic(tuningStatePath(loaded.stateDir), { history: [...state.history.filter((item) => item.path !== path), record], frozen: [...new Set([...state.frozen, path])] })
-  return record
-}
