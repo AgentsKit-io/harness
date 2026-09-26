@@ -215,7 +215,12 @@ export interface EffectiveConfig {
   readonly weakenedGates: readonly string[]
 }
 
-export interface ConfigChange { readonly path: string; readonly value: unknown }
+export interface ConfigChange {
+  readonly path: string
+  readonly value: unknown
+  /** Remove the key from the target file instead of setting it (personal: fall back to the team value). */
+  readonly reset?: boolean
+}
 
 export interface ConfigWriteRequest {
   readonly changes: readonly ConfigChange[]

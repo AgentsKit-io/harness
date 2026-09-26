@@ -12,6 +12,7 @@ import { createIssueQueue } from '../../loop/queue.js'
 import { resumeIssue as clearPause } from '../../loop/resilience-state.js'
 import { rankModels } from '../../loop/routing.js'
 import { appendLoopEvent } from '../../loop/tick.js'
+import { weakenedGates } from './config-view.js'
 import { syncProjection } from './store.js'
 
 /**
@@ -156,12 +157,14 @@ export interface EnqueueRunInput {
 /** The wizard's confirmation step: `queue.ts` owns the run record (id, status machine, duplicate-active-run
  * check — the same store `tick.ts` reads for `queue.mode: explicit`); `ui.run-enqueued` only carries the phase
  * signal nothing else emits before a dispatch happens. */
+const weakened = (loaded: LoadedLoopConfig): { readonly weakenedGates?: readonly string[] } => { const paths = weakenedGates(loaded); return paths.length ? { weakenedGates: paths } : {} }
+
 export const enqueueRun = (context: ActionContext, input: EnqueueRunInput): { readonly runId: string } => {
   const { loaded } = context
   const at = new Date().toISOString()
   const run = createIssueQueue({ stateDir: loaded.stateDir }).enqueue({
     issue: input.issue, title: input.title ?? null, url: input.url ?? null,
-    config: { configHash: input.configHash, flow: input.flow, builder: input.builder, maxFixRounds: input.maxFixRounds, perIssueTokens: input.perIssueTokens, roles: { orchestrator: 'project', reviewer: 'project', watcher: 'project', delivery: 'snapshot' } },
+    config: { configHash: input.configHash, flow: input.flow, builder: input.builder, maxFixRounds: input.maxFixRounds, perIssueTokens: input.perIssueTokens, roles: { orchestrator: 'project', reviewer: 'project', watcher: 'project', delivery: 'snapshot' }, ...weakened(loaded) },
     contract: { digest: input.contractDigest, status: 'valid', frozenAt: at },
     preflight: { status: 'passed', checkedAt: at },
   })
