@@ -175,6 +175,19 @@ export const recordStageRunResult = (stateDir: string, stage: LoopStageName, out
   return entry
 }
 
+/**
+ * A human stops a stage on purpose. Same entry `isStagePaused` reads (so `loop stage` skips its runs exactly as it
+ * does after an automatic pause), and it stays paused until `resumeStage` — a success can never clear it, because a
+ * paused stage never runs. Keeps the failure counter; re-pausing keeps the original `pausedAt`.
+ */
+export const pauseStage = (stateDir: string, stage: LoopStageName, reason: string, now: Date = new Date()): StagePauseEntry => {
+  const state = readStagePause(stateDir)
+  const current = state[stage] ?? emptyStageEntry
+  const entry: StagePauseEntry = { ...current, pausedAt: current.pausedAt ?? now.toISOString(), pausedReason: reason.trim().slice(0, 300) || 'paused by a human' }
+  writeStagePause(stateDir, { ...state, [stage]: entry })
+  return entry
+}
+
 export const resumeStage = (stateDir: string, stage: LoopStageName): void => {
   const state = readStagePause(stateDir)
   const { [stage]: _removed, ...rest } = state
