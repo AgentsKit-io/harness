@@ -43,8 +43,10 @@ try {
   process.exit()
 }
 try {
-  for (const [name, viewport] of [['desktop', { width: 1440, height: 960 }], ['mobile', { width: 390, height: 844 }]]) {
-    const page = await browser.newPage({ viewport, reducedMotion: 'no-preference' })
+  const schemes = (process.env.HARNESS_UI_COLOR_SCHEMES ?? 'light,dark').split(',')
+  const runs = schemes.flatMap(scheme => [['desktop', { width: 1440, height: 960 }], ['mobile', { width: 390, height: 844 }]].map(([device, viewport]) => [`${device}-${scheme}`, viewport, scheme, device]))
+  for (const [name, viewport, colorScheme, device] of runs) {
+    const page = await browser.newPage({ viewport, colorScheme, reducedMotion: 'no-preference' })
     // HARNESS_SHELL_DIR serves /shell/v1.* from a local checkout (agentskit/apps/docs-next/public/shell) before it is hosted.
     if (process.env.HARNESS_SHELL_DIR) await page.route(/\/shell\/v1\.(js|css)(\?.*)?$/, route => route.fulfill({ path: join(resolve(process.env.HARNESS_SHELL_DIR), new URL(route.request().url()).pathname.split('/').pop()), headers: { 'access-control-allow-origin': '*' } }))
     const errors = []
@@ -99,15 +101,15 @@ try {
     await page.screenshot({ path, fullPage: true })
     artifacts.push({ path: relative(root, path), sha256: createHash('sha256').update(readFileSync(path)).digest('hex'), type: 'screenshot', viewport })
     if (copyDir) copyFileSync(path, join(copyDir, `home-${name}.png`))
-    if (name === 'desktop') {
+    if (device === 'desktop') {
       const docs = await page.goto(`${baseURL}/docs/`, { waitUntil: 'networkidle', timeout: 45000 })
       await page.waitForTimeout(800)
       const wordmark = await page.evaluate(() => Boolean(document.querySelector('.ak-product-wordmark')))
-      check('docs:wordmark', docs?.status() === 200 && wordmark, `HTTP ${docs?.status()} wordmark=${wordmark}`)
-      const docsPath = join(outDir, 'docs-desktop.png')
+      check(`docs-${colorScheme}:wordmark`, docs?.status() === 200 && wordmark, `HTTP ${docs?.status()} wordmark=${wordmark}`)
+      const docsPath = join(outDir, `docs-${name}.png`)
       await page.screenshot({ path: docsPath })
       artifacts.push({ path: relative(root, docsPath), sha256: createHash('sha256').update(readFileSync(docsPath)).digest('hex'), type: 'screenshot', viewport })
-      if (copyDir) copyFileSync(docsPath, join(copyDir, 'docs-desktop.png'))
+      if (copyDir) copyFileSync(docsPath, join(copyDir, `docs-${name}.png`))
     }
     await page.close()
   }

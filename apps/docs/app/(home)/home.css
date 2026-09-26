@@ -17,21 +17,6 @@
 
 .harness-home > [data-home-content] { position: relative; z-index: 1; }
 
-/* The landing page is always dark: shell v1 (bar, aurora, tour, footer) reads these tokens; docs keep Fumadocs' theme. */
-body:has(.harness-home) {
-  --ak-bg: #0D1117;
-  --ak-surface: #161B22;
-  --ak-border: #30363D;
-  --ak-fg: #E6EDF3;
-  --ak-muted: #8B949E;
-  --ak-blue: #58A6FF;
-  --ak-green: #2EA043;
-  --ak-accent: #56D364;
-  background: #0D1117;
-  color: #E6EDF3;
-  color-scheme: dark;
-}
-
 
 .harness-home a { color: #56D364; text-decoration: none; }
 .harness-home a:hover { color: #A2F2AD; }
