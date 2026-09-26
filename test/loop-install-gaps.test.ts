@@ -211,6 +211,15 @@ describe('loopStatus edge cases', () => {
   })
 })
 
+describe('parseAutomationRuns: a precheck that crashed before the stage ran', () => {
+  it('reports the first stderr line when stdout carries no JSON report, and nothing when it does', () => {
+    const run = (stdout: string, stderr: string) => parseAutomationRuns({ runs: [{ at: '2026-09-25T22:40:28.000Z', status: 'skipped_precheck', precheckResult: { exitCode: 1, stdout, stderr } }] })[0]
+    expect(run('', 'INVALID_CONFIG: Invalid loop.config.yaml: connectors.tracker: Invalid input: expected "linear"\nat load')).toMatchObject({ error: 'INVALID_CONFIG: Invalid loop.config.yaml: connectors.tracker: Invalid input: expected "linear"' })
+    expect(run(JSON.stringify({ status: 'idle', results: [] }), 'a warning on stderr')).not.toHaveProperty('error')
+    expect(run('', '')).not.toHaveProperty('error')
+  })
+})
+
 describe('parseAutomationRuns shapes', () => {
   it('reads a bare-array result and prefers startedAt/createdAt/at/finishedAt in order', () => {
     expect(parseAutomationRuns([{ startedAt: 1700000000000, status: 'ok' }])).toEqual([{ at: new Date(1700000000000).toISOString(), status: 'ok' }])

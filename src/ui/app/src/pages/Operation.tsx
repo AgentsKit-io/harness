@@ -32,9 +32,17 @@ export const OperationPage = (): React.ReactElement => {
   const history = deriveHistory(snapshot)
   const archived = deriveArchived(snapshot)
   const inbox = deriveInbox(snapshot)
+  const brokenStages = (snapshot.automations ?? []).filter((automation) => automation.error)
 
   return (
     <Shell title="Operação" subtitle={`${snapshot.project.repo} · ${snapshot.project.baseBranch}`} inboxCount={inbox.length} error={error}>
+      {brokenStages.map((automation) => (
+        <div key={automation.name} role="alert" className="mb-4 rounded-md border border-danger/40 bg-danger/10 p-4 text-sm">
+          <div className="font-semibold text-danger">Estágio “{automation.stage}” parado — a última execução agendada falhou antes de rodar</div>
+          <div className="mt-1 font-mono text-xs text-ink-muted">{automation.name}{automation.lastRunAt ? ` · ${new Date(automation.lastRunAt).toLocaleString('pt-BR')}` : ''}</div>
+          <div className="mt-2 whitespace-pre-wrap font-mono text-xs">{automation.error}</div>
+        </div>
+      ))}
       <div className="mb-6 grid grid-cols-4 gap-3">
         <Metric label="Executando" value={running.length} tone="accent" />
         <Metric label="Disponíveis" value={available.length} />

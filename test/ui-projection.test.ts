@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { emptyProjection, overlayLiveState, reduce, type Decision, type ProjectionState, type RunRecord } from '../src/ui/api/projection.js'
+import { emptyProjection, overlayLiveState, overlayRunnerObservation, reduce, type Decision, type ProjectionState, type RunRecord } from '../src/ui/api/projection.js'
 import type { LoopEvent } from '../src/loop/retro.js'
 
 const at = (n: number): string => new Date(2026, 0, 1, 0, 0, n).toISOString()
@@ -127,5 +127,29 @@ describe('overlayLiveState (the queue.ts/hitl.ts merge)', () => {
     const merged = overlayLiveState(record, run('running'), [decision])
     expect(merged.phase).toBe('running')
     expect(merged.pendingDecisions).toEqual([decision])
+  })
+})
+
+describe('the runner observation overlay', () => {
+  const runningRecord = () => fold([enqueued, dispatched]).issues['ENG-1']!
+
+  it('moves a running issue to review when the runner saw its pull request open', () => {
+    expect(overlayRunnerObservation(runningRecord(), { number: 226, state: 'OPEN' })).toMatchObject({ phase: 'review', reviewState: null, pullRequest: { number: 226, state: 'OPEN', head: null } })
+  })
+
+  it('does nothing without an open pull request, including one reported with no state', () => {
+    const record = runningRecord()
+    expect(overlayRunnerObservation(record, null)).toBe(record)
+    expect(overlayRunnerObservation(record, { number: 226, state: null })).toBe(record)
+    expect(overlayRunnerObservation(record, { number: 226, state: 'CLOSED' })).toBe(record)
+  })
+
+  it('never completes an issue, never lowers a phase, and never overrides a PR the deliver stage recorded', () => {
+    const record = runningRecord()
+    expect(overlayRunnerObservation(record, { number: 226, state: 'MERGED' })).toBe(record)
+    const blocked = fold([enqueued, dispatched, { at: at(2), type: 'worker.failed', issue: 'ENG-1', reason: 'boom' }]).issues['ENG-1']!
+    expect(overlayRunnerObservation(blocked, { number: 226, state: 'OPEN' })).toBe(blocked)
+    const reviewed = fold([enqueued, dispatched, { at: at(2), type: 'pr.reviewed', issue: 'ENG-1', pr: 42, head: 'sha1', status: 'findings' }]).issues['ENG-1']!
+    expect(overlayRunnerObservation(reviewed, { number: 226, state: 'OPEN' })).toBe(reviewed)
   })
 })

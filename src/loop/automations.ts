@@ -164,6 +164,31 @@ export const automationDrift = (spec: AutomationSpec, automation: OrcaAutomation
   return drift
 }
 
+/** One scheduled run as `loop status`/`doctor`/the UI need it. `error` is set only when the precheck broke. */
+export interface AutomationRun { readonly at: string | null; readonly status: string | null; readonly summary?: string; readonly error?: string }
+
+/**
+ * A stage precheck exits 1 on every run by design (`runner: precheck`), so the exit code says nothing. What says the
+ * stage never ran is a precheck that printed no JSON report and wrote to stderr — a harness that crashed on load,
+ * e.g. an older global `ak-harness` rejecting a config it does not understand. That failure used to be visible only
+ * inside Orca's run history.
+ */
+export const parseAutomationRuns = (result: unknown): readonly AutomationRun[] => {
+  const list = isRecord(result) && Array.isArray(result['runs']) ? result['runs'] : Array.isArray(result) ? result : []
+  return list.filter(isRecord).map((run) => {
+    const raw = run['startedAt'] ?? run['createdAt'] ?? run['at'] ?? run['finishedAt']
+    const at = typeof raw === 'number' ? new Date(raw).toISOString() : typeof raw === 'string' && !Number.isNaN(Date.parse(raw)) ? new Date(raw).toISOString() : null
+    const precheck = isRecord(run['precheckResult']) ? run['precheckResult'] : null
+    const stdout = precheck && typeof precheck['stdout'] === 'string' ? precheck['stdout'] : ''
+    const stderr = precheck && typeof precheck['stderr'] === 'string' ? precheck['stderr'].trim() : ''
+    let report: Record<string, unknown> | null = null
+    try { const parsed = JSON.parse(stdout) as unknown; report = isRecord(parsed) ? parsed : null } catch { report = null }
+    const summary = report && typeof report['status'] === 'string' ? `${report['status']}${Array.isArray(report['results']) ? ` · ${report['results'].length} result(s)` : ''}${typeof report['reason'] === 'string' ? ` · ${report['reason']}` : ''}` : null
+    const error = report === null && stderr ? (stderr.split(/\r?\n/)[0] ?? stderr).slice(0, 400) : null
+    return { at, status: typeof run['status'] === 'string' ? run['status'] : typeof run['outcome'] === 'string' ? run['outcome'] : null, ...(summary === null ? {} : { summary }), ...(error === null ? {} : { error }) }
+  }).sort((left, right) => (right.at ?? '').localeCompare(left.at ?? ''))
+}
+
 export interface AutomationDriftRow { readonly name: string; readonly stage: LoopStage | null; readonly state: 'in-sync' | 'missing' | 'drifted' | 'undeclared'; readonly fields: readonly string[] }
 
 /**

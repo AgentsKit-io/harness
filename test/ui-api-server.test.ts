@@ -6,7 +6,7 @@ import type { CommandResult, CommandRunner } from '../src/adapters/command.js'
 import type { LoadedLoopConfig } from '../src/loop/config.js'
 import { createHitlStore } from '../src/loop/hitl.js'
 import type { IssueBoardCache } from '../src/ui/api/board.js'
-import { startUiServer, type UiServerHandle } from '../src/ui/api/server.js'
+import { startUiServer, withRunningHarness, type UiServerHandle } from '../src/ui/api/server.js'
 
 const cleanups: string[] = []
 const servers: UiServerHandle[] = []
@@ -130,5 +130,22 @@ describe('the control-plane HTTP surface', () => {
     // Any unknown client-side route falls back to the same index.html for the SPA router to own.
     const deepLink = await fetch(`${server.url}wizard/ENG-1`)
     expect(await deepLink.text()).toContain('window.__HARNESS_SESSION__')
+  })
+})
+
+describe('the automations the control plane installs', () => {
+  const withCommand = (harnessCommand: string): LoadedLoopConfig => {
+    const root = mkdtempSync(join(tmpdir(), 'harness-ui-pin-')); cleanups.push(root)
+    return { ...loadedFor(root), config: { schedule: { harnessCommand } } } as unknown as LoadedLoopConfig
+  }
+
+  it('pins the default harness command to the binary serving the page, so Orca cannot run an older global install', () => {
+    const pinned = withRunningHarness(withCommand('ak-harness')).config.schedule.harnessCommand
+    expect(pinned).toMatch(/^node "/)
+    expect(pinned).not.toBe('ak-harness')
+  })
+
+  it('keeps a harness command the config set explicitly', () => {
+    expect(withRunningHarness(withCommand('npx @agentskit/harness')).config.schedule.harnessCommand).toBe('npx @agentskit/harness')
   })
 })
