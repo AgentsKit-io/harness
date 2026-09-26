@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
-  "contentHash": "c6dbea112df89e5eaf06e85d7c5ce8c50456774a79371e4beae3fcc72aa9ada3",
+  "contentHash": "d40d1d9367c11fe1bab520854ede32ae9e758e890c533bb61741ef8770c40f32",
   "contentHashAlgo": "sha256-normalized-v1",
-  "generatedAt": "2026-09-25T23:51:07.144Z",
+  "generatedAt": "2026-09-26T00:06:17.327Z",
   "project": {
     "name": "AgentsKit Harness",
     "root": "."
@@ -1494,7 +1494,7 @@
         "ts",
         ".source"
       ],
-      "contentHash": "25714256405347c2c22ec7b366e0c083cd01c5dae34e937a187b27d5fab836d7"
+      "contentHash": "36fdf88ed2398b87f0ac4980d7c538276bf5e7e4518d8770930ac71680c934a8"
     },
     {
       "id": "module:apps/docs/.source/dynamic.ts",
@@ -1521,7 +1521,7 @@
         "ts",
         ".source"
       ],
-      "contentHash": "df69f38acac906546039afc7e7a9d9e36940e41b8e573e87cf7917d67ac07724"
+      "contentHash": "0a4ee4c88aedd58b6b1a8c3df858b5f01129c9568b3864cdf0345fec721fc08e"
     },
     {
       "id": "module:apps/docs/.source/source.config.mjs",
@@ -1865,7 +1865,7 @@
         "ts",
         "docs"
       ],
-      "contentHash": "7ffc81b25133285ed9bf828649cff94bf2e0b39da596d6af695aff6afd4399f5"
+      "contentHash": "f9ed026ba8a9c875d0b5baad64f0e18d68fdf32c3cd25d049ebfe26236fddf7e"
     },
     {
       "id": "module:apps/docs/next.config.mjs",
@@ -2320,6 +2320,18 @@
         "scripts"
       ],
       "contentHash": "a2fb7f0fdb00237258c873265c43e4ea90977d6be227224ecfa2e5a4360a447a"
+    },
+    {
+      "id": "module:scripts/verify-site-shell-ui.mjs",
+      "type": "module",
+      "title": "verify-site-shell-ui.mjs",
+      "path": "scripts/verify-site-shell-ui.mjs",
+      "tags": [
+        "module",
+        "mjs",
+        "scripts"
+      ],
+      "contentHash": "be5205731ad6187a8bc9887887b48bed9a54feb8240b638d2d0ba5b9b13c3477"
     },
     {
       "id": "module:src/adapters/agent.ts",
@@ -8354,8 +8366,8 @@
     }
   },
   "inputs": {
-    "hash": "11702720d1d8c827a9bfd1fb655229cb4bec25e81ebcea9d9ba7a58e8a34070c",
-    "fileCount": 525,
+    "hash": "9186f835201f17e679f271bf2a7b25c2cdedd8df11afc1eff2f588ae9d395aa2",
+    "fileCount": 526,
     "projectionVersion": 2
   },
   "retrieval": {
@@ -8377,9 +8389,9 @@
   "projection": {
     "type": "retrieval-index",
     "schemaVersion": 1,
-    "contentHash": "64e652a98e71ccac9cf78ed9c2efdbb20a5e824d87510423c15e74c6345ba8f2",
+    "contentHash": "da36e8ffc652cdba9d6bd30337ecd4c32979c5cc2b5f80412fb7788cd917cfa8",
     "contentHashAlgo": "sha256-normalized-v1",
-    "snapshotHash": "5a91035578e3e773e8aa77990280da20d18c1e9a1a012ee0540d02fc4635c9e8",
+    "snapshotHash": "d8f013125687b99de43256d105c699cc9b3208f1e2966a8bc3ab80fb3bfa3475",
     "overlayHash": "f99666ff9119084dd25c2974ae64eb6935ec2aa785ff5ad478fb9d541f7a5e94",
     "configurationHash": "816afaf6a7dc09767f7594d8fd80024612ca0f33becf0e44dde0107fcf2782df",
     "lexiconVersion": 1,
@@ -8399,7 +8411,7 @@
     },
     "lexical": {
       "version": 1,
-      "documentCount": 535,
+      "documentCount": 536,
       "fieldNames": [
         "aliases",
         "body",
@@ -8410,13 +8422,13 @@
         "title"
       ],
       "averageFieldLength": {
-        "aliases": 2.8485981308411215,
-        "body": 60.904672897196264,
-        "headings": 5.190654205607476,
-        "path": 6.196261682242991,
-        "summary": 4.102803738317757,
-        "symbols": 12.725233644859813,
-        "title": 3.869158878504673
+        "aliases": 2.8488805970149254,
+        "body": 60.791044776119406,
+        "headings": 5.1809701492537314,
+        "path": 6.197761194029851,
+        "summary": 4.095149253731344,
+        "symbols": 12.701492537313433,
+        "title": 3.873134328358209
       }
     },
     "entries": [
@@ -8761,7 +8773,7 @@
           ],
           "outbound": []
         },
-        "contentHash": "e6167d12f827e8b746c85f974e950c84a028d177b5a14b72e5c5d68c75920653",
+        "contentHash": "de4ebfb9169974715397914e22d6fb1099d9020a6a4cbcf236232032d1f4bf29",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -15780,7 +15792,7 @@
             }
           ]
         },
-        "contentHash": "25714256405347c2c22ec7b366e0c083cd01c5dae34e937a187b27d5fab836d7",
+        "contentHash": "36fdf88ed2398b87f0ac4980d7c538276bf5e7e4518d8770930ac71680c934a8",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -15863,7 +15875,7 @@
             }
           ]
         },
-        "contentHash": "df69f38acac906546039afc7e7a9d9e36940e41b8e573e87cf7917d67ac07724",
+        "contentHash": "0a4ee4c88aedd58b6b1a8c3df858b5f01129c9568b3864cdf0345fec721fc08e",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -16761,7 +16773,7 @@
           "inbound": [],
           "outbound": []
         },
-        "contentHash": "7ffc81b25133285ed9bf828649cff94bf2e0b39da596d6af695aff6afd4399f5",
+        "contentHash": "f9ed026ba8a9c875d0b5baad64f0e18d68fdf32c3cd25d049ebfe26236fddf7e",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -18097,6 +18109,40 @@
           "outbound": []
         },
         "contentHash": "a2fb7f0fdb00237258c873265c43e4ea90977d6be227224ecfa2e5a4360a447a",
+        "provenance": "observed",
+        "confidence": "observed"
+      },
+      {
+        "id": "module:scripts/verify-site-shell-ui.mjs",
+        "kind": "module",
+        "path": "scripts/verify-site-shell-ui.mjs",
+        "title": "verify-site-shell-ui.mjs",
+        "aliases": [],
+        "tags": [
+          "module",
+          "mjs",
+          "scripts"
+        ],
+        "fields": {
+          "title": "verify-site-shell-ui.mjs",
+          "headings": "",
+          "path": "scripts/verify-site-shell-ui.mjs",
+          "symbols": "",
+          "summary": "",
+          "body": "",
+          "aliases": "module mjs scripts"
+        },
+        "graph": {
+          "pagerank": 0,
+          "inboundLinks": 0,
+          "coveredBy": [],
+          "mentionedBy": [],
+          "areaId": "area:scripts",
+          "packageId": "package:@agentskit/harness",
+          "inbound": [],
+          "outbound": []
+        },
+        "contentHash": "be5205731ad6187a8bc9887887b48bed9a54feb8240b638d2d0ba5b9b13c3477",
         "provenance": "observed",
         "confidence": "observed"
       },

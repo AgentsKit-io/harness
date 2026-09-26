@@ -227,3 +227,12 @@ candidate checklist and any open blocker live in
 [`release/manifest.json`](release/manifest.json) and [`release/notes.md`](release/notes.md).
 
 Free and open source under MIT. See [LICENSE](./LICENSE).
+
+## AgentsKit ecosystem
+
+- [AgentsKit](https://www.agentskit.io)
+- [Registry](https://registry.agentskit.io)
+- [Chat](https://chat.agentskit.io)
+- [Doc Bridge](https://doc-bridge.agentskit.io)
+- [Code Review](https://code-review.agentskit.io)
+- [Harness](https://harness.agentskit.io)

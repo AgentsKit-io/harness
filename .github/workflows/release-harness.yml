@@ -58,6 +58,14 @@ jobs:
           node-version: 22
           cache: pnpm
       - run: pnpm install --frozen-lockfile
+      # Doc Bridge dogfooding: the config is generated, the committed index must be current, and the public docs
+      # must pass the standard gate and Documentation Standard v1 before the site builds.
+      - run: pnpm docs:bridge:config:check
+      - run: pnpm exec ak-docs validate-config
+      - run: node scripts/verify-ecosystem-public-outputs.mjs
+      - run: pnpm docs:bridge:index && git diff --exit-code -- doc-bridge.config.json .doc-bridge
+      - run: pnpm docs:bridge:gate
+      - run: pnpm docs:bridge:conformance
       # The reference is generated from the schema, the commander tree and the event vocabulary. `--check`
       # regenerates nothing: it fails when what is committed no longer matches the code.
       - run: pnpm build

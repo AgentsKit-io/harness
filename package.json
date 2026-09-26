@@ -93,7 +93,12 @@
     "test:process-runtime": "pnpm typecheck && vitest run --config vitest.config.ts test/runtime.test.ts -t \"child process|configured process runtime|timed-out and oversized|non-zero child\" && node -e \"console.log(JSON.stringify({status:'passed',criteria:['process-runtime']}))\"",
     "test:docker-runtime": "pnpm typecheck && HARNESS_REQUIRE_DOCKER=1 vitest run --config vitest.config.ts test/runtime.test.ts -t \"Docker sandbox\" && node -e \"console.log(JSON.stringify({status:'passed',criteria:['docker-runtime']}))\"",
     "test:runtime-attestation": "pnpm typecheck && vitest run --config vitest.config.ts test/runtime.test.ts test/agent.test.ts -t \"attestation|Docker sandbox\" && node -e \"console.log(JSON.stringify({status:'passed',criteria:['runtime-attestation']}))\"",
-    "prepublishOnly": "pnpm typecheck && pnpm build && pnpm test"
+    "prepublishOnly": "pnpm typecheck && pnpm build && pnpm test",
+    "docs:bridge:config": "node scripts/generate-doc-bridge-config.mjs",
+    "docs:bridge:config:check": "node scripts/generate-doc-bridge-config.mjs --check",
+    "docs:bridge:index": "ak-docs index",
+    "docs:bridge:gate": "ak-docs gate run",
+    "docs:bridge:conformance": "ak-docs conformance run documentation-standard-v1 --text"
   },
   "dependencies": {
     "commander": "^14.0.3",
@@ -104,6 +109,7 @@
     "zod": "^4.6.5"
   },
   "devDependencies": {
+    "@agentskit/doc-bridge": "^1.11.2",
     "@radix-ui/react-radio-group": "^1.4.7",
     "@radix-ui/react-slot": "^1.3.3",
     "@tailwindcss/vite": "^4.3.3",
