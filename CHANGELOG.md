@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+## [0.20.0] — 2026-09-25
+
+Control plane v2, and the fixes found running the loop against a real repository in the week since 0.19.0.
+
 - **Control plane v2 (`ak-harness ui`).** The home page is now an attention queue — human decisions, stuck or
   failed runs, state out of sync with the tracker or Orca, and system problems — each with the reason and the next
   action. The page reconciles the loop against the tracker and Orca on every refresh, resolves titles and states
@@ -30,6 +34,15 @@
   change and stopped before pushing; the generic idle check-in did not see it and the dispatch was marked stuck
   40 minutes later with the work sitting in the worktree. Deliver now counts local commits no remote has and
   asks the worker to push and open the PR.
+- **Control plane rewrite (#111).** One projection over the loop's event log replaced the lifecycle guesses the old
+  page made from free text; the frontend is a React app shipped in the package.
+- **A worktree left for inspection no longer marks its issue busy forever (#112).** After a cost-guard trip or an
+  escalation the preserved worktree kept the issue out of dispatch even once resumed; only a live agent, an open PR
+  or a merged artifact now counts as busy, and unknown activity still fails closed.
+- **Scheduled stages run the harness that installed them (#114).** Orca resolved `ak-harness` on its own PATH — an
+  older global install that rejected the config — so every scheduled deliver crashed on load. Installs pin the
+  running binary; doctor fails `automations.precheck-failing`; the UI shows a stopped stage; Orca's linked PR moves
+  a running issue to review as a read-only overlay.
 
 ## [0.19.0] — 2026-09-23
 

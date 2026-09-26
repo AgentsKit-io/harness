@@ -1,24 +1,28 @@
-# 0.19.0 release candidate
+# 0.20.0 release candidate
 
-Everything here was found by running the keep-pushing loop on a real multi-week repository migration, first with
-a single non-default provider and then a mixed one. Each fix was observed live and has a test; `CHANGELOG.md`
-has the full list.
+The control plane (`ak-harness ui`) becomes the operator's single place to see what needs them and act on it
+safely, plus the loop fixes found running it against a real repository since 0.19.0. `CHANGELOG.md` has the full
+list; `docs/ADR-0040` records the decisions.
 
-**Safety.** A worker at a tool-permission prompt is held for a person, never typed into. The orchestrator reads
-a harness-owned view of `origin/<baseBranch>`, and workers start from it. A PR held for protected paths is
-released only by `loop approve <issue> --head <sha> --by <you>`, bound to that commit. Gate lists accumulate
-across config layers. Approved plan documents stay out of a checkout that is not the clean base branch.
+**Attention first.** The home page is a queue of what needs a person — decisions, stuck or failed runs, state out
+of sync, system problems — each with its reason and next action. Empty means nothing does.
 
-**Delivery.** The brief goes over as a file with a one-line pointer, and counts as delivered only when the turn
-starts, or, for agents Orca cannot observe, when it stays on screen. An unconfirmed brief is re-sent on the
-first idle pass. A worker out of usage is handed to another provider after its terminal is closed, and a reset
-given in days is read whole. A PR closed without merge is escalated once.
+**Reconciled, then locked.** Every refresh compares the loop with the tracker and Orca, including issues the board
+does not list. Drift is shown and reconciled explicitly; destructive actions refuse (409) while their issue is out
+of sync or its data is stale. On a real loop, 24 "blocked" issues were 4 once cancelled work was recognised.
 
-**Planning.** Model output is found in markers, a fenced block or the last valid JSON value. Decompose files
-what it reviewed, outside the queue, and marks work that is not a PR to this repository (`outside-loop`).
+**Every operator action, same kernel.** Held-PR approval (pinned to the head), plan, design and release approval,
+learnings, stage pause and resume, tick/deliver/doctor, automation reinstall and batch enqueue call the functions
+the CLI calls. There is no deploy from the UI.
 
-**Breaking.** Gate lists accumulate across layers; `approve-design` needs `--accept-objections` when votes
-carry objections; decompose files issues in `linear.entryState`, which must not be one of `linear.states`;
-the queue never dispatches `linear.outsideLabel`.
+**Insights and configuration.** Trends, Costs (tokens and plan usage, no dollar figures) and Explore read at most
+30 days of events. Settings shows each value's layer, writes only the personal overlay, returns team changes as a
+diff, and records every run queued under a weakened gate.
+
+**Loop.** A worktree kept for inspection no longer blocks its issue forever (#112); scheduled stages run the
+harness that installed them and a crashed precheck is reported (#114).
+
+**Behaviour change.** The UI no longer installs Orca automations when it starts; missing or drifted automations
+appear as system items and reinstall on request.
 
 The blockers in `release/manifest.json` (`ecosystem-compatibility`, `pilot-benchmark`) are unchanged.
