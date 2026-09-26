@@ -236,3 +236,28 @@ export interface BatchRequest {
   readonly defaults: BatchRunSettings
   readonly issues: readonly ({ readonly issue: string } & BatchRunSettings)[]
 }
+
+// ---- issue detail (side panel) ----------------------------------------------------------------------------------
+
+export type CriterionStatus = 'proven' | 'failed' | 'missing'
+
+/** `GET /api/v1/issues/:id/detail` — everything the side panel's tabs show beyond the snapshot record. */
+export interface IssueDetail {
+  readonly issue: string
+  readonly contract: { readonly digest: string; readonly intent: string; readonly inScope: readonly string[]; readonly outOfScope: readonly string[]; readonly frozenAt: string | null } | null
+  /** Contract outcomes joined with DoD evidence; project-level DoD items appear with ids prefixed `dod:`. */
+  readonly criteria: readonly { readonly id: string; readonly text: string; readonly status: CriterionStatus; readonly evidence: string | null; readonly source: 'worker' | 'harness' | null }[]
+  readonly review: {
+    readonly head: string | null
+    readonly status: string
+    readonly blocking: number
+    readonly provider: string | null
+    readonly model: string | null
+    readonly findings: readonly { readonly severity: string; readonly text: string; readonly file: string | null }[]
+  } | null
+  readonly spend: { readonly tokens: number; readonly cap: number | null; readonly calls: number }
+  readonly worker: { readonly terminal: string | null; readonly lastOutputAt: string | null; readonly preview: string | null } | null
+  /** Why the run stopped (human-readable) and what to do, when it needs the operator; `null` when it is moving. */
+  readonly nextStep: { readonly reason: string; readonly detail: string | null; readonly actions: readonly AttentionAction[] } | null
+  readonly fixRounds: { readonly used: number; readonly max: number | null }
+}

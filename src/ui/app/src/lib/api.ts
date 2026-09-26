@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import type { UiSnapshot } from '../../../api/server'
 import type { UiJobRecord } from '../../../api/jobs'
 import type {
-  BatchRequest, ConfigChange, ConfigProposal, ConfigWriteRequest, EffectiveConfig, MetricsReport, MetricsWindow,
+  BatchRequest, ConfigChange, IssueDetail, ConfigProposal, ConfigWriteRequest, EffectiveConfig, MetricsReport, MetricsWindow,
   SearchResult, SearchType, SystemReport,
 } from '../../../api/contract'
 
@@ -118,3 +118,4 @@ export const getConfig = (): Promise<EffectiveConfig> => api('config')
 export const writeLocalConfig = (request: ConfigWriteRequest): Promise<EffectiveConfig> => api('config/local', { method: 'PUT', body: JSON.stringify(request) })
 export const proposeConfig = (changes: readonly ConfigChange[]): Promise<ConfigProposal> => post('config/proposal', { changes })
 export const tuning = (action: 'revert' | 'freeze' | 'unfreeze', path: string): Promise<unknown> => post(`tuning/${action}`, { path })
+export const getIssueDetail = (issue: string): Promise<IssueDetail> => api(`issues/${enc(issue)}/detail`)
