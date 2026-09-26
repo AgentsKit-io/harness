@@ -969,16 +969,16 @@ export const LoopConfigSchema = z.object({
      */
     runner: z.enum(['precheck', 'agent']).default('precheck'),
     /**
-     * Time budget for one stage when `runner: precheck`. Orca caps prechecks at 600s — enforced by Orca itself
-     * (`orca automations edit --precheck-timeout` rejects anything above 600, confirmed live 2026-09-22) — so a
-     * value here above 600 is simply unreachable for a stage actually wired to an Orca precheck automation.
-     *
-     * Not capped here, though: `ak-harness loop stage <name>` reads this value whenever it runs, including
-     * outside Orca entirely (e.g. a plain OS scheduler invoking it directly, sidestepping the precheck ceiling
-     * altogether — see docs/LOOP.md's tick-scheduling section). `tick`'s own contract-generation gate needs
-     * roughly contract.timeoutMs + setup timeout + 120s of budget just to attempt one candidate, which exceeds
-     * 600s on its own, so a caller with a longer real leash (like a scheduled task) needs to set this higher
-     * than an Orca precheck ever could.
+     * Internal work budget for one stage run — deliberately not capped at Orca's 600s precheck ceiling
+     * (`orca automations edit --precheck-timeout` rejects anything above 600, confirmed live 2026-09-22), because
+     * it no longer needs to be. `tick`'s own contract-generation gate needs roughly contract.timeoutMs + setup
+     * timeout + 120s of budget just to attempt one candidate — routinely more than 600s at high effort — but
+     * `loop stage tick`'s precheck never runs that work itself: it only peeks whether a tick is already in
+     * flight (see `peekStageLock`) and, if not, fires a fully detached background process (`loop tick-worker`,
+     * see cli.ts and `detached-worker.ts`) that does the real work on its own clock. The precheck itself always
+     * returns in milliseconds, well inside Orca's ceiling, regardless of how large this value is. `deliver` and
+     * `retro` still run inline (they've never needed more than a few seconds), so this budget is really only
+     * load-bearing for `tick`.
      */
     stageTimeoutSec: z.number().int().positive().default(600),
     timezone: nonEmpty.optional(),

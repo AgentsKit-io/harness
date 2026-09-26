@@ -384,6 +384,14 @@ Run one stage (tick \| deliver \| retro \| observe \| release \| intake \| maint
 ak-harness loop stage [options] <stage>
 ```
 
+### `ak-harness loop tick-worker`
+
+Internal: the detached background process `loop stage tick` spawns to run a real tick without Orca's 600s precheck ceiling — not meant to be run by hand. Use `loop tick` for a foreground run, or `loop stage tick` for the scheduled entrypoint.
+
+```bash
+ak-harness loop tick-worker [options]
+```
+
 ### `ak-harness loop tick`
 
 One keep-pushing tick: intake → admit → contract → dispatch workers into worktrees.

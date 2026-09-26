@@ -111,9 +111,20 @@ This is not a preference. On 2026-09-19 four automations were found still pointi
 With the default `schedule.runner: precheck` the **precheck command is the stage itself** (`ak-harness loop stage
 tick|deliver`): it runs the harness, prints the JSON report and always exits 1, so Orca records every run as
 `skipped_precheck` with the report in `precheckResult.stdout` and never opens an agent session. This is deliberate:
-Orca caps a precheck at 600 s, so `contract.timeoutMs` (default 300 s) plus dispatch must fit one run; an Orca-launched agent starts in bypass-permissions mode and waits for a human to accept the warning, which leaks one
-stuck session per run. `schedule.runner: agent` keeps the legacy behaviour for providers that run unattended.
-Runs and their output are visible in Orca's Automations view and via `loop status`.
+an Orca-launched agent starts in bypass-permissions mode and waits for a human to accept the warning, which leaks
+one stuck session per run — `schedule.runner: agent` keeps that legacy behaviour for providers that run
+unattended, but is not recommended for exactly this reason.
+
+Orca caps a precheck at 600 s. `deliver` and `retro` genuinely finish inside that window and run inline. `tick`
+does not — `contract.timeoutMs` (default 300 s) plus setup and dispatch routinely exceeds it at high effort — so
+`loop stage tick` never runs that work inside the precheck at all: the precheck only checks whether a tick is
+already in flight (a stage lock, `peekStageLock`) and, if not, fires `loop tick-worker` as a fully detached
+background process (`spawnDetachedWorker`, `detached-worker.ts`) that does the real contract-generation-and-dispatch
+work on `schedule.stageTimeoutSec`'s own clock — outliving the precheck itself, which returns in milliseconds
+either way. The next scheduled precheck, 5 minutes later, sees the lock and reports `already-in-flight` instead of
+starting a second one. Orca's Automations view shows the precheck's own `kicked-off`/`already-in-flight`/`locked`
+result for every run; the real tick-worker's own report lands in the loop's event log and `<stateDir>/tick-worker.log`,
+not in Orca's run history — check `loop debrief`/`loop status` for what a tick actually did, not just that one started.
 
 `schedule.harnessCommand` must resolve inside Orca's environment: install the harness globally
 (`npm i -g @agentskit/harness`) or set an absolute command. `loop install` warns when it cannot find it on this shell's PATH.

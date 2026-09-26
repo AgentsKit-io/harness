@@ -1,9 +1,18 @@
-import { closeSync, mkdirSync, openSync, readFileSync, statSync, unlinkSync, writeFileSync } from 'node:fs'
+import { closeSync, existsSync, mkdirSync, openSync, readFileSync, statSync, unlinkSync, writeFileSync } from 'node:fs'
 import { z } from 'zod'
 import { join } from 'node:path'
 import { readJsonFile } from '../kernel/json-file.js'
 
 type StageLockMetadata = { readonly pid?: unknown; readonly stage?: unknown }
+
+export interface StageLockStatus {
+  /** True only when a lock file exists AND its owner is a live process within the recovery window (see
+   * `acquireStageLock`'s doc comment) — the same "still genuinely held" test `acquireStageLock` itself applies,
+   * just without creating, deleting, or otherwise mutating anything. */
+  readonly held: boolean
+  readonly pid: number | null
+  readonly ageMs: number | null
+}
 
 const ownerIsAlive = (pid: number): boolean => {
   try {
@@ -51,5 +60,24 @@ export const acquireStageLock = (stateDir: string, stage: string): (() => void) 
       }
     } catch { /* lock disappeared; next scheduled run retries */ }
     return null
+  }
+}
+
+/**
+ * Read-only equivalent of `acquireStageLock`'s "is this still genuinely held" test — a stale lock (dead owner,
+ * or older than the 30-minute backstop) reports `held: false` without recovering it, so a caller that only wants
+ * to know whether real work is already in flight (e.g. a fast precheck deciding whether to spawn a background
+ * worker) never races the worker that will do the actual acquire.
+ */
+export const peekStageLock = (stateDir: string, stage: string): StageLockStatus => {
+  const path = join(stateDir, `.stage-${stage}.lock`)
+  if (!existsSync(path)) return { held: false, pid: null, ageMs: null }
+  try {
+    const ageMs = Date.now() - statSync(path).mtimeMs
+    const pid = readOwner(path)
+    const held = (pid === null || ownerIsAlive(pid)) && ageMs <= 30 * 60_000
+    return { held, pid, ageMs }
+  } catch {
+    return { held: false, pid: null, ageMs: null }
   }
 }

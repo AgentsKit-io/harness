@@ -98,29 +98,29 @@ describe('runLoopDoctor probe failures', () => {
     expect(report.checks.some((check) => check.id.startsWith('routing.'))).toBe(true)
   })
 
-  // schedule.stageTimeoutSec has no schema ceiling (a caller outside Orca's precheck, e.g. a plain OS scheduler,
-  // legitimately needs more than 600s) but for schedule.runner: precheck (the default) Orca's own
-  // `automations edit --precheck-timeout` rejects anything above 600 — deterministically failing `loop install`.
-  // doctor is read-only and meant to catch exactly this kind of thing before a side-effecting command hits it.
-  it('fails schedule.stage-timeout when stageTimeoutSec exceeds Orca\'s precheck ceiling under runner: precheck', async () => {
+  // schedule.stageTimeoutSec has no schema ceiling and no longer needs one: `tick`'s precheck fires a detached
+  // background worker instead of doing the real work inline, so stageTimeoutSec only bounds that worker's own
+  // deadline — Orca's precheck ceiling never sees it. What Orca's `automations edit --precheck-timeout` actually
+  // enforces (max 600s) is schedule.precheckTimeoutSec, sent for every stage regardless of runner mode.
+  it('fails schedule.precheck-timeout when precheckTimeoutSec exceeds Orca\'s precheck ceiling', async () => {
     const bin = fakeBinDir(['claude', 'codex', 'opencode', 'grok'])
-    const yaml = exampleYaml.replace('stageTimeoutSec: 600', 'stageTimeoutSec: 2700')
+    const yaml = exampleYaml.replace('precheckTimeoutSec: 120', 'precheckTimeoutSec: 700')
     const dir = configDir(yaml)
     const runner = fakeRunner()
     const report = await runLoopDoctor({ configPath: join(dir, 'loop.config.yaml'), runner, env: { PATH: bin, XAI_API_KEY: 'k' }, platform: 'darwin', now: () => new Date('2026-09-11T12:00:00.000Z'), probe: false })
-    expect(report.checks.find((check) => check.id === 'schedule.stage-timeout')).toMatchObject({ status: 'failed', detail: expect.stringContaining('2700') })
+    expect(report.checks.find((check) => check.id === 'schedule.precheck-timeout')).toMatchObject({ status: 'failed', detail: expect.stringContaining('700') })
     expect(report.status).toBe('failed')
   })
 
-  it('does not flag schedule.stage-timeout when stageTimeoutSec is within the ceiling, or when runner is not precheck', async () => {
+  it('does not flag schedule.precheck-timeout when precheckTimeoutSec is within the ceiling, however large stageTimeoutSec is', async () => {
     const bin = fakeBinDir(['claude', 'codex', 'opencode', 'grok'])
     const withinCeiling = configDir(exampleYaml)
     const runner = fakeRunner()
     const passing = await runLoopDoctor({ configPath: join(withinCeiling, 'loop.config.yaml'), runner, env: { PATH: bin, XAI_API_KEY: 'k' }, platform: 'darwin', now: () => new Date('2026-09-11T12:00:00.000Z'), probe: false })
-    expect(passing.checks.find((check) => check.id === 'schedule.stage-timeout')).toBeUndefined()
-    const agentRunner = configDir(exampleYaml.replace('runner: precheck', 'runner: agent').replace('stageTimeoutSec: 600', 'stageTimeoutSec: 2700'))
-    const agentReport = await runLoopDoctor({ configPath: join(agentRunner, 'loop.config.yaml'), runner, env: { PATH: bin, XAI_API_KEY: 'k' }, platform: 'darwin', now: () => new Date('2026-09-11T12:00:00.000Z'), probe: false })
-    expect(agentReport.checks.find((check) => check.id === 'schedule.stage-timeout')).toBeUndefined()
+    expect(passing.checks.find((check) => check.id === 'schedule.precheck-timeout')).toBeUndefined()
+    const longStage = configDir(exampleYaml.replace('stageTimeoutSec: 600', 'stageTimeoutSec: 2700'))
+    const longStageReport = await runLoopDoctor({ configPath: join(longStage, 'loop.config.yaml'), runner, env: { PATH: bin, XAI_API_KEY: 'k' }, platform: 'darwin', now: () => new Date('2026-09-11T12:00:00.000Z'), probe: false })
+    expect(longStageReport.checks.find((check) => check.id === 'schedule.precheck-timeout')).toBeUndefined()
   })
 })
 
@@ -221,7 +221,7 @@ describe('review.cli and memory checks', () => {
     const dir = configDir(exampleYaml)
     const configPath = join(dir, 'loop.config.yaml')
     const shared = { runner: fakeRunner(), env: { PATH: bin, XAI_API_KEY: 'k' }, platform: 'darwin' as const, now: () => new Date('2026-09-11T12:00:00.000Z'), probe: false }
-    const automation = (stage: string, rrule: string) => { const name = `loop-my-project-${stage}`; return { id: `id-${name}`, name, enabled: true, rrule, agentId: 'claude', prompt: `This automation does its work inside its precheck command (ak-harness loop stage ${stage} -f "${configPath}"), which always exits non-zero so that no agent session is needed. If you are reading this, the precheck unexpectedly exited 0: reply exactly LOOP_PRECHECK_BYPASSED and stop. Do not run any command.`, precheck: { command: `ak-harness loop stage ${stage} -f "${configPath}"`, timeoutSeconds: 600 }, workspaceId: `repo-1::${dir}` } }
+    const automation = (stage: string, rrule: string) => { const name = `loop-my-project-${stage}`; return { id: `id-${name}`, name, enabled: true, rrule, agentId: 'claude', prompt: `This automation does its work inside its precheck command (ak-harness loop stage ${stage} -f "${configPath}"), which always exits non-zero so that no agent session is needed. If you are reading this, the precheck unexpectedly exited 0: reply exactly LOOP_PRECHECK_BYPASSED and stop. Do not run any command.`, precheck: { command: `ak-harness loop stage ${stage} -f "${configPath}"`, timeoutSeconds: 120 }, workspaceId: `repo-1::${dir}` } }
     const inSync = fakeRunner({ 'orca automations list --json': ok({ ok: true, result: { automations: [automation('tick', '*/5 * * * *'), automation('deliver', '*/10 * * * *')] } }) })
     expect((await runLoopDoctor({ ...shared, runner: inSync, configPath })).checks.find((check) => check.id === 'automations.drift')).toMatchObject({ status: 'passed' })
 
