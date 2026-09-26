@@ -16,6 +16,8 @@
 }
 
 .harness-home > [data-home-content] { position: relative; z-index: 1; }
+/* Dark by design (as on main), scoped to the home only: shell v1's aurora reads these; docs follow the page theme. */
+.harness-home { --ak-bg: #0D1117; --ak-surface: #161B22; --ak-border: #30363D; --ak-fg: #E6EDF3; --ak-muted: #8B949E; --ak-blue: #58A6FF; --ak-accent: #56D364; }
 
 
 .harness-home a { color: #56D364; text-decoration: none; }
