@@ -35,8 +35,8 @@ export function ProductWordmark() {
 }
 
 const LOCAL_COLUMNS = [
-  { title: 'Start', links: [{ text: 'Documentation', href: '/docs' }, { text: 'Human gates', href: '#gates' }, { text: 'Example run', href: '#run' }] },
-  { title: 'Build', links: [{ text: 'Flow profiles', href: '#profiles' }, { text: 'Connectors', href: '#seams' }, { text: 'llms.txt', href: '/llms.txt' }] },
+  { title: 'Start', links: [{ text: 'Documentation', href: '/docs' }, { text: 'Human gates', href: '/#gates' }, { text: 'Example run', href: '/#run' }] },
+  { title: 'Build', links: [{ text: 'Flow profiles', href: '/#profiles' }, { text: 'Connectors', href: '/#seams' }, { text: 'llms.txt', href: '/llms.txt' }] },
 ] as const
 
 /**
