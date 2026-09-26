@@ -1,6 +1,6 @@
 import { existsSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
-import { stringify as toYaml } from 'yaml'
+import { isMap, parseDocument, stringify as toYaml } from 'yaml'
 import type { CommandRunner } from '../adapters/command.js'
 import { orcaJson } from '../adapters/orca-cli.js'
 import { LOOP_LOCAL_CONFIG_FILE, loadLoopConfig, type LoadedLoopConfig } from './config.js'
@@ -37,6 +37,31 @@ export const localConfigPath = (loaded: LoadedLoopConfig): string => join(dirnam
 export const writeLocalConfig = (loaded: LoadedLoopConfig, answers: LocalConfigAnswers): { readonly path: string; readonly loaded: LoadedLoopConfig } => {
   const path = localConfigPath(loaded)
   writeFileSync(path, renderLocalConfig(answers, loaded.path), 'utf8')
+  return { path, loaded: loadLoopConfig(loaded.path) }
+}
+
+/** One key-path edit: set `value`, or remove the key when `remove` is true. */
+export interface YamlEdit { readonly path: readonly string[]; readonly value?: unknown; readonly remove?: boolean }
+
+/** Apply edits to YAML text in place with the Document API: comments and every untouched key survive. A removal also drops the parents it leaves empty. */
+export const editYaml = (text: string, edits: readonly YamlEdit[]): string => {
+  const document = parseDocument(text)
+  for (const edit of edits) {
+    if (!edit.remove) { document.setIn(edit.path, edit.value); continue }
+    document.deleteIn(edit.path)
+    for (let depth = edit.path.length - 1; depth > 0; depth--) {
+      const parent = document.getIn(edit.path.slice(0, depth), true)
+      if (!isMap(parent) || parent.items.length) break
+      document.deleteIn(edit.path.slice(0, depth))
+    }
+  }
+  return document.toString()
+}
+
+/** Write already-validated overlay text to `loop.config.local.yaml` and reload the composed config. */
+export const writeLocalConfigText = (loaded: LoadedLoopConfig, text: string): { readonly path: string; readonly loaded: LoadedLoopConfig } => {
+  const path = localConfigPath(loaded)
+  writeFileSync(path, text, 'utf8')
   return { path, loaded: loadLoopConfig(loaded.path) }
 }
 
