@@ -543,6 +543,11 @@ export const runTick = async (input: TickInput): Promise<TickReport> => {
     if (!requests.length) return false
     if (dryRun) return true
     const store = createHitlStore(loaded.stateDir)
+    // A request's id is keyed by this contract's own digest, so a superseding contract (a new blocking
+    // ambiguity, or the same one re-asked before the open-HITL skip above existed) always creates new
+    // request ids rather than reusing the old ones — leaving the previous batch open forever otherwise.
+    // Confirmed live: 110 open requests had accumulated this way before the skip above was added.
+    for (const stale of store.list({ status: 'open', issue })) store.markStale(stale.requestId, 'superseded by a newer contract for the same issue')
     const batchId = `contract:${issue}:${stored.digest}`
     for (const [index, request] of requests.entries()) {
       const requestId = `${batchId}:${index}`
@@ -680,6 +685,20 @@ export const runTick = async (input: TickInput): Promise<TickReport> => {
       : builder)
     const issueOrchestrators = applyRoleSettings(orchestratorCandidates, orchestratorSettings)
 
+    // An issue with an open (unanswered) HITL request already has a standing question for a human — regenerating
+    // its contract every tick just to re-ask the identical question wastes a full orchestrator call for no new
+    // information, and self-perpetuates: escalating posts a tracker comment, which bumps the issue's own
+    // updatedAt, which (via contractIsFresh below) invalidates the very cache that would otherwise have skipped
+    // this. Reproduced live: AGE-1858 reached its 12th consecutive identical escalation, and the repeat
+    // evaluations ran long enough that fresh, never-yet-evaluated candidates never got reached in the same tick.
+    // Skip cheaply instead — until `store.answer(...)` marks the request no longer 'open', at which point the
+    // normal path below regenerates with `priorHitlAnswers` folded in.
+    const openHitl = createHitlStore(loaded.stateDir).list({ status: 'open', issue: detail.identifier })
+    if (openHitl.length) {
+      const request = openHitl[0]!
+      results.push({ issue: detail.identifier, outcome: 'escalated', reason: `awaiting a human answer to a standing question (asked ${request.createdAt}): ${request.question}` })
+      continue
+    }
     let stored = cachedContract
     // Reused below for the worker brief too (memory content cannot change mid-tick) — computing it once instead of
     // twice per dispatch halves this dispatch's memory-recall I/O (file reads + ranking) when memory.enabled.
