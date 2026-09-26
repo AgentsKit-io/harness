@@ -1,0 +1,34 @@
+{
+  "schemaVersion": 1,
+  "type": "doc-bridge-capabilities",
+  "package": "@agentskit/doc-bridge",
+  "version": "1.11.2",
+  "project": {
+    "name": "AgentsKit Harness",
+    "root": "."
+  },
+  "contentHash": "c6dbea112df89e5eaf06e85d7c5ce8c50456774a79371e4beae3fcc72aa9ada3",
+  "artifacts": {
+    "index": ".doc-bridge/index.json",
+    "llmsTxt": ".doc-bridge/llms.txt"
+  },
+  "capabilities": [
+    "index",
+    "query",
+    "search",
+    "agent-handoff",
+    "gates",
+    "mcp",
+    "human-docs"
+  ],
+  "surfaces": {
+    "cli": {
+      "bin": "ak-docs",
+      "defaultFormat": "text"
+    },
+    "mcp": {
+      "enabled": true,
+      "transport": "stdio"
+    }
+  }
+}
