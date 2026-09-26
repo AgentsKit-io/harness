@@ -1,4 +1,7 @@
 import { existsSync, statSync } from 'node:fs'
+import { z } from 'zod'
+import { readJsonFile } from '../../kernel/json-file.js'
+import { writeJsonAtomic } from '../../loop/fs-atomic.js'
 import { join } from 'node:path'
 import type { CommandRunner } from '../../adapters/command.js'
 import { orcaAutomationsList, orcaTerminalList, orcaWorktrees, type OrcaTerminal } from '../../adapters/orca-cli.js'
@@ -91,7 +94,7 @@ const eventsKey = (stateDir: string): string => {
   return `${stat.mtimeMs}:${stat.size}`
 }
 
-const createEventTail = (stateDir: string) => {
+export const createEventTail = (stateDir: string) => {
   let key = ''
   let events: readonly LoopEvent[] = []
   return (now: Date): readonly LoopEvent[] => {
@@ -148,16 +151,31 @@ const TRACKER_LOOKUPS_PER_CYCLE = 8
  * looks those issues up one by one in the background (bounded per cycle, cached for 10 min) so reconciliation and
  * attention can see they are closed. Reads never wait on it; an unknown state stays unknown, never "closed".
  */
-export const createTrackerStateCache = <T>(lookup: (issue: string) => Promise<T>, now: () => number = Date.now) => {
-  const states = new Map<string, { readonly state: T; readonly at: number }>()
+export interface TrackerCacheStore<T> { readonly load: () => Readonly<Record<string, { readonly state: T; readonly at: number }>>; readonly save: (entries: Readonly<Record<string, { readonly state: T; readonly at: number }>>) => void }
+
+export const createTrackerStateCache = <T>(lookup: (issue: string) => Promise<T>, now: () => number = Date.now, store?: TrackerCacheStore<T>) => {
+  // Persisted so a restarted UI shows known titles/states at once instead of re-learning them 8 per cycle.
+  const states = new Map<string, { readonly state: T; readonly at: number }>(Object.entries(store?.load() ?? {}))
   const pending = new Set<string>()
   return (issues: readonly string[]): Readonly<Record<string, T>> => {
     const due = issues.filter((issue) => !pending.has(issue) && (now() - (states.get(issue)?.at ?? -Infinity)) > TRACKER_TTL_MS).slice(0, TRACKER_LOOKUPS_PER_CYCLE)
     for (const issue of due) {
       pending.add(issue)
-      void lookup(issue).then((state) => { states.set(issue, { state, at: now() }) }).catch(() => { /* unknown stays unknown */ }).finally(() => pending.delete(issue))
+      void lookup(issue).then((state) => { states.set(issue, { state, at: now() }); store?.save(Object.fromEntries(states)) }).catch(() => { /* unknown stays unknown */ }).finally(() => pending.delete(issue))
     }
     return Object.fromEntries(issues.flatMap((issue) => { const hit = states.get(issue); return hit ? [[issue, hit.state]] : [] }))
+  }
+}
+
+const TRACKER_CACHE_LIMIT = 1_000
+const trackerFactsSchema = z.record(z.string(), z.object({ state: z.object({ state: z.string(), title: z.string() }), at: z.number() }))
+
+/** `<stateDir>/ui/tracker-facts.json`, newest 1000 entries (bounded). */
+export const trackerFactsStore = (stateDir: string): TrackerCacheStore<TrackerFacts> => {
+  const path = join(stateDir, 'ui', 'tracker-facts.json')
+  return {
+    load: () => readJsonFile(path, trackerFactsSchema) ?? {},
+    save: (entries) => { try { writeJsonAtomic(path, Object.fromEntries(Object.entries(entries).sort(([, a], [, b]) => b.at - a.at).slice(0, TRACKER_CACHE_LIMIT))) } catch { /* a cache; the next lookup rewrites it */ } },
   }
 }
 
@@ -184,7 +202,7 @@ export const createExtrasBuilder = (loaded: LoadedLoopConfig, runner: CommandRun
   const orca = options.orca ?? orcaCacheFor(loaded, runner)
   const tail = createEventTail(loaded.stateDir)
   const automations = createAutomationsCache(loaded, runner)
-  const trackerFacts = options.trackerState ?? createTrackerStateCache(async (issue): Promise<TrackerFacts> => { const detail = await resolveConnectors({ runner, config: loaded.config }).tracker.issue(issue); return { state: detail.state, title: detail.title } })
+  const trackerFacts = options.trackerState ?? createTrackerStateCache(async (issue): Promise<TrackerFacts> => { const detail = await resolveConnectors({ runner, config: loaded.config }).tracker.issue(issue); return { state: detail.state, title: detail.title } }, Date.now, trackerFactsStore(loaded.stateDir))
   const { stateDir, config } = loaded
 
   return {

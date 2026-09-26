@@ -92,6 +92,8 @@ export interface IssueRecord {
   readonly updatedAt: string
   /** Fix rounds spent so far (`delivery.json`), overlaid live by `store.ts`; absent when the issue never reached a PR. */
   readonly fixRoundsUsed?: number
+  /** When the issue entered its current `phase` (reducer phases only); absent on records projected before it existed. */
+  readonly phaseSince?: string
 }
 
 export interface ProjectionState {
@@ -110,7 +112,9 @@ const blankRecord = (issue: string, at: string): IssueRecord => ({
 
 const withIssue = (state: ProjectionState, issue: string, at: string, update: (record: IssueRecord) => IssueRecord): ProjectionState => {
   const current = state.issues[issue] ?? blankRecord(issue, at)
-  return { issues: { ...state.issues, [issue]: { ...update(current), updatedAt: at } } }
+  const next = update(current)
+  const phaseSince = !state.issues[issue] || next.phase !== current.phase ? at : current.phaseSince ?? current.updatedAt
+  return { issues: { ...state.issues, [issue]: { ...next, updatedAt: at, phaseSince } } }
 }
 
 const pullRequestFrom = (record: IssueRecord, event: LoopEvent, prState: PullRequestRef['state']): PullRequestRef | null => {

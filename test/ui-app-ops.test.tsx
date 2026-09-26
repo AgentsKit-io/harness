@@ -2,7 +2,7 @@ import { renderToStaticMarkup } from 'react-dom/server'
 import { MemoryRouter } from 'react-router-dom'
 import { describe, expect, it, vi } from 'vitest'
 import type { AttentionItem, IssueRecord, UiSnapshot } from '@/lib/api'
-import { availableIssues, capTone, formatTokens, matchesSearch, phaseLabel, recentChanges, runBucket, segments } from '@/lib/runs'
+import { availableIssues, capTone, formatTokens, matchesSearch, phaseLabel, runBucket, segments } from '@/lib/runs'
 import { confirmBasis } from '@/lib/actions'
 import { AttentionCard, AttentionQueue, targetOf } from '@/pages/Attention'
 import { RunsTable, filterCounts, inFilter } from '@/pages/Runs'
@@ -76,10 +76,9 @@ describe('ui runs helpers', () => {
     expect(inFilter(records[2]!, 'all')).toBe(false)
   })
 
-  it('lists queueable board issues and a newest-first change feed', () => {
+  it('lists queueable board issues', () => {
     const snap = snapshot([record(), record({ issue: 'AK-9', updatedAt: '2026-09-25T13:00:00.000Z' })])
     expect(availableIssues(snap).map((issue) => issue.identifier)).toEqual(['AK-2'])
-    expect(recentChanges(snap).map((row) => row.issue)).toEqual(['AK-9', 'AK-1'])
   })
 
   it('keeps only fields that differ from the batch defaults as overrides', () => {
@@ -146,7 +145,7 @@ describe('runs table and issue panel', () => {
       rows={[record({ run: { ...record().run!, weakenedGates: ['review.required'] } })]} />)
     expect(html).toContain('AK-1')
     expect(html).toContain('85k/100k')
-    expect(html).toContain('—/3')
+    expect(html).toContain('0/3')
     expect(html).toContain('personal override')
     expect(html).toContain('bg-warning')
   })

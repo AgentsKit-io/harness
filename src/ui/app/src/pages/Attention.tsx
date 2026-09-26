@@ -6,11 +6,11 @@ import { Button } from '@/components/ui/button'
 import { Sparkline } from '@/components/Sparkline'
 import { CapBar, PhaseBar } from '@/components/IssuePanel'
 import { cn } from '@/lib/utils'
-import { answerDecision, getMetrics, type AttentionAction, type AttentionGroup, type AttentionItem, type IssueRecord, type MetricsReport, type UiSnapshot } from '@/lib/api'
+import { answerDecision, getMetrics, type AttentionAction, type AttentionGroup, type AttentionItem, type IssueRecord, type MetricsReport, type UiSnapshot, getRecentEvents, type RecentEvent } from '@/lib/api'
 import { useActionRunner, type ActionTarget } from '@/lib/actions'
 import { formatAge, useLiveSnapshot } from '@/lib/snapshot'
 import { useIssuePanel } from '@/lib/useIssuePanel'
-import { BUCKET_COLOR, ageMs, formatTokens, modelOf, phaseLabel, recentChanges, runBucket, tokensByIssue } from '@/lib/runs'
+import { ageMs, formatTokens, modelOf, phaseAgeMs, phaseLabel, runBucket, tokensByIssue } from '@/lib/runs'
 
 export const GROUPS: readonly { readonly group: AttentionGroup; readonly name: string; readonly color: string; readonly dot: string }[] = [
   { group: 'human', name: 'Human decisions', color: 'text-warning', dot: 'bg-warning' },
@@ -136,7 +136,7 @@ export const WorkerCard = ({ record, tokens, now, onOpen }: { readonly record: I
       <span className="w-full"><PhaseBar record={record} /></span>
       <span className="flex w-full gap-3 font-mono text-xs text-ink-subtle">
         <span className="text-[#c5ccd8]">{phaseLabel(record)}</span>
-        <span>{formatAge(ageMs(record.updatedAt, now))}</span>
+        <span>{formatAge(phaseAgeMs(record, now))}</span>
         <span>{modelOf(record)}</span>
         <span className="ml-auto">{tokens !== undefined ? formatTokens(tokens) : '—'}{cap ? ` / ${formatTokens(cap)}` : ''}</span>
       </span>
@@ -145,11 +145,29 @@ export const WorkerCard = ({ record, tokens, now, onOpen }: { readonly record: I
   )
 }
 
+/** The loop's own event log (last 24 h), refetched when the snapshot changes but at most every 5 s. */
+const useRecentEvents = (generatedAt: string): readonly RecentEvent[] => {
+  const [events, setEvents] = React.useState<readonly RecentEvent[]>([])
+  const last = React.useRef(0)
+  React.useEffect(() => {
+    if (Date.now() - last.current < 5_000) return
+    last.current = Date.now()
+    getRecentEvents(8).then((value) => setEvents(value.events)).catch(() => { /* keep the last feed */ })
+  }, [generatedAt])
+  return events
+}
+
+const eventColor = (type: string): string =>
+  /failed|blocked|stuck|abandoned|tripped|refused|pii/.test(type) ? 'text-danger'
+    : /merged|approved|passed|promoted/.test(type) ? 'text-success'
+      : /hitl|held|needs-input|cooldown|paused|escalated/.test(type) ? 'text-warning'
+        : 'text-accent-strong'
+
 const LiveColumn = ({ snapshot, metrics, now, onOpen }: { readonly snapshot: UiSnapshot; readonly metrics: MetricsReport | null; readonly now: number; readonly onOpen: (issue: string) => void }): React.ReactElement => {
   const tokens = tokensByIssue(metrics)
   const running = snapshot.issues.filter((record) => { const bucket = runBucket(record); return bucket === 'running' || bucket === 'review' })
   const queued = snapshot.issues.filter((record) => runBucket(record) === 'queued')
-  const feed = recentChanges(snapshot)
+  const feed = useRecentEvents(snapshot.generatedAt)
   return (
     <aside aria-label="Live overview" className="flex w-[400px] shrink-0 flex-col gap-4 overflow-auto">
       <SparkCards metrics={metrics} />
@@ -169,11 +187,13 @@ const LiveColumn = ({ snapshot, metrics, now, onOpen }: { readonly snapshot: UiS
       <div className="flex min-h-0 flex-col gap-2">
         <SectionTitle>Event stream</SectionTitle>
         <ol aria-label="Recent changes" className="flex flex-col gap-px overflow-hidden rounded-[10px] border border-line-soft font-mono text-xs">
-          {feed.map((row, index) => (
-            <li key={row.key} className={cn('flex gap-2.5 bg-panel-alt px-3 py-2', index === 0 && 'tick-in')}>
-              <span className="text-ink-subtle">{new Date(row.at).toLocaleTimeString([], { hour12: false })}</span>
-              <span className={cn('w-[130px] shrink-0 truncate', BUCKET_COLOR[row.bucket])}>{row.label}</span>
-              <button type="button" className="truncate text-left text-[#c5ccd8] hover:text-ink" onClick={() => onOpen(row.issue)}>{row.text}</button>
+          {feed.map((event, index) => (
+            <li key={`${event.at}:${event.type}:${event.issue ?? ''}:${index}`} className={cn('flex gap-2.5 bg-panel-alt px-3 py-2', index === 0 && 'tick-in')}>
+              <span className="text-ink-subtle">{new Date(event.at).toLocaleTimeString([], { hour12: false })}</span>
+              <span className={cn('w-[150px] shrink-0 truncate', eventColor(event.type))}>{event.type}</span>
+              {event.issue
+                ? <button type="button" className="truncate text-left text-[#c5ccd8] hover:text-ink" onClick={() => onOpen(event.issue!)}>{event.issue}{event.summary ? ` · ${event.summary}` : ''}</button>
+                : <span className="truncate text-[#c5ccd8]">{event.summary}</span>}
             </li>
           ))}
           {feed.length === 0 && <li className="bg-panel-alt px-3 py-2 text-ink-subtle">No activity yet.</li>}
