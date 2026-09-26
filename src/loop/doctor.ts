@@ -91,12 +91,13 @@ export const runLoopDoctor = async (input: LoopDoctorInput): Promise<LoopDoctorR
   else push('orca.version', 'passed', `Orca ${version} ≥ ${config.orca.minVersion}`)
   if (status) push('orca.runtime', status.runtimeReady ? 'passed' : 'failed', status.runtimeReady ? `runtime ready (app ${status.appRunning ? 'running' : 'not running'})` : `runtime ${status.runtimeState}; start it with "${config.orca.bin} open"`)
   else push('orca.runtime', 'failed', orcaError ?? 'status unavailable')
-  // schedule.stageTimeoutSec has no schema ceiling (a caller outside Orca's precheck, e.g. a plain OS scheduler,
-  // legitimately needs more than 600s) but Orca's own `automations edit --precheck-timeout` rejects anything
-  // above 600 for a stage actually wired to a precheck automation — this deterministically fails `loop install`
-  // for that stage, worth catching here (doctor is read-only, install is not) rather than only via Orca's own
-  // CLI error at install time.
-  if (config.schedule.runner === 'precheck' && config.schedule.stageTimeoutSec > 600) push('schedule.stage-timeout', 'failed', `stageTimeoutSec (${config.schedule.stageTimeoutSec}s) exceeds Orca's precheck ceiling of 600s; "loop install" will fail creating/editing the precheck automation. Lower schedule.stageTimeoutSec to 600 or fewer, or switch schedule.runner to "agent".`)
+  // schedule.stageTimeoutSec has no schema ceiling and no longer needs one: `tick`'s precheck fires a detached
+  // background worker (see `loop stage tick` in cli.ts) rather than doing the real, potentially long-running
+  // work inline, so stageTimeoutSec only bounds that worker's own deadline — Orca's precheck ceiling never sees
+  // it. What Orca's `automations edit --precheck-timeout` actually enforces (max 600s) is schedule.precheckTimeoutSec,
+  // sent for every stage regardless of runner mode (see automationSpecs) — worth catching here (doctor is
+  // read-only, install is not) rather than only via Orca's own CLI error at install time.
+  if (config.schedule.precheckTimeoutSec > 600) push('schedule.precheck-timeout', 'failed', `precheckTimeoutSec (${config.schedule.precheckTimeoutSec}s) exceeds Orca's precheck ceiling of 600s; "loop install" will fail creating/editing every automation. Lower schedule.precheckTimeoutSec to 600 or fewer.`)
 
   const [accountList, agentHooks] = await Promise.all([
     orcaAccountList(input.runner, orcaOptions).catch((error: unknown) => { push('orca.accounts', 'warning', `account list unavailable: ${message(error)}`); return null }),

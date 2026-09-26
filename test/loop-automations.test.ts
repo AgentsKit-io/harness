@@ -47,6 +47,12 @@ describe('declared automations', () => {
     const agentMode = { ...loaded, config: { ...loaded.config, schedule: { ...loaded.config.schedule, runner: 'agent' as const } } }
     expect(precheckCommand(agentMode.config, loaded.path, 'observe')).toContain('loop stage observe')
   })
+
+  it('gives every stage the precheck budget, never the (possibly much longer) stage budget — tick fires a detached worker instead of running inline', () => {
+    const loaded = load('\n  retro: "0 9 * * 1"\n  retroIssue: ENG-1\n  observe: "*/15 * * * *"\n')
+    const longStage = { ...loaded, config: { ...loaded.config, schedule: { ...loaded.config.schedule, stageTimeoutSec: 2700 } } }
+    for (const spec of automationSpecs(longStage, 'claude')) expect(spec.precheckTimeoutSec).toBe(120)
+  })
 })
 
 describe('automation drift', () => {

@@ -91,8 +91,12 @@ export const automationSpecs = (loaded: LoadedLoopConfig, provider: string): rea
     prompt: automationPrompt(config, loaded.path, stage),
     provider,
     precheck: precheckCommand(config, loaded.path, stage),
-    // The observe precheck is a scan, not a stage run: it gets the ordinary precheck budget even in `precheck` runner mode.
-    precheckTimeoutSec: config.schedule.runner === 'precheck' && stage !== 'observe' ? config.schedule.stageTimeoutSec : config.schedule.precheckTimeoutSec,
+    // Every precheck gets the ordinary (short, Orca-ceiling-compatible) budget: `tick`'s precheck only peeks a
+    // lock and fires a detached background worker (see `loop stage tick` in cli.ts) rather than doing the real
+    // contract-generation-and-dispatch work inline, so it — like deliver, retro, and observe — never needs
+    // `schedule.stageTimeoutSec`'s long budget here; that value now only bounds the detached worker's own
+    // internal deadline, which Orca's precheck ceiling has no say over.
+    precheckTimeoutSec: config.schedule.precheckTimeoutSec,
     workspace,
     ...(config.orca.host ? { host: config.orca.host } : {}),
     reuseSession: true,

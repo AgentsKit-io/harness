@@ -50,7 +50,10 @@ describe('loop install', () => {
     expect(specs[0]).toMatchObject({ trigger: '*/5 * * * *', provider: 'claude', reuseSession: true })
     expect(specs[0]?.precheck).toBe(precheckCommand(loaded.config, loaded.path, 'tick'))
     expect(specs[0]?.precheck).toBe(`ak-harness loop stage tick -f "${loaded.path}"`)
-    expect(specs[0]?.precheckTimeoutSec).toBe(600)
+    // Always the short precheck budget, never schedule.stageTimeoutSec — tick's precheck fires a detached
+    // background worker instead of doing the real work inline, so Orca's own precheck ceiling never has to
+    // accommodate a potentially much longer stage budget.
+    expect(specs[0]?.precheckTimeoutSec).toBe(120)
     expect(automationPrompt(loaded.config, loaded.path, 'tick')).toContain('LOOP_PRECHECK_BYPASSED')
     const agentMode = { ...loaded, config: { ...loaded.config, schedule: { ...loaded.config.schedule, runner: 'agent' as const } } }
     expect(automationSpecs(agentMode, 'claude')[0]).toMatchObject({ precheckTimeoutSec: 120 })

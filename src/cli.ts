@@ -7,7 +7,9 @@ import type { BenchmarkObservationEvidence } from './execution/metrics.js'
 import { fail } from './kernel/errors.js'
 import { appendLoopEvent, approveHeldDelivery, ensureBaseView, attachNotifier, buildDebriefReport, buildRetroReport, createLoopEventBus, createProcessRunner, createRichIO, formatWatchEvent, generateContract, installLoopAutomations, loadLoopConfig, loadLoopPlugins, openLoopMemory, promoteLearningsToMemory, requireWritableTracker, resolveConnectors, runGuidedInstall, runLoopInit, loopStatus, renderDebriefMarkdown, renderObservabilityMarkdown, renderRetroMarkdown, retroLearnings, runRetroStage, precheckDeliver, precheckTick, rankModels, promoteLearnings, writePrdDocument, writeDesignDocument, documentRoot, readCheckoutState, readLearningsLedger, startPlan, interviewRound, answerRound, approvePlan, architectRound, approveDesign, decomposeRound, createPlannedIssues, designApproved, listPlans, prdGaps, readPlanState, writePlanState, renderPlanMarkdown, readStoredContract, writeLearningsLedger, runDeliver, runLoopDoctor, runIntakeStage, runMaintainStage, readReleaseBatch, readReleaseState, approveRelease, renderReleaseMarkdown, runReleaseStage, runObservability, runObserveStage, runTick, uninstallLoopAutomations, watchDeliveries, writeStoredContract, isStagePaused, recordStageRunResult, resumeIssue, resumeStage, readIssueFailures, stageEntry, listPausedIssues, readLastConfigHash, writeLastConfigHash, buildIssueTimeline, renderIssueTimelineMarkdown, runWorkerGuard, type LoopStageName } from './index.js'
 import { FileEventStore, inspectEventLogLock, recoverEventLogLock } from './kernel/events.js'
-import { acquireStageLock } from './loop/stage-lock.js'
+import { acquireStageLock, peekStageLock } from './loop/stage-lock.js'
+import { spawnDetachedWorker } from './loop/detached-worker.js'
+import { join } from 'node:path'
 import { startUiServer } from './ui/api/server.js'
 
 interface CliOptions { readonly config: string; readonly json: boolean }
@@ -144,6 +146,50 @@ loop.command('stage <stage>').description('Run one stage (tick | deliver | retro
       process.exitCode = 1
       return
     }
+    if (stage === 'tick') {
+      // `tick`'s own contract-generation gate can legitimately run well past Orca's 600s precheck ceiling (see
+      // `schedule.stageTimeoutSec`'s doc comment) — so, unlike every other stage, this precheck never does the
+      // real work itself. It only peeks whether a tick is already in flight (never acquires — the spawned worker
+      // does that itself, so there is nothing here to race) and, if not, fires a fully detached background
+      // process that does the real work on its own clock, then returns in milliseconds either way.
+      const inFlight = peekStageLock(loaded.stateDir, 'tick')
+      if (inFlight.held) {
+        console.log(JSON.stringify({ status: 'already-in-flight', stage, pid: inFlight.pid, ageMs: inFlight.ageMs }, null, 2))
+        process.exitCode = 1
+        return
+      }
+      // Spawn `node <this same cli.js> loop tick-worker …` directly with `process.execPath`/`process.argv[1]`,
+      // never `schedule.harnessCommand` (`ak-harness` by default) itself. On Windows any globally-installed
+      // Node CLI is a `.cmd` shim, which `shell: false` cannot exec directly — `cross-spawn` (used by
+      // `spawnDetachedWorker`) re-execs those through an extra `cmd.exe /d /s /c` hop, and that hop, however long
+      // this precheck then waits before exiting, never reliably outlives this process's own exit (reproduced
+      // live: even 5s did not help, where the same wait reliably worked for a direct, shim-free `node <script>`
+      // spawn — see `spawnDetachedWorker`'s doc comment). `process.argv[1]` is already the real, resolved script
+      // path regardless of whether a shim launched this process, so spawning it directly needs no shim, no
+      // extra hop, and no dependency on how `harnessCommand` is configured.
+      const logPath = join(loaded.stateDir, 'tick-worker.log')
+      const spawned = spawnDetachedWorker({ command: process.execPath, args: [process.argv[1]!, 'loop', 'tick-worker', '-f', file], cwd: loaded.root, logPath })
+      // Windows needs the detached child to survive a little past this process's own exit to be safely
+      // independent of it: reproduced live under real system load — exiting immediately after spawn (even with
+      // `detached: true` + `.unref()`) silently kills a still-starting child before its own process/module-load/
+      // config-read startup finishes, no matter how the child is spawned (native `child_process.spawn` and
+      // `cross-spawn` both show it; a fixed few-hundred-ms delay was not reliably enough either — 2-4s was,
+      // under load). Poll for the child's own stage-lock acquisition instead of guessing a fixed delay: it is a
+      // real checkpoint (its process, module graph, and config load all completed), so this returns as soon as
+      // it's actually safe rather than always waiting a worst-case amount. The ceiling below is a last resort,
+      // not the real timeout — Orca's own precheck-timeout is — so staying at 10s against a 120s budget leaves
+      // enormous margin even on the rare run that never confirms.
+      const confirmDeadlineAt = Date.now() + 10_000
+      let confirmed = false
+      while (Date.now() < confirmDeadlineAt) {
+        await new Promise((resolve) => setTimeout(resolve, 100))
+        if (peekStageLock(loaded.stateDir, 'tick').pid === spawned.pid) { confirmed = true; break }
+      }
+      completed('kicked-off', 0)
+      console.log(JSON.stringify({ status: 'kicked-off', stage, pid: spawned.pid, log: spawned.logPath, confirmed }, null, 2))
+      process.exitCode = 1
+      return
+    }
     const stageLock = acquireStageLock(loaded.stateDir, stage)
     if (!stageLock) {
       console.log(JSON.stringify({ status: 'locked', stage, reason: 'another stage run is still active' }, null, 2))
@@ -153,7 +199,7 @@ loop.command('stage <stage>').description('Run one stage (tick | deliver | retro
     const budgetMs = Math.max(60_000, loaded.config.schedule.stageTimeoutSec * 1000 - 60_000)
     const threshold = loaded.config.resilience.stagePauseAfterRuns
     try {
-      const report = stage === 'tick' ? await runTick({ loaded, runner, budgetMs, bus }) : stage === 'deliver' ? await runDeliver({ loaded, runner, budgetMs, bus }) : await runRetroStage({ loaded, runner, bus })
+      const report = stage === 'deliver' ? await runDeliver({ loaded, runner, budgetMs, bus }) : await runRetroStage({ loaded, runner, bus })
       if (stage !== 'retro') recordStageRunResult(loaded.stateDir, trackedStage, { succeeded: true }, threshold)
       completed(report.status, 'results' in report ? report.results.length : 'learningsProposed' in report ? report.learningsProposed : 0)
       console.log(JSON.stringify(report, null, 2))
@@ -166,6 +212,54 @@ loop.command('stage <stage>').description('Run one stage (tick | deliver | retro
       // channel hears about it exactly the way any other notified event does — no more separate direct call.
       if (entry?.pausedAt) appendLoopEvent(loaded.stateDir, { at: new Date().toISOString(), type: 'stage.paused', stage, reason, consecutiveFailures: entry.consecutiveFailures }, bus)
       console.log(JSON.stringify({ status: 'error', stage, error: reason, ...(entry ? { consecutiveFailures: entry.consecutiveFailures, paused: entry.pausedAt !== null } : {}) }, null, 2))
+    } finally {
+      stageLock()
+    }
+    process.exitCode = 1
+  } finally {
+    await flushNotifications()
+  }
+})
+loop.command('tick-worker').description('Internal: the detached background process `loop stage tick` spawns to run a real tick without Orca\'s 600s precheck ceiling — not meant to be run by hand. Use `loop tick` for a foreground run, or `loop stage tick` for the scheduled entrypoint.').action(async function (this: Command) {
+  const runner = createProcessRunner(); const file = loopFile(this)
+  const loaded = loadLoopConfig(file)
+  const startedAt = Date.now()
+  const bus = createLoopEventBus()
+  if (loaded.config.plugins.modules.length) await loadLoopPlugins(loaded.root, loaded.config.plugins.modules, bus)
+  const flushNotifications = attachNotifier(bus, { config: loaded.config, runner })
+  const completed = (status: string, count: number): void => appendLoopEvent(loaded.stateDir, { at: new Date().toISOString(), type: 'stage.completed', stage: 'tick', durationMs: Date.now() - startedAt, status, count }, bus)
+  try {
+    // A stage that got paused (or resumed) in the gap between the precheck's peek and this process actually
+    // starting is rare — the precheck returns in milliseconds — but cheap to catch here too rather than burn a
+    // whole tick budget on work the loop was told to stop.
+    if (isStagePaused(loaded.stateDir, 'tick')) {
+      const entry = stageEntry(loaded.stateDir, 'tick')
+      console.log(JSON.stringify({ status: 'paused', stage: 'tick', pausedAt: entry.pausedAt, pausedReason: entry.pausedReason, consecutiveFailures: entry.consecutiveFailures, resume: `ak-harness loop resume --stage tick -f ${JSON.stringify(file)}` }, null, 2))
+      process.exitCode = 1
+      return
+    }
+    const stageLock = acquireStageLock(loaded.stateDir, 'tick')
+    if (!stageLock) {
+      // Lost a race with another tick-worker (or a human's own `loop stage tick` / `loop tick-worker`) that
+      // acquired first — the precheck's peek is advisory, this acquire is the real, atomic mutex. Harmless: the
+      // lock's actual owner is already doing the work this run would have duplicated.
+      console.log(JSON.stringify({ status: 'locked', stage: 'tick', reason: 'another stage run is still active' }, null, 2))
+      process.exitCode = 1
+      return
+    }
+    const budgetMs = Math.max(60_000, loaded.config.schedule.stageTimeoutSec * 1000 - 60_000)
+    const threshold = loaded.config.resilience.stagePauseAfterRuns
+    try {
+      const report = await runTick({ loaded, runner, budgetMs, bus })
+      recordStageRunResult(loaded.stateDir, 'tick', { succeeded: true }, threshold)
+      completed(report.status, report.results.length)
+      console.log(JSON.stringify(report, null, 2))
+    } catch (error) {
+      const reason = error instanceof Error ? error.message : String(error)
+      const entry = recordStageRunResult(loaded.stateDir, 'tick', { succeeded: false, reason }, threshold)
+      completed('error', 0)
+      if (entry.pausedAt) appendLoopEvent(loaded.stateDir, { at: new Date().toISOString(), type: 'stage.paused', stage: 'tick', reason, consecutiveFailures: entry.consecutiveFailures }, bus)
+      console.log(JSON.stringify({ status: 'error', stage: 'tick', error: reason, consecutiveFailures: entry.consecutiveFailures, paused: entry.pausedAt !== null }, null, 2))
     } finally {
       stageLock()
     }

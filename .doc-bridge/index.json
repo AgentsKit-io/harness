@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
-  "contentHash": "13bc4872dc94d58fadea39da60a86edea53cb5725acca6c52cb1479f1f53fce2",
+  "contentHash": "f87ec03d499ff36110c37784b727f2f9b2acac1b7ac2c6118484418f05fb54d0",
   "contentHashAlgo": "sha256-normalized-v1",
-  "generatedAt": "2026-09-26T12:10:03.522Z",
+  "generatedAt": "2026-09-26T12:15:42.884Z",
   "project": {
     "name": "AgentsKit Harness",
     "root": "."
@@ -891,7 +891,7 @@
         "document",
         "human"
       ],
-      "contentHash": "27069a16217eab54a726d8d602ce5d36f788b8a65c1901cf331ab4a154ca3717"
+      "contentHash": "71519fe7826066e491c4fbd060fe55a6ba73e589d2800d7402b13f7a672bc634"
     },
     {
       "id": "document:docs/MODULE-BOUNDARIES.md",
@@ -2168,7 +2168,7 @@
         "ts",
         "src"
       ],
-      "contentHash": "7add2c091d167f7fc75489630c13332a5bef49204252d65ee74e9daca5fb4ca4"
+      "contentHash": "b39d46cd7877bc43b8324fc91d0c401ed68ec34155b20269ccce4d018db213f4"
     },
     {
       "id": "module:src/context/index.ts",
@@ -3651,7 +3651,7 @@
         "ts",
         "loop"
       ],
-      "contentHash": "e6ab23de5d74a7e5e6470f09cd7fa732a7fb092f0deebd941a506a5e04d9194a"
+      "contentHash": "4f22188070a8fab0f63ffb61333624a30b7b490eff91628e13983f41ad900e98"
     },
     {
       "id": "module:src/loop/base-view.ts",
@@ -3756,7 +3756,7 @@
         "ts",
         "loop"
       ],
-      "contentHash": "a2429341a98fc0752c2ceb2105b0354fc4a520b27b547704c8df8c9cd745be32"
+      "contentHash": "2c9cad4aa2a1f8d31395bc3e38f03fec404b3a6cea13601d5bf06005d13bd841"
     },
     {
       "id": "module:src/loop/connectors.ts",
@@ -3888,6 +3888,22 @@
       "contentHash": "f0617c0d68ccfc598c5cc49bfdc191d8eb67bac54901ac7a81aa5f671a89322f"
     },
     {
+      "id": "module:src/loop/detached-worker.ts",
+      "type": "module",
+      "title": "detached-worker.ts",
+      "path": "src/loop/detached-worker.ts",
+      "symbols": [
+        "DetachedWorkerResult",
+        "spawnDetachedWorker"
+      ],
+      "tags": [
+        "module",
+        "ts",
+        "loop"
+      ],
+      "contentHash": "a1995dfb4cdce91ab952542b59ca9f432579c7ddfabedc680859528772e2e0a0"
+    },
+    {
       "id": "module:src/loop/doctor.ts",
       "type": "module",
       "title": "doctor.ts",
@@ -3906,7 +3922,7 @@
         "ts",
         "loop"
       ],
-      "contentHash": "846c12eb5427d8ea2e5f3d9c0a592cebca9571bbf467ba30898e13a6d343c1bc"
+      "contentHash": "e6c95ac822f16c56d298f4dbfdde2abd252c75df43aa0ccdec0662e8d45cd887"
     },
     {
       "id": "module:src/loop/documents.ts",
@@ -5094,14 +5110,16 @@
       "title": "stage-lock.ts",
       "path": "src/loop/stage-lock.ts",
       "symbols": [
-        "acquireStageLock"
+        "StageLockStatus",
+        "acquireStageLock",
+        "peekStageLock"
       ],
       "tags": [
         "module",
         "ts",
         "loop"
       ],
-      "contentHash": "52290b2ea94c7507d4801d2bcf25970ace3ed20dc3dcb3900105cb079552e5c7"
+      "contentHash": "bfc4502d2b8d5f8a37caf395d23b9187ae42f7b8cdc7806b52b9ac86688c24b7"
     },
     {
       "id": "module:src/loop/tick.ts",
@@ -6855,6 +6873,18 @@
       "contentHash": "d656ea68438df9f2b16f37b0492cc70b5931cb9839e03fb4ced25c54c7d6a5bf"
     },
     {
+      "id": "module:test/detached-worker.test.ts",
+      "type": "module",
+      "title": "detached-worker.test.ts",
+      "path": "test/detached-worker.test.ts",
+      "tags": [
+        "module",
+        "ts",
+        "test"
+      ],
+      "contentHash": "0de42dba47c469438555fc8b4ce92088b9103e0cc3480cc2a5ebfcd5cee2d2f7"
+    },
+    {
       "id": "module:test/discovery.test.ts",
       "type": "module",
       "title": "discovery.test.ts",
@@ -7467,7 +7497,7 @@
         "ts",
         "test"
       ],
-      "contentHash": "748a0cd0b55e34ab9c2923ac4ce61d995271dbd64e24f09727fc4e5e0af08abf"
+      "contentHash": "a01ec789a25ca4b71cb8661811a4e737d526a19a108c242aa416eab24d818fd0"
     },
     {
       "id": "module:test/loop-base-view.test.ts",
@@ -7623,7 +7653,7 @@
         "ts",
         "test"
       ],
-      "contentHash": "e66a39e33838ae4e0cf4435c673f567ba04558191ffdfa0becf565e2ff900752"
+      "contentHash": "388f2564cd2e3098d0d0efaee2b35c00d8a9ed36a7bd78549e711266b46a1ebf"
     },
     {
       "id": "module:test/loop-documents.test.ts",
@@ -7791,7 +7821,7 @@
         "ts",
         "test"
       ],
-      "contentHash": "a3b8f049355bb5ddebab06f350d443ff5c9e020d76d9dfb3e883afe221335c98"
+      "contentHash": "5fa35a82999231112a397cc98bf5f82925792625bafc6fac564a76db8dcbdba1"
     },
     {
       "id": "module:test/loop-intake-maintain.test.ts",
@@ -8427,7 +8457,7 @@
         "ts",
         "test"
       ],
-      "contentHash": "6c2ef195eab4dd674ee2eb0ffeb9c0136877f72444bd7442c3e0e3a90a5d3d42"
+      "contentHash": "0f7d74c5cbc632fc8b3ceeb0359171eb65997fe510e963cbd79cee43b5b5463f"
     },
     {
       "id": "module:test/ui-actions.test.ts",
@@ -8755,8 +8785,8 @@
     }
   },
   "inputs": {
-    "hash": "643f0bb8a29d931001b34366f37a123329d1cad93c2d6f1284cd2bdc87f16257",
-    "fileCount": 531,
+    "hash": "6104319c9fcabc61babfe73da1f885fe31ba1b378f73c22a22441edcc1f41bca",
+    "fileCount": 533,
     "projectionVersion": 2
   },
   "retrieval": {
@@ -8778,9 +8808,9 @@
   "projection": {
     "type": "retrieval-index",
     "schemaVersion": 1,
-    "contentHash": "41ce81d73245ab90cd9a4cebe9f051369ba7c78dbaba4ec50e4c93548ec6eae0",
+    "contentHash": "8d726a576918053b050a716151edaf6ac88891e209d228b9bb1258dafd473f6a",
     "contentHashAlgo": "sha256-normalized-v1",
-    "snapshotHash": "5be85458b93f9297e5087fa10eb9112ae8399643ff19c067bd235fdadc361c82",
+    "snapshotHash": "82ffc92d4f57bbec379fc006bd160e34914f87ea83de1bc0f30a3cf7b0168612",
     "overlayHash": "f99666ff9119084dd25c2974ae64eb6935ec2aa785ff5ad478fb9d541f7a5e94",
     "configurationHash": "816afaf6a7dc09767f7594d8fd80024612ca0f33becf0e44dde0107fcf2782df",
     "lexiconVersion": 1,
@@ -8800,7 +8830,7 @@
     },
     "lexical": {
       "version": 1,
-      "documentCount": 540,
+      "documentCount": 542,
       "fieldNames": [
         "aliases",
         "body",
@@ -8811,13 +8841,13 @@
         "title"
       ],
       "averageFieldLength": {
-        "aliases": 2.925925925925926,
-        "body": 43.84444444444444,
-        "headings": 3.8777777777777778,
-        "path": 6.111111111111111,
-        "summary": 2.664814814814815,
-        "symbols": 14.018518518518519,
-        "title": 3.933333333333333
+        "aliases": 2.92619926199262,
+        "body": 43.68265682656826,
+        "headings": 3.8653136531365315,
+        "path": 6.11070110701107,
+        "summary": 2.6549815498154983,
+        "symbols": 13.99630996309963,
+        "title": 3.9354243542435423
       }
     },
     "entries": [
@@ -9342,7 +9372,7 @@
           ],
           "outbound": []
         },
-        "contentHash": "c38a0e441be17d88ac0da292f62436de1ff2e90ef084cfd4445d76d706448f8b",
+        "contentHash": "c45ea68e316ba6abaf768b9e2dafa03d98d647a1912c18b46ed3eac8acc34fb4",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -9457,7 +9487,7 @@
           ],
           "outbound": []
         },
-        "contentHash": "5496611b904d90ec12bd229cc261538b7b5e876603f3cd2e5cd37994bf0ee4ba",
+        "contentHash": "11c10505de780fc6a88c16cb2ddca049522c95fb31cee44e04ff817341188880",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -10958,7 +10988,7 @@
         ],
         "fields": {
           "title": "cli",
-          "headings": "ak-harness doctor ak-harness ui ak-harness plan ak-harness context ak-harness context resolve ak-harness discovery ak-harness discovery assess ak-harness wip ak-harness wip assess ak-harness experiment ak-harness experiment select ak-harness delivery ak-harness delivery preflight ak-harness delivery pr ak-harness delivery integration ak-harness delivery production ak-harness delivery acceptance ak-harness delivery cleanup ak-harness pilot ak-harness cycle ak-harness cycle assess ak-harness block ak-harness block validate ak-harness block assess ak-harness preflight ak-harness preflight files ak-harness snapshot ak-harness snapshot validate ak-harness learning ak-harness learning parse ak-harness coordination ak-harness coordination claim ak-harness artifacts ak-harness artifacts inspect ak-harness artifacts list ak-harness artifacts schema ak-harness loop ak-harness loop validate ak-harness loop doctor ak-harness loop precheck ak-harness loop deliver ak-harness loop stage ak-harness loop tick ak-harness loop contract ak-harness loop init ak-harness loop install ak-harness loop uninstall ak-harness loop status ak-harness loop approve ak-harness loop resume ak-harness loop paused ak-harness loop hook ak-harness loop debrief ak-harness loop issue-timeline ak-harness loop worker-guard ak-harness loop observe ak-harness loop watch ak-harness loop retro ak-harness loop plan ak-harness loop plan start ak-harness loop plan answer ak-harness loop plan show ak-harness loop plan approve ak-harness loop plan architect",
+          "headings": "ak-harness doctor ak-harness ui ak-harness plan ak-harness context ak-harness context resolve ak-harness discovery ak-harness discovery assess ak-harness wip ak-harness wip assess ak-harness experiment ak-harness experiment select ak-harness delivery ak-harness delivery preflight ak-harness delivery pr ak-harness delivery integration ak-harness delivery production ak-harness delivery acceptance ak-harness delivery cleanup ak-harness pilot ak-harness cycle ak-harness cycle assess ak-harness block ak-harness block validate ak-harness block assess ak-harness preflight ak-harness preflight files ak-harness snapshot ak-harness snapshot validate ak-harness learning ak-harness learning parse ak-harness coordination ak-harness coordination claim ak-harness artifacts ak-harness artifacts inspect ak-harness artifacts list ak-harness artifacts schema ak-harness loop ak-harness loop validate ak-harness loop doctor ak-harness loop precheck ak-harness loop deliver ak-harness loop stage ak-harness loop tick-worker ak-harness loop tick ak-harness loop contract ak-harness loop init ak-harness loop install ak-harness loop uninstall ak-harness loop status ak-harness loop approve ak-harness loop resume ak-harness loop paused ak-harness loop hook ak-harness loop debrief ak-harness loop issue-timeline ak-harness loop worker-guard ak-harness loop observe ak-harness loop watch ak-harness loop retro ak-harness loop plan ak-harness loop plan start ak-harness loop plan answer ak-harness loop plan show ak-harness loop plan approve",
           "path": "apps/docs/content/docs/reference/cli.mdx",
           "symbols": "",
           "summary": "{/* Generated by `pnpm docs:generate`. Do not edit by hand: edit `src/cli.ts` and regenerate. */}",
@@ -10979,7 +11009,7 @@
             }
           ]
         },
-        "contentHash": "84143fd4fed3053c8b4f18d59cad5ce57ba6da63ae3ce3bcc167b6435f697b7b",
+        "contentHash": "3988bca9bd18f2a97c5c1749e09a22f907af5def43dfe228b1f461dd73d33721",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -11045,12 +11075,17 @@
             },
             {
               "kind": "mentions-symbol",
+              "id": "module:src/loop/stage-lock.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "mentions-symbol",
               "id": "module:src/ui/app/src/lib/api.ts",
               "confidence": "observed"
             }
           ]
         },
-        "contentHash": "741c928ccda17536cf437a2a6870d725bde4bbdd4e93f1b2550d2eeb39b1d8a8",
+        "contentHash": "39d58f5be1599482b8d1bc7fa43a57152a99a560184dbaa654af7746547413ba",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -13788,6 +13823,11 @@
             },
             {
               "kind": "mentions-symbol",
+              "id": "module:src/loop/detached-worker.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "mentions-symbol",
               "id": "module:src/loop/event-bus.ts",
               "confidence": "observed"
             },
@@ -13813,12 +13853,17 @@
             },
             {
               "kind": "mentions-symbol",
+              "id": "module:src/loop/stage-lock.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "mentions-symbol",
               "id": "module:src/loop/tick.ts",
               "confidence": "observed"
             }
           ]
         },
-        "contentHash": "27069a16217eab54a726d8d602ce5d36f788b8a65c1901cf331ab4a154ca3717",
+        "contentHash": "71519fe7826066e491c4fbd060fe55a6ba73e589d2800d7402b13f7a672bc634",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -18532,6 +18577,11 @@
             },
             {
               "kind": "imports",
+              "id": "module:src/loop/detached-worker.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
               "id": "module:src/loop/stage-lock.ts",
               "confidence": "observed"
             },
@@ -18542,7 +18592,7 @@
             }
           ]
         },
-        "contentHash": "7add2c091d167f7fc75489630c13332a5bef49204252d65ee74e9daca5fb4ca4",
+        "contentHash": "b39d46cd7877bc43b8324fc91d0c401ed68ec34155b20269ccce4d018db213f4",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -24594,7 +24644,7 @@
             }
           ]
         },
-        "contentHash": "e6ab23de5d74a7e5e6470f09cd7fa732a7fb092f0deebd941a506a5e04d9194a",
+        "contentHash": "4f22188070a8fab0f63ffb61333624a30b7b490eff91628e13983f41ad900e98",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -25334,7 +25384,7 @@
             }
           ]
         },
-        "contentHash": "a2429341a98fc0752c2ceb2105b0354fc4a520b27b547704c8df8c9cd745be32",
+        "contentHash": "2c9cad4aa2a1f8d31395bc3e38f03fec404b3a6cea13601d5bf06005d13bd841",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -26307,6 +26357,62 @@
         "confidence": "observed"
       },
       {
+        "id": "module:src/loop/detached-worker.ts",
+        "kind": "module",
+        "path": "src/loop/detached-worker.ts",
+        "title": "detached-worker.ts",
+        "aliases": [],
+        "symbols": [
+          "DetachedWorkerResult",
+          "spawnDetachedWorker"
+        ],
+        "tags": [
+          "module",
+          "ts",
+          "loop"
+        ],
+        "fields": {
+          "title": "detached-worker.ts",
+          "headings": "",
+          "path": "src/loop/detached-worker.ts",
+          "symbols": "DetachedWorkerResult spawnDetachedWorker",
+          "summary": "",
+          "body": "",
+          "aliases": "module ts loop"
+        },
+        "graph": {
+          "pagerank": 0,
+          "inboundLinks": 1,
+          "coveredBy": [],
+          "mentionedBy": [
+            "document:docs/LOOP.md"
+          ],
+          "areaId": "area:src/loop",
+          "packageId": "package:@agentskit/harness",
+          "inbound": [
+            {
+              "kind": "imports",
+              "id": "module:src/cli.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
+              "id": "module:test/detached-worker.test.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "mentions-symbol",
+              "id": "document:docs/LOOP.md",
+              "confidence": "observed"
+            }
+          ],
+          "outbound": []
+        },
+        "contentHash": "a1995dfb4cdce91ab952542b59ca9f432579c7ddfabedc680859528772e2e0a0",
+        "provenance": "observed",
+        "confidence": "observed"
+      },
+      {
         "id": "module:src/loop/doctor.ts",
         "kind": "module",
         "path": "src/loop/doctor.ts",
@@ -26540,7 +26646,7 @@
             }
           ]
         },
-        "contentHash": "846c12eb5427d8ea2e5f3d9c0a592cebca9571bbf467ba30898e13a6d343c1bc",
+        "contentHash": "e6c95ac822f16c56d298f4dbfdde2abd252c75df43aa0ccdec0662e8d45cd887",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -31074,7 +31180,9 @@
         "title": "stage-lock.ts",
         "aliases": [],
         "symbols": [
-          "acquireStageLock"
+          "StageLockStatus",
+          "acquireStageLock",
+          "peekStageLock"
         ],
         "tags": [
           "module",
@@ -31085,16 +31193,19 @@
           "title": "stage-lock.ts",
           "headings": "",
           "path": "src/loop/stage-lock.ts",
-          "symbols": "acquireStageLock",
+          "symbols": "StageLockStatus acquireStageLock peekStageLock",
           "summary": "",
           "body": "",
           "aliases": "module ts loop"
         },
         "graph": {
           "pagerank": 0,
-          "inboundLinks": 0,
+          "inboundLinks": 2,
           "coveredBy": [],
-          "mentionedBy": [],
+          "mentionedBy": [
+            "document:apps/docs/content/docs/reference/configuration.mdx",
+            "document:docs/LOOP.md"
+          ],
           "areaId": "area:src/loop",
           "packageId": "package:@agentskit/harness",
           "inbound": [
@@ -31112,6 +31223,16 @@
               "kind": "imports",
               "id": "module:test/stage-lock.test.ts",
               "confidence": "observed"
+            },
+            {
+              "kind": "mentions-symbol",
+              "id": "document:apps/docs/content/docs/reference/configuration.mdx",
+              "confidence": "observed"
+            },
+            {
+              "kind": "mentions-symbol",
+              "id": "document:docs/LOOP.md",
+              "confidence": "observed"
             }
           ],
           "outbound": [
@@ -31122,7 +31243,7 @@
             }
           ]
         },
-        "contentHash": "52290b2ea94c7507d4801d2bcf25970ace3ed20dc3dcb3900105cb079552e5c7",
+        "contentHash": "bfc4502d2b8d5f8a37caf395d23b9187ae42f7b8cdc7806b52b9ac86688c24b7",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -37755,6 +37876,46 @@
         "confidence": "observed"
       },
       {
+        "id": "module:test/detached-worker.test.ts",
+        "kind": "module",
+        "path": "test/detached-worker.test.ts",
+        "title": "detached-worker.test.ts",
+        "aliases": [],
+        "tags": [
+          "module",
+          "ts",
+          "test"
+        ],
+        "fields": {
+          "title": "detached-worker.test.ts",
+          "headings": "",
+          "path": "test/detached-worker.test.ts",
+          "symbols": "",
+          "summary": "",
+          "body": "",
+          "aliases": "module ts test"
+        },
+        "graph": {
+          "pagerank": 0,
+          "inboundLinks": 0,
+          "coveredBy": [],
+          "mentionedBy": [],
+          "areaId": "area:test",
+          "packageId": "package:@agentskit/harness",
+          "inbound": [],
+          "outbound": [
+            {
+              "kind": "imports",
+              "id": "module:src/loop/detached-worker.ts",
+              "confidence": "observed"
+            }
+          ]
+        },
+        "contentHash": "0de42dba47c469438555fc8b4ce92088b9103e0cc3480cc2a5ebfcd5cee2d2f7",
+        "provenance": "observed",
+        "confidence": "observed"
+      },
+      {
         "id": "module:test/discovery.test.ts",
         "kind": "module",
         "path": "test/discovery.test.ts",
@@ -39861,7 +40022,7 @@
             }
           ]
         },
-        "contentHash": "748a0cd0b55e34ab9c2923ac4ce61d995271dbd64e24f09727fc4e5e0af08abf",
+        "contentHash": "a01ec789a25ca4b71cb8661811a4e737d526a19a108c242aa416eab24d818fd0",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -40381,7 +40542,7 @@
             }
           ]
         },
-        "contentHash": "e66a39e33838ae4e0cf4435c673f567ba04558191ffdfa0becf565e2ff900752",
+        "contentHash": "388f2564cd2e3098d0d0efaee2b35c00d8a9ed36a7bd78549e711266b46a1ebf",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -40941,7 +41102,7 @@
             }
           ]
         },
-        "contentHash": "a3b8f049355bb5ddebab06f350d443ff5c9e020d76d9dfb3e883afe221335c98",
+        "contentHash": "5fa35a82999231112a397cc98bf5f82925792625bafc6fac564a76db8dcbdba1",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -43138,7 +43299,7 @@
             }
           ]
         },
-        "contentHash": "6c2ef195eab4dd674ee2eb0ffeb9c0136877f72444bd7442c3e0e3a90a5d3d42",
+        "contentHash": "0f7d74c5cbc632fc8b3ceeb0359171eb65997fe510e963cbd79cee43b5b5463f",
         "provenance": "observed",
         "confidence": "observed"
       },
