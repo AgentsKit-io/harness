@@ -3,9 +3,16 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import {
-  extractResetsAt, generateContract, parseLinearIssueDetail, parseStructuredContractOutput, readStoredContract, resolveDocContext, validateLoopConfig,
+  CONTRACT_JSON_SCHEMA, extractResetsAt, generateContract, parseLinearIssueDetail, parseStructuredContractOutput, readStoredContract, resolveDocContext, validateLoopConfig,
 } from '../src/index.js'
 import type { CommandResult, CommandRunner, RankedModel } from '../src/index.js'
+
+describe('CONTRACT_JSON_SCHEMA', () => {
+  it('requires id/title/description on every hitl option (regression: 2026-09-26 — a bare `{ type: "array" }` with no `items` shape let providers omit them, which TaskContractSchema\'s Zod then rejected as "expected string, received undefined" on every retry, e.g. AGE-1872 and AGE-1612 on a real project)', () => {
+    const optionsSchema = CONTRACT_JSON_SCHEMA.properties.hitl.items.properties.options as { readonly items?: { readonly required?: readonly string[] } }
+    expect(optionsSchema.items?.required).toEqual(['id', 'title', 'description'])
+  })
+})
 
 describe('extractResetsAt', () => {
   it('parses a relative "resets in Nh" or "resets in Nm" phrase', () => {
