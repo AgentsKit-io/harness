@@ -86,7 +86,7 @@
     {
       "id": "docs-index",
       "category": "docs",
-      "command": "pnpm -s docs:bridge:index >/dev/null && git diff --exit-code -- doc-bridge.config.json .doc-bridge && node -e 'console.log(JSON.stringify({status:\"passed\",criteria:[\"doc-bridge-dogfooding\"]}))'",
+      "command": "pnpm -s exec ak-docs gate run index-freshness >/dev/null && node -e 'console.log(JSON.stringify({status:\"passed\",criteria:[\"doc-bridge-dogfooding\"]}))'",
       "execution": "real",
       "timeoutMs": 180000,
       "evidence": "structured"
