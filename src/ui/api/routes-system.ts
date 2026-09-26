@@ -116,14 +116,15 @@ export const createSystemRoutes = (deps: SystemRouteDeps = { doctor: runLoopDoct
       .then((report) => report.suggestions.map((item) => ({ text: item.text, knob: item.knob ?? null, target: item.target })))
       .catch(() => []))
     const cpuCount = cpus().length || 1
-    const alerts = (config as { readonly alerts?: { readonly webhook?: unknown } }).alerts
+    // Attention alerts go through the existing `notifications` channels (webhook or command), see alerts.ts.
+    const alertsConfigured = Boolean(config.notifications?.webhook || config.notifications?.command)
     return {
       doctor: (() => { const saved = readJsonFile(doctorReportPath(stateDir), doctorSchema); return saved ? { ranAt: saved.ranAt, checks: saved.checks } : null })(),
       machine: { loadPercent: process.platform === 'win32' ? null : Math.round(((loadavg()[0] ?? 0) / cpuCount) * 100), freeRamGb: Math.round((freemem() / 1024 ** 3) * 10) / 10, liveTerminals: null, slots: config.machine.ceiling ?? config.machine.floor },
       routing,
       cooldowns: Object.entries(cooldownState).filter(([, entry]) => Date.parse(entry.until) > now.getTime()).map(([provider, entry]) => ({ provider, until: entry.until, reason: entry.reason })),
       handoffs, stages, learnings, retroSuggestions,
-      alerts: { configured: Boolean(alerts?.webhook), lastDelivery: readJsonFile(alertsStatePath(stateDir), alertsSchema)?.lastDelivery ?? null },
+      alerts: { configured: alertsConfigured, lastDelivery: readJsonFile(alertsStatePath(stateDir), alertsSchema)?.lastDelivery ?? null },
     }
   }
 

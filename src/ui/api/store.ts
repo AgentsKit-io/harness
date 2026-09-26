@@ -35,6 +35,7 @@ const runRecordFrom = (run: IssueRun): RunRecord => ({
   id: run.id, attempt: run.attempt, configHash: run.config.configHash, flow: run.config.flow,
   builder: `${run.config.builder.provider}/${run.config.builder.model}`, contractDigest: run.contract.digest,
   maxFixRounds: run.config.maxFixRounds, perIssueTokens: run.config.perIssueTokens, status: run.status, archived: run.archived,
+  ...(run.config.weakenedGates?.length ? { weakenedGates: run.config.weakenedGates } : {}),
 })
 
 const decisionFrom = (request: HitlRequest): Decision => ({
