@@ -97,27 +97,34 @@ try {
     check(`${name}:aurora`, data.aurora, 'fixed, aria-hidden, pointer-events:none')
     check(`${name}:overflow`, data.overflow <= 0, `horizontal overflow ${data.overflow}px`)
     check(`${name}:console`, errors.length === 0, errors.join(' | ') || 'no console errors')
-    // Hero title contrast (WCAG AA, large text >= 3:1) against the pixels actually rendered behind it (aurora included).
-    const title = page.locator('.harness-home h1 + p')
-    const box = await title.boundingBox()
-    const fg = await title.evaluate(el => getComputedStyle(el).color)
-    await title.evaluate(el => { el.dataset.prevColor = el.style.color; el.style.color = 'transparent' })
-    const bgShot = box ? (await page.screenshot({ clip: box })).toString('base64') : ''
-    await title.evaluate(el => { el.style.color = el.dataset.prevColor ?? '' })
-    const ratio = await page.evaluate(async ({ png, fg }) => {
-      if (!png) return 0
-      const img = new Image(); img.src = `data:image/png;base64,${png}`; await img.decode()
-      const canvas = document.createElement('canvas'); canvas.width = img.width; canvas.height = img.height
-      const ctx = canvas.getContext('2d'); ctx.drawImage(img, 0, 0)
-      const data = ctx.getImageData(0, 0, img.width, img.height).data
-      const lum = ([r, g, b]) => [r, g, b].map(v => { const x = v / 255; return x <= 0.04045 ? x / 12.92 : ((x + 0.055) / 1.055) ** 2.4 }).reduce((a, v, i) => a + v * [0.2126, 0.7152, 0.0722][i], 0)
-      const f = lum(fg.match(/[\d.]+/g).slice(0, 3).map(Number))
-      const ratios = []
-      for (let i = 0; i < data.length; i += 16) { const b = lum([data[i], data[i + 1], data[i + 2]]); ratios.push((Math.max(f, b) + 0.05) / (Math.min(f, b) + 0.05)) }
-      ratios.sort((a, b) => a - b)
-      return ratios[Math.floor(ratios.length * 0.05)] // worst 5% of background pixels
-    }, { png: bgShot, fg })
-    check(`${name}:hero-contrast`, ratio >= 3, `title ${fg} worst-5% contrast ${ratio.toFixed(2)}:1 (AA large >= 3)`)
+    // Contrast (WCAG AA) of text against the pixels actually rendered behind it (aurora, translucent bar included).
+    const contrast = async (locator) => {
+      const box = await locator.boundingBox()
+      const fg = await locator.evaluate(el => getComputedStyle(el).color)
+      await locator.evaluate(el => el.style.setProperty('-webkit-text-fill-color', 'transparent', 'important'))
+      const png = box ? (await page.screenshot({ clip: box })).toString('base64') : ''
+      await locator.evaluate(el => el.style.removeProperty('-webkit-text-fill-color'))
+      const ratio = await page.evaluate(async ({ png, fg }) => {
+        if (!png) return 0
+        const img = new Image(); img.src = `data:image/png;base64,${png}`; await img.decode()
+        const canvas = document.createElement('canvas'); canvas.width = img.width; canvas.height = img.height
+        const ctx = canvas.getContext('2d'); ctx.drawImage(img, 0, 0)
+        const data = ctx.getImageData(0, 0, img.width, img.height).data
+        const lum = ([r, g, b]) => [r, g, b].map(v => { const x = v / 255; return x <= 0.04045 ? x / 12.92 : ((x + 0.055) / 1.055) ** 2.4 }).reduce((a, v, i) => a + v * [0.2126, 0.7152, 0.0722][i], 0)
+        const f = lum(fg.match(/[\d.]+/g).slice(0, 3).map(Number))
+        const ratios = []
+        for (let i = 0; i < data.length; i += 16) { const b = lum([data[i], data[i + 1], data[i + 2]]); ratios.push((Math.max(f, b) + 0.05) / (Math.min(f, b) + 0.05)) }
+        ratios.sort((a, b) => a - b)
+        return ratios[Math.floor(ratios.length * 0.05)] // worst 5% of background pixels
+      }, { png, fg })
+      return { fg, ratio }
+    }
+    const hero = await contrast(page.locator('.harness-home h1 + p'))
+    check(`${name}:hero-contrast`, hero.ratio >= 3, `title ${hero.fg} worst-5% ${hero.ratio.toFixed(2)}:1 (AA large >= 3)`)
+    // First product link in the bar that is not the current one (normal text, AA >= 4.5).
+    const barLink = page.locator('#ak-eco a:not([aria-current]):not(.ak-eco-cta)').filter({ hasText: /Registry/ }).first()
+    const bar = (await barLink.count()) ? await contrast(barLink) : { fg: 'missing', ratio: 0 }
+    check(`${name}:bar-contrast`, bar.ratio >= 4.5, `bar link ${bar.fg} worst-5% ${bar.ratio.toFixed(2)}:1 (AA >= 4.5)`)
     const path = join(outDir, `home-${name}.png`)
     await page.screenshot({ path, fullPage: true })
     artifacts.push({ path: relative(root, path), sha256: createHash('sha256').update(readFileSync(path)).digest('hex'), type: 'screenshot', viewport })

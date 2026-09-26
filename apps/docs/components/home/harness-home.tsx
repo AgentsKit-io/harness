@@ -302,7 +302,7 @@ export function HarnessHome({ counts }: HarnessHomeProps) {
   const nightShift = true
 
   return (
-    <div className="harness-home">
+    <div className="harness-home" data-ak-surface="dark">
       <AgentsKitAurora />
 
       <div data-home-content="" style={{ maxWidth: '100%', overflowX: 'hidden' }}>
