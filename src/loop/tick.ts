@@ -543,6 +543,11 @@ export const runTick = async (input: TickInput): Promise<TickReport> => {
     if (!requests.length) return false
     if (dryRun) return true
     const store = createHitlStore(loaded.stateDir)
+    // A request's id is keyed by this contract's own digest, so a superseding contract (a new blocking
+    // ambiguity, or the same one re-asked before the open-HITL skip above existed) always creates new
+    // request ids rather than reusing the old ones — leaving the previous batch open forever otherwise.
+    // Confirmed live: 110 open requests had accumulated this way before the skip above was added.
+    for (const stale of store.list({ status: 'open', issue })) store.markStale(stale.requestId, 'superseded by a newer contract for the same issue')
     const batchId = `contract:${issue}:${stored.digest}`
     for (const [index, request] of requests.entries()) {
       const requestId = `${batchId}:${index}`
