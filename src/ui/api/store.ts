@@ -35,6 +35,7 @@ const runRecordFrom = (run: IssueRun): RunRecord => ({
   id: run.id, attempt: run.attempt, configHash: run.config.configHash, flow: run.config.flow,
   builder: `${run.config.builder.provider}/${run.config.builder.model}`, contractDigest: run.contract.digest,
   maxFixRounds: run.config.maxFixRounds, perIssueTokens: run.config.perIssueTokens, status: run.status, archived: run.archived,
+  ...(run.config.weakenedGates?.length ? { weakenedGates: run.config.weakenedGates } : {}),
 })
 
 const decisionFrom = (request: HitlRequest): Decision => ({
@@ -160,7 +161,8 @@ const overlayLiveStores = (state: ProjectionState, stateDir: string): Projection
   for (const issue of issues) {
     const record = state.issues[issue] ?? { issue, title: null, url: null, trackerState: null, phase: 'available', reviewState: null, run: null, dispatch: null, pullRequest: null, pendingDecisions: [], error: null, updatedAt: new Date(0).toISOString() }
     const latestRun = runsByIssue.get(issue)
-    merged[issue] = overlayLiveState(record, latestRun ? runRecordFrom(latestRun) : null, decisionsByIssue.get(issue) ?? [])
+    const live = overlayLiveState(record, latestRun ? runRecordFrom(latestRun) : null, decisionsByIssue.get(issue) ?? [])
+    merged[issue] = record.dispatch || record.pullRequest ? { ...live, fixRoundsUsed: readDeliveryState(stateDir, issue).fixRounds } : live
   }
   return { issues: merged }
 }

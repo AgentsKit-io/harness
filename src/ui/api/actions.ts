@@ -1,17 +1,19 @@
 import type { CommandRunner } from '../../adapters/command.js'
 import { orcaTerminalClose, orcaWorktreeRemove } from '../../adapters/orca-cli.js'
-import { createDispatchLedger } from '../../execution/coordination.js'
+import { createDispatchLedger, readActiveClaims } from '../../execution/coordination.js'
 import { ensureBaseView } from '../../loop/base-view.js'
 import type { LoadedLoopConfig, ModelReference } from '../../loop/config.js'
 import { resolveConnectors } from '../../loop/connectors.js'
 import { assessContract, contractIsFresh, generateContract, readStoredContract, writeStoredContract, type StoredContract } from '../../loop/contract.js'
-import { listDispatched, markDispatchCancelled } from '../../loop/deliver.js'
+import { listDispatched, markDispatchCancelled, readDeliveryState } from '../../loop/deliver.js'
 import { runLoopDoctor } from '../../loop/doctor.js'
 import { createHitlStore } from '../../loop/hitl.js'
 import { createIssueQueue } from '../../loop/queue.js'
 import { resumeIssue as clearPause } from '../../loop/resilience-state.js'
 import { rankModels } from '../../loop/routing.js'
 import { appendLoopEvent } from '../../loop/tick.js'
+import type { Drift } from './contract.js'
+import { weakenedGates } from './config-view.js'
 import { syncProjection } from './store.js'
 
 /**
@@ -67,7 +69,7 @@ export const generateOrReuseContract = async (context: ActionContext, issueId: s
   // `hitl.ts` directly (the same store the motor's own materialize/answer flow uses) rather than a UI-side copy.
   const humanDecisions = createHitlStore(loaded.stateDir).list({ issue: issueId, status: 'answered' })
   const contractIssue = humanDecisions.length
-    ? { ...issueDetail, description: `${issueDetail.description}\n\nDecisões humanas de uma rodada anterior:\n${humanDecisions.map((request) => `- ${request.question}: ${request.answer?.optionId}${request.answer?.freeText ? ` — ${request.answer.freeText}` : ''}`).join('\n')}` }
+    ? { ...issueDetail, description: `${issueDetail.description}\n\nHuman decisions from an earlier round:\n${humanDecisions.map((request) => `- ${request.question}: ${request.answer?.optionId}${request.answer?.freeText ? ` — ${request.answer.freeText}` : ''}`).join('\n')}` }
     : issueDetail
 
   const stored = await generateContract({ runner, config: loaded.config, root: deps.root, issue: contractIssue, candidates: deps.candidates })
@@ -75,11 +77,11 @@ export const generateOrReuseContract = async (context: ActionContext, issueId: s
 
   const ambiguities = stored.contract.ambiguities.filter((item) => item.blocking).map((item, index) => ({
     question: item.question,
-    context: 'O contrato marcou isto como uma ambiguidade bloqueante; a execução retoma depois que você responder.',
+    context: 'The contract marked this as a blocking ambiguity; the run resumes once you answer.',
     options: [
-      { id: `proceed-${index}`, title: 'Seguir com a leitura atual', description: 'Usar o que o contrato já assumiu e continuar.' },
-      { id: `clarify-${index}`, title: 'Aguardar mais detalhe', description: 'Revisar a issue antes de deixar a execução continuar.' },
-      { id: `example-${index}`, title: 'Dar um exemplo concreto', description: 'Adicionar um caso real à issue para orientar a próxima tentativa.' },
+      { id: `proceed-${index}`, title: 'Proceed with the current reading', description: 'Use what the contract already assumed and continue.' },
+      { id: `clarify-${index}`, title: 'Wait for more detail', description: 'Revise the issue before letting the run continue.' },
+      { id: `example-${index}`, title: 'Give a concrete example', description: 'Add a real case to the issue to guide the next attempt.' },
     ],
     recommendedOptionId: `clarify-${index}`,
   }))
@@ -156,12 +158,14 @@ export interface EnqueueRunInput {
 /** The wizard's confirmation step: `queue.ts` owns the run record (id, status machine, duplicate-active-run
  * check — the same store `tick.ts` reads for `queue.mode: explicit`); `ui.run-enqueued` only carries the phase
  * signal nothing else emits before a dispatch happens. */
+const weakened = (loaded: LoadedLoopConfig): { readonly weakenedGates?: readonly string[] } => { const paths = weakenedGates(loaded); return paths.length ? { weakenedGates: paths } : {} }
+
 export const enqueueRun = (context: ActionContext, input: EnqueueRunInput): { readonly runId: string } => {
   const { loaded } = context
   const at = new Date().toISOString()
   const run = createIssueQueue({ stateDir: loaded.stateDir }).enqueue({
     issue: input.issue, title: input.title ?? null, url: input.url ?? null,
-    config: { configHash: input.configHash, flow: input.flow, builder: input.builder, maxFixRounds: input.maxFixRounds, perIssueTokens: input.perIssueTokens, roles: { orchestrator: 'project', reviewer: 'project', watcher: 'project', delivery: 'snapshot' } },
+    config: { configHash: input.configHash, flow: input.flow, builder: input.builder, maxFixRounds: input.maxFixRounds, perIssueTokens: input.perIssueTokens, roles: { orchestrator: 'project', reviewer: 'project', watcher: 'project', delivery: 'snapshot' }, ...weakened(loaded) },
     contract: { digest: input.contractDigest, status: 'valid', frozenAt: at },
     preflight: { status: 'passed', checkedAt: at },
   })
@@ -256,4 +260,35 @@ export const answerDecision = (context: ActionContext, issue: string, expectedDi
   if (batchReady) appendLoopEvent(loaded.stateDir, { at: nowIso(), type: 'human.hitl-batch-ready', issue, batchId: answered.batchId, requestId: input.requestId })
   syncProjection(loaded.stateDir)
   return { batchReady, stage: answered.stage }
+}
+
+// ---- reconciliation (loop vs tracker/Orca drift) ----------------------------------------------------------
+
+/**
+ * Settle an issue's drift locally, and only locally: release its dispatch lease, mark an unfinished dispatch
+ * finished (frees the slot, keeps the record as evidence) and cancel an active queue run. No Orca call and no
+ * tracker write — the tracker is the side that is right in every drift this settles, and a live worktree is left
+ * for a human to inspect. Refuses when the issue has no drift, so it can never be used as a blind "force cancel".
+ */
+export const reconcileIssue = (context: ActionContext, issue: string, drift: readonly Drift[]): { readonly actions: readonly string[] } => {
+  const { loaded } = context
+  const mine = drift.filter((item) => item.issue === issue)
+  if (!mine.length) throw new Error(`${issue} has no drift to reconcile.`)
+  const actions: string[] = []
+  const ledger = createDispatchLedger(loaded.stateDir)
+  for (const lease of readActiveClaims(loaded.stateDir).filter((claim) => claim.issue === issue)) {
+    ledger.release(lease, `ui reconcile: ${mine.map((item) => item.kind).join(', ')}`)
+    actions.push('lease released')
+  }
+  const dispatched = listDispatched(loaded.stateDir).some((dispatch) => dispatch.issue === issue)
+  if (dispatched && !readDeliveryState(loaded.stateDir, issue).finishedAt) { markDispatchCancelled(loaded.stateDir, issue); actions.push('dispatch marked finished') }
+  const queue = createIssueQueue({ stateDir: loaded.stateDir })
+  const run = queue.getLatestByIssue(issue)
+  if (run && ['queued', 'dispatching', 'running', 'needs-input', 'blocked'].includes(run.status)) {
+    queue.cancel(run.id, { confirmActive: true, cleanupConfirmed: true })
+    actions.push(`run ${run.id} cancelled`)
+  }
+  appendLoopEvent(loaded.stateDir, { at: nowIso(), type: 'ui.cleanup-completed', issue, runId: run?.id ?? 'reconcile', reason: 'reconcile', kinds: mine.map((item) => item.kind) })
+  syncProjection(loaded.stateDir)
+  return { actions }
 }

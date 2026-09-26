@@ -19,6 +19,8 @@ export interface IssueRunConfigSnapshot {
   readonly perIssueTokens: number
   /** The builder override is the only model override. These roles stay project-owned. */
   readonly roles: { readonly orchestrator: 'project'; readonly reviewer: 'project'; readonly watcher: 'project'; readonly delivery: 'snapshot' }
+  /** Gate paths a personal config override had weakened below the team value when this run was queued. */
+  readonly weakenedGates?: readonly string[]
 }
 
 export interface IssueRunContractSnapshot {
@@ -123,7 +125,7 @@ const issueRunSchema = z.object({
   sequence: z.number().int().positive(), acceptedAt: z.string(), updatedAt: z.string(),
   status: z.enum(['queued', 'dispatching', 'running', 'needs-input', 'blocked', 'failed', 'completed', 'cancelled']),
   attempt: z.number().int().positive(),
-  config: z.object({ configHash: z.string().min(1), flow: z.string().nullable(), builder: z.object({ provider: z.string().min(1), model: z.string().min(1) }), maxFixRounds: z.number().int().min(0), perIssueTokens: z.number().int().min(0), roles: z.object({ orchestrator: z.literal('project'), reviewer: z.literal('project'), watcher: z.literal('project'), delivery: z.literal('snapshot') }) }),
+  config: z.object({ configHash: z.string().min(1), flow: z.string().nullable(), builder: z.object({ provider: z.string().min(1), model: z.string().min(1) }), maxFixRounds: z.number().int().min(0), perIssueTokens: z.number().int().min(0), roles: z.object({ orchestrator: z.literal('project'), reviewer: z.literal('project'), watcher: z.literal('project'), delivery: z.literal('snapshot') }), weakenedGates: z.array(z.string()).optional() }),
   contract: z.object({ digest: z.string().min(1), status: z.literal('valid'), frozenAt: z.string() }),
   preflight: z.object({ status: z.literal('passed'), checkedAt: z.string(), capacity: z.object({ free: z.number().int().min(0), max: z.number().int().min(0) }).optional() }),
   projection: z.object({ stage: z.string(), branch: z.string().nullable(), worktree: z.string().nullable(), terminal: z.string().nullable(), pullRequest: z.number().int().positive().nullable(), evidence: z.array(z.string()), timeline: z.array(z.object({ at: z.string(), stage: z.string(), detail: z.string() })) }),

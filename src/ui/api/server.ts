@@ -1,5 +1,5 @@
 import { randomBytes } from 'node:crypto'
-import { existsSync, readFileSync, realpathSync, statSync } from 'node:fs'
+import { existsSync, readFileSync, statSync } from 'node:fs'
 import { createServer, request as httpRequest, type IncomingMessage, type Server, type ServerResponse } from 'node:http'
 import { extname, join, normalize, sep } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -19,8 +19,15 @@ import { createIssueBoardCache, createIssueBoardReader, type BoardSnapshot, type
 import { createUiWizardStore, parseUiWizardDraftPatch, type UiWizardStore } from './wizard.js'
 import { createUiJobManager, type UiJobManager } from './jobs.js'
 import { readCurrentProjection, syncProjection } from './store.js'
+import { json, readRequestBody, recordOf, SAFE_IDENTIFIER, sendJson, sendText, stringOf } from './http.js'
+import { ROUTE_MODULES } from './route-modules.js'
+import type { RouteContext } from './routes.js'
+import type { SnapshotExtras } from './contract.js'
+import { createExtrasBuilder, type ExtrasBuilder } from './extras.js'
+import { createAlertSender, type AlertSender } from './alerts.js'
 import { overlayRunnerObservation, type IssueRecord } from './projection.js'
-import { installLoopAutomations, loopStatus, shellQuote } from '../../loop/install.js'
+import { loopStatus } from '../../loop/install.js'
+export { withRunningHarness } from './running-harness.js'
 import { createRunnerConnector, type WorkspaceObservation } from '../../loop/runner-connector.js'
 import {
   answerDecision, archiveRun, cancelRun, decideIssue, enqueueRun, generateOrReuseContract, resumePausedIssue,
@@ -38,7 +45,6 @@ const DEFAULT_HOST = '127.0.0.1'
 const DEFAULT_PORT = 4321
 const POLL_INTERVAL_MS = 1_000
 const SESSION_HEADER = 'x-harness-session'
-const SAFE_IDENTIFIER = /^[A-Za-z0-9][A-Za-z0-9._:/#-]{0,127}$/
 
 export const UI_SNAPSHOT_SCHEMA_VERSION = 1 as const
 
@@ -53,6 +59,8 @@ export interface UiSnapshot {
   readonly board: BoardSnapshot | null
   readonly issues: readonly IssueRecord[]
   readonly automations: readonly UiAutomationHealth[]
+  /** Attention, reconciliation and freshness — see `contract.ts`. Absent only from test snapshots. */
+  readonly extras?: SnapshotExtras
 }
 
 export interface UiServerOptions {
@@ -73,8 +81,6 @@ export interface UiServerOptions {
   readonly wizard?: UiWizardStore
   /** Test seam: replaces the real snapshot builder. */
   readonly snapshot?: (force?: boolean) => UiSnapshot | Promise<UiSnapshot>
-  /** Test seam: skip the fire-and-forget `installLoopAutomations` the server runs on startup. */
-  readonly skipAutoInstall?: boolean
 }
 
 export interface UiServerHandle {
@@ -97,28 +103,6 @@ const authorized = (request: IncomingMessage, token: string, expectedOrigin: str
   if (origin && origin !== expectedOrigin && !sameLoopbackOrigin(origin, expectedOrigin)) return false
   return request.headers[SESSION_HEADER] === token || url.searchParams.get('session') === token
 }
-
-const json = (value: unknown): string => JSON.stringify(value)
-const sendJson = (response: ServerResponse, status: number, body: unknown): void => {
-  const payload = json(body)
-  response.writeHead(status, { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store', 'content-length': Buffer.byteLength(payload) })
-  response.end(payload)
-}
-const sendText = (response: ServerResponse, status: number, body: string, contentType = 'text/html; charset=utf-8'): void => {
-  response.writeHead(status, { 'content-type': contentType, 'cache-control': 'no-store', 'content-length': Buffer.byteLength(body) })
-  response.end(body)
-}
-
-const readRequestBody = (request: IncomingMessage, maxBytes = 64 * 1024): Promise<unknown> => new Promise((resolve, reject) => {
-  let body = ''
-  request.setEncoding('utf8')
-  request.on('data', (chunk: string) => { body += chunk; if (Buffer.byteLength(body) > maxBytes) reject(new Error('Request body is too large.')) })
-  request.on('end', () => { if (!body.trim()) return resolve({}); try { resolve(JSON.parse(body) as unknown) } catch { reject(new Error('Request body must be valid JSON.')) } })
-  request.on('error', reject)
-})
-
-const recordOf = (value: unknown): Record<string, unknown> => typeof value === 'object' && value !== null && !Array.isArray(value) ? value as Record<string, unknown> : {}
-const stringOf = (value: unknown): string | null => typeof value === 'string' && value.trim() ? value.trim() : null
 
 // ---- static frontend / dev proxy -----------------------------------------------------------------------------
 
@@ -165,10 +149,10 @@ const proxyToDevServer = (devServerUrl: string, token: string, request: Incoming
 // ---- wizard data ------------------------------------------------------------------------------------------
 
 const contractSummary = (stored: StoredContract): string => [
-  `Intenção: ${stored.contract.intent}`,
-  `Incluído: ${stored.contract.scope.inScope.join('; ')}`,
-  ...(stored.contract.scope.outOfScope.length ? [`Fora do escopo: ${stored.contract.scope.outOfScope.join('; ')}`] : []),
-  ...(stored.contract.outcomes.length ? [`Resultados verificáveis: ${stored.contract.outcomes.map((outcome) => `${outcome.id} — ${outcome.description}`).join('; ')}`] : []),
+  `Intent: ${stored.contract.intent}`,
+  `In scope: ${stored.contract.scope.inScope.join('; ')}`,
+  ...(stored.contract.scope.outOfScope.length ? [`Out of scope: ${stored.contract.scope.outOfScope.join('; ')}`] : []),
+  ...(stored.contract.outcomes.length ? [`Verifiable outcomes: ${stored.contract.outcomes.map((outcome) => `${outcome.id} — ${outcome.description}`).join('; ')}`] : []),
 ].join('\n')
 
 const issueWizard = async (context: ActionContext, issue: string): Promise<Record<string, unknown>> => {
@@ -182,14 +166,14 @@ const issueWizard = async (context: ActionContext, issue: string): Promise<Recor
   const contract = cached && fresh
     ? { status: cached.assessment?.dispatchable === false ? 'escalated' : 'valid', digest: cached.digest, summary: cached.assessment?.dispatchable === false ? cached.assessment.reasons.join('; ') : contractSummary(cached) }
     : cached
-      ? { status: 'expired', digest: cached.digest, summary: 'O contrato existente expirou ou a issue mudou. Gere um novo contrato para continuar.' }
+      ? { status: 'expired', digest: cached.digest, summary: 'The stored contract expired or the issue changed. Generate a new contract to continue.' }
       : { status: 'missing', digest: null }
   const maxAgents = loaded.config.machine.ceiling ?? loaded.config.machine.floor
   const running = listDispatched(loaded.stateDir).filter((dispatch) => !readDeliveryState(loaded.stateDir, dispatch.issue).finishedAt).length
   const free = Math.max(0, maxAgents - running)
   const preflight = candidates.length > 0
-    ? { status: 'passed', checkedAt: new Date().toISOString(), ...(free <= 0 ? { reason: 'Nenhum slot está livre agora; a execução será enfileirada.' } : {}) }
-    : { status: 'blocked', checkedAt: new Date().toISOString(), reason: 'Nenhum modelo builder está roteável agora.' }
+    ? { status: 'passed', checkedAt: new Date().toISOString(), ...(free <= 0 ? { reason: 'No slot is free right now; the run will be queued.' } : {}) }
+    : { status: 'blocked', checkedAt: new Date().toISOString(), reason: 'No builder model is routable right now.' }
   return {
     issue: detail, configHash: loaded.configHash, contract, flows: Object.keys(loaded.config.flows.profiles), defaultFlow: loaded.config.flows.default ?? null,
     builderModels: candidates, limits: { maxFixRounds: loaded.config.delivery.maxFixRounds, perIssueTokens: loaded.config.budget.perIssueTokens },
@@ -200,7 +184,7 @@ const issueWizard = async (context: ActionContext, issue: string): Promise<Recor
 const modelReferenceFor = (value: unknown, loaded: LoadedLoopConfig): ModelReference => {
   const raw = stringOf(value)
   const configured = loaded.config.models.builder.flat().find((candidate) => candidate === raw && loaded.config.models.providers[candidate.slice(0, candidate.indexOf('/'))])
-  if (!configured) throw new Error('O builder precisa ser um dos candidatos declarados e roteáveis.')
+  if (!configured) throw new Error('The builder must be one of the declared, routable candidates.')
   return parseModelRef(configured)
 }
 
@@ -217,18 +201,18 @@ interface EnqueueBody {
 const parseEnqueueBody = (body: unknown, loaded: LoadedLoopConfig): EnqueueBody => {
   const raw = recordOf(body)
   const issue = stringOf(raw['issue'])
-  if (!issue || !SAFE_IDENTIFIER.test(issue)) throw new Error('É necessário um identificador de issue válido.')
+  if (!issue || !SAFE_IDENTIFIER.test(issue)) throw new Error('A valid issue identifier is required.')
   const configHash = stringOf(raw['configHash'])
-  if (configHash && configHash !== loaded.configHash) throw new Error('A configuração do projeto mudou enquanto esta issue era configurada. Refaça o preflight.')
+  if (configHash && configHash !== loaded.configHash) throw new Error('The project config changed while this issue was being set up. Run the preflight again.')
   const contractDigest = stringOf(raw['contractDigest'])
-  if (!contractDigest) throw new Error('É necessário um contractDigest válido antes de confirmar.')
-  if (raw['preflight'] !== true) throw new Error('É necessário um preflight aprovado antes de confirmar.')
+  if (!contractDigest) throw new Error('A valid contractDigest is required before confirming.')
+  if (raw['preflight'] !== true) throw new Error('A passed preflight is required before confirming.')
   const flow = stringOf(raw['flow'])
-  if (flow && !Object.prototype.hasOwnProperty.call(loaded.config.flows?.profiles ?? {}, flow)) throw new Error(`Flow desconhecido: ${flow}.`)
+  if (flow && !Object.prototype.hasOwnProperty.call(loaded.config.flows?.profiles ?? {}, flow)) throw new Error(`Unknown flow: ${flow}.`)
   const maxFixRounds = typeof raw['maxFixRounds'] === 'number' ? raw['maxFixRounds'] : loaded.config.delivery.maxFixRounds
   const perIssueTokens = typeof raw['perIssueTokens'] === 'number' ? raw['perIssueTokens'] : loaded.config.budget.perIssueTokens
-  if (!Number.isInteger(maxFixRounds) || maxFixRounds < 0 || maxFixRounds > loaded.config.delivery.maxFixRounds) throw new Error(`maxFixRounds não pode passar do teto do projeto (${loaded.config.delivery.maxFixRounds}).`)
-  if (!Number.isInteger(perIssueTokens) || perIssueTokens < 0 || (loaded.config.budget.perIssueTokens > 0 && perIssueTokens > loaded.config.budget.perIssueTokens)) throw new Error('perIssueTokens não pode passar do teto do projeto.')
+  if (!Number.isInteger(maxFixRounds) || maxFixRounds < 0 || maxFixRounds > loaded.config.delivery.maxFixRounds) throw new Error(`maxFixRounds cannot exceed the project ceiling (${loaded.config.delivery.maxFixRounds}).`)
+  if (!Number.isInteger(perIssueTokens) || perIssueTokens < 0 || (loaded.config.budget.perIssueTokens > 0 && perIssueTokens > loaded.config.budget.perIssueTokens)) throw new Error('perIssueTokens cannot exceed the project ceiling.')
   return { issue, configHash: loaded.configHash, flow, builder: modelReferenceFor(raw['builder'], loaded), contractDigest, maxFixRounds, perIssueTokens }
 }
 
@@ -258,35 +242,26 @@ const snapshotSources = (context: ActionContext, board: IssueBoardCache): Snapsh
   automations: memo(60_000, async () => (await loopStatus(context)).automations.map((automation) => ({ name: automation.name, stage: automation.stage, installed: automation.installed && automation.enabled, lastRunAt: automation.lastRun?.at ?? null, error: automation.lastRun?.error ?? null })), []),
 })
 
-const buildSnapshot = async (context: ActionContext, sources: SnapshotSources, force = false): Promise<UiSnapshot> => {
+const buildSnapshot = async (context: ActionContext, sources: SnapshotSources, extras: ExtrasBuilder, alerts: AlertSender, force = false): Promise<UiSnapshot> => {
   const { loaded } = context
   const projection = syncProjection(loaded.stateDir)
   const [boardSnapshot, workspaces, automations] = await Promise.all([sources.board.read(force), sources.workspaces(force), sources.automations(force)])
   const dispatches = listDispatched(loaded.stateDir)
-  const running = dispatches.filter((dispatch) => !readDeliveryState(loaded.stateDir, dispatch.issue).finishedAt).length
+  const deliveries = new Map(dispatches.map((dispatch) => [dispatch.issue, readDeliveryState(loaded.stateDir, dispatch.issue)]))
+  const running = dispatches.filter((dispatch) => !deliveries.get(dispatch.issue)?.finishedAt).length
   const maxAgents = loaded.config.machine.ceiling ?? loaded.config.machine.floor
   const issues = Object.values(projection.issues).map((record) => overlayRunnerObservation(record, record.dispatch?.worktreeId ? workspaces.get(record.dispatch.worktreeId) ?? null : null))
+  const enriched = extras.enrich(issues, boardSnapshot)
+  const snapshotExtras = await extras.build({ issues: enriched, board: boardSnapshot, dispatches, deliveries, maxAgents })
+  void alerts.observe(snapshotExtras.attention)
   return {
     schemaVersion: UI_SNAPSHOT_SCHEMA_VERSION, generatedAt: new Date().toISOString(),
     project: { name: loaded.config.project.name, repo: loaded.config.project.repo, baseBranch: loaded.config.project.baseBranch, root: loaded.root, stateDir: loaded.stateDir, configHash: loaded.configHash },
     capacity: { maxAgents, running, free: Math.max(0, maxAgents - running) },
-    board: boardSnapshot, issues, automations,
+    board: boardSnapshot, issues: enriched, automations, extras: snapshotExtras,
   }
 }
 
-/**
- * Orca runs a scheduled stage by the command name in `schedule.harnessCommand`, resolved on Orca's own PATH — which
- * can be a different (older) harness than the one serving this page: a global npm install from last week will
- * reject a config the repository build accepts, and every scheduled deliver then crashes on load. When the config
- * leaves the default, pin the automations to the binary that is running right now.
- */
-export const withRunningHarness = (loaded: LoadedLoopConfig): LoadedLoopConfig => {
-  const script = process.argv[1]
-  // ponytail: an explicit `harnessCommand: ak-harness` is indistinguishable from the default; both get pinned.
-  if (loaded.config.schedule.harnessCommand !== 'ak-harness' || !script || !existsSync(script)) return loaded
-  // `node` by name, not `process.execPath`: a quoted path first on the line is mangled by cmd.exe's /c quote rule.
-  return { ...loaded, config: { ...loaded.config, schedule: { ...loaded.config.schedule, harnessCommand: `node ${shellQuote(realpathSync(script))}` } } }
-}
 
 /** Fire-and-forget: the wizard confirming a run should not wait out a whole tick before the page can navigate
  * to the run. Failure just leaves the issue queued for the next scheduled tick — never surfaced as an error
@@ -315,8 +290,13 @@ export const startUiServer = async (options: UiServerOptions = {}): Promise<UiSe
   const appDir = options.appDir ?? fileURLToPath(new URL('./app', import.meta.url))
   const ownsJobs = options.jobs === undefined && jobs !== null
 
-  const snapshot = options.snapshot ?? (async (force = false) => context && sources ? buildSnapshot(context, sources, force) : (() => { throw new Error('UI snapshot unavailable without a loaded config.') })())
+  const extras = context ? createExtrasBuilder(context.loaded, runner) : null
+  const alerts = context ? createAlertSender(context.loaded, runner) : null
+  const snapshot = options.snapshot ?? (async (force = false) => context && sources && extras && alerts ? buildSnapshot(context, sources, extras, alerts, force) : (() => { throw new Error('UI snapshot unavailable without a loaded config.') })())
+  /** Server-side half of the UI's action locks: a destructive call on a locked issue is refused, whatever the client shows. */
+  const lockFor = async (issue: string): Promise<string | null> => (await snapshot()).extras?.locks[issue] ?? null
 
+  const routeContext: RouteContext | null = context && board ? { ...context, board, jobs, snapshot } : null
   const clients = new Set<ServerResponse>()
   const server = createServer((request, response) => {
     void (async () => {
@@ -347,13 +327,13 @@ export const startUiServer = async (options: UiServerOptions = {}): Promise<UiSe
             if (!jobs) return sendJson(response, 503, { error: 'contract_generation_unavailable' })
             const body = recordOf(await readRequestBody(request))
             const job = jobs.submit({
-              kind: `contract:${issue}`, issue, actor: 'ui', reason: 'Preparar contrato no wizard',
-              run: async ({ emit }) => { emit({ phase: 'generating', detail: 'Consultando o modelo orquestrador' }); return generateOrReuseContract(context, issue, { refresh: body['refresh'] === true }) },
+              kind: `contract:${issue}`, issue, actor: 'ui', reason: 'Prepare the contract in the wizard',
+              run: async ({ emit }) => { emit({ phase: 'generating', detail: 'Asking the orchestrator model' }); return generateOrReuseContract(context, issue, { refresh: body['refresh'] === true }) },
             })
             return sendJson(response, 202, { job })
           }
         } catch (error) { return sendJson(response, 400, { error: error instanceof Error ? error.message : String(error) }) }
-        return sendJson(response, 404, { error: 'not_found' })
+        // unmatched here: fall through to the route modules
       }
 
       if (url.pathname === '/api/v1/runs' && request.method === 'POST') {
@@ -381,6 +361,10 @@ export const startUiServer = async (options: UiServerOptions = {}): Promise<UiSe
             // regardless of how long the issue has been open.
             const events = readLoopEvents(context.loaded.stateDir).filter((event) => event.issue === issue).sort((left, right) => Date.parse(right.at) - Date.parse(left.at)).slice(0, 200)
             return sendJson(response, 200, { events })
+          }
+          if (request.method === 'POST' && (operation === 'cancel' || operation === 'retry' || operation === 'decision')) {
+            const locked = await lockFor(issue)
+            if (locked) return sendJson(response, 409, { error: 'locked', reason: locked })
           }
           if (request.method === 'POST' && operation === 'cancel') {
             if (!record?.run) return sendJson(response, 404, { error: 'run_not_found' })
@@ -426,7 +410,7 @@ export const startUiServer = async (options: UiServerOptions = {}): Promise<UiSe
             return sendJson(response, 200, { issue, ...result })
           }
         } catch (error) { return sendJson(response, 400, { error: error instanceof Error ? error.message : String(error) }) }
-        return sendJson(response, 404, { error: 'not_found' })
+        // unmatched here: fall through to the route modules
       }
 
       if (url.pathname.startsWith('/api/v1/jobs/')) {
@@ -436,7 +420,7 @@ export const startUiServer = async (options: UiServerOptions = {}): Promise<UiSe
         if (!id || !jobs) return sendJson(response, 404, { error: 'job_not_found' })
         if (request.method === 'GET' && !operation) { const job = jobs.get(id); return job ? sendJson(response, 200, { job }) : sendJson(response, 404, { error: 'job_not_found' }) }
         if (request.method === 'POST' && operation === 'cancel') return sendJson(response, 200, jobs.cancel(id))
-        return sendJson(response, 404, { error: 'not_found' })
+        // unmatched here: fall through to the route modules
       }
       if (url.pathname === '/api/v1/jobs' && request.method === 'GET') return sendJson(response, 200, { jobs: jobs?.list() ?? [] })
 
@@ -447,6 +431,12 @@ export const startUiServer = async (options: UiServerOptions = {}): Promise<UiSe
         try { response.write(`event: snapshot\ndata: ${json(await snapshot())}\n\n`) }
         catch (error) { response.write(`event: error\ndata: ${json({ error: error instanceof Error ? error.message : String(error) })}\n\n`) }
         return
+      }
+      if (routeContext) {
+        for (const route of ROUTE_MODULES) {
+          try { if (await route(routeContext, request, response, url)) return }
+          catch (error) { return sendJson(response, 400, { error: error instanceof Error ? error.message : String(error) }) }
+        }
       }
       return sendJson(response, 404, { error: 'not_found' })
     })().catch(() => { try { response.destroy() } catch { /* client disconnected */ } })
@@ -483,19 +473,6 @@ export const startUiServer = async (options: UiServerOptions = {}): Promise<UiSe
     })()
   }, POLL_INTERVAL_MS)
   timer.unref()
-
-  // UI-first: opening the control plane is enough to keep this config's tick and deliver running. Multi-project
-  // setups (one Orca, many `loop.config.yaml`s) need every config to own its own automations by name, otherwise
-  // a second `ak-harness ui` overwrites the first's `<prefix>-tick`/`<prefix>-deliver`. The install is idempotent
-  // (`installLoopAutomations` reconciles drift) and runs fire-and-forget: a failed Orca call never blocks the UI.
-  // Test seam: `options.skipAutoInstall` keeps the suite deterministic.
-  if (loaded && options.skipAutoInstall !== true) {
-    void Promise.resolve().then(() => installLoopAutomations({ loaded: withRunningHarness(loaded), runner })).catch((error: unknown) => {
-      const detail = error instanceof Error ? error.message : String(error)
-      // eslint-disable-next-line no-console -- surface the bootstrap failure to the operator's terminal
-      console.warn(`ak-harness ui: failed to bootstrap delivery for ${loaded.path}: ${detail}`)
-    })
-  }
 
   return {
     url: expectedUrl,

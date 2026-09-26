@@ -1096,7 +1096,7 @@ export const unknownConfigKeys = (raw: unknown, parsed: unknown, prefix = ''): r
  * That is not hypothetical: a machine overlay written to free one file under `.github/` replaced the whole
  * `selfEditPaths`, and so dropped a `packages/**` freeze the project added days later without anyone noticing.
  */
-const GATE_LISTS: readonly string[] = ['delivery.selfEditPaths', 'delivery.secretFilePatterns', 'delivery.requiredChecks']
+export const GATE_LISTS: readonly string[] = ['delivery.selfEditPaths', 'delivery.secretFilePatterns', 'delivery.requiredChecks']
 
 const mergeGateList = (base: unknown, overlay: readonly unknown[]): unknown[] => {
   const removed = new Set(overlay.filter((item): item is string => typeof item === 'string' && item.startsWith('!')).map((item) => item.slice(1)))

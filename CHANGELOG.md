@@ -2,6 +2,27 @@
 
 ## [Unreleased]
 
+- **Control plane v2 (`ak-harness ui`).** The home page is now an attention queue — human decisions, stuck or
+  failed runs, state out of sync with the tracker or Orca, and system problems — each with the reason and the next
+  action. The page reconciles the loop against the tracker and Orca on every refresh, resolves titles and states
+  for issues the board does not list, and refuses destructive actions (409) while an issue is out of sync or its
+  data is stale. Observed on a real loop: 24 "blocked" issues shrank to 4 once the cancelled ones were recognised.
+  New screens: Runs (filters, search, paging, issue side panel with per-criterion evidence, review, worker,
+  timeline and cost), Trends, Costs (tokens and plan usage, no dollar estimates), Explore (windowed search over
+  events, contracts, evidence, reviews and learnings), System (doctor, routing, cooldowns, automations, stages,
+  learnings) and Settings (effective config with provenance, personal overrides, team diffs, tuning freeze). CLI-only
+  actions are now in the UI and call the same kernel functions: approve a held PR, plan/design/release approval,
+  learning promotion, stage pause/resume, tick/deliver/doctor, automation reinstall, batch enqueue. See ADR-0040.
+- **The UI no longer installs Orca automations on start.** Missing or drifted automations show up as system items
+  and reinstall on request, pinned to the running harness binary.
+- **Weakening a gate is a personal, recorded choice.** Settings writes only `loop.config.local.yaml`; lowering a
+  gate there needs explicit confirmation, and every run queued under it records `weakenedGates` and shows a
+  badge. Team values come back as a diff to commit, never written by the UI.
+- **Attention alerts reuse `notifications`.** A new human-decision or failure item posts `attention.entered`
+  through the existing webhook or command channel, once per item.
+- **The `ui` verification check runs the real UI suites.** It pointed at `test/ui.test.ts`, which #111 removed.
+- **UI copy is English.**
+
 - **`plan approved` supersedes a stale finished run by itself.** A `COMPLETE` (or approval-pending) run whose
   source or contract had moved on still blocked a new plan with `ACTIVE_RUN` until someone ran `status`, which
   only reconciles. Planning now marks it `STALE` and supersedes it; a fresh finished run still blocks.

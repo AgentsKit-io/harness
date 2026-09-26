@@ -208,3 +208,11 @@ export const renderTuningMarkdown = (result: TuningResult): string => {
   for (const note of result.notes) lines.push(`- _${note}_`)
   return lines.join('\n')
 }
+
+/** Freeze or unfreeze one knob: a frozen knob is skipped by every future retro until a human unfreezes it. */
+export const setTuningFrozen = (stateDir: string, path: string, frozen: boolean): TuningState => {
+  const state = readTuningState(stateDir)
+  const next = { history: state.history, frozen: frozen ? [...new Set([...state.frozen, path])] : state.frozen.filter((item) => item !== path) }
+  writeJsonAtomic(tuningStatePath(stateDir), next)
+  return next
+}

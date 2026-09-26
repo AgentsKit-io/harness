@@ -8,10 +8,12 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
-        default: 'bg-accent text-ink-on-accent font-bold hover:brightness-110',
+        default: 'bg-accent text-ink-on-accent font-semibold hover:brightness-110',
+        primary: 'bg-ink text-surface font-semibold hover:brightness-95',
         outline: 'border border-line bg-panel text-ink hover:border-accent',
         ghost: 'text-ink-muted hover:bg-panel-alt hover:text-ink',
-        destructive: 'border border-danger/40 bg-danger-dim text-red-200 hover:bg-danger/20',
+        destructive: 'bg-[#dc4a4a] text-white font-semibold hover:brightness-110',
+        'destructive-outline': 'border border-danger/40 text-red-300 hover:bg-danger-dim',
       },
       size: {
         default: 'h-9 px-3.5 py-2',

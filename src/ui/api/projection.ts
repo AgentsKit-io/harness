@@ -35,6 +35,8 @@ export interface RunRecord {
   readonly perIssueTokens: number
   readonly status: RunStatus
   readonly archived: boolean
+  /** Gate fields a personal config override weakened when this run was queued (see `contract.ts`). */
+  readonly weakenedGates?: readonly string[]
 }
 
 /** What the engine's own `worker.dispatched` reported, regardless of who triggered the tick that dispatched it. */
@@ -88,6 +90,8 @@ export interface IssueRecord {
   readonly pendingDecisions: readonly Decision[]
   readonly error: string | null
   readonly updatedAt: string
+  /** Fix rounds spent so far (`delivery.json`), overlaid live by `store.ts`; absent when the issue never reached a PR. */
+  readonly fixRoundsUsed?: number
 }
 
 export interface ProjectionState {
