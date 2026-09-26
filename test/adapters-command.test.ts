@@ -42,7 +42,11 @@ describe('findExecutable', () => {
     expect(findExecutable('tool', {}, 'darwin')).toBeNull()
   })
 
-  it('skips a PATH entry whose candidate exists but is not executable', () => {
+  // `platform: 'darwin'` only steers findExecutable's own branching (PATHEXT vs X_OK) — it cannot make a real
+  // Windows host's filesystem enforce a POSIX execute bit. NTFS has no such bit at all: chmodSync(path, 0o644) on
+  // a real Windows host does not actually revoke X_OK the way it does on POSIX (confirmed live), so this test can
+  // only mean anything when it also runs on a host where chmod's execute bit is real.
+  it.skipIf(process.platform === 'win32')('skips a PATH entry whose candidate exists but is not executable', () => {
     const dir = binDir({ tool: false })
     expect(findExecutable('tool', { PATH: dir }, 'darwin')).toBeNull()
   })

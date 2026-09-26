@@ -77,8 +77,15 @@ describe('createProcessToolRuntime: child environment on Windows', () => {
       Object.defineProperty(process, 'platform', platform)
     }
     const environment = spawned.at(-1) ?? {}
-    expect(environment['SystemRoot']).toBe('C:\\Windows')
-    expect(environment['COMSPEC']).toBe('C:\\Windows\\system32\\cmd.exe')
+    // Case-insensitive lookup, not a literal `environment['SystemRoot']`: `vi.stubEnv` sets a real process.env
+    // entry, and on a real Windows host that name almost always already exists under whatever casing that
+    // machine's own OS install happens to use (`SYSTEMROOT`, `SystemRoot`, ...) — Node's win32 env handling
+    // updates the existing entry's value in place but does not change its enumerated key casing, so asserting on
+    // one specific casing is asserting on a host-dependent accident, not the behavior this test means to cover
+    // (that the value gets forwarded at all, whatever its key happens to be cased as).
+    const value = (name: string): string | undefined => Object.entries(environment).find(([key]) => key.toLowerCase() === name.toLowerCase())?.[1]
+    expect(value('SystemRoot')).toBe('C:\\Windows')
+    expect(value('COMSPEC')).toBe('C:\\Windows\\system32\\cmd.exe')
     expect(environment['PATH']).toBe(process.env['PATH'] ?? '')
   })
 })

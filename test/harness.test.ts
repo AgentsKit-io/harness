@@ -7,9 +7,8 @@ import { expect, it } from 'vitest'
 import { approveRun, authorizeRun, cancelRun, cleanTaskArtifacts, FileEventStore, loadConfig, loadLatestRun, planRun, reconcileRun, retryRun, startRun, validateConfig, verifyRun } from '../src/index.js'
 import type { TrackingConfig, VerificationCheck, VerificationConfig } from '../src/index.js'
 import { initializeGitRepository } from './git.js'
+import { evidenceCommand } from './helpers/evidence-command.js'
 
-const quote = (value: string): string => `'${value.replaceAll("'", "'\"'\"'")}'`
-const evidenceCommand = (value: unknown, exitCode = 0): string => `${quote(process.execPath)} -e ${quote(`console.log(${JSON.stringify(JSON.stringify(value))}); process.exit(${exitCode})`)} `
 const hash = (value: string): string => createHash('sha256').update(value).digest('hex')
 type FixtureCheck = Omit<VerificationCheck, 'required' | 'timeoutMs'> & Partial<Pick<VerificationCheck, 'required' | 'timeoutMs'>>
 

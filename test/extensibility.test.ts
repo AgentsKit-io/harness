@@ -5,9 +5,7 @@ import { expect, it } from 'vitest'
 import { FileEventStore, createPluginRegistry, createPluginSlot, loadConfig, planRun, startRun, verifyRun } from '../src/index.js'
 import type { HarnessPlugin, VerificationCheck } from '../src/index.js'
 import { initializeGitRepository } from './git.js'
-
-const quote = (value: string): string => `'${value.replaceAll("'", "'\"'\"'")}'`
-const evidenceCommand = (value: unknown): string => `${quote(process.execPath)} -e ${quote(`console.log(${JSON.stringify(JSON.stringify(value))})`)}`
+import { evidenceCommand } from './helpers/evidence-command.js'
 
 it('mounts dependency-ordered plugins and removes their contributions on dispose', () => {
   const slot = createPluginSlot<{ readonly name: string }>('test.provider')
