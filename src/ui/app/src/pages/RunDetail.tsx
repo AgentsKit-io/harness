@@ -1,10 +1,13 @@
 import * as React from 'react'
-import { useParams } from 'react-router-dom'
+import { Link, useParams } from 'react-router-dom'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
 import { EmptyState, Shell } from '@/components/Shell'
 import { phaseTone } from '@/lib/derive'
 import { getTimeline, useSnapshot, type TimelineEvent } from '@/lib/api'
+
+const BackHome = (): React.ReactElement => <Button asChild variant="outline" size="sm" className="mt-3"><Link to="/">← Voltar para a Operação</Link></Button>
 
 const eventDetail = (event: TimelineEvent): string => {
   for (const key of ['reason', 'error', 'message', 'status']) { const value = event[key]; if (typeof value === 'string') return value }
@@ -19,12 +22,13 @@ export const RunDetailPage = (): React.ReactElement => {
   React.useEffect(() => { getTimeline(issue).then(({ events: value }) => setEvents(value)).catch(() => setEvents([])) }, [issue])
 
   const record = snapshot?.issues.find((item) => item.issue === issue)
-  if (!snapshot) return <Shell title={issue} inboxCount={0} error={error}><EmptyState>Carregando…</EmptyState></Shell>
-  if (!record) return <Shell title={issue} inboxCount={0} error={error}><EmptyState>Issue não encontrada na projeção.</EmptyState></Shell>
+  if (!snapshot) return <Shell title={issue} inboxCount={0} error={error}><EmptyState>Carregando…<br /><BackHome /></EmptyState></Shell>
+  if (!record) return <Shell title={issue} inboxCount={0} error={error}><EmptyState>Issue não encontrada na projeção.<br /><BackHome /></EmptyState></Shell>
 
   return (
     <Shell title={`${record.issue}${record.title ? ` · ${record.title}` : ''}`} inboxCount={0} error={error}>
       <div className="grid gap-4">
+        <Button asChild variant="outline" size="sm" className="justify-self-start"><Link to="/">← Voltar para a Operação</Link></Button>
         <Card>
           <CardHeader><CardTitle>Estado</CardTitle><Badge tone={phaseTone(record.phase)}>{record.phase}</Badge></CardHeader>
           <CardContent className="grid grid-cols-2 gap-px overflow-hidden bg-line-ghost text-sm">

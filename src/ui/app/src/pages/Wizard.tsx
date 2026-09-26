@@ -75,7 +75,7 @@ export const WizardPage = (): React.ReactElement => {
       .catch((cause: unknown) => setError(cause instanceof Error ? cause.message : String(cause)))
   }
 
-  if (!data) return <Shell title="Wizard" inboxCount={0} error={error}><p className="text-ink-muted">Carregando…</p></Shell>
+  if (!data) return <Shell title="Wizard" inboxCount={0} error={error}><p className="text-ink-muted">Carregando…</p><Button variant="outline" size="sm" className="mt-3" onClick={() => navigate('/')}>← Voltar para a Operação</Button></Shell>
 
   const contractValid = data.contract.status === 'valid' && Boolean(contractDigest)
   const stepValid = [true, contractValid, true, Boolean(builder), maxFixRounds >= 0 && perIssueTokens >= 0, true][step]
@@ -154,7 +154,10 @@ export const WizardPage = (): React.ReactElement => {
             </div>
           )}
           <div className="flex justify-between border-t border-line-ghost pt-5">
-            {step > 0 ? <Button variant="outline" onClick={() => goto(step - 1)}>Voltar</Button> : <Button variant="outline" onClick={() => navigate('/')}>Cancelar</Button>}
+            <div className="flex gap-2">
+              <Button variant="ghost" onClick={() => navigate('/')}>Cancelar</Button>
+              {step > 0 && <Button variant="outline" onClick={() => goto(step - 1)}>Voltar</Button>}
+            </div>
             {step < STEPS.length - 1 ? <Button onClick={() => goto(step + 1)} disabled={!stepValid}>Continuar</Button> : <Button onClick={confirm} disabled={!builder || !contractDigest}>Confirmar e enfileirar execução</Button>}
           </div>
         </CardContent>
