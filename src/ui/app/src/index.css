@@ -39,7 +39,15 @@
 .pulse { animation: pulse-ring 1.8s ease-out infinite }
 .seg-active { background: linear-gradient(90deg, #38bdf8 0%, #bae6fd 50%, #38bdf8 100%); background-size: 200% 100%; animation: flow 1.6s linear infinite }
 .tick-in { animation: tick-in .7s ease-out }
-@media (prefers-reduced-motion: reduce) { .pulse, .seg-active, .tick-in { animation: none } }
+/* Chart entry: bars grow from their baseline, lines/rings fade in. `transform-box` makes SVG shapes scale from
+   their own box, not the viewport. */
+@keyframes grow-y { from { transform: scaleY(0) } to { transform: none } }
+@keyframes grow-x { from { transform: scaleX(0) } to { transform: none } }
+@keyframes fade-in { from { opacity: 0 } to { opacity: 1 } }
+.chart-grow-y { transform-box: fill-box; transform-origin: 50% 100%; animation: grow-y .5s ease-out both }
+.chart-grow-x { transform-origin: 0 50%; animation: grow-x .5s ease-out both }
+.chart-fade { animation: fade-in .6s ease-out both }
+@media (prefers-reduced-motion: reduce) { .pulse, .seg-active, .tick-in, .chart-grow-y, .chart-grow-x, .chart-fade { animation: none } }
 
 body {
   background: var(--color-surface);
