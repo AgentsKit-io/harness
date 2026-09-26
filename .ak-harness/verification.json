@@ -30,7 +30,7 @@
       ,{ "id": "phase-executor", "statement": "Phase profiles declare inputs, outputs, dependencies, gates, bounded retries, budgets, effects, and deterministic pass/block/escalate/retry/cancel/resume routing.", "checks": ["phase-executor"] }
       ,{ "id": "artifacts", "statement": "Versioned artifacts bind run provenance, render as JSON and Markdown, record decisions in the event log, reject stale bindings, and resume completed phases without replaying handlers.", "checks": ["artifacts", "artifact-cli"] }
       ,{ "id": "observability", "statement": "The loop exposes a deterministic, read-only observability report with actionable anomaly detection and operating metrics.", "checks": ["observability"] }
-      ,{ "id": "ui", "statement": "The local UI exposes a protected, live operational projection of loop tasks and events without duplicating execution logic.", "checks": ["ui"] }
+      ,{ "id": "ui", "statement": "The local UI exposes a protected, live operational projection of loop tasks and events, reconciles it against the tracker and Orca, locks destructive actions on stale or out-of-sync data, and executes only kernel functions.", "checks": ["ui"] }
     ]
   },
   "surfaces": {
@@ -65,7 +65,7 @@
     ,{ "id": "artifacts", "category": "logic", "command": "pnpm vitest run --config vitest.config.ts test/artifacts.test.ts && node -e 'console.log(JSON.stringify({status:\"passed\",criteria:[\"artifacts\"]}))'", "evidence": "structured", "timeoutMs": 60000 }
     ,{ "id": "artifact-cli", "category": "cli", "execution": "real", "command": "node scripts/verify-artifact-cli.mjs", "evidence": "structured", "timeoutMs": 60000 }
     ,{ "id": "observability", "category": "logic", "execution": "real", "dependsOn": ["package-tests"], "command": "pnpm vitest run --config vitest.config.ts test/loop-observability.test.ts && node dist/cli.js loop observe --help >/dev/null && node -e 'console.log(JSON.stringify({status:\"passed\",criteria:[\"observability\"]}))'", "evidence": "structured", "timeoutMs": 120000 }
-    ,{ "id": "ui", "category": "logic", "execution": "real", "command": "pnpm vitest run --config vitest.config.ts test/ui.test.ts test/github-board.test.ts && pnpm build && node dist/cli.js ui --help >/dev/null && node -e 'console.log(JSON.stringify({status:\"passed\",criteria:[\"ui\"]}))'", "evidence": "structured", "timeoutMs": 120000 }
+    ,{ "id": "ui", "category": "logic", "execution": "real", "command": "pnpm test:ui && pnpm build && node dist/cli.js ui --help >/dev/null && node -e 'console.log(JSON.stringify({status:\"passed\",criteria:[\"ui\"]}))'", "evidence": "structured", "timeoutMs": 120000 }
   ],
   "tracking": { "required": false, "reason": "Repository bootstrap is local; GitHub and npm publication are separate authorized actions." },
   "budget": { "maxDurationMs": 600000 },
