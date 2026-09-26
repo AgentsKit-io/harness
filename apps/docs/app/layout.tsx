@@ -1,15 +1,13 @@
 import type { Metadata, Viewport } from 'next'
 import { Inter, JetBrains_Mono, Space_Grotesk } from 'next/font/google'
-import Script from 'next/script'
 import { RootProvider } from 'fumadocs-ui/provider/next'
 import './globals.css'
 import { SITE_URL } from '@/lib/site'
+import { AgentsKitShellScript, AgentsKitShellStyles } from '@/components/agentskit-shell'
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter', display: 'swap' })
 const jetbrains = JetBrains_Mono({ subsets: ['latin'], variable: '--font-jetbrains', display: 'swap' })
 const spaceGrotesk = Space_Grotesk({ subsets: ['latin'], variable: '--font-space-grotesk', display: 'swap' })
-const ecosystemBarOrigin = process.env.NEXT_PUBLIC_AGENTSKIT_SITE_URL
-  ?? (process.env.NODE_ENV === 'development' ? 'http://localhost:3101' : 'https://www.agentskit.io')
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
@@ -42,8 +40,11 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
 
   return (
     <html lang="en" data-scroll-behavior="smooth" suppressHydrationWarning>
+      <head>
+        <AgentsKitShellStyles />
+      </head>
       <body className={`${inter.variable} ${jetbrains.variable} ${spaceGrotesk.variable}`}>
-        <Script src={`${ecosystemBarOrigin}/ecosystem-bar.js?v=ak-ecosystem-6`} strategy="afterInteractive" data-current="harness" />
+        <AgentsKitShellScript />
         <RootProvider search={{ enabled: true, options: { type: 'static', api: `${basePath}/api/search/` } }}>
           {children}
         </RootProvider>

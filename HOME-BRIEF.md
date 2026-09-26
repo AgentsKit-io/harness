@@ -257,9 +257,10 @@ Small, but it signals the ecosystem's posture and costs almost nothing.
 ## 13. Section 9 — Final CTA and footer
 
 - `h2`: **Start the loop.**
-- The install command again, **Read the docs**, **GitHub**.
-- Then the shared ecosystem bar (loaded from `https://www.agentskit.io/ecosystem-bar.js`, `data-current="harness"`),
-  then the site footer built from the local `ecosystem.json`.
+- The install command again and **Read the docs**. The GitHub Star lives only in the shared ecosystem bar.
+- Then the shared ecosystem tour (`<agentskit-ecosystem current="harness">`) and footer (`<agentskit-footer>`, with a
+  static fallback built from the local `ecosystem.json`), both upgraded by AgentsKit shell v1
+  (`{NEXT_PUBLIC_AGENTSKIT_SHELL_ORIGIN}/shell/v1.js`, `data-current="harness"`).
 
 ---
 

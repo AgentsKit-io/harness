@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { GitBranch, GitPullRequest, Workflow } from 'lucide-react'
 
 import { EcosystemShowcase } from './ecosystem'
-import { LiquidCursorGradient } from './liquid-cursor-gradient'
+import { AgentsKitAurora, ProductWordmark, SiteFooter } from '@/components/agentskit-shell'
 import { CopyButton } from '@/components/copy-button'
 import type { HarnessStatCounts } from '@/lib/stats'
 
@@ -303,26 +303,17 @@ export function HarnessHome({ counts }: HarnessHomeProps) {
 
   return (
     <div className="harness-home">
-      <LiquidCursorGradient />
+      <AgentsKitAurora />
 
       <div data-home-content="" style={{ maxWidth: '100%', overflowX: 'hidden' }}>
 
-      <header style={{ position: 'sticky', top: '0', zIndex: '40', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '24px', padding: '14px 28px', borderBottom: '1px solid #30363D', background: 'rgba(13,17,23,0.86)', backdropFilter: 'blur(10px)' }}>
-        <a href="/" style={{ display: 'flex', alignItems: 'center', gap: '10px', color: '#E6EDF3' }}>
-          <svg viewBox="0 0 24 24" aria-hidden="true" style={{ width: '22px', height: '22px', display: 'block', flex: 'none' }}>
-            <path d="M12 5.5 L5 17 L19 17 Z" fill="none" stroke="#56D364" strokeWidth="1.2"></path>
-            <circle cx="12" cy="5.5" r="2.7" fill="#56D364"></circle>
-            <circle cx="5" cy="17" r="2.7" fill="#56D364"></circle>
-            <circle cx="19" cy="17" r="2.7" fill="#56D364"></circle>
-          </svg>
-          <span style={{ fontFamily: 'var(--ak-font-display)', fontWeight: '600', letterSpacing: '-0.02em', fontSize: '15px' }}>agentskit harness</span>
-        </a>
-        <nav style={{ display: 'flex', alignItems: 'center', gap: '22px', fontFamily: 'var(--ak-font-mono)', fontSize: '11px', letterSpacing: '0.2em', textTransform: 'uppercase', color: '#8B949E' }}>
-          <a href="/docs" style={{ color: '#8B949E' }}>Docs</a>
-          <a href="#gates" style={{ color: '#8B949E' }}>Gates</a>
-          <a href="#run" style={{ color: '#8B949E' }}>A run</a>
-          <a href="/llms.txt" style={{ color: '#8B949E' }}>llms.txt</a>
-          <a href="https://github.com/AgentsKit-io" style={{ color: '#8B949E' }}>GitHub</a>
+      <header className="harness-home-header">
+        <a href="/" aria-label="AgentsKit Harness home"><ProductWordmark /></a>
+        <nav aria-label="Harness">
+          <a href="/docs">Docs</a>
+          <a href="#gates">Gates</a>
+          <a href="#run">A run</a>
+          <a href="/llms.txt">llms.txt</a>
         </nav>
       </header>
 
@@ -342,7 +333,6 @@ export function HarnessHome({ counts }: HarnessHomeProps) {
             </div>
 
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '14px', alignItems: 'center', fontFamily: 'var(--ak-font-mono)', fontSize: '11px', letterSpacing: '0.2em', textTransform: 'uppercase' }}>
-              <a className="hv2" href="https://github.com/AgentsKit-io/harness" style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '10px 16px', border: '1px solid #30363D', borderRadius: '0.5rem', background: '#161B22', color: '#E6EDF3', fontFamily: 'var(--ak-font-mono)', fontSize: '11px', letterSpacing: '0.2em', textTransform: 'uppercase', transition: 'border-color 200ms cubic-bezier(0.4,0,0.2,1)' }}><span style={{ color: '#56D364', letterSpacing: '0' }}>★</span>Star on GitHub</a>
               <a href="/docs">Read the docs →</a>
               <a href="#run" style={{ color: '#8B949E' }}>See a run →</a>
             </div>
@@ -744,8 +734,7 @@ export function HarnessHome({ counts }: HarnessHomeProps) {
               <code style={{ fontFamily: 'var(--ak-font-mono)', fontSize: '13px', color: '#E6EDF3', flex: '1', overflowX: 'auto', whiteSpace: 'nowrap' }}>{INSTALL}</code>
               <CopyButton text={INSTALL} />
             </div>
-            <a href="https://github.com/AgentsKit-io/harness" style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', minHeight: '44px', padding: '0 16px', borderRadius: '999px', background: '#E6EDF3', color: '#0D1117', fontSize: '14px', fontWeight: '600' }}>Star on GitHub →</a>
-            <a href="/docs" style={{ color: '#8B949E', fontSize: '14px' }}>Read the docs</a>
+            <a href="/docs" style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', minHeight: '44px', padding: '0 16px', borderRadius: '999px', background: '#E6EDF3', color: '#0D1117', fontSize: '14px', fontWeight: '600' }}>Read the docs →</a>
           </div>
         </div>
       </section>
@@ -753,23 +742,7 @@ export function HarnessHome({ counts }: HarnessHomeProps) {
       <EcosystemShowcase />
       </main>
 
-      <footer style={{ padding: '64px 28px 56px' }}>
-        <div style={{ maxWidth: '1180px', margin: '0 auto' }}>
-          <div className="harness-footer-grid">
-            <div style={{ minWidth: '0' }}>
-              <a href="/" style={{ display: 'inline-flex', alignItems: 'center', gap: '10px', color: '#E6EDF3', fontFamily: 'var(--ak-font-mono)', fontSize: '16px', fontWeight: '700', letterSpacing: '-0.02em' }}>
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 4 5 17h14L12 4Z" stroke="#E6EDF3" strokeWidth="1.4"/><circle cx="12" cy="4" r="2" fill="#56D364"/><circle cx="5" cy="17" r="2" fill="#56D364"/><circle cx="19" cy="17" r="2" fill="#56D364"/></svg>
-                AgentsKit Harness
-              </a>
-              <p style={{ maxWidth: '28ch', margin: '16px 0 0', fontSize: '14px', lineHeight: '1.65', color: '#8B949E' }}>The configurable loop that takes software work from objective to release.</p>
-            </div>
-            <div><h3 className="harness-footer-title">Start</h3><a href="/docs">Documentation</a><a href="#gates">Human gates</a><a href="#run">Example run</a></div>
-            <div><h3 className="harness-footer-title">Build</h3><a href="#profiles">Flow profiles</a><a href="#seams">Connectors</a><a href="/llms.txt">llms.txt</a></div>
-            <div><h3 className="harness-footer-title">Ecosystem</h3><a href="https://www.agentskit.io/docs">AgentsKit</a><a href="https://registry.agentskit.io/docs">Registry</a><a href="https://chat.agentskit.io/docs">Chat</a><a href="https://doc-bridge.agentskit.io/">Doc Bridge</a><a href="https://code-review.agentskit.io/docs">Code Review</a><a href="https://harness.agentskit.io/docs" aria-current="page" className="harness-footer-current">Harness <span aria-hidden="true">●</span></a></div>
-            <div><h3 className="harness-footer-title">Community</h3><a href="https://github.com/AgentsKit-io/harness">GitHub</a><a href="https://github.com/AgentsKit-io/harness/blob/main/CONTRIBUTING.md">Contribute</a><a href="https://github.com/AgentsKit-io/harness/blob/main/LICENSE">MIT License</a></div>
-          </div>
-        </div>
-      </footer>
+      <SiteFooter />
 
       </div>
     </div>
