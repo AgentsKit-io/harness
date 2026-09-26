@@ -1,4 +1,4 @@
-# 0.20.0 release candidate
+# 0.21.0 release candidate
 
 The control plane (`ak-harness ui`) becomes the operator's single place to see what needs them and act on it
 safely, plus the loop fixes found running it against a real repository since 0.19.0. `CHANGELOG.md` has the full
@@ -24,5 +24,9 @@ harness that installed them and a crashed precheck is reported (#114).
 
 **Behaviour change.** The UI no longer installs Orca automations when it starts; missing or drifted automations
 appear as system items and reinstall on request.
+
+**0.21.0.** Runs shows fix rounds used and real time in phase; the home event stream reads the loop's event log
+(`GET /api/v1/events/recent`); New batch shows which issues already have a fresh contract (`GET /api/v1/contracts`);
+tracker titles and states survive a UI restart.
 
 The blockers in `release/manifest.json` (`ecosystem-compatibility`, `pilot-benchmark`) are unchanged.
