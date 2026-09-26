@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
-  "contentHash": "0db6c11aa35e2344a912f4b398e2e8169d0a9c7494a25a90ba146ff82267a764",
+  "contentHash": "757febda7406f0f8f5207f4217dee121d5f8102c45dea7ba71f009417037cd43",
   "contentHashAlgo": "sha256-normalized-v1",
-  "generatedAt": "2026-09-26T23:26:24.690Z",
+  "generatedAt": "2026-09-26T23:40:02.426Z",
   "project": {
     "name": "AgentsKit Harness",
     "root": "."
@@ -8824,9 +8824,9 @@
   "projection": {
     "type": "retrieval-index",
     "schemaVersion": 1,
-    "contentHash": "003ba9b603e4e5d48716b3f273217dc2e932d2b6524b826ecdd1177a84407ef7",
+    "contentHash": "57af32d6f96da809acbef32c5626a01cb51d03fbef2d2bae65d112cea6a36f68",
     "contentHashAlgo": "sha256-normalized-v1",
-    "snapshotHash": "6b308861730022217134141ca6e586e7f8389c779e41ba487c6edb7ddbb3501d",
+    "snapshotHash": "1ced5f6458cff54a25c341e7d12bef433e520281f707c6c7e65289cb7a059ce3",
     "overlayHash": "f99666ff9119084dd25c2974ae64eb6935ec2aa785ff5ad478fb9d541f7a5e94",
     "configurationHash": "816afaf6a7dc09767f7594d8fd80024612ca0f33becf0e44dde0107fcf2782df",
     "lexiconVersion": 1,
@@ -8846,7 +8846,7 @@
     },
     "lexical": {
       "version": 1,
-      "documentCount": 537,
+      "documentCount": 543,
       "fieldNames": [
         "aliases",
         "body",
@@ -8857,13 +8857,13 @@
         "title"
       ],
       "averageFieldLength": {
-        "aliases": 2.9478584729981376,
-        "body": 44.089385474860336,
-        "headings": 3.9013035381750467,
-        "path": 6.128491620111732,
-        "summary": 2.6797020484171323,
-        "symbols": 14.13780260707635,
-        "title": 3.9664804469273744
+        "aliases": 2.9263351749539597,
+        "body": 43.60220994475138,
+        "headings": 3.858195211786372,
+        "path": 6.110497237569061,
+        "summary": 2.6500920810313073,
+        "symbols": 13.98158379373849,
+        "title": 3.9355432780847144
       }
     },
     "entries": [
@@ -8897,7 +8897,7 @@
           "mentionedBy": [
             "document:CHANGELOG.md"
           ],
-          "packageId": "package:@agentskit/harness",
+          "packageId": "package:@agentskit/harness-docs",
           "inbound": [
             {
               "kind": "mentions",
@@ -8907,10 +8907,202 @@
           ],
           "outbound": []
         },
-        "contentHash": "3e31631ee3f05011673a8678798eac3058d1eedf0733d1bf9fa5a90ac174405c",
+        "contentHash": "a01ec06bc2caed884d4f536ec8c1c393dcfbe20200ff629c54ef0296490c684c",
         "provenance": "observed",
         "confidence": "observed",
         "ownershipId": "harness-site"
+      },
+      {
+        "id": "area:apps/docs/app/(home)",
+        "kind": "area",
+        "path": "apps/docs/app/(home)",
+        "title": "(home)",
+        "aliases": [],
+        "tags": [
+          "area"
+        ],
+        "fields": {
+          "title": "(home)",
+          "headings": "",
+          "path": "apps/docs/app/(home)",
+          "symbols": "",
+          "summary": "",
+          "body": "",
+          "aliases": "area"
+        },
+        "graph": {
+          "pagerank": 0,
+          "inboundLinks": 0,
+          "coveredBy": [],
+          "mentionedBy": [],
+          "areaId": "area:apps/docs",
+          "packageId": "package:@agentskit/harness-docs",
+          "inbound": [],
+          "outbound": []
+        },
+        "contentHash": "cdee0fa5ff80a6e82b7aa5091af718f0fd5e0f977370cfce629bbcd3c94986cc",
+        "provenance": "observed",
+        "confidence": "observed"
+      },
+      {
+        "id": "area:apps/docs/app/api",
+        "kind": "area",
+        "path": "apps/docs/app/api",
+        "title": "api",
+        "aliases": [],
+        "tags": [
+          "area"
+        ],
+        "fields": {
+          "title": "api",
+          "headings": "",
+          "path": "apps/docs/app/api",
+          "symbols": "",
+          "summary": "",
+          "body": "",
+          "aliases": "area"
+        },
+        "graph": {
+          "pagerank": 0,
+          "inboundLinks": 0,
+          "coveredBy": [],
+          "mentionedBy": [],
+          "areaId": "area:apps/docs",
+          "packageId": "package:@agentskit/harness-docs",
+          "inbound": [],
+          "outbound": []
+        },
+        "contentHash": "985d753a6334c9f42aa46124309c21a5ea524e2c6798f90778a0c1dac31ecb13",
+        "provenance": "observed",
+        "confidence": "observed"
+      },
+      {
+        "id": "area:apps/docs/app/docs",
+        "kind": "area",
+        "path": "apps/docs/app/docs",
+        "title": "docs",
+        "aliases": [],
+        "tags": [
+          "area"
+        ],
+        "fields": {
+          "title": "docs",
+          "headings": "",
+          "path": "apps/docs/app/docs",
+          "symbols": "",
+          "summary": "",
+          "body": "",
+          "aliases": "area"
+        },
+        "graph": {
+          "pagerank": 0,
+          "inboundLinks": 0,
+          "coveredBy": [],
+          "mentionedBy": [],
+          "areaId": "area:apps/docs",
+          "packageId": "package:@agentskit/harness-docs",
+          "inbound": [],
+          "outbound": []
+        },
+        "contentHash": "078df9c25e10f3bff010afdb84ecafe50b2ad09377a11f0c38fb5a70274814bf",
+        "provenance": "observed",
+        "confidence": "observed"
+      },
+      {
+        "id": "area:apps/docs/app/for-agents",
+        "kind": "area",
+        "path": "apps/docs/app/for-agents",
+        "title": "for-agents",
+        "aliases": [],
+        "tags": [
+          "area"
+        ],
+        "fields": {
+          "title": "for-agents",
+          "headings": "",
+          "path": "apps/docs/app/for-agents",
+          "symbols": "",
+          "summary": "",
+          "body": "",
+          "aliases": "area"
+        },
+        "graph": {
+          "pagerank": 0,
+          "inboundLinks": 0,
+          "coveredBy": [],
+          "mentionedBy": [],
+          "areaId": "area:apps/docs",
+          "packageId": "package:@agentskit/harness-docs",
+          "inbound": [],
+          "outbound": []
+        },
+        "contentHash": "33fd99f48899a1785c2ec0d672b7692de5ff3fbed9a819d7526d0f9fa2540fdb",
+        "provenance": "observed",
+        "confidence": "observed"
+      },
+      {
+        "id": "area:apps/docs/components",
+        "kind": "area",
+        "path": "apps/docs/components",
+        "title": "components",
+        "aliases": [],
+        "tags": [
+          "area"
+        ],
+        "fields": {
+          "title": "components",
+          "headings": "",
+          "path": "apps/docs/components",
+          "symbols": "",
+          "summary": "",
+          "body": "",
+          "aliases": "area"
+        },
+        "graph": {
+          "pagerank": 0,
+          "inboundLinks": 0,
+          "coveredBy": [],
+          "mentionedBy": [],
+          "areaId": "area:apps/docs",
+          "packageId": "package:@agentskit/harness-docs",
+          "inbound": [],
+          "outbound": []
+        },
+        "contentHash": "a995c30b1f5f6185e4bafc8069bb1c6a2d19aac65d1497750b93381b96a72a93",
+        "provenance": "observed",
+        "confidence": "observed"
+      },
+      {
+        "id": "area:apps/docs/types",
+        "kind": "area",
+        "path": "apps/docs/types",
+        "title": "types",
+        "aliases": [],
+        "tags": [
+          "area"
+        ],
+        "fields": {
+          "title": "types",
+          "headings": "",
+          "path": "apps/docs/types",
+          "symbols": "",
+          "summary": "",
+          "body": "",
+          "aliases": "area"
+        },
+        "graph": {
+          "pagerank": 0,
+          "inboundLinks": 0,
+          "coveredBy": [],
+          "mentionedBy": [],
+          "areaId": "area:apps/docs",
+          "packageId": "package:@agentskit/harness-docs",
+          "inbound": [],
+          "outbound": []
+        },
+        "contentHash": "a9222c597da887fdf351994ec2d2b6cafacbf0ff695261b6cf4f4dcb855bf724",
+        "provenance": "observed",
+        "confidence": "observed"
       },
       {
         "id": "area:examples",
@@ -14609,8 +14801,8 @@
           "inboundLinks": 0,
           "coveredBy": [],
           "mentionedBy": [],
-          "areaId": "area:apps/docs",
-          "packageId": "package:@agentskit/harness",
+          "areaId": "area:apps/docs/app/(home)",
+          "packageId": "package:@agentskit/harness-docs",
           "inbound": [],
           "outbound": []
         },
@@ -14652,8 +14844,8 @@
             "document:CHANGELOG.md",
             "document:docs/LOOP.md"
           ],
-          "areaId": "area:apps/docs",
-          "packageId": "package:@agentskit/harness",
+          "areaId": "area:apps/docs/app/api",
+          "packageId": "package:@agentskit/harness-docs",
           "inbound": [
             {
               "kind": "mentions-symbol",
@@ -14712,8 +14904,8 @@
           "inboundLinks": 0,
           "coveredBy": [],
           "mentionedBy": [],
-          "areaId": "area:apps/docs",
-          "packageId": "package:@agentskit/harness",
+          "areaId": "area:apps/docs/app/docs",
+          "packageId": "package:@agentskit/harness-docs",
           "inbound": [],
           "outbound": []
         },
@@ -14749,8 +14941,8 @@
           "inboundLinks": 0,
           "coveredBy": [],
           "mentionedBy": [],
-          "areaId": "area:apps/docs",
-          "packageId": "package:@agentskit/harness",
+          "areaId": "area:apps/docs/app/docs",
+          "packageId": "package:@agentskit/harness-docs",
           "inbound": [],
           "outbound": []
         },
@@ -14787,8 +14979,8 @@
           "inboundLinks": 0,
           "coveredBy": [],
           "mentionedBy": [],
-          "areaId": "area:apps/docs",
-          "packageId": "package:@agentskit/harness",
+          "areaId": "area:apps/docs/app/for-agents",
+          "packageId": "package:@agentskit/harness-docs",
           "inbound": [],
           "outbound": []
         },
@@ -14827,7 +15019,7 @@
           "coveredBy": [],
           "mentionedBy": [],
           "areaId": "area:apps/docs",
-          "packageId": "package:@agentskit/harness",
+          "packageId": "package:@agentskit/harness-docs",
           "inbound": [],
           "outbound": []
         },
@@ -14867,8 +15059,8 @@
           "inboundLinks": 0,
           "coveredBy": [],
           "mentionedBy": [],
-          "areaId": "area:apps/docs",
-          "packageId": "package:@agentskit/harness",
+          "areaId": "area:apps/docs/components",
+          "packageId": "package:@agentskit/harness-docs",
           "inbound": [],
           "outbound": []
         },
@@ -14905,8 +15097,8 @@
           "inboundLinks": 0,
           "coveredBy": [],
           "mentionedBy": [],
-          "areaId": "area:apps/docs",
-          "packageId": "package:@agentskit/harness",
+          "areaId": "area:apps/docs/components",
+          "packageId": "package:@agentskit/harness-docs",
           "inbound": [],
           "outbound": []
         },
@@ -14942,8 +15134,8 @@
           "inboundLinks": 0,
           "coveredBy": [],
           "mentionedBy": [],
-          "areaId": "area:apps/docs",
-          "packageId": "package:@agentskit/harness",
+          "areaId": "area:apps/docs/components",
+          "packageId": "package:@agentskit/harness-docs",
           "inbound": [
             {
               "kind": "imports",
@@ -14985,8 +15177,8 @@
           "inboundLinks": 0,
           "coveredBy": [],
           "mentionedBy": [],
-          "areaId": "area:apps/docs",
-          "packageId": "package:@agentskit/harness",
+          "areaId": "area:apps/docs/components",
+          "packageId": "package:@agentskit/harness-docs",
           "inbound": [],
           "outbound": [
             {
@@ -15028,8 +15220,8 @@
           "inboundLinks": 0,
           "coveredBy": [],
           "mentionedBy": [],
-          "areaId": "area:apps/docs",
-          "packageId": "package:@agentskit/harness",
+          "areaId": "area:apps/docs/components",
+          "packageId": "package:@agentskit/harness-docs",
           "inbound": [],
           "outbound": []
         },
@@ -15065,8 +15257,8 @@
           "inboundLinks": 0,
           "coveredBy": [],
           "mentionedBy": [],
-          "areaId": "area:apps/docs",
-          "packageId": "package:@agentskit/harness",
+          "areaId": "area:apps/docs/components",
+          "packageId": "package:@agentskit/harness-docs",
           "inbound": [],
           "outbound": []
         },
@@ -15102,8 +15294,8 @@
           "inboundLinks": 0,
           "coveredBy": [],
           "mentionedBy": [],
-          "areaId": "area:apps/docs",
-          "packageId": "package:@agentskit/harness",
+          "areaId": "area:apps/docs/components",
+          "packageId": "package:@agentskit/harness-docs",
           "inbound": [],
           "outbound": []
         },
@@ -15139,8 +15331,8 @@
           "inboundLinks": 0,
           "coveredBy": [],
           "mentionedBy": [],
-          "areaId": "area:apps/docs",
-          "packageId": "package:@agentskit/harness",
+          "areaId": "area:apps/docs/components",
+          "packageId": "package:@agentskit/harness-docs",
           "inbound": [],
           "outbound": []
         },
@@ -15174,7 +15366,7 @@
           "coveredBy": [],
           "mentionedBy": [],
           "areaId": "area:apps/docs",
-          "packageId": "package:@agentskit/harness",
+          "packageId": "package:@agentskit/harness-docs",
           "inbound": [],
           "outbound": []
         },
@@ -15215,7 +15407,7 @@
           "coveredBy": [],
           "mentionedBy": [],
           "areaId": "area:apps/docs",
-          "packageId": "package:@agentskit/harness",
+          "packageId": "package:@agentskit/harness-docs",
           "inbound": [],
           "outbound": []
         },
@@ -15253,7 +15445,7 @@
           "coveredBy": [],
           "mentionedBy": [],
           "areaId": "area:apps/docs",
-          "packageId": "package:@agentskit/harness",
+          "packageId": "package:@agentskit/harness-docs",
           "inbound": [],
           "outbound": []
         },
@@ -15293,7 +15485,7 @@
             "document:docs/MODULE-BOUNDARIES.md"
           ],
           "areaId": "area:apps/docs",
-          "packageId": "package:@agentskit/harness",
+          "packageId": "package:@agentskit/harness-docs",
           "inbound": [
             {
               "kind": "mentions-symbol",
@@ -15343,7 +15535,7 @@
           "coveredBy": [],
           "mentionedBy": [],
           "areaId": "area:apps/docs",
-          "packageId": "package:@agentskit/harness",
+          "packageId": "package:@agentskit/harness-docs",
           "inbound": [],
           "outbound": []
         },
@@ -15380,7 +15572,7 @@
           "coveredBy": [],
           "mentionedBy": [],
           "areaId": "area:apps/docs",
-          "packageId": "package:@agentskit/harness",
+          "packageId": "package:@agentskit/harness-docs",
           "inbound": [],
           "outbound": []
         },
@@ -15417,7 +15609,7 @@
           "coveredBy": [],
           "mentionedBy": [],
           "areaId": "area:apps/docs",
-          "packageId": "package:@agentskit/harness",
+          "packageId": "package:@agentskit/harness-docs",
           "inbound": [],
           "outbound": []
         },
@@ -15454,7 +15646,7 @@
           "coveredBy": [],
           "mentionedBy": [],
           "areaId": "area:apps/docs",
-          "packageId": "package:@agentskit/harness",
+          "packageId": "package:@agentskit/harness-docs",
           "inbound": [],
           "outbound": []
         },
@@ -15496,7 +15688,7 @@
             "document:docs/PRD-0.4.0.md"
           ],
           "areaId": "area:apps/docs",
-          "packageId": "package:@agentskit/harness",
+          "packageId": "package:@agentskit/harness-docs",
           "inbound": [
             {
               "kind": "mentions-symbol",
@@ -15545,8 +15737,8 @@
           "inboundLinks": 0,
           "coveredBy": [],
           "mentionedBy": [],
-          "areaId": "area:apps/docs",
-          "packageId": "package:@agentskit/harness",
+          "areaId": "area:apps/docs/types",
+          "packageId": "package:@agentskit/harness-docs",
           "inbound": [],
           "outbound": []
         },
