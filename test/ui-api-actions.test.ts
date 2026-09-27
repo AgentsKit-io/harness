@@ -137,3 +137,15 @@ describe('the control-plane action surface', () => {
     await expect(decideIssue(context, 'ENG-8', 'close-issue')).rejects.toThrow(/not waiting on a close-or-reopen decision/)
   })
 })
+
+describe('contract reuse after HITL answers', () => {
+  it('reuses a valid contract, and a blocked one while a question is open or none was asked — never one whose questions were all answered', async () => {
+    const { canReuseContract } = await import('../src/ui/api/actions.js')
+    expect(canReuseContract(true, [{ status: 'answered' }])).toBe(true)
+    expect(canReuseContract(false, [])).toBe(true)
+    expect(canReuseContract(false, [{ status: 'open' }, { status: 'answered' }])).toBe(true)
+    // Live: answering the only question and re-running the batch returned the same blocked contract.
+    expect(canReuseContract(false, [{ status: 'answered' }])).toBe(false)
+    expect(canReuseContract(false, [{ status: 'answered' }, { status: 'answered' }])).toBe(false)
+  })
+})
