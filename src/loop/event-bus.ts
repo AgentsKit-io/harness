@@ -18,8 +18,8 @@ export type LoopEventListener = (event: LoopEventPayload) => void
 
 /**
  * Fired around a loop-orchestration decision (not a model/tool call inside the worker's own CLI session — that
- * loop is opaque to us). A `before*` hook can return `{ block: true, reason }` to stop the action outright; any
- * other return value (including a thrown error, which is treated as `{ block: true }`) does not block.
+ * loop is opaque to us). A `before*` hook can return `{ block: true, reason }` to stop the action outright. A
+ * `before*` hook that throws also blocks (a gate that could not decide is not a pass); any other hook's error does not.
  */
 export type LoopHookName = 'beforeDispatch' | 'afterDispatch' | 'beforeReview' | 'afterReview' | 'beforeMerge' | 'afterMerge' | 'onPause' | 'onEscalate'
 export type LoopHookPayload = Readonly<Record<string, unknown>>
@@ -35,8 +35,8 @@ export interface LoopEventBus {
   hook(name: LoopHookName, listener: LoopHookListener): () => void
   /**
    * Run every listener registered for `name` in registration order and return the first block decision, or
-   * `{ block: false }` when none blocked. A listener that throws is treated as a non-blocking no-op (a broken
-   * plugin must not take down the loop) and its error is appended to `errors`.
+   * `{ block: false }` when none blocked. A listener that throws has its error appended to `errors`; on a `before*`
+   * hook that is a block (fail closed — the gate could not decide), on any other hook it is a no-op.
    */
   runHook(name: LoopHookName, payload: LoopHookPayload): Promise<{ readonly block: boolean; readonly reason?: string; readonly errors: readonly string[] }>
 }
@@ -68,7 +68,10 @@ export const createLoopEventBus = (): LoopEventBus => {
         try {
           const result = await listener(payload)
           if (result?.block) return { block: true, reason: result.reason, errors }
-        } catch (error) { errors.push(error instanceof Error ? error.message : String(error)) }
+        } catch (error) {
+          errors.push(error instanceof Error ? error.message : String(error))
+          if (name.startsWith('before')) return { block: true, reason: `${name} hook failed: ${errors.at(-1)}`, errors }
+        }
       }
       return { block: false, errors }
     },

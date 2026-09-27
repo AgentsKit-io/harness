@@ -223,6 +223,14 @@ export const LOOP_EVENT_TYPES = {
    * update was re-applied and succeeded) or `dismiss` (a person accepted the tracker's current state). Earlier
    * sync failures for the issue stop showing in Attention. */
   'ui.tracker-sync-resolved': ['issue', 'action'],
+  /** A delivery pass over one issue threw (gh/Orca/review); `consecutive` counts passes in a row — at 3 the issue is `failed`. */
+  'delivery.error': ['issue', 'error', 'consecutive'],
+  /** Orca could not answer (e.g. `terminal list` failed); the worker's state is unknown, so the pass waits instead of acting. */
+  'orca.unavailable': ['issue', 'operation', 'error'],
+  /** The tracker answered with a rate limit; tick and tracker writes wait until `until` (15 min doubling, 2 h cap). */
+  'tracker.cooldown': ['until', 'attempts', 'reason'],
+  /** A gating `before*` plugin hook threw; the action it guards was blocked (fail closed), not waved through. */
+  'plugin.hook-failed': ['issue', 'hook', 'error'],
 } as const satisfies Readonly<Record<string, readonly string[]>>
 
 export type LoopEventType = keyof typeof LOOP_EVENT_TYPES
