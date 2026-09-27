@@ -276,6 +276,16 @@ const PERMISSION_PROMPT = /Permission required|Allow once|Allow always|Do you wa
  * whatever the agent asked for — typically the one command its own config marks as dangerous (`rm -rf`,
  * `git reset --hard`). Orca's `worktree ps` reports it as `permission`; the screen is the fallback.
  */
+/** The reason a worker gave when it stopped itself: the check-in prompt tells it to set an Orca worktree comment
+ * `BLOCKED: <reason>` and stop. The loop's own escalation writes `LOOP BLOCKED: …`, which does not match. */
+export const workerDeclaredBlocked = async (ctx: Pick<Context, 'runner' | 'config'>, record: Pick<DispatchRecordFile, 'worktreeId'>): Promise<string | null> => {
+  try {
+    const own = (await orcaWorktrees(ctx.runner, orcaOptions(ctx.config))).find((item) => item.id === record.worktreeId)
+    const match = /^\s*BLOCKED:\s*([\s\S]+)/i.exec(own?.comment ?? '')
+    return match ? match[1]!.trim().slice(0, 500) : null
+  } catch { return null }
+}
+
 export const workerAwaitingPermission = async (ctx: Pick<Context, 'runner' | 'config'>, record: Pick<DispatchRecordFile, 'worktreeId' | 'terminal'>): Promise<string | null> => {
   try {
     const own = (await orcaWorktrees(ctx.runner, orcaOptions(ctx.config))).find((item) => item.id === record.worktreeId)
@@ -653,6 +663,18 @@ const handleNoPullRequest = async (ctx: Context, record: DispatchRecordFile, lea
   const idleTimeout = ctx.config.delivery.workerIdleTimeoutMin
   const nextBuilder = pickHandoffBuilder(ctx, record)
   const unavailable = providerUnavailable(ctx, record.provider)
+
+  // The worker stopped on purpose and said why. Nudging it again is noise, and the idle path would restart it from
+  // scratch, discarding work the blocker says nothing about (law-os AGE-1750: committed, unpushed, blocked on a
+  // registry 403 only a person can fix). Escalate like a stuck worker: worktree kept, lease released. Checked before the terminal-gone path, so a worker
+  // that wrote BLOCKED: and exited is escalated, not handed off or restarted.
+  const declared = await workerDeclaredBlocked(ctx, record)
+  if (declared) {
+    const reason = `worker declared blocked: ${declared.split('\n')[0]!.slice(0, 200)}`
+    await escalateTracker(ctx, record, 'blocked', `**Loop: worker blocked** — the worker stopped and reported: ${declared}\n\nThe worktree was preserved (its committed work is still there) and the lease was released; the issue returned to ${ctx.config.delivery.returnState}. Clear the blocker, then resume in that worktree — Retry starts a fresh attempt, which does not reuse unpushed work.`, actions)
+    finish(ctx, record, lease, state, 'blocked', reason)
+    return { issue: record.issue, outcome: ctx.dryRun ? 'dry-run' : 'blocked', reason, actions }
+  }
 
   if (!terminalAlive) {
     if (sinceDispatch < 5) return { issue: record.issue, outcome: 'waiting', reason: 'worker terminal not visible yet', actions }
