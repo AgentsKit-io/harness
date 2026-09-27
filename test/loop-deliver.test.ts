@@ -2,8 +2,11 @@ import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync
 import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
-import { approveHeldDelivery, atLeast, buildReviewArgv, createDispatchLedger, createHitlStore, dispatchRecordPath, listDispatched, loadLoopConfig, parseReviewResult, precheckDeliver, readDeliveryState, renderFindingsForWorker, runCodeReview, runDeliver } from '../src/index.js'
-import type { CommandResult, CommandRunner, DispatchRecordFile } from '../src/index.js'
+import { approveHeldDelivery, atLeast, buildReviewArgv, createDispatchLedger, createHitlStore, dispatchRecordPath, listDispatched, loadLoopConfig, parseReviewResult, precheckDeliver, readDeliveryState, renderFindingsForWorker, runCodeReview, runDeliver, createIssueQueue } from '../src/index.js'
+import type { CommandResult, CommandRunner, DispatchRecordFile, StoredContract } from '../src/index.js'
+import { renderSpec, writeSpec } from '../src/loop/spec.js'
+import { readAgentRunReport } from '../src/loop/agent-runs.js'
+import { activeTrackerCooldown, isTrackerRateLimit, markTrackerRateLimited } from '../src/loop/tracker-cooldown.js'
 
 const fixture = (name: string): unknown => JSON.parse(readFileSync(join(process.cwd(), 'test/fixtures/loop', `${name}.json`), 'utf8')) as unknown
 const exampleYaml = readFileSync(join(process.cwd(), 'loop.config.example.yaml'), 'utf8').replace('person: my-linear-display-name', 'person: person')
@@ -19,7 +22,7 @@ interface Scenario {
   readonly mergedPr?: Record<string, unknown>
   readonly closedPr?: Record<string, unknown>
   readonly terminals?: readonly Record<string, unknown>[]
-  readonly review?: { readonly code: number; readonly findings?: readonly Record<string, unknown>[]; readonly incomplete?: boolean; readonly failureMessage?: string }
+  readonly review?: { readonly code: number; readonly findings?: readonly Record<string, unknown>[]; readonly incomplete?: boolean; readonly failureMessage?: string; /** The CLI exits without writing `--result`. */ readonly noResultFile?: boolean }
   readonly mergeRefused?: boolean
   readonly dispatchedAt?: string
   readonly reviewerAvailable?: boolean
@@ -49,6 +52,20 @@ interface Scenario {
   readonly worktreeFiles?: Readonly<Record<string, string>>
   /** Exit code the fake `delivery.verify.argv` command (`agentskit-verify-fixture`) returns; 0 by default. */
   readonly verifyExitCode?: number
+  /** Set by the fake: the cwd the verify command last ran in. */
+  readonly verifyCwd?: string
+  /** `git status --porcelain` output in the worktree (the spec gate's commit check); clean by default. */
+  readonly gitStatus?: string
+  /** Id of an existing run-summary comment on the PR, returned by the marker lookup (`gh api ... --jq`). */
+  readonly summaryCommentId?: number
+  /** The next N `gh pr list` calls fail (a transient GitHub error). */
+  readonly prListFailures?: number
+  /** The next N review invocations throw (the runner itself fails, e.g. a spawn error). */
+  readonly reviewThrows?: number
+  /** `orca terminal list` fails (Orca runtime down). */
+  readonly orcaDown?: boolean
+  /** Every Linear write answers with a rate limit. */
+  readonly linearRateLimited?: boolean
 }
 
 const basePr = (over: Record<string, unknown> = {}): Record<string, unknown> => ({ ...(fixture('gh-pr-view') as Record<string, unknown>), headRefName: 'person/eng-10-demo', files: [{ path: 'packages/demo/src/index.ts' }], statusCheckRollup: [{ __typename: 'CheckRun', name: 'ci', conclusion: 'SUCCESS', status: 'COMPLETED' }], mergeable: 'MERGEABLE', mergeStateStatus: 'CLEAN', state: 'OPEN', number: 42, url: 'https://github.com/o/r/pull/42', ...over })
@@ -104,6 +121,7 @@ const setup = (initial: Scenario = {}) => {
       if (key.startsWith('orca account list')) return okResult(account)
       if (key.startsWith('orca agent hooks status')) return ok(fixture('agent-hooks'))
       if (key === 'gh auth token') return { code: 0, stdout: 'ghp_test\n', stderr: '', timedOut: false, durationMs: 1 }
+      if (argv[0] === 'gh' && argv[1] === 'pr' && argv[2] === 'list' && (scenario.prListFailures ?? 0) > 0) { scenario.prListFailures = (scenario.prListFailures ?? 1) - 1; return { code: 1, stdout: '', stderr: 'HTTP 502: Bad Gateway', timedOut: false, durationMs: 1 } }
       if (argv[0] === 'gh' && argv[1] === 'pr' && argv[2] === 'list') {
         const state = argv[argv.indexOf('--state') + 1]
         const byHead = argv.includes('--head')
@@ -121,6 +139,7 @@ const setup = (initial: Scenario = {}) => {
         return { code: 1, stdout: '', stderr: `no fixture for pr view ${number}`, timedOut: false, durationMs: 1 }
       }
       if (argv[0] === 'gh' && argv[1] === 'pr' && argv[2] === 'edit') return { code: 0, stdout: '', stderr: '', timedOut: false, durationMs: 1 }
+      if (key.startsWith('orca terminal list') && scenario.orcaDown) return { code: 1, stdout: '', stderr: 'orca runtime unavailable: connect ECONNREFUSED', timedOut: false, durationMs: 1 }
       if (key.startsWith('orca terminal list')) return okResult({ terminals: scenario.terminals ?? [{ handle: 'term_w', connected: true, orphaned: false, lastOutputAt: Date.parse('2026-09-11T10:30:00.000Z'), worktreeId: 'repo-1::/w/eng-10-demo' }] })
       if (key.startsWith('orca terminal read')) return scenario.terminalScreen === undefined ? { code: 127, stdout: '', stderr: 'no fixture for terminal read', timedOut: false, durationMs: 1 } : okResult({ tail: scenario.terminalScreen })
       if (key.startsWith('orca terminal create')) return okResult({ handle: 'term_handoff', terminal: { handle: 'term_handoff' } })
@@ -131,16 +150,21 @@ const setup = (initial: Scenario = {}) => {
         return okResult({ accepted: true, requestId: 'r' })
       }
       if (scenario.orcaWorktreeMissing && (key.startsWith('orca worktree set') || key.startsWith('orca worktree rm'))) return { code: 1, stdout: '', stderr: 'selector_not_found', timedOut: false, durationMs: 1 }
+      if (key.startsWith('orca linear') && scenario.linearRateLimited) return { code: 1, stdout: '', stderr: 'Linear API: HTTP 429 Too Many Requests', timedOut: false, durationMs: 1 }
       if (key.startsWith('orca linear') || key.startsWith('orca worktree set') || key.startsWith('orca worktree rm')) return okResult({ ok: true })
+      if (argv[0] === 'agentskit-review' && (scenario.reviewThrows ?? 0) > 0) { scenario.reviewThrows = (scenario.reviewThrows ?? 1) - 1; throw new Error('spawn agentskit-review EAGAIN') }
       if (argv[0] === 'agentskit-review') {
         const resultFile = argv[argv.indexOf('--result') + 1]
-        if (resultFile && scenario.review) writeFileSync(resultFile, JSON.stringify({ blocking: scenario.review.code === 1, incomplete: scenario.review.incomplete ?? false, findings: scenario.review.findings ?? [] }))
+        if (resultFile && scenario.review && !scenario.review.noResultFile) writeFileSync(resultFile, JSON.stringify({ blocking: scenario.review.code === 1, incomplete: scenario.review.incomplete ?? false, findings: scenario.review.findings ?? [] }))
         return { code: scenario.review?.code ?? 0, stdout: scenario.review?.failureMessage ?? '## Code review — done', stderr: '', timedOut: false, durationMs: 1 }
       }
       if (argv[0] === 'gh' && argv[1] === 'api' && argv.includes('--method')) return scenario.mergeRefused ? { code: 1, stdout: JSON.stringify({ message: 'Head branch was modified.' }), stderr: '', timedOut: false, durationMs: 1 } : ok({ merged: true, sha: 'deadbeef', message: 'merged' })
+      if (argv[0] === 'gh' && argv[1] === 'api' && argv.some((arg) => arg.includes('loop:run-summary'))) return { code: 0, stdout: scenario.summaryCommentId ? `${scenario.summaryCommentId}\n` : '', stderr: '', timedOut: false, durationMs: 1 }
       if (argv[0] === 'gh' && argv[1] === 'api') return ok([])
       if (argv[0] === 'gh' && argv[1] === 'pr' && argv[2] === 'comment') return { code: 0, stdout: '', stderr: '', timedOut: false, durationMs: 1 }
+      if (argv[0] === 'git' && argv[1] === 'status') return { code: 0, stdout: scenario.gitStatus ?? '', stderr: '', timedOut: false, durationMs: 1 }
       if (argv[0] === 'git' && argv[1] === 'rev-list') return { code: 0, stdout: `${scenario.unpushedCommits ?? 0}\n`, stderr: '', timedOut: false, durationMs: 1 }
+      if (key === 'agentskit-verify-fixture') scenario.verifyCwd = options?.cwd
       if (key === 'agentskit-verify-fixture') return { code: scenario.verifyExitCode ?? 0, stdout: 'verify output', stderr: '', timedOut: false, durationMs: 1 }
       return { code: 127, stdout: '', stderr: `no fixture for ${key} ${options?.cwd ?? ''}`, timedOut: false, durationMs: 1 }
     },
@@ -339,6 +363,18 @@ describe('deliver', () => {
     const events = readFileSync(join(env.loaded.stateDir, 'events.ndjson'), 'utf8')
     expect(events).toContain('"type":"provider.cooldown"')
     expect(events).toContain('"source":"review"')
+  })
+
+  it('never merges on a review that wrote no result file: incomplete, then held after two attempts (fail-closed)', async () => {
+    const env = setup({ review: { code: 0, noResultFile: true } })
+    const first = (await deliver(env)).results[0]
+    expect(first).toMatchObject({ outcome: 'waiting', review: { status: 'incomplete' } })
+    await deliver(env)
+    expect((await deliver(env)).results[0]).toMatchObject({ outcome: 'held' })
+    expect(env.runner.calls.some((argv) => argv[0] === 'gh' && argv[1] === 'api' && argv.includes('--method'))).toBe(false)
+    const exitOne = setup({ review: { code: 1, noResultFile: true } })
+    expect((await deliver(exitOne)).results[0]).toMatchObject({ outcome: 'waiting', review: { status: 'incomplete' } })
+    expect(exitOne.runner.calls.some((argv) => argv[1] === 'terminal' && argv[2] === 'send')).toBe(false)
   })
 
   it('keeps why a review was incomplete, and says it when holding the PR for a human', async () => {
@@ -734,6 +770,110 @@ describe('deliver', () => {
     expect(held.runner.calls.some((argv) => argv[0] === 'gh' && argv[1] === 'api' && argv.includes('--method'))).toBe(false)
   })
 
+  it('fails closed when a beforeReview or beforeMerge hook throws: no review / no merge, plugin.hook-failed logged', async () => {
+    const review = setup({ review: { code: 0 }, pluginSource: `export default { id: 'broken', apply(bus) { bus.hook('beforeReview', () => { throw new Error('boom') }) } }` })
+    expect((await deliver(review)).results[0]).toMatchObject({ outcome: 'waiting', reason: expect.stringContaining('beforeReview hook failed: boom') })
+    expect(review.runner.calls.some((argv) => argv[0] === 'agentskit-review')).toBe(false)
+    expect(readFileSync(join(review.loaded.stateDir, 'events.ndjson'), 'utf8')).toContain('"type":"plugin.hook-failed","issue":"ENG-10","hook":"beforeReview","error":"boom"')
+
+    const merge = setup({ review: { code: 0 }, pluginSource: `export default { id: 'broken', apply(bus) { bus.hook('beforeMerge', () => { throw new Error('boom') }) } }` })
+    expect((await deliver(merge)).results[0]).toMatchObject({ outcome: 'held', reason: expect.stringContaining('beforeMerge hook failed: boom') })
+    expect(merge.runner.calls.some((argv) => argv[0] === 'gh' && argv[1] === 'api' && argv.includes('--method'))).toBe(false)
+    expect(readFileSync(join(merge.loaded.stateDir, 'events.ndjson'), 'utf8')).toContain('"type":"plugin.hook-failed","issue":"ENG-10","hook":"beforeMerge"')
+  })
+
+  it('treats one thrown pass as transient: waiting (lease kept, delivery.error logged), and the next pass proceeds normally', async () => {
+    const env = setup({ review: { code: 0 }, prListFailures: 1 })
+    const first = (await deliver(env)).results[0]
+    expect(first).toMatchObject({ outcome: 'waiting', reason: expect.stringContaining('transient error 1/3') })
+    expect(env.ledger.active()).toHaveLength(1)
+    expect(readDeliveryState(env.loaded.stateDir, 'ENG-10')).toMatchObject({ finishedAt: null, consecutiveErrors: 1 })
+    expect(readFileSync(join(env.loaded.stateDir, 'events.ndjson'), 'utf8')).toContain('"type":"delivery.error","issue":"ENG-10"')
+    expect((await deliver(env)).results[0]).toMatchObject({ outcome: 'merged' })
+    expect(readDeliveryState(env.loaded.stateDir, 'ENG-10').consecutiveErrors).toBe(0)
+  })
+
+  it('finishes as failed only after 3 consecutive thrown passes, and a new PR head resumes a failed issue', async () => {
+    const env = setup({ review: { code: 0 }, reviewThrows: 3 })
+    expect((await deliver(env)).results[0]).toMatchObject({ outcome: 'waiting' })
+    expect((await deliver(env)).results[0]).toMatchObject({ outcome: 'waiting', reason: expect.stringContaining('transient error 2/3') })
+    expect((await deliver(env)).results[0]).toMatchObject({ outcome: 'failed', reason: expect.stringContaining('3 consecutive errors') })
+    expect(env.ledger.active()).toEqual([])
+    const failed = readDeliveryState(env.loaded.stateDir, 'ENG-10')
+    expect(failed).toMatchObject({ finalOutcome: 'failed', consecutiveErrors: 3, failedAtHead: expect.stringMatching(/^c74d687e/) })
+    const events = readFileSync(join(env.loaded.stateDir, 'events.ndjson'), 'utf8').split('\n').filter(Boolean).map((line) => JSON.parse(line) as Record<string, unknown>)
+    expect(events.filter((event) => event['type'] === 'delivery.error').map((event) => event['consecutive'])).toEqual([1, 2, 3])
+    // Same head: stays failed, nothing re-run.
+    expect((await deliver(env)).results).toEqual([])
+    // New head: resumed and delivered.
+    env.scenario.pr = basePr({ headRefOid: '5555555555555555555555555555555555555555' })
+    expect((await deliver(env)).results[0]).toMatchObject({ outcome: 'merged' })
+    expect(readFileSync(join(env.loaded.stateDir, 'events.ndjson'), 'utf8')).toContain('"type":"worker.reopened"')
+  })
+
+  it('an Orca outage is not a dead worker: waiting with orca.unavailable, no stuck escalation and no handoff', async () => {
+    const env = setup({ pr: null, orcaDown: true, exhaustClaude: true, dispatchedAt: '2026-09-11T09:00:00.000Z' })
+    const result = (await deliver(env)).results[0]
+    expect(result).toMatchObject({ outcome: 'waiting', reason: expect.stringContaining('orca unavailable') })
+    expect(env.ledger.active()).toHaveLength(1)
+    expect(readDeliveryState(env.loaded.stateDir, 'ENG-10')).toMatchObject({ finishedAt: null, handoffs: [] })
+    expect(env.runner.calls.some((argv) => argv[1] === 'terminal' && argv[2] === 'create')).toBe(false)
+    expect(env.runner.calls.some((argv) => argv[1] === 'linear' && argv[2] === 'label')).toBe(false)
+    expect(readFileSync(join(env.loaded.stateDir, 'events.ndjson'), 'utf8')).toContain('"type":"orca.unavailable","issue":"ENG-10"')
+  })
+
+  it('backs a tracker rate limit off 15 min doubling to a 2 h cap, and matches only rate-limit text (not a 429 inside a hash)', () => {
+    const env = setup()
+    const at = (minutes: number) => new Date(NOW.getTime() + minutes * 60_000)
+    expect(markTrackerRateLimited(env.loaded.stateDir, 'HTTP 429', NOW).until).toBe(at(15).toISOString())
+    expect(markTrackerRateLimited(env.loaded.stateDir, 'HTTP 429', at(15)).until).toBe(at(45).toISOString())
+    let last = at(45)
+    for (let i = 0; i < 5; i++) last = new Date(markTrackerRateLimited(env.loaded.stateDir, 'HTTP 429', last).until)
+    expect(activeTrackerCooldown(env.loaded.stateDir, new Date(last.getTime() - 1))).toMatchObject({ attempts: 6 })
+    const entry = markTrackerRateLimited(env.loaded.stateDir, 'x', last)
+    expect(Date.parse(entry.until) - last.getTime()).toBe(120 * 60_000)
+    expect(['Rate limit exceeded', 'ratelimited', 'Too Many Requests', 'HTTP 429: slow down', '429 Too Many Requests'].every((text) => isTrackerRateLimit(new Error(text)))).toBe(true)
+    expect(['sha 4290af1c', 'issue #429 not found', 'exited 1'].some((text) => isTrackerRateLimit(new Error(text)))).toBe(false)
+  })
+
+  it('while the tracker cools down, deliver skips every tracker write (and says so) but still reviews and merges the PR', async () => {
+    const env = setup({ review: { code: 0 } })
+    markTrackerRateLimited(env.loaded.stateDir, 'HTTP 429', NOW)
+    const report = await deliver(env)
+    expect(report.results[0]).toMatchObject({ outcome: 'merged' })
+    expect(env.runner.calls.some((argv) => argv[0] === 'gh' && argv[1] === 'api' && argv.includes('--method'))).toBe(true)
+    expect(env.runner.calls.some((argv) => argv[1] === 'linear')).toBe(false)
+    expect(report.notes.some((note) => note.includes('rate-limited until') && note.includes('tracker writes skipped'))).toBe(true)
+    expect(report.results[0]?.actions.some((action) => action.includes('cooling down until'))).toBe(true)
+  })
+
+  it('a rate-limited tracker write starts a cooldown (tracker.cooldown) and later writes in the pass are skipped, not retried', async () => {
+    const env = setup({ review: { code: 0 }, linearRateLimited: true })
+    const report = await deliver(env)
+    expect(report.results[0]).toMatchObject({ outcome: 'merged' })
+    expect(env.runner.calls.filter((argv) => argv[1] === 'linear')).toHaveLength(1)
+    expect(readFileSync(join(env.loaded.stateDir, 'events.ndjson'), 'utf8')).toContain('"type":"tracker.cooldown"')
+    expect(activeTrackerCooldown(env.loaded.stateDir, NOW)).not.toBeNull()
+  })
+
+  it('moves an open-PR issue to the review state once, not with a tracker write on every pass', async () => {
+    const env = setup({ pr: basePr({ statusCheckRollup: [{ __typename: 'CheckRun', name: 'ci', status: 'IN_PROGRESS' }] }) })
+    await deliver(env)
+    await deliver(env)
+    await deliver(env)
+    expect(env.runner.calls.filter((argv) => argv[1] === 'linear' && argv[2] === 'status' && argv.includes('In Review'))).toHaveLength(1)
+    expect(readDeliveryState(env.loaded.stateDir, 'ENG-10').trackerState).toBe('In Review')
+  })
+
+  it('reports a pass whose every result failed as failed, not ok', async () => {
+    const env = setup({ review: { code: 0 }, reviewThrows: 3 })
+    expect((await deliver(env)).status).toBe('ok')
+    await deliver(env)
+    const third = await deliver(env)
+    expect(third.results.map((result) => result.outcome)).toEqual(['failed'])
+    expect(third.status).toBe('failed')
+  })
+
   it('stops a dispatch that has run past delivery.maxDispatchMinutes, even though the terminal is still active', async () => {
     const env = setup({ pr: null, dispatchedAt: '2026-09-11T00:00:00.000Z' }) // 12h before NOW
     writeFileSync(join(env.dir, 'loop.config.local.yaml'), 'delivery:\n  maxDispatchMinutes: 60\n')
@@ -786,14 +926,27 @@ describe('deliver', () => {
     expect(observed).toMatchObject({ issue: 'ENG-10', provider: 'claude', initialRemainingPercent: 90, currentRemainingPercent: 80, deltaPercent: 10 })
   })
 
-  it('logs verify.passed and merges normally when delivery.verify.argv passes before the review', async () => {
-    const env = setup({ review: { code: 0 } })
+  it('logs verify.passed and merges normally when delivery.verify.argv passes before the review — run in the worker\'s worktree, not the operator checkout', async () => {
+    const env = setup({ review: { code: 0 }, worktreeFiles: { 'verify.json': JSON.stringify({ command: 'pnpm test', exitCode: 0, outcomes: [{ id: 'o1', status: 'passed', evidence: 'green' }] }) } })
     writeFileSync(join(env.dir, 'loop.config.local.yaml'), 'delivery:\n  verify:\n    argv: [agentskit-verify-fixture]\n')
     const report = await deliver(env)
     expect(report.results[0]).toMatchObject({ outcome: 'merged', pr: 42 })
+    expect(env.scenario.verifyCwd).toBe(env.worktreePath)
+    expect(report.results[0]?.actions).toContain('vouched for by: CI, the project verify, the review')
     const events = readFileSync(join(env.loaded.stateDir, 'events.ndjson'), 'utf8').split('\n').filter(Boolean).map((line) => JSON.parse(line) as Record<string, unknown>)
     const passed = events.find((event) => event['type'] === 'verify.passed')
     expect(passed).toMatchObject({ issue: 'ENG-10', pr: 42 })
+  })
+
+  it('does not run or vouch with delivery.verify.argv when the dispatch has no worktree to run it in', async () => {
+    const env = setup({ review: { code: 0 } })
+    writeFileSync(join(env.dir, 'loop.config.local.yaml'), 'delivery:\n  verify:\n    argv: [agentskit-verify-fixture]\n')
+    const report = await deliver(env)
+    expect(env.runner.calls.some((argv) => argv[0] === 'agentskit-verify-fixture')).toBe(false)
+    expect(report.results[0]?.actions.some((action) => action.startsWith('local verify skipped: no worktree'))).toBe(true)
+    expect(report.results[0]?.actions.some((action) => action.startsWith('vouched for by:') && action.includes('the project verify'))).toBe(false)
+    const events = readFileSync(join(env.loaded.stateDir, 'events.ndjson'), 'utf8')
+    expect(events).not.toContain('"verify.passed"')
   })
 
   it('logs dod.assessed with how many lines were proven when the definition of done is judged', async () => {
@@ -881,6 +1034,110 @@ describe('deliver', () => {
     const report = await deliver(env)
     expect(report.results[0]).toMatchObject({ outcome: 'merged' })
   })
+})
+
+describe('rendered spec gate (ADR-0041)', () => {
+  const contract: StoredContract = {
+    schemaVersion: 1, issue: 'ENG-10', issueUpdatedAt: '2026-09-10T00:00:00.000Z', generatedAt: '2026-09-10T00:00:00.000Z', provider: 'claude', model: 'opus', source: 'llm', digest: 'c0ffee000000beef',
+    assessment: { dispatchable: true, reasons: [] },
+    contract: { intent: 'Expose a health endpoint', scope: { inScope: ['GET /health'], outOfScope: [] }, outcomes: [{ id: 'o1', description: 'health returns 200', check: { kind: 'command', command: 'pnpm test' } }], ambiguities: [], hitl: [], touchpoints: ['src/health.ts'], risks: [] },
+  }
+  const verify = JSON.stringify({ command: 'pnpm test', exitCode: 0, outcomes: [{ id: 'o1', status: 'passed', evidence: 'green' }] })
+  const specEnv = (scenario: Scenario = {}) => {
+    const env = setup({ review: { code: 0 }, worktreeFiles: { 'verify.json': verify }, ...scenario })
+    writeFileSync(join(env.dir, 'loop.config.local.yaml'), 'spec:\n  enabled: true\n')
+    mkdirSync(join(env.loaded.stateDir, 'issues', 'ENG-10'), { recursive: true })
+    writeFileSync(join(env.loaded.stateDir, 'issues', 'ENG-10', 'contract.json'), JSON.stringify(contract))
+    const loaded = loadLoopConfig(env.loaded.path)
+    const expected = renderSpec({ issue: 'ENG-10', url: env.record.url, contract, plan: null })
+    return { env, loaded, expected }
+  }
+
+  const specFiles = ['requirements.md', 'design.md', 'tasks.md'].map((file) => ({ path: `specs/ENG-10/${file}` }))
+
+  it('merges a PR that commits the spec exactly as rendered', async () => {
+    const { env, loaded, expected } = specEnv({ pr: basePr({ files: [{ path: 'packages/demo/src/index.ts' }, ...specFiles] }) })
+    writeSpec(env.worktreePath ?? '', loaded.config, 'ENG-10', expected)
+    const report = await deliver(env)
+    expect(report.results[0]).toMatchObject({ outcome: 'merged' })
+    expect(report.results[0]?.actions).toContain('spec specs/ENG-10/ committed as rendered')
+  })
+
+  it('sends a missing spec back as a fix round and restores the rendered files', async () => {
+    const { env, expected } = specEnv()
+    const report = await deliver(env)
+    expect(report.results[0]).toMatchObject({ outcome: 'fix-round', reason: expect.stringContaining('specs/ENG-10/requirements.md` is missing') })
+    expect(readFileSync(join(env.worktreePath ?? '', 'specs', 'ENG-10', 'tasks.md'), 'utf8')).toBe(expected['tasks.md'])
+  })
+
+  it('holds a spec that drifted from the frozen contract, or that was never committed', async () => {
+    const drifted = specEnv()
+    writeSpec(drifted.env.worktreePath ?? '', drifted.loaded.config, 'ENG-10', { ...drifted.expected, 'requirements.md': `${drifted.expected['requirements.md']}\n### o2\n\nsomething the contract never said\n` })
+    expect((await deliver(drifted.env)).results[0]).toMatchObject({ outcome: 'fix-round', reason: expect.stringContaining('requirements.md` differs from what the frozen contract renders') })
+
+    // Correct and committed locally, but gitignored or never pushed: the PR the reviewer reads has no spec.
+    const unpushed = specEnv()
+    writeSpec(unpushed.env.worktreePath ?? '', unpushed.loaded.config, 'ENG-10', unpushed.expected)
+    expect((await deliver(unpushed.env)).results[0]).toMatchObject({ outcome: 'fix-round', reason: expect.stringContaining('`specs/ENG-10/requirements.md` is not in the PR') })
+
+    const uncommitted = specEnv({ gitStatus: '?? specs/ENG-10/\n', pr: basePr({ files: [{ path: 'packages/demo/src/index.ts' }, ...specFiles] }) })
+    writeSpec(uncommitted.env.worktreePath ?? '', uncommitted.loaded.config, 'ENG-10', uncommitted.expected)
+    expect((await deliver(uncommitted.env)).results[0]).toMatchObject({ outcome: 'fix-round', reason: expect.stringContaining('`specs/ENG-10/` is not committed') })
+  })
+})
+
+describe('run summary on the PR (ADR-0041)', () => {
+  const summaryPosts = (env: ReturnType<typeof setup>) => env.runner.calls.filter((argv) => !argv.includes('--paginate') && argv.some((arg) => arg.includes('<!-- loop:run-summary:ENG-10 -->')))
+
+  it('creates one summary comment with the run behind the PR, and records what it posted', async () => {
+    const env = setup({ review: { code: 0 } })
+    expect((await deliver(env)).results[0]).toMatchObject({ outcome: 'merged' })
+    const [post] = summaryPosts(env)
+    expect(post?.slice(0, 3)).toEqual(['gh', 'pr', 'comment'])
+    const body = post?.[post.indexOf('--body') + 1] ?? ''
+    expect(body).toContain('**Loop run `ENG-10-1`** — stage `closed`, status `completed`')
+    expect(body).toContain('ak-harness loop run show ENG-10-1')
+    expect(readAgentRunReport(env.loaded.stateDir, 'ENG-10')?.state.summaryDigest).toMatch(/^[0-9a-f]{64}$/)
+  })
+
+  it('edits the existing comment in place instead of adding another', async () => {
+    const env = setup({ review: { code: 0 }, summaryCommentId: 42 })
+    await deliver(env)
+    const [patch] = summaryPosts(env)
+    expect(patch?.slice(0, 5)).toEqual(['gh', 'api', '--method', 'PATCH', 'repos/my-org/my-project/issues/comments/42'])
+    expect(env.runner.calls.some((argv) => argv[1] === 'pr' && argv[2] === 'comment' && argv.some((arg) => arg.includes('loop:run-summary')))).toBe(false)
+  })
+
+  it('does not re-post a run that did not change, and posts nothing with runs.prSummary off', async () => {
+    const env = setup({ review: { code: 0 }, pr: basePr({ reviewDecision: '' }) })
+    writeFileSync(join(env.dir, 'loop.config.local.yaml'), 'delivery:\n  merge:\n    requireHumanApproval: true\n')
+    await deliver(env)
+    await deliver(env)
+    expect(summaryPosts(env).filter((argv) => argv[2] === 'comment')).toHaveLength(1)
+
+    const off = setup({ review: { code: 0 } })
+    writeFileSync(join(off.dir, 'loop.config.local.yaml'), 'runs:\n  prSummary: false\n')
+    await deliver(off)
+    expect(summaryPosts(off)).toHaveLength(0)
+  })
+})
+
+describe('queue projection after delivery', () => {
+  // A PR observed for an issue whose latest queue run is already terminal (an older failed attempt, a run a human
+  // blocked or cancelled) must not be forced to `completed`: the queue refuses it, and the throw used to abort the
+  // whole deliver pass — three in a row auto-paused the stage.
+  for (const terminal of ['failed', 'blocked', 'needs-input', 'cancelled'] as const) {
+    it(`leaves a ${terminal} queue run as it is when its issue has an open PR`, async () => {
+      const env = setup({ review: { code: 0 }, pr: basePr({ reviewDecision: '' }) })
+      writeFileSync(join(env.dir, 'loop.config.local.yaml'), 'delivery:\n  merge:\n    requireHumanApproval: true\n')
+      const queue = createIssueQueue({ stateDir: env.loaded.stateDir })
+      const run = queue.enqueue({ issue: 'ENG-10', title: 'ENG-10', config: { configHash: 'c', flow: null, builder: { provider: 'claude', model: 'sonnet' }, maxFixRounds: 2, perIssueTokens: 10_000, roles: { orchestrator: 'project', reviewer: 'project', watcher: 'project', delivery: 'snapshot' } }, contract: { digest: 'd', status: 'valid', frozenAt: NOW.toISOString() }, preflight: { status: 'passed', checkedAt: NOW.toISOString() }, now: NOW })
+      queue.update(run.id, { status: terminal, now: NOW })
+      const report = await deliver(env)
+      expect(report.results[0]).toMatchObject({ outcome: 'held', pr: expect.any(Number) })
+      expect(createIssueQueue({ stateDir: env.loaded.stateDir }).getLatestByIssue('ENG-10')?.status).toBe(terminal)
+    })
+  }
 })
 
 describe('github label intake', () => {

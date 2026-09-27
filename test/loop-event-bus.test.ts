@@ -45,12 +45,18 @@ describe('createLoopEventBus', () => {
     expect(calls).toEqual(['first', 'second']) // third never runs once blocked
   })
 
-  it('reports a throwing hook as a non-blocking error instead of failing the run', async () => {
+  it('fails closed on a throwing before* hook: it blocks, with the error as the reason', async () => {
     const bus = createLoopEventBus()
     bus.hook('beforeMerge', () => { throw new Error('plugin bug') })
     const result = await bus.runHook('beforeMerge', {})
-    expect(result.block).toBe(false)
-    expect(result.errors).toEqual(['plugin bug'])
+    expect(result).toEqual({ block: true, reason: 'beforeMerge hook failed: plugin bug', errors: ['plugin bug'] })
+  })
+
+  it('reports a throwing after/on hook as a non-blocking error instead of failing the run', async () => {
+    const bus = createLoopEventBus()
+    bus.hook('afterMerge', () => { throw new Error('plugin bug') })
+    const result = await bus.runHook('afterMerge', {})
+    expect(result).toEqual({ block: false, errors: ['plugin bug'] })
   })
 
   it('returns block: false with no errors when nothing is registered', async () => {

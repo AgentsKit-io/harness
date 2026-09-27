@@ -156,6 +156,8 @@ const writeCache = (path: string, value: BoardCacheFile): void => {
   writeFileSync(path, `${JSON.stringify(value, null, 2)}\n`, 'utf8')
 }
 
+const BOARD_MAX_BACKOFF_MS = 15 * 60_000
+
 export const createIssueBoardCache = (input: IssueBoardCacheOptions): IssueBoardCache => {
   const loaded = input.loaded
   const provider = input.reader.provider
@@ -164,21 +166,33 @@ export const createIssueBoardCache = (input: IssueBoardCacheOptions): IssueBoard
   const path = input.path ?? join(loaded.stateDir, 'ui', provider === 'github' ? 'github-issues.json' : 'linear-issues.json')
   const now = input.now ?? (() => new Date())
   let inFlight: Promise<BoardSnapshot> | null = null
+  // A failed read backs off (doubling from `refreshSeconds`, capped) instead of retrying on the next 1 s snapshot:
+  // `fetchedAt` only moves on success, so a failing board used to be re-read every second — ~3600 requests an hour
+  // against a tracker that was already rate-limiting, which kept it rate-limited indefinitely.
+  let failure: { readonly at: number; readonly count: number; readonly error: string } | null = null
+  const backoffMs = (count: number): number => Math.min(refreshMs * 2 ** Math.max(0, count - 1), BOARD_MAX_BACKOFF_MS)
 
   const read = async (force = false): Promise<BoardSnapshot> => {
     if (inFlight) return inFlight
     const cached = readCache(path, provider, repo)
     const age = cached ? now().getTime() - Date.parse(cached.fetchedAt) : Number.POSITIVE_INFINITY
     if (!force && cached && Number.isFinite(age) && age <= refreshMs) return { provider, repo, status: 'fresh', fetchedAt: cached.fetchedAt, issues: cached.issues, truncated: cached.truncated, error: null }
+    if (!force && failure && now().getTime() - failure.at < backoffMs(failure.count)) {
+      return cached
+        ? { provider, repo, status: 'stale', fetchedAt: cached.fetchedAt, issues: cached.issues, truncated: cached.truncated, error: failure.error }
+        : { provider, repo, status: 'unavailable', fetchedAt: null, issues: [], truncated: false, error: failure.error }
+    }
     inFlight = (async () => {
       try {
         const result = await input.reader.read()
         const fetchedAt = now().toISOString()
         const file: BoardCacheFile = { schemaVersion: CACHE_SCHEMA_VERSION, provider, repo, fetchedAt, issues: result.issues, truncated: result.truncated }
         writeCache(path, file)
+        failure = null
         return { provider, repo, status: 'fresh' as const, fetchedAt, issues: result.issues, truncated: result.truncated, error: null }
       } catch (error) {
         const message = error instanceof Error ? error.message : String(error)
+        failure = { at: now().getTime(), count: (failure?.count ?? 0) + 1, error: message }
         if (cached) return { provider, repo, status: 'stale' as const, fetchedAt: cached.fetchedAt, issues: cached.issues, truncated: cached.truncated, error: message }
         return { provider, repo, status: 'unavailable' as const, fetchedAt: null, issues: [], truncated: false, error: message }
       } finally { inFlight = null }

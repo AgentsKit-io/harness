@@ -28,10 +28,15 @@ import { createLoopEventBus, loadLoopPlugins, type LoopEventBus, type LoopEventP
 import { attachNotifier } from './notify.js'
 import { applyRoleSettings, resolveFlowSettings, resolveRoleSettings, workerPhaseEnabled, type EffectiveFlowSettings } from './flows.js'
 import { assessDod, readDodEvidence, renderDodMarkdown } from './dod.js'
-import { missingArtifacts, readPhaseArtifacts, readVerifyArtifact, verifyProofs, type PhaseArtifactName } from './artifacts.js'
+import { artifactPath, missingArtifacts, readPhaseArtifacts, readVerifyArtifact, verifyProofs, type PhaseArtifactName } from './artifacts.js'
+import { sha256 } from '../kernel/hash.js'
+import { markRunSummaryPosted, readAgentRunReport, recordRunEvidence, recordRunIo, renderRunSummaryMarkdown, runSummaryMarker } from './agent-runs.js'
+import { checkSpec, renderSpec, specDirFor, writeSpec } from './spec.js'
+import { readStoredPlan } from './plan-vote.js'
 import { readJsonFile } from '../kernel/json-file.js'
 import { createIssueQueue } from './queue.js'
 import { createLifecycleStore, type LifecyclePullRequest } from './lifecycle.js'
+import { activeTrackerCooldown, guardTracker, TrackerCooldownError } from './tracker-cooldown.js'
 
 export type DeliverOutcome = 'waiting' | 'reviewed' | 'fix-round' | 'nudged' | 'handed-off' | 'merged' | 'held' | 'needs-input' | 'blocked' | 'stuck' | 'abandoned' | 'failed' | 'dry-run'
 
@@ -46,7 +51,8 @@ export interface DeliverResult {
 }
 
 export interface DeliverReport {
-  readonly status: 'ok' | 'idle'
+  /** `failed`: there were results and every one of them failed. */
+  readonly status: 'ok' | 'idle' | 'failed'
   readonly generatedAt: string
   readonly dryRun: boolean
   readonly reviewer: string | null
@@ -78,6 +84,12 @@ export interface DeliveryState {
   readonly finalOutcome: DeliverOutcome | null
   /** Cancellation is a UI/control-plane terminal marker, not a delivery outcome. */
   readonly cancelledAt?: string | null
+  /** Passes in a row that threw (gh/Orca/review exception); reset by a pass that does not. */
+  readonly consecutiveErrors?: number
+  /** The PR head seen when the errors finished the issue as `failed`, so a new push can resume it. */
+  readonly failedAtHead?: string | null
+  /** The tracker state this loop last set for the open PR, so it is not re-set on every pass. */
+  readonly trackerState?: string | null
 }
 
 export interface DeliverInput {
@@ -157,7 +169,9 @@ const unpushedCommits = async (ctx: Context, record: DispatchRecordFile): Promis
   } catch { return 0 }
 }
 
-const resumableOutcomes = new Set<DeliverOutcome>(['blocked', 'stuck', 'abandoned', 'held'])
+const resumableOutcomes = new Set<DeliverOutcome>(['blocked', 'stuck', 'abandoned', 'held', 'failed'])
+// ponytail: fixed, not configurable; one transient gh/Orca/review exception is `waiting`, this many in a row is `failed`.
+const DELIVERY_ERROR_LIMIT = 3
 const lastReviewHead = (state: DeliveryState): string | null => {
   const heads = Object.keys(state.reviews)
   return heads.at(-1) ?? state.heldFor
@@ -213,6 +227,11 @@ const orcaOptions = (config: LoopConfig) => ({ bin: config.orca.bin, timeoutMs: 
 
 const saveState = (ctx: Context, state: DeliveryState): void => { if (!ctx.dryRun) writeJsonAtomic(deliveryStatePath(ctx.loaded.stateDir, state.issue), state) }
 const event = (ctx: Context, payload: LoopEventPayload): void => { if (!ctx.dryRun) appendLoopEvent(ctx.loaded.stateDir, { at: ctx.now().toISOString(), ...payload }, ctx.bus) }
+
+/** A gating hook that threw blocked the action (fail closed); say so, or it reads as a plugin's deliberate block. */
+const reportHookErrors = (ctx: Context, issue: string, hook: string, result: { readonly errors: readonly string[] }): void => {
+  if (result.errors.length) event(ctx, { type: 'plugin.hook-failed', issue, hook, error: result.errors.join('; ') })
+}
 
 /** Recover a merge recorded by this loop when GitHub no longer lists the deleted head branch. */
 const readMergedEvent = (stateDir: string, issue: string): { readonly pr: number; readonly head?: string; readonly sha?: string } | null => {
@@ -343,11 +362,30 @@ const captureWorkerOutput = async (ctx: Context, terminal: string | null): Promi
   } catch { return null }
 }
 
+/** ADR-0041: what the worker left behind, copied into its run (deduplicated by hash) and linked as evidence. */
+const recordWorkerArtifacts = (ctx: Context, record: DispatchRecordFile): void => {
+  if (!record.worktreePath) return
+  const { stateDir } = ctx.loaded
+  const dodFile = ctx.config.dod.evidenceFile.replace(/^\.ak-loop[\\/]/, '')
+  const files = [
+    { file: 'plan.md', stage: 'build', extension: 'md', evidence: null },
+    { file: 'verify.json', stage: 'verify', extension: 'json', evidence: 'verify' },
+    { file: dodFile, stage: 'dod', extension: 'json', evidence: 'dod' },
+  ] as const
+  for (const item of files) {
+    const path = artifactPath(record.worktreePath, item.file)
+    let content: string
+    try { content = readFileSync(path, 'utf8') } catch { continue }
+    recordRunIo(stateDir, record.issue, { direction: 'output', stage: item.stage, role: 'worker', content, extension: item.extension, maxBytes: ctx.config.runs.maxIoBytes }, ctx.now)
+    if (item.evidence) recordRunEvidence(stateDir, record.issue, item.evidence, path, ctx.now)
+  }
+}
+
 const escalateTracker = async (ctx: Context, record: DispatchRecordFile, kind: 'stuck' | 'blocked' | 'abandoned', body: string, actions: string[]): Promise<void> => {
   if (ctx.dryRun) { actions.push(`would mark ${kind} in ${ctx.tracker.id} and Orca`); return }
   const workerOutput = await captureWorkerOutput(ctx, record.terminal)
   const fullBody = workerOutput ? `${body}\n\n<details><summary>Worker's last terminal output</summary>\n\n\`\`\`\n${workerOutput}\n\`\`\`\n\n</details>` : body
-  if (workerOutput) actions.push('captured worker terminal output for the escalation')
+  if (workerOutput) { actions.push('captured worker terminal output for the escalation'); recordRunIo(ctx.loaded.stateDir, record.issue, { direction: 'output', stage: 'build', role: 'worker-terminal', content: workerOutput, extension: 'txt', maxBytes: ctx.config.runs.maxIoBytes }, ctx.now) }
   try {
     await ctx.tracker.comment({ issue: record.issue, body: `${fullBody}\n\n<!-- loop:${kind}:${record.leaseId} -->`, dedupeKey: `${kind}:${record.issue}:${record.leaseId}` })
     if (ctx.tracker.id === 'github') await ctx.tracker.transitions.transition({ tracker: ctx.tracker.id, issue: record.issue, to: ctx.config.linear.blockedLabel, reason: `loop ${kind}` })
@@ -372,9 +410,11 @@ const escalateTracker = async (ctx: Context, record: DispatchRecordFile, kind: '
 }
 
 const reopenFinishedIssue = async (ctx: Context, record: DispatchRecordFile, state: DeliveryState, pr: PullRequestSnapshot): Promise<DeliveryState> => {
-  const previousHead = lastReviewHead(state)
-  if (!state.finishedAt || !state.finalOutcome || !resumableOutcomes.has(state.finalOutcome) || !previousHead || previousHead === pr.headSha) return state
-  const next: DeliveryState = { ...state, finishedAt: null, finalOutcome: null, fixRounds: 0, heldFor: null, nudges: [] }
+  // A `failed` issue compares against the head it failed at; failing before any PR was seen, any PR head is new to it.
+  const failed = state.finalOutcome === 'failed'
+  const previousHead = failed ? state.failedAtHead ?? null : lastReviewHead(state)
+  if (!state.finishedAt || !state.finalOutcome || !resumableOutcomes.has(state.finalOutcome) || (!previousHead && !failed) || previousHead === pr.headSha) return state
+  const next: DeliveryState = { ...state, finishedAt: null, finalOutcome: null, fixRounds: 0, heldFor: null, nudges: [], consecutiveErrors: 0, failedAtHead: null, trackerState: null }
   saveState(ctx, next)
   event(ctx, { type: 'worker.reopened', issue: record.issue, pr: pr.number, previousHead, head: pr.headSha, previousOutcome: state.finalOutcome })
   ctx.notes.push(`${record.issue}: reopened after a new PR head (${pr.headSha.slice(0, 7)})`)
@@ -528,7 +568,13 @@ const handleNoPullRequest = async (ctx: Context, record: DispatchRecordFile, lea
     const own = terminals.find((terminal) => terminal.handle === record.terminal) ?? terminals[0]
     terminalAlive = Boolean(own && own.status !== 'orphaned' && own.status !== 'disconnected')
     lastOutputAt = own?.lastOutputAt ?? null
-  } catch (error) { actions.push(`terminal list failed: ${message(error)}`) }
+  } catch (error) {
+    // An Orca outage says nothing about the worker: treating it as "terminal gone" escalated live workers as stuck,
+    // or handed a second agent into the same worktree.
+    const detail = message(error)
+    event(ctx, { type: 'orca.unavailable', issue: record.issue, operation: 'terminal-list', error: detail })
+    return { issue: record.issue, outcome: 'waiting', reason: `orca unavailable: ${detail}`, actions: [...actions, `terminal list failed: ${detail}`] }
+  }
   const sinceDispatch = minutesBetween(now, record.dispatchedAt)
   const sinceOutput = Math.min(sinceDispatch, minutesBetween(now, lastOutputAt))
   const idleTimeout = ctx.config.delivery.workerIdleTimeoutMin
@@ -736,15 +782,24 @@ const flowFor = (ctx: Context, record: DispatchRecordFile): EffectiveFlowSetting
   }
 }
 
-const syncReviewTracker = async (ctx: Context, record: DispatchRecordFile, pr: PullRequestSnapshot, actions: string[]): Promise<void> => {
-  if (ctx.dryRun) { actions.push(`would move ${ctx.tracker.id} issue to ${ctx.config.linear.reviewState}`); return }
+/** Move the issue to the review state once per open PR — not a tracker write on every pass (a rate limit's worth of them). */
+const syncReviewTracker = async (ctx: Context, record: DispatchRecordFile, state: DeliveryState, pr: PullRequestSnapshot, actions: string[]): Promise<DeliveryState> => {
+  const to = ctx.config.linear.reviewState
+  if (state.trackerState === to) return state
+  if (ctx.dryRun) { actions.push(`would move ${ctx.tracker.id} issue to ${to}`); return state }
   try {
-    await ctx.tracker.setState({ issue: record.issue, to: ctx.config.linear.reviewState, reason: `PR #${pr.number} opened; review lifecycle is now remote-authoritative` })
-    actions.push(`${ctx.tracker.id}: → ${ctx.config.linear.reviewState}`)
+    await ctx.tracker.setState({ issue: record.issue, to, reason: `PR #${pr.number} opened; review lifecycle is now remote-authoritative` })
+    actions.push(`${ctx.tracker.id}: → ${to}`)
+    const next: DeliveryState = { ...state, trackerState: to }
+    saveState(ctx, next)
+    return next
   } catch (error) {
     const detail = message(error)
+    // Skipped for a cooldown, not failed: the next pass after it retries, so there is nothing for a human to settle.
+    if (error instanceof TrackerCooldownError) { actions.push(`${ctx.tracker.id} review sync skipped: ${detail}`); return state }
     actions.push(`${ctx.tracker.id} review sync failed: ${detail}`)
     event(ctx, { type: 'tracker.sync-failed', issue: record.issue, operation: 'review-state', error: detail })
+    return state
   }
 }
 
@@ -883,8 +938,11 @@ ${marker}` }); actions.push('secret-file hold commented') } catch (error) { acti
     }
     // Cost lever: the cheap verifier runs before the expensive one. A build that does not compile does not
     // deserve a two-vote review, and `delivery.verify.argv` is the project's own check, not a guess.
-    if (config.delivery.verify.argv.length && workerPhaseEnabled(config, flow.flow, 'verify', true) && !ctx.dryRun) {
-      const verify = await ctx.runner.run(config.delivery.verify.argv, { timeoutMs: 600_000, cwd: ctx.loaded.root })
+    // It runs in the worker's worktree — the operator's checkout is not this PR's code, so passing there vouches for nothing.
+    const verifyWanted = config.delivery.verify.argv.length > 0 && workerPhaseEnabled(config, flow.flow, 'verify', true) && !ctx.dryRun
+    if (verifyWanted && !record.worktreePath) actions.push('local verify skipped: no worktree recorded for this dispatch, so it cannot run against the PR\'s code (not counted as evidence)')
+    if (verifyWanted && record.worktreePath) {
+      const verify = await ctx.runner.run(config.delivery.verify.argv, { timeoutMs: 600_000, cwd: record.worktreePath })
       if (verify.code !== 0) {
         actions.push(`local verify failed before review: ${(verify.stderr || verify.stdout).trim().slice(0, 200)}`)
         return fixRound(ctx, record, lease, state, pr, 'ci', `Loop: the project verification failed on PR #${pr.number} before the review was even requested: \`${config.delivery.verify.argv.join(' ')}\`. Fix it, re-run it locally, commit and push. No review is spent on a build that does not pass.`, 'local verify failed before review', actions)
@@ -896,6 +954,7 @@ ${marker}` }); actions.push('secret-file hold commented') } catch (error) { acti
     if (prior && prior.attempts >= 2) actions.push(`retrying incomplete review with ${reviewProvider}/${chosen.model}`)
     if (ctx.dryRun) { actions.push(`would review with ${chosen.provider}/${chosen.model}`); return { issue: record.issue, outcome: 'dry-run', reason: 'review pending', pr: pr.number, head: pr.headSha, actions } }
     const beforeReview = await ctx.bus.runHook('beforeReview', { issue: record.issue, pr: pr.number, head: pr.headSha, provider: chosen.provider, model: chosen.model })
+    reportHookErrors(ctx, record.issue, 'beforeReview', beforeReview)
     if (beforeReview.block) return { issue: record.issue, outcome: 'waiting', reason: `review blocked by plugin: ${beforeReview.reason}`, pr: pr.number, head: pr.headSha, actions }
     const resultFile = join(ctx.loaded.stateDir, 'issues', record.issue, `review-${pr.headSha.slice(0, 12)}.json`)
     mkdirSync(dirname(resultFile), { recursive: true })
@@ -940,6 +999,7 @@ ${marker}` }); actions.push('secret-file hold commented') } catch (error) { acti
   // A record with no worktree path predates the worktree or lost it: the harness cannot read anything there, and
   // blaming the worker for a file nobody can look for is how a loop invents work.
   const artifacts = record.worktreePath ? readPhaseArtifacts(record.worktreePath, config) : []
+  if (!ctx.dryRun) recordWorkerArtifacts(ctx, record)
   // Same source as `tick` used when it decided whether to run the planner at all (`tick.ts:554`). Reading
   // `worker.plan.enabled` directly here meant a flow that turned the planner off still had deliver demand a
   // `plan.md` the worker was never asked to write, and send it back a fix round for the omission.
@@ -948,6 +1008,28 @@ ${marker}` }); actions.push('secret-file hold commented') } catch (error) { acti
   if (absentArtifacts.length) {
     const detail = absentArtifacts.map((artifact) => `\`${artifact.file}\` — ${artifact.detail}`).join('; ')
     return fixRound(ctx, record, lease, state, pr, 'review', `Loop: PR #${pr.number} cannot be checked because the phase artifact(s) the loop reads are not there: ${detail}. Write each file at the root of this worktree, commit and push. \`verify.json\` is \`{ "ranAt": "<iso>", "command": "<what you ran>", "exitCode": 0, "outcomes": [{ "id": "<outcome id>", "status": "passed", "evidence": "<the line that proves it>" }] }\`.`, `missing phase artifact(s): ${absentArtifacts.map((artifact) => artifact.file).join(', ')}`, actions)
+  }
+
+  // ADR-0041: the rendered spec travels in the PR unchanged. Re-rendered from the same frozen contract and plan, so a
+  // copy that differs is drift from the contract, not a formatting nit — it goes back as a fix round naming the file.
+  if (config.spec.enabled && record.worktreePath) {
+    const stored = readStoredContract(ctx.loaded.stateDir, record.issue)
+    if (stored) {
+      const plan = workerPhaseEnabled(config, flow.flow, 'planner', config.worker.plan.enabled) ? readStoredPlan(ctx.loaded.stateDir, record.issue) : null
+      const expected = renderSpec({ issue: record.issue, url: record.url, contract: stored, plan })
+      const spec = await checkSpec(ctx.runner, record.worktreePath, config, record.issue, expected, pr.files)
+      const problems = [
+        ...spec.missing.map((file) => `\`${file}\` is missing`),
+        ...spec.drifted.map((file) => `\`${file}\` differs from what the frozen contract renders`),
+        ...spec.uncommitted.map((file) => `\`${file}\` is not committed`),
+        ...spec.notInPr.map((file) => `\`${file}\` is not in the PR (gitignored or not pushed)`),
+      ]
+      if (problems.length) {
+        if (spec.missing.length || spec.drifted.length) writeSpec(record.worktreePath, config, record.issue, expected)
+        return fixRound(ctx, record, lease, state, pr, 'review', `Loop: the spec for ${record.issue} is not in PR #${pr.number} as rendered: ${problems.join('; ')}. The loop has restored the rendered files in \`${specDirFor(config, record.issue)}/\` — commit them unchanged and push. If the spec itself is wrong, say so in the PR body; it changes when the contract does.`, `spec not as rendered: ${problems.join('; ')}`, actions)
+      }
+      actions.push(`spec ${specDirFor(config, record.issue)}/ committed as rendered`)
+    }
   }
 
   // Both DoD lists, proven, before anything merges: the project's (`dod.items`) and the issue's (the frozen
@@ -1005,6 +1087,7 @@ ${marker}` }); actions.push('secret-file hold commented') } catch (error) { acti
 
   if (ctx.dryRun) { actions.push('would squash-merge'); return { issue: record.issue, outcome: 'dry-run', reason: 'ready to merge', pr: pr.number, head: pr.headSha, actions } }
   const beforeMerge = await ctx.bus.runHook('beforeMerge', { issue: record.issue, pr: pr.number, head: pr.headSha })
+  reportHookErrors(ctx, record.issue, 'beforeMerge', beforeMerge)
   if (beforeMerge.block) return { issue: record.issue, outcome: 'held', reason: `merge blocked by plugin: ${beforeMerge.reason}`, pr: pr.number, head: pr.headSha, actions }
   const merged = await githubMerge(ctx.runner, { repo: config.project.repo, number: pr.number, headSha: pr.headSha, method: config.delivery.merge.method, title: `${pr.title} (#${pr.number})` })
   if (!merged.merged) { actions.push(`merge refused: ${merged.message}`); event(ctx, { type: 'pr.merge-refused', issue: record.issue, pr: pr.number, head: pr.headSha, message: merged.message }); return { issue: record.issue, outcome: 'waiting', reason: `merge refused: ${merged.message}`, pr: pr.number, head: pr.headSha, actions } }
@@ -1082,6 +1165,7 @@ const handleIntakePullRequest = async (ctx: Context, identifier: string, pr: Pul
     if (ctx.dryRun) { actions.push(`would review with ${ctx.reviewer.provider}/${ctx.reviewer.model}`); return { issue: identifier, outcome: 'dry-run', reason: 'review pending', pr: pr.number, head: pr.headSha, actions } }
     const { settings } = providerIdentity(config, ctx.reviewer.provider)
     const beforeReview = await ctx.bus.runHook('beforeReview', { issue: identifier, pr: pr.number, head: pr.headSha, provider: ctx.reviewer.provider, model: ctx.reviewer.model, source: 'github-intake' })
+    reportHookErrors(ctx, identifier, 'beforeReview', beforeReview)
     if (beforeReview.block) return { issue: identifier, outcome: 'waiting', reason: `review blocked by plugin: ${beforeReview.reason}`, pr: pr.number, head: pr.headSha, actions }
     const resultFile = join(ctx.loaded.stateDir, 'issues', identifier, `review-${pr.headSha.slice(0, 12)}.json`)
     mkdirSync(dirname(resultFile), { recursive: true })
@@ -1158,7 +1242,13 @@ export const runDeliver = async (input: DeliverInput): Promise<DeliverReport> =>
   // An externally-owned bus (`loop stage`) already has its own notifier attached, and its owner flushes it once
   // for the whole invocation — attaching a second one here would double-send every notification.
   const flushNotifications = ownsBus ? attachNotifier(bus, { config, runner: input.runner, env }) : async () => { /* owner flushes */ }
-  const { tracker, scm } = resolveConnectors({ runner: input.runner, config, env, cwd: loaded.root, dryRun })
+  const connectors = resolveConnectors({ runner: input.runner, config, env, cwd: loaded.root, dryRun })
+  const { scm } = connectors
+  // A rate-limited tracker is skipped (each write says so in its actions), never retried into the limit; PR and merge
+  // work goes on — GitHub is not the tracker that is limited.
+  const tracker = guardTracker(connectors.tracker, { stateDir: loaded.stateDir, now, dryRun, onRateLimited: (entry) => appendLoopEvent(loaded.stateDir, { at: now().toISOString(), type: 'tracker.cooldown', until: entry.until, attempts: entry.attempts, reason: entry.reason }, bus) })
+  const trackerCooling = activeTrackerCooldown(loaded.stateDir, now())
+  if (trackerCooling) notes.push(`${connectors.tracker.id} rate-limited until ${trackerCooling.until}: tracker writes skipped this pass; PR/merge work continues`)
   const ctx: Context = { loaded, config, runner: input.runner, now, dryRun, reviewer, reviewerCandidates, builder, providers, env, tracker, scm, ...(input.assumeIdle === undefined ? {} : { assumeIdle: input.assumeIdle }), notes, reviewDeadlineMs, bus, builderExtras }
   const ledger = createDispatchLedger(loaded.stateDir)
   const leases = new Map(ledger.active().map((lease) => [lease.issue, lease]))
@@ -1200,6 +1290,8 @@ export const runDeliver = async (input: DeliverInput): Promise<DeliverReport> =>
         }
       }
     }
+    let threw = false
+    let seenHead: string | null = null
     try {
       const workerHitl = materializeWorkerHitl(ctx, record)
       if (workerHitl.invalid) { results.push({ issue: record.issue, outcome: 'blocked', reason: 'worker HITL request file is invalid; the worker protocol is blocked', actions: [] }); continue }
@@ -1219,11 +1311,12 @@ export const runDeliver = async (input: DeliverInput): Promise<DeliverReport> =>
       }
       const pr = open[0]
       if (pr) {
+        seenHead = pr.headSha
         const wasFinished = Boolean(state.finishedAt)
         state = await reopenFinishedIssue(ctx, record, state, pr)
         if (wasFinished && state.finishedAt) continue
         const reviewActions: string[] = []
-        await syncReviewTracker(ctx, record, pr, reviewActions)
+        state = await syncReviewTracker(ctx, record, state, pr, reviewActions)
         if (reviewActions.length) notes.push(`${record.issue}: ${reviewActions.join('; ')}`)
         results.push(await handlePullRequest(ctx, record, lease, state, pr)); continue
       }
@@ -1257,11 +1350,24 @@ export const runDeliver = async (input: DeliverInput): Promise<DeliverReport> =>
       if (state.finishedAt) continue
       results.push(await handleNoPullRequest(ctx, record, lease, state))
     } catch (error) {
+      threw = true
       const reason = message(error)
-      // Common tool/API failures are retryable. Finish the local attempt so its lease and capacity slot are released;
-      // the queue projection puts the issue back in Available and keeps this failed attempt in History.
-      finish(ctx, record, lease, state, 'failed', reason)
-      results.push({ issue: record.issue, outcome: 'failed', reason, actions: [] })
+      // Re-checking an already finished issue failed: its terminal outcome stands; try again next pass.
+      if (state.finishedAt) { notes.push(`${record.issue}: re-check failed: ${reason}`); continue }
+      // One gh/Orca/review exception is transient: keep the lease and wait. Only DELIVERY_ERROR_LIMIT in a row finish
+      // the attempt as `failed` (lease and slot released; a new PR head resumes it) instead of skipping it forever.
+      const consecutive = (state.consecutiveErrors ?? 0) + 1
+      const latest = readDeliveryState(loaded.stateDir, record.issue)
+      event(ctx, { type: 'delivery.error', issue: record.issue, error: reason, consecutive })
+      if (consecutive >= DELIVERY_ERROR_LIMIT) {
+        finish(ctx, record, lease, { ...latest, consecutiveErrors: consecutive, failedAtHead: seenHead }, 'failed', reason)
+        results.push({ issue: record.issue, outcome: 'failed', reason: `${consecutive} consecutive errors; last: ${reason}`, actions: [] })
+      } else {
+        saveState(ctx, { ...latest, consecutiveErrors: consecutive })
+        results.push({ issue: record.issue, outcome: 'waiting', reason: `transient error ${consecutive}/${DELIVERY_ERROR_LIMIT}: ${reason}`, actions: [] })
+      }
+    } finally {
+      if (!threw && (state.consecutiveErrors ?? 0) > 0) saveState(ctx, { ...readDeliveryState(loaded.stateDir, record.issue), consecutiveErrors: 0 })
     }
   }
 
@@ -1277,10 +1383,34 @@ export const runDeliver = async (input: DeliverInput): Promise<DeliverReport> =>
       const status = result.outcome === 'needs-input' ? 'needs-input' : openPullRequest || result.outcome === 'merged' || result.outcome === 'abandoned' ? 'completed' : result.outcome === 'failed' ? 'failed' : ['blocked', 'stuck'].includes(result.outcome) ? 'blocked' : null
       // Once a PR was observed, this run is historical. A later delivery/API failure belongs to the issue's review
       // projection and Inbox, not to rewriting the completed execution attempt into a different terminal run.
-      if (status && run.status !== status && !(run.status === 'completed' && status === 'failed')) queue.update(run.id, { status, error: status === 'completed' ? null : result.reason, projection: { stage, pullRequest: result.pr ?? run.projection.pullRequest } })
+      //
+      // The reverse is refused by the queue itself: only running/dispatching/queued may become `completed`, and
+      // `queue.update` throws otherwise. `getLatestByIssue` can point at a run that is already terminal — an older
+      // failed attempt a later retry went on to deliver, or a run a human blocked or cancelled — while
+      // `openPullRequest` reads the issue's current GitHub state. Letting that throw abort the pass auto-paused the
+      // whole deliver stage for ~2 hours on a real project. Apply the queue's own rule here instead of one pair.
+      const completable = ['running', 'dispatching', 'queued'].includes(run.status)
+      const applies = status !== null && run.status !== status && !(run.status === 'completed' && status === 'failed') && (status !== 'completed' || completable)
+      if (applies) queue.update(run.id, { status, error: status === 'completed' ? null : result.reason, projection: { stage, pullRequest: result.pr ?? run.projection.pullRequest } })
       const pullRequest: LifecyclePullRequest | null = result.pr === undefined ? null : { number: result.pr, state: result.outcome === 'merged' ? 'MERGED' : result.outcome === 'abandoned' ? 'CLOSED' : 'OPEN', ...(result.head ? { head: result.head } : {}) }
       const syncError = result.actions.find((action) => action.includes('review sync failed')) ?? null
-      lifecycle.upsert({ issue: result.issue, runId: run.id, runStatus: status ?? run.status, stage, deliveryOutcome: result.outcome, pullRequest, error: result.outcome === 'failed' ? result.reason : syncError, finalFailure: ['blocked', 'stuck'].includes(result.outcome), events: [{ type: result.outcome === 'held' ? 'worker.held' : result.outcome === 'waiting' ? 'worker.waiting' : 'worker.reviewed', reason: result.reason }], now: now() })
+      lifecycle.upsert({ issue: result.issue, runId: run.id, runStatus: applies ? status : run.status, stage, deliveryOutcome: result.outcome, pullRequest, error: result.outcome === 'failed' ? result.reason : syncError, finalFailure: ['blocked', 'stuck'].includes(result.outcome), events: [{ type: result.outcome === 'held' ? 'worker.held' : result.outcome === 'waiting' ? 'worker.waiting' : 'worker.reviewed', reason: result.reason }], now: now() })
+    }
+  }
+
+  // ADR-0041: one living comment per PR with the run behind it — edited in place, re-posted only when the run changed.
+  if (!dryRun && config.runs.prSummary) {
+    for (const result of results) {
+      if (result.pr === undefined) continue
+      const report = readAgentRunReport(loaded.stateDir, result.issue)
+      if (!report) continue
+      const body = renderRunSummaryMarkdown(report)
+      const digest = sha256(body)
+      if (report.state.summaryDigest === digest) continue
+      try {
+        await scm.upsertComment({ number: result.pr, body, marker: runSummaryMarker(result.issue) })
+        markRunSummaryPosted(loaded.stateDir, report.state.runId, digest)
+      } catch (error) { notes.push(`run summary on PR #${result.pr} failed: ${message(error)}`) }
     }
   }
 
@@ -1315,5 +1445,6 @@ export const runDeliver = async (input: DeliverInput): Promise<DeliverReport> =>
   }
 
   await flushNotifications()
-  return { status: results.length ? 'ok' : 'idle', generatedAt: now().toISOString(), dryRun, reviewer: reviewer ? `${reviewer.provider}/${reviewer.model}` : null, results, notes }
+  const allFailed = results.length > 0 && results.every((result) => result.outcome === 'failed')
+  return { status: allFailed ? 'failed' : results.length ? 'ok' : 'idle', generatedAt: now().toISOString(), dryRun, reviewer: reviewer ? `${reviewer.provider}/${reviewer.model}` : null, results, notes }
 }

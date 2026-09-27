@@ -160,7 +160,7 @@ const buildAnalysisTokenConfig = (input: CodeReviewInput): Record<string, unknow
   review: { maxTokens: input.analysisMaxTokens, globalMaxTokens: input.analysisGlobalMaxTokens },
 })
 
-/** Run one review. Exit 0 = clean, 1 = findings at/above the floor, 2 = incomplete; the `--result` file refines the verdict. */
+/** Run one review. Exit 0 = clean, 1 = findings at/above the floor, 2 = incomplete; the `--result` file is the evidence — without a parseable one the review is `incomplete`, whatever the exit code. */
 export const runCodeReview = async (runner: CommandRunner, input: CodeReviewInput): Promise<CodeReviewOutcome> => {
   const needsTokenConfig = input.analysisMaxTokens !== undefined || input.analysisGlobalMaxTokens !== undefined
   // A random id, not just the PR number: two review invocations for the same PR (a retry started before a
@@ -168,6 +168,8 @@ export const runCodeReview = async (runner: CommandRunner, input: CodeReviewInpu
   // this same process) would otherwise share one path and step on each other's config/cleanup mid-run.
   const configFile = needsTokenConfig ? join(dirname(input.resultFile), `.review-config-${input.number}-${randomUUID()}.json`) : null
   if (configFile) writeFileSync(configFile, JSON.stringify(buildAnalysisTokenConfig(input)), 'utf8')
+  // The result path is per head, so a rerun at the same head would otherwise read the last run's file as its own evidence.
+  if (existsSync(input.resultFile)) unlinkSync(input.resultFile)
   try {
     const argv = [...buildReviewArgv(input), ...(configFile ? ['--config', configFile] : [])]
     const env = input.subprocessTimeoutMs ? { ...input.env, AGENTSKIT_REVIEW_SUBPROCESS_TIMEOUT_MS: String(input.subprocessTimeoutMs) } : input.env
@@ -193,8 +195,8 @@ const finishCodeReview = (input: CodeReviewInput, outcome: Awaited<ReturnType<Co
   const findings = parsed?.findings ?? []
   const blocking = findings.filter((finding) => atLeast(finding.severity, input.minSeverity))
   const tail = `${outcome.stderr.trim()}\n${outcome.stdout.trim()}`.trim().slice(-800)
-  const status: CodeReviewOutcome['status'] = outcome.timedOut || outcome.code === 2 || outcome.code === null || (outcome.code !== 0 && outcome.code !== 1) || parsed?.incomplete === true ? 'incomplete' : blocking.length || outcome.code === 1 || parsed?.blocking === true ? 'findings' : 'clean'
-  const summary = status === 'incomplete' ? `review incomplete (exit ${outcome.timedOut ? 'timeout' : outcome.code ?? 'null'}): ${tail.split('\n').slice(-3).join(' ').slice(0, 300)}` : status === 'findings' ? `${blocking.length || 'unknown number of'} finding(s) at/above ${input.minSeverity}` : `clean at/above ${input.minSeverity} (${findings.length} lower-severity note(s))`
+  const status: CodeReviewOutcome['status'] = outcome.timedOut || outcome.code === 2 || outcome.code === null || (outcome.code !== 0 && outcome.code !== 1) || parsed === null || parsed.incomplete === true ? 'incomplete' : blocking.length || outcome.code === 1 || parsed?.blocking === true ? 'findings' : 'clean'
+  const summary = status === 'incomplete' ? `review incomplete (exit ${outcome.timedOut ? 'timeout' : outcome.code ?? 'null'}${parsed === null ? ', no parseable result file' : ''}): ${tail.split('\n').slice(-3).join(' ').slice(0, 300)}` : status === 'findings' ? `${blocking.length || 'unknown number of'} finding(s) at/above ${input.minSeverity}` : `clean at/above ${input.minSeverity} (${findings.length} lower-severity note(s))`
   return { status, exitCode: outcome.timedOut ? null : outcome.code, findings, blocking, summary, provider: input.provider, model: input.model ?? null, resultParsed: parsed !== null, rawTail: tail, usage, ...(hitl.length ? { hitl } : {}) }
 }
 

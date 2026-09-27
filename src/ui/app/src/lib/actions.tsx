@@ -1,7 +1,7 @@
 import * as React from 'react'
 import { useConfirm, type ConfirmBasis, type ConfirmRequest } from '@/components/ConfirmDialog'
 import {
-  approveDesign, approveHeldPr, approvePlan, approveRelease, cancelRun, reconcileIssue, reinstallAutomations, resumePausedIssue,
+  approveDesign, approveHeldPr, approvePlan, approveRelease, cancelRun, reconcileIssue, reinstallAutomations, resolveTrackerSync, resumePausedIssue,
   resumeStage, retryRun, runDoctor, type AttentionAction, type UiSnapshot,
 } from './api'
 import { useLiveSnapshot, useSnapshotAge } from './snapshot'
@@ -17,6 +17,11 @@ export interface ActionTarget {
   readonly lockReason?: string | null
 }
 
+/** Drift locks destructive actions — except `reconcile`, the one action that clears the lock. Locking it too
+ * left an out-of-sync issue with no way out. */
+export const lockedOut = (action: Pick<AttentionAction, 'id' | 'destructive'>, locked: boolean): boolean =>
+  locked && Boolean(action.destructive) && action.id !== 'reconcile'
+
 /** The facts a confirmation relies on, each with its age — loop/tracker/orca freshness plus the issue's own state. */
 export const confirmBasis = (snapshot: UiSnapshot | null, snapshotAgeMs: number | null, target: ActionTarget): readonly ConfirmBasis[] => {
   const extras = snapshot?.extras
@@ -31,7 +36,8 @@ export const confirmBasis = (snapshot: UiSnapshot | null, snapshotAgeMs: number 
     rows.push({ label: 'tracker state', value: record.trackerState, ageMs: tracker?.ageMs ?? snapshotAgeMs, stale: tracker?.stale ?? false })
   }
   if (target.head) rows.push({ label: 'PR head', value: target.head.slice(0, 7), ageMs: snapshotAgeMs, stale: snapshotStale })
-  const lock = target.lockReason ?? (target.issue ? extras?.locks[target.issue] : undefined)
+  // `null` = explicitly not locked (reconcile); `undefined` = look the issue up.
+  const lock = target.lockReason !== undefined ? target.lockReason : target.issue ? extras?.locks[target.issue] : undefined
   if (lock) rows.push({ label: 'out of sync', value: lock, ageMs: null, stale: true })
   return rows
 }
@@ -54,6 +60,10 @@ const confirmation = (action: AttentionAction, target: ActionTarget): Confirmabl
       title: `Approve the ${action.id === 'approve-plan' ? 'plan' : 'design'} for ${target.planId ?? issue}?`, tone: 'gate', confirmLabel: 'Approve', typeToConfirm: target.planId ?? issue,
       effects: [`Mark the ${action.id === 'approve-plan' ? 'plan' : 'design'} as human-approved`, 'Allow its issues to be dispatched'],
     }
+    case 'dismiss-sync': return {
+      title: <>Dismiss the tracker sync failure for <span className="font-mono text-warning">{issue}</span>?</>, tone: 'gate', confirmLabel: 'Dismiss', typeToConfirm: issue,
+      effects: ['Record that you checked the tracker and accept its current state', 'Nothing is changed in the tracker', 'A later sync failure for this issue shows up again'],
+    }
     case 'approve-release': return { title: 'Approve the release?', tone: 'gate', confirmLabel: 'Approve release', effects: ['Record human approval for the pending release', 'Let the release stage publish it'] }
     default: return action.destructive || action.gate
       ? { title: `${action.label}${issue ? ` · ${issue}` : ''}?`, tone: action.destructive ? 'danger' : 'gate', confirmLabel: action.label, typeToConfirm: issue || undefined, effects: [action.label] }
@@ -72,6 +82,8 @@ const call = (action: AttentionAction, target: ActionTarget): Promise<unknown> =
     case 'cancel': return cancelRun(issue, 'Cancelled from the control plane')
     case 'resume': return resumePausedIssue(issue)
     case 'reconcile': return reconcileIssue(issue)
+    case 'retry-sync': return resolveTrackerSync(issue, 'retry')
+    case 'dismiss-sync': return resolveTrackerSync(issue, 'dismiss')
     case 'reinstall-automations': return reinstallAutomations()
     case 'resume-stage': return resumeStage(target.stage ?? issue)
     case 'run-doctor': return runDoctor()
@@ -98,7 +110,8 @@ export const useActionRunner = (): {
   const run = (action: AttentionAction, target: ActionTarget): void => {
     if ((action.id === 'open' || action.id === 'answer') && target.issue) { panel.open(target.issue); return }
     const confirm = confirmation(action, target)
-    if (confirm) { ask({ ...confirm, basis: confirmBasis(snapshot, age, target), onConfirm: () => call(action, target).then(refresh) }); return }
+    const basisTarget = action.id === 'reconcile' ? { ...target, lockReason: null } : target
+    if (confirm) { ask({ ...confirm, basis: confirmBasis(snapshot, age, basisTarget), onConfirm: () => call(action, target).then(refresh) }); return }
     const key = `${action.id}:${target.issue ?? ''}`
     setBusy(key); setError(null)
     call(action, target).then(refresh).catch((cause: unknown) => setError(cause instanceof Error ? cause.message : String(cause))).finally(() => setBusy(null))

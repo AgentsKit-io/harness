@@ -9,7 +9,7 @@ The four layers that produce this configuration — the machine's global file, t
 machine's overlay — are described in [ADR-0033](https://github.com/AgentsKit-io/harness/blob/main/docs/ADR-0033-four-config-layers-and-presets.md).
 `ak-harness loop validate` prints the effective result, which is the only one that decides anything.
 
-222 of 390 paths carry no description yet.
+223 of 398 paths carry no description yet.
 
 ## `schemaVersion`
 
@@ -479,6 +479,26 @@ The project's half of the Definition of Done: the same list for every issue, and
 | `dod.items.pattern` | string |  |  |
 | `dod.items.paths` | string[] | `[]` | Restrict `pattern-absent` / `file-changed` to these path globs; empty = every changed file. |
 | `dod.evidenceFile` | string | `".ak-loop/dod.json"` | Where the worker writes its proofs, relative to the worktree root. |
+
+## `runs`
+
+Per-issue run records under `&lt;stateDir&gt;/runs/&lt;issue&gt;-&lt;n&gt;/` (ADR-0041): the projected state, what each step was handed and produced (redacted), the machine-written handoffs and the evidence links. Local, never committed.
+
+| Path | Type | Default | Description |
+|---|---|---|---|
+| `runs.keep` | integer | `3` | windowed: runs kept per issue; older ones are pruned at the start of each tick. |
+| `runs.maxAgeDays` | integer | `30` | Closed runs older than this are pruned, whatever `keep` says. |
+| `runs.maxIoBytes` | integer | `262144` | Ceiling for one recorded input or output; an input keeps its head, an output its tail. |
+| `runs.prSummary` | boolean | `true` | Keep one comment on the PR with the run's steps, handoffs and evidence hashes, edited as the run moves. |
+
+## `spec`
+
+Spec-driven development (ADR-0041): at dispatch the loop renders `&lt;dir&gt;/&lt;issue&gt;/{requirements,design,tasks}.md` into the worktree from the frozen contract and the approved plan; the worker commits them unchanged and `deliver` sends a fix round for a copy that is missing, uncommitted or drifted. Off by default — it adds files to every PR.
+
+| Path | Type | Default | Description |
+|---|---|---|---|
+| `spec.enabled` | boolean | `false` |  |
+| `spec.dir` | string | `"specs"` | Directory at the repository root that holds one folder per issue. |
 
 ## `tuning`
 

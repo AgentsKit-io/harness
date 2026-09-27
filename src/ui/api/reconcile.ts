@@ -48,7 +48,7 @@ export interface ReconcileResult {
   readonly freshness: readonly Freshness[]
 }
 
-const CLOSED_STATES = /^(done|completed|closed|cancell?ed|canceled|duplicate|won'?t ?(do|fix))$/i
+export const CLOSED_STATES = /^(done|completed|closed|cancell?ed|canceled|duplicate|won'?t ?(do|fix))$/i
 const ACTIVE_RUN = new Set(['queued', 'dispatching', 'running'])
 
 /** Whether a tracker state (or board lane) means the issue is finished on the tracker side. */

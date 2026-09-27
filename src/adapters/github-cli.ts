@@ -117,6 +117,22 @@ const ghJson = async (runner: CommandRunner, args: readonly string[], options: G
   try { return JSON.parse(outcome.stdout) as unknown } catch { return fail(`${argv.slice(0, 3).join(' ')} did not return JSON.`, 'HARNESS_ERROR') }
 }
 
+/**
+ * Every comment body on an issue/PR. `--paginate` applies `--jq` per page, so a whole-array filter prints one
+ * JSON array per page (>30 comments = unparseable concatenation); one JSON string per line is page-safe.
+ */
+const ghCommentBodies = async (runner: CommandRunner, repo: string, number: number, options: GitHubCliOptions): Promise<readonly string[]> => {
+  const argv = [options.bin ?? 'gh', 'api', '--paginate', `repos/${repo}/issues/${number}/comments`, '--jq', '.[].body | tojson']
+  const outcome = await runner.run(argv, { timeoutMs: options.timeoutMs ?? 30_000, ...(options.cwd ? { cwd: options.cwd } : {}) })
+  if (outcome.timedOut) return fail(`${argv.slice(0, 3).join(' ')} timed out.`, 'HARNESS_ERROR')
+  if (outcome.code !== 0) return fail(`${argv.slice(0, 3).join(' ')} exited ${outcome.code ?? 'null'}: ${outcome.stderr.trim().slice(0, 300)}`, 'HARNESS_ERROR')
+  const lines = outcome.stdout.split(/\r?\n/).filter((line) => line.trim())
+  let values: unknown[]
+  try { values = lines.map((line) => JSON.parse(line) as unknown) } catch { return fail(`${argv.slice(0, 3).join(' ')} did not return JSON.`, 'HARNESS_ERROR') }
+  // ponytail: a line holding an array (older fixtures, `[.[].body]` shape) is flattened; costs nothing, parses both.
+  return values.flat().filter((body): body is string => typeof body === 'string')
+}
+
 export const githubPullRequest = async (runner: CommandRunner, input: { readonly repo: string; readonly number: number }, options: GitHubCliOptions = {}): Promise<PullRequestSnapshot> => parsePullRequest(await ghJson(runner, ['pr', 'view', String(input.number), '--repo', input.repo, '--json', PR_FIELDS.join(',')], options))
 
 /** Open PRs whose head branch equals `head` (exact match); empty when none. */
@@ -226,8 +242,7 @@ export const githubIssueCommentArgv = (input: { readonly repo: string; readonly 
 export const githubIssueComment = async (runner: CommandRunner, input: Parameters<typeof githubIssueCommentArgv>[0], options: GitHubCliOptions = {}): Promise<void> => { await ghRun(runner, githubIssueCommentArgv(input, options.bin).slice(1), options) }
 
 export const githubIssueCommentExists = async (runner: CommandRunner, input: { readonly repo: string; readonly identifier: string; readonly marker: string }, options: GitHubCliOptions = {}): Promise<boolean> => {
-  const list = await ghJson(runner, ['api', '--paginate', `repos/${input.repo}/issues/${issueNumber(input.identifier)}/comments`, '--jq', '[.[].body]'], options)
-  return Array.isArray(list) && list.some((body) => typeof body === 'string' && body.includes(input.marker))
+  return (await ghCommentBodies(runner, input.repo, issueNumber(input.identifier), options)).some((body) => body.includes(input.marker))
 }
 
 export const githubIssueClose = async (runner: CommandRunner, input: { readonly repo: string; readonly identifier: string }, options: GitHubCliOptions = {}): Promise<void> => { await ghRun(runner, ['issue', 'close', String(issueNumber(input.identifier)), '--repo', input.repo], options) }
@@ -235,9 +250,11 @@ export const githubIssueReopen = async (runner: CommandRunner, input: { readonly
 
 export const githubIssueCreate = async (runner: CommandRunner, input: { readonly repo: string; readonly title: string; readonly body: string; readonly labels?: readonly string[]; readonly assignee?: string | null; readonly dedupeKey?: string }, options: GitHubCliOptions = {}): Promise<{ readonly identifier: string | null; readonly url: string | null }> => {
   if (input.dedupeKey) {
-    const existing = await ghJson(runner, ['issue', 'list', '--repo', input.repo, '--state', 'all', '--limit', '20', '--search', input.dedupeKey, '--json', 'number,url'], options)
-    const first = Array.isArray(existing) && isRecord(existing[0]) ? existing[0] : null
-    if (first && typeof first['number'] === 'number') return { identifier: `${input.repo}#${first['number']}`, url: str(first['url']) || null }
+    // Search is fuzzy full-text: only a hit whose body carries the exact marker (the caller appends it) is this issue.
+    const marker = `<!-- harness:${input.dedupeKey} -->`
+    const existing = await ghJson(runner, ['issue', 'list', '--repo', input.repo, '--state', 'all', '--limit', '20', '--search', input.dedupeKey, '--json', 'number,url,body'], options)
+    const hit = Array.isArray(existing) ? existing.find((item) => isRecord(item) && typeof item['number'] === 'number' && str(item['body']).includes(marker)) : undefined
+    if (isRecord(hit)) return { identifier: `${input.repo}#${hit['number'] as number}`, url: str(hit['url']) || null }
   }
   const output = await ghRun(runner, ['issue', 'create', '--repo', input.repo, '--title', input.title, '--body', input.body, ...(input.labels ?? []).flatMap((label) => ['--label', label]), ...(input.assignee ? ['--assignee', input.assignee] : [])], options)
   const url = output.match(/https?:\/\/[^\s]+/)?.[0] ?? null
@@ -264,6 +281,22 @@ export const githubPreflight = async (runner: CommandRunner, input: { readonly r
     if (missing.length) fail(`GitHub lifecycle labels are missing in ${input.repo}: ${missing.join(', ')}.`, 'INVALID_CONFIG')
   }
   return { login: await githubCurrentUser(runner, options), permission }
+}
+
+/**
+ * Create whichever of `labels` the repository does not have yet, and return the ones created. The loop owns its
+ * lifecycle labels; a missing one (observed: `ai-done`) made every completion fail after the merge, silently, with
+ * nothing retrying it. A label created concurrently by another machine is not an error.
+ */
+export const githubEnsureLabels = async (runner: CommandRunner, input: { readonly repo: string; readonly labels: readonly string[] }, options: GitHubCliOptions = {}): Promise<readonly string[]> => {
+  const listed = await ghJson(runner, ['label', 'list', '--repo', input.repo, '--limit', '1000', '--json', 'name'], options)
+  const available = new Set(Array.isArray(listed) ? listed.filter(isRecord).map((label) => str(label['name'])).filter(Boolean) : [])
+  const missing = [...new Set(input.labels)].filter((label) => !available.has(label))
+  for (const label of missing) {
+    try { await ghRun(runner, ['label', 'create', label, '--repo', input.repo, '--description', 'AgentsKit loop lifecycle label'], options) }
+    catch (error) { if (!/already exists/i.test(error instanceof Error ? error.message : String(error))) throw error }
+  }
+  return missing
 }
 
 export interface DiffStat { readonly files: readonly string[]; readonly changedLines: number }
@@ -307,8 +340,23 @@ export const githubComment = async (runner: CommandRunner, input: Parameters<typ
   if (outcome.code !== 0) fail(`gh pr comment exited ${outcome.code ?? 'null'}: ${outcome.stderr.trim().slice(0, 300)}`, 'HARNESS_ERROR')
 }
 
+/**
+ * One living comment per `marker`: edit the first comment whose body contains it, or create it. A listing that
+ * fails throws rather than posting blind — a second copy of a comment meant to be unique is the bug this prevents.
+ */
+export const githubUpsertComment = async (runner: CommandRunner, input: { readonly repo: string; readonly number: number; readonly body: string; readonly marker: string }, options: GitHubCliOptions = {}): Promise<'created' | 'updated'> => {
+  const bin = options.bin ?? 'gh'
+  const run = (argv: readonly string[]) => runner.run(argv, { timeoutMs: options.timeoutMs ?? 30_000, ...(options.cwd ? { cwd: options.cwd } : {}) })
+  const listed = await run([bin, 'api', '--paginate', `repos/${input.repo}/issues/${input.number}/comments`, '--jq', `.[] | select(.body | contains(${JSON.stringify(input.marker)})) | .id`])
+  if (listed.code !== 0) fail(`gh api comments exited ${listed.code ?? 'null'}: ${listed.stderr.trim().slice(0, 300)}`, 'HARNESS_ERROR')
+  const id = listed.stdout.split(/\r?\n/).map((line) => line.trim()).find((line) => /^\d+$/.test(line))
+  if (!id) { await githubComment(runner, { repo: input.repo, number: input.number, body: input.body }, options); return 'created' }
+  const patched = await run([bin, 'api', '--method', 'PATCH', `repos/${input.repo}/issues/comments/${id}`, '-f', `body=${input.body}`])
+  if (patched.code !== 0) fail(`gh api PATCH comment exited ${patched.code ?? 'null'}: ${patched.stderr.trim().slice(0, 300)}`, 'HARNESS_ERROR')
+  return 'updated'
+}
+
 /** Issue/PR comments whose body contains `marker` — used for one-comment-per-head dedupe. */
 export const githubCommentExists = async (runner: CommandRunner, input: { readonly repo: string; readonly number: number; readonly marker: string }, options: GitHubCliOptions = {}): Promise<boolean> => {
-  const list = await ghJson(runner, ['api', '--paginate', `repos/${input.repo}/issues/${input.number}/comments`, '--jq', '[.[].body]'], options)
-  return Array.isArray(list) && list.some((body) => typeof body === 'string' && body.includes(input.marker))
+  return (await ghCommentBodies(runner, input.repo, input.number, options)).some((body) => body.includes(input.marker))
 }

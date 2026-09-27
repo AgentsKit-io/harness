@@ -1,4 +1,4 @@
-import { existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, mkdtempSync, rmSync, statSync, utimesSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
@@ -51,6 +51,24 @@ describe('the projection store', () => {
     expect(third.issues['ENG-4']!.phase).toBe('completed')
   })
 
+  it('writes neither projection.json nor cursor.json when nothing changed (the 1 s poll must not rewrite them)', () => {
+    const stateDir = stateDirFor()
+    writeDispatch(stateDir, 'ENG-12')
+    appendLoopEvent(stateDir, { at: '2026-01-01T00:10:00.000Z', type: 'worker.held', issue: 'ENG-12', reason: 'protected path', worktreeId: 'wt-ENG-12' })
+    const first = syncProjection(stateDir)
+    const files = ['projection.json', 'cursor.json'].map((name) => join(stateDir, 'ui', name))
+    const old = new Date('2020-01-01T00:00:00.000Z')
+    for (const file of files) utimesSync(file, old, old)
+    expect(syncProjection(stateDir)).toEqual(first)
+    expect(syncProjection(stateDir)).toEqual(first)
+    for (const file of files) expect(statSync(file).mtimeMs).toBe(old.getTime())
+
+    // A real new event still lands, and moves both files.
+    appendLoopEvent(stateDir, { at: '2026-01-01T00:20:00.000Z', type: 'worker.merged', issue: 'ENG-12', reason: 'clean review', worktreeId: 'wt-ENG-12' })
+    expect(syncProjection(stateDir).issues['ENG-12']!.phase).toBe('completed')
+    for (const file of files) expect(statSync(file).mtimeMs).toBeGreaterThan(old.getTime())
+  })
+
   it('survives a simulated restart: a fresh call rereads projection+cursor and continues from there', () => {
     const stateDir = stateDirFor()
     writeDispatch(stateDir, 'ENG-5')
@@ -93,6 +111,27 @@ describe('the projection store', () => {
     writeFileSync(join(deliveryDir, 'delivery.json'), JSON.stringify({ issue: 'ENG-8', prNumber: 7, reviews: {}, fixRounds: 0, nudges: [], handoffs: [], heldFor: 'sha', finishedAt: '2026-01-01T00:31:00.000Z', finalOutcome: 'held' }))
     const state = syncProjection(stateDir)
     expect(state.issues['ENG-8']).toMatchObject({ phase: 'review', reviewState: 'human-approval' })
+  })
+
+  it('engine-state reconciliation: a cancellation newer than the final outcome is not undone by it', () => {
+    // Live: a run failed on a GitHub rate limit, then was cancelled from the UI; the old `failed` kept re-blocking it.
+    const stateDir = stateDirFor()
+    writeDispatch(stateDir, 'ENG-10')
+    writeFileSync(join(stateDir, 'issues', 'ENG-10', 'delivery.json'), JSON.stringify({ issue: 'ENG-10', prNumber: 220, reviews: {}, fixRounds: 1, nudges: [], handoffs: [], heldFor: null, finishedAt: '2026-01-01T00:40:00.000Z', finalOutcome: 'failed', cancelledAt: '2026-01-02T00:00:00.000Z' }))
+    appendLoopEvent(stateDir, { at: '2026-01-02T00:00:01.000Z', type: 'ui.cleanup-completed', issue: 'ENG-10', runId: 'run-1' })
+    expect(syncProjection(stateDir).issues['ENG-10']!.phase).toBe('available')
+    expect(syncProjection(stateDir).issues['ENG-10']!.phase).toBe('available')
+  })
+
+  it('engine-state reconciliation: heals a projection persisted as blocked before the cancellation fix, but leaves a re-enqueued run alone', () => {
+    const stateDir = stateDirFor()
+    writeDispatch(stateDir, 'ENG-11')
+    writeFileSync(join(stateDir, 'issues', 'ENG-11', 'delivery.json'), JSON.stringify({ issue: 'ENG-11', prNumber: 220, reviews: {}, fixRounds: 1, nudges: [], handoffs: [], heldFor: null, finishedAt: '2026-01-01T00:40:00.000Z', finalOutcome: 'failed', cancelledAt: null }))
+    expect(syncProjection(stateDir).issues['ENG-11']!.phase).toBe('blocked')
+    writeFileSync(join(stateDir, 'issues', 'ENG-11', 'delivery.json'), JSON.stringify({ issue: 'ENG-11', prNumber: 220, reviews: {}, fixRounds: 1, nudges: [], handoffs: [], heldFor: null, finishedAt: '2026-01-01T00:40:00.000Z', finalOutcome: 'failed', cancelledAt: '2026-01-02T00:00:00.000Z' }))
+    expect(syncProjection(stateDir).issues['ENG-11']).toMatchObject({ phase: 'available', error: null, dispatch: null })
+    appendLoopEvent(stateDir, { at: '2026-01-03T00:00:00.000Z', type: 'ui.run-enqueued', issue: 'ENG-11' })
+    expect(syncProjection(stateDir).issues['ENG-11']!.phase).toBe('running')
   })
 
   it('engine-state reconciliation: an issue with no delivery.json and no events stays at the reducer\u2019s guess', () => {

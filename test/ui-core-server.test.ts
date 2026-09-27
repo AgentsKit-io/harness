@@ -16,7 +16,8 @@ import { enqueueRun } from '../src/ui/api/actions.js'
 import { alertsStatePath, createAlertSender, readAlertsState } from '../src/ui/api/alerts.js'
 import type { BoardSnapshot, IssueBoardCache } from '../src/ui/api/board.js'
 import type { AttentionItem, IssueDetail, SnapshotExtras } from '../src/ui/api/contract.js'
-import { startUiServer, type UiServerHandle } from '../src/ui/api/server.js'
+import { createOrcaCache } from '../src/ui/api/extras.js'
+import { startUiServer, type UiServerHandle, type UiSnapshot } from '../src/ui/api/server.js'
 
 const cleanups: string[] = []
 const servers: UiServerHandle[] = []
@@ -106,6 +107,18 @@ describe('control plane core: extras, locks, reconcile, issue detail', () => {
     expect((await api(server, 'api/v1/issues/ENG-1/reconcile', { method: 'POST', body: '{}' })).status).toBe(409)
   })
 
+  it('settles a tracker sync failure from the control plane: dismiss clears the item, an unknown action is refused', async () => {
+    const root = mkdtempSync(join(tmpdir(), 'harness-ui-core-')); cleanups.push(root)
+    const loaded = loadedFor(root)
+    appendLoopEvent(loaded.stateDir, { at: new Date(Date.now() - 60_000).toISOString(), type: 'tracker.sync-failed', issue: 'ENG-3', operation: 'completion', error: "'ai-done' not found" })
+    const server = await start(loaded, boardOf([]))
+    expect((await extrasOf(server)).attention.find((item) => item.id === 'tracker-sync:ENG-3')?.actions.map((action) => action.id)).toEqual(['retry-sync', 'dismiss-sync', 'open'])
+    expect((await api(server, 'api/v1/issues/ENG-3/tracker-sync', { method: 'POST', body: JSON.stringify({ action: 'nope' }) })).status).toBe(400)
+    const dismissed = await api(server, 'api/v1/issues/ENG-3/tracker-sync', { method: 'POST', body: JSON.stringify({ action: 'dismiss' }) })
+    expect(dismissed.status).toBe(200)
+    expect((await extrasOf(server)).attention.some((item) => item.id === 'tracker-sync:ENG-3')).toBe(false)
+  })
+
   it('returns the issue detail: contract, criteria joined with DoD proofs, latest review, spend, fix rounds, next step', async () => {
     const root = mkdtempSync(join(tmpdir(), 'harness-ui-core-')); cleanups.push(root)
     const loaded = loadedFor(root)
@@ -177,5 +190,42 @@ describe('attention alerts', () => {
     const quiet = loadedFor(quietRoot, { notifications: { events: [], commandTimeoutMs: 10_000 } })
     await createAlertSender(quiet).observe([item('hitl:1')])
     expect(readAlertsState(quiet.stateDir)).toEqual({ seen: [], lastDelivery: null })
+  })
+})
+
+describe('Orca failures are unknown, not "nothing wrong"', () => {
+  const orcaDown: CommandRunner = { run: async (): Promise<CommandResult> => ({ code: 1, stdout: '', stderr: 'orca: runtime not running', timedOut: false, durationMs: 1 }) }
+
+  it('the snapshot carries automationsError instead of an empty "all healthy" automation list', async () => {
+    const root = mkdtempSync(join(tmpdir(), 'harness-ui-core-')); cleanups.push(root)
+    const server = await startUiServer({ loaded: loadedFor(root), runner: orcaDown, port: 0, board: boardOf([]) })
+    servers.push(server)
+    const snapshot = await (await api(server, 'api/v1/state')).json() as UiSnapshot
+    expect(snapshot.automations).toEqual([])
+    expect(snapshot.automationsError).toMatch(/^Orca unreachable: /)
+  })
+
+  it('a healthy Orca reports no automationsError', async () => {
+    const root = mkdtempSync(join(tmpdir(), 'harness-ui-core-')); cleanups.push(root)
+    const snapshot = await (await api(await start(loadedFor(root), boardOf([])), 'api/v1/state')).json() as UiSnapshot
+    expect(snapshot.automationsError).toBeNull()
+  })
+
+  it('a failed terminal list keeps the old terminals under their old timestamp; worktrees still advance', async () => {
+    const root = mkdtempSync(join(tmpdir(), 'harness-ui-core-')); cleanups.push(root)
+    let clock = Date.parse('2026-09-20T12:00:00.000Z')
+    let terminalsDown = false
+    const flaky: CommandRunner = { run: async (argv) => terminalsDown && argv.includes('terminal') ? orcaDown.run(argv) : runner.run(argv) }
+    const cache = createOrcaCache(loadedFor(root), flaky, () => new Date(clock), 0)
+    const first = await cache.read()
+    expect(first).toMatchObject({ at: '2026-09-20T12:00:00.000Z', terminalsAt: '2026-09-20T12:00:00.000Z' })
+    expect(first.terminals.length).toBe(1)
+    terminalsDown = true
+    clock += 60_000
+    for (let attempt = 0; attempt < 50 && (await cache.read()).at === first.at; attempt += 1) await new Promise((resolve) => setTimeout(resolve, 5))
+    const second = await cache.read()
+    expect(second.at).toBe('2026-09-20T12:01:00.000Z')
+    expect(second.terminalsAt).toBe('2026-09-20T12:00:00.000Z')
+    expect(second.terminals).toEqual(first.terminals)
   })
 })

@@ -7,7 +7,7 @@ import { Sparkline } from '@/components/Sparkline'
 import { CapBar, PhaseBar } from '@/components/IssuePanel'
 import { cn } from '@/lib/utils'
 import { answerDecision, getMetrics, type AttentionAction, type AttentionGroup, type AttentionItem, type IssueRecord, type MetricsReport, type UiSnapshot, getRecentEvents, type RecentEvent } from '@/lib/api'
-import { useActionRunner, type ActionTarget } from '@/lib/actions'
+import { lockedOut, useActionRunner, type ActionTarget } from '@/lib/actions'
 import { formatAge, useLiveSnapshot } from '@/lib/snapshot'
 import { useIssuePanel } from '@/lib/useIssuePanel'
 import { ageMs, formatTokens, modelOf, phaseAgeMs, phaseLabel, runBucket, tokensByIssue } from '@/lib/runs'
@@ -65,11 +65,11 @@ export const AttentionCard = ({ item, color, now, busy, onAction, onAnswer }: At
         {item.locked && <span className="flex items-center gap-1.5 text-xs text-drift"><Lock className="size-3.5" aria-hidden />{item.lockReason ?? 'Cancel, close and reopen locked until reconciled'}</span>}
         <div className="ml-auto flex gap-2">
           {item.actions.filter((action) => !(action.id === 'answer' && decision?.options.length)).map((action) => {
-            const lockedOut = item.locked && action.destructive
+            const locked = lockedOut(action, Boolean(item.locked))
             return (
               <Button key={action.id} variant={action.primary ? 'primary' : action.destructive ? 'destructive-outline' : 'outline'}
-                className={action.primary ? undefined : 'bg-transparent'} disabled={lockedOut || busy === `${action.id}:${item.issue ?? ''}`}
-                title={lockedOut ? 'Reconcile first' : undefined} onClick={() => onAction(item, action)}>
+                className={action.primary ? undefined : 'bg-transparent'} disabled={locked || busy === `${action.id}:${item.issue ?? ''}`}
+                title={locked ? 'Reconcile first' : undefined} onClick={() => onAction(item, action)}>
                 {action.label}
               </Button>
             )
@@ -236,6 +236,12 @@ export const AttentionPage = (): React.ReactElement => {
         <section aria-label="Attention queue" className="flex min-w-0 grow flex-col gap-[22px] overflow-auto">
           {!snapshot && <p className="text-sm text-ink-subtle">Loading…</p>}
           {/* A scheduled stage whose precheck crashed never ran at all (#114): louder than any single issue. */}
+          {snapshot?.automationsError && (
+            <div role="alert" className="rounded-[10px] border border-warning/40 bg-panel-alt p-4 text-sm">
+              <div className="font-semibold text-warning">Stage health unknown — Orca unreachable</div>
+              <div className="mt-2 whitespace-pre-wrap font-mono text-xs">{snapshot.automationsError}</div>
+            </div>
+          )}
           {(snapshot?.automations ?? []).filter((automation) => automation.error).map((automation) => (
             <div key={automation.name} role="alert" className="rounded-[10px] border border-danger/40 bg-danger-dim p-4 text-sm">
               <div className="font-semibold text-danger">Stage “{automation.stage}” is stopped — its last scheduled run failed before the stage ran</div>

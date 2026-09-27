@@ -165,6 +165,16 @@ describe('action routes', () => {
     expect(stageEntry(loaded.stateDir, 'deliver')).toMatchObject({ consecutiveFailures: 1, lastReason: 'adapter crashed' })
   })
 
+  it('counts a manual run whose every result failed toward the failure counter, but not a tracker cooldown', async () => {
+    const failed = await harness({ deliver: (async () => ({ status: 'failed', results: [{ issue: 'ENG-1', outcome: 'failed', reason: 'gh 502' }] })) as never })
+    await settled(failed.jobs, ((await failed.post('stages/deliver/run')).body['job'] as UiJobRecord).id)
+    expect(stageEntry(failed.loaded.stateDir, 'deliver')).toMatchObject({ consecutiveFailures: 1, lastReason: expect.stringContaining('ENG-1: gh 502') })
+
+    const cooling = await harness({ tick: (async () => ({ status: 'blocked', results: [] })) as never })
+    await settled(cooling.jobs, ((await cooling.post('stages/tick/run')).body['job'] as UiJobRecord).id)
+    expect(stageEntry(cooling.loaded.stateDir, 'tick').consecutiveFailures).toBe(0)
+  })
+
   it('batch: validates every entry before starting a job, queues only valid contracts, leaves ambiguous ones for HITL', async () => {
     const contract = async (_context: unknown, issue: string): Promise<ContractResult> => ({ status: issue === 'ENG-2' ? 'needs-input' : 'valid', contract: { digest: `digest-${issue}` } as ContractResult['contract'] })
     const { loaded, post, jobs } = await harness({ contract: contract as ActionRouteDeps['contract'] })
@@ -185,5 +195,16 @@ describe('action routes', () => {
     const runs = createIssueQueue({ stateDir: loaded.stateDir }).list()
     expect(runs.map((run) => run.issue)).toEqual(['ENG-1'])
     expect(runs[0]?.config).toMatchObject({ maxFixRounds: ceiling, builder: { provider: builder.slice(0, builder.indexOf('/')) } })
+  })
+
+  it('batch: accepts a GitHub-tracker id (owner/repo#N) and still refuses path traversal', async () => {
+    const contract = async (_context: unknown, issue: string): Promise<ContractResult> => ({ status: 'valid', contract: { digest: `digest-${issue}` } as ContractResult['contract'] })
+    const { loaded, post, jobs } = await harness({ contract: contract as ActionRouteDeps['contract'] })
+    const builder = loaded.config.models.builder.flat()[0]!
+    expect((await post('batch', { defaults: { builder }, issues: [{ issue: 'acme/app/../../x#1' }] })).status).toBe(400)
+    const response = await post('batch', { defaults: { builder }, issues: [{ issue: 'acme/app#77' }] })
+    expect(response.status).toBe(202)
+    const [job] = response.body['jobs'] as UiJobRecord[]
+    expect(await settled(jobs, job!.id)).toMatchObject({ status: 'succeeded', result: { status: 'queued', issue: 'acme/app#77' } })
   })
 })

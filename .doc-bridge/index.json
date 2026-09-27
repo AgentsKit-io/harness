@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
-  "contentHash": "d986765f46568193d273ccdcc50aedf000b38ffcd65cea6e800c14cb7e5157a8",
+  "contentHash": "3378730f79a40ccd7dd762640a36fcc7866163d213a22111396fe206d1d7fae9",
   "contentHashAlgo": "sha256-normalized-v1",
-  "generatedAt": "2026-09-26T16:07:44.822Z",
+  "generatedAt": "2026-09-27T13:29:02.172Z",
   "project": {
     "name": "AgentsKit Harness",
     "root": "."
@@ -298,12 +298,12 @@
       "type": "document",
       "title": "Changelog",
       "path": "CHANGELOG.md",
-      "description": "The four gaps left in the control plane v2, closed.",
+      "description": "Failures that were invisible, made visible or closed. Every fix ships with a regression test that fails on 0.22.0.",
       "tags": [
         "document",
         "project"
       ],
-      "contentHash": "116798e20b9053537be2cbc87db55fda22adb0327c519b61e0bf7a595236ed9f"
+      "contentHash": "3efae54cc470a60e683fcc3f42d95cce75371acdd805add7fc573b6ed12a502f"
     },
     {
       "id": "document:CLAUDE.md",
@@ -870,6 +870,18 @@
       "contentHash": "274c9631393d95bbe0f8157cbf34da09babbf2eb709585d00895386bd02ce882"
     },
     {
+      "id": "document:docs/ADR-0041-agent-runs-and-rendered-specs.md",
+      "type": "document",
+      "title": "ADR-0041: Agent runs and rendered specs",
+      "path": "docs/ADR-0041-agent-runs-and-rendered-specs.md",
+      "description": "Accepted",
+      "tags": [
+        "document",
+        "human"
+      ],
+      "contentHash": "96c1192d37304224b10fe41555e43bbaf8b4c385ffa9630349e1d0da34058e54"
+    },
+    {
       "id": "document:docs/GETTING-STARTED.md",
       "type": "document",
       "title": "Getting started",
@@ -891,7 +903,7 @@
         "document",
         "human"
       ],
-      "contentHash": "71519fe7826066e491c4fbd060fe55a6ba73e589d2800d7402b13f7a672bc634"
+      "contentHash": "4c66e10f66838427dbbf06aaaa8ac46f9ffd5dca98c0ffb6db74491cc3b05407"
     },
     {
       "id": "document:docs/MODULE-BOUNDARIES.md",
@@ -980,14 +992,14 @@
     {
       "id": "document:release/notes.md",
       "type": "document",
-      "title": "0.21.0 release candidate",
+      "title": "0.22.1 release candidate",
       "path": "release/notes.md",
       "description": "The control plane (ak-harness ui) becomes the operator's single place to see what needs them and act on it safely, plus the loop fixes found running it against a real repository since 0.19.0. CHANGELOG.md has the full list; docs/ADR-0040 records the decisions.",
       "tags": [
         "document",
         "unclassified"
       ],
-      "contentHash": "8313116e4c10739632b6700d531698a2c9e94171d1cafe671109c59d93a64bde"
+      "contentHash": "47761afc98768820feb18a0ef9759550cbef3fb59ff8f4a61b5d1005bc093e49"
     },
     {
       "id": "document:SECURITY.md",
@@ -1842,7 +1854,7 @@
         "ts",
         "adapters"
       ],
-      "contentHash": "9107ba696e3cb2bed87d9e7b6f6255d64a567efb116ea68d246da3458763e993"
+      "contentHash": "b9e02e6a7dea75b02b549bc40c360a8d60de09de45e9b845a79cd48a4297d6a6"
     },
     {
       "id": "module:src/adapters/command.ts",
@@ -1905,6 +1917,7 @@
         "githubCommentExists",
         "githubCompare",
         "githubCurrentUser",
+        "githubEnsureLabels",
         "githubIssue",
         "githubIssueClose",
         "githubIssueComment",
@@ -1924,6 +1937,7 @@
         "githubPullRequest",
         "githubPullRequestsForBranch",
         "githubPullRequestsForIssue",
+        "githubUpsertComment",
         "parseGitHubIssue",
         "parseGitHubIssueDetail",
         "parsePullRequest",
@@ -1934,7 +1948,7 @@
         "ts",
         "adapters"
       ],
-      "contentHash": "46a4b21344ba2c0815a83270c4f537a68b45b8321579a6f88ccd9a6433929387"
+      "contentHash": "929d51a8a995a801baec9337503f2ad38ebc6512efa0ed5d9804a039dc87aace"
     },
     {
       "id": "module:src/adapters/linear-orca.ts",
@@ -2168,7 +2182,7 @@
         "ts",
         "src"
       ],
-      "contentHash": "b39d46cd7877bc43b8324fc91d0c401ed68ec34155b20269ccce4d018db213f4"
+      "contentHash": "38dafd70017fdc198c4942465f6e6527caab984ed63197300a270adf42004698"
     },
     {
       "id": "module:src/context/index.ts",
@@ -2481,7 +2495,7 @@
         "ts",
         "execution"
       ],
-      "contentHash": "d742dc4146644a2c7b6c77346fe0babd82309351715a3df1de41d40d54257386"
+      "contentHash": "4917025d2cd90bd194ab490920756b87de00fec9965a53c67f799a28a92e4b14"
     },
     {
       "id": "module:src/execution/verification.ts",
@@ -2533,6 +2547,12 @@
         "AgentRegistryEntry",
         "AgentRegistryEntrySchema",
         "AgentRegistrySchema",
+        "AgentRunEvidence",
+        "AgentRunIoEntry",
+        "AgentRunReport",
+        "AgentRunStage",
+        "AgentRunState",
+        "AgentRunStatus",
         "AgentUsage",
         "Alert",
         "AlertSchema",
@@ -2761,20 +2781,14 @@
         "LOOP_PRESETS",
         "LOOP_ROLES",
         "LOOP_STAGES",
-        "Layer",
-        "LearningRecord",
-        "LearningStatus",
-        "LearningsLedger",
-        "LifecycleEvent",
-        "LifecyclePhase",
-        "LifecyclePullRequest"
+        "Layer"
       ],
       "tags": [
         "module",
         "ts",
         "src"
       ],
-      "contentHash": "012a53f90f08297b92bd9d7ef7e8dd89b116af027bb98840f89d92443f85155e"
+      "contentHash": "1a16f25e3e858196c2b0680847d2fa1a988889cd971aac4c69910e0a7987a5d3"
     },
     {
       "id": "module:src/kernel/adapter-contract.ts",
@@ -3282,7 +3296,7 @@
         "ts",
         "kernel"
       ],
-      "contentHash": "2505fd217fdbd31b18ca5b75f2d6bf204fa9de4c9710311a0af6ba00503df3a8"
+      "contentHash": "bca5001e5fbadd14b126dd6dc5ac49be862c4bf94bc464014fe9ac598aae156f"
     },
     {
       "id": "module:src/kernel/pilot.ts",
@@ -3427,7 +3441,7 @@
         "ts",
         "kernel"
       ],
-      "contentHash": "5b069911b3eb40b1f796c9107ea1cac7777460e6af3a665c2d7825b96bfa7ea7"
+      "contentHash": "9c067625601376b44855aa3b07ce02bb9fef7d6a6d711ed770ec63efda61b746"
     },
     {
       "id": "module:src/kernel/state-machine.ts",
@@ -3594,6 +3608,47 @@
       "contentHash": "23a79d380c05488a80907abecbc1ead79478c5be8423e770322762a498b16536"
     },
     {
+      "id": "module:src/loop/agent-runs.ts",
+      "type": "module",
+      "title": "agent-runs.ts",
+      "path": "src/loop/agent-runs.ts",
+      "symbols": [
+        "AGENT_RUN_SCHEMA_VERSION",
+        "AgentRunEvidence",
+        "AgentRunIoEntry",
+        "AgentRunReport",
+        "AgentRunStage",
+        "AgentRunState",
+        "AgentRunStatus",
+        "DEFAULT_RUN_IO_MAX_BYTES",
+        "RUNS_DIR",
+        "RunIoInput",
+        "classifyRunEvent",
+        "latestIssueRun",
+        "listAgentRuns",
+        "listIssueRuns",
+        "markRunSummaryPosted",
+        "pruneAgentRuns",
+        "readAgentRun",
+        "readAgentRunReport",
+        "recordRunEvent",
+        "recordRunEvidence",
+        "recordRunIo",
+        "renderAgentRunMarkdown",
+        "renderRunSummaryMarkdown",
+        "resolveAgentRun",
+        "runDirFor",
+        "runSummaryMarker",
+        "runsRoot"
+      ],
+      "tags": [
+        "module",
+        "ts",
+        "loop"
+      ],
+      "contentHash": "da958972f4c77ede76494a8d0e6335103170778cde617d9e9f34ae1beea9a11f"
+    },
+    {
       "id": "module:src/loop/artifacts.ts",
       "type": "module",
       "title": "artifacts.ts",
@@ -3668,7 +3723,7 @@
         "ts",
         "loop"
       ],
-      "contentHash": "ce3666ddb1e1a511896f71b571c83b6a48966a0c0a403eadd5eaa1fc7ab044d2"
+      "contentHash": "8edd4c1a58e0f00cac23df66dc728b87127e263bcd7eea31e7f635850fe4decb"
     },
     {
       "id": "module:src/loop/brief.ts",
@@ -3686,7 +3741,7 @@
         "ts",
         "loop"
       ],
-      "contentHash": "431c875ec5b2de5d12704a209d5d3eaeb0dfe5050e81f212624294ae04b03e49"
+      "contentHash": "d4bafff1b5c645d4951f6c4f389de2ef2dc3e05bdceade0dd1bf3018387774f3"
     },
     {
       "id": "module:src/loop/budget.ts",
@@ -3756,7 +3811,7 @@
         "ts",
         "loop"
       ],
-      "contentHash": "2c9cad4aa2a1f8d31395bc3e38f03fec404b3a6cea13601d5bf06005d13bd841"
+      "contentHash": "c0842aea120ee55df31a1aea1421ffa12734098721434df77a03daa27a92cb6a"
     },
     {
       "id": "module:src/loop/connectors.ts",
@@ -3778,7 +3833,7 @@
         "ts",
         "loop"
       ],
-      "contentHash": "bf3b57bb38dd1a6c1119d48a6305e94b168b7315426acf461a6f0a3cf9ece421"
+      "contentHash": "1b937fafb871fb2b9b9633e19f933541d9e075741965260442a9e46321b83615"
     },
     {
       "id": "module:src/loop/contract.ts",
@@ -3793,6 +3848,7 @@
         "ContractAssessment",
         "ContractOutcomeSchema",
         "GenerateContractInput",
+        "ProviderCallIo",
         "ProviderFailure",
         "StoredContract",
         "TaskContract",
@@ -3816,7 +3872,7 @@
         "ts",
         "loop"
       ],
-      "contentHash": "2bd1b01c5f5bba2f7d9dcc2b8a4a79649785dc5693a10cc7ec23c9acd0cb098f"
+      "contentHash": "f49b21f3aa9b229b9c26ddc69baf1fc4e04d1b4864c5c91cb18df3806d769b07"
     },
     {
       "id": "module:src/loop/cooldown.ts",
@@ -3885,7 +3941,7 @@
         "ts",
         "loop"
       ],
-      "contentHash": "f0617c0d68ccfc598c5cc49bfdc191d8eb67bac54901ac7a81aa5f671a89322f"
+      "contentHash": "85de520a762bdd65292a3a40b3d3083a6df4125d485ad3a85940c40b1aa9c612"
     },
     {
       "id": "module:src/loop/detached-worker.ts",
@@ -3901,7 +3957,7 @@
         "ts",
         "loop"
       ],
-      "contentHash": "a1995dfb4cdce91ab952542b59ca9f432579c7ddfabedc680859528772e2e0a0"
+      "contentHash": "df495c982280fae2ae89361a1fd3eccab90a833c1f077a39aae2e70d6ed60305"
     },
     {
       "id": "module:src/loop/doctor.ts",
@@ -3995,7 +4051,7 @@
         "ts",
         "loop"
       ],
-      "contentHash": "aa46dc01bb5228c83faa60279f671d8090c957f85cc8067c2b9578cf461baa29"
+      "contentHash": "66aa6ffc92a8e671bdd5599c2e549a580a69b5e2a0f24d5b58f95a48374309d8"
     },
     {
       "id": "module:src/loop/event-vocabulary.ts",
@@ -4012,7 +4068,7 @@
         "ts",
         "loop"
       ],
-      "contentHash": "a848a47bd53daf2609208da3993180f033e383db9d3102bb53e8fa595e3b94f9"
+      "contentHash": "19ed966f077fe87e7266ac1d9e60baa6c13091413c7d8b224df32a27872a32df"
     },
     {
       "id": "module:src/loop/flows.ts",
@@ -4046,6 +4102,8 @@
       "title": "fs-atomic.ts",
       "path": "src/loop/fs-atomic.ts",
       "symbols": [
+        "acquireFileLock",
+        "releaseFileLock",
         "writeJsonAtomic"
       ],
       "tags": [
@@ -4053,7 +4111,7 @@
         "ts",
         "loop"
       ],
-      "contentHash": "9e1d0792a5f36b7f0934e0f58cf0fe7a7dbd7b9617b9789c280dfef099299d7c"
+      "contentHash": "4730afa3d95512d045cba9e9f1da84e86640c2c02778e73dd23eb2d3374a8380"
     },
     {
       "id": "module:src/loop/github-intake.ts",
@@ -4135,6 +4193,12 @@
         "AgentRegistryEntry",
         "AgentRegistryEntrySchema",
         "AgentRegistrySchema",
+        "AgentRunEvidence",
+        "AgentRunIoEntry",
+        "AgentRunReport",
+        "AgentRunStage",
+        "AgentRunState",
+        "AgentRunStatus",
         "Alert",
         "AlertSchema",
         "ArtificialAnalysisModel",
@@ -4300,6 +4364,7 @@
         "QUESTION_OPEN",
         "QuestionSchema",
         "REQUIRED_PRD_FIELDS",
+        "RUNS_DIR",
         "RankedModel",
         "ReleaseApproval",
         "ReleaseBatch",
@@ -4376,21 +4441,14 @@
         "approveDesign",
         "approveHeldDelivery",
         "approvePlan",
-        "approveRelease",
-        "architectRound",
-        "artifactPath",
-        "assessBoundary",
-        "assessContract",
-        "assessDod",
-        "assessObservability",
-        "assessObserveStage"
+        "approveRelease"
       ],
       "tags": [
         "module",
         "ts",
         "loop"
       ],
-      "contentHash": "0062d47877f098bb7af99584cedf97adcf0859bae304b860e68e6a9d8f0a77ab"
+      "contentHash": "d96ee263b52ee26419d84eadd152c297f5dd5bda04b6c92d5025bd90e2a44397"
     },
     {
       "id": "module:src/loop/init.ts",
@@ -4498,7 +4556,7 @@
         "ts",
         "loop"
       ],
-      "contentHash": "7385145555f417227a69a10cdac227d4974a7c1a13ff71ecf8ca3b3de8b7ad5a"
+      "contentHash": "ee6f40ca982d49232360a1a4c08d93e4411189523eb9bfaab851ea4b6ba8c06d"
     },
     {
       "id": "module:src/loop/layers.ts",
@@ -4821,7 +4879,7 @@
         "ts",
         "loop"
       ],
-      "contentHash": "6316cce58fc4f966bbf6b9d2439870a0ea6ea1992eac20be928ab64881da8c56"
+      "contentHash": "266956830dbbb7f37163985422c73704e250a0e167389e937cc6cae10ff5e52e"
     },
     {
       "id": "module:src/loop/presets.ts",
@@ -5105,6 +5163,31 @@
       "contentHash": "81b4fb92429b7593601b1739093bf63738bde188028bdb3be13645314a9c6606"
     },
     {
+      "id": "module:src/loop/spec.ts",
+      "type": "module",
+      "title": "spec.ts",
+      "path": "src/loop/spec.ts",
+      "symbols": [
+        "RenderedSpec",
+        "SPEC_FILES",
+        "SpecCheck",
+        "SpecFile",
+        "SpecInput",
+        "checkSpec",
+        "renderSpec",
+        "renderSpecForBrief",
+        "specDigest",
+        "specDirFor",
+        "writeSpec"
+      ],
+      "tags": [
+        "module",
+        "ts",
+        "loop"
+      ],
+      "contentHash": "0cb5d2f8bc94ef877869cdcc62146dfa41fe608a956e294a48c07b680f07c6d7"
+    },
+    {
       "id": "module:src/loop/stage-lock.ts",
       "type": "module",
       "title": "stage-lock.ts",
@@ -5112,6 +5195,7 @@
       "symbols": [
         "StageLockStatus",
         "acquireStageLock",
+        "lastStageLockOwner",
         "peekStageLock"
       ],
       "tags": [
@@ -5119,7 +5203,7 @@
         "ts",
         "loop"
       ],
-      "contentHash": "bfc4502d2b8d5f8a37caf395d23b9187ae42f7b8cdc7806b52b9ac86688c24b7"
+      "contentHash": "50d915b8d250befdb7c64ea35f6c667a81b254a9ff25686ca944939552e8ac6a"
     },
     {
       "id": "module:src/loop/tick.ts",
@@ -5152,7 +5236,29 @@
         "ts",
         "loop"
       ],
-      "contentHash": "778c5c7fbd320e390295ed64832212348565400945595abfff1ba36e2c17f7dc"
+      "contentHash": "f8cf26205ffcea7ebf8c227d2612b9f65af4a6b57ec518de0744b6f5024365af"
+    },
+    {
+      "id": "module:src/loop/tracker-cooldown.ts",
+      "type": "module",
+      "title": "tracker-cooldown.ts",
+      "path": "src/loop/tracker-cooldown.ts",
+      "symbols": [
+        "TRACKER_RATE_LIMIT",
+        "TrackerCooldown",
+        "TrackerCooldownError",
+        "activeTrackerCooldown",
+        "guardTracker",
+        "isTrackerRateLimit",
+        "markTrackerRateLimited",
+        "trackerCooldownPath"
+      ],
+      "tags": [
+        "module",
+        "ts",
+        "loop"
+      ],
+      "contentHash": "da10d0654eb0d3249e8c6c3d866a8e8975e77cf3ef9e3af4d7a469a362a932e4"
     },
     {
       "id": "module:src/loop/tracker.ts",
@@ -5324,6 +5430,7 @@
         "enqueueRun",
         "generateOrReuseContract",
         "reconcileIssue",
+        "resolveTrackerSync",
         "restoreRun",
         "resumePausedIssue",
         "retryRun"
@@ -5333,7 +5440,7 @@
         "ts",
         "api"
       ],
-      "contentHash": "1b9895e15cc8297fc86d242daccd50ebdb17220f33da332fdb15481f482f19bb"
+      "contentHash": "be4180f775a921ab68dd940ffe2eae06b5305c2e6a3fd4da864fbb06803e6ace"
     },
     {
       "id": "module:src/ui/api/alerts.ts",
@@ -5371,7 +5478,7 @@
         "ts",
         "api"
       ],
-      "contentHash": "6d774d272e2c973c7919fa7d8139f0c441cf1eb244e9118793972f2040f9a97f"
+      "contentHash": "e08faa2acc3179af2d8c7cb16c6a5e808d4e877f40c6c3c09682403bfdcd8d7f"
     },
     {
       "id": "module:src/ui/api/board.ts",
@@ -5396,7 +5503,7 @@
         "ts",
         "api"
       ],
-      "contentHash": "09d40282403d6919cc3809d4679c5d36e4ca59007956d95aee36802376d7ac6a"
+      "contentHash": "1a83dca67479c004b1ee6a39b813b4a374ffa940181964d475956a50839bdee2"
     },
     {
       "id": "module:src/ui/api/config-fields.ts",
@@ -5467,6 +5574,7 @@
         "MetricsReport",
         "MetricsWindow",
         "RecentEvent",
+        "SNAPSHOT_ERROR_EVENT",
         "SearchHit",
         "SearchResult",
         "SearchType",
@@ -5480,7 +5588,7 @@
         "ts",
         "api"
       ],
-      "contentHash": "a54aa8127e2390d1127985d710b5f6bf98a210c848c4eae2952c2e4f68bb2858"
+      "contentHash": "8c6596f2d97937f8d549ded274362f7188b7613aec6c8c196893d7870f1a80c7"
     },
     {
       "id": "module:src/ui/api/extras.ts",
@@ -5507,7 +5615,7 @@
         "ts",
         "api"
       ],
-      "contentHash": "c2f454f5c20fd63e2af8a88c184bce5a6c7ee2b24451dd7372ebd6deab285fae"
+      "contentHash": "d5117394355bc5381e2e9245a2f385601f4e973f4342a2aef8beeaf84b95175c"
     },
     {
       "id": "module:src/ui/api/http.ts",
@@ -5613,6 +5721,7 @@
       "title": "reconcile.ts",
       "path": "src/ui/api/reconcile.ts",
       "symbols": [
+        "CLOSED_STATES",
         "ClaimFact",
         "DispatchFact",
         "OrcaFact",
@@ -5628,7 +5737,7 @@
         "ts",
         "api"
       ],
-      "contentHash": "49457103b9bd2f014de2659ff54a3998c85af28eb009599eebce607dc8511a17"
+      "contentHash": "8738c37b9b582fbc653f4048e3e1d46e84225d9b88f5283a261e7980bb8eae2e"
     },
     {
       "id": "module:src/ui/api/route-modules.ts",
@@ -5661,7 +5770,7 @@
         "ts",
         "api"
       ],
-      "contentHash": "6369cf9f035eeff7e1c7e56ff8204424d02735a93c6b0530afc84218eb992107"
+      "contentHash": "d81a3570bb2bc4c1525a228138f490358ad28d475e55d1da2eae4857418dea21"
     },
     {
       "id": "module:src/ui/api/routes-config.ts",
@@ -5693,7 +5802,7 @@
         "ts",
         "api"
       ],
-      "contentHash": "ef6fbcaad3ce9ce3a68d7efcb24b2e847be275e96863a80f8663400d082c9dc5"
+      "contentHash": "576c5c2dec3abed795a0bc1db93c955f9c9e03f051d8f03c24007ab56726057d"
     },
     {
       "id": "module:src/ui/api/routes-feed.ts",
@@ -5745,7 +5854,7 @@
         "ts",
         "api"
       ],
-      "contentHash": "d693356cdd0d969c211353c57fc272a235e1097f54579e6aca82fc0442b671d5"
+      "contentHash": "28310d10aad16689646040f683f9af11025b53cb8cfd380ff88f2c55e0e3cf37"
     },
     {
       "id": "module:src/ui/api/routes.ts",
@@ -5815,7 +5924,7 @@
         "ts",
         "api"
       ],
-      "contentHash": "f9343faa7601b23f8adf013394cb3fe858e331a55487b75b8eb03ae1e07cc0be"
+      "contentHash": "ed6dc6443fc813d8d6b0c17ca5f4ed54e3a140acdb369c0a3e679f4c923914ea"
     },
     {
       "id": "module:src/ui/api/store.ts",
@@ -5823,6 +5932,7 @@
       "title": "store.ts",
       "path": "src/ui/api/store.ts",
       "symbols": [
+        "eventsKey",
         "readCurrentProjection",
         "syncProjection"
       ],
@@ -5831,7 +5941,7 @@
         "ts",
         "api"
       ],
-      "contentHash": "18d88e77e0332d5f0b8778faaffe5461e60e9724ba47e98a25a24ff433e6dc0b"
+      "contentHash": "517c79978a0107ab31476ffb3cf0bcea06e251b1efc2066903e6fc7dec60d098"
     },
     {
       "id": "module:src/ui/api/wizard.ts",
@@ -6066,7 +6176,7 @@
         "tsx",
         "components"
       ],
-      "contentHash": "56b8e6fb434d7eb9ff8ffd5271d4089cd1946bed0760f99975b9958a8a506a6f"
+      "contentHash": "26976d9126c01d43cd552a3597240950eaeccab64b1aef3d24f0f6977f15ef25"
     },
     {
       "id": "module:src/ui/app/src/components/Shell.tsx",
@@ -6207,6 +6317,7 @@
       "symbols": [
         "ActionTarget",
         "confirmBasis",
+        "lockedOut",
         "useActionRunner"
       ],
       "tags": [
@@ -6214,7 +6325,7 @@
         "tsx",
         "lib"
       ],
-      "contentHash": "928b29e24377c189d037dd05ee46f72be1064c6d628ae93f0344011375a20bff"
+      "contentHash": "af23c85c0d765a9046b985420d7557200eb6cfae3a379263cb9b3cae2e3a02c0"
     },
     {
       "id": "module:src/ui/app/src/lib/api.ts",
@@ -6253,6 +6364,7 @@
         "getConfig",
         "getIssueDetail",
         "getJob",
+        "getJobs",
         "getMetrics",
         "getRecentEvents",
         "getState",
@@ -6265,6 +6377,7 @@
         "reconcileIssue",
         "reinstallAutomations",
         "rejectLearnings",
+        "resolveTrackerSync",
         "restoreRun",
         "resumePausedIssue",
         "resumeStage",
@@ -6273,6 +6386,8 @@
         "runStage",
         "saveWizardDraft",
         "searchRecords",
+        "snapshotErrorText",
+        "sseNeedsPolling",
         "tuning",
         "useSnapshot",
         "writeLocalConfig"
@@ -6282,7 +6397,7 @@
         "ts",
         "lib"
       ],
-      "contentHash": "bc50c32094cbef96f595b4d0532317f31f80993e22b7ddc1fc9af2e9a3878274"
+      "contentHash": "ad42d6f5aaae0140a724c2a7c784d8cd5ecf8c275aff0761089bc63ad55efac6"
     },
     {
       "id": "module:src/ui/app/src/lib/format.ts",
@@ -6425,7 +6540,7 @@
         "tsx",
         "pages"
       ],
-      "contentHash": "56337685cda5d8494bb0c7ca610ec45299dbc8fc4dbe0f3b08095ee4c41dfce3"
+      "contentHash": "8d3b9d8fb2ec7f041980a1d63fe0eb02f19d65e80c0372ae16bd89c0f47f0908"
     },
     {
       "id": "module:src/ui/app/src/pages/Batch.tsx",
@@ -6441,7 +6556,7 @@
         "tsx",
         "pages"
       ],
-      "contentHash": "1b2cf29857177918c382b6988e6deb130ff07038266c347e4b8dd7c8297845d6"
+      "contentHash": "d6e08e366526468b9b1acd490fe3157ee6724224430c03eb7d10beb28691b814"
     },
     {
       "id": "module:src/ui/app/src/pages/Costs.tsx",
@@ -6529,14 +6644,15 @@
       "title": "System.tsx",
       "path": "src/ui/app/src/pages/System.tsx",
       "symbols": [
-        "SystemPage"
+        "SystemPage",
+        "stageState"
       ],
       "tags": [
         "module",
         "tsx",
         "pages"
       ],
-      "contentHash": "af648e67ba7023d76ca574de96da1ee1623155219998dffb1be72d83d379c561"
+      "contentHash": "6e1340d04725ce57d42c436cbca5e10c804a19d67fbd8fb7531df7472b7c7f80"
     },
     {
       "id": "module:src/ui/app/src/pages/Trends.tsx",
@@ -6606,7 +6722,7 @@
         "ts",
         "test"
       ],
-      "contentHash": "1a6d502a95d701c0fa12fc9eef4c4c410f516ce3cb74f99efa1e2b329f14c8ad"
+      "contentHash": "f6d40e596d4a8676d9250180e6d39c5aa1da72a3785cf00e1be606638ddb83a5"
     },
     {
       "id": "module:test/adapters-command.test.ts",
@@ -6642,7 +6758,7 @@
         "ts",
         "test"
       ],
-      "contentHash": "a93bec7ee03a715347757aeeec4fccdedaf0c1c34afe193401e956fdb0ee6f29"
+      "contentHash": "cc253760d4c2d7567bc6442a51989f11a282af821c2cdec111d9047200be5a79"
     },
     {
       "id": "module:test/adapters-linear-orca-gaps.test.ts",
@@ -6777,6 +6893,18 @@
       "contentHash": "c335801192ad5f12714410f2379d2f9d21680d8baf1263ae3a0a3fe7c5c53114"
     },
     {
+      "id": "module:test/cli-exit-codes.test.ts",
+      "type": "module",
+      "title": "cli-exit-codes.test.ts",
+      "path": "test/cli-exit-codes.test.ts",
+      "tags": [
+        "module",
+        "ts",
+        "test"
+      ],
+      "contentHash": "0458e64110f7adc74ed371cbb5b8a8316c82f33663bf91398b7d68f0f481da6e"
+    },
+    {
       "id": "module:test/compatibility.test.ts",
       "type": "module",
       "title": "compatibility.test.ts",
@@ -6882,7 +7010,7 @@
         "ts",
         "test"
       ],
-      "contentHash": "0de42dba47c469438555fc8b4ce92088b9103e0cc3480cc2a5ebfcd5cee2d2f7"
+      "contentHash": "205fa40b5ee0e00374f4228e5dd07af6ea920a9ee5b66b08821da858e7239a3f"
     },
     {
       "id": "module:test/discovery.test.ts",
@@ -7101,7 +7229,7 @@
         "ts",
         "test"
       ],
-      "contentHash": "fcb2c1e5745504c7a4f07b60930d93ff6e57dd25de407b2da6a815c2ec697250"
+      "contentHash": "f00d983366e352a5a7d7f0125b20541f369ab428fa0ad003610209edf00fa000"
     },
     {
       "id": "module:test/github-tracker.test.ts",
@@ -7113,7 +7241,7 @@
         "ts",
         "test"
       ],
-      "contentHash": "7fe2ee10c4811541306000315ce43e3b5c86fb147bbee3482ca6e69be38a1c50"
+      "contentHash": "d376fa5e98381da2826ae76dd61495bf128b5b408a04c02cf135d6d72ecdcacd"
     },
     {
       "id": "module:test/harness.test.ts",
@@ -7467,6 +7595,18 @@
       "contentHash": "b9a2544ff2aea7f381c0555198d788e2f5c91b14483c8369cd7303d6547afbb5"
     },
     {
+      "id": "module:test/loop-agent-runs.test.ts",
+      "type": "module",
+      "title": "loop-agent-runs.test.ts",
+      "path": "test/loop-agent-runs.test.ts",
+      "tags": [
+        "module",
+        "ts",
+        "test"
+      ],
+      "contentHash": "f19dc60423c9322c15090be23c5218073ea0cfddd30cd48e87adfc9f35473b85"
+    },
+    {
       "id": "module:test/loop-artifacts-exclude.test.ts",
       "type": "module",
       "title": "loop-artifacts-exclude.test.ts",
@@ -7524,7 +7664,7 @@
         "ts",
         "test"
       ],
-      "contentHash": "521e7b72a53c984e6410b98c5df9a91be4749737ce0f50be45f5dd5b3f16788f"
+      "contentHash": "afeebc6fbe56bf0ed5bad8887475e5b09f855631a53c192da86752315b6dd4d5"
     },
     {
       "id": "module:test/loop-brief-cache.test.ts",
@@ -7596,7 +7736,7 @@
         "ts",
         "test"
       ],
-      "contentHash": "91982a123f79f2ba3b6e56dd9b93420b056e4fad74ff7055282e2a0fb8dfac17"
+      "contentHash": "75f50d52adbc04b7a5681ec928f42e50364544e5463fd742e313be655ec4913e"
     },
     {
       "id": "module:test/loop-contract-gaps.test.ts",
@@ -7608,7 +7748,7 @@
         "ts",
         "test"
       ],
-      "contentHash": "edd09500a9bdf0daf5f4b365a09fe8384bf1c7bce9f64c141d3f77a737ddce43"
+      "contentHash": "0f3b9e6e8b545491e6da4a138fa2a88e66598ad1bcbd366e6da11ac22926bd14"
     },
     {
       "id": "module:test/loop-cooldown-gaps.test.ts",
@@ -7656,7 +7796,7 @@
         "ts",
         "test"
       ],
-      "contentHash": "7106cec8756b56afd6c723ec56a04c361d3f89b317c6b9e7249c4bbc0217fc91"
+      "contentHash": "e1fb279fa62c714d3dbb1edb791d7682e65deff418245a7707c53589b968d040"
     },
     {
       "id": "module:test/loop-doctor-gaps.test.ts",
@@ -7716,7 +7856,7 @@
         "ts",
         "test"
       ],
-      "contentHash": "7b49c9b64c37e3abdaf6a62efd38622a65246993fd672d2257ebda7a692b7693"
+      "contentHash": "eee62fff8b72ed3f8dcd17e9da7472911b840a097f43d4a88dbb28b97bf7428f"
     },
     {
       "id": "module:test/loop-event-vocabulary.test.ts",
@@ -7728,7 +7868,7 @@
         "ts",
         "test"
       ],
-      "contentHash": "4fadbda7cdf33f8d17cf1717022671128a97fa06ada2e449c67a42a503630164"
+      "contentHash": "cf6f46e6f56cb973d1c616ddf24dc5bc63cd8155d9e0c8b3132a2d951b4f8565"
     },
     {
       "id": "module:test/loop-events-rotation.test.ts",
@@ -7860,7 +8000,7 @@
         "ts",
         "test"
       ],
-      "contentHash": "83c41cbde645836c079079c83a981a6a8275184cf089cb1a8b092a572db80b49"
+      "contentHash": "8020600aa0f89d3fe54f1a6db4bd5e1dedd3eb15d61c280b47a5e993cd66446d"
     },
     {
       "id": "module:test/loop-issue-timeline.test.ts",
@@ -7872,7 +8012,7 @@
         "ts",
         "test"
       ],
-      "contentHash": "2fc6b68ed2f7a931b051b85351263cab1ff9cc2f52ff6c6299cf263e9a360c42"
+      "contentHash": "e790e3e36a925553fddafeb31fe0934211b77816ff0dc643d2bb675bb473c1d9"
     },
     {
       "id": "module:test/loop-launch-worker.test.ts",
@@ -8163,6 +8303,18 @@
       "contentHash": "c6b2a06c6c4c88b44a9c009835530bbcf10ad3151412496a2bcc409902bc0439"
     },
     {
+      "id": "module:test/loop-spec.test.ts",
+      "type": "module",
+      "title": "loop-spec.test.ts",
+      "path": "test/loop-spec.test.ts",
+      "tags": [
+        "module",
+        "ts",
+        "test"
+      ],
+      "contentHash": "85db3881ee3dc420d1dcd77be79b244f8f631c8a1bd40fc8c0c8e599f87120aa"
+    },
+    {
       "id": "module:test/loop-tick.test.ts",
       "type": "module",
       "title": "loop-tick.test.ts",
@@ -8172,7 +8324,7 @@
         "ts",
         "test"
       ],
-      "contentHash": "8692c0fffccd303de1fb4d07fb0b593e394344a54b8c9d2afd059e57d5e1e906"
+      "contentHash": "a1388b4c664b92fadf09abad04f6cc58e413a61efa90f45f307e62ca65a51b93"
     },
     {
       "id": "module:test/loop-tuning.test.ts",
@@ -8412,7 +8564,7 @@
         "ts",
         "test"
       ],
-      "contentHash": "799de4469ad291b7b199121bb411395119ed18c570d6e0f0bad742b1e0626bf8"
+      "contentHash": "806348abb41fcd88b9c36413b9324fada44f02313237e33bd4a1c9f52f024b9f"
     },
     {
       "id": "module:test/review.test.ts",
@@ -8460,7 +8612,7 @@
         "ts",
         "test"
       ],
-      "contentHash": "594e830d79c55af21b25d97f8f44fe3122ad594421b9580a01611ebd0df5a746"
+      "contentHash": "0cae7abe7cbef434422e628f9d3ef64c4a2d276efde78d38f27f28aba25f6511"
     },
     {
       "id": "module:test/stage-lock.test.ts",
@@ -8484,7 +8636,7 @@
         "ts",
         "test"
       ],
-      "contentHash": "e5d90062e2497f1e7c6c7cb4e335468cc70aa8de224a4b88d8d0af39b9327c5c"
+      "contentHash": "f2a649ac8de8735e2fdb898e06116826c09aca982772a8a02e8fd470d447d6d7"
     },
     {
       "id": "module:test/ui-api-actions.test.ts",
@@ -8496,7 +8648,7 @@
         "ts",
         "test"
       ],
-      "contentHash": "121c8781dafd4163432e0fa3fe95dd3e085ebdb6a49f9ae4246607229d901e21"
+      "contentHash": "447402c20d079d211e35975516d572a5b3a6264988da92f2046d03a872244856"
     },
     {
       "id": "module:test/ui-api-jobs.test.ts",
@@ -8520,7 +8672,7 @@
         "ts",
         "test"
       ],
-      "contentHash": "4bc1e6a2ac3018393ab10a953246a629447765b542dc76d34ab80a71bfa0f58f"
+      "contentHash": "6b1612bf44d8147797292ec74b0b0c54f04b9c9c187c57e87ae5a35f3ac3328b"
     },
     {
       "id": "module:test/ui-app-ops.test.tsx",
@@ -8532,7 +8684,7 @@
         "tsx",
         "test"
       ],
-      "contentHash": "86f6c600cbaf7aad67414dbe50ec6b08519a09463265e1c8f0f822a7b501c30f"
+      "contentHash": "94172d43cd686b4f771c6cc1953f605aec2d4bdcf46afe9d4aceada8f3d6e84f"
     },
     {
       "id": "module:test/ui-config.test.ts",
@@ -8556,7 +8708,7 @@
         "ts",
         "test"
       ],
-      "contentHash": "7f72b11435312ff52359b584cc6c74185e9faaa051a2eaacba3ab4aa19ff69d3"
+      "contentHash": "4e76a8a3b7388b1286e4fc57aa60ee06dd4056f66de4eef78be452ac1dcc4ecd"
     },
     {
       "id": "module:test/ui-core-reconcile.test.ts",
@@ -8568,7 +8720,7 @@
         "ts",
         "test"
       ],
-      "contentHash": "5ce83a05f27594d64cc80d1fb5c9267fd703aed7c81c60495c0229ed4df1135a"
+      "contentHash": "98224353eb3066bedf5a63a646bc3941116fa6c2399816fa6bfe62e77efc04b9"
     },
     {
       "id": "module:test/ui-core-server.test.ts",
@@ -8580,7 +8732,7 @@
         "ts",
         "test"
       ],
-      "contentHash": "8d69ecac4dfc039cce53127d1fc38636cb97a88d422043c9d4019aaf5af6c147"
+      "contentHash": "b701458ee05768529d5f3f38ce9e7022b86b485b343dfcb08bd7e592502e879c"
     },
     {
       "id": "module:test/ui-feed.test.ts",
@@ -8631,6 +8783,18 @@
       "contentHash": "3c316085d0bc560520893603f5bb0e477945322b1ca058c3b19cc85d2a819653"
     },
     {
+      "id": "module:test/ui-sse.test.ts",
+      "type": "module",
+      "title": "ui-sse.test.ts",
+      "path": "test/ui-sse.test.ts",
+      "tags": [
+        "module",
+        "ts",
+        "test"
+      ],
+      "contentHash": "ed6cb204fa13a01370248e39693c161f41f3ea9b1aa53bc79a9917b2de7cef65"
+    },
+    {
       "id": "module:test/ui-store.test.ts",
       "type": "module",
       "title": "ui-store.test.ts",
@@ -8640,7 +8804,7 @@
         "ts",
         "test"
       ],
-      "contentHash": "ec959d3f7887c5e1a3ea8a035e296a3f939bddda615bae54fc1db099ebd0cf2b"
+      "contentHash": "86a53a20fb4bd476f2223e6c240bae6c1a6536a830b1a17fbddfb8feed3bbca8"
     },
     {
       "id": "module:test/ui-system.test.ts",
@@ -8652,7 +8816,7 @@
         "ts",
         "test"
       ],
-      "contentHash": "fb55a8c3b4ec353d7135eebcf727c922b0591236f5d1d1a482c87aa0d86d5a1a"
+      "contentHash": "fd21af76f15c7129c06ccb6bd24aeb54b2398b2ba53830cb058fc081a1357a68"
     },
     {
       "id": "module:test/wip.test.ts",
@@ -8800,8 +8964,8 @@
     }
   },
   "inputs": {
-    "hash": "c13acfcea7ed0e282568072444bba08fa996178459f51d6ebe3be1a5eeca0056",
-    "fileCount": 534,
+    "hash": "7efd6f9f6b23dc2f80b0bcd20ed162f7c55b06f1f5106b96cfbb2d73125ceaf9",
+    "fileCount": 542,
     "projectionVersion": 2
   },
   "retrieval": {
@@ -8823,9 +8987,9 @@
   "projection": {
     "type": "retrieval-index",
     "schemaVersion": 1,
-    "contentHash": "fc8e2f98e51b034c47e010c3ff61eaa124298d386fe5ac5af7f2567c7422c359",
+    "contentHash": "8786a77d314a86543f129edc1478495484f91fbf992ae6622a743cf02429f2c6",
     "contentHashAlgo": "sha256-normalized-v1",
-    "snapshotHash": "fe727fde951b11a377b83789033cd3b021c6306ed596b71678b2389ba36de202",
+    "snapshotHash": "4bd40b7d747af8604841a8f3f8bfb1a05fea083c871f10330841a4fd9b59ec99",
     "overlayHash": "f99666ff9119084dd25c2974ae64eb6935ec2aa785ff5ad478fb9d541f7a5e94",
     "configurationHash": "816afaf6a7dc09767f7594d8fd80024612ca0f33becf0e44dde0107fcf2782df",
     "lexiconVersion": 1,
@@ -8845,7 +9009,7 @@
     },
     "lexical": {
       "version": 1,
-      "documentCount": 543,
+      "documentCount": 551,
       "fieldNames": [
         "aliases",
         "body",
@@ -8856,13 +9020,13 @@
         "title"
       ],
       "averageFieldLength": {
-        "aliases": 2.9263351749539597,
-        "body": 43.60220994475138,
-        "headings": 3.858195211786372,
-        "path": 6.110497237569061,
-        "summary": 2.6500920810313073,
-        "symbols": 13.976058931860036,
-        "title": 3.9355432780847144
+        "aliases": 2.9255898366606172,
+        "body": 44,
+        "headings": 3.852994555353902,
+        "path": 6.116152450090744,
+        "summary": 2.6225045372050815,
+        "symbols": 14.225045372050817,
+        "title": 3.9491833030852996
       }
     },
     "entries": [
@@ -9387,7 +9551,7 @@
           ],
           "outbound": []
         },
-        "contentHash": "c45ea68e316ba6abaf768b9e2dafa03d98d647a1912c18b46ed3eac8acc34fb4",
+        "contentHash": "4549c955cbbcb7c12207702e8b1cc896a0dd7e7deba7b08854ccaa7e3fda257a",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -9502,7 +9666,7 @@
           ],
           "outbound": []
         },
-        "contentHash": "dbb5fe03841f3029d304b2f460f959f6037e55b578cfdffa1a66c0c422f7c12f",
+        "contentHash": "84c3cea16bd5de4d831af6cb406a79a93e05a7b66c15a97c6c42287fce2fadf0",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -11003,7 +11167,7 @@
         ],
         "fields": {
           "title": "cli",
-          "headings": "ak-harness doctor ak-harness ui ak-harness plan ak-harness context ak-harness context resolve ak-harness discovery ak-harness discovery assess ak-harness wip ak-harness wip assess ak-harness experiment ak-harness experiment select ak-harness delivery ak-harness delivery preflight ak-harness delivery pr ak-harness delivery integration ak-harness delivery production ak-harness delivery acceptance ak-harness delivery cleanup ak-harness pilot ak-harness cycle ak-harness cycle assess ak-harness block ak-harness block validate ak-harness block assess ak-harness preflight ak-harness preflight files ak-harness snapshot ak-harness snapshot validate ak-harness learning ak-harness learning parse ak-harness coordination ak-harness coordination claim ak-harness artifacts ak-harness artifacts inspect ak-harness artifacts list ak-harness artifacts schema ak-harness loop ak-harness loop validate ak-harness loop doctor ak-harness loop precheck ak-harness loop deliver ak-harness loop stage ak-harness loop tick-worker ak-harness loop tick ak-harness loop contract ak-harness loop init ak-harness loop install ak-harness loop uninstall ak-harness loop status ak-harness loop approve ak-harness loop resume ak-harness loop paused ak-harness loop hook ak-harness loop debrief ak-harness loop issue-timeline ak-harness loop worker-guard ak-harness loop observe ak-harness loop watch ak-harness loop retro ak-harness loop plan ak-harness loop plan start ak-harness loop plan answer ak-harness loop plan show ak-harness loop plan approve",
+          "headings": "ak-harness doctor ak-harness ui ak-harness plan ak-harness context ak-harness context resolve ak-harness discovery ak-harness discovery assess ak-harness wip ak-harness wip assess ak-harness experiment ak-harness experiment select ak-harness delivery ak-harness delivery preflight ak-harness delivery pr ak-harness delivery integration ak-harness delivery production ak-harness delivery acceptance ak-harness delivery cleanup ak-harness pilot ak-harness cycle ak-harness cycle assess ak-harness block ak-harness block validate ak-harness block assess ak-harness preflight ak-harness preflight files ak-harness snapshot ak-harness snapshot validate ak-harness learning ak-harness learning parse ak-harness coordination ak-harness coordination claim ak-harness artifacts ak-harness artifacts inspect ak-harness artifacts list ak-harness artifacts schema ak-harness loop ak-harness loop validate ak-harness loop doctor ak-harness loop precheck ak-harness loop deliver ak-harness loop stage ak-harness loop tick-worker ak-harness loop deliver-worker ak-harness loop tick ak-harness loop contract ak-harness loop init ak-harness loop install ak-harness loop uninstall ak-harness loop status ak-harness loop approve ak-harness loop resume ak-harness loop paused ak-harness loop hook ak-harness loop debrief ak-harness loop issue-timeline ak-harness loop run ak-harness loop run list ak-harness loop run show ak-harness loop worker-guard ak-harness loop observe ak-harness loop watch ak-harness loop retro ak-harness loop plan",
           "path": "apps/docs/content/docs/reference/cli.mdx",
           "symbols": "",
           "summary": "{/* Generated by `pnpm docs:generate`. Do not edit by hand: edit `src/cli.ts` and regenerate. */}",
@@ -11024,7 +11188,7 @@
             }
           ]
         },
-        "contentHash": "3988bca9bd18f2a97c5c1749e09a22f907af5def43dfe228b1f461dd73d33721",
+        "contentHash": "3694af71a5a76f12a2a4c1c9f05bb939147a5a1af31d28bda0c44d851a103df7",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -11044,11 +11208,11 @@
         ],
         "fields": {
           "title": "configuration",
-          "headings": "schemaVersion extends project orca linear queue knownFailures reviewOverrides models machine delivery contract memory agents rag mcp plugins github resilience brief security budget intake maintain connectors release worker layers documents dod tuning flows notifications schedule",
+          "headings": "schemaVersion extends project orca linear queue knownFailures reviewOverrides models machine delivery contract memory agents rag mcp plugins github resilience brief security budget intake maintain connectors release worker layers documents dod runs spec tuning flows notifications schedule",
           "path": "apps/docs/content/docs/reference/configuration.mdx",
           "symbols": "",
           "summary": "{/* Generated by `pnpm docs:generate`. Do not edit by hand: edit `src/loop/config.ts` and regenerate. */}",
-          "body": "{/ Generated by pnpm docs:generate . Do not edit by hand: edit src/loop/config.ts and regenerate. /} The four layers that produce this configuration — the machine's global file, the project's, the team's and this machine's overlay — are described in . ak-harness loop validate prints the effective result, which is the only one that decides anything. 222 of 390 paths carry no description yet. schemaVersion Type: number · Default: 1 extends Defaults for this kind of project ( web-app , library , monorepo , data-pipeline , mobile ), merged below every other layer. Anything this file states wins over the preset; the preset only fills silence. Type: string project Path Type Default Description --- --- --- --- project.name string required project.repo string required project.baseBranch string \"main\" project.root string \".\" project.stateDir string \".ak-loop\" Where the loop keeps everything that is NOT the project's configuration: dispatch ledger, delivery state, contracts, events, agent memory, plans. Meant to be gitignored — the configuration lives at the repo root as loop.config.yaml , versioned; this directory is runtime state, per machine. project.team string Selects the loop.config.team.&lt;key&gt;.yaml layer. $AK LOOP TEAM overrides it; a declared team whose file is missing fails loudly. project.orchestratorView base · root \"base\" The tree the orchestrator's headless calls (contract, plan interview, architect, votes, decompose) read. base (default): a harness-owned detached worktree of origin/&lt;baseBranch&gt; , fetched before each use. root : project.root as it is — whatever branch and age the operator's checkout has. project.setup object {} project.setup.command string[] Argv (no shell — one element per arg, e.g. [pnpm, install, --frozen-lockfile] ) run once in a freshly created worktree before the worker terminal opens. Unset/empty = skip. project.setup.timeoutSec integer 600 project.setup.required boolean true When true, a failing/timing-out setup removes the worktree and counts as a dispatch failure instead of handing the worker a broken environment. orca Path Type Default Description --- --- --- --- orca.bin string \"orca\" orca.repoSelector string Orca repo selector for new worktrees: id:&lt;repoId&gt; , name:&lt;name&gt; or path:&lt;abs&gt; ; default path:&lt;project.root&gt; . orca.workspaceSelector string Existing worktree the automations run in; default: the enclosing worktree resolved by Orca. orca.host string orca.minVersion string \"1.4.200\" orca.timeoutMs integer 20000 linear Path Type Default Description --- --- --- --- linear.workspaceId string required linear.teamKey string required linear.person string required Linear display name of the person whose queue this machine drains. linear.people record&lt;string&gt; {} Display name → Linear user id, for assignee set and audit; the queue itself filters by display name. linear.rotation object {} Optional ordered handoff between owners after the current dispatchable queue drains. linear.rotation.enabled boolean false linear.rotation.owners string[] [] linear.rotation.advanceWhenEmpty boolean true linear.queueOwnership person · unassigned \"person\" Whose queue this machine drains. person (default) keeps the historical behaviour: the issues assigned to linear.person . unassigned drains the issues with NO assignee and turns the assignee into a transient claim — written on dispatch, cleared when the item returns — so several machines can share one priority-ordered queue without colliding. Note when switching to unassigned : clearing the assignees is then REQUIRED, not cosmetic. With person and an emptied backlog the queue comes back empty and the loop looks healthy while doing nothing. linear.states string[] [\"Todo\",\"Ready\"] linear.entryState string \"Backlog\" Where loop plan decompose --create puts new issues. It must NOT be one of states : those are the queue, and an issue the planner just wrote is not work anyone approved yet. Moving it into states is the human gate. linea",
+          "body": "{/ Generated by pnpm docs:generate . Do not edit by hand: edit src/loop/config.ts and regenerate. /} The four layers that produce this configuration — the machine's global file, the project's, the team's and this machine's overlay — are described in . ak-harness loop validate prints the effective result, which is the only one that decides anything. 223 of 398 paths carry no description yet. schemaVersion Type: number · Default: 1 extends Defaults for this kind of project ( web-app , library , monorepo , data-pipeline , mobile ), merged below every other layer. Anything this file states wins over the preset; the preset only fills silence. Type: string project Path Type Default Description --- --- --- --- project.name string required project.repo string required project.baseBranch string \"main\" project.root string \".\" project.stateDir string \".ak-loop\" Where the loop keeps everything that is NOT the project's configuration: dispatch ledger, delivery state, contracts, events, agent memory, plans. Meant to be gitignored — the configuration lives at the repo root as loop.config.yaml , versioned; this directory is runtime state, per machine. project.team string Selects the loop.config.team.&lt;key&gt;.yaml layer. $AK LOOP TEAM overrides it; a declared team whose file is missing fails loudly. project.orchestratorView base · root \"base\" The tree the orchestrator's headless calls (contract, plan interview, architect, votes, decompose) read. base (default): a harness-owned detached worktree of origin/&lt;baseBranch&gt; , fetched before each use. root : project.root as it is — whatever branch and age the operator's checkout has. project.setup object {} project.setup.command string[] Argv (no shell — one element per arg, e.g. [pnpm, install, --frozen-lockfile] ) run once in a freshly created worktree before the worker terminal opens. Unset/empty = skip. project.setup.timeoutSec integer 600 project.setup.required boolean true When true, a failing/timing-out setup removes the worktree and counts as a dispatch failure instead of handing the worker a broken environment. orca Path Type Default Description --- --- --- --- orca.bin string \"orca\" orca.repoSelector string Orca repo selector for new worktrees: id:&lt;repoId&gt; , name:&lt;name&gt; or path:&lt;abs&gt; ; default path:&lt;project.root&gt; . orca.workspaceSelector string Existing worktree the automations run in; default: the enclosing worktree resolved by Orca. orca.host string orca.minVersion string \"1.4.200\" orca.timeoutMs integer 20000 linear Path Type Default Description --- --- --- --- linear.workspaceId string required linear.teamKey string required linear.person string required Linear display name of the person whose queue this machine drains. linear.people record&lt;string&gt; {} Display name → Linear user id, for assignee set and audit; the queue itself filters by display name. linear.rotation object {} Optional ordered handoff between owners after the current dispatchable queue drains. linear.rotation.enabled boolean false linear.rotation.owners string[] [] linear.rotation.advanceWhenEmpty boolean true linear.queueOwnership person · unassigned \"person\" Whose queue this machine drains. person (default) keeps the historical behaviour: the issues assigned to linear.person . unassigned drains the issues with NO assignee and turns the assignee into a transient claim — written on dispatch, cleared when the item returns — so several machines can share one priority-ordered queue without colliding. Note when switching to unassigned : clearing the assignees is then REQUIRED, not cosmetic. With person and an emptied backlog the queue comes back empty and the loop looks healthy while doing nothing. linear.states string[] [\"Todo\",\"Ready\"] linear.entryState string \"Backlog\" Where loop plan decompose --create puts new issues. It must NOT be one of states : those are the queue, and an issue the planner just wrote is not work anyone approved yet. Moving it into states is the human gate. linea",
           "aliases": "configuration document human"
         },
         "graph": {
@@ -11100,7 +11264,7 @@
             }
           ]
         },
-        "contentHash": "39d58f5be1599482b8d1bc7fa43a57152a99a560184dbaa654af7746547413ba",
+        "contentHash": "676bc24b3643b906106f5b34e0f8ebf2ca034a17988dd1ec6005f65771454202",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -11120,11 +11284,11 @@
         ],
         "fields": {
           "title": "events",
-          "headings": "contract.* human.* plan.* worker.* pr.* tracker.* github-intake.* release.* intake.* maintain.* memory.* provider.* queue.* security.* issue.* stage.* config.* agent.* tuning.* cost-guard.* max-duration.* dod.* verify.* ui.* Harness run events",
+          "headings": "contract.* human.* plan.* worker.* pr.* tracker.* github-intake.* release.* intake.* maintain.* memory.* provider.* queue.* security.* issue.* stage.* plugin.* config.* agent.* tuning.* cost-guard.* max-duration.* dod.* verify.* ui.* delivery.* orca.* Harness run events",
           "path": "apps/docs/content/docs/reference/events.mdx",
           "symbols": "",
           "summary": "{/* Generated by `pnpm docs:generate`. Do not edit by hand: edit `src/loop/event-vocabulary.ts` and regenerate. */}",
-          "body": "{/ Generated by pnpm docs:generate . Do not edit by hand: edit src/loop/event-vocabulary.ts and regenerate. /} Every loop event is appended to <stateDir /events.ndjson and emitted on the plugin bus, with at (ISO timestamp) and type on top of the fields below. A plugin subscribes with bus.on('<type ' ' ', listener) ; a notification channel subscribes by listing types in notifications.events . The vocabulary is enforced by the compiler: appendLoopEvent accepts only these names, so an event that is not here cannot be emitted — and a name here that nothing emits fails the test suite. 84 loop events. contract. Event Carries What it means --- --- --- contract.escalated issue , reasons , digest A contract was frozen but is not dispatchable; a human was asked to settle it. contract.failed issue , error Contract generation failed on every candidate provider. contract.generated issue , provider , model , effort , digest A contract was frozen successfully. provider / model / effort are what actually produced it — the join key for comparing how different LLMs (at what reasoning effort) did on the same kind of issue. human. Event Carries What it means --- --- --- human.hitl-requested issue , requestId , batchId , role , stage , question , context , options , recommendedOptionId , digest A structured human decision was requested by an LLM stage. human.hitl-answered issue , requestId , batchId , role , stage , optionId , freeText , digest , actor A human answered one structured HITL request. human.hitl-batch-ready issue , batchId , requestId All requests in a structured HITL batch have answers and the stage may resume. plan. Event Carries What it means --- --- --- plan.voted issue , cycle , approvals , votes , voters One planning cycle finished: how many agents approved the plan, out of how many voted, and who each one was. plan.failed issue , error Planning failed on every candidate provider. plan.escalated issue , cycles , unresolved The cycles ran out without consensus; the unresolved objections are a human's to settle. worker. Event Carries What it means --- --- --- worker.dispatched issue , worktree , worktreeId , branch , terminal , provider , model , effort , contractDigest , briefDigest , command , briefAccepted , tuiIdle , workerGuardInstalled A worker was launched in its own worktree. Carries the whole dispatch record plus the command that ran. worker.dispatch-failed issue , error The dispatch itself failed — worktree, terminal or brief — before any work started. worker.setup issue , worktreeId , ok project.setup.command ran in the fresh worktree. worker.nudged issue , kind , reason , worktreeId An idle worker was nudged in its own terminal — and also the terminal outcome nudged , which ends a delivery pass on the same issue. Two emissions, one name: kind is present on the first, reason on the second. worker.permission-wait issue , terminal , reason The worker stopped at a tool-permission prompt: held for a person, never typed into. Once per idle window. worker.reactivated issue , terminal , previousTerminal A stale terminal was relaunched for a worker that was still supposed to be working. worker.hitl-resumed issue , requestIds A human answered a worker HITL request and the decision was sent back to the worker terminal. worker.reopened issue , pr , previousHead , head , previousOutcome A finished issue came back: a new head on a PR the loop had already closed out. worker.handed-off issue , from , to , worktreeId , branch , reason , briefAccepted The task was handed to another provider in the same worktree, on the same branch — and also the terminal outcome handed-off that ends the delivery pass which did it. worker.ci-round issue , pr , head , round CI is red; the failing checks went back to the worker as a fix round. worker.review-round issue , pr , head , round The review found blocking issues; the findings went back to the worker as a fix round. worker.conflict-round issue , pr , head , round The PR conflicts with the base bran",
+          "body": "{/ Generated by pnpm docs:generate . Do not edit by hand: edit src/loop/event-vocabulary.ts and regenerate. /} Every loop event is appended to <stateDir /events.ndjson and emitted on the plugin bus, with at (ISO timestamp) and type on top of the fields below. A plugin subscribes with bus.on('<type ' ' ', listener) ; a notification channel subscribes by listing types in notifications.events . The vocabulary is enforced by the compiler: appendLoopEvent accepts only these names, so an event that is not here cannot be emitted — and a name here that nothing emits fails the test suite. 90 loop events. contract. Event Carries What it means --- --- --- contract.escalated issue , reasons , digest A contract was frozen but is not dispatchable; a human was asked to settle it. contract.failed issue , error Contract generation failed on every candidate provider. contract.generated issue , provider , model , effort , digest A contract was frozen successfully. provider / model / effort are what actually produced it — the join key for comparing how different LLMs (at what reasoning effort) did on the same kind of issue. human. Event Carries What it means --- --- --- human.hitl-requested issue , requestId , batchId , role , stage , question , context , options , recommendedOptionId , digest A structured human decision was requested by an LLM stage. human.hitl-answered issue , requestId , batchId , role , stage , optionId , freeText , digest , actor A human answered one structured HITL request. human.hitl-batch-ready issue , batchId , requestId All requests in a structured HITL batch have answers and the stage may resume. plan. Event Carries What it means --- --- --- plan.voted issue , cycle , approvals , votes , voters One planning cycle finished: how many agents approved the plan, out of how many voted, and who each one was. plan.failed issue , error Planning failed on every candidate provider. plan.escalated issue , cycles , unresolved The cycles ran out without consensus; the unresolved objections are a human's to settle. worker. Event Carries What it means --- --- --- worker.dispatched issue , worktree , worktreeId , branch , terminal , provider , model , effort , contractDigest , briefDigest , command , briefAccepted , tuiIdle , workerGuardInstalled , maxFixRounds A worker was launched in its own worktree. Carries the whole dispatch record plus the command that ran. worker.dispatch-failed issue , error The dispatch itself failed — worktree, terminal or brief — before any work started. worker.setup issue , worktreeId , ok project.setup.command ran in the fresh worktree. worker.nudged issue , kind , reason , worktreeId An idle worker was nudged in its own terminal — and also the terminal outcome nudged , which ends a delivery pass on the same issue. Two emissions, one name: kind is present on the first, reason on the second. worker.permission-wait issue , terminal , reason The worker stopped at a tool-permission prompt: held for a person, never typed into. Once per idle window. worker.reactivated issue , terminal , previousTerminal A stale terminal was relaunched for a worker that was still supposed to be working. worker.hitl-resumed issue , requestIds A human answered a worker HITL request and the decision was sent back to the worker terminal. worker.reopened issue , pr , previousHead , head , previousOutcome A finished issue came back: a new head on a PR the loop had already closed out. worker.handed-off issue , from , to , worktreeId , branch , reason , briefAccepted The task was handed to another provider in the same worktree, on the same branch — and also the terminal outcome handed-off that ends the delivery pass which did it. worker.ci-round issue , pr , head , round CI is red; the failing checks went back to the worker as a fix round. worker.review-round issue , pr , head , round The review found blocking issues; the findings went back to the worker as a fix round. worker.conflict-round issue , pr , head , round The PR conflicts wit",
           "aliases": "events document human"
         },
         "graph": {
@@ -11161,7 +11325,7 @@
             }
           ]
         },
-        "contentHash": "2ee68c6c6ae0e715f2b2a5578cb8031cd9fa6cd9f6cb6fb6e8c547197a60233b",
+        "contentHash": "a5da26a7567cea7783b0befc006623e4e4929720c68baa9ec98883936106fffa",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -11170,7 +11334,7 @@
         "kind": "document",
         "path": "CHANGELOG.md",
         "title": "Changelog",
-        "summary": "The four gaps left in the control plane v2, closed.",
+        "summary": "Failures that were invisible, made visible or closed. Every fix ships with a regression test that fails on 0.22.0.",
         "audience": "human",
         "aliases": [],
         "tags": [
@@ -11179,11 +11343,11 @@
         ],
         "fields": {
           "title": "Changelog",
-          "headings": "Changelog [Unreleased] [0.21.0] — 2026-09-26 [0.20.0] — 2026-09-25 [0.19.0] — 2026-09-23 [0.18.0] - 2026-09-22 Release Hygiene Boundaries Token and time economy Breaking Gates [0.17.0] - 2026-09-22 Worker guard Release can no longer publish past a red gate [0.16.0] - 2026-09-22 Verification and token waste Observability: every deterministic phase, timestamped and attributed Event bus, unified House conventions [0.15.0] - 2026-09-20 The phases of an issue leave evidence behind layers: and documents: — where the work belongs, and where the decisions live Per-role settings, and which phases run at all The four cost levers, finished release.waiting, once per head The event vocabulary, and the compiler that guards it The installed agent is code, not a markdown file to append to Documentation Windows stops being a second-class platform The licence, and a surface for the numbers The harness has a folder of its own The documentation site The twelve steps of the roadmap, in the order they landed loop install reconciles instead of rewriting loop stage observe — the health scan comes into the repository Configuration in four layers, and the loop learns to call a human The roles become installed agents, and the retro can improve them Presets and a grilled loop init intake, maintain, and release notes — the cycle closes Cost: a routing policy, two ceilings, and two of the four levers Connectors: the engine stops naming vendors release — promotion and deploy, with a human in front loop plan — a vague objective becomes issues A plan, voted on, before any worker starts The Definition of Done becomes two lists, both proven on the PR The retro starts improving the loop, within declared limits [0.14.0] - 2026-09-19 The queue stops being \"my issues\" Review strictness that matches the risk Telling the worker the truth about the base branch Memory: recurrence instead of guesswork One human approval covers the goal's own effects Fixes that had never shipped [0.13.0] - 2026-09-14 [0.12.0] - 2026-09-13 [0.11.0] - 2026-09-13 [0.10.0] - 2026-09-12 [0.9.0] - 2026-09-12 [0.8.0] - 2026-09-12 [0.7.0] - 2026-09-12 [0.6.0] - 2026-09-12 [0.5.0] - 2026-09-11 [0.4.0] - 2026-09-10",
+          "headings": "Changelog [Unreleased] [0.22.1] — 2026-09-27 [0.22.0] — 2026-09-27 [0.21.0] — 2026-09-26 [0.20.0] — 2026-09-25 [0.19.0] — 2026-09-23 [0.18.0] - 2026-09-22 Release Hygiene Boundaries Token and time economy Breaking Gates [0.17.0] - 2026-09-22 Worker guard Release can no longer publish past a red gate [0.16.0] - 2026-09-22 Verification and token waste Observability: every deterministic phase, timestamped and attributed Event bus, unified House conventions [0.15.0] - 2026-09-20 The phases of an issue leave evidence behind layers: and documents: — where the work belongs, and where the decisions live Per-role settings, and which phases run at all The four cost levers, finished release.waiting, once per head The event vocabulary, and the compiler that guards it The installed agent is code, not a markdown file to append to Documentation Windows stops being a second-class platform The licence, and a surface for the numbers The harness has a folder of its own The documentation site The twelve steps of the roadmap, in the order they landed loop install reconciles instead of rewriting loop stage observe — the health scan comes into the repository Configuration in four layers, and the loop learns to call a human The roles become installed agents, and the retro can improve them Presets and a grilled loop init intake, maintain, and release notes — the cycle closes Cost: a routing policy, two ceilings, and two of the four levers Connectors: the engine stops naming vendors release — promotion and deploy, with a human in front loop plan — a vague objective becomes issues A plan, voted on, before any worker starts The Definition of Done becomes two lists, both proven on the PR The retro starts improving the loop, within declared limits [0.14.0] - 2026-09-19 The queue stops being \"my issues\" Review strictness that matches the risk Telling the worker the truth about the base branch Memory: recurrence instead of guesswork One human approval covers the goal's own effects Fixes that had never shipped [0.13.0] - 2026-09-14 [0.12.0] - 2026-09-13 [0.11.0] - 2026-09-13 [0.10.0] - 2026-09-12 [0.9.0] - 2026-09-12 [0.8.0] - 2026-09-12 [0.7.0] - 2026-09-12 [0.6.0] - 2026-09-12",
           "path": "CHANGELOG.md",
           "symbols": "",
-          "summary": "The four gaps left in the control plane v2, closed.",
-          "body": "Changelog [Unreleased] [0.21.0] — 2026-09-26 The four gaps left in the control plane v2, closed. - Runs shows fix rounds used. The table reads used/max (or the used count when the run was dispatched without the wizard) instead of —/max . - Time in phase is time in phase. The projection stamps phaseSince when an issue's phase changes; the table, the running cards and the side panel use it instead of the last event's time. - A real event stream on the home page. GET /api/v1/events/recent serves the loop's last 24 h of events, newest first, each summarised from its typed fields; the home stream uses it instead of per-issue changes. - New batch shows contract status. GET /api/v1/contracts?issues= reports each stored contract and whether it is still inside contract.reuseHours ; the list marks issues as cached, expired, needing input or without a contract. - Tracker titles and states survive a restart. The off-board lookup cache is persisted (bounded to 1000 entries), so a restarted UI does not show cancelled work as blocked while it re-learns it. [0.20.0] — 2026-09-25 Control plane v2, and the fixes found running the loop against a real repository in the week since 0.19.0. - Control plane v2 ( ak-harness ui ). The home page is now an attention queue — human decisions, stuck or failed runs, state out of sync with the tracker or Orca, and system problems — each with the reason and the next action. The page reconciles the loop against the tracker and Orca on every refresh, resolves titles and states for issues the board does not list, and refuses destructive actions (409) while an issue is out of sync or its data is stale. Observed on a real loop: 24 \"blocked\" issues shrank to 4 once the cancelled ones were recognised. New screens: Runs (filters, search, paging, issue side panel with per-criterion evidence, review, worker, timeline and cost), Trends, Costs (tokens and plan usage, no dollar estimates), Explore (windowed search over events, contracts, evidence, reviews and learnings), System (doctor, routing, cooldowns, automations, stages, learnings) and Settings (effective config with provenance, personal overrides, team diffs, tuning freeze). CLI-only actions are now in the UI and call the same kernel functions: approve a held PR, plan/design/release approval, learning promotion, stage pause/resume, tick/deliver/doctor, automation reinstall, batch enqueue. See ADR-0040. - The UI no longer installs Orca automations on start. Missing or drifted automations show up as system items and reinstall on request, pinned to the running harness binary. - Weakening a gate is a personal, recorded choice. Settings writes only loop.config.local.yaml ; lowering a gate there needs explicit confirmation, and every run queued under it records weakenedGates and shows a badge. Team values come back as a diff to commit, never written by the UI. - Attention alerts reuse notifications . A new human-decision or failure item posts attention.entered through the existing webhook or command channel, once per item. - The ui verification check runs the real UI suites. It pointed at test/ui.test.ts , which 111 removed. - UI copy is English. - plan approved supersedes a stale finished run by itself. A COMPLETE (or approval-pending) run whose source or contract had moved on still blocked a new plan with ACTIVE RUN until someone ran status , which only reconciles. Planning now marks it STALE and supersedes it; a fresh finished run still blocks. - An idle worker with committed but unpushed work is told exactly that. Observed: a worker committed the whole change and stopped before pushing; the generic idle check-in did not see it and the dispatch was marked stuck 40 minutes later with the work sitting in the worktree. Deliver now counts local commits no remote has and asks the worker to push and open the PR. - Control plane rewrite ( 111). One projection over the loop's event log replaced the lifecycle guesses the old page made from free text; the frontend is a React app",
+          "summary": "Failures that were invisible, made visible or closed. Every fix ships with a regression test that fails on 0.22.0.",
+          "body": "Changelog [Unreleased] [0.22.1] — 2026-09-27 Failures that were invisible, made visible or closed. Every fix ships with a regression test that fails on 0.22.0. - The UI no longer keeps the tracker rate-limited. A failing board was re-read every second and every closed issue off the board was re-fetched every 10 minutes forever (~6 tracker calls/hour per historical issue, with or without viewers). Failures now back off, a rate limit pauses lookups, closed issues are never re-asked, and the snapshot pipeline idles when nobody is watching ( 139, 140). - Tracker cooldown. A Linear/GitHub rate limit records tracker.cooldown (15 min doubling, 2 h cap): tick returns blocked without counting toward the stage auto-pause, deliver skips tracker writes but keeps reviewing and merging, and the review state is set once per PR instead of every pass ( 140). - Gates fail closed. ak-verify run / verify / status exit 1 on a blocked, stale or cancelled run; git failures and 1 MB diffs no longer hash as empty (a stale run could be approved); a review with no parseable result is incomplete , never clean; deliver's verify runs in the PR worktree; plugins that fail to load fail the stage run and a throwing before hook blocks ( 140). - Delivery recovers. One transient gh/Orca error waits and retries ( delivery.error ) instead of finishing the issue as failed forever; failed resumes on a new head; an Orca outage is waiting , not a dead worker; a run where every result failed reports failed and counts toward the pause ( 140, 132). - Detached workers report an unconfirmed spawn and early crashes as failed runs; the worker log rotates at 5 MiB. deliver runs as a detached Orca worker like tick ( 127, 140). - Adapters. Comment dedupe works on threads with more than 30 comments; issue creation dedupes only on its marker; 429 / 502 / 503 and authentication no longer match inside hashes, counts or paths ( 140). - UI. Snapshot errors reach the tab ( snapshot-error ) instead of starting a hidden 2 s poll; an Orca failure shows \"Orca unreachable\", not \"not installed\" ( 140). - Runs (ADR-0041). Approval text and handoff fields are redacted before the PR summary; the spec gate requires the files in the PR; recording failures are reported ( 139). - Worktree creation retries through a transient Orca connection drop ( 129); tracker sync failures settle and the GitHub tracker creates missing labels ( 137). [0.22.0] — 2026-09-27 Runs you can reconstruct, specs the loop renders, and the fixes merged since 0.21.0. - Agent runs (ADR-0041). Every issue gets <stateDir /runs/<issue -<n / : state.json projected from its events (stage, status, fix rounds, next required approval), redacted inputs and outputs of each step (contract and plan prompts with their raw output, the worker brief, plan.md / verify.json /DoD, the terminal tail), machine-written handoffs at every stage change, and evidence linked by sha256. A re-dispatch opens n+1 , which names the run it supersedes. ak-harness loop run list show reconstructs a run without its worktree. Bounded by runs.keep / runs.maxAgeDays / runs.maxIoBytes ; prompts never reach events.ndjson ( 135). - Rendered specs. With spec.enabled (off by default), dispatch renders specs/<issue /requirements.md , design.md and tasks.md (Spec Kit / Kiro layout) from the frozen contract and approved plan; requirement ids are the outcome ids. deliver sends a fix round for a spec that is missing, drifted or uncommitted ( 135). - Run summary on the PR. runs.prSummary (default on) keeps one comment per PR with the run's stage, handoffs and evidence hashes, edited in place. ScmConnector gains upsertComment — a custom connector must implement it ( 135). - Contract HITL schema. The structured-output schema now tells providers each HITL option needs id / title / description ( 130). - Cancel from the UI survives a stale terminal , and cancellation and automation reinstall stick ( 134). - UI batch accepts GitHub issue ids, serializes the base view and resumes ba",
           "aliases": "document project"
         },
         "graph": {
@@ -11265,6 +11429,11 @@
             {
               "kind": "mentions",
               "id": "document:CONTRIBUTING.md",
+              "confidence": "observed"
+            },
+            {
+              "kind": "mentions",
+              "id": "document:design.md",
               "confidence": "observed"
             },
             {
@@ -11454,7 +11623,7 @@
             }
           ]
         },
-        "contentHash": "116798e20b9053537be2cbc87db55fda22adb0327c519b61e0bf7a595236ed9f",
+        "contentHash": "3efae54cc470a60e683fcc3f42d95cce75371acdd805add7fc573b6ed12a502f",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -11807,10 +11976,30 @@
         },
         "graph": {
           "pagerank": 0,
-          "inboundLinks": 0,
+          "inboundLinks": 3,
           "coveredBy": [],
-          "mentionedBy": [],
-          "inbound": [],
+          "mentionedBy": [
+            "document:CHANGELOG.md",
+            "document:docs/ADR-0041-agent-runs-and-rendered-specs.md",
+            "document:docs/LOOP.md"
+          ],
+          "inbound": [
+            {
+              "kind": "mentions",
+              "id": "document:CHANGELOG.md",
+              "confidence": "observed"
+            },
+            {
+              "kind": "mentions",
+              "id": "document:docs/ADR-0041-agent-runs-and-rendered-specs.md",
+              "confidence": "observed"
+            },
+            {
+              "kind": "mentions",
+              "id": "document:docs/LOOP.md",
+              "confidence": "observed"
+            }
+          ],
           "outbound": []
         },
         "contentHash": "d9b8e619bad550fe243291b9c6e72362c44313a73d5540f00d04baece2222b16",
@@ -13548,6 +13737,60 @@
         "confidence": "observed"
       },
       {
+        "id": "document:docs/ADR-0041-agent-runs-and-rendered-specs.md",
+        "kind": "document",
+        "path": "docs/ADR-0041-agent-runs-and-rendered-specs.md",
+        "title": "ADR-0041: Agent runs and rendered specs",
+        "summary": "Accepted",
+        "audience": "human",
+        "aliases": [],
+        "tags": [
+          "document",
+          "human"
+        ],
+        "fields": {
+          "title": "ADR-0041: Agent runs and rendered specs",
+          "headings": "ADR-0041: Agent runs and rendered specs Status Context Decision Consequences",
+          "path": "docs/ADR-0041-agent-runs-and-rendered-specs.md",
+          "symbols": "",
+          "summary": "Accepted",
+          "body": "ADR-0041: Agent runs and rendered specs Status Accepted Context ADR-0032 made every transition an event, so the path an issue took can be rebuilt from events.ndjson ( loop issue-timeline ). What cannot be rebuilt is the content : the prompt the orchestrator was given, the plan it returned, the brief the worker received, what the worker left behind, and what one step actually handed the next. Those lived in scattered places ( issues/<id / .json , the worktree's .ak-loop/ , a terminal screen) or nowhere, so \"how was this built?\" had no answer once the worktree was gone. The second gap is on the PR. A reviewer sees a diff and the DoD table, but not the specification the change was built against. The contract and the approved plan already are that specification — as JSON in the local state dir. Decision One issue, one run. <stateDir /runs/<issue -<n / holds: - A second dispatch, or any opening event after the run closed, starts run n+1 with supersedes pointing back. - Nothing here is a source of truth. issues/<id / and events.ndjson stay authoritative. state.json is classifyRunEvent folded over the issue's events as appendLoopEvent writes them. Recording is best-effort and never fails the stage that emitted the event. - Handoffs are written by the machine , from state it already holds: the triggering event, the I/O recorded since the previous handoff (by hash), the frozen contract's outcome ids, the plan's unresolved objections, the evidence hashes and the next required approval. A model never writes one — same rule as ADR-0032. - Capture is everything the harness sees , passed through scanForPii first. The worker's own session stays opaque (runner-specific); its brief, artifacts and terminal tail are captured. digest: identical content is stored once per run; a repeat under another name is a .ref.json pointer. - windowed: runs.keep runs per issue (default 3) and closed runs younger than runs.maxAgeDays (30), pruned at the start of each tick. The open run is never pruned. Specs are rendered, not written. With spec.enabled , dispatch renders specs/<issue /requirements.md , design.md and tasks.md (the GitHub Spec Kit / Kiro layout) into the worktree from the frozen contract and the approved plan — pure functions, no model call, no new gate on content. Requirement ids are the contract's outcome ids, so requirement → check → evidence ( verify.json ) is traceable without a new mapping. The worker commits the files unchanged; deliver re-renders them and sends a fix round when they are missing, uncommitted, or drifted from the frozen contract. The PR carries the run. With runs.prSummary , deliver keeps one comment on the PR — found by a marker and edited in place ( ScmConnector.upsertComment ) — with the run's stage, status, handoffs and evidence hashes. It is re-posted only when the run changed. Consequences loop run show <issue run-id reconstructs a run from disk without the worktree; loop issue-timeline still owns the event-level view. A run directory can be deleted at any time without changing what the loop decides next. The cost is disk (bounded by runs.keep / maxAgeDays / maxIoBytes ) and one small lock per event. Specs are off by default: turning them on adds files to every PR and a new reason for a fix round, which a project opts into. A worker that wants the spec to change says so in plan.md ; the spec changes when the contract does.",
+          "aliases": "document human"
+        },
+        "graph": {
+          "pagerank": 0,
+          "inboundLinks": 0,
+          "coveredBy": [],
+          "mentionedBy": [],
+          "inbound": [],
+          "outbound": [
+            {
+              "kind": "mentions",
+              "id": "document:design.md",
+              "confidence": "observed"
+            },
+            {
+              "kind": "mentions-symbol",
+              "id": "module:src/kernel/pii.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "mentions-symbol",
+              "id": "module:src/loop/agent-runs.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "mentions-symbol",
+              "id": "module:src/loop/tick.ts",
+              "confidence": "observed"
+            }
+          ]
+        },
+        "contentHash": "96c1192d37304224b10fe41555e43bbaf8b4c385ffa9630349e1d0da34058e54",
+        "provenance": "observed",
+        "confidence": "observed"
+      },
+      {
         "id": "document:docs/GETTING-STARTED.md",
         "kind": "document",
         "path": "docs/GETTING-STARTED.md",
@@ -13634,7 +13877,7 @@
         ],
         "fields": {
           "title": "Keep-pushing loop (ak-harness loop)",
-          "headings": "Keep-pushing loop (ak-harness loop) Commands Debrief and watch The observe stage — the scan that knows what it already said Running 24/7 with Orca Worker handoff Deliver GitHub label intake: reviewing PRs the loop never dispatched Event bus and orchestration hooks Calling a human: notifications Presets and loop init What the orchestrator reads Configuration in four layers Flow profiles: one motor, several kinds of demand loop plan — a vague objective becomes issues The plan and its votes (worker.plan) intake and maintain — where work comes from when nobody typed it Cost: policy, ceilings, and the levers that are real Connectors: the engine names no vendor release — promotion and deploy, with a human in front Definition of Done: two lists, both proven The roles are agents, and they can be improved The loop improving itself, within limits One tick Resilience: auto-pause after repeated failures PII/secret scanning Cost/time circuit breakers Dynamic outcome progress Skills pinned into the worker brief Worktree setup command What the doctor checks Dynamic model routing Model routing Reasoning effort per role Machine slots Integrations used by the loop Doc Bridge (context for the orchestrator) Code Review (agentskit-review) Eval battery (package quality, not the live loop) AgentsKit ecosystem map (what the harness has vs what the loop uses) What can be added to help the SDLC Boundaries Security notes Continuous improvement: loop retro",
+          "headings": "Keep-pushing loop (ak-harness loop) Commands Debrief and watch The observe stage — the scan that knows what it already said Running 24/7 with Orca Worker handoff Deliver GitHub label intake: reviewing PRs the loop never dispatched Event bus and orchestration hooks Calling a human: notifications Presets and loop init What the orchestrator reads Configuration in four layers Flow profiles: one motor, several kinds of demand loop plan — a vague objective becomes issues The plan and its votes (worker.plan) intake and maintain — where work comes from when nobody typed it Cost: policy, ceilings, and the levers that are real Connectors: the engine names no vendor release — promotion and deploy, with a human in front Definition of Done: two lists, both proven Runs: how an issue was built (ADR-0041) Rendered specs (spec.enabled) The roles are agents, and they can be improved The loop improving itself, within limits One tick Resilience: auto-pause after repeated failures PII/secret scanning Cost/time circuit breakers Dynamic outcome progress Skills pinned into the worker brief Worktree setup command What the doctor checks Dynamic model routing Model routing Reasoning effort per role Machine slots Integrations used by the loop Doc Bridge (context for the orchestrator) Code Review (agentskit-review) Eval battery (package quality, not the live loop) AgentsKit ecosystem map (what the harness has vs what the loop uses) What can be added to help the SDLC Boundaries Security notes Continuous improvement: loop retro",
           "path": "docs/LOOP.md",
           "symbols": "",
           "summary": "The loop drains one person's Linear queue through Orca worktrees, 24/7, with role-based model routing and usage-aware fallback. The harness supplies the deterministic parts (claims, machine pressure, gates, evidence); Orca supplies scheduling, worktrees, terminals, Linear access and visibility.",
@@ -13704,6 +13947,11 @@
             {
               "kind": "mentions",
               "id": "document:compatibility/report.md",
+              "confidence": "observed"
+            },
+            {
+              "kind": "mentions",
+              "id": "document:design.md",
               "confidence": "observed"
             },
             {
@@ -13878,7 +14126,7 @@
             }
           ]
         },
-        "contentHash": "71519fe7826066e491c4fbd060fe55a6ba73e589d2800d7402b13f7a672bc634",
+        "contentHash": "4c66e10f66838427dbbf06aaaa8ac46f9ffd5dca98c0ffb6db74491cc3b05407",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -14643,7 +14891,7 @@
         "id": "document:release/notes.md",
         "kind": "document",
         "path": "release/notes.md",
-        "title": "0.21.0 release candidate",
+        "title": "0.22.1 release candidate",
         "summary": "The control plane (ak-harness ui) becomes the operator's single place to see what needs them and act on it safely, plus the loop fixes found running it against a real repository since 0.19.0. CHANGELOG.md has the full list; docs/ADR-0040 records the decisions.",
         "aliases": [],
         "tags": [
@@ -14651,12 +14899,12 @@
           "unclassified"
         ],
         "fields": {
-          "title": "0.21.0 release candidate",
-          "headings": "0.21.0 release candidate",
+          "title": "0.22.1 release candidate",
+          "headings": "0.22.1 release candidate",
           "path": "release/notes.md",
           "symbols": "",
           "summary": "The control plane (ak-harness ui) becomes the operator's single place to see what needs them and act on it safely, plus the loop fixes found running it against a real repository since 0.19.0. CHANGELOG.md has the full list; docs/ADR-0040 records the decisions.",
-          "body": "0.21.0 release candidate The control plane ( ak-harness ui ) becomes the operator's single place to see what needs them and act on it safely, plus the loop fixes found running it against a real repository since 0.19.0. CHANGELOG.md has the full list; docs/ADR-0040 records the decisions. Attention first. The home page is a queue of what needs a person — decisions, stuck or failed runs, state out of sync, system problems — each with its reason and next action. Empty means nothing does. Reconciled, then locked. Every refresh compares the loop with the tracker and Orca, including issues the board does not list. Drift is shown and reconciled explicitly; destructive actions refuse (409) while their issue is out of sync or its data is stale. On a real loop, 24 \"blocked\" issues were 4 once cancelled work was recognised. Every operator action, same kernel. Held-PR approval (pinned to the head), plan, design and release approval, learnings, stage pause and resume, tick/deliver/doctor, automation reinstall and batch enqueue call the functions the CLI calls. There is no deploy from the UI. Insights and configuration. Trends, Costs (tokens and plan usage, no dollar figures) and Explore read at most 30 days of events. Settings shows each value's layer, writes only the personal overlay, returns team changes as a diff, and records every run queued under a weakened gate. Loop. A worktree kept for inspection no longer blocks its issue forever ( 112); scheduled stages run the harness that installed them and a crashed precheck is reported ( 114). Behaviour change. The UI no longer installs Orca automations when it starts; missing or drifted automations appear as system items and reinstall on request. 0.21.0. Runs shows fix rounds used and real time in phase; the home event stream reads the loop's event log ( GET /api/v1/events/recent ); New batch shows which issues already have a fresh contract ( GET /api/v1/contracts ); tracker titles and states survive a UI restart. The blockers in release/manifest.json ( ecosystem-compatibility , pilot-benchmark ) are unchanged.",
+          "body": "0.22.1 release candidate The control plane ( ak-harness ui ) becomes the operator's single place to see what needs them and act on it safely, plus the loop fixes found running it against a real repository since 0.19.0. CHANGELOG.md has the full list; docs/ADR-0040 records the decisions. Attention first. The home page is a queue of what needs a person — decisions, stuck or failed runs, state out of sync, system problems — each with its reason and next action. Empty means nothing does. Reconciled, then locked. Every refresh compares the loop with the tracker and Orca, including issues the board does not list. Drift is shown and reconciled explicitly; destructive actions refuse (409) while their issue is out of sync or its data is stale. On a real loop, 24 \"blocked\" issues were 4 once cancelled work was recognised. Every operator action, same kernel. Held-PR approval (pinned to the head), plan, design and release approval, learnings, stage pause and resume, tick/deliver/doctor, automation reinstall and batch enqueue call the functions the CLI calls. There is no deploy from the UI. Insights and configuration. Trends, Costs (tokens and plan usage, no dollar figures) and Explore read at most 30 days of events. Settings shows each value's layer, writes only the personal overlay, returns team changes as a diff, and records every run queued under a weakened gate. Loop. A worktree kept for inspection no longer blocks its issue forever ( 112); scheduled stages run the harness that installed them and a crashed precheck is reported ( 114). Behaviour change. The UI no longer installs Orca automations when it starts; missing or drifted automations appear as system items and reinstall on request. 0.21.0. Runs shows fix rounds used and real time in phase; the home event stream reads the loop's event log ( GET /api/v1/events/recent ); New batch shows which issues already have a fresh contract ( GET /api/v1/contracts ); tracker titles and states survive a UI restart. 0.22.0. Every issue gets a run under <stateDir /runs/<issue -<n / — projected state, redacted inputs and outputs, machine-written handoffs and evidence by hash — reconstructable with ak-harness loop run show (ADR-0041). spec.enabled renders specs/<issue / (requirements, design, tasks) from the frozen contract and plan and holds a PR whose copy drifted; runs.prSummary keeps one edited comment with the run on the PR. ScmConnector gains upsertComment . 0.22.1. Fixes for failures that were silent. The control plane no longer keeps a tracker rate-limited (it backed off nothing and re-fetched every closed issue forever); the loop gets a tracker cooldown instead of a permanent stage pause. ak-verify run exits non-zero on a blocked run; git errors, missing review results, a verify run outside the PR worktree and failing plugins now fail closed. One transient error no longer ends a delivery for good, and an Orca outage is not a dead worker. The blockers in release/manifest.json ( ecosystem-compatibility , pilot-benchmark ) are unchanged.",
           "aliases": "document unclassified"
         },
         "graph": {
@@ -14683,10 +14931,15 @@
               "kind": "mentions",
               "id": "document:CHANGELOG.md",
               "confidence": "observed"
+            },
+            {
+              "kind": "mentions-symbol",
+              "id": "module:src/loop/connectors.ts",
+              "confidence": "observed"
             }
           ]
         },
-        "contentHash": "8313116e4c10739632b6700d531698a2c9e94171d1cafe671109c59d93a64bde",
+        "contentHash": "47761afc98768820feb18a0ef9759550cbef3fb59ff8f4a61b5d1005bc093e49",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -17117,7 +17370,7 @@
             }
           ]
         },
-        "contentHash": "9107ba696e3cb2bed87d9e7b6f6255d64a567efb116ea68d246da3458763e993",
+        "contentHash": "b9e02e6a7dea75b02b549bc40c360a8d60de09de45e9b845a79cd48a4297d6a6",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -17305,6 +17558,11 @@
             {
               "kind": "imports",
               "id": "module:src/loop/runner-connector.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
+              "id": "module:src/loop/spec.ts",
               "confidence": "observed"
             },
             {
@@ -17546,6 +17804,7 @@
           "githubCommentExists",
           "githubCompare",
           "githubCurrentUser",
+          "githubEnsureLabels",
           "githubIssue",
           "githubIssueClose",
           "githubIssueComment",
@@ -17565,6 +17824,7 @@
           "githubPullRequest",
           "githubPullRequestsForBranch",
           "githubPullRequestsForIssue",
+          "githubUpsertComment",
           "parseGitHubIssue",
           "parseGitHubIssueDetail",
           "parsePullRequest",
@@ -17579,7 +17839,7 @@
           "title": "github-cli.ts",
           "headings": "",
           "path": "src/adapters/github-cli.ts",
-          "symbols": "CheckOutcome ChecksAssessment DiffStat GitHubCliOptions GitHubIssueComment GitHubIssueDetail GitHubIssueSnapshot ISSUE_DETAIL_FIELDS ISSUE_FIELDS PR_FIELDS PullRequestCheck PullRequestSnapshot assessChecks githubComment githubCommentArgv githubCommentExists githubCompare githubCurrentUser githubIssue githubIssueClose githubIssueComment githubIssueCommentArgv githubIssueCommentExists githubIssueCreate githubIssueEdit githubIssueEditArgv githubIssueNumber githubIssueReopen githubLabelRemove githubMerge githubMergeArgv githubOpenIssues githubOpenPullRequests githubPreflight githubPullRequest githubPullRequestsForBranch githubPullRequestsForIssue parseGitHubIssue parseGitHubIssueDetail parsePullRequest touchesProtectedPaths",
+          "symbols": "CheckOutcome ChecksAssessment DiffStat GitHubCliOptions GitHubIssueComment GitHubIssueDetail GitHubIssueSnapshot ISSUE_DETAIL_FIELDS ISSUE_FIELDS PR_FIELDS PullRequestCheck PullRequestSnapshot assessChecks githubComment githubCommentArgv githubCommentExists githubCompare githubCurrentUser githubEnsureLabels githubIssue githubIssueClose githubIssueComment githubIssueCommentArgv githubIssueCommentExists githubIssueCreate githubIssueEdit githubIssueEditArgv githubIssueNumber githubIssueReopen githubLabelRemove githubMerge githubMergeArgv githubOpenIssues githubOpenPullRequests githubPreflight githubPullRequest githubPullRequestsForBranch githubPullRequestsForIssue githubUpsertComment parseGitHubIssue parseGitHubIssueDetail parsePullRequest touchesProtectedPaths",
           "summary": "",
           "body": "",
           "aliases": "module ts adapters"
@@ -17688,7 +17948,7 @@
             }
           ]
         },
-        "contentHash": "46a4b21344ba2c0815a83270c4f537a68b45b8321579a6f88ccd9a6433929387",
+        "contentHash": "929d51a8a995a801baec9337503f2ad38ebc6512efa0ed5d9804a039dc87aace",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -18286,6 +18546,11 @@
             },
             {
               "kind": "imports",
+              "id": "module:src/loop/tracker-cooldown.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
               "id": "module:src/ui/api/routes-actions.ts",
               "confidence": "observed"
             },
@@ -18544,6 +18809,11 @@
           "packageId": "package:@agentskit/harness",
           "inbound": [
             {
+              "kind": "imports",
+              "id": "module:test/cli-exit-codes.test.ts",
+              "confidence": "observed"
+            },
+            {
               "kind": "mentions",
               "id": "document:AGENTS.md",
               "confidence": "observed"
@@ -18607,7 +18877,7 @@
             }
           ]
         },
-        "contentHash": "b39d46cd7877bc43b8324fc91d0c401ed68ec34155b20269ccce4d018db213f4",
+        "contentHash": "38dafd70017fdc198c4942465f6e6527caab984ed63197300a270adf42004698",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -19964,7 +20234,7 @@
             }
           ]
         },
-        "contentHash": "d742dc4146644a2c7b6c77346fe0babd82309351715a3df1de41d40d54257386",
+        "contentHash": "4917025d2cd90bd194ab490920756b87de00fec9965a53c67f799a28a92e4b14",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -20143,6 +20413,12 @@
           "AgentRegistryEntry",
           "AgentRegistryEntrySchema",
           "AgentRegistrySchema",
+          "AgentRunEvidence",
+          "AgentRunIoEntry",
+          "AgentRunReport",
+          "AgentRunStage",
+          "AgentRunState",
+          "AgentRunStatus",
           "AgentUsage",
           "Alert",
           "AlertSchema",
@@ -20371,13 +20647,7 @@
           "LOOP_PRESETS",
           "LOOP_ROLES",
           "LOOP_STAGES",
-          "Layer",
-          "LearningRecord",
-          "LearningStatus",
-          "LearningsLedger",
-          "LifecycleEvent",
-          "LifecyclePhase",
-          "LifecyclePullRequest"
+          "Layer"
         ],
         "tags": [
           "module",
@@ -20388,7 +20658,7 @@
           "title": "index.ts",
           "headings": "",
           "path": "src/index.ts",
-          "symbols": "AGENT_REGISTRY_SCHEMA_VERSION ARTIFACT_DIR ARTIFACT_SCHEMA_VERSION ARTIFACT_TYPES ASSURANCE_LEVELS ActionContext AdapterMetadata AdapterTelemetry AdversarialReviewResult AgentEvalCase AgentEvalReport AgentEvalSuite AgentMemoryAdapter AgentMemoryHit AgentMemoryKvStore AgentMemoryRecord AgentProposal AgentRegistry AgentRegistryEntry AgentRegistryEntrySchema AgentRegistrySchema AgentUsage Alert AlertSchema AnswerDecisionInput AnswerDecisionResult ArgvRagContextProviderOptions ArtifactBinding ArtifactEnvelope ArtifactEnvelopeInput ArtifactType ArtificialAnalysisModel AssuranceLevel AutomationDriftRow AutomationFields AutomationSpec AutomationStatus BENCHMARK_SCHEMA_VERSION BLOCK_STATUSES BRIEF_POINTER_PROMPT BaseView BlockAssessment BlockManifest BlockStatus BoardIssue BoardLane BoardProvider BoardReadResult BoardSnapshot BoardStatus BoundaryVerdict BudgetVerdict CAPABILITY_KINDS CAPABILITY_MANIFEST_SCHEMA_VERSION COMPATIBILITY_COMPONENTS COMPATIBILITY_SCHEMA_VERSION CONTEXT_PROVIDER_SLOT CONTRACT_CLOSE CONTRACT_JSON_SCHEMA CONTRACT_OPEN CONTRACT_SCHEMA_VERSION CRITICAL_ROLES CacheUsage CapabilityDescriptor CapabilityKind CapabilityManifest CapabilityManifestInput CastVote CatalogModel ChangedFile CheckOutcome CheckoutState ChecksAssessment ClaimResult CodeReviewInput CodeReviewOutcome CodingAgentAdapter CodingAgentHandlerResult CodingAgentRequest CodingAgentResult CommandResult CommandRunOptions CommandRunner CompatibilityComponent CompatibilityComponentId CompatibilityManifest CompatibilityObservation CompatibilityReport CompatibilityStatus ConnectorInput ContractAssessment ContractOutcomeSchema ContractResult CooldownEntry CooldownState CoordinationIdentity DEFAULT_CONFIG_PATH DESIGN_CLOSE DESIGN_OPEN DebriefInput DebriefIssueRow DebriefReport Decision DecisionOption DeliverInput DeliverOutcome DeliverReport DeliverResult DeliveryState Design DesignSchema DetectProvidersInput DiffStat DispatchLease DispatchLedger DispatchRecord DispatchRecordFile DispatchRef DocBridgeIndexInspection DoctorCheck DoctorCheckStatus DodAssessment DodEvidenceFile DodItem DodLine DodProof EVAL_COMPONENTS EVAL_LAYERS EVAL_MANIFEST_SCHEMA_VERSION EVENT_LOG_GENESIS EVIDENCE_BUNDLE_SCHEMA_VERSION EffectiveFlowSettings EffectiveReviewSettings EffortLevel EnqueueIssueRunInput EnqueueRunInput EvalBatteryReport EvalCaseDefinition EvalCaseReport EvalComponent EvalExpectation EvalGate EvalLayer EvalManifest EvalObservation EvalObservationStatus ExecutePhaseProfileOptions FailureClass FailureClassification FetchQueueInput FileArtifactStore FileEventStore FilePreflightPlan FiledRecord FlowIssue FlowProfile FlowSource GLOBAL_CONFIG_FILE GateAssessment GateBinding GateCriterion GenerateContractInput GitHubCliOptions GitHubIssueComment GitHubIssueDetail GitHubIssueSnapshot GuidedInstallIO GuidedInstallInput GuidedInstallReport HARNESS_ERROR_CATALOG HARNESS_ERROR_CODES HARNESS_EVENT_ENVELOPE_SCHEMA_VERSION HARNESS_EVENT_SCHEMA_VERSION HARNESS_EVENT_TYPES HARNESS_PLUGIN_API_VERSION HARNESS_REPO_URL HITL_ANCHOR_ID HITL_ANCHOR_TITLE HITL_FREE_TEXT_MAX HITL_SCHEMA_VERSION HandoffBriefInput HarnessError HarnessErrorClassification HarnessErrorDisposition HarnessEventEnvelope HarnessEventEnvelopeInput HarnessEventProvenance HitlAnswer HitlOption HitlRequest HitlRequestInput HitlRole HitlStatus HitlStore IMPROVEMENT_CYCLE_STEPS ISSUES_CLOSE ISSUES_OPEN ISSUE_DETAIL_FIELDS ISSUE_FIELDS ISSUE_LIFECYCLE_SCHEMA_VERSION ISSUE_QUEUE_SCHEMA_VERSION ImprovementOutcome ImprovementRecord ImprovementState InitAnswers InitInput InitQuestion InitResult InstallAction InstallInput InstallReport IntakeRecord IntakeReport IntakeResult IntakeState InterviewQuestion IssueBoardCache IssueBoardCacheOptions IssueBoardReader IssueDecision IssueFailureRecord IssueFailureState IssueLifecycle IssuePhase IssueQueue IssueQueueOptions IssueQueueProjection IssueRecord IssueRun IssueRunConfigSnapshot IssueRunContractSnapshot IssueRunPatch IssueRunPreflightSnapshot IssueRunProjection IssueRunStatus IssueSpend IssueTimelineProblem IssueTimelineReport LEARNING_STATUSES LEGACY_CONFIG_PATH LEGAL_TRANSITIONS LOOP_AUTO_ACTOR LOOP_CONFIG_FILE LOOP_CONFIG_SCHEMA_VERSION LOOP_EVENT_TYPES LOOP_LOCAL_CONFIG_FILE LOOP_PRESETS LOOP_ROLES LOOP_STAGES Layer LearningRecord LearningStatus LearningsLedger LifecycleEvent LifecyclePhase LifecyclePullRequest",
+          "symbols": "AGENT_REGISTRY_SCHEMA_VERSION ARTIFACT_DIR ARTIFACT_SCHEMA_VERSION ARTIFACT_TYPES ASSURANCE_LEVELS ActionContext AdapterMetadata AdapterTelemetry AdversarialReviewResult AgentEvalCase AgentEvalReport AgentEvalSuite AgentMemoryAdapter AgentMemoryHit AgentMemoryKvStore AgentMemoryRecord AgentProposal AgentRegistry AgentRegistryEntry AgentRegistryEntrySchema AgentRegistrySchema AgentRunEvidence AgentRunIoEntry AgentRunReport AgentRunStage AgentRunState AgentRunStatus AgentUsage Alert AlertSchema AnswerDecisionInput AnswerDecisionResult ArgvRagContextProviderOptions ArtifactBinding ArtifactEnvelope ArtifactEnvelopeInput ArtifactType ArtificialAnalysisModel AssuranceLevel AutomationDriftRow AutomationFields AutomationSpec AutomationStatus BENCHMARK_SCHEMA_VERSION BLOCK_STATUSES BRIEF_POINTER_PROMPT BaseView BlockAssessment BlockManifest BlockStatus BoardIssue BoardLane BoardProvider BoardReadResult BoardSnapshot BoardStatus BoundaryVerdict BudgetVerdict CAPABILITY_KINDS CAPABILITY_MANIFEST_SCHEMA_VERSION COMPATIBILITY_COMPONENTS COMPATIBILITY_SCHEMA_VERSION CONTEXT_PROVIDER_SLOT CONTRACT_CLOSE CONTRACT_JSON_SCHEMA CONTRACT_OPEN CONTRACT_SCHEMA_VERSION CRITICAL_ROLES CacheUsage CapabilityDescriptor CapabilityKind CapabilityManifest CapabilityManifestInput CastVote CatalogModel ChangedFile CheckOutcome CheckoutState ChecksAssessment ClaimResult CodeReviewInput CodeReviewOutcome CodingAgentAdapter CodingAgentHandlerResult CodingAgentRequest CodingAgentResult CommandResult CommandRunOptions CommandRunner CompatibilityComponent CompatibilityComponentId CompatibilityManifest CompatibilityObservation CompatibilityReport CompatibilityStatus ConnectorInput ContractAssessment ContractOutcomeSchema ContractResult CooldownEntry CooldownState CoordinationIdentity DEFAULT_CONFIG_PATH DESIGN_CLOSE DESIGN_OPEN DebriefInput DebriefIssueRow DebriefReport Decision DecisionOption DeliverInput DeliverOutcome DeliverReport DeliverResult DeliveryState Design DesignSchema DetectProvidersInput DiffStat DispatchLease DispatchLedger DispatchRecord DispatchRecordFile DispatchRef DocBridgeIndexInspection DoctorCheck DoctorCheckStatus DodAssessment DodEvidenceFile DodItem DodLine DodProof EVAL_COMPONENTS EVAL_LAYERS EVAL_MANIFEST_SCHEMA_VERSION EVENT_LOG_GENESIS EVIDENCE_BUNDLE_SCHEMA_VERSION EffectiveFlowSettings EffectiveReviewSettings EffortLevel EnqueueIssueRunInput EnqueueRunInput EvalBatteryReport EvalCaseDefinition EvalCaseReport EvalComponent EvalExpectation EvalGate EvalLayer EvalManifest EvalObservation EvalObservationStatus ExecutePhaseProfileOptions FailureClass FailureClassification FetchQueueInput FileArtifactStore FileEventStore FilePreflightPlan FiledRecord FlowIssue FlowProfile FlowSource GLOBAL_CONFIG_FILE GateAssessment GateBinding GateCriterion GenerateContractInput GitHubCliOptions GitHubIssueComment GitHubIssueDetail GitHubIssueSnapshot GuidedInstallIO GuidedInstallInput GuidedInstallReport HARNESS_ERROR_CATALOG HARNESS_ERROR_CODES HARNESS_EVENT_ENVELOPE_SCHEMA_VERSION HARNESS_EVENT_SCHEMA_VERSION HARNESS_EVENT_TYPES HARNESS_PLUGIN_API_VERSION HARNESS_REPO_URL HITL_ANCHOR_ID HITL_ANCHOR_TITLE HITL_FREE_TEXT_MAX HITL_SCHEMA_VERSION HandoffBriefInput HarnessError HarnessErrorClassification HarnessErrorDisposition HarnessEventEnvelope HarnessEventEnvelopeInput HarnessEventProvenance HitlAnswer HitlOption HitlRequest HitlRequestInput HitlRole HitlStatus HitlStore IMPROVEMENT_CYCLE_STEPS ISSUES_CLOSE ISSUES_OPEN ISSUE_DETAIL_FIELDS ISSUE_FIELDS ISSUE_LIFECYCLE_SCHEMA_VERSION ISSUE_QUEUE_SCHEMA_VERSION ImprovementOutcome ImprovementRecord ImprovementState InitAnswers InitInput InitQuestion InitResult InstallAction InstallInput InstallReport IntakeRecord IntakeReport IntakeResult IntakeState InterviewQuestion IssueBoardCache IssueBoardCacheOptions IssueBoardReader IssueDecision IssueFailureRecord IssueFailureState IssueLifecycle IssuePhase IssueQueue IssueQueueOptions IssueQueueProjection IssueRecord IssueRun IssueRunConfigSnapshot IssueRunContractSnapshot IssueRunPatch IssueRunPreflightSnapshot IssueRunProjection IssueRunStatus IssueSpend IssueTimelineProblem IssueTimelineReport LEARNING_STATUSES LEGACY_CONFIG_PATH LEGAL_TRANSITIONS LOOP_AUTO_ACTOR LOOP_CONFIG_FILE LOOP_CONFIG_SCHEMA_VERSION LOOP_EVENT_TYPES LOOP_LOCAL_CONFIG_FILE LOOP_PRESETS LOOP_ROLES LOOP_STAGES Layer",
           "summary": "",
           "body": "",
           "aliases": "module ts src"
@@ -20478,6 +20748,11 @@
             {
               "kind": "imports",
               "id": "module:test/bundle.test.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
+              "id": "module:test/cli-exit-codes.test.ts",
               "confidence": "observed"
             },
             {
@@ -20713,11 +20988,6 @@
             {
               "kind": "imports",
               "id": "module:test/loop-adapters.test.ts",
-              "confidence": "observed"
-            },
-            {
-              "kind": "imports",
-              "id": "module:test/loop-agent-improvement.test.ts",
               "confidence": "observed"
             }
           ],
@@ -21004,6 +21274,11 @@
             },
             {
               "kind": "re-exports",
+              "id": "module:src/loop/agent-runs.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "re-exports",
               "id": "module:src/loop/artifacts.ts",
               "confidence": "observed"
             },
@@ -21036,15 +21311,10 @@
               "kind": "re-exports",
               "id": "module:src/loop/connectors.ts",
               "confidence": "observed"
-            },
-            {
-              "kind": "re-exports",
-              "id": "module:src/loop/contract.ts",
-              "confidence": "observed"
             }
           ]
         },
-        "contentHash": "012a53f90f08297b92bd9d7ef7e8dd89b116af027bb98840f89d92443f85155e",
+        "contentHash": "1a16f25e3e858196c2b0680847d2fa1a988889cd971aac4c69910e0a7987a5d3",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -22610,12 +22880,22 @@
             },
             {
               "kind": "imports",
+              "id": "module:src/loop/agent-runs.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
               "id": "module:src/loop/config.ts",
               "confidence": "observed"
             },
             {
               "kind": "imports",
               "id": "module:src/loop/contract.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
+              "id": "module:src/loop/deliver.ts",
               "confidence": "observed"
             },
             {
@@ -22641,6 +22921,11 @@
             {
               "kind": "imports",
               "id": "module:src/loop/retro.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
+              "id": "module:src/loop/spec.ts",
               "confidence": "observed"
             },
             {
@@ -22713,6 +22998,11 @@
             },
             {
               "kind": "imports",
+              "id": "module:src/loop/agent-runs.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
               "id": "module:src/loop/contract.ts",
               "confidence": "observed"
             },
@@ -22769,6 +23059,11 @@
             {
               "kind": "imports",
               "id": "module:src/loop/stage-lock.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
+              "id": "module:src/loop/tracker-cooldown.ts",
               "confidence": "observed"
             },
             {
@@ -23284,15 +23579,21 @@
         },
         "graph": {
           "pagerank": 0,
-          "inboundLinks": 2,
+          "inboundLinks": 3,
           "coveredBy": [],
           "mentionedBy": [
             "document:docs/LOOP.md",
-            "document:docs/MODULE-BOUNDARIES.md"
+            "document:docs/MODULE-BOUNDARIES.md",
+            "document:docs/ADR-0041-agent-runs-and-rendered-specs.md"
           ],
           "areaId": "area:src/kernel",
           "packageId": "package:@agentskit/harness",
           "inbound": [
+            {
+              "kind": "imports",
+              "id": "module:src/loop/agent-runs.ts",
+              "confidence": "observed"
+            },
             {
               "kind": "imports",
               "id": "module:src/loop/brief.ts",
@@ -23314,6 +23615,11 @@
               "confidence": "observed"
             },
             {
+              "kind": "mentions-symbol",
+              "id": "document:docs/ADR-0041-agent-runs-and-rendered-specs.md",
+              "confidence": "observed"
+            },
+            {
               "kind": "re-exports",
               "id": "module:src/index.ts",
               "confidence": "observed"
@@ -23321,7 +23627,7 @@
           ],
           "outbound": []
         },
-        "contentHash": "2505fd217fdbd31b18ca5b75f2d6bf204fa9de4c9710311a0af6ba00503df3a8",
+        "contentHash": "bca5001e5fbadd14b126dd6dc5ac49be862c4bf94bc464014fe9ac598aae156f",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -23819,7 +24125,7 @@
             }
           ]
         },
-        "contentHash": "5b069911b3eb40b1f796c9107ea1cac7777460e6af3a665c2d7825b96bfa7ea7",
+        "contentHash": "9c067625601376b44855aa3b07ce02bb9fef7d6a6d711ed770ec63efda61b746",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -24454,6 +24760,138 @@
         "confidence": "observed"
       },
       {
+        "id": "module:src/loop/agent-runs.ts",
+        "kind": "module",
+        "path": "src/loop/agent-runs.ts",
+        "title": "agent-runs.ts",
+        "aliases": [],
+        "symbols": [
+          "AGENT_RUN_SCHEMA_VERSION",
+          "AgentRunEvidence",
+          "AgentRunIoEntry",
+          "AgentRunReport",
+          "AgentRunStage",
+          "AgentRunState",
+          "AgentRunStatus",
+          "DEFAULT_RUN_IO_MAX_BYTES",
+          "RUNS_DIR",
+          "RunIoInput",
+          "classifyRunEvent",
+          "latestIssueRun",
+          "listAgentRuns",
+          "listIssueRuns",
+          "markRunSummaryPosted",
+          "pruneAgentRuns",
+          "readAgentRun",
+          "readAgentRunReport",
+          "recordRunEvent",
+          "recordRunEvidence",
+          "recordRunIo",
+          "renderAgentRunMarkdown",
+          "renderRunSummaryMarkdown",
+          "resolveAgentRun",
+          "runDirFor",
+          "runSummaryMarker",
+          "runsRoot"
+        ],
+        "tags": [
+          "module",
+          "ts",
+          "loop"
+        ],
+        "fields": {
+          "title": "agent-runs.ts",
+          "headings": "",
+          "path": "src/loop/agent-runs.ts",
+          "symbols": "AGENT_RUN_SCHEMA_VERSION AgentRunEvidence AgentRunIoEntry AgentRunReport AgentRunStage AgentRunState AgentRunStatus DEFAULT_RUN_IO_MAX_BYTES RUNS_DIR RunIoInput classifyRunEvent latestIssueRun listAgentRuns listIssueRuns markRunSummaryPosted pruneAgentRuns readAgentRun readAgentRunReport recordRunEvent recordRunEvidence recordRunIo renderAgentRunMarkdown renderRunSummaryMarkdown resolveAgentRun runDirFor runSummaryMarker runsRoot",
+          "summary": "",
+          "body": "",
+          "aliases": "module ts loop"
+        },
+        "graph": {
+          "pagerank": 0,
+          "inboundLinks": 1,
+          "coveredBy": [],
+          "mentionedBy": [
+            "document:docs/ADR-0041-agent-runs-and-rendered-specs.md"
+          ],
+          "areaId": "area:src/loop",
+          "packageId": "package:@agentskit/harness",
+          "inbound": [
+            {
+              "kind": "imports",
+              "id": "module:src/loop/deliver.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
+              "id": "module:src/loop/tick.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
+              "id": "module:test/loop-agent-runs.test.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
+              "id": "module:test/loop-deliver.test.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "mentions-symbol",
+              "id": "document:docs/ADR-0041-agent-runs-and-rendered-specs.md",
+              "confidence": "observed"
+            },
+            {
+              "kind": "re-exports",
+              "id": "module:src/index.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "re-exports",
+              "id": "module:src/loop/index.ts",
+              "confidence": "observed"
+            }
+          ],
+          "outbound": [
+            {
+              "kind": "imports",
+              "id": "module:src/kernel/hash.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
+              "id": "module:src/kernel/json-file.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
+              "id": "module:src/kernel/pii.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
+              "id": "module:src/loop/contract.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
+              "id": "module:src/loop/fs-atomic.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
+              "id": "module:src/loop/plan-vote.ts",
+              "confidence": "observed"
+            }
+          ]
+        },
+        "contentHash": "da958972f4c77ede76494a8d0e6335103170778cde617d9e9f34ae1beea9a11f",
+        "provenance": "observed",
+        "confidence": "observed"
+      },
+      {
         "id": "module:src/loop/artifacts.ts",
         "kind": "module",
         "path": "src/loop/artifacts.ts",
@@ -24627,6 +25065,11 @@
             },
             {
               "kind": "imports",
+              "id": "module:test/ui-api-server.test.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
               "id": "module:test/ui-system.test.ts",
               "confidence": "observed"
             },
@@ -24735,7 +25178,7 @@
             }
           ]
         },
-        "contentHash": "ce3666ddb1e1a511896f71b571c83b6a48966a0c0a403eadd5eaa1fc7ab044d2",
+        "contentHash": "8edd4c1a58e0f00cac23df66dc728b87127e263bcd7eea31e7f635850fe4decb",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -24865,12 +25308,17 @@
             },
             {
               "kind": "imports",
+              "id": "module:src/loop/spec.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
               "id": "module:src/loop/tracker.ts",
               "confidence": "observed"
             }
           ]
         },
-        "contentHash": "431c875ec5b2de5d12704a209d5d3eaeb0dfe5050e81f212624294ae04b03e49",
+        "contentHash": "d4bafff1b5c645d4951f6c4f389de2ef2dc3e05bdceade0dd1bf3018387774f3",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -25046,12 +25494,9 @@
         },
         "graph": {
           "pagerank": 0,
-          "inboundLinks": 2,
+          "inboundLinks": 0,
           "coveredBy": [],
-          "mentionedBy": [
-            "document:apps/docs/content/docs/reference/configuration.mdx",
-            "document:docs/MODULE-BOUNDARIES.md"
-          ],
+          "mentionedBy": [],
           "areaId": "area:src/loop",
           "packageId": "package:@agentskit/harness",
           "inbound": [
@@ -25227,6 +25672,11 @@
             },
             {
               "kind": "imports",
+              "id": "module:src/loop/spec.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
               "id": "module:src/loop/tick.ts",
               "confidence": "observed"
             },
@@ -25362,17 +25812,12 @@
             },
             {
               "kind": "imports",
+              "id": "module:test/ui-sse.test.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
               "id": "module:test/ui-system.test.ts",
-              "confidence": "observed"
-            },
-            {
-              "kind": "mentions",
-              "id": "document:apps/docs/content/docs/reference/configuration.mdx",
-              "confidence": "observed"
-            },
-            {
-              "kind": "mentions",
-              "id": "document:docs/MODULE-BOUNDARIES.md",
               "confidence": "observed"
             }
           ],
@@ -25399,7 +25844,7 @@
             }
           ]
         },
-        "contentHash": "2c9cad4aa2a1f8d31395bc3e38f03fec404b3a6cea13601d5bf06005d13bd841",
+        "contentHash": "c0842aea120ee55df31a1aea1421ffa12734098721434df77a03daa27a92cb6a",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -25435,7 +25880,7 @@
         },
         "graph": {
           "pagerank": 0,
-          "inboundLinks": 7,
+          "inboundLinks": 8,
           "coveredBy": [],
           "mentionedBy": [
             "document:apps/docs/content/docs/concepts/connectors.mdx",
@@ -25444,7 +25889,8 @@
             "document:CHANGELOG.md",
             "document:docs/ADR-0034-connectors-tracker-scm-runner.md",
             "document:docs/LOOP.md",
-            "document:HOME-BRIEF.md"
+            "document:HOME-BRIEF.md",
+            "document:release/notes.md"
           ],
           "areaId": "area:src/loop",
           "packageId": "package:@agentskit/harness",
@@ -25477,6 +25923,11 @@
             {
               "kind": "imports",
               "id": "module:src/loop/tick.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
+              "id": "module:src/loop/tracker-cooldown.ts",
               "confidence": "observed"
             },
             {
@@ -25530,6 +25981,11 @@
               "confidence": "observed"
             },
             {
+              "kind": "mentions-symbol",
+              "id": "document:release/notes.md",
+              "confidence": "observed"
+            },
+            {
               "kind": "re-exports",
               "id": "module:src/index.ts",
               "confidence": "observed"
@@ -25578,7 +26034,7 @@
             }
           ]
         },
-        "contentHash": "bf3b57bb38dd1a6c1119d48a6305e94b168b7315426acf461a6f0a3cf9ece421",
+        "contentHash": "1b937fafb871fb2b9b9633e19f933541d9e075741965260442a9e46321b83615",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -25596,6 +26052,7 @@
           "ContractAssessment",
           "ContractOutcomeSchema",
           "GenerateContractInput",
+          "ProviderCallIo",
           "ProviderFailure",
           "StoredContract",
           "TaskContract",
@@ -25623,7 +26080,7 @@
           "title": "contract.ts",
           "headings": "",
           "path": "src/loop/contract.ts",
-          "symbols": "CONTRACT_CLOSE CONTRACT_JSON_SCHEMA CONTRACT_OPEN CONTRACT_SCHEMA_VERSION ContractAssessment ContractOutcomeSchema GenerateContractInput ProviderFailure StoredContract TaskContract TaskContractSchema assessContract classifyProviderFailure contractIsFresh contractPath extractResetsAt generateContract parseContractOutput parseStructuredContractOutput readStoredContract renderContractPrompt resolveDocContext untrusted writeStoredContract",
+          "symbols": "CONTRACT_CLOSE CONTRACT_JSON_SCHEMA CONTRACT_OPEN CONTRACT_SCHEMA_VERSION ContractAssessment ContractOutcomeSchema GenerateContractInput ProviderCallIo ProviderFailure StoredContract TaskContract TaskContractSchema assessContract classifyProviderFailure contractIsFresh contractPath extractResetsAt generateContract parseContractOutput parseStructuredContractOutput readStoredContract renderContractPrompt resolveDocContext untrusted writeStoredContract",
           "summary": "",
           "body": "",
           "aliases": "module ts loop"
@@ -25643,6 +26100,11 @@
           "areaId": "area:src/loop",
           "packageId": "package:@agentskit/harness",
           "inbound": [
+            {
+              "kind": "imports",
+              "id": "module:src/loop/agent-runs.ts",
+              "confidence": "observed"
+            },
             {
               "kind": "imports",
               "id": "module:src/loop/brief.ts",
@@ -25686,6 +26148,11 @@
             {
               "kind": "imports",
               "id": "module:src/loop/retro.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
+              "id": "module:src/loop/spec.ts",
               "confidence": "observed"
             },
             {
@@ -25862,7 +26329,7 @@
             }
           ]
         },
-        "contentHash": "2bd1b01c5f5bba2f7d9dcc2b8a4a79649785dc5693a10cc7ec23c9acd0cb098f",
+        "contentHash": "f49b21f3aa9b229b9c26ddc69baf1fc4e04d1b4864c5c91cb18df3806d769b07",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -26247,7 +26714,17 @@
             },
             {
               "kind": "imports",
+              "id": "module:src/kernel/hash.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
               "id": "module:src/kernel/json-file.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
+              "id": "module:src/loop/agent-runs.ts",
               "confidence": "observed"
             },
             {
@@ -26342,6 +26819,11 @@
             },
             {
               "kind": "imports",
+              "id": "module:src/loop/plan-vote.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
               "id": "module:src/loop/queue.ts",
               "confidence": "observed"
             },
@@ -26357,7 +26839,17 @@
             },
             {
               "kind": "imports",
+              "id": "module:src/loop/spec.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
               "id": "module:src/loop/tick.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
+              "id": "module:src/loop/tracker-cooldown.ts",
               "confidence": "observed"
             },
             {
@@ -26367,7 +26859,7 @@
             }
           ]
         },
-        "contentHash": "f0617c0d68ccfc598c5cc49bfdc191d8eb67bac54901ac7a81aa5f671a89322f",
+        "contentHash": "85de520a762bdd65292a3a40b3d3083a6df4125d485ad3a85940c40b1aa9c612",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -26423,7 +26915,7 @@
           ],
           "outbound": []
         },
-        "contentHash": "a1995dfb4cdce91ab952542b59ca9f432579c7ddfabedc680859528772e2e0a0",
+        "contentHash": "df495c982280fae2ae89361a1fd3eccab90a833c1f077a39aae2e70d6ed60305",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -26938,6 +27430,11 @@
               "confidence": "observed"
             },
             {
+              "kind": "imports",
+              "id": "module:test/loop-agent-runs.test.ts",
+              "confidence": "observed"
+            },
+            {
               "kind": "mentions",
               "id": "document:apps/docs/content/docs/reference/configuration.mdx",
               "confidence": "observed"
@@ -26991,7 +27488,7 @@
             }
           ]
         },
-        "contentHash": "aa46dc01bb5228c83faa60279f671d8090c957f85cc8067c2b9578cf461baa29",
+        "contentHash": "66aa6ffc92a8e671bdd5599c2e549a580a69b5e2a0f24d5b58f95a48374309d8",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -27083,7 +27580,7 @@
           ],
           "outbound": []
         },
-        "contentHash": "a848a47bd53daf2609208da3993180f033e383db9d3102bb53e8fa595e3b94f9",
+        "contentHash": "19ed966f077fe87e7266ac1d9e60baa6c13091413c7d8b224df32a27872a32df",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -27179,6 +27676,8 @@
         "title": "fs-atomic.ts",
         "aliases": [],
         "symbols": [
+          "acquireFileLock",
+          "releaseFileLock",
           "writeJsonAtomic"
         ],
         "tags": [
@@ -27190,7 +27689,7 @@
           "title": "fs-atomic.ts",
           "headings": "",
           "path": "src/loop/fs-atomic.ts",
-          "symbols": "writeJsonAtomic",
+          "symbols": "acquireFileLock releaseFileLock writeJsonAtomic",
           "summary": "",
           "body": "",
           "aliases": "module ts loop"
@@ -27209,6 +27708,11 @@
             {
               "kind": "imports",
               "id": "module:src/loop/agent-improvement.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
+              "id": "module:src/loop/agent-runs.ts",
               "confidence": "observed"
             },
             {
@@ -27268,6 +27772,11 @@
             },
             {
               "kind": "imports",
+              "id": "module:src/loop/tracker-cooldown.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
               "id": "module:src/loop/tuning.ts",
               "confidence": "observed"
             },
@@ -27318,6 +27827,11 @@
             },
             {
               "kind": "imports",
+              "id": "module:test/ui-api-actions.test.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
               "id": "module:test/ui-core-server.test.ts",
               "confidence": "observed"
             },
@@ -27334,7 +27848,7 @@
           ],
           "outbound": []
         },
-        "contentHash": "9e1d0792a5f36b7f0934e0f58cf0fe7a7dbd7b9617b9789c280dfef099299d7c",
+        "contentHash": "4730afa3d95512d045cba9e9f1da84e86640c2c02778e73dd23eb2d3374a8380",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -27638,6 +28152,12 @@
           "AgentRegistryEntry",
           "AgentRegistryEntrySchema",
           "AgentRegistrySchema",
+          "AgentRunEvidence",
+          "AgentRunIoEntry",
+          "AgentRunReport",
+          "AgentRunStage",
+          "AgentRunState",
+          "AgentRunStatus",
           "Alert",
           "AlertSchema",
           "ArtificialAnalysisModel",
@@ -27803,6 +28323,7 @@
           "QUESTION_OPEN",
           "QuestionSchema",
           "REQUIRED_PRD_FIELDS",
+          "RUNS_DIR",
           "RankedModel",
           "ReleaseApproval",
           "ReleaseBatch",
@@ -27879,14 +28400,7 @@
           "approveDesign",
           "approveHeldDelivery",
           "approvePlan",
-          "approveRelease",
-          "architectRound",
-          "artifactPath",
-          "assessBoundary",
-          "assessContract",
-          "assessDod",
-          "assessObservability",
-          "assessObserveStage"
+          "approveRelease"
         ],
         "tags": [
           "module",
@@ -27897,7 +28411,7 @@
           "title": "index.ts",
           "headings": "",
           "path": "src/loop/index.ts",
-          "symbols": "AGENT_REGISTRY_SCHEMA_VERSION ARTIFACT_DIR AgentProposal AgentRegistry AgentRegistryEntry AgentRegistryEntrySchema AgentRegistrySchema Alert AlertSchema ArtificialAnalysisModel AutomationDriftRow AutomationFields AutomationSpec AutomationStatus BRIEF_POINTER_PROMPT BaseView BoundaryVerdict BudgetVerdict CONTRACT_CLOSE CONTRACT_OPEN CONTRACT_SCHEMA_VERSION CRITICAL_ROLES CastVote CatalogModel CheckoutState ConnectorInput ContractAssessment ContractOutcomeSchema CooldownEntry CooldownState DESIGN_CLOSE DESIGN_OPEN DebriefInput DebriefIssueRow DebriefReport DeliverInput DeliverOutcome DeliverReport DeliverResult DeliveryState Design DesignSchema DispatchRecordFile DoctorCheck DoctorCheckStatus DodAssessment DodEvidenceFile DodItem DodLine DodProof EffectiveFlowSettings EffortLevel EvalGate FiledRecord FlowIssue FlowProfile FlowSource GLOBAL_CONFIG_FILE GenerateContractInput GuidedInstallIO GuidedInstallInput GuidedInstallReport HARNESS_REPO_URL HandoffBriefInput ISSUES_CLOSE ISSUES_OPEN ImprovementOutcome ImprovementRecord ImprovementState InitAnswers InitInput InitQuestion InitResult InstallAction InstallInput InstallReport IntakeRecord IntakeReport IntakeResult IntakeState InterviewQuestion IssueFailureRecord IssueFailureState IssueSpend IssueTimelineProblem IssueTimelineReport LOOP_CONFIG_FILE LOOP_CONFIG_SCHEMA_VERSION LOOP_EVENT_TYPES LOOP_LOCAL_CONFIG_FILE LOOP_PRESETS LOOP_ROLES LOOP_STAGES Layer LearningsLedger LoadedLoopConfig LocalConfigAnswers LocalConfigPrompter LoopConfig LoopConfigInput LoopConfigSchema LoopDoctorInput LoopDoctorReport LoopEvent LoopEventBus LoopEventListener LoopEventPayload LoopEventType LoopHookListener LoopHookName LoopHookPayload LoopHookResult LoopPluginModule LoopProviderConfig LoopRole LoopStage LoopStageName LoopState LoopStatusReport MANAGED_STAGES MaintainReport MaintainResult MemoryContextPlan MemoryPromptSelection MetricReading ModelQuality ModelReference Notification NotifyInput NotifyOutcome ObservabilityAnomaly ObservabilityMetrics ObservabilityReport ObservabilitySeverity ObservabilitySnapshot ObservabilityTerminal ObserveAssessment ObserveAssessmentInput ObserveProblem ObserveStageReport ObserverState OutcomeProgress OutcomeProgressStatus PLAN_CLOSE PLAN_OPEN PLAN_SCHEMA_VERSION PLAN_STAGE_SCHEMA_VERSION PRD_CLOSE PRD_OPEN PRESET_NAMES PhaseArtifact PhaseArtifactName PinnedSkill PinnedSkillRef PlanPhase PlanRound PlanStageDeps PlanStageState PlanVote PlanVoteSchema PlanWithVotesInput PlannedIssue PlannedIssueSchema Prd PrdSchema PresetName ProviderCatalog ProviderFailure QUESTION_CLOSE QUESTION_OPEN QuestionSchema REQUIRED_PRD_FIELDS RankedModel ReleaseApproval ReleaseBatch ReleaseCommit ReleaseReport ReleaseState ResolvedAgent ResolvedFlow RetroInput RetroIssueRow RetroReport RetroStageReport RetroSuggestion RetroTarget RetroWindow RichIO RoleSettings RoleSignal RoutingDecision RoutingSkip RunnerConnector RunnerInput RunnerWorkspace ScheduledJob ScmConnector SkillHandoffBlock SlotAssessment SlotInput StagePauseEntry StagePauseState StoredContract StoredPlan TaskContract TaskContractSchema TaskPlan TaskPlanSchema TeamMember TickCandidateResult TickInput TickOutcome TickReport TimelineStep TrackerConnector TuningDecision TuningKnob TuningMetric TuningRecord TuningResult TuningState VOTE_CLOSE VOTE_OPEN VerifyArtifact VerifyArtifactSchema WORKER_ROLES WatchEvent WatchEventKind WatchInput WatchReport WatchTargetSnapshot WorkerBriefInput WorkerGuardInstallOutcome WorkerGuardVerdict WorkerRole WrittenDocument activeCooldowns advanceQueueOwner alreadyFiled answerRound appendLoopEvent applyRoleSettings applyRoutingPolicy applyToYaml applyTuning approveDesign approveHeldDelivery approvePlan approveRelease architectRound artifactPath assessBoundary assessContract assessDod assessObservability assessObserveStage",
+          "symbols": "AGENT_REGISTRY_SCHEMA_VERSION ARTIFACT_DIR AgentProposal AgentRegistry AgentRegistryEntry AgentRegistryEntrySchema AgentRegistrySchema AgentRunEvidence AgentRunIoEntry AgentRunReport AgentRunStage AgentRunState AgentRunStatus Alert AlertSchema ArtificialAnalysisModel AutomationDriftRow AutomationFields AutomationSpec AutomationStatus BRIEF_POINTER_PROMPT BaseView BoundaryVerdict BudgetVerdict CONTRACT_CLOSE CONTRACT_OPEN CONTRACT_SCHEMA_VERSION CRITICAL_ROLES CastVote CatalogModel CheckoutState ConnectorInput ContractAssessment ContractOutcomeSchema CooldownEntry CooldownState DESIGN_CLOSE DESIGN_OPEN DebriefInput DebriefIssueRow DebriefReport DeliverInput DeliverOutcome DeliverReport DeliverResult DeliveryState Design DesignSchema DispatchRecordFile DoctorCheck DoctorCheckStatus DodAssessment DodEvidenceFile DodItem DodLine DodProof EffectiveFlowSettings EffortLevel EvalGate FiledRecord FlowIssue FlowProfile FlowSource GLOBAL_CONFIG_FILE GenerateContractInput GuidedInstallIO GuidedInstallInput GuidedInstallReport HARNESS_REPO_URL HandoffBriefInput ISSUES_CLOSE ISSUES_OPEN ImprovementOutcome ImprovementRecord ImprovementState InitAnswers InitInput InitQuestion InitResult InstallAction InstallInput InstallReport IntakeRecord IntakeReport IntakeResult IntakeState InterviewQuestion IssueFailureRecord IssueFailureState IssueSpend IssueTimelineProblem IssueTimelineReport LOOP_CONFIG_FILE LOOP_CONFIG_SCHEMA_VERSION LOOP_EVENT_TYPES LOOP_LOCAL_CONFIG_FILE LOOP_PRESETS LOOP_ROLES LOOP_STAGES Layer LearningsLedger LoadedLoopConfig LocalConfigAnswers LocalConfigPrompter LoopConfig LoopConfigInput LoopConfigSchema LoopDoctorInput LoopDoctorReport LoopEvent LoopEventBus LoopEventListener LoopEventPayload LoopEventType LoopHookListener LoopHookName LoopHookPayload LoopHookResult LoopPluginModule LoopProviderConfig LoopRole LoopStage LoopStageName LoopState LoopStatusReport MANAGED_STAGES MaintainReport MaintainResult MemoryContextPlan MemoryPromptSelection MetricReading ModelQuality ModelReference Notification NotifyInput NotifyOutcome ObservabilityAnomaly ObservabilityMetrics ObservabilityReport ObservabilitySeverity ObservabilitySnapshot ObservabilityTerminal ObserveAssessment ObserveAssessmentInput ObserveProblem ObserveStageReport ObserverState OutcomeProgress OutcomeProgressStatus PLAN_CLOSE PLAN_OPEN PLAN_SCHEMA_VERSION PLAN_STAGE_SCHEMA_VERSION PRD_CLOSE PRD_OPEN PRESET_NAMES PhaseArtifact PhaseArtifactName PinnedSkill PinnedSkillRef PlanPhase PlanRound PlanStageDeps PlanStageState PlanVote PlanVoteSchema PlanWithVotesInput PlannedIssue PlannedIssueSchema Prd PrdSchema PresetName ProviderCatalog ProviderFailure QUESTION_CLOSE QUESTION_OPEN QuestionSchema REQUIRED_PRD_FIELDS RUNS_DIR RankedModel ReleaseApproval ReleaseBatch ReleaseCommit ReleaseReport ReleaseState ResolvedAgent ResolvedFlow RetroInput RetroIssueRow RetroReport RetroStageReport RetroSuggestion RetroTarget RetroWindow RichIO RoleSettings RoleSignal RoutingDecision RoutingSkip RunnerConnector RunnerInput RunnerWorkspace ScheduledJob ScmConnector SkillHandoffBlock SlotAssessment SlotInput StagePauseEntry StagePauseState StoredContract StoredPlan TaskContract TaskContractSchema TaskPlan TaskPlanSchema TeamMember TickCandidateResult TickInput TickOutcome TickReport TimelineStep TrackerConnector TuningDecision TuningKnob TuningMetric TuningRecord TuningResult TuningState VOTE_CLOSE VOTE_OPEN VerifyArtifact VerifyArtifactSchema WORKER_ROLES WatchEvent WatchEventKind WatchInput WatchReport WatchTargetSnapshot WorkerBriefInput WorkerGuardInstallOutcome WorkerGuardVerdict WorkerRole WrittenDocument activeCooldowns advanceQueueOwner alreadyFiled answerRound appendLoopEvent applyRoleSettings applyRoutingPolicy applyToYaml applyTuning approveDesign approveHeldDelivery approvePlan approveRelease",
           "summary": "",
           "body": "",
           "aliases": "module ts loop"
@@ -27919,6 +28433,11 @@
             {
               "kind": "re-exports",
               "id": "module:src/loop/agent-registry.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "re-exports",
+              "id": "module:src/loop/agent-runs.ts",
               "confidence": "observed"
             },
             {
@@ -28168,7 +28687,7 @@
             }
           ]
         },
-        "contentHash": "0062d47877f098bb7af99584cedf97adcf0859bae304b860e68e6a9d8f0a77ab",
+        "contentHash": "d96ee263b52ee26419d84eadd152c297f5dd5bda04b6c92d5025bd90e2a44397",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -28581,7 +29100,7 @@
             }
           ]
         },
-        "contentHash": "7385145555f417227a69a10cdac227d4974a7c1a13ff71ecf8ca3b3de8b7ad5a",
+        "contentHash": "ee6f40ca982d49232360a1a4c08d93e4411189523eb9bfaab851ea4b6ba8c06d",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -29170,6 +29689,11 @@
               "confidence": "observed"
             },
             {
+              "kind": "imports",
+              "id": "module:src/ui/api/server.ts",
+              "confidence": "observed"
+            },
+            {
               "kind": "re-exports",
               "id": "module:src/index.ts",
               "confidence": "observed"
@@ -29724,7 +30248,17 @@
           "inbound": [
             {
               "kind": "imports",
+              "id": "module:src/loop/agent-runs.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
               "id": "module:src/loop/brief.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
+              "id": "module:src/loop/deliver.ts",
               "confidence": "observed"
             },
             {
@@ -29734,7 +30268,17 @@
             },
             {
               "kind": "imports",
+              "id": "module:src/loop/spec.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
               "id": "module:src/loop/tick.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
+              "id": "module:test/loop-spec.test.ts",
               "confidence": "observed"
             },
             {
@@ -29796,7 +30340,7 @@
             }
           ]
         },
-        "contentHash": "6316cce58fc4f966bbf6b9d2439870a0ea6ea1992eac20be928ab64881da8c56",
+        "contentHash": "266956830dbbb7f37163985422c73704e250a0e167389e937cc6cae10ff5e52e",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -30486,6 +31030,11 @@
             {
               "kind": "imports",
               "id": "module:test/ui-actions.test.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
+              "id": "module:test/ui-api-actions.test.ts",
               "confidence": "observed"
             },
             {
@@ -31189,6 +31738,105 @@
         "confidence": "observed"
       },
       {
+        "id": "module:src/loop/spec.ts",
+        "kind": "module",
+        "path": "src/loop/spec.ts",
+        "title": "spec.ts",
+        "aliases": [],
+        "symbols": [
+          "RenderedSpec",
+          "SPEC_FILES",
+          "SpecCheck",
+          "SpecFile",
+          "SpecInput",
+          "checkSpec",
+          "renderSpec",
+          "renderSpecForBrief",
+          "specDigest",
+          "specDirFor",
+          "writeSpec"
+        ],
+        "tags": [
+          "module",
+          "ts",
+          "loop"
+        ],
+        "fields": {
+          "title": "spec.ts",
+          "headings": "",
+          "path": "src/loop/spec.ts",
+          "symbols": "RenderedSpec SPEC_FILES SpecCheck SpecFile SpecInput checkSpec renderSpec renderSpecForBrief specDigest specDirFor writeSpec",
+          "summary": "",
+          "body": "",
+          "aliases": "module ts loop"
+        },
+        "graph": {
+          "pagerank": 0,
+          "inboundLinks": 0,
+          "coveredBy": [],
+          "mentionedBy": [],
+          "areaId": "area:src/loop",
+          "packageId": "package:@agentskit/harness",
+          "inbound": [
+            {
+              "kind": "imports",
+              "id": "module:src/loop/brief.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
+              "id": "module:src/loop/deliver.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
+              "id": "module:src/loop/tick.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
+              "id": "module:test/loop-deliver.test.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
+              "id": "module:test/loop-spec.test.ts",
+              "confidence": "observed"
+            }
+          ],
+          "outbound": [
+            {
+              "kind": "imports",
+              "id": "module:src/adapters/command.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
+              "id": "module:src/kernel/hash.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
+              "id": "module:src/loop/config.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
+              "id": "module:src/loop/contract.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
+              "id": "module:src/loop/plan-vote.ts",
+              "confidence": "observed"
+            }
+          ]
+        },
+        "contentHash": "0cb5d2f8bc94ef877869cdcc62146dfa41fe608a956e294a48c07b680f07c6d7",
+        "provenance": "observed",
+        "confidence": "observed"
+      },
+      {
         "id": "module:src/loop/stage-lock.ts",
         "kind": "module",
         "path": "src/loop/stage-lock.ts",
@@ -31197,6 +31845,7 @@
         "symbols": [
           "StageLockStatus",
           "acquireStageLock",
+          "lastStageLockOwner",
           "peekStageLock"
         ],
         "tags": [
@@ -31208,7 +31857,7 @@
           "title": "stage-lock.ts",
           "headings": "",
           "path": "src/loop/stage-lock.ts",
-          "symbols": "StageLockStatus acquireStageLock peekStageLock",
+          "symbols": "StageLockStatus acquireStageLock lastStageLockOwner peekStageLock",
           "summary": "",
           "body": "",
           "aliases": "module ts loop"
@@ -31236,6 +31885,11 @@
             },
             {
               "kind": "imports",
+              "id": "module:test/cli-exit-codes.test.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
               "id": "module:test/stage-lock.test.ts",
               "confidence": "observed"
             },
@@ -31258,7 +31912,7 @@
             }
           ]
         },
-        "contentHash": "bfc4502d2b8d5f8a37caf395d23b9187ae42f7b8cdc7806b52b9ac86688c24b7",
+        "contentHash": "50d915b8d250befdb7c64ea35f6c667a81b254a9ff25686ca944939552e8ac6a",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -31305,7 +31959,7 @@
         },
         "graph": {
           "pagerank": 0,
-          "inboundLinks": 7,
+          "inboundLinks": 8,
           "coveredBy": [],
           "mentionedBy": [
             "document:docs/ADR-0030-loop-event-bus-orchestration-hooks.md",
@@ -31314,6 +31968,7 @@
             "document:CHANGELOG.md",
             "document:docs/ADR-0030-loop-event-bus-orchestration-hooks.md",
             "document:docs/ADR-0040-control-plane-v2.md",
+            "document:docs/ADR-0041-agent-runs-and-rendered-specs.md",
             "document:docs/LOOP.md"
           ],
           "areaId": "area:src/loop",
@@ -31401,6 +32056,11 @@
             },
             {
               "kind": "imports",
+              "id": "module:test/ui-api-actions.test.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
               "id": "module:test/ui-core-server.test.ts",
               "confidence": "observed"
             },
@@ -31442,6 +32102,11 @@
             {
               "kind": "mentions-symbol",
               "id": "document:docs/ADR-0040-control-plane-v2.md",
+              "confidence": "observed"
+            },
+            {
+              "kind": "mentions-symbol",
+              "id": "document:docs/ADR-0041-agent-runs-and-rendered-specs.md",
               "confidence": "observed"
             },
             {
@@ -31499,6 +32164,11 @@
             {
               "kind": "imports",
               "id": "module:src/kernel/model-policy.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
+              "id": "module:src/loop/agent-runs.ts",
               "confidence": "observed"
             },
             {
@@ -31618,6 +32288,16 @@
             },
             {
               "kind": "imports",
+              "id": "module:src/loop/spec.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
+              "id": "module:src/loop/tracker-cooldown.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
               "id": "module:src/loop/tracker.ts",
               "confidence": "observed"
             },
@@ -31628,7 +32308,88 @@
             }
           ]
         },
-        "contentHash": "778c5c7fbd320e390295ed64832212348565400945595abfff1ba36e2c17f7dc",
+        "contentHash": "f8cf26205ffcea7ebf8c227d2612b9f65af4a6b57ec518de0744b6f5024365af",
+        "provenance": "observed",
+        "confidence": "observed"
+      },
+      {
+        "id": "module:src/loop/tracker-cooldown.ts",
+        "kind": "module",
+        "path": "src/loop/tracker-cooldown.ts",
+        "title": "tracker-cooldown.ts",
+        "aliases": [],
+        "symbols": [
+          "TRACKER_RATE_LIMIT",
+          "TrackerCooldown",
+          "TrackerCooldownError",
+          "activeTrackerCooldown",
+          "guardTracker",
+          "isTrackerRateLimit",
+          "markTrackerRateLimited",
+          "trackerCooldownPath"
+        ],
+        "tags": [
+          "module",
+          "ts",
+          "loop"
+        ],
+        "fields": {
+          "title": "tracker-cooldown.ts",
+          "headings": "",
+          "path": "src/loop/tracker-cooldown.ts",
+          "symbols": "TRACKER_RATE_LIMIT TrackerCooldown TrackerCooldownError activeTrackerCooldown guardTracker isTrackerRateLimit markTrackerRateLimited trackerCooldownPath",
+          "summary": "",
+          "body": "",
+          "aliases": "module ts loop"
+        },
+        "graph": {
+          "pagerank": 0,
+          "inboundLinks": 0,
+          "coveredBy": [],
+          "mentionedBy": [],
+          "areaId": "area:src/loop",
+          "packageId": "package:@agentskit/harness",
+          "inbound": [
+            {
+              "kind": "imports",
+              "id": "module:src/loop/deliver.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
+              "id": "module:src/loop/tick.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
+              "id": "module:test/loop-deliver.test.ts",
+              "confidence": "observed"
+            }
+          ],
+          "outbound": [
+            {
+              "kind": "imports",
+              "id": "module:src/adapters/providers.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
+              "id": "module:src/kernel/json-file.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
+              "id": "module:src/loop/connectors.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
+              "id": "module:src/loop/fs-atomic.ts",
+              "confidence": "observed"
+            }
+          ]
+        },
+        "contentHash": "da10d0654eb0d3249e8c6c3d866a8e8975e77cf3ef9e3af4d7a469a362a932e4",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -31688,6 +32449,11 @@
             {
               "kind": "imports",
               "id": "module:src/loop/tick.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
+              "id": "module:test/loop-spec.test.ts",
               "confidence": "observed"
             },
             {
@@ -32209,6 +32975,7 @@
           "enqueueRun",
           "generateOrReuseContract",
           "reconcileIssue",
+          "resolveTrackerSync",
           "restoreRun",
           "resumePausedIssue",
           "retryRun"
@@ -32222,7 +32989,7 @@
           "title": "actions.ts",
           "headings": "",
           "path": "src/ui/api/actions.ts",
-          "symbols": "ActionContext AnswerDecisionInput AnswerDecisionResult ContractResult EnqueueRunInput IssueDecision answerDecision archiveRun cancelRun cleanupRun decideIssue enqueueRun generateOrReuseContract reconcileIssue restoreRun resumePausedIssue retryRun",
+          "symbols": "ActionContext AnswerDecisionInput AnswerDecisionResult ContractResult EnqueueRunInput IssueDecision answerDecision archiveRun cancelRun cleanupRun decideIssue enqueueRun generateOrReuseContract reconcileIssue resolveTrackerSync restoreRun resumePausedIssue retryRun",
           "summary": "",
           "body": "",
           "aliases": "module ts api"
@@ -32369,7 +33136,7 @@
             }
           ]
         },
-        "contentHash": "1b9895e15cc8297fc86d242daccd50ebdb17220f33da332fdb15481f482f19bb",
+        "contentHash": "be4180f775a921ab68dd940ffe2eae06b5305c2e6a3fd4da864fbb06803e6ace",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -32532,7 +33299,7 @@
             }
           ]
         },
-        "contentHash": "6d774d272e2c973c7919fa7d8139f0c441cf1eb244e9118793972f2040f9a97f",
+        "contentHash": "e08faa2acc3179af2d8c7cb16c6a5e808d4e877f40c6c3c09682403bfdcd8d7f",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -32629,6 +33396,11 @@
             },
             {
               "kind": "imports",
+              "id": "module:test/ui-sse.test.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
               "id": "module:test/ui-system.test.ts",
               "confidence": "observed"
             },
@@ -32666,7 +33438,7 @@
             }
           ]
         },
-        "contentHash": "09d40282403d6919cc3809d4679c5d36e4ca59007956d95aee36802376d7ac6a",
+        "contentHash": "1a83dca67479c004b1ee6a39b813b4a374ffa940181964d475956a50839bdee2",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -32861,6 +33633,7 @@
           "MetricsReport",
           "MetricsWindow",
           "RecentEvent",
+          "SNAPSHOT_ERROR_EVENT",
           "SearchHit",
           "SearchResult",
           "SearchType",
@@ -32878,7 +33651,7 @@
           "title": "contract.ts",
           "headings": "",
           "path": "src/ui/api/contract.ts",
-          "symbols": "AttentionAction AttentionActionId AttentionGroup AttentionItem AttentionKind BatchRequest BatchRunSettings CachedContract CheckStatus ConfigChange ConfigField ConfigLayer ConfigProposal ConfigWriteRequest CriterionStatus Drift DriftKind EffectiveConfig FieldClass Freshness FreshnessSource IssueDetail MetricsReport MetricsWindow RecentEvent SearchHit SearchResult SearchType SnapshotExtras SystemReport TimePoint TuningRevertResult",
+          "symbols": "AttentionAction AttentionActionId AttentionGroup AttentionItem AttentionKind BatchRequest BatchRunSettings CachedContract CheckStatus ConfigChange ConfigField ConfigLayer ConfigProposal ConfigWriteRequest CriterionStatus Drift DriftKind EffectiveConfig FieldClass Freshness FreshnessSource IssueDetail MetricsReport MetricsWindow RecentEvent SNAPSHOT_ERROR_EVENT SearchHit SearchResult SearchType SnapshotExtras SystemReport TimePoint TuningRevertResult",
           "summary": "",
           "body": "",
           "aliases": "module ts api"
@@ -33010,7 +33783,7 @@
             }
           ]
         },
-        "contentHash": "a54aa8127e2390d1127985d710b5f6bf98a210c848c4eae2952c2e4f68bb2858",
+        "contentHash": "8c6596f2d97937f8d549ded274362f7188b7613aec6c8c196893d7870f1a80c7",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -33075,6 +33848,11 @@
             {
               "kind": "imports",
               "id": "module:test/ui-core-reconcile.test.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
+              "id": "module:test/ui-core-server.test.ts",
               "confidence": "observed"
             },
             {
@@ -33183,10 +33961,20 @@
               "kind": "imports",
               "id": "module:src/ui/api/reconcile.ts",
               "confidence": "observed"
+            },
+            {
+              "kind": "imports",
+              "id": "module:src/ui/api/running-harness.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
+              "id": "module:src/ui/api/store.ts",
+              "confidence": "observed"
             }
           ]
         },
-        "contentHash": "c2f454f5c20fd63e2af8a88c184bce5a6c7ee2b24451dd7372ebd6deab285fae",
+        "contentHash": "d5117394355bc5381e2e9245a2f385601f4e973f4342a2aef8beeaf84b95175c",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -33605,6 +34393,7 @@
         "title": "reconcile.ts",
         "aliases": [],
         "symbols": [
+          "CLOSED_STATES",
           "ClaimFact",
           "DispatchFact",
           "OrcaFact",
@@ -33624,7 +34413,7 @@
           "title": "reconcile.ts",
           "headings": "",
           "path": "src/ui/api/reconcile.ts",
-          "symbols": "ClaimFact DispatchFact OrcaFact ReconcileInput ReconcileResult computeLocks cronCadenceMs reconcile trackerClosed",
+          "symbols": "CLOSED_STATES ClaimFact DispatchFact OrcaFact ReconcileInput ReconcileResult computeLocks cronCadenceMs reconcile trackerClosed",
           "summary": "",
           "body": "",
           "aliases": "module ts api"
@@ -33671,7 +34460,7 @@
             }
           ]
         },
-        "contentHash": "49457103b9bd2f014de2659ff54a3998c85af28eb009599eebce607dc8511a17",
+        "contentHash": "8738c37b9b582fbc653f4048e3e1d46e84225d9b88f5283a261e7980bb8eae2e",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -33907,7 +34696,7 @@
             }
           ]
         },
-        "contentHash": "6369cf9f035eeff7e1c7e56ff8204424d02735a93c6b0530afc84218eb992107",
+        "contentHash": "d81a3570bb2bc4c1525a228138f490358ad28d475e55d1da2eae4857418dea21",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -34102,7 +34891,7 @@
             }
           ]
         },
-        "contentHash": "ef6fbcaad3ce9ce3a68d7efcb24b2e847be275e96863a80f8663400d082c9dc5",
+        "contentHash": "576c5c2dec3abed795a0bc1db93c955f9c9e03f051d8f03c24007ab56726057d",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -34396,7 +35185,7 @@
             }
           ]
         },
-        "contentHash": "d693356cdd0d969c211353c57fc272a235e1097f54579e6aca82fc0442b671d5",
+        "contentHash": "28310d10aad16689646040f683f9af11025b53cb8cfd380ff88f2c55e0e3cf37",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -34546,6 +35335,11 @@
           "areaId": "area:src/ui",
           "packageId": "package:@agentskit/harness",
           "inbound": [
+            {
+              "kind": "imports",
+              "id": "module:src/ui/api/extras.ts",
+              "confidence": "observed"
+            },
             {
               "kind": "imports",
               "id": "module:src/ui/api/routes-system.ts",
@@ -34739,6 +35533,11 @@
               "confidence": "observed"
             },
             {
+              "kind": "imports",
+              "id": "module:test/ui-sse.test.ts",
+              "confidence": "observed"
+            },
+            {
               "kind": "re-exports",
               "id": "module:src/index.ts",
               "confidence": "observed"
@@ -34793,6 +35592,11 @@
             {
               "kind": "imports",
               "id": "module:src/loop/install.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
+              "id": "module:src/loop/notify.ts",
               "confidence": "observed"
             },
             {
@@ -34887,7 +35691,7 @@
             }
           ]
         },
-        "contentHash": "f9343faa7601b23f8adf013394cb3fe858e331a55487b75b8eb03ae1e07cc0be",
+        "contentHash": "ed6dc6443fc813d8d6b0c17ca5f4ed54e3a140acdb369c0a3e679f4c923914ea",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -34898,6 +35702,7 @@
         "title": "store.ts",
         "aliases": [],
         "symbols": [
+          "eventsKey",
           "readCurrentProjection",
           "syncProjection"
         ],
@@ -34910,7 +35715,7 @@
           "title": "store.ts",
           "headings": "",
           "path": "src/ui/api/store.ts",
-          "symbols": "readCurrentProjection syncProjection",
+          "symbols": "eventsKey readCurrentProjection syncProjection",
           "summary": "",
           "body": "",
           "aliases": "module ts api"
@@ -34926,6 +35731,11 @@
             {
               "kind": "imports",
               "id": "module:src/ui/api/actions.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
+              "id": "module:src/ui/api/extras.ts",
               "confidence": "observed"
             },
             {
@@ -34997,7 +35807,7 @@
             }
           ]
         },
-        "contentHash": "18d88e77e0332d5f0b8778faaffe5461e60e9724ba47e98a25a24ff433e6dc0b",
+        "contentHash": "517c79978a0107ab31476ffb3cf0bcea06e251b1efc2066903e6fc7dec60d098",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -35641,7 +36451,7 @@
           "inbound": [],
           "outbound": []
         },
-        "contentHash": "56b8e6fb434d7eb9ff8ffd5271d4089cd1946bed0760f99975b9958a8a506a6f",
+        "contentHash": "26976d9126c01d43cd552a3597240950eaeccab64b1aef3d24f0f6977f15ef25",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -35961,6 +36771,7 @@
         "symbols": [
           "ActionTarget",
           "confirmBasis",
+          "lockedOut",
           "useActionRunner"
         ],
         "tags": [
@@ -35972,7 +36783,7 @@
           "title": "actions.tsx",
           "headings": "",
           "path": "src/ui/app/src/lib/actions.tsx",
-          "symbols": "ActionTarget confirmBasis useActionRunner",
+          "symbols": "ActionTarget confirmBasis lockedOut useActionRunner",
           "summary": "",
           "body": "",
           "aliases": "module tsx lib"
@@ -36003,7 +36814,7 @@
             }
           ]
         },
-        "contentHash": "928b29e24377c189d037dd05ee46f72be1064c6d628ae93f0344011375a20bff",
+        "contentHash": "af23c85c0d765a9046b985420d7557200eb6cfae3a379263cb9b3cae2e3a02c0",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -36045,6 +36856,7 @@
           "getConfig",
           "getIssueDetail",
           "getJob",
+          "getJobs",
           "getMetrics",
           "getRecentEvents",
           "getState",
@@ -36057,6 +36869,7 @@
           "reconcileIssue",
           "reinstallAutomations",
           "rejectLearnings",
+          "resolveTrackerSync",
           "restoreRun",
           "resumePausedIssue",
           "resumeStage",
@@ -36065,6 +36878,8 @@
           "runStage",
           "saveWizardDraft",
           "searchRecords",
+          "snapshotErrorText",
+          "sseNeedsPolling",
           "tuning",
           "useSnapshot",
           "writeLocalConfig"
@@ -36078,7 +36893,7 @@
           "title": "api.ts",
           "headings": "",
           "path": "src/ui/app/src/lib/api.ts",
-          "symbols": "ApiError BoardIssue BoardSnapshot Decision DispatchRef EnqueueRunInput IssuePhase IssueRecord PullRequestRef ReviewSubstatus RunRecord TimelineEvent UiJobRecord UiSnapshot UiWizardDraft UiWizardDraftPatch answerDecision approveDesign approveHeldPr approvePlan approveRelease archiveRun cancelRun decideIssue enqueueBatch enqueueRun generateContract getCachedContracts getConfig getIssueDetail getJob getMetrics getRecentEvents getState getSystem getTimeline getWizard pauseStage promoteLearnings proposeConfig reconcileIssue reinstallAutomations rejectLearnings restoreRun resumePausedIssue resumeStage retryRun runDoctor runStage saveWizardDraft searchRecords tuning useSnapshot writeLocalConfig",
+          "symbols": "ApiError BoardIssue BoardSnapshot Decision DispatchRef EnqueueRunInput IssuePhase IssueRecord PullRequestRef ReviewSubstatus RunRecord TimelineEvent UiJobRecord UiSnapshot UiWizardDraft UiWizardDraftPatch answerDecision approveDesign approveHeldPr approvePlan approveRelease archiveRun cancelRun decideIssue enqueueBatch enqueueRun generateContract getCachedContracts getConfig getIssueDetail getJob getJobs getMetrics getRecentEvents getState getSystem getTimeline getWizard pauseStage promoteLearnings proposeConfig reconcileIssue reinstallAutomations rejectLearnings resolveTrackerSync restoreRun resumePausedIssue resumeStage retryRun runDoctor runStage saveWizardDraft searchRecords snapshotErrorText sseNeedsPolling tuning useSnapshot writeLocalConfig",
           "summary": "",
           "body": "",
           "aliases": "module ts lib"
@@ -36108,6 +36923,11 @@
             {
               "kind": "imports",
               "id": "module:src/ui/app/src/lib/snapshot.tsx",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
+              "id": "module:test/ui-sse.test.ts",
               "confidence": "observed"
             },
             {
@@ -36174,7 +36994,7 @@
             }
           ]
         },
-        "contentHash": "bc50c32094cbef96f595b4d0532317f31f80993e22b7ddc1fc9af2e9a3878274",
+        "contentHash": "ad42d6f5aaae0140a724c2a7c784d8cd5ecf8c275aff0761089bc63ad55efac6",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -36519,7 +37339,7 @@
           "inbound": [],
           "outbound": []
         },
-        "contentHash": "56337685cda5d8494bb0c7ca610ec45299dbc8fc4dbe0f3b08095ee4c41dfce3",
+        "contentHash": "8d3b9d8fb2ec7f041980a1d63fe0eb02f19d65e80c0372ae16bd89c0f47f0908",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -36557,7 +37377,7 @@
           "inbound": [],
           "outbound": []
         },
-        "contentHash": "1b2cf29857177918c382b6988e6deb130ff07038266c347e4b8dd7c8297845d6",
+        "contentHash": "d6e08e366526468b9b1acd490fe3157ee6724224430c03eb7d10beb28691b814",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -36758,7 +37578,8 @@
         "title": "System.tsx",
         "aliases": [],
         "symbols": [
-          "SystemPage"
+          "SystemPage",
+          "stageState"
         ],
         "tags": [
           "module",
@@ -36769,7 +37590,7 @@
           "title": "System.tsx",
           "headings": "",
           "path": "src/ui/app/src/pages/System.tsx",
-          "symbols": "SystemPage",
+          "symbols": "SystemPage stageState",
           "summary": "",
           "body": "",
           "aliases": "module tsx pages"
@@ -36781,10 +37602,16 @@
           "mentionedBy": [],
           "areaId": "area:src/ui",
           "packageId": "package:@agentskit/harness",
-          "inbound": [],
+          "inbound": [
+            {
+              "kind": "imports",
+              "id": "module:test/ui-system.test.ts",
+              "confidence": "observed"
+            }
+          ],
           "outbound": []
         },
-        "contentHash": "af648e67ba7023d76ca574de96da1ee1623155219998dffb1be72d83d379c561",
+        "contentHash": "6e1340d04725ce57d42c436cbca5e10c804a19d67fbd8fb7531df7472b7c7f80",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -36976,7 +37803,7 @@
             }
           ]
         },
-        "contentHash": "1a6d502a95d701c0fa12fc9eef4c4c410f516ce3cb74f99efa1e2b329f14c8ad",
+        "contentHash": "f6d40e596d4a8676d9250180e6d39c5aa1da72a3785cf00e1be606638ddb83a5",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -37096,7 +37923,7 @@
             }
           ]
         },
-        "contentHash": "a93bec7ee03a715347757aeeec4fccdedaf0c1c34afe193401e956fdb0ee6f29",
+        "contentHash": "cc253760d4c2d7567bc6442a51989f11a282af821c2cdec111d9047200be5a79",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -37566,6 +38393,56 @@
         "confidence": "observed"
       },
       {
+        "id": "module:test/cli-exit-codes.test.ts",
+        "kind": "module",
+        "path": "test/cli-exit-codes.test.ts",
+        "title": "cli-exit-codes.test.ts",
+        "aliases": [],
+        "tags": [
+          "module",
+          "ts",
+          "test"
+        ],
+        "fields": {
+          "title": "cli-exit-codes.test.ts",
+          "headings": "",
+          "path": "test/cli-exit-codes.test.ts",
+          "symbols": "",
+          "summary": "",
+          "body": "",
+          "aliases": "module ts test"
+        },
+        "graph": {
+          "pagerank": 0,
+          "inboundLinks": 0,
+          "coveredBy": [],
+          "mentionedBy": [],
+          "areaId": "area:test",
+          "packageId": "package:@agentskit/harness",
+          "inbound": [],
+          "outbound": [
+            {
+              "kind": "imports",
+              "id": "module:src/cli.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
+              "id": "module:src/index.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
+              "id": "module:src/loop/stage-lock.ts",
+              "confidence": "observed"
+            }
+          ]
+        },
+        "contentHash": "0458e64110f7adc74ed371cbb5b8a8316c82f33663bf91398b7d68f0f481da6e",
+        "provenance": "observed",
+        "confidence": "observed"
+      },
+      {
         "id": "module:test/compatibility.test.ts",
         "kind": "module",
         "path": "test/compatibility.test.ts",
@@ -37931,7 +38808,7 @@
             }
           ]
         },
-        "contentHash": "0de42dba47c469438555fc8b4ce92088b9103e0cc3480cc2a5ebfcd5cee2d2f7",
+        "contentHash": "205fa40b5ee0e00374f4228e5dd07af6ea920a9ee5b66b08821da858e7239a3f",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -38722,7 +39599,7 @@
             }
           ]
         },
-        "contentHash": "fcb2c1e5745504c7a4f07b60930d93ff6e57dd25de407b2da6a815c2ec697250",
+        "contentHash": "f00d983366e352a5a7d7f0125b20541f369ab428fa0ad003610209edf00fa000",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -38762,7 +39639,7 @@
             }
           ]
         },
-        "contentHash": "7fe2ee10c4811541306000315ce43e3b5c86fb147bbee3482ca6e69be38a1c50",
+        "contentHash": "d376fa5e98381da2826ae76dd61495bf128b5b408a04c02cf135d6d72ecdcacd",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -39950,6 +40827,56 @@
         "confidence": "observed"
       },
       {
+        "id": "module:test/loop-agent-runs.test.ts",
+        "kind": "module",
+        "path": "test/loop-agent-runs.test.ts",
+        "title": "loop-agent-runs.test.ts",
+        "aliases": [],
+        "tags": [
+          "module",
+          "ts",
+          "test"
+        ],
+        "fields": {
+          "title": "loop-agent-runs.test.ts",
+          "headings": "",
+          "path": "test/loop-agent-runs.test.ts",
+          "symbols": "",
+          "summary": "",
+          "body": "",
+          "aliases": "module ts test"
+        },
+        "graph": {
+          "pagerank": 0,
+          "inboundLinks": 0,
+          "coveredBy": [],
+          "mentionedBy": [],
+          "areaId": "area:test",
+          "packageId": "package:@agentskit/harness",
+          "inbound": [],
+          "outbound": [
+            {
+              "kind": "imports",
+              "id": "module:src/index.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
+              "id": "module:src/loop/agent-runs.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
+              "id": "module:src/loop/event-bus.ts",
+              "confidence": "observed"
+            }
+          ]
+        },
+        "contentHash": "f19dc60423c9322c15090be23c5218073ea0cfddd30cd48e87adfc9f35473b85",
+        "provenance": "observed",
+        "confidence": "observed"
+      },
+      {
         "id": "module:test/loop-artifacts-exclude.test.ts",
         "kind": "module",
         "path": "test/loop-artifacts-exclude.test.ts",
@@ -40145,7 +41072,7 @@
             }
           ]
         },
-        "contentHash": "521e7b72a53c984e6410b98c5df9a91be4749737ce0f50be45f5dd5b3f16788f",
+        "contentHash": "afeebc6fbe56bf0ed5bad8887475e5b09f855631a53c192da86752315b6dd4d5",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -40385,7 +41312,7 @@
             }
           ]
         },
-        "contentHash": "91982a123f79f2ba3b6e56dd9b93420b056e4fad74ff7055282e2a0fb8dfac17",
+        "contentHash": "75f50d52adbc04b7a5681ec928f42e50364544e5463fd742e313be655ec4913e",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -40425,7 +41352,7 @@
             }
           ]
         },
-        "contentHash": "edd09500a9bdf0daf5f4b365a09fe8384bf1c7bce9f64c141d3f77a737ddce43",
+        "contentHash": "0f3b9e6e8b545491e6da4a138fa2a88e66598ad1bcbd366e6da11ac22926bd14",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -40582,10 +41509,25 @@
               "kind": "imports",
               "id": "module:src/index.ts",
               "confidence": "observed"
+            },
+            {
+              "kind": "imports",
+              "id": "module:src/loop/agent-runs.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
+              "id": "module:src/loop/spec.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
+              "id": "module:src/loop/tracker-cooldown.ts",
+              "confidence": "observed"
             }
           ]
         },
-        "contentHash": "7106cec8756b56afd6c723ec56a04c361d3f89b317c6b9e7249c4bbc0217fc91",
+        "contentHash": "e1fb279fa62c714d3dbb1edb791d7682e65deff418245a7707c53589b968d040",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -40785,7 +41727,7 @@
             }
           ]
         },
-        "contentHash": "7b49c9b64c37e3abdaf6a62efd38622a65246993fd672d2257ebda7a692b7693",
+        "contentHash": "eee62fff8b72ed3f8dcd17e9da7472911b840a097f43d4a88dbb28b97bf7428f",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -40825,7 +41767,7 @@
             }
           ]
         },
-        "contentHash": "4fadbda7cdf33f8d17cf1717022671128a97fa06ada2e449c67a42a503630164",
+        "contentHash": "cf6f46e6f56cb973d1c616ddf24dc5bc63cd8155d9e0c8b3132a2d951b4f8565",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -41265,7 +42207,7 @@
             }
           ]
         },
-        "contentHash": "83c41cbde645836c079079c83a981a6a8275184cf089cb1a8b092a572db80b49",
+        "contentHash": "8020600aa0f89d3fe54f1a6db4bd5e1dedd3eb15d61c280b47a5e993cd66446d",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -41305,7 +42247,7 @@
             }
           ]
         },
-        "contentHash": "2fc6b68ed2f7a931b051b85351263cab1ff9cc2f52ff6c6299cf263e9a360c42",
+        "contentHash": "e790e3e36a925553fddafeb31fe0934211b77816ff0dc643d2bb675bb473c1d9",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -42314,6 +43256,61 @@
         "confidence": "observed"
       },
       {
+        "id": "module:test/loop-spec.test.ts",
+        "kind": "module",
+        "path": "test/loop-spec.test.ts",
+        "title": "loop-spec.test.ts",
+        "aliases": [],
+        "tags": [
+          "module",
+          "ts",
+          "test"
+        ],
+        "fields": {
+          "title": "loop-spec.test.ts",
+          "headings": "",
+          "path": "test/loop-spec.test.ts",
+          "symbols": "",
+          "summary": "",
+          "body": "",
+          "aliases": "module ts test"
+        },
+        "graph": {
+          "pagerank": 0,
+          "inboundLinks": 0,
+          "coveredBy": [],
+          "mentionedBy": [],
+          "areaId": "area:test",
+          "packageId": "package:@agentskit/harness",
+          "inbound": [],
+          "outbound": [
+            {
+              "kind": "imports",
+              "id": "module:src/index.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
+              "id": "module:src/loop/plan-vote.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
+              "id": "module:src/loop/spec.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
+              "id": "module:src/loop/tracker.ts",
+              "confidence": "observed"
+            }
+          ]
+        },
+        "contentHash": "85db3881ee3dc420d1dcd77be79b244f8f631c8a1bd40fc8c0c8e599f87120aa",
+        "provenance": "observed",
+        "confidence": "observed"
+      },
+      {
         "id": "module:test/loop-tick.test.ts",
         "kind": "module",
         "path": "test/loop-tick.test.ts",
@@ -42349,7 +43346,7 @@
             }
           ]
         },
-        "contentHash": "8692c0fffccd303de1fb4d07fb0b593e394344a54b8c9d2afd059e57d5e1e906",
+        "contentHash": "a1388b4c664b92fadf09abad04f6cc58e413a61efa90f45f307e62ca65a51b93",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -43159,7 +44156,7 @@
             }
           ]
         },
-        "contentHash": "799de4469ad291b7b199121bb411395119ed18c570d6e0f0bad742b1e0626bf8",
+        "contentHash": "806348abb41fcd88b9c36413b9324fada44f02313237e33bd4a1c9f52f024b9f",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -43342,7 +44339,7 @@
             }
           ]
         },
-        "contentHash": "594e830d79c55af21b25d97f8f44fe3122ad594421b9580a01611ebd0df5a746",
+        "contentHash": "0cae7abe7cbef434422e628f9d3ef64c4a2d276efde78d38f27f28aba25f6511",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -43492,7 +44489,7 @@
             }
           ]
         },
-        "contentHash": "e5d90062e2497f1e7c6c7cb4e335468cc70aa8de224a4b88d8d0af39b9327c5c",
+        "contentHash": "f2a649ac8de8735e2fdb898e06116826c09aca982772a8a02e8fd470d447d6d7",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -43537,12 +44534,27 @@
             },
             {
               "kind": "imports",
+              "id": "module:src/loop/fs-atomic.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
               "id": "module:src/loop/hitl.ts",
               "confidence": "observed"
             },
             {
               "kind": "imports",
               "id": "module:src/loop/resilience-state.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
+              "id": "module:src/loop/retro.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
+              "id": "module:src/loop/tick.ts",
               "confidence": "observed"
             },
             {
@@ -43557,7 +44569,7 @@
             }
           ]
         },
-        "contentHash": "121c8781dafd4163432e0fa3fe95dd3e085ebdb6a49f9ae4246607229d901e21",
+        "contentHash": "447402c20d079d211e35975516d572a5b3a6264988da92f2046d03a872244856",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -43637,6 +44649,11 @@
             },
             {
               "kind": "imports",
+              "id": "module:src/loop/automations.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
               "id": "module:src/loop/config.ts",
               "confidence": "observed"
             },
@@ -43657,7 +44674,7 @@
             }
           ]
         },
-        "contentHash": "4bc1e6a2ac3018393ab10a953246a629447765b542dc76d34ab80a71bfa0f58f",
+        "contentHash": "6b1612bf44d8147797292ec74b0b0c54f04b9c9c187c57e87ae5a35f3ac3328b",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -43691,7 +44708,7 @@
           "inbound": [],
           "outbound": []
         },
-        "contentHash": "86f6c600cbaf7aad67414dbe50ec6b08519a09463265e1c8f0f822a7b501c30f",
+        "contentHash": "94172d43cd686b4f771c6cc1953f605aec2d4bdcf46afe9d4aceada8f3d6e84f",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -43821,7 +44838,7 @@
             }
           ]
         },
-        "contentHash": "7f72b11435312ff52359b584cc6c74185e9faaa051a2eaacba3ab4aa19ff69d3",
+        "contentHash": "4e76a8a3b7388b1286e4fc57aa60ee06dd4056f66de4eef78be452ac1dcc4ecd",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -43881,7 +44898,7 @@
             }
           ]
         },
-        "contentHash": "5ce83a05f27594d64cc80d1fb5c9267fd703aed7c81c60495c0229ed4df1135a",
+        "contentHash": "98224353eb3066bedf5a63a646bc3941116fa6c2399816fa6bfe62e77efc04b9",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -43981,12 +44998,17 @@
             },
             {
               "kind": "imports",
+              "id": "module:src/ui/api/extras.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
               "id": "module:src/ui/api/server.ts",
               "confidence": "observed"
             }
           ]
         },
-        "contentHash": "8d69ecac4dfc039cce53127d1fc38636cb97a88d422043c9d4019aaf5af6c147",
+        "contentHash": "b701458ee05768529d5f3f38ce9e7022b86b485b343dfcb08bd7e592502e879c",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -44221,6 +45243,61 @@
         "confidence": "observed"
       },
       {
+        "id": "module:test/ui-sse.test.ts",
+        "kind": "module",
+        "path": "test/ui-sse.test.ts",
+        "title": "ui-sse.test.ts",
+        "aliases": [],
+        "tags": [
+          "module",
+          "ts",
+          "test"
+        ],
+        "fields": {
+          "title": "ui-sse.test.ts",
+          "headings": "",
+          "path": "test/ui-sse.test.ts",
+          "symbols": "",
+          "summary": "",
+          "body": "",
+          "aliases": "module ts test"
+        },
+        "graph": {
+          "pagerank": 0,
+          "inboundLinks": 0,
+          "coveredBy": [],
+          "mentionedBy": [],
+          "areaId": "area:test",
+          "packageId": "package:@agentskit/harness",
+          "inbound": [],
+          "outbound": [
+            {
+              "kind": "imports",
+              "id": "module:src/loop/config.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
+              "id": "module:src/ui/api/board.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
+              "id": "module:src/ui/api/server.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
+              "id": "module:src/ui/app/src/lib/api.ts",
+              "confidence": "observed"
+            }
+          ]
+        },
+        "contentHash": "ed6cb204fa13a01370248e39693c161f41f3ea9b1aa53bc79a9917b2de7cef65",
+        "provenance": "observed",
+        "confidence": "observed"
+      },
+      {
         "id": "module:test/ui-store.test.ts",
         "kind": "module",
         "path": "test/ui-store.test.ts",
@@ -44261,7 +45338,7 @@
             }
           ]
         },
-        "contentHash": "ec959d3f7887c5e1a3ea8a035e296a3f939bddda615bae54fc1db099ebd0cf2b",
+        "contentHash": "86a53a20fb4bd476f2223e6c240bae6c1a6536a830b1a17fbddfb8feed3bbca8",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -44363,10 +45440,15 @@
               "kind": "imports",
               "id": "module:src/ui/api/routes.ts",
               "confidence": "observed"
+            },
+            {
+              "kind": "imports",
+              "id": "module:src/ui/app/src/pages/System.tsx",
+              "confidence": "observed"
             }
           ]
         },
-        "contentHash": "fb55a8c3b4ec353d7135eebcf727c922b0591236f5d1d1a482c87aa0d86d5a1a",
+        "contentHash": "fd21af76f15c7129c06ccb6bd24aeb54b2398b2ba53830cb058fc081a1357a68",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -44592,7 +45674,7 @@
           ],
           "outbound": []
         },
-        "contentHash": "d95e70d66393590e1d517d92ef893e2885b4f18ff75aae1673d97508e82ba84c",
+        "contentHash": "9e5fcfe3a723912ef17df7e03740e9c68eddeddec7c641446656a8f8037800be",
         "provenance": "observed",
         "confidence": "observed"
       },
