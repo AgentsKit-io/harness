@@ -50,6 +50,25 @@ describe('ensureBaseView', () => {
     await expect(ensureBaseView(git('fetch'), loaded)).rejects.toThrow(/will not read a stale tree/)
   })
 
+  it('runs concurrent refreshes one after another, and a failed one does not block the next', async () => {
+    const loaded = setup()
+    let active = 0
+    let maxActive = 0
+    let calls = 0
+    const runner: CommandRunner = {
+      run: async (argv): Promise<CommandResult> => {
+        active += 1; maxActive = Math.max(maxActive, active); calls += 1
+        await new Promise((resolve) => setTimeout(resolve, 5))
+        active -= 1
+        if (calls === 1) return { code: 128, stdout: '', stderr: "fatal: Unable to create 'index.lock': File exists.", timedOut: false, durationMs: 1 }
+        return { code: 0, stdout: argv[1] === 'rev-parse' ? 'abc123\n' : '', stderr: '', timedOut: false, durationMs: 1 }
+      },
+    }
+    const results = await Promise.allSettled([ensureBaseView(runner, loaded), ensureBaseView(runner, loaded), ensureBaseView(runner, loaded)])
+    expect(maxActive).toBe(1)
+    expect(results.map((result) => result.status)).toEqual(['rejected', 'fulfilled', 'fulfilled'])
+  })
+
   it('reads project.root as it is only when asked to', async () => {
     const loaded = setup('\n')
     const root = { ...loaded, config: { ...loaded.config, project: { ...loaded.config.project, orchestratorView: 'root' as const } } }

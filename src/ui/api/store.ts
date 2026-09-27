@@ -1,4 +1,4 @@
-import { existsSync } from 'node:fs'
+import { existsSync, statSync } from 'node:fs'
 import { join } from 'node:path'
 import { z } from 'zod'
 import { readJsonFile } from '../../kernel/json-file.js'
@@ -122,6 +122,14 @@ const reconcileAgainstEngineState = (state: ProjectionState, stateDir: string): 
   for (const issue of known) {
     const delivery = readDeliveryState(stateDir, issue)
     if (!delivery.finishedAt || !delivery.finalOutcome) continue
+    // A cancellation after the delivery finished is the newer decision: the old outcome must not re-block the issue.
+    // Until the next dispatch clears `cancelledAt` (tick's resetDeliveryStateForDispatch), the issue is available —
+    // unless a fresh run was already enqueued for it.
+    if (delivery.cancelledAt && delivery.cancelledAt >= delivery.finishedAt) {
+      const record = next.issues[issue]
+      if (record && record.phase !== 'available' && record.phase !== 'running') next = { issues: { ...next.issues, [issue]: { ...record, phase: 'available', reviewState: null, dispatch: null, error: null } } }
+      continue
+    }
     const enginePhase = phaseForDeliveryOutcome(delivery.finalOutcome, 'review')
     const engineReviewState = reviewStateForDeliveryOutcome(delivery.finalOutcome)
     const record = next.issues[issue] ?? { issue, title: null, url: null, trackerState: null, phase: 'available' as const, reviewState: null, run: null, dispatch: null, pullRequest: null, pendingDecisions: [], error: null, updatedAt: new Date(0).toISOString() }
@@ -167,6 +175,17 @@ const overlayLiveStores = (state: ProjectionState, stateDir: string): Projection
   return { issues: merged }
 }
 
+/** Changes whenever `events.ndjson` is appended to or rotated; cheap enough for every poll. */
+export const eventsKey = (stateDir: string): string => {
+  const path = join(stateDir, 'events.ndjson')
+  if (!existsSync(path)) return 'none'
+  const stat = statSync(path)
+  return `${stat.mtimeMs}:${stat.size}`
+}
+
+/** `eventsKey` per state dir at its last sync: an unchanged log has nothing past the cursor, so it is not re-parsed. */
+const syncedEvents = new Map<string, string>()
+
 const readCursor = (stateDir: string): { readonly cursor: Cursor; readonly isFirstSync: boolean } => {
   const parsed = readJsonFile(cursorPath(stateDir), cursorSchema)
   return parsed ? { cursor: parsed, isFirstSync: false } : { cursor: emptyCursor(), isFirstSync: true }
@@ -190,12 +209,14 @@ export const readCurrentProjection = (stateDir: string): ProjectionState => over
  */
 export const syncProjection = (stateDir: string): ProjectionState => {
   const { cursor, isFirstSync } = readCursor(stateDir)
-  let state = readProjection(stateDir)
-  if (isFirstSync) state = seedFromEngineState(state, stateDir)
+  const persisted = readProjection(stateDir)
+  let state = isFirstSync ? seedFromEngineState(persisted, stateDir) : persisted
 
+  const logKey = eventsKey(stateDir)
+  const logUnchanged = !isFirstSync && syncedEvents.get(stateDir) === logKey
   const sinceMs = Date.parse(cursor.lastEventAt)
   const seenAtSameMs = new Set(cursor.seenAtSameMs)
-  const fresh = readLoopEvents(stateDir, sinceMs)
+  const fresh = (logUnchanged ? [] : readLoopEvents(stateDir, sinceMs))
     .filter((event) => {
       const eventMs = Date.parse(event.at)
       if (!Number.isFinite(eventMs) || eventMs < sinceMs) return false
@@ -214,7 +235,9 @@ export const syncProjection = (stateDir: string): ProjectionState => {
   const lastAtMs = Date.parse(lastAt)
   const nextCursor: Cursor = { schemaVersion: PROJECTION_SCHEMA_VERSION, lastEventAt: lastAt, seenAtSameMs: fresh.filter((event) => Date.parse(event.at) === lastAtMs).map(eventKey) }
 
-  writeJsonAtomic(projectionPath(stateDir), { schemaVersion: PROJECTION_SCHEMA_VERSION, issues: state.issues })
-  writeJsonAtomic(cursorPath(stateDir), nextCursor)
+  // Nothing new folded in and nothing reconciled: the files on disk already say this, so the 1 s poll writes nothing.
+  if (isFirstSync || state !== persisted) writeJsonAtomic(projectionPath(stateDir), { schemaVersion: PROJECTION_SCHEMA_VERSION, issues: state.issues })
+  if (isFirstSync || fresh.length > 0) writeJsonAtomic(cursorPath(stateDir), nextCursor)
+  syncedEvents.set(stateDir, logKey)
   return overlayLiveStores(state, stateDir)
 }

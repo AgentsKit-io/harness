@@ -17,6 +17,7 @@ import type { SystemReport } from '../src/ui/api/contract.js'
 import { createUiJobManager, type UiJobManager, type UiJobRecord } from '../src/ui/api/jobs.js'
 import type { RouteContext } from '../src/ui/api/routes.js'
 import { alertsStatePath, createSystemRoutes, doctorReportPath, type SystemRouteDeps } from '../src/ui/api/routes-system.js'
+import { stageState } from '../src/ui/app/src/pages/System.js'
 
 const exampleYaml = readFileSync(join(process.cwd(), 'loop.config.example.yaml'), 'utf8').replace('person: my-linear-display-name', 'person: Pat Operator')
 const NOW = new Date('2026-09-20T12:00:00Z')
@@ -25,7 +26,7 @@ afterEach(() => { for (const cleanup of cleanups.splice(0).reverse()) cleanup() 
 
 const ok = (result: unknown): CommandResult => ({ code: 0, stdout: JSON.stringify({ ok: true, result }), stderr: '', timedOut: false, durationMs: 1 })
 
-const harness = async (deps: Partial<SystemRouteDeps> = {}) => {
+const harness = async (deps: Partial<SystemRouteDeps> = {}, orcaDown = false) => {
   const dir = mkdtempSync(join(tmpdir(), 'harness-ui-system-'))
   cleanups.push(() => rmSync(dir, { recursive: true, force: true }))
   writeFileSync(join(dir, 'loop.config.yaml'), exampleYaml)
@@ -36,6 +37,7 @@ const harness = async (deps: Partial<SystemRouteDeps> = {}) => {
     run: async (argv) => {
       calls.push([...argv])
       const key = argv.join(' ')
+      if (orcaDown) return { code: 1, stdout: '', stderr: 'orca: runtime not running', timedOut: false, durationMs: 1 }
       if (key.startsWith('orca automations list')) { const automations = [{ id: 'auto-1', name: tick, enabled: true, trigger: '*/7 * * * *', provider: 'claude' }]; return ok({ automations, items: automations }) }
       if (key.startsWith('orca automations runs')) return ok({ runs: [{ startedAt: Date.parse('2026-09-20T11:55:00Z'), status: 'succeeded' }] })
       return { code: 127, stdout: '', stderr: `no fixture for ${key}`, timedOut: false, durationMs: 1 }
@@ -100,6 +102,22 @@ describe('GET /system', () => {
     expect(calls.every((argv) => argv[0] === 'orca' && argv[1] === 'automations')).toBe(true)
     await call('GET', 'system')
     expect(calls.length).toBe(orcaCalls)
+  })
+})
+
+describe('GET /system with Orca unreachable', () => {
+  it('reports every stage as unknown with the Orca error, never as "not installed"', async () => {
+    const { call } = await harness({}, true)
+    const report = (await call('GET', 'system')).body as unknown as SystemReport
+    expect(report.orcaError).toMatch(/^Orca unreachable: /)
+    expect(report.stages.length).toBeGreaterThan(0)
+    for (const stage of report.stages) expect(stage.installed).toBeNull()
+    expect(stageState(report.stages[0]!)).toEqual({ text: 'Orca unreachable', className: 'text-warning' })
+  })
+
+  it('an answering Orca reports no error', async () => {
+    const { call } = await harness()
+    expect(((await call('GET', 'system')).body as unknown as SystemReport).orcaError).toBeNull()
   })
 })
 

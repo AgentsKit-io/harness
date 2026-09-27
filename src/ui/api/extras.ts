@@ -1,3 +1,4 @@
+import { CLOSED_STATES } from './reconcile.js'
 import { existsSync, statSync } from 'node:fs'
 import { z } from 'zod'
 import { readJsonFile } from '../../kernel/json-file.js'
@@ -20,6 +21,8 @@ import { buildAttention, latestStops, type AttentionInput } from './attention.js
 import type { BoardSnapshot } from './board.js'
 import type { SnapshotExtras } from './contract.js'
 import type { IssueRecord } from './projection.js'
+import { withRunningHarness } from './running-harness.js'
+import { eventsKey } from './store.js'
 import { computeLocks, cronCadenceMs, reconcile } from './reconcile.js'
 
 /**
@@ -41,8 +44,11 @@ export const staleAfterMsFor = (loaded: LoadedLoopConfig): number => 2 * cronCad
 // ---- Orca (worktrees + terminals), TTL-cached -----------------------------------------------------------------
 
 export interface OrcaView {
+  /** When `worktreeIds` was last read successfully. */
   readonly at: string | null
   readonly worktreeIds: readonly string[] | null
+  /** When `terminals` was last read successfully: a failed terminal list keeps the old ones, never re-dated. */
+  readonly terminalsAt: string | null
   readonly terminals: readonly OrcaTerminal[]
 }
 
@@ -52,15 +58,16 @@ export interface OrcaCache {
 }
 
 export const createOrcaCache = (loaded: LoadedLoopConfig, runner: CommandRunner, now: () => Date = () => new Date(), ttlMs = ORCA_TTL_MS): OrcaCache => {
-  let view: OrcaView = { at: null, worktreeIds: null, terminals: [] }
+  let view: OrcaView = { at: null, worktreeIds: null, terminalsAt: null, terminals: [] }
   let fetchedAtMs = Number.NEGATIVE_INFINITY
   let inFlight: Promise<OrcaView> | null = null
   const refresh = (): Promise<OrcaView> => {
     inFlight ??= (async () => {
       const options = { bin: loaded.config.orca?.bin, timeoutMs: loaded.config.orca?.timeoutMs ?? 20_000 }
       try {
-        const [worktrees, terminals] = await Promise.all([orcaWorktrees(runner, options), orcaTerminalList(runner, {}, options).catch(() => view.terminals)])
-        view = { at: now().toISOString(), worktreeIds: worktrees.map((worktree) => worktree.id), terminals }
+        const [worktrees, terminals] = await Promise.all([orcaWorktrees(runner, options), orcaTerminalList(runner, {}, options).catch(() => null)])
+        const at = now().toISOString()
+        view = { at, worktreeIds: worktrees.map((worktree) => worktree.id), ...(terminals ? { terminalsAt: at, terminals } : { terminalsAt: view.terminalsAt, terminals: view.terminals }) }
       } catch { /* keep the last good view; freshness goes stale on its own */ }
       fetchedAtMs = now().getTime()
       inFlight = null
@@ -86,13 +93,6 @@ export const orcaCacheFor = (loaded: LoadedLoopConfig, runner: CommandRunner): O
 }
 
 // ---- windowed event tail, re-parsed only when the file changes -----------------------------------------------
-
-const eventsKey = (stateDir: string): string => {
-  const path = join(stateDir, 'events.ndjson')
-  if (!existsSync(path)) return 'none'
-  const stat = statSync(path)
-  return `${stat.mtimeMs}:${stat.size}`
-}
 
 export const createEventTail = (stateDir: string) => {
   let key = ''
@@ -129,7 +129,9 @@ const createAutomationsCache = (loaded: LoadedLoopConfig, runner: CommandRunner)
         try {
           const existing = await orcaAutomationsList(runner, { bin: loaded.config.orca?.bin, timeoutMs: loaded.config.orca?.timeoutMs ?? 20_000 })
           const since = new Date().toISOString()
-          rows = reconcileAutomations(automationSpecs(loaded, ''), existing, loaded.config)
+          // Same spec the Reinstall action writes (#114 pins the running binary); comparing against the unpinned
+          // default made every reinstalled automation look drifted forever.
+          rows = reconcileAutomations(automationSpecs(withRunningHarness(loaded), ''), existing, loaded.config)
             .filter((row) => row.state !== 'in-sync')
             .map((row) => ({ name: row.name, stage: row.stage, state: row.state as 'missing' | 'drifted' | 'undeclared', fields: row.fields, since: rows.find((old) => old.name === row.name && old.state === row.state)?.since ?? since }))
         } catch { /* Orca unreachable: its freshness already says so; no automation claims either way */ }
@@ -153,15 +155,39 @@ const TRACKER_LOOKUPS_PER_CYCLE = 8
  */
 export interface TrackerCacheStore<T> { readonly load: () => Readonly<Record<string, { readonly state: T; readonly at: number }>>; readonly save: (entries: Readonly<Record<string, { readonly state: T; readonly at: number }>>) => void }
 
-export const createTrackerStateCache = <T>(lookup: (issue: string) => Promise<T>, now: () => number = Date.now, store?: TrackerCacheStore<T>) => {
+/** A tracker that answered "rate limited" gets no lookups at all for this long — retrying is what keeps the limit on. */
+const TRACKER_RATE_LIMIT_PAUSE_MS = 15 * 60_000
+const RATE_LIMITED = /rate.?limit|too many requests|\b429\b|quota/i
+
+/**
+ * `settled`: a cached answer that can no longer change the UI (the issue is closed in the tracker) is never asked
+ * again. Without it every issue the loop ever touched — the projection keeps them all, and none is on the board once
+ * closed — was re-fetched every TTL, forever: ~6 tracker calls an hour per historical issue with nobody watching.
+ */
+export const createTrackerStateCache = <T>(lookup: (issue: string) => Promise<T>, now: () => number = Date.now, store?: TrackerCacheStore<T>, settled: (state: T) => boolean = () => false) => {
   // Persisted so a restarted UI shows known titles/states at once instead of re-learning them 8 per cycle.
   const states = new Map<string, { readonly state: T; readonly at: number }>(Object.entries(store?.load() ?? {}))
   const pending = new Set<string>()
+  // A failed lookup waits out the same TTL as a successful one. Without this, a failure recorded nothing, the issue
+  // stayed "due", and the next 1 s snapshot asked again: a rate-limited tracker was hit up to 8×/s until the limit
+  // never reset (observed: Linear limited for 12+ hours by the UI alone).
+  const failedAt = new Map<string, number>()
+  let pausedUntil = 0
   return (issues: readonly string[]): Readonly<Record<string, T>> => {
-    const due = issues.filter((issue) => !pending.has(issue) && (now() - (states.get(issue)?.at ?? -Infinity)) > TRACKER_TTL_MS).slice(0, TRACKER_LOOKUPS_PER_CYCLE)
+    const at = now()
+    const due = at < pausedUntil ? [] : issues.filter((issue) => !pending.has(issue)
+      && !(states.has(issue) && settled(states.get(issue)!.state))
+      && (at - (states.get(issue)?.at ?? -Infinity)) > TRACKER_TTL_MS
+      && (at - (failedAt.get(issue) ?? -Infinity)) > TRACKER_TTL_MS).slice(0, TRACKER_LOOKUPS_PER_CYCLE)
     for (const issue of due) {
       pending.add(issue)
-      void lookup(issue).then((state) => { states.set(issue, { state, at: now() }); store?.save(Object.fromEntries(states)) }).catch(() => { /* unknown stays unknown */ }).finally(() => pending.delete(issue))
+      void lookup(issue)
+        .then((state) => { failedAt.delete(issue); states.set(issue, { state, at: now() }); store?.save(Object.fromEntries(states)) })
+        .catch((error: unknown) => {
+          failedAt.set(issue, now())
+          if (RATE_LIMITED.test(error instanceof Error ? error.message : String(error))) pausedUntil = now() + TRACKER_RATE_LIMIT_PAUSE_MS
+        })
+        .finally(() => pending.delete(issue))
     }
     return Object.fromEntries(issues.flatMap((issue) => { const hit = states.get(issue); return hit ? [[issue, hit.state]] : [] }))
   }
@@ -202,7 +228,7 @@ export const createExtrasBuilder = (loaded: LoadedLoopConfig, runner: CommandRun
   const orca = options.orca ?? orcaCacheFor(loaded, runner)
   const tail = createEventTail(loaded.stateDir)
   const automations = createAutomationsCache(loaded, runner)
-  const trackerFacts = options.trackerState ?? createTrackerStateCache(async (issue): Promise<TrackerFacts> => { const detail = await resolveConnectors({ runner, config: loaded.config }).tracker.issue(issue); return { state: detail.state, title: detail.title } }, Date.now, trackerFactsStore(loaded.stateDir))
+  const trackerFacts = options.trackerState ?? createTrackerStateCache(async (issue): Promise<TrackerFacts> => { const detail = await resolveConnectors({ runner, config: loaded.config }).tracker.issue(issue); return { state: detail.state, title: detail.title } }, Date.now, trackerFactsStore(loaded.stateDir), (facts) => CLOSED_STATES.test(facts.state.trim()))
   const { stateDir, config } = loaded
 
   return {
@@ -257,6 +283,7 @@ export const createExtrasBuilder = (loaded: LoadedLoopConfig, runner: CommandRun
         stagePauses: Object.entries(stagePause).flatMap(([stage, entry]) => entry?.pausedAt ? [{ stage, since: entry.pausedAt, reason: entry.pausedReason }] : []),
         cooldowns: Object.entries(cooldowns).filter(([provider]) => provider in activeCooldowns(cooldowns, at)).map(([provider, entry]) => ({ provider, until: entry.until, reason: entry.reason, since: entry.markedAt })),
         syncFailures: recent.filter((event) => event.type === 'tracker.sync-failed').map((event) => ({ issue: typeof event.issue === 'string' ? event.issue : null, operation: typeof event['operation'] === 'string' ? event['operation'] : null, error: typeof event['error'] === 'string' ? event['error'] : null, at: event.at })),
+        syncResolutions: recent.flatMap((event) => event.type === 'ui.tracker-sync-resolved' && typeof event.issue === 'string' ? [{ issue: event.issue, at: event.at }] : []),
         pii: recent.filter((event) => event.type === 'security.pii-detected').map((event) => ({ issue: typeof event.issue === 'string' ? event.issue : null, kinds: Array.isArray(event['kinds']) ? event['kinds'].filter((kind): kind is string => typeof kind === 'string') : [], at: event.at })),
         automations: automations(at),
       })

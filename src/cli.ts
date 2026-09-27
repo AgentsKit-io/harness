@@ -5,9 +5,9 @@ import { Command } from 'commander'
 import { approveRun, ARTIFACT_SCHEMA_VERSION, assessAcceptance, assessBlock, assessDiscovery, assessImprovementCycle, assessIntegration, assessPilot, assessPreflight, assessProduction, assessWip, assessWorktreeCleanup, authorizeRun, benchmarkRuns, cancelRun, cleanTaskArtifacts, composePullRequest, createDispatchLedger, createDocBridgeContextProvider, createStatusSnapshot, exportEvidenceBundle, FileArtifactStore, loadBenchmarkManifest, loadConfig, loadLatestRun, parseRetro, planFilePreflight, planRun, readArtifactFile, readContextSnapshots, readEvidenceTrustStore, reconcileRun, recordBenchmarkObservation, renderArtifactMarkdown, retryRun, selectRuntime, startRun, validateBlockManifest, validateStatusSnapshot, verifyEvidenceBundle, verifyRun } from './index.js'
 import type { BenchmarkObservationEvidence } from './execution/metrics.js'
 import { fail } from './kernel/errors.js'
-import { appendLoopEvent, approveHeldDelivery, ensureBaseView, attachNotifier, buildDebriefReport, buildRetroReport, createLoopEventBus, createProcessRunner, createRichIO, formatWatchEvent, generateContract, installLoopAutomations, loadLoopConfig, loadLoopPlugins, openLoopMemory, promoteLearningsToMemory, requireWritableTracker, resolveConnectors, runGuidedInstall, runLoopInit, loopStatus, renderDebriefMarkdown, renderObservabilityMarkdown, renderRetroMarkdown, retroLearnings, runRetroStage, precheckDeliver, precheckTick, rankModels, promoteLearnings, writePrdDocument, writeDesignDocument, documentRoot, readCheckoutState, readLearningsLedger, startPlan, interviewRound, answerRound, approvePlan, architectRound, approveDesign, decomposeRound, createPlannedIssues, designApproved, listPlans, prdGaps, readPlanState, writePlanState, renderPlanMarkdown, readStoredContract, writeLearningsLedger, runDeliver, runLoopDoctor, runIntakeStage, runMaintainStage, readReleaseBatch, readReleaseState, approveRelease, renderReleaseMarkdown, runReleaseStage, runObservability, runObserveStage, runTick, uninstallLoopAutomations, watchDeliveries, writeStoredContract, isStagePaused, recordStageRunResult, resumeIssue, resumeStage, readIssueFailures, stageEntry, listPausedIssues, readLastConfigHash, writeLastConfigHash, buildIssueTimeline, renderIssueTimelineMarkdown, runWorkerGuard, type LoopStageName } from './index.js'
+import { appendLoopEvent, approveHeldDelivery, ensureBaseView, attachNotifier, buildDebriefReport, buildRetroReport, createLoopEventBus, createProcessRunner, createRichIO, formatWatchEvent, generateContract, installLoopAutomations, loadLoopConfig, loadLoopPlugins, openLoopMemory, promoteLearningsToMemory, requireWritableTracker, resolveConnectors, runGuidedInstall, runLoopInit, loopStatus, renderDebriefMarkdown, renderObservabilityMarkdown, renderRetroMarkdown, retroLearnings, runRetroStage, precheckDeliver, precheckTick, rankModels, promoteLearnings, writePrdDocument, writeDesignDocument, documentRoot, readCheckoutState, readLearningsLedger, startPlan, interviewRound, answerRound, approvePlan, architectRound, approveDesign, decomposeRound, createPlannedIssues, designApproved, listPlans, prdGaps, readPlanState, writePlanState, renderPlanMarkdown, readStoredContract, writeLearningsLedger, runDeliver, runLoopDoctor, runIntakeStage, runMaintainStage, readReleaseBatch, readReleaseState, approveRelease, renderReleaseMarkdown, runReleaseStage, runObservability, runObserveStage, runTick, uninstallLoopAutomations, watchDeliveries, writeStoredContract, isStagePaused, recordStageRunResult, resumeIssue, resumeStage, readIssueFailures, stageEntry, listPausedIssues, readLastConfigHash, writeLastConfigHash, buildIssueTimeline, renderIssueTimelineMarkdown, listAgentRuns, readAgentRunReport, renderAgentRunMarkdown, runWorkerGuard, type LoopStageName } from './index.js'
 import { FileEventStore, inspectEventLogLock, recoverEventLogLock } from './kernel/events.js'
-import { acquireStageLock, peekStageLock } from './loop/stage-lock.js'
+import { acquireStageLock, lastStageLockOwner, peekStageLock } from './loop/stage-lock.js'
 import { spawnDetachedWorker } from './loop/detached-worker.js'
 import { join } from 'node:path'
 import { startUiServer } from './ui/api/server.js'
@@ -92,6 +92,23 @@ loop.command('validate').description('Validate loop.config.yaml and print the ef
 loop.command('doctor').description('Check Orca, providers, usage, machine slots, routing, and the selected tracker board without dispatching.').option('--no-probe', 'skip provider probe commands').action(async function (this: Command, command: { readonly probe: boolean }) { const report = await runLoopDoctor({ configPath: loopFile(this), runner: createProcessRunner(), probe: command.probe }); print(report); if (report.status === 'failed') process.exitCode = 1 })
 loop.command('precheck <stage>').description('Read-only Orca precheck: exit 0 when the stage (tick | deliver) has work.').action(async function (this: Command, stage: string) { if (stage !== 'tick' && stage !== 'deliver') fail(`Unknown precheck stage: ${stage}`, 'INVALID_INPUT'); const result = stage === 'tick' ? await precheckTick({ configPath: loopFile(this), runner: createProcessRunner() }) : precheckDeliver(loadLoopConfig(loopFile(this)).stateDir); print(result); process.exitCode = result.work ? 0 : 1 })
 loop.command('deliver').description('Drive dispatched workers to merge: PR detection, CI, review, fix rounds, squash-merge, tracker Done, cleanup.').option('--dry-run', 'decide only; no terminal input, no review, no merge, no tracker write').option('--issue <identifier>', 'restrict to one issue').action(async function (this: Command, command: { readonly dryRun?: boolean; readonly issue?: string }) { print(await runDeliver({ configPath: loopFile(this), runner: createProcessRunner(), dryRun: command.dryRun ?? false, onlyIssue: command.issue })) })
+// A plugin can gate merge/dispatch (`beforeMerge`/`beforeDispatch`); one that failed to load gates nothing, so a
+// scheduled run must not proceed as if it were there. Each failure becomes an event; the caller fails the run.
+const loadStagePlugins = async (loaded: ReturnType<typeof loadLoopConfig>, bus: ReturnType<typeof createLoopEventBus>): Promise<string | null> => {
+  if (!loaded.config.plugins.modules.length) return null
+  const { errors } = await loadLoopPlugins(loaded.root, loaded.config.plugins.modules, bus)
+  for (const error of errors) appendLoopEvent(loaded.stateDir, { at: new Date().toISOString(), type: 'plugin.load-failed', path: error.path, error: error.error }, bus)
+  return errors.length ? `plugin(s) failed to load: ${errors.map((error) => `${error.path} (${error.error})`).join('; ')}` : null
+}
+const stageFailureReason = (report: { readonly results: readonly unknown[] }): string =>
+  `every result failed: ${report.results.map((result) => { const row = result as { readonly issue?: unknown; readonly reason?: unknown }; return `${String(row.issue)}: ${String(row.reason)}` }).join('; ')}`.slice(0, 500)
+// One failed tick/deliver run: counts toward the stage auto-pause and says so, the same way whatever the cause.
+const failStageRun = (loaded: ReturnType<typeof loadLoopConfig>, stage: LoopStageName, reason: string, bus: ReturnType<typeof createLoopEventBus>, completed: (status: string, count: number) => void): void => {
+  const entry = recordStageRunResult(loaded.stateDir, stage, { succeeded: false, reason }, loaded.config.resilience.stagePauseAfterRuns)
+  completed('error', 0)
+  if (entry.pausedAt) appendLoopEvent(loaded.stateDir, { at: new Date().toISOString(), type: 'stage.paused', stage, reason, consecutiveFailures: entry.consecutiveFailures }, bus)
+  console.log(JSON.stringify({ status: 'error', stage, error: reason, consecutiveFailures: entry.consecutiveFailures, paused: entry.pausedAt !== null }, null, 2))
+}
 loop.command('stage <stage>').description('Run one stage (tick | deliver | retro | observe | release | intake | maintain) as an Orca precheck: prints the JSON report and exits 1 so Orca records the run without launching an agent — except `observe`, which exits 0 when a human has to look.').action(async function (this: Command, stage: string) {
   if (stage !== 'tick' && stage !== 'deliver' && stage !== 'retro' && stage !== 'observe' && stage !== 'release' && stage !== 'intake' && stage !== 'maintain') fail(`Unknown stage: ${stage}`, 'INVALID_INPUT')
   const runner = createProcessRunner(); const file = loopFile(this)
@@ -109,10 +126,17 @@ loop.command('stage <stage>').description('Run one stage (tick | deliver | retro
   // `stage.completed`, `stage.paused`) alike — reaches the same plugin/notifier path, unified instead of each
   // stage (or this handler) wiring its own.
   const bus = createLoopEventBus()
-  if (loaded.config.plugins.modules.length) await loadLoopPlugins(loaded.root, loaded.config.plugins.modules, bus)
   const flushNotifications = attachNotifier(bus, { config: loaded.config, runner })
   const completed = (status: string, count: number): void => appendLoopEvent(loaded.stateDir, { at: new Date().toISOString(), type: 'stage.completed', stage, durationMs: Date.now() - startedAt, status, count }, bus)
   try {
+    const pluginFailure = await loadStagePlugins(loaded, bus)
+    if (pluginFailure) {
+      // Never spawn a tick/deliver worker past a missing gate; the failure counts toward that stage's auto-pause.
+      if ((stage === 'tick' || stage === 'deliver') && !isStagePaused(loaded.stateDir, stage)) failStageRun(loaded, stage, pluginFailure, bus, completed)
+      else { completed('error', 0); console.log(JSON.stringify({ status: 'error', stage, error: pluginFailure }, null, 2)) }
+      process.exitCode = 1
+      return
+    }
     if (stage === 'intake' || stage === 'maintain') {
       // Both create issues and nothing else; like every scheduled stage they exit 1 so Orca records the run.
       const report = stage === 'intake' ? await runIntakeStage({ loaded, runner, bus }) : await runMaintainStage({ loaded, runner, bus })
@@ -146,19 +170,22 @@ loop.command('stage <stage>').description('Run one stage (tick | deliver | retro
       process.exitCode = 1
       return
     }
-    if (stage === 'tick') {
-      // `tick`'s own contract-generation gate can legitimately run well past Orca's 600s precheck ceiling (see
-      // `schedule.stageTimeoutSec`'s doc comment) — so, unlike every other stage, this precheck never does the
-      // real work itself. It only peeks whether a tick is already in flight (never acquires — the spawned worker
-      // does that itself, so there is nothing here to race) and, if not, fires a fully detached background
-      // process that does the real work on its own clock, then returns in milliseconds either way.
-      const inFlight = peekStageLock(loaded.stateDir, 'tick')
+    if (stage === 'tick' || stage === 'deliver') {
+      // Both `tick`'s contract-generation gate and `deliver`'s per-issue delivery loop can legitimately run past
+      // Orca's 600s precheck ceiling — `tick` always could (see `schedule.stageTimeoutSec`'s doc comment);
+      // `deliver` didn't used to (it was fast with one or two dispatched issues) but a sequential `for` over every
+      // dispatched record (`runDeliver`) stopped fitting `precheckTimeoutSec` once several issues were in flight
+      // at once (reproduced live: 3 concurrent deliveries timed out 3 runs in a row at 120s). So neither stage's
+      // precheck does the real work itself: it only peeks whether that stage is already in flight (never acquires
+      // — the spawned worker does that itself, so there is nothing here to race) and, if not, fires a fully
+      // detached background process that does the real work on its own clock, then returns in milliseconds either way.
+      const inFlight = peekStageLock(loaded.stateDir, stage)
       if (inFlight.held) {
         console.log(JSON.stringify({ status: 'already-in-flight', stage, pid: inFlight.pid, ageMs: inFlight.ageMs }, null, 2))
         process.exitCode = 1
         return
       }
-      // Spawn `node <this same cli.js> loop tick-worker …` directly with `process.execPath`/`process.argv[1]`,
+      // Spawn `node <this same cli.js> loop <stage>-worker …` directly with `process.execPath`/`process.argv[1]`,
       // never `schedule.harnessCommand` (`ak-harness` by default) itself. On Windows any globally-installed
       // Node CLI is a `.cmd` shim, which `shell: false` cannot exec directly — `cross-spawn` (used by
       // `spawnDetachedWorker`) re-execs those through an extra `cmd.exe /d /s /c` hop, and that hop, however long
@@ -167,8 +194,8 @@ loop.command('stage <stage>').description('Run one stage (tick | deliver | retro
       // spawn — see `spawnDetachedWorker`'s doc comment). `process.argv[1]` is already the real, resolved script
       // path regardless of whether a shim launched this process, so spawning it directly needs no shim, no
       // extra hop, and no dependency on how `harnessCommand` is configured.
-      const logPath = join(loaded.stateDir, 'tick-worker.log')
-      const spawned = spawnDetachedWorker({ command: process.execPath, args: [process.argv[1]!, 'loop', 'tick-worker', '-f', file], cwd: loaded.root, logPath })
+      const logPath = join(loaded.stateDir, `${stage}-worker.log`)
+      const spawned = spawnDetachedWorker({ command: process.execPath, args: [process.argv[1]!, 'loop', `${stage}-worker`, '-f', file], cwd: loaded.root, logPath })
       // Windows needs the detached child to survive a little past this process's own exit to be safely
       // independent of it: reproduced live under real system load — exiting immediately after spawn (even with
       // `detached: true` + `.unref()`) silently kills a still-starting child before its own process/module-load/
@@ -179,15 +206,19 @@ loop.command('stage <stage>').description('Run one stage (tick | deliver | retro
       // it's actually safe rather than always waiting a worst-case amount. The ceiling below is a last resort,
       // not the real timeout — Orca's own precheck-timeout is — so staying at 10s against a 120s budget leaves
       // enormous margin even on the rare run that never confirms.
+      // `lastStageLockOwner`, not the live lock: a worker with nothing to do can acquire and release it between
+      // two polls, and that is a confirmed start, not a missing one.
       const confirmDeadlineAt = Date.now() + 10_000
       let confirmed = false
-      while (Date.now() < confirmDeadlineAt) {
+      while (spawned.pid !== null && Date.now() < confirmDeadlineAt) {
         await new Promise((resolve) => setTimeout(resolve, 100))
-        if (peekStageLock(loaded.stateDir, 'tick').pid === spawned.pid) { confirmed = true; break }
+        if (lastStageLockOwner(loaded.stateDir, stage) === spawned.pid) { confirmed = true; break }
       }
+      process.exitCode = 1
+      // An unconfirmed spawn is a failed run, not a kick-off: nothing proves a worker is doing the stage's work.
+      if (!confirmed) return failStageRun(loaded, stage, `detached ${stage} worker (pid ${spawned.pid ?? 'none'}) did not take the stage lock within 10s; see ${spawned.logPath}`, bus, completed)
       completed('kicked-off', 0)
       console.log(JSON.stringify({ status: 'kicked-off', stage, pid: spawned.pid, log: spawned.logPath, confirmed }, null, 2))
-      process.exitCode = 1
       return
     }
     const stageLock = acquireStageLock(loaded.stateDir, stage)
@@ -196,22 +227,15 @@ loop.command('stage <stage>').description('Run one stage (tick | deliver | retro
       process.exitCode = 1
       return
     }
-    const budgetMs = Math.max(60_000, loaded.config.schedule.stageTimeoutSec * 1000 - 60_000)
-    const threshold = loaded.config.resilience.stagePauseAfterRuns
     try {
-      const report = stage === 'deliver' ? await runDeliver({ loaded, runner, budgetMs, bus }) : await runRetroStage({ loaded, runner, bus })
-      if (stage !== 'retro') recordStageRunResult(loaded.stateDir, trackedStage, { succeeded: true }, threshold)
-      completed(report.status, 'results' in report ? report.results.length : 'learningsProposed' in report ? report.learningsProposed : 0)
+      // Only `retro` still reaches here — `tick` and `deliver` both returned above.
+      const report = await runRetroStage({ loaded, runner, bus })
+      completed(report.status, report.learningsProposed)
       console.log(JSON.stringify(report, null, 2))
     } catch (error) {
       const reason = error instanceof Error ? error.message : String(error)
-      const entry = stage !== 'retro' ? recordStageRunResult(loaded.stateDir, trackedStage, { succeeded: false, reason }, threshold) : null
       completed('error', 0)
-      // A stage that just auto-paused is the loop stopping on its own: it gets an event on the same bus as
-      // everything else, and `stage.paused` is in `notifications.events`' default list, so the configured
-      // channel hears about it exactly the way any other notified event does — no more separate direct call.
-      if (entry?.pausedAt) appendLoopEvent(loaded.stateDir, { at: new Date().toISOString(), type: 'stage.paused', stage, reason, consecutiveFailures: entry.consecutiveFailures }, bus)
-      console.log(JSON.stringify({ status: 'error', stage, error: reason, ...(entry ? { consecutiveFailures: entry.consecutiveFailures, paused: entry.pausedAt !== null } : {}) }, null, 2))
+      console.log(JSON.stringify({ status: 'error', stage, error: reason }, null, 2))
     } finally {
       stageLock()
     }
@@ -220,53 +244,75 @@ loop.command('stage <stage>').description('Run one stage (tick | deliver | retro
     await flushNotifications()
   }
 })
-loop.command('tick-worker').description('Internal: the detached background process `loop stage tick` spawns to run a real tick without Orca\'s 600s precheck ceiling — not meant to be run by hand. Use `loop tick` for a foreground run, or `loop stage tick` for the scheduled entrypoint.').action(async function (this: Command) {
-  const runner = createProcessRunner(); const file = loopFile(this)
-  const loaded = loadLoopConfig(file)
+// Shared body for `tick-worker` and `deliver-worker`: both are detached background processes the `stage`
+// precheck spawns (see above) to do the real work outside Orca's precheck ceiling, on the stage's own lock and
+// budget. Not meant to be run by hand — use `loop tick`/`loop deliver` for a foreground run, or `loop stage
+// tick`/`loop stage deliver` for the scheduled entrypoint.
+const runDetachedStageWorker = async (input: {
+  readonly stage: LoopStageName
+  readonly file: string
+  readonly run: (ctx: { readonly loaded: ReturnType<typeof loadLoopConfig>; readonly runner: ReturnType<typeof createProcessRunner>; readonly budgetMs: number; readonly bus: ReturnType<typeof createLoopEventBus> }) => Promise<{ readonly status: string; readonly results: readonly unknown[] }>
+}): Promise<void> => {
+  const { stage, file, run } = input
   const startedAt = Date.now()
+  // ponytail: a config that fails to load leaves no stateDir to record into; the top-level catch writes it to the worker log.
+  const loaded = loadLoopConfig(file)
   const bus = createLoopEventBus()
-  if (loaded.config.plugins.modules.length) await loadLoopPlugins(loaded.root, loaded.config.plugins.modules, bus)
-  const flushNotifications = attachNotifier(bus, { config: loaded.config, runner })
-  const completed = (status: string, count: number): void => appendLoopEvent(loaded.stateDir, { at: new Date().toISOString(), type: 'stage.completed', stage: 'tick', durationMs: Date.now() - startedAt, status, count }, bus)
+  const completed = (status: string, count: number): void => appendLoopEvent(loaded.stateDir, { at: new Date().toISOString(), type: 'stage.completed', stage, durationMs: Date.now() - startedAt, status, count }, bus)
+  let flushNotifications = async (): Promise<void> => { /* replaced once the notifier is attached */ }
   try {
+    const runner = createProcessRunner()
+    flushNotifications = attachNotifier(bus, { config: loaded.config, runner })
+    const pluginFailure = await loadStagePlugins(loaded, bus)
     // A stage that got paused (or resumed) in the gap between the precheck's peek and this process actually
     // starting is rare — the precheck returns in milliseconds — but cheap to catch here too rather than burn a
-    // whole tick budget on work the loop was told to stop.
-    if (isStagePaused(loaded.stateDir, 'tick')) {
-      const entry = stageEntry(loaded.stateDir, 'tick')
-      console.log(JSON.stringify({ status: 'paused', stage: 'tick', pausedAt: entry.pausedAt, pausedReason: entry.pausedReason, consecutiveFailures: entry.consecutiveFailures, resume: `ak-harness loop resume --stage tick -f ${JSON.stringify(file)}` }, null, 2))
+    // whole stage budget on work the loop was told to stop.
+    if (isStagePaused(loaded.stateDir, stage)) {
+      const entry = stageEntry(loaded.stateDir, stage)
+      console.log(JSON.stringify({ status: 'paused', stage, pausedAt: entry.pausedAt, pausedReason: entry.pausedReason, consecutiveFailures: entry.consecutiveFailures, resume: `ak-harness loop resume --stage ${stage} -f ${JSON.stringify(file)}` }, null, 2))
       process.exitCode = 1
       return
     }
-    const stageLock = acquireStageLock(loaded.stateDir, 'tick')
+    const stageLock = acquireStageLock(loaded.stateDir, stage)
     if (!stageLock) {
-      // Lost a race with another tick-worker (or a human's own `loop stage tick` / `loop tick-worker`) that
-      // acquired first — the precheck's peek is advisory, this acquire is the real, atomic mutex. Harmless: the
-      // lock's actual owner is already doing the work this run would have duplicated.
-      console.log(JSON.stringify({ status: 'locked', stage: 'tick', reason: 'another stage run is still active' }, null, 2))
+      // Lost a race with another worker of this stage (or a human's own `loop stage <stage>` / `loop <stage>-worker`)
+      // that acquired first — the precheck's peek is advisory, this acquire is the real, atomic mutex. Harmless:
+      // the lock's actual owner is already doing the work this run would have duplicated.
+      console.log(JSON.stringify({ status: 'locked', stage, reason: 'another stage run is still active' }, null, 2))
       process.exitCode = 1
       return
     }
     const budgetMs = Math.max(60_000, loaded.config.schedule.stageTimeoutSec * 1000 - 60_000)
-    const threshold = loaded.config.resilience.stagePauseAfterRuns
     try {
-      const report = await runTick({ loaded, runner, budgetMs, bus })
-      recordStageRunResult(loaded.stateDir, 'tick', { succeeded: true }, threshold)
-      completed(report.status, report.results.length)
+      if (pluginFailure) fail(pluginFailure)
+      const report = await run({ loaded, runner, budgetMs, bus })
+      // A run whose every result failed is a failed run, so it counts toward the auto-pause. `blocked` (a tracker
+      // cooldown) is not: a rate limit waits itself out instead of becoming a permanent stage pause.
+      if (report.status === 'failed') failStageRun(loaded, stage, stageFailureReason(report), bus, completed)
+      else {
+        recordStageRunResult(loaded.stateDir, stage, { succeeded: true }, loaded.config.resilience.stagePauseAfterRuns)
+        completed(report.status, report.results.length)
+      }
       console.log(JSON.stringify(report, null, 2))
     } catch (error) {
-      const reason = error instanceof Error ? error.message : String(error)
-      const entry = recordStageRunResult(loaded.stateDir, 'tick', { succeeded: false, reason }, threshold)
-      completed('error', 0)
-      if (entry.pausedAt) appendLoopEvent(loaded.stateDir, { at: new Date().toISOString(), type: 'stage.paused', stage: 'tick', reason, consecutiveFailures: entry.consecutiveFailures }, bus)
-      console.log(JSON.stringify({ status: 'error', stage: 'tick', error: reason, consecutiveFailures: entry.consecutiveFailures, paused: entry.pausedAt !== null }, null, 2))
+      failStageRun(loaded, stage, error instanceof Error ? error.message : String(error), bus, completed)
     } finally {
       stageLock()
     }
     process.exitCode = 1
+  } catch (error) {
+    // Anything that throws before the stage lock (runner, notifier, plugin import) is still a failed run.
+    failStageRun(loaded, stage, error instanceof Error ? error.message : String(error), bus, completed)
+    process.exitCode = 1
   } finally {
     await flushNotifications()
   }
+}
+loop.command('tick-worker').description('Internal: the detached background process `loop stage tick` spawns to run a real tick without Orca\'s precheck ceiling — not meant to be run by hand. Use `loop tick` for a foreground run, or `loop stage tick` for the scheduled entrypoint.').action(async function (this: Command) {
+  await runDetachedStageWorker({ stage: 'tick', file: loopFile(this), run: ({ loaded, runner, budgetMs, bus }) => runTick({ loaded, runner, budgetMs, bus }) })
+})
+loop.command('deliver-worker').description('Internal: the detached background process `loop stage deliver` spawns to run a real delivery pass without Orca\'s precheck ceiling — not meant to be run by hand. Use `loop deliver` for a foreground run, or `loop stage deliver` for the scheduled entrypoint.').action(async function (this: Command) {
+  await runDetachedStageWorker({ stage: 'deliver', file: loopFile(this), run: ({ loaded, runner, budgetMs, bus }) => runDeliver({ loaded, runner, budgetMs, bus }) })
 })
 loop.command('tick').description('One keep-pushing tick: intake → admit → contract → dispatch workers into worktrees.').option('--dry-run', 'plan only; no worktree, no tracker write, no contract cached').option('--max <n>', 'max dispatches this tick', (value: string) => Number(value)).option('--issue <identifier>', 'restrict to one issue').option('--skip-contract', 'do not call the orchestrator when no contract is cached').action(async function (this: Command, command: { readonly dryRun?: boolean; readonly max?: number; readonly issue?: string; readonly skipContract?: boolean }) { const report = await runTick({ configPath: loopFile(this), runner: createProcessRunner(), dryRun: command.dryRun ?? false, maxDispatch: command.max, onlyIssue: command.issue, skipContractGeneration: command.skipContract ?? false }); print(report); if (report.status === 'blocked') process.exitCode = 1 })
 loop.command('contract <identifier>').description('Freeze (or show) the orchestrator contract for one configured-tracker issue.').option('--refresh', 'regenerate even when a cached contract exists').option('--dry-run', 'generate but do not cache').action(async function (this: Command, identifier: string, command: { readonly refresh?: boolean; readonly dryRun?: boolean }) {
@@ -336,6 +382,18 @@ loop.command('issue-timeline <identifier>').description('Every logged step for o
   const report = buildIssueTimeline(loaded.stateDir, identifier, { since: command.since })
   if (options().json) return print(report)
   console.log(renderIssueTimelineMarkdown(report))
+})
+const runCommand = loop.command('run').description('Per-issue run records (ADR-0041): state, inputs/outputs, handoffs and evidence under <stateDir>/runs/. Read-only.')
+runCommand.command('list').description('Recent runs, newest activity first.').option('--issue <identifier>', 'only this issue').option('--limit <n>', 'how many runs', (value: string) => Number(value), 20).action(function (this: Command, command: { readonly issue?: string; readonly limit: number }) {
+  const loaded = loadLoopConfig(loopFile(this.parent ?? this))
+  print(listAgentRuns(loaded.stateDir, command.issue ? 500 : command.limit).filter((run) => !command.issue || run.issue === command.issue).slice(0, command.limit).map(({ runId, issue, currentStage, status, loopCount, maxLoopCount, nextRequiredApproval, pr, openedAt, closedAt }) => ({ runId, issue, currentStage, status, loopCount, maxLoopCount, nextRequiredApproval, pr, openedAt, closedAt })))
+})
+runCommand.command('show <run>').description('Reconstruct one run — by run id, or an issue identifier for its latest run: what each step was handed, what it produced, what the machine passed on, and the evidence. The event-level timeline is `loop issue-timeline`.').action(function (this: Command, run: string) {
+  const loaded = loadLoopConfig(loopFile(this.parent ?? this))
+  const report = readAgentRunReport(loaded.stateDir, run)
+  if (!report) return fail(`No run found for ${run} under ${loaded.stateDir}/runs.`, 'INVALID_INPUT')
+  if (options().json) return print(report)
+  console.log(renderAgentRunMarkdown(report))
 })
 loop.command('worker-guard').description('PreToolUse hook entrypoint (Claude Code / Grok Build CLI-compatible): reads a hook event on stdin and exits 2 to block a Write/Edit that would touch a path matching delivery.selfEditPaths or delivery.secretFilePatterns. Installed automatically into a dispatched worktree; not meant to be run by a human.').action(async function (this: Command) {
   const chunks: Buffer[] = []
@@ -504,13 +562,17 @@ loopLearning.command('promoted').description('List the learnings currently promo
   print({ total: promoted.length, records: promoted.map((record) => ({ id: record.id, category: record.category, sightings: record.sightings ?? 1, text: record.text })) })
 })
 program.command('start').description('Move a planned run into implementation.').action(() => print(startRun(loadConfig(options().config))))
-program.command('verify').description('Execute every configured check and record evidence.').action(async () => print(await verifyRun({ configPath: options().config })))
-program.command('run').description('Alias for verify, compatible with the common protocol.').action(async () => print(await verifyRun({ configPath: options().config })))
+// Required gates fail closed: a run printed in any other state (BLOCKED, STALE, …) exits non-zero, so CI and
+// scripts that only check the exit code cannot read a blocked verification as a pass.
+const VERIFIED_STATES: readonly string[] = ['AWAITING_HUMAN_APPROVAL', 'AWAITING_AUTHORIZATION', 'COMPLETE']
+const printRun = <T extends { readonly state: string }>(run: T, passing = VERIFIED_STATES): void => { print(run); if (!passing.includes(run.state)) process.exitCode = 1 }
+program.command('verify').description('Execute every configured check and record evidence.').action(async () => printRun(await verifyRun({ configPath: options().config })))
+program.command('run').description('Alias for verify, compatible with the common protocol.').action(async () => printRun(await verifyRun({ configPath: options().config })))
 program.command('approve <run-id-or-decision> [decision-or-run-id]').description('Record human approval or rejection. Use only <decision> to apply it to the latest pending run; run IDs remain an audit detail.').option('--by <actor>', 'approval actor', 'human').action(async (first: string, second: string | undefined, command: { readonly by: string }) => { const args = decisionArgs(first, second); print(await approveRun({ configPath: options().config, ...args, actor: command.by })) })
 program.command('authorize <run-id-or-decision> [decision-or-run-id]').description('Authorize or reject declared external tracking. Use only <decision> to apply it to the latest pending run; run IDs remain an audit detail.').option('--by <actor>', 'approval actor', 'human').action(async (first: string, second: string | undefined, command: { readonly by: string }) => { const args = decisionArgs(first, second); print(await authorizeRun({ configPath: options().config, ...args, actor: command.by })) })
 program.command('retry').description('Create a new implementation attempt after a blocked or stale run.').action(async () => print(await retryRun({ configPath: options().config })))
 program.command('cancel [run-id]').description('Cancel an active run.').option('--by <actor>', 'cancellation actor', 'human').option('--reason <reason>', 'cancellation reason', 'Run cancelled by a human.').action(async (runId: string | undefined, command: { readonly by: string; readonly reason: string }) => print(await cancelRun({ configPath: options().config, runId, reason: command.reason, actor: command.by })))
-program.command('status').description('Show the latest run after reconciling its audit evidence.').action(async () => { const loaded = loadConfig(options().config); print(loadLatestRun(loaded.stateDir) ? await reconcileRun({ configPath: options().config }) : { state: 'CLARIFYING', message: 'No run exists.' }) })
+program.command('status').description('Show the latest run after reconciling its audit evidence.').action(async () => { const loaded = loadConfig(options().config); printRun(loadLatestRun(loaded.stateDir) ? await reconcileRun({ configPath: options().config }) : { state: 'CLARIFYING', message: 'No run exists.' }, [...VERIFIED_STATES, 'CLARIFYING', 'PLANNED', 'IMPLEMENTING', 'VERIFYING']) })
 program.command('audit [run-id]').description('Reconcile a run projection with its verified lifecycle decisions.').action(async (runId?: string) => print(await reconcileRun({ configPath: options().config, runId })))
 const events = program.command('events').description('Inspect the lifecycle audit log.')
 events.command('verify [run-id]').description('Verify the latest or selected event log hash chain.').action((runId?: string) => { const loaded = loadConfig(options().config); const run = runId ? { runId } : loadLatestRun(loaded.stateDir); const selectedRunId = run?.runId ?? fail('No verification run exists.', 'NO_RUN'); print(new FileEventStore(loaded.stateDir).verify(selectedRunId)) })

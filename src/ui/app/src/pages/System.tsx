@@ -71,7 +71,8 @@ const JobStrip = ({ label, record }: { readonly label: string; readonly record: 
 
 type Stage = SystemReport['stages'][number]
 
-const stageState = (stage: Stage): { readonly text: string; readonly className: string } => {
+export const stageState = (stage: Stage): { readonly text: string; readonly className: string } => {
+  if (stage.installed === null) return { text: 'Orca unreachable', className: 'text-warning' }
   if (!stage.installed) return { text: 'not installed', className: 'text-danger' }
   if (stage.drift.length) return { text: `drift: ${stage.drift.join(', ')}`, className: 'text-warning' }
   if (stage.paused) return { text: `paused${stage.pausedReason ? ` · ${stage.pausedReason}` : ''}`, className: 'text-ink-muted' }
@@ -88,7 +89,7 @@ const StageRow = ({ stage, onPause, onResume, onReinstall }: {
   const [reason, setReason] = React.useState('')
   const [busy, setBusy] = React.useState(false)
   const state = stageState(stage)
-  const needsReinstall = !stage.installed || stage.drift.length > 0
+  const needsReinstall = stage.installed === false || stage.drift.length > 0
   const submit = (event: React.FormEvent): void => {
     event.preventDefault()
     setBusy(true)
@@ -190,6 +191,7 @@ const SystemGrid = ({ report, reload, setError }: { readonly report: SystemRepor
 
       <Card title="Automations · stages">
         <div className="flex flex-col">
+          {report.orcaError && <div role="alert" className="rounded-lg bg-panel-alt px-3 py-2.5 text-xs text-warning">Stage status unknown — {report.orcaError}</div>}
           {report.stages.length === 0 && <EmptyState>No stage automations found.</EmptyState>}
           {report.stages.map((stage) => (
             <StageRow key={stage.stage} stage={stage} onReinstall={reinstall}

@@ -39,6 +39,19 @@ describe('buildIssueTimeline', () => {
     expect(report.problems[0]?.detail).toBe('exited 1: quota')
   })
 
+  it('counts tracker sync failures, a pause, a refused merge and delivery errors as problems', () => {
+    const stateDir = tempStateDir()
+    write(stateDir, { at: '2026-09-20T10:00:00.000Z', type: 'tracker.sync-failed', issue: 'ENG-4', operation: 'review-state', error: 'HTTP 429' })
+    write(stateDir, { at: '2026-09-20T10:01:00.000Z', type: 'issue.paused', issue: 'ENG-4', kind: 'contract.failed', consecutive: 3, reason: 'paused' })
+    write(stateDir, { at: '2026-09-20T10:02:00.000Z', type: 'pr.merge-refused', issue: 'ENG-4', pr: 1, head: 'abc', message: 'Head branch was modified.' })
+    write(stateDir, { at: '2026-09-20T10:03:00.000Z', type: 'delivery.error', issue: 'ENG-4', error: 'gh 502', consecutive: 1 })
+    write(stateDir, { at: '2026-09-20T10:04:00.000Z', type: 'orca.unavailable', issue: 'ENG-4', operation: 'terminal-list', error: 'ECONNREFUSED' })
+    write(stateDir, { at: '2026-09-20T10:05:00.000Z', type: 'plugin.hook-failed', issue: 'ENG-4', hook: 'beforeMerge', error: 'boom' })
+    const report = buildIssueTimeline(stateDir, 'ENG-4', { now: new Date('2026-09-21T00:00:00.000Z') })
+    expect(report.problems.map((problem) => problem.type)).toEqual(['tracker.sync-failed', 'issue.paused', 'pr.merge-refused', 'delivery.error', 'orca.unavailable', 'plugin.hook-failed'])
+    expect(report.problems[2]?.detail).toBe('Head branch was modified.')
+  })
+
   it('returns an empty timeline for an issue with no logged events', () => {
     const report = buildIssueTimeline(tempStateDir(), 'ENG-9')
     expect(report).toMatchObject({ issue: 'ENG-9', steps: [], totalMs: null, totalTokens: 0, totalCalls: 0, problems: [] })

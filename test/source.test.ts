@@ -1,5 +1,5 @@
 import { execFileSync } from 'node:child_process'
-import { mkdirSync, mkdtempSync, writeFileSync } from 'node:fs'
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { expect, it } from 'vitest'
@@ -44,4 +44,22 @@ it('matches a git status line against a path written with either separator', () 
 
   expect(statusLineIsPath('?? src/other.ts', '.ak-harness/verification.json')).toBe(false)
   expect(statusLineIsPath('?? anything', '')).toBe(false)
+})
+
+it('keeps fingerprinting edits when the tracked diff is larger than execFile\'s 1 MiB default buffer', async () => {
+  const root = repository(); const stateDir = join(root, '.ak-harness', 'verification')
+  writeFileSync(join(root, 'big.txt'), 'a\n'.repeat(700_000)); git(root, ['add', 'big.txt']); git(root, ['commit', '-qm', 'big'])
+  writeFileSync(join(root, 'big.txt'), 'b\n'.repeat(700_000)); writeFileSync(join(root, 'tracked.txt'), 'two\n')
+  const before = await sourceSnapshot(root, stateDir)
+  writeFileSync(join(root, 'tracked.txt'), 'three\n')
+  const after = await sourceSnapshot(root, stateDir)
+  expect(after.statusHash).not.toBe(before.statusHash)
+})
+
+it('fails closed when git cannot produce the diff instead of hashing an empty one', async () => {
+  const root = repository(); const stateDir = join(root, '.ak-harness', 'verification')
+  const blob = execFileSync('git', ['-C', root, 'rev-parse', 'HEAD:tracked.txt'], { encoding: 'utf8' }).trim()
+  rmSync(join(root, '.git', 'objects', blob.slice(0, 2), blob.slice(2)), { force: true })
+  writeFileSync(join(root, 'tracked.txt'), 'two\n')
+  await expect(sourceSnapshot(root, stateDir)).rejects.toMatchObject({ code: 'HARNESS_ERROR', message: expect.stringContaining('git') })
 })

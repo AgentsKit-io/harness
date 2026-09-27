@@ -1,4 +1,4 @@
-import { appendFileSync, closeSync, existsSync, mkdirSync, openSync, readdirSync, readFileSync, renameSync, statSync, unlinkSync, writeFileSync } from 'node:fs'
+import { appendFileSync, existsSync, mkdirSync, readdirSync, readFileSync, renameSync, statSync, unlinkSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { z } from 'zod'
 import type { CommandRunner } from '../adapters/command.js'
@@ -12,7 +12,9 @@ import { createDispatchLedger, type DispatchLedger, type DispatchLease } from '.
 import { HarnessError } from '../kernel/errors.js'
 import { renderWorkerBrief } from './brief.js'
 import { readStoredPlan, runPlanWithVotes, writeStoredPlan, type StoredPlan } from './plan-vote.js'
-import { writeJsonAtomic } from './fs-atomic.js'
+import { acquireFileLock, releaseFileLock, writeJsonAtomic } from './fs-atomic.js'
+import { pruneAgentRuns, recordRunEvent, recordRunIo, type RunIoInput } from './agent-runs.js'
+import { renderSpec, SPEC_FILES, writeSpec } from './spec.js'
 import { loadPinnedSkills, skillRefs, skillDigest, type PinnedSkillRef } from './skills.js'
 import { loadLoopConfig, providerIdentity, type EffortLevel, type LoadedLoopConfig, type LoopConfig, type ModelReference } from './config.js'
 import { assessContract, contractIsFresh, extractResetsAt, generateContract, readStoredContract, resolveDocContext, writeStoredContract, type StoredContract } from './contract.js'
@@ -35,6 +37,7 @@ import { installWorkerGuard } from './worker-guard.js'
 import { createIssueQueue, type IssueRun } from './queue.js'
 import { createLifecycleStore } from './lifecycle.js'
 import { createHitlStore } from './hitl.js'
+import { activeTrackerCooldown, guardTracker, isTrackerRateLimit, TrackerCooldownError, type TrackerCooldown } from './tracker-cooldown.js'
 
 export type TickOutcome = 'dispatched' | 'dry-run' | 'skipped' | 'escalated' | 'failed'
 
@@ -53,7 +56,8 @@ export interface TickCandidateResult {
 }
 
 export interface TickReport {
-  readonly status: 'ok' | 'idle' | 'blocked'
+  /** `blocked`: nothing could run (no builder, or the tracker is cooling down) — not a failure. `failed`: every candidate failed. */
+  readonly status: 'ok' | 'idle' | 'blocked' | 'failed'
   readonly generatedAt: string
   readonly dryRun: boolean
   readonly slots: Pick<SlotAssessment, 'maxAgents' | 'running' | 'free' | 'reasons'>
@@ -139,6 +143,8 @@ export interface TickInput {
   readonly owner?: string
   /** Test seam: override live machine sampling. */
   readonly machine?: Pick<SlotInput, 'sample' | 'freeBytes' | 'totalBytes' | 'osRelease'>
+  /** Test seam: base delay between worktree-create retries (see `createWorktreeWithRetry`); production default 5000ms. */
+  readonly worktreeCreateRetryDelayMs?: number
   /** Wall-clock budget for this tick; candidates that would not fit are left for the next tick. */
   readonly budgetMs?: number
   /** An externally-owned event bus (e.g. `loop stage`, unifying every stage's events on one bus for that
@@ -216,6 +222,29 @@ export const launchWorkerTerminal = async (input: { readonly runner: CommandRunn
 
 const message = (error: unknown): string => error instanceof HarnessError ? `${error.code}: ${error.message}` : error instanceof Error ? error.message : String(error)
 
+// Orca's own worktree-create IPC intermittently drops mid-call under concurrent load — reproduced live against a
+// real project (agentskit-os) under 3 simultaneous dispatches: "The Orca runtime closed the connection before
+// responding." Not this issue's fault, and a bounded retry costs nothing tick can no longer afford — the
+// detached-worker architecture (see cli.ts's `stage`/`tick-worker`) gives this tick minutes, not the ~2s an Orca
+// precheck once had. Retrying here means the loop self-heals instead of spending one of
+// resilience.maxConsecutiveFailures on Orca's own transient hiccup.
+const isTransientOrcaConnectionError = (error: unknown): boolean =>
+  error instanceof Error && error.message.includes('closed the connection before responding')
+const createWorktreeWithRetry = async (runner: CommandRunner, argv: readonly string[], options: { readonly timeoutMs: number }, baseDelayMs = 5_000): ReturnType<typeof orcaWorktreeCreate> => {
+  const attempts = 3
+  let lastError: unknown
+  for (let attempt = 1; attempt <= attempts; attempt += 1) {
+    try {
+      return await orcaWorktreeCreate(runner, argv, options)
+    } catch (error) {
+      lastError = error
+      if (!isTransientOrcaConnectionError(error)) throw error
+      if (attempt < attempts) await new Promise((resolve) => setTimeout(resolve, attempt * baseDelayMs))
+    }
+  }
+  throw lastError
+}
+
 /** Worktree name: last branch segment, lowercase, safe charset, ≤ 60 chars. */
 export const worktreeNameFor = (issue: Pick<LoopIssue, 'identifier' | 'branchName'>): string => {
   const source = (issue.branchName ?? `loop/${issue.identifier}`).split('/').pop() ?? issue.identifier
@@ -290,7 +319,7 @@ const resetDeliveryStateForDispatch = (stateDir: string, issue: string): void =>
   if (!existsSync(path)) return
   try {
     const previous = JSON.parse(readFileSync(path, 'utf8')) as { readonly finalOutcome?: unknown; readonly cancelledAt?: unknown }
-    if (!previous.cancelledAt && !['stuck', 'blocked', 'abandoned'].includes(String(previous.finalOutcome))) return
+    if (!previous.cancelledAt && !['stuck', 'blocked', 'abandoned', 'failed'].includes(String(previous.finalOutcome))) return
   } catch { return }
   // `writeJsonAtomic` e não `writeJson`: o remoto trocou toda escrita de estado por escrita atômica
   // (PR #80), e um reset de estado de entrega escrito pela metade é pior que nenhum reset.
@@ -326,18 +355,7 @@ const pruneEventArchives = (stateDir: string, nowMs: number): void => {
  * lands in the archive instead of the fresh file mid-rotation is not data loss, since `readLoopEvents` merges
  * archives back in — the lock only needs to stop two processes from racing the rename itself.
  */
-const acquireEventsLock = (lockFilePath: string): number | null => {
-  for (let attempt = 0; attempt < EVENTS_LOCK_MAX_ATTEMPTS; attempt += 1) {
-    try {
-      return openSync(lockFilePath, 'wx')
-    } catch (error) {
-      if ((error as NodeJS.ErrnoException).code !== 'EEXIST') throw error
-      try { if (Date.now() - statSync(lockFilePath).mtimeMs > EVENTS_LOCK_STALE_MS) unlinkSync(lockFilePath) } catch { /* another process already cleared it, or still holds it */ }
-      Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, EVENTS_LOCK_RETRY_MS)
-    }
-  }
-  return null
-}
+const acquireEventsLock = (lockFilePath: string): number | null => acquireFileLock(lockFilePath, { staleMs: EVENTS_LOCK_STALE_MS, attempts: EVENTS_LOCK_MAX_ATTEMPTS, retryMs: EVENTS_LOCK_RETRY_MS })
 
 export const appendLoopEvent = (stateDir: string, event: LoopEventPayload, bus?: LoopEventBus, now: () => Date = () => new Date()): void => {
   const path = join(stateDir, 'events.ndjson')
@@ -359,11 +377,10 @@ export const appendLoopEvent = (stateDir: string, event: LoopEventPayload, bus?:
     }
     appendFileSync(path, `${JSON.stringify(event)}\n`, 'utf8')
   } finally {
-    if (lockFd !== null) {
-      try { closeSync(lockFd) } catch { /* already closed */ }
-      try { unlinkSync(lockFilePath) } catch { /* already removed */ }
-    }
+    releaseFileLock(lockFilePath, lockFd)
   }
+  // ADR-0041: fold the event into its issue's run (`runs/<issue>-<n>/state.json`). Best-effort by construction.
+  recordRunEvent(stateDir, event)
   if (bus && typeof event['type'] === 'string') bus.emit(event as LoopEventPayload)
 }
 
@@ -381,12 +398,17 @@ export interface LoopState {
   readonly extrasByRole: Partial<Record<ModelRole, readonly ModelReference[]>>
 }
 
-export const gatherLoopState = async (input: { readonly loaded: LoadedLoopConfig; readonly runner: CommandRunner; readonly ledger: DispatchLedger; readonly env?: NodeJS.ProcessEnv; readonly platform?: NodeJS.Platform; readonly now: () => Date; readonly onlyIssue?: string; readonly machine?: TickInput['machine'] }): Promise<LoopState> => {
+/** Log a tracker rate limit the moment it starts a cooldown. */
+const trackerCooldownLogger = (stateDir: string, now: () => Date, bus?: LoopEventBus) => (entry: TrackerCooldown): void => {
+  appendLoopEvent(stateDir, { at: now().toISOString(), type: 'tracker.cooldown', until: entry.until, attempts: entry.attempts, reason: entry.reason }, bus)
+}
+
+export const gatherLoopState = async (input: { readonly loaded: LoadedLoopConfig; readonly runner: CommandRunner; readonly ledger: DispatchLedger; readonly env?: NodeJS.ProcessEnv; readonly platform?: NodeJS.Platform; readonly now: () => Date; readonly onlyIssue?: string; readonly machine?: TickInput['machine']; readonly bus?: LoopEventBus }): Promise<LoopState> => {
   const { config } = input.loaded
   requireWritableTracker(config)
   const person = queueOwner(input.loaded)
   const orca = { bin: config.orca.bin, timeoutMs: config.orca.timeoutMs }
-  const tracker = resolveConnectors({ runner: input.runner, config, env: input.env }).tracker
+  const tracker = guardTracker(resolveConnectors({ runner: input.runner, config, env: input.env }).tracker, { stateDir: input.loaded.stateDir, now: input.now, onRateLimited: trackerCooldownLogger(input.loaded.stateDir, input.now, input.bus) })
   const explicitRuns = config.queue.mode === 'explicit'
     ? createIssueQueue({ stateDir: input.loaded.stateDir }).list().filter((run) => run.status === 'queued').sort((left, right) => left.sequence - right.sequence)
     : []
@@ -437,6 +459,8 @@ export const gatherLoopState = async (input: { readonly loaded: LoadedLoopConfig
 export const precheckTick = async (input: Omit<TickInput, 'dryRun' | 'maxDispatch'>): Promise<{ readonly work: boolean; readonly reason: string; readonly free: number; readonly candidates: number }> => {
   const loaded = input.loaded ?? loadLoopConfig(input.configPath)
   const now = input.now ?? (() => new Date())
+  const cooling = activeTrackerCooldown(loaded.stateDir, now())
+  if (cooling) return { work: false, reason: `tracker rate-limited; cooling down until ${cooling.until}`, free: 0, candidates: 0 }
   const state = await gatherLoopState({ loaded, runner: input.runner, ledger: createDispatchLedger(loaded.stateDir), env: input.env, platform: input.platform, now, onlyIssue: input.onlyIssue, machine: input.machine })
   const builder = state.routing['builder']?.selected ?? null
   const reason = !builder ? 'no builder provider available' : !state.candidates.length ? 'queue has no dispatchable candidate' : `${state.candidates.length} dispatch(es) possible; machine capacity is advisory`
@@ -485,7 +509,20 @@ export const runTick = async (input: TickInput): Promise<TickReport> => {
   // An externally-owned bus (`loop stage`) already has its own notifier attached, and its owner flushes it once
   // for the whole invocation — attaching a second one here would double-send every notification.
   const flushNotifications = ownsBus ? attachNotifier(bus, { config, runner: input.runner, ...(input.env === undefined ? {} : { env: input.env }) }) : async () => { /* owner flushes */ }
-  const state = await gatherLoopState({ loaded, runner: input.runner, ledger, env: input.env, platform: input.platform, now, onlyIssue: input.onlyIssue, machine: input.machine })
+  // A rate-limited tracker is waited out, not retried every tick: `blocked` is a returned report, so it never counts
+  // toward the stage auto-pause the way a thrown tick does.
+  const cooledReport = async (cooldown: string): Promise<TickReport> => {
+    notes.push(`tracker rate-limited; ${cooldown}; nothing fetched or dispatched`)
+    await flushNotifications()
+    return { generatedAt: now().toISOString(), dryRun, slots: { maxAgents: 0, running: 0, free: 0, reasons: [] }, routing: { orchestrator: null, builder: null }, queue: { total: 0, busy: [], candidates: [] }, status: 'blocked', results, notes }
+  }
+  const cooling = activeTrackerCooldown(loaded.stateDir, now())
+  if (cooling) return cooledReport(`cooling down until ${cooling.until}`)
+  let state: LoopState
+  try { state = await gatherLoopState({ loaded, runner: input.runner, ledger, env: input.env, platform: input.platform, now, onlyIssue: input.onlyIssue, machine: input.machine, bus }) } catch (error) {
+    if (error instanceof TrackerCooldownError || isTrackerRateLimit(error)) return cooledReport(message(error))
+    throw error
+  }
   const orchestrator = state.routing['orchestrator'] ?? { role: 'orchestrator', selected: null, skipped: [] }
   // `gatherLoopState` already resolved catalog candidates for every role (including orchestrator) to compute
   // `state.routing` — reuse that instead of resolving the same provider/model catalog a second time this tick.
@@ -497,6 +534,12 @@ export const runTick = async (input: TickInput): Promise<TickReport> => {
     notes.push(`provider ${failure.provider} marked cooling down until ${entry.until} (${failure.kind})`)
     appendLoopEvent(loaded.stateDir, { at: now().toISOString(), type: 'provider.cooldown', provider: failure.provider, kind: failure.kind, until: entry.until }, bus)
   }
+  const recordProviderIo = (issue: string, stage: RunIoInput['stage'], role: string, io: { readonly prompt: string; readonly stdout: string }): void => {
+    recordRunIo(loaded.stateDir, issue, { direction: 'input', stage, role, content: io.prompt, maxBytes: config.runs.maxIoBytes }, now)
+    recordRunIo(loaded.stateDir, issue, { direction: 'output', stage, role, content: io.stdout, extension: 'txt', maxBytes: config.runs.maxIoBytes }, now)
+  }
+  // windowed: the run directories are pruned here, the one stage that opens runs, so they never outgrow `runs.keep`.
+  if (!dryRun) pruneAgentRuns(loaded.stateDir, { keep: config.runs.keep, maxAgeDays: config.runs.maxAgeDays, now: now() })
   const builder = state.routing['builder']?.selected ?? null
   const summary = { orchestrator: orchestrator.selected ? `${orchestrator.selected.provider}/${orchestrator.selected.model}` : null, builder: builder ? `${builder.provider}/${builder.model}` : null }
   const base = { generatedAt: now().toISOString(), dryRun, slots: { maxAgents: state.slots.maxAgents, running: state.slots.running, free: state.slots.free, reasons: state.slots.reasons }, routing: summary, queue: { total: state.queue.length, busy: [...state.busy], candidates: state.candidates.map((issue) => issue.identifier) } }
@@ -514,7 +557,8 @@ export const runTick = async (input: TickInput): Promise<TickReport> => {
   const timeBudgetMs = input.budgetMs ?? Number.POSITIVE_INFINITY
   const remainingMs = (): number => timeBudgetMs - (Date.now() - startedAt)
   // Every tracker write in this stage goes through the connector; the engine never names Linear.
-  const { tracker } = resolveConnectors({ runner: input.runner, config, dryRun })
+  const tracker = guardTracker(resolveConnectors({ runner: input.runner, config, dryRun }).tracker, { stateDir: loaded.stateDir, now, dryRun, onRateLimited: trackerCooldownLogger(loaded.stateDir, now, bus) })
+  let trackerCooling = false
   // UI-confirmed runs need status projection even for legacy backlog projects; only explicit mode changes which
   // tracker issues are eligible when a tick is not targeted at one selected request.
   const issueQueue = config.queue.mode === 'explicit' || input.onlyIssue ? createIssueQueue({ stateDir: loaded.stateDir }) : null
@@ -651,7 +695,12 @@ export const runTick = async (input: TickInput): Promise<TickReport> => {
       notes.push(`${candidate.identifier}: resumed (the "${config.resilience.pausedLabel}" label was removed)`)
     }
     let detail: TrackerIssueDetail
-    try { detail = await tracker.issue(candidate.identifier) } catch (error) { results.push({ issue: candidate.identifier, outcome: 'failed', reason: `issue fetch failed: ${message(error)}` }); continue }
+    try { detail = await tracker.issue(candidate.identifier) } catch (error) {
+      if (!dryRun) appendLoopEvent(loaded.stateDir, { at: now().toISOString(), type: 'tracker.sync-failed', issue: candidate.identifier, operation: 'fetch', error: message(error) }, bus)
+      // Rate-limited: every further fetch would hit the same limit — stop here and let the cooldown run out.
+      if (error instanceof TrackerCooldownError || isTrackerRateLimit(error)) { trackerCooling = true; notes.push(`tracker rate-limited fetching ${candidate.identifier}; remaining candidates left for after the cooldown`); break }
+      results.push({ issue: candidate.identifier, outcome: 'failed', reason: `issue fetch failed: ${message(error)}` }); continue
+    }
     const selectedRun = queueRun(detail.identifier)
     // A UI cancellation can land after gatherLoopState read the queue but before the tracker fetch returns.
     // In explicit mode, dispatch only the still-queued reservation; never turn a stale snapshot into a new worker.
@@ -747,8 +796,10 @@ export const runTick = async (input: TickInput): Promise<TickReport> => {
           onPiiDetected: (matches) => {
             if (!dryRun) appendLoopEvent(loaded.stateDir, { at: now().toISOString(), type: 'security.pii-detected', issue: detail.identifier, source: 'issue-text', kinds: [...new Set(matches.map((match) => match.kind))], count: matches.length }, bus)
           },
-          onProviderCall: (event) => {
-            if (!dryRun) appendLoopEvent(loaded.stateDir, { at: now().toISOString(), type: 'provider.call', role: 'orchestrator', issue: detail.identifier, ...event }, bus)
+          onProviderCall: ({ io, ...event }) => {
+            if (dryRun) return
+            recordProviderIo(detail.identifier, 'contract', 'orchestrator', io)
+            appendLoopEvent(loaded.stateDir, { at: now().toISOString(), type: 'provider.call', role: 'orchestrator', issue: detail.identifier, ...event }, bus)
           },
         })
         if (!dryRun) {
@@ -805,8 +856,10 @@ export const runTick = async (input: TickInput): Promise<TickReport> => {
             humanDecisions,
             now, onProviderFailure,
             onCycle: (cycle, votes) => { if (!dryRun) appendLoopEvent(loaded.stateDir, { at: now().toISOString(), type: 'plan.voted', issue: detail.identifier, cycle, approvals: votes.filter((vote) => vote.vote === 'approve').length, votes: votes.length, voters: votes.map((vote) => ({ provider: vote.provider, model: vote.model, vote: vote.vote })) }, bus) },
-            onProviderCall: (event) => {
-              if (!dryRun) appendLoopEvent(loaded.stateDir, { at: now().toISOString(), type: 'provider.call', issue: detail.identifier, ...event }, bus)
+            onProviderCall: ({ io, ...event }) => {
+              if (dryRun) return
+              recordProviderIo(detail.identifier, 'plan', event.role, io)
+              appendLoopEvent(loaded.stateDir, { at: now().toISOString(), type: 'provider.call', issue: detail.identifier, ...event }, bus)
             },
           })
           if (!dryRun) writeStoredPlan(loaded.stateDir, approvedPlan)
@@ -856,6 +909,8 @@ export const runTick = async (input: TickInput): Promise<TickReport> => {
       continue
     }
     const beforeDispatch = await bus.runHook('beforeDispatch', { issue: detail.identifier, provider: worker.provider, model: worker.model, branch, worktree })
+    // A throwing beforeDispatch blocks (fail closed); logged so it is not mistaken for a deliberate plugin block.
+    if (beforeDispatch.errors.length) appendLoopEvent(loaded.stateDir, { at: now().toISOString(), type: 'plugin.hook-failed', issue: detail.identifier, hook: 'beforeDispatch', error: beforeDispatch.errors.join('; ') }, bus)
     if (beforeDispatch.block) {
       ledger.release(claim.lease, `blocked by plugin: ${beforeDispatch.reason}`)
       results.push({ issue: detail.identifier, outcome: 'skipped', reason: `blocked by plugin: ${beforeDispatch.reason}` })
@@ -865,7 +920,7 @@ export const runTick = async (input: TickInput): Promise<TickReport> => {
     try {
       const fetched = await input.runner.run(['git', 'fetch', '--quiet', 'origin', config.project.baseBranch], { cwd: loaded.root, timeoutMs: 120_000 })
       if (fetched.timedOut || fetched.code !== 0) throw new Error(`git fetch origin ${config.project.baseBranch} failed before creating the worktree; a worker must not start from a stale base: ${`${fetched.stderr}${fetched.stdout}`.trim().slice(0, 200)}`)
-      created = await orcaWorktreeCreate(input.runner, plan.argv, { timeoutMs: Math.max(config.orca.timeoutMs, 120_000) })
+      created = await createWorktreeWithRetry(input.runner, plan.argv, { timeoutMs: Math.max(config.orca.timeoutMs, 120_000) }, input.worktreeCreateRetryDelayMs)
       // Orca names the branch `<git user>/<worktree>`; the Linear branchName is only a hint. Record and brief the real one.
       const actualBranch = created.branch || branch
       // Real-time enforcement, before the worker's own setup command (let alone the worker itself) ever runs —
@@ -886,6 +941,13 @@ export const runTick = async (input: TickInput): Promise<TickReport> => {
           throw new Error(`setup command failed (${detailMsg}): ${[...setupResult.command].join(' ')}${setupRun.stderr ? ` — ${setupRun.stderr.slice(-300)}` : ''}`)
         }
         if (setupFailed) notes.push(`${detail.identifier}: setup command failed but project.setup.required is false — continuing`)
+      }
+      let specText: string | null = null
+      if (config.spec.enabled) {
+        // ADR-0041: the spec is rendered from what was just frozen and approved — no model writes it.
+        const spec = renderSpec({ issue: detail.identifier, url: detail.url, contract: stored, plan: approvedPlan })
+        writeSpec(created.path, config, detail.identifier, spec)
+        specText = SPEC_FILES.map((file) => spec[file]).join('\n')
       }
       const briefMemory = memoryPlan ?? { memoryBlock: '', issueCharBudget: config.contract.maxIssueChars, hits: [] as const }
       const guidanceRefs = config.contract.maxBriefReferences > 0 && config.contract.briefScopes.length
@@ -921,7 +983,11 @@ export const runTick = async (input: TickInput): Promise<TickReport> => {
       const record: DispatchRecordFile = { issue: detail.identifier, worktreeId: created.id, worktree, branch: actualBranch, terminal: launched.terminal, provider: worker.provider, model: worker.model, contractDigest: stored.digest, leaseKey: claim.lease.key, leaseId: claim.lease.leaseId, dispatchedAt: now().toISOString(), url: detail.url, briefDigest, skills: skillRefs(pinnedSkills), ...(delegation ? { delegation } : {}), setup: setupResult, effort: worker.effort, briefAccepted: launched.accepted, initialRemainingPercent: worker.remainingPercent, worktreePath: created.path, labels: [...detail.labels], project: detail.project, priorityLabel: detail.priorityLabel, workerGuardInstalled: workerGuard.installed, ...(selectedRun ? { queueRunId: selectedRun.id, frozenFlow: selectedRun.config.flow, frozenMaxFixRounds: selectedRun.config.maxFixRounds, frozenPerIssueTokens: selectedRun.config.perIssueTokens } : {}) }
       resetDeliveryStateForDispatch(loaded.stateDir, detail.identifier)
       writeJsonAtomic(dispatchRecordPath(loaded.stateDir, detail.identifier), record)
-      appendLoopEvent(loaded.stateDir, { at: record.dispatchedAt, type: 'worker.dispatched', ...record, command: worker.tui, briefAccepted: launched.accepted, tuiIdle: launched.idle }, bus)
+      appendLoopEvent(loaded.stateDir, { at: record.dispatchedAt, type: 'worker.dispatched', ...record, command: worker.tui, briefAccepted: launched.accepted, tuiIdle: launched.idle, maxFixRounds: selectedRun?.config.maxFixRounds ?? flow.profile?.maxFixRounds ?? config.delivery.maxFixRounds }, bus)
+      // After `worker.dispatched`, which is what opens run n+1 on a re-dispatch: recorded before it, the new attempt's
+      // brief and spec landed in the superseded run and the new one started with no inputs.
+      if (specText) recordRunIo(loaded.stateDir, detail.identifier, { direction: 'input', stage: 'build', role: 'spec', content: specText, maxBytes: config.runs.maxIoBytes }, now)
+      recordRunIo(loaded.stateDir, detail.identifier, { direction: 'input', stage: 'build', role: 'worker', content: brief, maxBytes: config.runs.maxIoBytes }, now)
       await bus.runHook('afterDispatch', { issue: detail.identifier, provider: record.provider, model: record.model, branch: record.branch, worktreeId: record.worktreeId })
       clearIssueFailures(loaded.stateDir, detail.identifier)
       // The claim, under `queueOwnership: 'unassigned'`: written only AFTER the dispatch succeeded, so a
@@ -958,5 +1024,8 @@ export const runTick = async (input: TickInput): Promise<TickReport> => {
   }
   if (!dispatched && !results.length) notes.push('no candidate reached dispatch')
   await flushNotifications()
-  return { ...base, status: dispatched > 0 || results.some((result) => result.outcome === 'escalated') ? 'ok' : 'idle', results, notes }
+  // Every candidate failing is a failed run, not an idle one — the stage's failure count has to see it. A tracker
+  // cooldown stays `blocked`: waiting out a rate limit is not a failure.
+  const allFailed = results.length > 0 && results.every((result) => result.outcome === 'failed')
+  return { ...base, status: dispatched > 0 || results.some((result) => result.outcome === 'escalated') ? 'ok' : trackerCooling ? 'blocked' : allFailed ? 'failed' : 'idle', results, notes }
 }

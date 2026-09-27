@@ -33,7 +33,9 @@ export interface ActionContext {
   readonly runner: CommandRunner
 }
 
-const cleanupAlreadyGone = (error: unknown): boolean => (error instanceof Error ? error.message : String(error)).includes('selector_not_found')
+/** What cleanup wanted to remove is already gone: `selector_not_found` (no such worktree/terminal) or
+ * `terminal_handle_stale` (the handle outlived its terminal — the worker exited or Orca restarted). */
+const cleanupAlreadyGone = (error: unknown): boolean => /selector_not_found|terminal_handle_stale/.test(error instanceof Error ? error.message : String(error))
 const nowIso = (): string => new Date().toISOString()
 
 // ---- contract (wizard step) -------------------------------------------------------------------------------
@@ -200,6 +202,20 @@ export type IssueDecision = 'close-issue' | 'reopen'
 
 /** Only legal from `needs-decision` — a PR closed without merge, with nothing left to retry automatically.
  * `close-issue` sets the tracker to done; `reopen` returns it to the entry state for a fresh wizard run. */
+/**
+ * Settle a `tracker.sync-failed` from the control plane. `retry` re-applies the failed completion — the issue's move
+ * to the done state — and throws, recording nothing, if the tracker still refuses (e.g. a missing lifecycle label).
+ * `dismiss` records that a person accepted the tracker as it is. Either way Attention stops showing earlier failures.
+ */
+export const resolveTrackerSync = async (context: ActionContext, issue: string, action: 'retry' | 'dismiss'): Promise<void> => {
+  const { loaded, runner } = context
+  if (action === 'retry') {
+    const tracker = resolveConnectors({ runner, config: loaded.config }).tracker
+    await tracker.setState({ issue, to: loaded.config.linear?.doneState ?? 'Done', reason: 'control plane: retry tracker sync' })
+  }
+  appendLoopEvent(loaded.stateDir, { at: nowIso(), type: 'ui.tracker-sync-resolved', issue, action })
+}
+
 export const decideIssue = async (context: ActionContext, issue: string, decision: IssueDecision): Promise<void> => {
   const { loaded, runner } = context
   const record = syncProjection(loaded.stateDir).issues[issue]

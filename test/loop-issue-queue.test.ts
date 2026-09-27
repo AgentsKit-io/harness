@@ -81,6 +81,21 @@ describe('persistent issue queue', () => {
     expect(queue.restore(first.id).archived).toBe(false)
   })
 
+  it('refuses to move a failed run straight to completed (regression: 2026-09-26 — deliver auto-paused for ~2h on a real project this exact way)', () => {
+    // The retry above leaves the original attempt permanently `failed`, its own terminal fact — it is the
+    // *later* attempt (a new run id) that goes on to actually deliver. `getLatestByIssue` sorts by `sequence`
+    // descending, so once nothing newer supersedes this record's own sequence for a given issue, it stays
+    // "the latest" — deliver.ts's own reconciliation loop hit exactly this on a real project: it computed
+    // `status: 'completed'` for an issue's *old*, already-`failed` run purely because the issue's *current*
+    // GitHub state now had an open PR (opened by a separately-tracked, later attempt), tried `queue.update`,
+    // and this exact throw propagated 3 times in a row and auto-paused the entire deliver stage.
+    const root = mkdtempSync(join(tmpdir(), 'harness-queue-failed-completed-')); roots.push(root)
+    const queue = createIssueQueue({ stateDir: root })
+    const first = queue.enqueue(input('ENG-10', '2026-09-23T10:00:00.000Z'))
+    queue.update(first.id, { status: 'failed', error: 'orca terminal create failed: Terminal creation timed out', projection: { stage: 'failed' } })
+    expect(() => queue.update(first.id, { status: 'completed', projection: { stage: 'pr-open', pullRequest: 14 } })).toThrow(/cannot complete from failed/)
+  })
+
   it('retries a blocked run as a new attempt without mutating the blocked record', () => {
     const root = mkdtempSync(join(tmpdir(), 'harness-queue-blocked-retry-')); roots.push(root)
     const queue = createIssueQueue({ stateDir: root })

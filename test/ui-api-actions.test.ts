@@ -6,7 +6,10 @@ import type { CommandResult, CommandRunner } from '../src/adapters/command.js'
 import type { LoadedLoopConfig } from '../src/loop/config.js'
 import { createHitlStore } from '../src/loop/hitl.js'
 import { readIssueFailures, pauseIssue } from '../src/loop/resilience-state.js'
-import { answerDecision, archiveRun, cancelRun, decideIssue, enqueueRun, resumePausedIssue, restoreRun, retryRun, type ActionContext } from '../src/ui/api/actions.js'
+import { writeJsonAtomic } from '../src/loop/fs-atomic.js'
+import { dispatchRecordPath } from '../src/loop/tick.js'
+import { answerDecision, archiveRun, cancelRun, cleanupRun, decideIssue, enqueueRun, resolveTrackerSync, resumePausedIssue, restoreRun, retryRun, type ActionContext } from '../src/ui/api/actions.js'
+import { readLoopEvents } from '../src/loop/retro.js'
 import { readCurrentProjection } from '../src/ui/api/store.js'
 
 const cleanups: string[] = []
@@ -33,6 +36,34 @@ describe('the control-plane action surface', () => {
     const record = readCurrentProjection(context.loaded.stateDir).issues['ENG-1']!
     expect(record.phase).toBe('running')
     expect(record.run).toMatchObject({ id: runId, status: 'queued', builder: 'codex/gpt' })
+  })
+
+  it('a tracker sync retry the tracker still refuses records nothing, so the failure stays visible', async () => {
+    const base = contextFor()
+    const loaded = { ...base.loaded, config: { ...base.loaded.config, github: { issues: { labels: { todo: 'ai-ready', inProgress: 'ai-working', review: 'ai-pr', done: 'ai-done', blocked: 'ai-blocked' } } } } } as unknown as LoadedLoopConfig
+    const runner: CommandRunner = { run: async (argv): Promise<CommandResult> => argv.includes('edit')
+      ? { code: 1, stdout: '', stderr: "failed to update: 'ai-done' not found", timedOut: false, durationMs: 1 }
+      : { code: 0, stdout: JSON.stringify({ number: 76, title: 't', body: '', state: 'OPEN', url: 'u', labels: [{ name: 'ai-pr' }], assignees: [], createdAt: '2026-01-01T00:00:00Z', updatedAt: '2026-01-01T00:00:00Z' }), stderr: '', timedOut: false, durationMs: 1 } }
+    await expect(resolveTrackerSync({ loaded, runner }, 'acme/app#76', 'retry')).rejects.toThrow()
+    expect(readLoopEvents(loaded.stateDir, 0).some((event) => event.type === 'ui.tracker-sync-resolved')).toBe(false)
+    await resolveTrackerSync({ loaded, runner }, 'acme/app#76', 'dismiss')
+    expect(readLoopEvents(loaded.stateDir, 0).filter((event) => event.type === 'ui.tracker-sync-resolved')).toMatchObject([{ issue: 'acme/app#76', action: 'dismiss' }])
+  })
+
+  it('cancel cleanup treats a stale terminal handle as already closed and goes on to remove the worktree', async () => {
+    const context = contextFor()
+    writeJsonAtomic(dispatchRecordPath(context.loaded.stateDir, 'acme/app#83'), { issue: 'acme/app#83', worktreeId: 'repo::C:/w/app-83', branch: 'you/app-83', provider: 'codex', model: 'gpt', terminal: 'term_gone', leaseId: 'lease-1', dispatchedAt: '2026-09-26T00:00:00.000Z' })
+    const calls: string[] = []
+    const runner: CommandRunner = { run: async (argv): Promise<CommandResult> => {
+      calls.push(argv.slice(1, 3).join(' '))
+      return argv[1] === 'terminal' && argv[2] === 'close'
+        ? { code: 1, stdout: JSON.stringify({ ok: false, error: { code: 'terminal_handle_stale', message: 'terminal_handle_stale' } }), stderr: '', timedOut: false, durationMs: 1 }
+        : { code: 0, stdout: '{"ok":true,"result":{}}', stderr: '', timedOut: false, durationMs: 1 }
+    } }
+    await cleanupRun({ ...context, runner }, 'acme/app#83', 'run-1').catch((error: unknown) => {
+      expect(String(error)).not.toContain('terminal cleanup failed')
+    })
+    expect(calls).toContain('worktree rm')
   })
 
   it('cancelling a queued run (no dispatch, no active lease) completes cleanup immediately', async () => {

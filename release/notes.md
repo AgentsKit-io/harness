@@ -1,4 +1,4 @@
-# 0.21.0 release candidate
+# 0.22.1 release candidate
 
 The control plane (`ak-harness ui`) becomes the operator's single place to see what needs them and act on it
 safely, plus the loop fixes found running it against a real repository since 0.19.0. `CHANGELOG.md` has the full
@@ -28,5 +28,17 @@ appear as system items and reinstall on request.
 **0.21.0.** Runs shows fix rounds used and real time in phase; the home event stream reads the loop's event log
 (`GET /api/v1/events/recent`); New batch shows which issues already have a fresh contract (`GET /api/v1/contracts`);
 tracker titles and states survive a UI restart.
+
+**0.22.0.** Every issue gets a run under `<stateDir>/runs/<issue>-<n>/` — projected state, redacted inputs and
+outputs, machine-written handoffs and evidence by hash — reconstructable with `ak-harness loop run show` (ADR-0041).
+`spec.enabled` renders `specs/<issue>/` (requirements, design, tasks) from the frozen contract and plan and holds a PR
+whose copy drifted; `runs.prSummary` keeps one edited comment with the run on the PR. `ScmConnector` gains
+`upsertComment`.
+
+**0.22.1.** Fixes for failures that were silent. The control plane no longer keeps a tracker rate-limited (it
+backed off nothing and re-fetched every closed issue forever); the loop gets a tracker cooldown instead of a
+permanent stage pause. `ak-verify run` exits non-zero on a blocked run; git errors, missing review results, a
+verify run outside the PR worktree and failing plugins now fail closed. One transient error no longer ends a
+delivery for good, and an Orca outage is not a dead worker.
 
 The blockers in `release/manifest.json` (`ecosystem-compatibility`, `pilot-benchmark`) are unchanged.
