@@ -72,6 +72,8 @@ interface Scenario {
   readonly orcaDown?: boolean
   /** Every Linear write answers with a rate limit. */
   readonly linearRateLimited?: boolean
+  /** `orca terminal close` fails with this error. */
+  readonly terminalCloseError?: string
 }
 
 const basePr = (over: Record<string, unknown> = {}): Record<string, unknown> => ({ ...(fixture('gh-pr-view') as Record<string, unknown>), headRefName: 'person/eng-10-demo', files: [{ path: 'packages/demo/src/index.ts' }], statusCheckRollup: [{ __typename: 'CheckRun', name: 'ci', conclusion: 'SUCCESS', status: 'COMPLETED' }], mergeable: 'MERGEABLE', mergeStateStatus: 'CLEAN', state: 'OPEN', number: 42, url: 'https://github.com/o/r/pull/42', ...over })
@@ -150,6 +152,7 @@ const setup = (initial: Scenario = {}) => {
       if (key.startsWith('orca terminal list')) return okResult({ terminals: scenario.terminals ?? [{ handle: 'term_w', connected: true, orphaned: false, lastOutputAt: Date.parse('2026-09-11T10:30:00.000Z'), worktreeId: 'repo-1::/w/eng-10-demo' }] })
       if (key.startsWith('orca terminal read')) return scenario.terminalScreen === undefined ? { code: 127, stdout: '', stderr: 'no fixture for terminal read', timedOut: false, durationMs: 1 } : okResult({ tail: scenario.terminalScreen })
       if (key.startsWith('orca terminal create')) return okResult({ handle: 'term_handoff', terminal: { handle: 'term_handoff' } })
+      if (key.startsWith('orca terminal close') && scenario.terminalCloseError) return { code: 1, stdout: '', stderr: scenario.terminalCloseError, timedOut: false, durationMs: 1 }
       if (key.startsWith('orca terminal close')) return okResult({ closed: true })
       if (key.startsWith('orca terminal wait')) return okResult({ satisfied: true })
       if (key.startsWith('orca terminal send')) {
@@ -570,7 +573,7 @@ describe('deliver', () => {
   it('relaunches the agent instead of typing the brief into a bare shell when no agent is attached', async () => {
     // Live (law-os AGE-1751/1753, Windows): Codex never started, the terminal fell back to PowerShell while Orca kept
     // the codex command on it, and the brief nudge ran as a shell command ("Your" is not a command).
-    const env = setup({ pr: null, dispatchedAt: '2026-09-11T11:59:00.000Z', worktreeAgents: [], terminals: [{ handle: 'term_w', connected: true, orphaned: false, command: 'codex -m gpt-6-luna', lastOutputAt: Date.parse('2026-09-11T11:59:30.000Z'), preview: 'PS C:\Users\me\w\eng-10-demo>', worktreeId: 'repo-1::/w/eng-10-demo' }] })
+    const env = setup({ pr: null, dispatchedAt: '2026-09-11T11:59:00.000Z', worktreeAgents: [], terminals: [{ handle: 'term_w', connected: true, orphaned: false, command: 'codex -m gpt-6-luna', lastOutputAt: Date.parse('2026-09-11T11:59:30.000Z'), preview: 'PS C:\\Users\\me\\w\\eng-10-demo>', worktreeId: 'repo-1::/w/eng-10-demo' }] })
     const path = dispatchRecordPath(env.loaded.stateDir, 'ENG-10')
     writeFileSync(path, JSON.stringify({ ...JSON.parse(readFileSync(path, 'utf8')), briefAccepted: false }))
     const report = await deliver(env, { assumeIdle: true })
@@ -586,6 +589,37 @@ describe('deliver', () => {
     const report = await deliver(env, { assumeIdle: true })
     expect(report.results[0]?.actions.join(' ')).not.toContain('no agent attached')
     expect(env.runner.calls.some((argv) => argv[1] === 'terminal' && argv[2] === 'create')).toBe(false)
+  })
+
+  it('does not relaunch an idle agent that never registers with Orca when its screen is not a shell prompt', async () => {
+    // Zero Orca agents and not `working` is also an idle agent from a CLI that never registers (pi): relaunching it on
+    // every nudge put a second agent in the same worktree.
+    const env = setup({ pr: null, dispatchedAt: '2026-09-11T11:59:00.000Z', worktreeAgents: [], terminals: [{ handle: 'term_w', connected: true, orphaned: false, command: 'pi', lastOutputAt: Date.parse('2026-09-11T11:59:30.000Z'), preview: '> ready for input', worktreeId: 'repo-1::/w/eng-10-demo' }] })
+    const path = dispatchRecordPath(env.loaded.stateDir, 'ENG-10')
+    writeFileSync(path, JSON.stringify({ ...JSON.parse(readFileSync(path, 'utf8')), briefAccepted: false }))
+    const report = await deliver(env, { assumeIdle: true })
+    expect(report.results[0]?.actions.join(' ')).toContain('sent to worker terminal term_w')
+    expect(env.runner.calls.some((argv) => argv[1] === 'terminal' && argv[2] === 'create')).toBe(false)
+  })
+
+  it('closes the old terminal before relaunching an agent, and does not relaunch when it cannot close it', async () => {
+    const shell = { handle: 'term_w', connected: true, orphaned: false, command: 'codex -m gpt-6-luna', lastOutputAt: Date.parse('2026-09-11T11:59:30.000Z'), preview: 'user@host:~/w/eng-10-demo$ ', worktreeId: 'repo-1::/w/eng-10-demo' }
+    const briefNotConfirmed = (env: ReturnType<typeof setup>): void => {
+      const path = dispatchRecordPath(env.loaded.stateDir, 'ENG-10')
+      writeFileSync(path, JSON.stringify({ ...JSON.parse(readFileSync(path, 'utf8')), briefAccepted: false }))
+    }
+    const env = setup({ pr: null, dispatchedAt: '2026-09-11T11:59:00.000Z', worktreeAgents: [], terminals: [shell] })
+    briefNotConfirmed(env)
+    await deliver(env, { assumeIdle: true })
+    const closeAt = env.runner.calls.findIndex((argv) => argv[1] === 'terminal' && argv[2] === 'close' && argv.includes('term_w'))
+    const createAt = env.runner.calls.findIndex((argv) => argv[1] === 'terminal' && argv[2] === 'create')
+    expect(closeAt).toBeGreaterThanOrEqual(0)
+    expect(closeAt).toBeLessThan(createAt)
+    const stuck = setup({ pr: null, dispatchedAt: '2026-09-11T11:59:00.000Z', worktreeAgents: [], terminals: [shell], terminalCloseError: 'orca: permission denied' })
+    briefNotConfirmed(stuck)
+    const report = await deliver(stuck, { assumeIdle: true })
+    expect(report.results[0]?.actions.join(' ')).toContain('could not be closed')
+    expect(stuck.runner.calls.some((argv) => argv[1] === 'terminal' && argv[2] === 'create')).toBe(false)
   })
 
   it('re-sends a brief the terminal never confirmed at once, instead of waiting out the idle timeout', async () => {
@@ -623,7 +657,9 @@ describe('deliver', () => {
     expect(first.results[0]).toMatchObject({ outcome: 'nudged' })
     const second = await deliver(env, { assumeIdle: true })
     expect(second.results[0]).toMatchObject({ outcome: 'waiting' })
-    const later = await deliver(env, { assumeIdle: true, now: () => new Date('2026-09-11T13:00:00.000Z') })
+    // Lost-track evidence is confirmed on a second pass before anything is done about it.
+    expect((await deliver(env, { assumeIdle: true, now: () => new Date('2026-09-11T13:00:00.000Z') })).results[0]).toMatchObject({ outcome: 'waiting', reason: expect.stringContaining('lost tracking suspected') })
+    const later = await deliver(env, { assumeIdle: true, now: () => new Date('2026-09-11T13:05:00.000Z') })
     expect(later.results[0]).toMatchObject({ outcome: 'stuck' })
     expect(env.ledger.active()).toEqual([])
     expect(env.runner.calls.some((argv) => argv[1] === 'worktree' && argv[2] === 'rm')).toBe(false)
@@ -632,6 +668,7 @@ describe('deliver', () => {
     expect((await deliver(busy, { assumeIdle: false })).results[0]).toMatchObject({ outcome: 'waiting', reason: 'worker active' })
     const gone = setup({ pr: null, terminals: [] })
     writeFileSync(join(gone.loaded.stateDir, 'issues', 'ENG-10', 'restarts.json'), JSON.stringify({ at: ['2026-09-10T00:00:00.000Z', '2026-09-10T01:00:00.000Z'] }))
+    await deliver(gone)
     expect((await deliver(gone)).results[0]).toMatchObject({ outcome: 'stuck', reason: expect.stringContaining('terminal gone') })
   })
 
@@ -642,7 +679,8 @@ describe('deliver', () => {
     const env = setup({ pr: null, dispatchedAt: '2026-09-11T09:00:00.000Z', queueOwnership: 'unassigned' })
     writeFileSync(join(env.loaded.stateDir, 'issues', 'ENG-10', 'restarts.json'), JSON.stringify({ at: ['2026-09-10T00:00:00.000Z', '2026-09-10T01:00:00.000Z'] }))
     await deliver(env, { assumeIdle: true })
-    const stuck = await deliver(env, { assumeIdle: true, now: () => new Date('2026-09-11T13:00:00.000Z') })
+    await deliver(env, { assumeIdle: true, now: () => new Date('2026-09-11T13:00:00.000Z') })
+    const stuck = await deliver(env, { assumeIdle: true, now: () => new Date('2026-09-11T13:05:00.000Z') })
     expect(stuck.results[0]).toMatchObject({ outcome: 'stuck' })
     expect(env.runner.calls.some((argv) => argv[1] === 'linear' && argv[2] === 'assignee' && argv[3] === 'clear')).toBe(true)
   })
@@ -660,6 +698,7 @@ describe('deliver', () => {
     await deliver(env, { assumeIdle: true })
     await deliver(env, { assumeIdle: true })
     await deliver(env, { assumeIdle: true, now: () => new Date('2026-09-11T13:00:00.000Z') })
+    await deliver(env, { assumeIdle: true, now: () => new Date('2026-09-11T13:05:00.000Z') })
     const comment = env.runner.calls.find((argv) => argv[1] === 'linear' && argv[2] === 'comment')
     expect(comment).toBeDefined()
     const body = comment?.[comment.indexOf('--body') + 1] ?? ''
@@ -670,6 +709,7 @@ describe('deliver', () => {
     await deliver(noOutput, { assumeIdle: true })
     await deliver(noOutput, { assumeIdle: true })
     await deliver(noOutput, { assumeIdle: true, now: () => new Date('2026-09-11T13:00:00.000Z') })
+    await deliver(noOutput, { assumeIdle: true, now: () => new Date('2026-09-11T13:05:00.000Z') })
     const plainComment = noOutput.runner.calls.find((argv) => argv[1] === 'linear' && argv[2] === 'comment')
     const plainBody = plainComment?.[plainComment.indexOf('--body') + 1] ?? ''
     expect(plainBody).not.toContain("Worker's last terminal output")
@@ -1248,10 +1288,11 @@ describe('lost tracking: abort and restart from scratch', () => {
 
   it('aborts a worker idle after a check-in with no PR and queues a fresh attempt, discarding the worktree', async () => {
     // Live (law-os AGE-1751/1753): workers with no agent and no PR sat "running" on screen for hours.
-    const env = setup({ pr: null, dispatchedAt: '2026-09-11T09:00:00.000Z' })
+    const env = setup({ pr: null, dispatchedAt: '2026-09-11T09:00:00.000Z', worktreeFiles: { 'brief.md': 'b' } })
     const run = runningRun(env.loaded.stateDir)
     await deliver(env, { assumeIdle: true })
-    const report = await deliver(env, { assumeIdle: true, now: () => new Date('2026-09-11T13:00:00.000Z') })
+    expect((await deliver(env, { assumeIdle: true, now: () => new Date('2026-09-11T13:00:00.000Z') })).results[0]).toMatchObject({ outcome: 'waiting' })
+    const report = await deliver(env, { assumeIdle: true, now: () => new Date('2026-09-11T13:05:00.000Z') })
     expect(report.results[0]).toMatchObject({ outcome: 'restarted' })
     expect(env.runner.calls.some((argv) => argv[1] === 'worktree' && argv[2] === 'rm')).toBe(true)
     expect(env.ledger.active()).toEqual([])
@@ -1277,17 +1318,10 @@ describe('lost tracking: abort and restart from scratch', () => {
     expect(readDeliveryState(env.loaded.stateDir, 'ENG-10')).toMatchObject({ finalOutcome: 'blocked' })
   })
 
-  it('escalates a worker that wrote BLOCKED: and then exited, instead of restarting or handing it off', async () => {
-    const env = setup({ pr: null, terminals: [], worktreeComment: 'BLOCKED: needs a production API key only a person can issue' })
-    runningRun(env.loaded.stateDir)
-    const report = await deliver(env)
-    expect(report.results[0]).toMatchObject({ outcome: 'blocked', reason: expect.stringContaining('production API key') })
-    expect(env.runner.calls.some((argv) => argv[1] === 'worktree' && argv[2] === 'rm')).toBe(false)
-  })
-
   it('restarts a run whose worker terminal is gone before any PR', async () => {
-    const env = setup({ pr: null, terminals: [] })
+    const env = setup({ pr: null, terminals: [], worktreeFiles: { 'brief.md': 'b' } })
     runningRun(env.loaded.stateDir)
+    await deliver(env)
     expect((await deliver(env)).results[0]).toMatchObject({ outcome: 'restarted', reason: expect.stringContaining('terminal gone') })
   })
 
@@ -1295,9 +1329,107 @@ describe('lost tracking: abort and restart from scratch', () => {
     const env = setup({ pr: null, terminals: [] })
     runningRun(env.loaded.stateDir)
     writeFileSync(join(env.loaded.stateDir, 'issues', 'ENG-10', 'restarts.json'), JSON.stringify({ at: ['2026-09-10T00:00:00.000Z', '2026-09-10T01:00:00.000Z'] }))
+    await deliver(env)
     const report = await deliver(env)
     expect(report.results[0]).toMatchObject({ outcome: 'stuck' })
     expect(report.results[0]?.actions.join(' ')).toContain('escalating to a person')
     expect(env.runner.calls.some((argv) => argv[1] === 'worktree' && argv[2] === 'rm')).toBe(false)
+  })
+
+  const toLostTrack = async (env: ReturnType<typeof setup>): Promise<Awaited<ReturnType<typeof deliver>>> => {
+    await deliver(env, { assumeIdle: true })
+    await deliver(env, { assumeIdle: true, now: () => new Date('2026-09-11T13:00:00.000Z') })
+    return deliver(env, { assumeIdle: true, now: () => new Date('2026-09-11T13:05:00.000Z') })
+  }
+  const destroyed = (env: ReturnType<typeof setup>): boolean => env.runner.calls.some((argv) => (argv[1] === 'worktree' && argv[2] === 'rm') || (argv[1] === 'terminal' && argv[2] === 'close'))
+
+  it('never restarts over unpushed commits or uncommitted edits: escalates stuck and keeps the worktree', async () => {
+    for (const scenario of [{ unpushedCommits: 3 }, { gitStatus: ' M src/index.ts\n' }] as const) {
+      const env = setup({ pr: null, dispatchedAt: '2026-09-11T09:00:00.000Z', worktreeFiles: { 'brief.md': 'b' }, ...scenario })
+      runningRun(env.loaded.stateDir)
+      const report = await toLostTrack(env)
+      expect(report.results[0]).toMatchObject({ outcome: 'stuck' })
+      expect(report.results[0]?.actions.join(' ')).toMatch(/not restarting: (3 unpushed commit|uncommitted changes)/)
+      expect(env.runner.calls.some((argv) => argv[1] === 'worktree' && argv[2] === 'rm')).toBe(false)
+      expect(existsSync(join(env.loaded.stateDir, 'issues', 'ENG-10', 'restarts.json'))).toBe(false)
+    }
+    // No worktree path to check: fail closed.
+    const unknown = setup({ pr: null, dispatchedAt: '2026-09-11T09:00:00.000Z' })
+    expect((await toLostTrack(unknown)).results[0]).toMatchObject({ outcome: 'stuck' })
+    expect(unknown.runner.calls.some((argv) => argv[1] === 'worktree' && argv[2] === 'rm')).toBe(false)
+  })
+
+  it('removes a verified-clean worktree without --force', async () => {
+    const env = setup({ pr: null, dispatchedAt: '2026-09-11T09:00:00.000Z', worktreeFiles: { 'brief.md': 'b' } })
+    expect((await toLostTrack(env)).results[0]).toMatchObject({ outcome: 'restarted' })
+    const rm = env.runner.calls.find((argv) => argv[1] === 'worktree' && argv[2] === 'rm')
+    expect(rm).toBeDefined()
+    expect(rm).not.toContain('--force')
+  })
+
+  it('escalates a worker that wrote BLOCKED: and exited (terminal gone) instead of restarting it', async () => {
+    const env = setup({ pr: null, terminals: [], worktreeFiles: { 'brief.md': 'b' }, worktreeComment: 'BLOCKED: needs a registry token only a person can issue' })
+    runningRun(env.loaded.stateDir)
+    const report = await deliver(env)
+    expect(report.results[0]).toMatchObject({ outcome: 'blocked', reason: expect.stringContaining('registry token') })
+    expect(env.runner.calls.some((argv) => argv[1] === 'worktree' && argv[2] === 'rm')).toBe(false)
+    expect(existsSync(join(env.loaded.stateDir, 'issues', 'ENG-10', 'restarts.json'))).toBe(false)
+  })
+
+  it('captures the worker screen as run evidence before closing its terminal on a restart', async () => {
+    const env = setup({ pr: null, dispatchedAt: '2026-09-11T09:00:00.000Z', worktreeFiles: { 'brief.md': 'b' }, terminalScreen: 'npm ERR! something the worker saw last' })
+    const report = await toLostTrack(env)
+    expect(report.results[0]).toMatchObject({ outcome: 'restarted' })
+    expect(report.results[0]?.actions).toContain('captured worker terminal output')
+    const readAt = env.runner.calls.findIndex((argv) => argv[1] === 'terminal' && argv[2] === 'read')
+    const closeAt = env.runner.calls.findIndex((argv) => argv[1] === 'terminal' && argv[2] === 'close')
+    expect(readAt).toBeGreaterThanOrEqual(0)
+    expect(readAt).toBeLessThan(closeAt)
+  })
+
+  it('does not destroy anything or finish the run while the tracker is cooling down or refuses the restart', async () => {
+    const env = setup({ pr: null, dispatchedAt: '2026-09-11T09:00:00.000Z', worktreeFiles: { 'brief.md': 'b' } })
+    runningRun(env.loaded.stateDir)
+    await deliver(env, { assumeIdle: true })
+    await deliver(env, { assumeIdle: true, now: () => new Date('2026-09-11T13:00:00.000Z') })
+    markTrackerRateLimited(env.loaded.stateDir, 'HTTP 429 Too Many Requests', new Date('2026-09-11T13:04:00.000Z'))
+    const cooling = await deliver(env, { assumeIdle: true, now: () => new Date('2026-09-11T13:05:00.000Z') })
+    expect(cooling.results[0]).toMatchObject({ outcome: 'waiting', reason: expect.stringContaining('cooldown') })
+    expect(destroyed(env)).toBe(false)
+    expect(env.ledger.active()).toHaveLength(1)
+    expect(readDeliveryState(env.loaded.stateDir, 'ENG-10').finishedAt).toBeNull()
+
+    const refused = setup({ pr: null, dispatchedAt: '2026-09-11T09:00:00.000Z', worktreeFiles: { 'brief.md': 'b' }, linearRateLimited: true })
+    runningRun(refused.loaded.stateDir)
+    const report = await toLostTrack(refused)
+    expect(report.results[0]).toMatchObject({ outcome: 'waiting', reason: expect.stringContaining('restart deferred') })
+    expect(destroyed(refused)).toBe(false)
+    expect(refused.ledger.active()).toHaveLength(1)
+    expect(readDeliveryState(refused.loaded.stateDir, 'ENG-10').finishedAt).toBeNull()
+  })
+
+  it('needs lost-track evidence on two consecutive passes; seeing the worker alive in between resets it', async () => {
+    const disconnected = [{ handle: 'term_w', connected: false, orphaned: false, lastOutputAt: Date.parse('2026-09-11T10:30:00.000Z'), worktreeId: 'repo-1::/w/eng-10-demo' }]
+    const env = setup({ pr: null, terminals: disconnected, worktreeFiles: { 'brief.md': 'b' } })
+    runningRun(env.loaded.stateDir)
+    expect((await deliver(env)).results[0]).toMatchObject({ outcome: 'waiting', reason: expect.stringContaining('lost tracking suspected') })
+    expect(destroyed(env)).toBe(false)
+    env.scenario.terminals = undefined
+    expect((await deliver(env, { assumeIdle: false })).results[0]).toMatchObject({ outcome: 'waiting', reason: 'worker active' })
+    env.scenario.terminals = disconnected
+    expect((await deliver(env)).results[0]).toMatchObject({ outcome: 'waiting', reason: expect.stringContaining('lost tracking suspected') })
+    expect(destroyed(env)).toBe(false)
+    expect((await deliver(env)).results[0]).toMatchObject({ outcome: 'restarted' })
+  })
+
+  it('never converts a run waiting on a person (needs-input) into a failed-and-requeued attempt', async () => {
+    const env = setup({ pr: null, terminals: [], worktreeFiles: { 'brief.md': 'b' } })
+    const run = runningRun(env.loaded.stateDir)
+    const queue = createIssueQueue({ stateDir: env.loaded.stateDir })
+    queue.update(run.id, { status: 'needs-input', now: NOW })
+    await deliver(env)
+    expect((await deliver(env)).results[0]).toMatchObject({ outcome: 'restarted' })
+    expect(queue.get(run.id)?.status).toBe('needs-input')
+    expect(queue.list().filter((item) => item.issue === 'ENG-10')).toHaveLength(1)
   })
 })
