@@ -103,14 +103,15 @@ describe('GitHub tracker adapter', () => {
     await expect(tracker.preflight?.()).rejects.toThrow(/write access/)
   })
 
-  it('fails closed when configured lifecycle labels are missing', async () => {
+  it('reports missing lifecycle labels instead of failing — the tracker creates them on first use', async () => {
     const runner: CommandRunner = { run: async (argv): Promise<CommandResult> => {
       if (argv[1] === 'repo') return { code: 0, stdout: JSON.stringify({ viewerPermission: 'WRITE' }), stderr: '', timedOut: false, durationMs: 1 }
       if (argv[1] === 'api' && argv[2] === 'user') return { code: 0, stdout: JSON.stringify({ login: 'alice' }), stderr: '', timedOut: false, durationMs: 1 }
       if (argv[1] === 'label') return { code: 0, stdout: JSON.stringify([{ name: 'loop:todo' }]), stderr: '', timedOut: false, durationMs: 1 }
       return { code: 0, stdout: 'logged in', stderr: '', timedOut: false, durationMs: 1 }
     } }
-    await expect(createGitHubTracker({ runner, config: config() }).preflight?.()).rejects.toThrow(/lifecycle labels are missing/)
+    // Used to throw INVALID_CONFIG, which doctor turned into a failed queue read; githubEnsureLabels now self-heals.
+    await expect(createGitHubTracker({ runner, config: config() }).preflight?.()).resolves.toMatchObject({ login: 'alice', permission: 'WRITE', missingLabels: ['loop:in-progress', 'loop:review', 'loop:done', 'loop:blocked'] })
   })
 
   it('keeps planned backlog issues unclassified until a human moves them into the queue', async () => {
