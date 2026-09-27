@@ -16,6 +16,18 @@ const writeDispatch = (stateDir: string, issue: string, overrides: Partial<Recor
 }
 
 describe('the projection store', () => {
+  it('rebuilds a projection folded by an older reducer instead of keeping its stale records', () => {
+    const stateDir = stateDirFor()
+    writeDispatch(stateDir, 'ENG-9', { provider: 'pi-minimax', model: 'M3' })
+    appendLoopEvent(stateDir, { at: '2026-01-01T00:01:00.000Z', type: 'worker.nudged', issue: 'ENG-9', kind: 'brief' })
+    // What the pre-#144 reducer left on disk: `review` with no PR, and the model from before the handoff.
+    mkdirSync(join(stateDir, 'ui'), { recursive: true })
+    const stale = { issue: 'ENG-9', title: null, url: null, trackerState: null, phase: 'review', reviewState: null, run: null, dispatch: { worktreeId: 'wt-ENG-9', provider: 'codex', model: 'gpt-5' }, pullRequest: null, pendingDecisions: [], error: null, updatedAt: '2026-01-01T00:01:00.000Z' }
+    writeFileSync(join(stateDir, 'ui', 'projection.json'), JSON.stringify({ schemaVersion: 1, issues: { 'ENG-9': stale } }))
+    writeFileSync(join(stateDir, 'ui', 'cursor.json'), JSON.stringify({ schemaVersion: 1, lastEventAt: '2026-01-01T00:01:00.000Z', seenAtSameMs: [] }))
+    expect(syncProjection(stateDir).issues['ENG-9']).toMatchObject({ phase: 'running', dispatch: { provider: 'pi-minimax', model: 'M3' } })
+  })
+
   it('bootstraps a minimal record from dispatch.json on the very first sync only', () => {
     const stateDir = stateDirFor()
     writeDispatch(stateDir, 'ENG-1')
