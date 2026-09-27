@@ -1277,6 +1277,14 @@ describe('lost tracking: abort and restart from scratch', () => {
     expect(readDeliveryState(env.loaded.stateDir, 'ENG-10')).toMatchObject({ finalOutcome: 'blocked' })
   })
 
+  it('escalates a worker that wrote BLOCKED: and then exited, instead of restarting or handing it off', async () => {
+    const env = setup({ pr: null, terminals: [], worktreeComment: 'BLOCKED: needs a production API key only a person can issue' })
+    runningRun(env.loaded.stateDir)
+    const report = await deliver(env)
+    expect(report.results[0]).toMatchObject({ outcome: 'blocked', reason: expect.stringContaining('production API key') })
+    expect(env.runner.calls.some((argv) => argv[1] === 'worktree' && argv[2] === 'rm')).toBe(false)
+  })
+
   it('restarts a run whose worker terminal is gone before any PR', async () => {
     const env = setup({ pr: null, terminals: [] })
     runningRun(env.loaded.stateDir)

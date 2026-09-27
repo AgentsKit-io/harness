@@ -664,6 +664,18 @@ const handleNoPullRequest = async (ctx: Context, record: DispatchRecordFile, lea
   const nextBuilder = pickHandoffBuilder(ctx, record)
   const unavailable = providerUnavailable(ctx, record.provider)
 
+  // The worker stopped on purpose and said why. Nudging it again is noise, and the idle path would restart it from
+  // scratch, discarding work the blocker says nothing about (law-os AGE-1750: committed, unpushed, blocked on a
+  // registry 403 only a person can fix). Escalate like a stuck worker: worktree kept, lease released. Checked before the terminal-gone path, so a worker
+  // that wrote BLOCKED: and exited is escalated, not handed off or restarted.
+  const declared = await workerDeclaredBlocked(ctx, record)
+  if (declared) {
+    const reason = `worker declared blocked: ${declared.split('\n')[0]!.slice(0, 200)}`
+    await escalateTracker(ctx, record, 'blocked', `**Loop: worker blocked** — the worker stopped and reported: ${declared}\n\nThe worktree was preserved (its committed work is still there) and the lease was released; the issue returned to ${ctx.config.delivery.returnState}. Clear the blocker, then resume in that worktree — Retry starts a fresh attempt, which does not reuse unpushed work.`, actions)
+    finish(ctx, record, lease, state, 'blocked', reason)
+    return { issue: record.issue, outcome: ctx.dryRun ? 'dry-run' : 'blocked', reason, actions }
+  }
+
   if (!terminalAlive) {
     if (sinceDispatch < 5) return { issue: record.issue, outcome: 'waiting', reason: 'worker terminal not visible yet', actions }
     if (canHandoff(ctx, record, state, nextBuilder)) {
@@ -708,17 +720,6 @@ const handleNoPullRequest = async (ctx: Context, record: DispatchRecordFile, lea
       }
     }
     return performHandoff(ctx, record, state, other, `${record.provider} out of usage (${limitLine.slice(0, 80)})`, actions)
-  }
-
-  // The worker stopped on purpose and said why. Nudging it again is noise, and the idle path would restart it from
-  // scratch, discarding work the blocker says nothing about (law-os AGE-1750: committed, unpushed, blocked on a
-  // registry 403 only a person can fix). Escalate like a stuck worker: worktree kept, slot released, Retry resumes.
-  const declared = await workerDeclaredBlocked(ctx, record)
-  if (declared) {
-    const reason = `worker declared blocked: ${declared.split('\n')[0]!.slice(0, 200)}`
-    await escalateTracker(ctx, record, 'blocked', `**Loop: worker blocked** — the worker stopped and reported: ${declared}\n\nThe worktree was preserved; the slot was released and the issue returned to ${ctx.config.delivery.returnState}. Retry resumes it once the blocker is cleared.`, actions)
-    finish(ctx, record, lease, state, 'blocked', reason)
-    return { issue: record.issue, outcome: ctx.dryRun ? 'dry-run' : 'blocked', reason, actions }
   }
 
   let idle = ctx.assumeIdle ?? false
