@@ -180,6 +180,9 @@ export const reduce = (state: ProjectionState, event: LoopEvent): ProjectionStat
     case 'worker.fix-round':
     case 'worker.needs-input':
       return withIssue(state, issue, at, (record) => ({ ...record, phase: 'review' }))
+    // A finished (blocked/stuck) delivery resumed on its open PR — by a new head or by the operator's Retry.
+    case 'worker.reopened':
+      return withIssue(state, issue, at, (record) => ({ ...record, phase: 'review', reviewState: null, error: null, pullRequest: pullRequestFrom(record, event, 'OPEN') }))
     case 'worker.ci-round':
       return withIssue(state, issue, at, (record) => ({ ...record, phase: 'review', reviewState: 'ci-failed', pullRequest: pullRequestFrom(record, event, 'OPEN') }))
     case 'worker.review-round':

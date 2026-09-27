@@ -5,12 +5,13 @@ import { ensureBaseView } from '../../loop/base-view.js'
 import type { LoadedLoopConfig, ModelReference } from '../../loop/config.js'
 import { resolveConnectors } from '../../loop/connectors.js'
 import { assessContract, contractIsFresh, generateContract, readStoredContract, writeStoredContract, type StoredContract } from '../../loop/contract.js'
-import { listDispatched, markDispatchCancelled, readDeliveryState } from '../../loop/deliver.js'
+import { deliveryStatePath, listDispatched, markDispatchCancelled, readDeliveryState } from '../../loop/deliver.js'
 import { runLoopDoctor } from '../../loop/doctor.js'
 import { createHitlStore, type HitlRequest } from '../../loop/hitl.js'
 import { createIssueQueue } from '../../loop/queue.js'
 import { resumeIssue as clearPause } from '../../loop/resilience-state.js'
 import { rankModels } from '../../loop/routing.js'
+import { writeJsonAtomic } from '../../loop/fs-atomic.js'
 import { appendLoopEvent } from '../../loop/tick.js'
 import type { Drift } from './contract.js'
 import { weakenedGates } from './config-view.js'
@@ -198,7 +199,25 @@ export const cancelRun = async (context: ActionContext, issue: string, runId: st
  * `ui.run-enqueued` is re-emitted for the same reason a fresh confirm emits it — a new attempt is queued. */
 export const retryRun = (context: ActionContext, issue: string, runId: string): { readonly runId: string } => {
   const { loaded } = context
-  const run = createIssueQueue({ stateDir: loaded.stateDir }).retry(runId)
+  const queue = createIssueQueue({ stateDir: loaded.stateDir })
+  // A run turns `completed` once its PR is observed. If delivery then gave up (fix-round cap, stuck, a failed
+  // pass), the PR is still open and its worktree still in review — a fresh attempt could never dispatch past it.
+  // Retry resumes delivery on that PR instead: the same reset deliver applies itself when a new head arrives.
+  const delivery = readDeliveryState(loaded.stateDir, issue)
+  const status = queue.get(runId)?.status
+  const idle = status !== undefined && !['queued', 'dispatching', 'running'].includes(status)
+  // A cancelled run went through cleanup (terminal, worktree, lease): resuming its delivery would act on nothing. It
+  // takes a fresh attempt, below.
+  if (idle && status !== 'cancelled' && !delivery.cancelledAt && delivery.prNumber !== null && delivery.finishedAt && (delivery.finalOutcome === 'blocked' || delivery.finalOutcome === 'stuck' || delivery.finalOutcome === 'failed')) {
+    const head = (delivery.finalOutcome === 'failed' ? delivery.failedAtHead : null) ?? Object.keys(delivery.reviews).at(-1) ?? null
+    // The same reset `reopenFinishedIssue` applies: the error budget, the failed-at head and the last tracker state
+    // it set start over, or the first transient error after a Retry re-finishes it and the tracker is never moved back.
+    writeJsonAtomic(deliveryStatePath(loaded.stateDir, issue), { ...delivery, finishedAt: null, finalOutcome: null, fixRounds: 0, heldFor: null, nudges: [], consecutiveErrors: 0, failedAtHead: null, trackerState: null })
+    appendLoopEvent(loaded.stateDir, { at: new Date().toISOString(), type: 'worker.reopened', issue, pr: delivery.prNumber, previousHead: head, head, previousOutcome: delivery.finalOutcome })
+    syncProjection(loaded.stateDir)
+    return { runId }
+  }
+  const run = queue.retry(runId)
   appendLoopEvent(loaded.stateDir, { at: new Date().toISOString(), type: 'ui.run-enqueued', issue })
   syncProjection(loaded.stateDir)
   return { runId: run.id }

@@ -138,6 +138,48 @@ describe('the control-plane action surface', () => {
   })
 })
 
+describe('retry after a failed delivery', () => {
+  it('resumes delivery on the open PR when the delivery of a completed run ended blocked, and still refuses one that merged', async () => {
+    // Live (law-os AGE-1837): the run completed when its PR opened, delivery then hit the fix-round cap. Attention
+    // offered Retry and the queue refused ("got completed"); a fresh attempt could not dispatch past the open PR either.
+    const { createIssueQueue } = await import('../src/loop/queue.js')
+    const { deliveryStatePath, readDeliveryState } = await import('../src/loop/deliver.js')
+    const context = contextFor()
+    const issue = 'AGE-1837'
+    const { runId } = enqueueRun(context, { issue, configHash: 'hash', flow: null, builder: { provider: 'codex', model: 'gpt' }, contractDigest: 'd', maxFixRounds: 2, perIssueTokens: 0 })
+    createIssueQueue({ stateDir: context.loaded.stateDir }).update(runId, { status: 'completed', projection: { stage: 'pr-open', pullRequest: 3 } })
+    const delivery = (finalOutcome: string) => writeJsonAtomic(deliveryStatePath(context.loaded.stateDir, issue), { issue, prNumber: 3, reviews: { abc1234: { status: 'findings' } }, fixRounds: 2, nudges: [{ kind: 'ci' }], handoffs: [], heldFor: null, finishedAt: '2026-09-27T00:00:00.000Z', finalOutcome, cancelledAt: null })
+    delivery('merged')
+    expect(() => retryRun(context, issue, runId)).toThrow(/got completed/)
+    delivery('blocked')
+    expect(retryRun(context, issue, runId)).toEqual({ runId })
+    expect(readDeliveryState(context.loaded.stateDir, issue)).toMatchObject({ prNumber: 3, finishedAt: null, finalOutcome: null, fixRounds: 0, nudges: [] })
+    expect(createIssueQueue({ stateDir: context.loaded.stateDir }).list().filter((run) => run.issue === issue)).toHaveLength(1)
+    expect(readCurrentProjection(context.loaded.stateDir).issues[issue]).toMatchObject({ phase: 'review', error: null })
+  })
+
+  it('a resumed failed delivery gets its error budget, failed-at head and tracker state back; a cancelled run is never resumed', async () => {
+    const { createIssueQueue } = await import('../src/loop/queue.js')
+    const { deliveryStatePath, readDeliveryState } = await import('../src/loop/deliver.js')
+    const context = contextFor()
+    const issue = 'AGE-1900'
+    const { runId } = enqueueRun(context, { issue, configHash: 'hash', flow: null, builder: { provider: 'codex', model: 'gpt' }, contractDigest: 'd', maxFixRounds: 2, perIssueTokens: 0 })
+    const queue = createIssueQueue({ stateDir: context.loaded.stateDir })
+    queue.update(runId, { status: 'completed', projection: { stage: 'pr-open', pullRequest: 3 } })
+    const failed = { issue, prNumber: 3, reviews: {}, fixRounds: 1, nudges: [], handoffs: [], heldFor: null, finishedAt: '2026-09-27T00:00:00.000Z', finalOutcome: 'failed', cancelledAt: null, consecutiveErrors: 3, failedAtHead: 'feed123', trackerState: 'Blocked' }
+    writeJsonAtomic(deliveryStatePath(context.loaded.stateDir, issue), failed)
+    expect(retryRun(context, issue, runId)).toEqual({ runId })
+    expect(readDeliveryState(context.loaded.stateDir, issue)).toMatchObject({ finalOutcome: null, consecutiveErrors: 0, failedAtHead: null, trackerState: null })
+
+    // Cancelled after its delivery gave up: cleanup already tore it down, so Retry starts a fresh attempt instead.
+    writeJsonAtomic(deliveryStatePath(context.loaded.stateDir, issue), { ...failed, cancelledAt: '2026-09-27T01:00:00.000Z' })
+    queue.update(runId, { status: 'cancelled' })
+    const fresh = retryRun(context, issue, runId)
+    expect(readDeliveryState(context.loaded.stateDir, issue)).toMatchObject({ finalOutcome: 'failed', cancelledAt: '2026-09-27T01:00:00.000Z' })
+    expect(fresh.runId).not.toBe(runId)
+  })
+})
+
 describe('contract reuse after HITL answers', () => {
   it('reuses a valid contract, and a blocked one while a question is open or none was asked — never one whose questions were all answered', async () => {
     const { canReuseContract } = await import('../src/ui/api/actions.js')
