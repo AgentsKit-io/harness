@@ -182,9 +182,12 @@ export interface SystemReport {
     readonly lastStatus: string | null
     readonly paused: boolean
     readonly pausedReason: string | null
-    readonly installed: boolean
+    /** `null` = unknown: Orca could not be read (see `orcaError`), which is not "not installed". */
+    readonly installed: boolean | null
     readonly drift: readonly string[]
   }[]
+  /** Why stage status/drift is unknown right now; `null` when Orca answered. */
+  readonly orcaError: string | null
   readonly learnings: readonly { readonly id: string; readonly category: string; readonly text: string; readonly sightings: number; readonly source: string; readonly status: 'proposed' | 'promoted' | 'rejected' }[]
   readonly retroSuggestions: readonly { readonly text: string; readonly knob: string | null; readonly target: 'project' | 'harness' }[]
   readonly alerts: { readonly configured: boolean; readonly lastDelivery: { readonly at: string; readonly status: number | 'error' } | null }

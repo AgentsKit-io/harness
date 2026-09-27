@@ -44,8 +44,11 @@ export const staleAfterMsFor = (loaded: LoadedLoopConfig): number => 2 * cronCad
 // ---- Orca (worktrees + terminals), TTL-cached -----------------------------------------------------------------
 
 export interface OrcaView {
+  /** When `worktreeIds` was last read successfully. */
   readonly at: string | null
   readonly worktreeIds: readonly string[] | null
+  /** When `terminals` was last read successfully: a failed terminal list keeps the old ones, never re-dated. */
+  readonly terminalsAt: string | null
   readonly terminals: readonly OrcaTerminal[]
 }
 
@@ -55,15 +58,16 @@ export interface OrcaCache {
 }
 
 export const createOrcaCache = (loaded: LoadedLoopConfig, runner: CommandRunner, now: () => Date = () => new Date(), ttlMs = ORCA_TTL_MS): OrcaCache => {
-  let view: OrcaView = { at: null, worktreeIds: null, terminals: [] }
+  let view: OrcaView = { at: null, worktreeIds: null, terminalsAt: null, terminals: [] }
   let fetchedAtMs = Number.NEGATIVE_INFINITY
   let inFlight: Promise<OrcaView> | null = null
   const refresh = (): Promise<OrcaView> => {
     inFlight ??= (async () => {
       const options = { bin: loaded.config.orca?.bin, timeoutMs: loaded.config.orca?.timeoutMs ?? 20_000 }
       try {
-        const [worktrees, terminals] = await Promise.all([orcaWorktrees(runner, options), orcaTerminalList(runner, {}, options).catch(() => view.terminals)])
-        view = { at: now().toISOString(), worktreeIds: worktrees.map((worktree) => worktree.id), terminals }
+        const [worktrees, terminals] = await Promise.all([orcaWorktrees(runner, options), orcaTerminalList(runner, {}, options).catch(() => null)])
+        const at = now().toISOString()
+        view = { at, worktreeIds: worktrees.map((worktree) => worktree.id), ...(terminals ? { terminalsAt: at, terminals } : { terminalsAt: view.terminalsAt, terminals: view.terminals }) }
       } catch { /* keep the last good view; freshness goes stale on its own */ }
       fetchedAtMs = now().getTime()
       inFlight = null

@@ -66,6 +66,8 @@ export interface UiSnapshot {
   readonly board: BoardSnapshot | null
   readonly issues: readonly IssueRecord[]
   readonly automations: readonly UiAutomationHealth[]
+  /** Set when Orca could not be read: `automations` is then unknown, not "no stage failed". */
+  readonly automationsError?: string | null
   /** Attention, reconciliation and freshness — see `contract.ts`. Absent only from test snapshots. */
   readonly extras?: SnapshotExtras
 }
@@ -225,28 +227,31 @@ const parseEnqueueBody = (body: unknown, loaded: LoadedLoopConfig): EnqueueBody 
 
 // ---- snapshot -----------------------------------------------------------------------------------------------
 
-/** Memoizes an async read that is too costly for the 1 s poll. A failed read yields `fallback` for one TTL — a
+/** Memoizes an async read that is too costly for the 1 s poll. A failed read yields `fallback(error)` for one TTL — a
  * broken Orca must degrade the page to "no observation", never fail the snapshot. */
-const memo = <T>(ttlMs: number, read: () => Promise<T>, fallback: T): ((force?: boolean) => Promise<T>) => {
+const memo = <T>(ttlMs: number, read: () => Promise<T>, fallback: (error: unknown) => T): ((force?: boolean) => Promise<T>) => {
   let value: { readonly at: number; readonly data: T } | null = null
   let inFlight: Promise<T> | null = null
   return async (force = false) => {
     if (!force && value && Date.now() - value.at < ttlMs) return value.data
-    inFlight ??= read().catch(() => fallback).then((data) => { value = { at: Date.now(), data }; inFlight = null; return data })
+    inFlight ??= read().catch(fallback).then((data) => { value = { at: Date.now(), data }; inFlight = null; return data })
     return inFlight
   }
 }
 
+interface AutomationsRead { readonly rows: readonly UiAutomationHealth[]; readonly error: string | null }
+
 interface SnapshotSources {
   readonly board: IssueBoardCache
   readonly workspaces: (force?: boolean) => Promise<ReadonlyMap<string, WorkspaceObservation['pullRequest']>>
-  readonly automations: (force?: boolean) => Promise<readonly UiAutomationHealth[]>
+  readonly automations: (force?: boolean) => Promise<AutomationsRead>
 }
 
 const snapshotSources = (context: ActionContext, board: IssueBoardCache): SnapshotSources => ({
   board,
-  workspaces: memo(10_000, async () => new Map((await createRunnerConnector(context).observeWorkspaces()).map((workspace) => [workspace.id, workspace.pullRequest])), new Map()),
-  automations: memo(60_000, async () => (await loopStatus(context)).automations.map((automation) => ({ name: automation.name, stage: automation.stage, installed: automation.installed && automation.enabled, lastRunAt: automation.lastRun?.at ?? null, error: automation.lastRun?.error ?? null })), []),
+  workspaces: memo(10_000, async () => new Map((await createRunnerConnector(context).observeWorkspaces()).map((workspace) => [workspace.id, workspace.pullRequest])), () => new Map()),
+  automations: memo<AutomationsRead>(60_000, async () => ({ rows: (await loopStatus(context)).automations.map((automation) => ({ name: automation.name, stage: automation.stage, installed: automation.installed && automation.enabled, lastRunAt: automation.lastRun?.at ?? null, error: automation.lastRun?.error ?? null })), error: null }),
+    (error) => ({ rows: [], error: `Orca unreachable: ${error instanceof Error ? error.message : String(error)}` })),
 })
 
 const buildSnapshot = async (context: ActionContext, sources: SnapshotSources, extras: ExtrasBuilder, alerts: AlertSender, force = false): Promise<UiSnapshot> => {
@@ -265,7 +270,7 @@ const buildSnapshot = async (context: ActionContext, sources: SnapshotSources, e
     schemaVersion: UI_SNAPSHOT_SCHEMA_VERSION, generatedAt: new Date().toISOString(),
     project: { name: loaded.config.project.name, repo: loaded.config.project.repo, baseBranch: loaded.config.project.baseBranch, root: loaded.root, stateDir: loaded.stateDir, configHash: loaded.configHash },
     capacity: { maxAgents, running, free: Math.max(0, maxAgents - running) },
-    board: boardSnapshot, issues: enriched, automations, extras: snapshotExtras,
+    board: boardSnapshot, issues: enriched, automations: automations.rows, automationsError: automations.error, extras: snapshotExtras,
   }
 }
 
