@@ -5,7 +5,7 @@ import { ensureBaseView } from '../../loop/base-view.js'
 import type { LoadedLoopConfig, ModelReference } from '../../loop/config.js'
 import { resolveConnectors } from '../../loop/connectors.js'
 import { assessContract, contractIsFresh, generateContract, readStoredContract, writeStoredContract, type StoredContract } from '../../loop/contract.js'
-import { deliveryStatePath, listDispatched, markDispatchCancelled, readDeliveryState } from '../../loop/deliver.js'
+import { clearRestarts, deliveryStatePath, listDispatched, markDispatchCancelled, readDeliveryState } from '../../loop/deliver.js'
 import { runLoopDoctor } from '../../loop/doctor.js'
 import { createHitlStore, type HitlRequest } from '../../loop/hitl.js'
 import { createIssueQueue } from '../../loop/queue.js'
@@ -200,6 +200,7 @@ export const cancelRun = async (context: ActionContext, issue: string, runId: st
 export const retryRun = (context: ActionContext, issue: string, runId: string): { readonly runId: string } => {
   const { loaded } = context
   const queue = createIssueQueue({ stateDir: loaded.stateDir })
+  clearRestarts(loaded.stateDir, issue)
   // A run turns `completed` once its PR is observed. If delivery then gave up (fix-round cap, stuck, a failed
   // pass), the PR is still open and its worktree still in review — a fresh attempt could never dispatch past it.
   // Retry resumes delivery on that PR instead: the same reset deliver applies itself when a new head arrives.
@@ -256,6 +257,9 @@ export const decideIssue = async (context: ActionContext, issue: string, decisio
   // The human decision supersedes delivery's `abandoned`: without this marker, the next sync re-read delivery.json and
   // put the issue straight back into needs-decision. The next dispatch clears it (resetDeliveryStateForDispatch).
   if (listDispatched(loaded.stateDir).some((dispatch) => dispatch.issue === issue)) markDispatchCancelled(loaded.stateDir, issue)
+  // The abandoned delivery kept its lease; left held, the issue stays non-dispatchable until someone reconciles it.
+  const ledger = createDispatchLedger(loaded.stateDir)
+  for (const lease of readActiveClaims(loaded.stateDir).filter((claim) => claim.issue === issue)) ledger.release(lease, `ui decision: ${decision}`)
   appendLoopEvent(loaded.stateDir, { at: nowIso(), type: 'ui.issue-decided', issue, action: decision })
   syncProjection(loaded.stateDir)
 }
