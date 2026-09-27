@@ -6,7 +6,7 @@ import { fail } from '../kernel/errors.js'
 import { extractOutputBlock } from './output-block.js'
 import { hashJson } from '../kernel/hash.js'
 import { providerIdentity, renderHeadlessArgv, type EffortLevel, type LoopConfig } from './config.js'
-import { classifyProviderFailure, untrusted, type ProviderFailure, type TaskContract } from './contract.js'
+import { classifyProviderFailure, untrusted, type ProviderCallIo, type ProviderFailure, type TaskContract } from './contract.js'
 import { writeJsonAtomic } from './fs-atomic.js'
 import type { RankedModel } from './routing.js'
 import { readJsonFile } from '../kernel/json-file.js'
@@ -187,7 +187,7 @@ const callHeadless = async (input: { readonly runner: CommandRunner; readonly co
   const argv = renderHeadlessArgv(settings, candidate.model, input.call.prompt, candidate.effort)
   if (!argv) return { failure: { provider: candidate.provider, model: candidate.model, kind: 'other', detail: `no headless argv template (models.providers.${candidate.provider}.headless)` } }
   const outcome = await input.runner.run(argv, { timeoutMs: input.timeoutMs, cwd: input.root, promptOnStdin: true })
-  input.onProviderCall?.({ role: input.call.role, provider: candidate.provider, model: candidate.model, effort: candidate.effort, durationMs: outcome.durationMs, exitCode: outcome.code, timedOut: outcome.timedOut, stdoutBytes: outcome.stdout.length, stderrBytes: outcome.stderr.length })
+  input.onProviderCall?.({ role: input.call.role, provider: candidate.provider, model: candidate.model, effort: candidate.effort, durationMs: outcome.durationMs, exitCode: outcome.code, timedOut: outcome.timedOut, stdoutBytes: outcome.stdout.length, stderrBytes: outcome.stderr.length, io: { prompt: input.call.prompt, stdout: outcome.stdout } })
   const detail = `${outcome.stderr.trim()}\n${outcome.stdout.trim()}`.trim().slice(0, 600)
   if (outcome.timedOut || outcome.code !== 0) return { failure: { provider: candidate.provider, model: candidate.model, kind: classifyProviderFailure(detail, outcome.timedOut), detail: outcome.timedOut ? `timed out after ${input.timeoutMs}ms` : `exited ${outcome.code ?? 'null'}: ${detail || 'no output'}` } }
   return { stdout: outcome.stdout }
@@ -214,7 +214,7 @@ export interface PlanWithVotesInput {
   readonly onCycle?: (cycle: number, votes: readonly CastVote[]) => void
   /** Called once per planner/voter call attempted (success or failure) — the same per-call visibility contract
    * generation gets, so planning costs the same as any other harness-direct call, not just its failures. */
-  readonly onProviderCall?: (event: { readonly role: 'planner' | 'voter'; readonly provider: string; readonly model: string; readonly effort: EffortLevel; readonly durationMs: number; readonly exitCode: number | null; readonly timedOut: boolean; readonly stdoutBytes: number; readonly stderrBytes: number }) => void
+  readonly onProviderCall?: (event: { readonly role: 'planner' | 'voter'; readonly provider: string; readonly model: string; readonly effort: EffortLevel; readonly durationMs: number; readonly exitCode: number | null; readonly timedOut: boolean; readonly stdoutBytes: number; readonly stderrBytes: number; readonly io: ProviderCallIo }) => void
   /** Ceiling for one planner call. Unset = `worker.plan.timeoutMs`; a flow may shorten it per role. */
   readonly plannerTimeoutMs?: number
   /** Ceiling for one vote call. Unset = `worker.plan.timeoutMs`. */

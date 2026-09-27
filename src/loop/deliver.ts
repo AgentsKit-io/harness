@@ -28,7 +28,8 @@ import { createLoopEventBus, loadLoopPlugins, type LoopEventBus, type LoopEventP
 import { attachNotifier } from './notify.js'
 import { applyRoleSettings, resolveFlowSettings, resolveRoleSettings, workerPhaseEnabled, type EffectiveFlowSettings } from './flows.js'
 import { assessDod, readDodEvidence, renderDodMarkdown } from './dod.js'
-import { missingArtifacts, readPhaseArtifacts, readVerifyArtifact, verifyProofs, type PhaseArtifactName } from './artifacts.js'
+import { artifactPath, missingArtifacts, readPhaseArtifacts, readVerifyArtifact, verifyProofs, type PhaseArtifactName } from './artifacts.js'
+import { recordRunEvidence, recordRunIo } from './agent-runs.js'
 import { readJsonFile } from '../kernel/json-file.js'
 import { createIssueQueue } from './queue.js'
 import { createLifecycleStore, type LifecyclePullRequest } from './lifecycle.js'
@@ -343,11 +344,30 @@ const captureWorkerOutput = async (ctx: Context, terminal: string | null): Promi
   } catch { return null }
 }
 
+/** ADR-0041: what the worker left behind, copied into its run (deduplicated by hash) and linked as evidence. */
+const recordWorkerArtifacts = (ctx: Context, record: DispatchRecordFile): void => {
+  if (!record.worktreePath) return
+  const { stateDir } = ctx.loaded
+  const dodFile = ctx.config.dod.evidenceFile.replace(/^\.ak-loop[\\/]/, '')
+  const files = [
+    { file: 'plan.md', stage: 'build', extension: 'md', evidence: null },
+    { file: 'verify.json', stage: 'verify', extension: 'json', evidence: 'verify' },
+    { file: dodFile, stage: 'dod', extension: 'json', evidence: 'dod' },
+  ] as const
+  for (const item of files) {
+    const path = artifactPath(record.worktreePath, item.file)
+    let content: string
+    try { content = readFileSync(path, 'utf8') } catch { continue }
+    recordRunIo(stateDir, record.issue, { direction: 'output', stage: item.stage, role: 'worker', content, extension: item.extension, maxBytes: ctx.config.runs.maxIoBytes }, ctx.now)
+    if (item.evidence) recordRunEvidence(stateDir, record.issue, item.evidence, path, ctx.now)
+  }
+}
+
 const escalateTracker = async (ctx: Context, record: DispatchRecordFile, kind: 'stuck' | 'blocked' | 'abandoned', body: string, actions: string[]): Promise<void> => {
   if (ctx.dryRun) { actions.push(`would mark ${kind} in ${ctx.tracker.id} and Orca`); return }
   const workerOutput = await captureWorkerOutput(ctx, record.terminal)
   const fullBody = workerOutput ? `${body}\n\n<details><summary>Worker's last terminal output</summary>\n\n\`\`\`\n${workerOutput}\n\`\`\`\n\n</details>` : body
-  if (workerOutput) actions.push('captured worker terminal output for the escalation')
+  if (workerOutput) { actions.push('captured worker terminal output for the escalation'); recordRunIo(ctx.loaded.stateDir, record.issue, { direction: 'output', stage: 'build', role: 'worker-terminal', content: workerOutput, extension: 'txt', maxBytes: ctx.config.runs.maxIoBytes }, ctx.now) }
   try {
     await ctx.tracker.comment({ issue: record.issue, body: `${fullBody}\n\n<!-- loop:${kind}:${record.leaseId} -->`, dedupeKey: `${kind}:${record.issue}:${record.leaseId}` })
     if (ctx.tracker.id === 'github') await ctx.tracker.transitions.transition({ tracker: ctx.tracker.id, issue: record.issue, to: ctx.config.linear.blockedLabel, reason: `loop ${kind}` })
@@ -934,6 +954,7 @@ ${marker}` }); actions.push('secret-file hold commented') } catch (error) { acti
   // A record with no worktree path predates the worktree or lost it: the harness cannot read anything there, and
   // blaming the worker for a file nobody can look for is how a loop invents work.
   const artifacts = record.worktreePath ? readPhaseArtifacts(record.worktreePath, config) : []
+  if (!ctx.dryRun) recordWorkerArtifacts(ctx, record)
   // Same source as `tick` used when it decided whether to run the planner at all (`tick.ts:554`). Reading
   // `worker.plan.enabled` directly here meant a flow that turned the planner off still had deliver demand a
   // `plan.md` the worker was never asked to write, and send it back a fix round for the omission.

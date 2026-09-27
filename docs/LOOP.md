@@ -520,6 +520,39 @@ onto the PR** before it merges. An item with no proof recorded is `missing` and 
 asking for the proof; an item proven and failing is `failed` and sends it back to fix the thing. Those are
 different instructions, and the loop keeps them apart. A reviewer reads evidence, not a promise.
 
+## Runs: how an issue was built (ADR-0041)
+
+Every issue gets a run directory, `<stateDir>/runs/<issue>-<n>/`; a re-dispatch or a reopened issue starts `n+1`,
+which names the run it `supersedes`.
+
+```
+state.json   currentStage, status, loopCount/maxLoopCount, lastOutput, nextRequiredApproval, pr, head
+inputs/      what each step was handed — orchestrator/planner/voter prompts, the worker brief (redacted)
+outputs/     what each step produced — raw model output, plan.md / verify.json / DoD, the terminal tail
+handoffs/    NN-<from>-to-<to>.json, written by the machine at every stage change
+evidence/    index.json — verify, DoD and review files linked by sha256
+```
+
+`state.json` is a projection of the event log, never a second source of truth, and the handoffs are generated from
+state the harness already holds — a model never writes one. Identical content is stored once per run. `runs.keep`
+and `runs.maxAgeDays` bound the directory; the open run is never pruned.
+
+```bash
+ak-harness loop run list [--issue ENG-12]
+ak-harness loop run show ENG-12        # latest run of the issue, or a run id such as ENG-12-2
+```
+
+With `runs.prSummary` (default on) `deliver` keeps one comment on the PR with the run's steps and evidence hashes,
+edited in place as the run moves.
+
+### Rendered specs (`spec.enabled`)
+
+With `spec.enabled: true`, dispatch renders `specs/<issue>/requirements.md`, `design.md` and `tasks.md` into the
+worktree — the Spec Kit / Kiro layout — from the frozen contract and the approved plan. No model writes them:
+requirement ids are the contract's outcome ids, so every requirement traces to its check and to the worker's
+`verify.json`. The worker commits them unchanged; `deliver` sends a fix round when they are missing, uncommitted, or
+differ from what the contract renders. Off by default, because it adds files to every PR.
+
 ## The roles are agents, and they can be improved
 
 `agents.registry.yaml` maps a role to an agent the project installed (`npx agentskit add <id>` copies it to

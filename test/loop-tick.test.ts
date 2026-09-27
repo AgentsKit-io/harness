@@ -3,6 +3,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
 import {
+  readAgentRunReport,
   BRIEF_POINTER_PROMPT, CONTRACT_CLOSE, CONTRACT_OPEN, assessContract, busyIssues, contractIsFresh, createDispatchLedger, createIssueQueue, deliveryStatePath, dispatchRecordPath, isIssuePaused, linearLabelRemove, loadLoopConfig, parseContractOutput, parseLinearIssueDetail, parseModelRef, precheckTick, readCliModelsCache, readDispatchRecord, readDeliveryState, readIssueFailures, readStoredContract, recordIssueFailure, renderContractPrompt, renderWorkerBrief, resumeIssue, runTick, untrusted, worktreeNameFor, writeStoredContract,
 } from '../src/index.js'
 import type { CommandResult, CommandRunner, StoredContract, TaskContract } from '../src/index.js'
@@ -344,6 +345,15 @@ describe('tick', () => {
     const handedOver = readFileSync(join(env.dir, 'w', '.ak-loop', 'brief.md'), 'utf8')
     expect(handedOver).toContain('Loop-Contract:')
     expect(handedOver).toContain(`git push -u origin ${result?.branch}`)
+    // ADR-0041: the dispatch is reconstructable from its run — what the orchestrator and the worker were handed.
+    const run = readAgentRunReport(loaded.stateDir, result?.issue ?? '')
+    expect(run?.state).toMatchObject({ runId: `${result?.issue}-1`, currentStage: 'build', status: 'running', dispatches: 1, maxLoopCount: loaded.config.delivery.maxFixRounds })
+    expect(run?.state.io.map((entry) => `${entry.direction}:${entry.stage}:${entry.role}`)).toEqual(expect.arrayContaining(['input:contract:orchestrator', 'output:contract:orchestrator', 'input:build:worker']))
+    expect(readFileSync(join(run?.dir ?? '', run?.state.io.find((entry) => entry.role === 'worker')?.file ?? ''), 'utf8')).toContain('Loop-Contract:')
+    expect(run?.handoffs.map((handoff) => `${String(handoff['from'])}->${String(handoff['to'])}`)).toEqual(['intake->contract', 'contract->build'])
+    const providerCalls = readFileSync(join(loaded.stateDir, 'events.ndjson'), 'utf8').trim().split('\n').map((line) => JSON.parse(line) as Record<string, unknown>).filter((event) => event['type'] === 'provider.call')
+    expect(providerCalls.length).toBeGreaterThan(0)
+    for (const event of providerCalls) expect(event).not.toHaveProperty('io')
     expect(send).toContain('--enter')
     expect(env.runner.calls.findIndex((argv) => argv[1] === 'terminal' && argv[2] === 'wait')).toBeLessThan(env.runner.calls.findIndex((argv) => argv[1] === 'terminal' && argv[2] === 'send'))
 

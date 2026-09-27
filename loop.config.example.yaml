@@ -326,6 +326,14 @@ memory:
 #       pattern: "TODO|FIXME"
 #       paths: ["src/**"]
 
+# Per-issue run records under <stateDir>/runs/<issue>-<n>/ (ADR-0041): projected state, redacted inputs/outputs,
+# machine-written handoffs and evidence links. Local only. `ak-harness loop run show <issue>` reconstructs one.
+# runs:
+#   keep: 3                           # runs kept per issue; older ones are pruned at the start of each tick
+#   maxAgeDays: 30                    # closed runs older than this are pruned
+#   maxIoBytes: 262144                # ceiling per recorded input/output (inputs keep the head, outputs the tail)
+#   prSummary: true                   # one PR comment with the run's steps and evidence hashes, edited in place
+
 # Knobs the retro may move by itself, each inside a declared range and justified by a declared metric — and
 # reverted by the same metric when the next cycle is worse (that knob is then frozen until a human clears it).
 # Never auto-adjustable, whatever is listed here: models, providers, gates and branches.

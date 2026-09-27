@@ -4,7 +4,7 @@
   "package": "@agentskit/harness",
   "packageVersion": "0.21.0",
   "entryPoint": "src/index.ts",
-  "sourceDigest": "cdb8e7b48daf6909f0dc16fe7187937450b7416b5324818354cce75f25b8fd57",
+  "sourceDigest": "03bb85c61c5e49e5caa68be5ee9b643665223c96469c5d0b139bb6164ed0d24e",
   "capabilities": [
     {
       "id": "public-surface:adapters/agent",
@@ -944,6 +944,27 @@
         "loadAgentRegistry",
         "parseAgentRegistryText",
         "resolveAgentForRole"
+      ]
+    },
+    {
+      "id": "public-surface:loop/agent-runs",
+      "version": "0.21.0",
+      "kind": "composition",
+      "entryPoint": "src/index.ts",
+      "exports": [
+        "AgentRunEvidence",
+        "AgentRunIoEntry",
+        "AgentRunReport",
+        "AgentRunStage",
+        "AgentRunState",
+        "AgentRunStatus",
+        "RUNS_DIR",
+        "classifyRunEvent",
+        "listAgentRuns",
+        "pruneAgentRuns",
+        "readAgentRunReport",
+        "renderAgentRunMarkdown",
+        "runDirFor"
       ]
     },
     {
@@ -2065,5 +2086,5 @@
       ]
     }
   ],
-  "digest": "727415ccc09c8f4504aa37933d6fc2cdfb6930f042a98df99e84aa097f750614"
+  "digest": "72d055587159e57b7ab58dd58618936d2ac0ebe5803f19cdfcf0dcd5fd505eb5"
 }
