@@ -325,7 +325,7 @@ describe('deliver', () => {
     // 'findings'` alone sent this to a fix round asking the worker to "address" zero findings, then every
     // later tick returned `waiting: review findings pending a new push` forever — a push that never comes
     // because nothing is left to fix (this is what happened live to AGE-1871 and AGE-1874).
-    const env = setup({ review: { code: 1, findings: [] } })
+    const env = setup({ review: { code: 1, findings: [{ severity: 'nit', title: 'rename x', file: 'a.ts', line: 1 }] } })
     const first = await deliver(env)
     expect(first.results[0]).toMatchObject({ outcome: 'merged', pr: 42 })
     expect(readDeliveryState(env.loaded.stateDir, 'ENG-10')).toMatchObject({ finalOutcome: 'merged' })
