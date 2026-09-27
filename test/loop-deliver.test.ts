@@ -44,6 +44,8 @@ interface Scenario {
   readonly worktreeAgents?: readonly Record<string, unknown>[]
   /** `orca worktree ps` status (activity) for the worker worktree, with `worktreeAgents`. */
   readonly worktreeStatus?: string
+  /** `orca worktree ps` comment on the worker worktree (a worker sets `BLOCKED: <reason>` when it stops itself). */
+  readonly worktreeComment?: string
   readonly orcaWorktreeMissing?: boolean
   readonly pluginSource?: string
   readonly initialRemainingPercent?: number | null
@@ -143,7 +145,7 @@ const setup = (initial: Scenario = {}) => {
         return { code: 1, stdout: '', stderr: `no fixture for pr view ${number}`, timedOut: false, durationMs: 1 }
       }
       if (argv[0] === 'gh' && argv[1] === 'pr' && argv[2] === 'edit') return { code: 0, stdout: '', stderr: '', timedOut: false, durationMs: 1 }
-      if (key.startsWith('orca worktree ps') && scenario.worktreeAgents) return okResult({ worktrees: [{ worktreeId: 'repo-1::/w/eng-10-demo', path: '/w/eng-10-demo', agents: scenario.worktreeAgents, ...(scenario.worktreeStatus ? { status: scenario.worktreeStatus } : {}) }] })
+      if (key.startsWith('orca worktree ps') && (scenario.worktreeAgents || scenario.worktreeComment)) return okResult({ worktrees: [{ worktreeId: 'repo-1::/w/eng-10-demo', path: '/w/eng-10-demo', agents: scenario.worktreeAgents ?? [], ...(scenario.worktreeStatus ? { status: scenario.worktreeStatus } : {}), ...(scenario.worktreeComment ? { comment: scenario.worktreeComment } : {}) }] })
       if (key.startsWith('orca terminal list') && scenario.orcaDown) return { code: 1, stdout: '', stderr: 'orca runtime unavailable: connect ECONNREFUSED', timedOut: false, durationMs: 1 }
       if (key.startsWith('orca terminal list')) return okResult({ terminals: scenario.terminals ?? [{ handle: 'term_w', connected: true, orphaned: false, lastOutputAt: Date.parse('2026-09-11T10:30:00.000Z'), worktreeId: 'repo-1::/w/eng-10-demo' }] })
       if (key.startsWith('orca terminal read')) return scenario.terminalScreen === undefined ? { code: 127, stdout: '', stderr: 'no fixture for terminal read', timedOut: false, durationMs: 1 } : okResult({ tail: scenario.terminalScreen })
@@ -1261,6 +1263,18 @@ describe('lost tracking: abort and restart from scratch', () => {
     expect(types).toEqual(expect.arrayContaining(['worker.lost-tracking', 'worker.restarted']))
     // A human is not needed yet: no blocked label on the first restart.
     expect(env.runner.calls.some((argv) => argv[1] === 'linear' && argv[2] === 'label' && argv.includes('blocked'))).toBe(false)
+  })
+
+  it('escalates a worker that declared itself blocked instead of nudging or restarting it', async () => {
+    // Live (law-os AGE-1750): committed, unpushed, `BLOCKED: pnpm install 403` — the idle path would have discarded it.
+    const env = setup({ pr: null, dispatchedAt: '2026-09-11T09:00:00.000Z', worktreeComment: 'BLOCKED: pnpm install --frozen-lockfile fails with HTTP 403 on npm.pkg.github.com' })
+    runningRun(env.loaded.stateDir)
+    const report = await deliver(env, { assumeIdle: true, now: () => new Date('2026-09-11T13:00:00.000Z') })
+    expect(report.results[0]).toMatchObject({ outcome: 'blocked', reason: expect.stringContaining('HTTP 403') })
+    expect(env.runner.calls.some((argv) => argv[1] === 'worktree' && argv[2] === 'rm')).toBe(false)
+    expect(env.runner.calls.some((argv) => argv[1] === 'terminal' && argv[2] === 'send')).toBe(false)
+    expect(env.ledger.active()).toEqual([])
+    expect(readDeliveryState(env.loaded.stateDir, 'ENG-10')).toMatchObject({ finalOutcome: 'blocked' })
   })
 
   it('restarts a run whose worker terminal is gone before any PR', async () => {
