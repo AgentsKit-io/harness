@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { classifyProviderFailure, extractResetsAt } from '../src/index.js'
+import { providerFailureDetail } from '../src/loop/contract.js'
 
 describe('classifyProviderFailure', () => {
   it('classifies real CLI usage-limit phrasing as quota, not "other" (regression: 2026-09-11 pilot — 19 unclassified contract failures)', () => {
@@ -17,6 +18,14 @@ describe('classifyProviderFailure', () => {
     expect(classifyProviderFailure('Not logged in · Please run /login')).toBe('auth')
     expect(classifyProviderFailure('429 Too Many Requests')).toBe('quota')
     expect(classifyProviderFailure('rate limit exceeded, please retry')).toBe('quota')
+  })
+
+  it('classifies a quota error printed after a long CLI banner (Codex: ~10 KB of banner, error last)', () => {
+    // Live (law-os AGE-1750, 2026-09-27): the head was kept, the usage-limit line cut off → `other`, contract failed.
+    const banner = Array.from({ length: 300 }, (_, i) => `hook: SessionStart ${i} — model: gpt-5.6-sol, sandbox: workspace-write`).join('\n')
+    const detail = providerFailureDetail({ stderr: `Reading prompt from stdin...\n${banner}\nERROR: You’ve hit your usage limit. Upgrade to Pro or try again at 3:23 PM.`, stdout: '' })
+    expect(classifyProviderFailure(detail)).toBe('quota')
+    expect(new Date(extractResetsAt(detail, new Date('2026-09-27T12:00:00')) as string).getMinutes()).toBe(23)
   })
 
   it('falls back to timeout/other when nothing matches', () => {
