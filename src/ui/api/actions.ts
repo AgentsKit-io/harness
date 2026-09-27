@@ -213,7 +213,9 @@ export const retryRun = (context: ActionContext, issue: string, runId: string): 
     const head = (delivery.finalOutcome === 'failed' ? delivery.failedAtHead : null) ?? Object.keys(delivery.reviews).at(-1) ?? null
     // The same reset `reopenFinishedIssue` applies: the error budget, the failed-at head and the last tracker state
     // it set start over, or the first transient error after a Retry re-finishes it and the tracker is never moved back.
-    writeJsonAtomic(deliveryStatePath(loaded.stateDir, issue), { ...delivery, finishedAt: null, finalOutcome: null, fixRounds: 0, heldFor: null, nudges: [], consecutiveErrors: 0, failedAtHead: null, trackerState: null })
+    // Incomplete review attempts go too: a delivery blocked after two incomplete reviews would re-block at once.
+    const reviews = Object.fromEntries(Object.entries(delivery.reviews).filter(([, review]) => review.status !== 'incomplete'))
+    writeJsonAtomic(deliveryStatePath(loaded.stateDir, issue), { ...delivery, reviews, finishedAt: null, finalOutcome: null, fixRounds: 0, heldFor: null, nudges: [], consecutiveErrors: 0, failedAtHead: null, trackerState: null })
     appendLoopEvent(loaded.stateDir, { at: new Date().toISOString(), type: 'worker.reopened', issue, pr: delivery.prNumber, previousHead: head, head, previousOutcome: delivery.finalOutcome })
     syncProjection(loaded.stateDir)
     return { runId }
