@@ -7,7 +7,7 @@ import { resolveConnectors } from '../../loop/connectors.js'
 import { assessContract, contractIsFresh, generateContract, readStoredContract, writeStoredContract, type StoredContract } from '../../loop/contract.js'
 import { listDispatched, markDispatchCancelled, readDeliveryState } from '../../loop/deliver.js'
 import { runLoopDoctor } from '../../loop/doctor.js'
-import { createHitlStore } from '../../loop/hitl.js'
+import { createHitlStore, type HitlRequest } from '../../loop/hitl.js'
 import { createIssueQueue } from '../../loop/queue.js'
 import { resumeIssue as clearPause } from '../../loop/resilience-state.js'
 import { rankModels } from '../../loop/routing.js'
@@ -57,13 +57,24 @@ const contractDeps = async (context: ActionContext) => {
  * request, becomes a `human.hitl-requested` event — the same event the tick-stage escalation path emits — so
  * there is one way a stage asks a human something, not a bespoke store per caller.
  */
+/**
+ * Whether a fresh cached contract can be served as is. A blocked contract whose own questions were all answered
+ * cannot: the answers only reach a contract through regeneration, so reusing it left the issue in needs-input
+ * until `contract.reuseHours` expired (observed: a batch re-run right after answering got the same digest back).
+ */
+export const canReuseContract = (dispatchable: boolean, asked: readonly Pick<HitlRequest, 'status'>[]): boolean =>
+  dispatchable || asked.length === 0 || asked.some((request) => request.status !== 'answered')
+
 export const generateOrReuseContract = async (context: ActionContext, issueId: string, options: { readonly refresh?: boolean } = {}): Promise<ContractResult> => {
   const { loaded, runner } = context
   const tracker = resolveConnectors({ runner, config: loaded.config }).tracker
   const issueDetail = await tracker.issue(issueId)
   const cached = options.refresh ? null : readStoredContract(loaded.stateDir, issueId)
   if (cached && contractIsFresh(cached, issueDetail, loaded.config.contract.reuseHours, new Date())) {
-    return { status: assessContract(cached.contract).dispatchable ? 'valid' : 'needs-input', contract: cached }
+    const dispatchable = assessContract(cached.contract).dispatchable
+    if (canReuseContract(dispatchable, createHitlStore(loaded.stateDir).list({ issue: issueId }).filter((request) => request.batchId === `contract:${issueId}:${cached.digest}`))) {
+      return { status: dispatchable ? 'valid' : 'needs-input', contract: cached }
+    }
   }
 
   const deps = await contractDeps(context)
