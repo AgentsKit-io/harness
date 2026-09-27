@@ -49,16 +49,17 @@ export interface SystemRouteDeps {
   readonly now: () => Date
 }
 
-interface OrcaStages { readonly statuses: readonly AutomationStatus[]; readonly rows: readonly AutomationDriftRow[] }
+interface OrcaStages { readonly statuses: readonly AutomationStatus[]; readonly rows: readonly AutomationDriftRow[]; readonly error: string | null }
 
-/** Status (last run) and drift both come from Orca; a failure reads as "nothing known", never as an error page. */
+/** Status (last run) and drift both come from Orca; a failure reads as "unknown" (`error`), never as an error page
+ * and never as "not installed". */
 const readOrcaStages = async ({ loaded, runner }: ActionContext): Promise<OrcaStages> => {
   try {
     const status = await loopStatus({ loaded, runner })
     const existing = await orcaAutomationsList(runner, { bin: loaded.config.orca.bin, timeoutMs: loaded.config.orca.timeoutMs })
     // Empty provider: drift on a field the UI did not resolve would be invented (see `automationDrift`).
-    return { statuses: status.automations, rows: reconcileAutomations(automationSpecs(loaded, ''), existing, loaded.config) }
-  } catch { return { statuses: [], rows: [] } }
+    return { statuses: status.automations, rows: reconcileAutomations(automationSpecs(loaded, ''), existing, loaded.config), error: null }
+  } catch (error) { return { statuses: [], rows: [], error: `Orca unreachable: ${error instanceof Error ? error.message : String(error)}` } }
 }
 
 /** A tiny per-state-dir TTL cache; the in-flight promise is cached too, so concurrent GETs share one Orca read. */
@@ -101,7 +102,7 @@ export const createSystemRoutes = (deps: SystemRouteDeps = { doctor: runLoopDoct
         stage, schedule: status?.trigger ?? specs.find((spec) => spec.name === row?.name)?.trigger ?? null,
         lastRunAt: status?.lastRun?.at ?? null, lastStatus: status?.lastRun?.status ?? null,
         paused: Boolean(pause?.pausedAt), pausedReason: pause?.pausedReason ?? null,
-        installed: status?.installed ?? false,
+        installed: orcaStages.error ? null : status?.installed ?? false,
         drift: row?.state === 'drifted' ? row.fields : row?.state === 'undeclared' ? ['undeclared'] : [],
       }
     })
@@ -124,7 +125,7 @@ export const createSystemRoutes = (deps: SystemRouteDeps = { doctor: runLoopDoct
       machine: { loadPercent: process.platform === 'win32' ? null : Math.round(((loadavg()[0] ?? 0) / cpuCount) * 100), freeRamGb: Math.round((freemem() / 1024 ** 3) * 10) / 10, liveTerminals: null, slots: config.machine.ceiling ?? config.machine.floor },
       routing,
       cooldowns: Object.entries(cooldownState).filter(([, entry]) => Date.parse(entry.until) > now.getTime()).map(([provider, entry]) => ({ provider, until: entry.until, reason: entry.reason })),
-      handoffs, stages, learnings, retroSuggestions,
+      handoffs, stages, learnings, retroSuggestions, orcaError: orcaStages.error,
       alerts: { configured: alertsConfigured, lastDelivery: readJsonFile(alertsStatePath(stateDir), alertsSchema)?.lastDelivery ?? null },
     }
   }

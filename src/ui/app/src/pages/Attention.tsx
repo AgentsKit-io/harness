@@ -236,6 +236,12 @@ export const AttentionPage = (): React.ReactElement => {
         <section aria-label="Attention queue" className="flex min-w-0 grow flex-col gap-[22px] overflow-auto">
           {!snapshot && <p className="text-sm text-ink-subtle">Loading…</p>}
           {/* A scheduled stage whose precheck crashed never ran at all (#114): louder than any single issue. */}
+          {snapshot?.automationsError && (
+            <div role="alert" className="rounded-[10px] border border-warning/40 bg-panel-alt p-4 text-sm">
+              <div className="font-semibold text-warning">Stage health unknown — Orca unreachable</div>
+              <div className="mt-2 whitespace-pre-wrap font-mono text-xs">{snapshot.automationsError}</div>
+            </div>
+          )}
           {(snapshot?.automations ?? []).filter((automation) => automation.error).map((automation) => (
             <div key={automation.name} role="alert" className="rounded-[10px] border border-danger/40 bg-danger-dim p-4 text-sm">
               <div className="font-semibold text-danger">Stage “{automation.stage}” is stopped — its last scheduled run failed before the stage ran</div>

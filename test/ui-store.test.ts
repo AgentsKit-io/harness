@@ -1,4 +1,4 @@
-import { existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, mkdtempSync, rmSync, statSync, utimesSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
@@ -49,6 +49,24 @@ describe('the projection store', () => {
     appendLoopEvent(stateDir, { at: '2026-01-01T00:10:00.000Z', type: 'worker.merged', issue: 'ENG-4', reason: 'clean review', worktreeId: 'wt-ENG-4' })
     const third = syncProjection(stateDir)
     expect(third.issues['ENG-4']!.phase).toBe('completed')
+  })
+
+  it('writes neither projection.json nor cursor.json when nothing changed (the 1 s poll must not rewrite them)', () => {
+    const stateDir = stateDirFor()
+    writeDispatch(stateDir, 'ENG-12')
+    appendLoopEvent(stateDir, { at: '2026-01-01T00:10:00.000Z', type: 'worker.held', issue: 'ENG-12', reason: 'protected path', worktreeId: 'wt-ENG-12' })
+    const first = syncProjection(stateDir)
+    const files = ['projection.json', 'cursor.json'].map((name) => join(stateDir, 'ui', name))
+    const old = new Date('2020-01-01T00:00:00.000Z')
+    for (const file of files) utimesSync(file, old, old)
+    expect(syncProjection(stateDir)).toEqual(first)
+    expect(syncProjection(stateDir)).toEqual(first)
+    for (const file of files) expect(statSync(file).mtimeMs).toBe(old.getTime())
+
+    // A real new event still lands, and moves both files.
+    appendLoopEvent(stateDir, { at: '2026-01-01T00:20:00.000Z', type: 'worker.merged', issue: 'ENG-12', reason: 'clean review', worktreeId: 'wt-ENG-12' })
+    expect(syncProjection(stateDir).issues['ENG-12']!.phase).toBe('completed')
+    for (const file of files) expect(statSync(file).mtimeMs).toBeGreaterThan(old.getTime())
   })
 
   it('survives a simulated restart: a fresh call rereads projection+cursor and continues from there', () => {
