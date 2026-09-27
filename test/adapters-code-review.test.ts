@@ -120,26 +120,43 @@ describe('buildReviewArgv', () => {
 
 const tempResultFile = (): string => { const dir = mkdtempSync(join(tmpdir(), 'agentskit-code-review-')); cleanups.push(dir); return join(dir, 'result.json') }
 const runner = (result: CommandResult): CommandRunner => ({ run: async () => result })
+/** The CLI writing its `--result` file during the run — the only result file a run may read. */
+const writes = (resultFile: string, body: string, result: CommandResult): CommandRunner => ({ run: async () => { writeFileSync(resultFile, body); return result } })
 const cmd = (overrides: Partial<CommandResult> = {}): CommandResult => ({ code: 0, stdout: '', stderr: '', timedOut: false, durationMs: 1, ...overrides })
 
 describe('runCodeReview', () => {
   it('reports clean when the CLI exits 0 and the result file has no blocking findings', async () => {
     const resultFile = tempResultFile()
-    writeFileSync(resultFile, JSON.stringify({ findings: [{ severity: 'nit', title: 'style nit' }] }))
-    const outcome = await runCodeReview(runner(cmd({ code: 0 })), { ...baseInput, resultFile })
+    const outcome = await runCodeReview(writes(resultFile, JSON.stringify({ findings: [{ severity: 'nit', title: 'style nit' }] }), cmd({ code: 0 })), { ...baseInput, resultFile })
     expect(outcome).toMatchObject({ status: 'clean', exitCode: 0, resultParsed: true })
     expect(outcome.summary).toContain('clean at/above med')
   })
 
-  it('reports findings when exit code is 1, even with no result file', async () => {
+  it('reports incomplete, never findings, when exit code is 1 but no result file was written (a fix round for nothing)', async () => {
     const outcome = await runCodeReview(runner(cmd({ code: 1 })), { ...baseInput, resultFile: tempResultFile() })
-    expect(outcome).toMatchObject({ status: 'findings', resultParsed: false })
+    expect(outcome).toMatchObject({ status: 'incomplete', resultParsed: false, blocking: [] })
+  })
+
+  it('reports incomplete, never clean, when the CLI exits 0 with a missing or unparseable result file', async () => {
+    const missing = await runCodeReview(runner(cmd({ code: 0 })), { ...baseInput, resultFile: tempResultFile() })
+    expect(missing).toMatchObject({ status: 'incomplete', resultParsed: false })
+    expect(missing.summary).toContain('no parseable result file')
+    const resultFile = tempResultFile()
+    writeFileSync(resultFile, 'not json')
+    await expect(runCodeReview(runner(cmd({ code: 0 })), { ...baseInput, resultFile })).resolves.toMatchObject({ status: 'incomplete', resultParsed: false })
+  })
+
+  it('deletes a stale result file from an earlier run at the same head before running, so it is never read as this run\'s evidence', async () => {
+    const resultFile = tempResultFile()
+    writeFileSync(resultFile, JSON.stringify({ findings: [], blocking: false, incomplete: false }))
+    const outcome = await runCodeReview(runner(cmd({ code: 0 })), { ...baseInput, resultFile })
+    expect(outcome).toMatchObject({ status: 'incomplete', resultParsed: false })
+    expect(existsSync(resultFile)).toBe(false)
   })
 
   it('reports findings when the result file has blocking findings, regardless of a clean exit code', async () => {
     const resultFile = tempResultFile()
-    writeFileSync(resultFile, JSON.stringify({ findings: [{ severity: 'blocker', title: 'must fix' }] }))
-    const outcome = await runCodeReview(runner(cmd({ code: 0 })), { ...baseInput, resultFile })
+    const outcome = await runCodeReview(writes(resultFile, JSON.stringify({ findings: [{ severity: 'blocker', title: 'must fix' }] }), cmd({ code: 0 })), { ...baseInput, resultFile })
     expect(outcome.status).toBe('findings')
     expect(outcome.blocking).toHaveLength(1)
   })
@@ -154,15 +171,13 @@ describe('runCodeReview', () => {
 
   it('reports incomplete when the result file explicitly says incomplete, even on a clean exit', async () => {
     const resultFile = tempResultFile()
-    writeFileSync(resultFile, JSON.stringify({ findings: [], incomplete: true }))
-    const outcome = await runCodeReview(runner(cmd({ code: 0 })), { ...baseInput, resultFile })
+    const outcome = await runCodeReview(writes(resultFile, JSON.stringify({ findings: [], incomplete: true }), cmd({ code: 0 })), { ...baseInput, resultFile })
     expect(outcome.status).toBe('incomplete')
   })
 
   it('treats an unparseable result file the same as a missing one (resultParsed: false)', async () => {
     const resultFile = tempResultFile()
-    writeFileSync(resultFile, 'not json')
-    const outcome = await runCodeReview(runner(cmd({ code: 0 })), { ...baseInput, resultFile })
+    const outcome = await runCodeReview({ run: async () => { writeFileSync(resultFile, 'not json'); return cmd({ code: 0 }) } }, { ...baseInput, resultFile })
     expect(outcome.resultParsed).toBe(false)
   })
 
@@ -173,8 +188,7 @@ describe('runCodeReview', () => {
 
   it('carries provider-call/token usage from the result file, defaulting to all-null when absent', async () => {
     const resultFile = tempResultFile()
-    writeFileSync(resultFile, JSON.stringify({ findings: [], evidence: { providerCalls: 4, usage: { inputTokens: 500, outputTokens: 100 } } }))
-    const withUsage = await runCodeReview(runner(cmd({ code: 0 })), { ...baseInput, resultFile })
+    const withUsage = await runCodeReview(writes(resultFile, JSON.stringify({ findings: [], evidence: { providerCalls: 4, usage: { inputTokens: 500, outputTokens: 100 } } }), cmd({ code: 0 })), { ...baseInput, resultFile })
     expect(withUsage.usage).toEqual({ providerCalls: 4, inputTokens: 500, outputTokens: 100, totalTokens: 600 })
 
     const withoutResultFile = await runCodeReview(runner(cmd({ code: 1 })), { ...baseInput, resultFile: tempResultFile() })

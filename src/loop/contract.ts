@@ -316,7 +316,8 @@ export interface GenerateContractInput {
   readonly timeoutMs?: number
 }
 
-const AUTH_PATTERN = /failed to authenticate|not logged in|oauth|unauthori[sz]ed|invalid api key|login required|authentication/i
+// Failure phrasing only: the bare words "authentication"/"oauth" also appear in paths (src/authentication.ts).
+const AUTH_PATTERN = /failed to authenticate|not logged in|unauthori[sz]ed|invalid api key|login required|authentication (?:failed|failure|error|required)|oauth\b[^\n]{0,40}?\b(?:expired|invalid|revoked|failed)/i
 
 /**
  * CLI-specific usage-limit phrasing that `classifyFailure`'s generic `quota|rate.?limit|too many requests|429`

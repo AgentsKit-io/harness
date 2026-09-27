@@ -39,6 +39,7 @@ const PROBLEM_TYPES: ReadonlySet<string> = new Set([
   'worker.blocked', 'worker.stuck', 'worker.failed', 'worker.dispatch-failed',
   'provider.cooldown', 'cost-guard.tripped', 'max-duration.tripped',
   'security.pii-detected', 'queue.claim-failed',
+  'tracker.sync-failed', 'issue.paused', 'pr.merge-refused', 'delivery.error', 'orca.unavailable', 'plugin.hook-failed',
 ])
 
 const tokensOf = (event: LoopEvent): number | null => {
@@ -54,6 +55,7 @@ const detailOf = (event: LoopEvent): string => {
   if (typeof event['reason'] === 'string') return event['reason']
   if (Array.isArray(event['reasons'])) return event['reasons'].join('; ')
   if (typeof event['error'] === 'string') return event['error']
+  if (typeof event['message'] === 'string') return event['message']
   if (typeof event['status'] === 'string') return event['status']
   return event.type
 }

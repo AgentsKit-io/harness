@@ -16,11 +16,11 @@ const okResult = (result: unknown): CommandResult => ok({ ok: true, result })
 const goodContract: TaskContract = { intent: 'Add the demo binding', scope: { inScope: ['binding'], outOfScope: ['ui'] }, outcomes: [{ id: 'o1', description: 'tests pass', check: { kind: 'test', command: 'pnpm --filter demo test' } }], ambiguities: [], touchpoints: ['packages/demo'], risks: [] }
 const vagueContract: TaskContract = { intent: 'Do something', scope: { inScope: ['unclear'], outOfScope: [] }, outcomes: [{ id: 'o1', description: 'looks good', check: { kind: 'manual', note: 'eyeball it' } }], ambiguities: [{ question: 'What is the acceptance criterion?', blocking: true }], touchpoints: [], risks: [] }
 
-interface Env { readonly dir: string; readonly bin: string; readonly runner: CommandRunner & { readonly calls: string[][] }; readonly configPath: string }
+interface Env { readonly dir: string; readonly bin: string; readonly runner: CommandRunner & { readonly calls: string[][] }; readonly configPath: string; readonly tracker: { rateLimit: 'queue' | 'issue' | undefined } }
 const cleanups: string[] = []
 afterEach(() => { for (const dir of cleanups.splice(0)) rmSync(dir, { recursive: true, force: true }) })
 
-const makeEnv = (options: { readonly contract?: TaskContract | 'garbage'; readonly worktrees?: unknown; readonly failCreate?: boolean; readonly failCreateTransientTimes?: number; readonly claudeAuthFails?: boolean; readonly claudeSessionLimit?: boolean; readonly failAllContracts?: boolean; readonly accountList?: unknown; readonly briefSkills?: readonly string[]; readonly setup?: { readonly exitCode?: number; readonly timedOut?: boolean }; readonly setupRequired?: boolean; readonly pluginSource?: string; readonly issueDescription?: string; readonly securityPii?: { readonly action?: 'redact' | 'warn' | 'block' }; readonly catalogMode?: boolean; readonly queueOwnership?: 'person' | 'unassigned'; readonly queueMode?: 'backlog' | 'explicit'; readonly tracker?: 'linear' | 'github'; readonly hideIssuesFromQueue?: boolean; readonly knownFailures?: readonly { readonly path: string; readonly issue: string; readonly reason: string }[] } = {}): Env => {
+const makeEnv = (options: { readonly contract?: TaskContract | 'garbage'; readonly worktrees?: unknown; readonly failCreate?: boolean; readonly failCreateTransientTimes?: number; readonly claudeAuthFails?: boolean; readonly claudeSessionLimit?: boolean; readonly failAllContracts?: boolean; readonly accountList?: unknown; readonly briefSkills?: readonly string[]; readonly setup?: { readonly exitCode?: number; readonly timedOut?: boolean }; readonly setupRequired?: boolean; readonly pluginSource?: string; readonly issueDescription?: string; readonly securityPii?: { readonly action?: 'redact' | 'warn' | 'block' }; readonly catalogMode?: boolean; readonly queueOwnership?: 'person' | 'unassigned'; readonly queueMode?: 'backlog' | 'explicit'; readonly tracker?: 'linear' | 'github'; readonly hideIssuesFromQueue?: boolean; readonly knownFailures?: readonly { readonly path: string; readonly issue: string; readonly reason: string }[]; /** Which Linear read answers with a rate limit / a plain failure (mutable via `env.tracker`). */ readonly trackerRateLimit?: 'queue' | 'issue'; readonly issueFetchFails?: boolean; /** Issue fetches after this many fail with a rate limit. */ readonly rateLimitAfterIssueFetches?: number } = {}): Env => {
   const dir = mkdtempSync(join(tmpdir(), 'agentskit-loop-tick-')); cleanups.push(dir)
   const bin = join(dir, 'bin'); rmSync(bin, { recursive: true, force: true })
   let yaml = options.briefSkills?.length ? exampleYaml.replace('skills: []', `skills: [${options.briefSkills.join(', ')}]`) : exampleYaml
@@ -57,6 +57,7 @@ const makeEnv = (options: { readonly contract?: TaskContract | 'garbage'; readon
   const binDir = mkdtempSync(join(tmpdir(), 'agentskit-loop-tick-bin-')); cleanups.push(binDir)
   for (const name of ['claude', 'codex', 'opencode', 'grok']) writeFileSync(join(binDir, name), '#!/bin/sh\nexit 0\n', { mode: 0o755 })
   const calls: string[][] = []
+  const trackerState: { rateLimit: 'queue' | 'issue' | undefined } = { rateLimit: options.trackerRateLimit }
   let createAttempts = 0
   const contract = options.contract ?? goodContract
   // Tracks labels added/removed via `orca linear label add|remove` so a later `list-issues` reflects them — the static
@@ -85,6 +86,10 @@ const makeEnv = (options: { readonly contract?: TaskContract | 'garbage'; readon
         extraLabels.set(issueId, set)
         return okResult({ ok: true })
       }
+      if (key.startsWith('orca linear list-issues') && trackerState.rateLimit === 'queue') return { code: 1, stdout: '', stderr: 'Linear API: HTTP 429 Too Many Requests', timedOut: false, durationMs: 1 }
+      if (key.startsWith('orca linear issue') && trackerState.rateLimit === 'issue') return { code: 1, stdout: '', stderr: 'Linear API: Rate limit exceeded, retry later', timedOut: false, durationMs: 1 }
+      if (key.startsWith('orca linear issue') && options.rateLimitAfterIssueFetches !== undefined && calls.filter((call) => call[1] === 'linear' && call[2] === 'issue').length > options.rateLimitAfterIssueFetches) return { code: 1, stdout: '', stderr: 'Too Many Requests', timedOut: false, durationMs: 1 }
+      if (key.startsWith('orca linear issue') && options.issueFetchFails) return { code: 1, stdout: '', stderr: 'upstream connect error (sha 4290af1c)', timedOut: false, durationMs: 1 }
       if (key.startsWith('orca linear list-issues')) {
         const payload = applyExtraLabels(fixture(key.includes('--state Ready') ? 'list-issues-ready' : 'list-issues-todo') as never)
         return options.hideIssuesFromQueue ? ok({ ...payload, result: { ...payload.result, issues: [] } }) : ok(payload)
@@ -115,7 +120,7 @@ const makeEnv = (options: { readonly contract?: TaskContract | 'garbage'; readon
       return { code: 127, stdout: '', stderr: `no fixture for ${key}`, timedOut: false, durationMs: 1 }
     },
   }
-  return { dir, bin: binDir, runner, configPath: join(dir, 'loop.config.yaml') }
+  return { dir, bin: binDir, runner, configPath: join(dir, 'loop.config.yaml'), tracker: trackerState }
 }
 
 const relaxed = { sample: { at: '2026-09-11T12:00:00.000Z', cpus: 10, load1: 1, load1PerCpuPercent: 10, memoryUsedPercent: 40, rssBytes: 1 }, freeBytes: 20 * 1024 ** 3, totalBytes: 32 * 1024 ** 3 }
@@ -303,6 +308,16 @@ describe('tick', () => {
     expect(readStoredContract(loaded.stateDir, result?.issue ?? '')).toBeNull()
   })
 
+  it('re-dispatching an issue whose last delivery finished as failed starts it from a clean delivery state', async () => {
+    const env = makeEnv()
+    const initial = loadLoopConfig(env.configPath)
+    mkdirSync(join(initial.stateDir, 'issues', 'ENG-10'), { recursive: true })
+    writeFileSync(deliveryStatePath(initial.stateDir, 'ENG-10'), JSON.stringify({ issue: 'ENG-10', prNumber: null, reviews: {}, fixRounds: 0, nudges: [], handoffs: [], heldFor: null, finishedAt: 'old', finalOutcome: 'failed', consecutiveErrors: 3 }))
+    const report = await runTick({ ...tickOptions(env), maxDispatch: 1 })
+    expect(report.results[0]).toMatchObject({ issue: 'ENG-10', outcome: 'dispatched' })
+    expect(readDeliveryState(initial.stateDir, 'ENG-10')).toMatchObject({ finishedAt: null, finalOutcome: null })
+  })
+
   it('dispatches into a worktree, records the lease, moves Linear, and never double-dispatches', async () => {
     const env = makeEnv()
     const initial = loadLoopConfig(env.configPath)
@@ -451,6 +466,73 @@ describe('tick', () => {
     expect(report.results[0]).toMatchObject({ outcome: 'skipped', reason: expect.stringContaining('blocked by plugin: not now') })
     expect(env.runner.calls.some((argv) => argv[1] === 'worktree' && argv[2] === 'create')).toBe(false)
     expect(createDispatchLedger(loadLoopConfig(env.configPath).stateDir).active()).toEqual([])
+  })
+
+  it('a beforeDispatch hook that throws fails closed: dispatch skipped with the error, plugin.hook-failed logged', async () => {
+    const env = makeEnv({ pluginSource: `
+      export default { id: 'broken', apply(bus) { bus.hook('beforeDispatch', () => { throw new Error('policy service down') }) } }
+    ` })
+    const report = await runTick({ ...tickOptions(env), maxDispatch: 1 })
+    expect(report.results[0]).toMatchObject({ outcome: 'skipped', reason: expect.stringContaining('beforeDispatch hook failed: policy service down') })
+    expect(env.runner.calls.some((argv) => argv[1] === 'worktree' && argv[2] === 'create')).toBe(false)
+    const stateDir = loadLoopConfig(env.configPath).stateDir
+    expect(createDispatchLedger(stateDir).active()).toEqual([])
+    const events = readFileSync(join(stateDir, 'events.ndjson'), 'utf8').split('\n').filter(Boolean).map((line) => JSON.parse(line) as Record<string, unknown>)
+    expect(events.find((event) => event['type'] === 'plugin.hook-failed')).toMatchObject({ hook: 'beforeDispatch', error: 'policy service down', issue: report.results[0]?.issue })
+  })
+
+  it('a rate-limited tracker becomes a cooldown: tick returns blocked (never throws toward the stage pause) and calls no tracker until it expires', async () => {
+    const env = makeEnv({ trackerRateLimit: 'queue' })
+    const stateDir = loadLoopConfig(env.configPath).stateDir
+    const first = await runTick({ ...tickOptions(env), maxDispatch: 1 })
+    expect(first.status).toBe('blocked')
+    const events = (): Record<string, unknown>[] => readFileSync(join(stateDir, 'events.ndjson'), 'utf8').split('\n').filter(Boolean).map((line) => JSON.parse(line) as Record<string, unknown>)
+    expect(events().find((event) => event['type'] === 'tracker.cooldown')).toMatchObject({ until: '2026-09-11T12:15:00.000Z', attempts: 0 })
+    env.runner.calls.length = 0
+    env.tracker.rateLimit = undefined
+    const cooling = await runTick({ ...tickOptions(env), now: () => new Date('2026-09-11T12:10:00.000Z'), maxDispatch: 1 })
+    expect(cooling).toMatchObject({ status: 'blocked', results: [] })
+    expect(cooling.notes.join(' ')).toContain('cooling down until 2026-09-11T12:15:00.000Z')
+    expect(env.runner.calls.some((argv) => argv[1] === 'linear')).toBe(false)
+    expect((await precheckTick({ configPath: env.configPath, runner: env.runner, now: () => new Date('2026-09-11T12:10:00.000Z') })).work).toBe(false)
+    const after = await runTick({ ...tickOptions(env), now: () => new Date('2026-09-11T12:16:00.000Z'), maxDispatch: 1 })
+    expect(after.status).toBe('ok')
+    expect(after.results[0]).toMatchObject({ outcome: 'dispatched' })
+  })
+
+  it('stops fetching candidates on a rate-limited issue fetch, logging tracker.sync-failed (fetch) and a cooldown', async () => {
+    const env = makeEnv({ trackerRateLimit: 'issue' })
+    const report = await runTick({ ...tickOptions(env) })
+    expect(report.status).toBe('blocked')
+    expect(report.results).toEqual([])
+    expect(env.runner.calls.filter((argv) => argv[1] === 'linear' && argv[2] === 'issue')).toHaveLength(1)
+    const events = readFileSync(join(loadLoopConfig(env.configPath).stateDir, 'events.ndjson'), 'utf8')
+    expect(events).toContain('"type":"tracker.sync-failed"')
+    expect(events).toContain('"operation":"fetch"')
+    expect(events).toContain('"type":"tracker.cooldown"')
+  })
+
+  it('logs tracker.sync-failed (fetch) for an ordinary issue-fetch failure and keeps going; a "429" inside a hash is not a rate limit', async () => {
+    const env = makeEnv({ issueFetchFails: true })
+    const report = await runTick({ ...tickOptions(env) })
+    expect(report.results.length).toBeGreaterThan(1)
+    expect(report.results.every((result) => result.outcome === 'failed')).toBe(true)
+    expect(report.status).toBe('failed')
+    const stateDir = loadLoopConfig(env.configPath).stateDir
+    const events = readFileSync(join(stateDir, 'events.ndjson'), 'utf8').split('\n').filter(Boolean).map((line) => JSON.parse(line) as Record<string, unknown>)
+    expect(events.filter((event) => event['type'] === 'tracker.sync-failed' && event['operation'] === 'fetch')).toHaveLength(report.results.length)
+    expect(events.some((event) => event['type'] === 'tracker.cooldown')).toBe(false)
+  })
+
+  it('reports a tick whose every candidate failed as failed, but a tracker cooldown as blocked even after earlier failures', async () => {
+    const failed = await runTick({ ...tickOptions(makeEnv({ failCreate: true })) })
+    expect(failed.results.length).toBeGreaterThan(0)
+    expect(failed.results.every((result) => result.outcome === 'failed')).toBe(true)
+    expect(failed.status).toBe('failed')
+    const env = makeEnv({ issueFetchFails: true, rateLimitAfterIssueFetches: 1 })
+    const cooled = await runTick({ ...tickOptions(env) })
+    expect(cooled.results).toEqual([expect.objectContaining({ outcome: 'failed' })])
+    expect(cooled.status).toBe('blocked')
   })
 
   it('a plugin module that fails to load is reported as a note and does not stop the tick', async () => {

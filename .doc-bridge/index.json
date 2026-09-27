@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
-  "contentHash": "3b04e81a2e7b6eaf13274aa0889d0c9b70175ce94599005b32ee24c2d03722a3",
+  "contentHash": "3378730f79a40ccd7dd762640a36fcc7866163d213a22111396fe206d1d7fae9",
   "contentHashAlgo": "sha256-normalized-v1",
-  "generatedAt": "2026-09-27T12:54:49.276Z",
+  "generatedAt": "2026-09-27T13:29:02.172Z",
   "project": {
     "name": "AgentsKit Harness",
     "root": "."
@@ -298,12 +298,12 @@
       "type": "document",
       "title": "Changelog",
       "path": "CHANGELOG.md",
-      "description": "Runs you can reconstruct, specs the loop renders, and the fixes merged since 0.21.0.",
+      "description": "Failures that were invisible, made visible or closed. Every fix ships with a regression test that fails on 0.22.0.",
       "tags": [
         "document",
         "project"
       ],
-      "contentHash": "c932c063dcb22918610812642dfd4f0f8851a0111c4f74bc59d4f106fba6b9b2"
+      "contentHash": "3efae54cc470a60e683fcc3f42d95cce75371acdd805add7fc573b6ed12a502f"
     },
     {
       "id": "document:CLAUDE.md",
@@ -992,14 +992,14 @@
     {
       "id": "document:release/notes.md",
       "type": "document",
-      "title": "0.22.0 release candidate",
+      "title": "0.22.1 release candidate",
       "path": "release/notes.md",
       "description": "The control plane (ak-harness ui) becomes the operator's single place to see what needs them and act on it safely, plus the loop fixes found running it against a real repository since 0.19.0. CHANGELOG.md has the full list; docs/ADR-0040 records the decisions.",
       "tags": [
         "document",
         "unclassified"
       ],
-      "contentHash": "1aa12514ee50a59f952bf6243ad35a17a1161117dc5fe5d3ac26249864bc37fe"
+      "contentHash": "47761afc98768820feb18a0ef9759550cbef3fb59ff8f4a61b5d1005bc093e49"
     },
     {
       "id": "document:SECURITY.md",
@@ -1854,7 +1854,7 @@
         "ts",
         "adapters"
       ],
-      "contentHash": "9107ba696e3cb2bed87d9e7b6f6255d64a567efb116ea68d246da3458763e993"
+      "contentHash": "b9e02e6a7dea75b02b549bc40c360a8d60de09de45e9b845a79cd48a4297d6a6"
     },
     {
       "id": "module:src/adapters/command.ts",
@@ -1948,7 +1948,7 @@
         "ts",
         "adapters"
       ],
-      "contentHash": "d090b768a9f76c5bf805d4866d47fd941b644d9415fc56793b953827fa529656"
+      "contentHash": "929d51a8a995a801baec9337503f2ad38ebc6512efa0ed5d9804a039dc87aace"
     },
     {
       "id": "module:src/adapters/linear-orca.ts",
@@ -2182,7 +2182,7 @@
         "ts",
         "src"
       ],
-      "contentHash": "3627a5aa47ee4b5e7ef369489c660a113337a668f9d8dbad9255d62562a9ee5f"
+      "contentHash": "38dafd70017fdc198c4942465f6e6527caab984ed63197300a270adf42004698"
     },
     {
       "id": "module:src/context/index.ts",
@@ -2495,7 +2495,7 @@
         "ts",
         "execution"
       ],
-      "contentHash": "d742dc4146644a2c7b6c77346fe0babd82309351715a3df1de41d40d54257386"
+      "contentHash": "4917025d2cd90bd194ab490920756b87de00fec9965a53c67f799a28a92e4b14"
     },
     {
       "id": "module:src/execution/verification.ts",
@@ -3441,7 +3441,7 @@
         "ts",
         "kernel"
       ],
-      "contentHash": "5b069911b3eb40b1f796c9107ea1cac7777460e6af3a665c2d7825b96bfa7ea7"
+      "contentHash": "9c067625601376b44855aa3b07ce02bb9fef7d6a6d711ed770ec63efda61b746"
     },
     {
       "id": "module:src/kernel/state-machine.ts",
@@ -3872,7 +3872,7 @@
         "ts",
         "loop"
       ],
-      "contentHash": "85501d1d631ecba6eb9fe31ec3851797bcaaf9d23f0cbc4504f94311a23c271e"
+      "contentHash": "f49b21f3aa9b229b9c26ddc69baf1fc4e04d1b4864c5c91cb18df3806d769b07"
     },
     {
       "id": "module:src/loop/cooldown.ts",
@@ -3941,7 +3941,7 @@
         "ts",
         "loop"
       ],
-      "contentHash": "097712a258d079745ba1f6265ad408a5964a5b7d51500fd9f86b96f0ad2fcda3"
+      "contentHash": "85de520a762bdd65292a3a40b3d3083a6df4125d485ad3a85940c40b1aa9c612"
     },
     {
       "id": "module:src/loop/detached-worker.ts",
@@ -3957,7 +3957,7 @@
         "ts",
         "loop"
       ],
-      "contentHash": "a1995dfb4cdce91ab952542b59ca9f432579c7ddfabedc680859528772e2e0a0"
+      "contentHash": "df495c982280fae2ae89361a1fd3eccab90a833c1f077a39aae2e70d6ed60305"
     },
     {
       "id": "module:src/loop/doctor.ts",
@@ -4051,7 +4051,7 @@
         "ts",
         "loop"
       ],
-      "contentHash": "aa46dc01bb5228c83faa60279f671d8090c957f85cc8067c2b9578cf461baa29"
+      "contentHash": "66aa6ffc92a8e671bdd5599c2e549a580a69b5e2a0f24d5b58f95a48374309d8"
     },
     {
       "id": "module:src/loop/event-vocabulary.ts",
@@ -4068,7 +4068,7 @@
         "ts",
         "loop"
       ],
-      "contentHash": "1af8c17f7f785fc9b5f45adb5867739a026bbf6081a67387d9b7cf0db9553d91"
+      "contentHash": "19ed966f077fe87e7266ac1d9e60baa6c13091413c7d8b224df32a27872a32df"
     },
     {
       "id": "module:src/loop/flows.ts",
@@ -4556,7 +4556,7 @@
         "ts",
         "loop"
       ],
-      "contentHash": "7385145555f417227a69a10cdac227d4974a7c1a13ff71ecf8ca3b3de8b7ad5a"
+      "contentHash": "ee6f40ca982d49232360a1a4c08d93e4411189523eb9bfaab851ea4b6ba8c06d"
     },
     {
       "id": "module:src/loop/layers.ts",
@@ -5195,6 +5195,7 @@
       "symbols": [
         "StageLockStatus",
         "acquireStageLock",
+        "lastStageLockOwner",
         "peekStageLock"
       ],
       "tags": [
@@ -5202,7 +5203,7 @@
         "ts",
         "loop"
       ],
-      "contentHash": "bfc4502d2b8d5f8a37caf395d23b9187ae42f7b8cdc7806b52b9ac86688c24b7"
+      "contentHash": "50d915b8d250befdb7c64ea35f6c667a81b254a9ff25686ca944939552e8ac6a"
     },
     {
       "id": "module:src/loop/tick.ts",
@@ -5235,7 +5236,29 @@
         "ts",
         "loop"
       ],
-      "contentHash": "2db19d7a9c0c5ab73c1af7029abb8b2b173757ff92a0174f4b0d19c971bf32aa"
+      "contentHash": "f8cf26205ffcea7ebf8c227d2612b9f65af4a6b57ec518de0744b6f5024365af"
+    },
+    {
+      "id": "module:src/loop/tracker-cooldown.ts",
+      "type": "module",
+      "title": "tracker-cooldown.ts",
+      "path": "src/loop/tracker-cooldown.ts",
+      "symbols": [
+        "TRACKER_RATE_LIMIT",
+        "TrackerCooldown",
+        "TrackerCooldownError",
+        "activeTrackerCooldown",
+        "guardTracker",
+        "isTrackerRateLimit",
+        "markTrackerRateLimited",
+        "trackerCooldownPath"
+      ],
+      "tags": [
+        "module",
+        "ts",
+        "loop"
+      ],
+      "contentHash": "da10d0654eb0d3249e8c6c3d866a8e8975e77cf3ef9e3af4d7a469a362a932e4"
     },
     {
       "id": "module:src/loop/tracker.ts",
@@ -5401,7 +5424,6 @@
         "IssueDecision",
         "answerDecision",
         "archiveRun",
-        "canReuseContract",
         "cancelRun",
         "cleanupRun",
         "decideIssue",
@@ -5418,7 +5440,7 @@
         "ts",
         "api"
       ],
-      "contentHash": "4bf2f444d05eaaa4fcb30d9b0bc76a5d6bb301dcacfacd78b438c451c6f63996"
+      "contentHash": "be4180f775a921ab68dd940ffe2eae06b5305c2e6a3fd4da864fbb06803e6ace"
     },
     {
       "id": "module:src/ui/api/alerts.ts",
@@ -5552,6 +5574,7 @@
         "MetricsReport",
         "MetricsWindow",
         "RecentEvent",
+        "SNAPSHOT_ERROR_EVENT",
         "SearchHit",
         "SearchResult",
         "SearchType",
@@ -5565,7 +5588,7 @@
         "ts",
         "api"
       ],
-      "contentHash": "0a962f1a8a9ad73820c04e6dc90261da73381a90f381e5f7330f099008663e6f"
+      "contentHash": "8c6596f2d97937f8d549ded274362f7188b7613aec6c8c196893d7870f1a80c7"
     },
     {
       "id": "module:src/ui/api/extras.ts",
@@ -5592,7 +5615,7 @@
         "ts",
         "api"
       ],
-      "contentHash": "0cfc60515c68683a12734fe06e2fe5fe956c83d5806c737f5bf64662771b1993"
+      "contentHash": "d5117394355bc5381e2e9245a2f385601f4e973f4342a2aef8beeaf84b95175c"
     },
     {
       "id": "module:src/ui/api/http.ts",
@@ -5747,7 +5770,7 @@
         "ts",
         "api"
       ],
-      "contentHash": "d98c02ee72f5ba8b9c5c9397ad235a457acaafbd00ba82c394a0643f0d84ee66"
+      "contentHash": "d81a3570bb2bc4c1525a228138f490358ad28d475e55d1da2eae4857418dea21"
     },
     {
       "id": "module:src/ui/api/routes-config.ts",
@@ -5831,7 +5854,7 @@
         "ts",
         "api"
       ],
-      "contentHash": "d693356cdd0d969c211353c57fc272a235e1097f54579e6aca82fc0442b671d5"
+      "contentHash": "28310d10aad16689646040f683f9af11025b53cb8cfd380ff88f2c55e0e3cf37"
     },
     {
       "id": "module:src/ui/api/routes.ts",
@@ -5901,7 +5924,7 @@
         "ts",
         "api"
       ],
-      "contentHash": "f9343faa7601b23f8adf013394cb3fe858e331a55487b75b8eb03ae1e07cc0be"
+      "contentHash": "ed6dc6443fc813d8d6b0c17ca5f4ed54e3a140acdb369c0a3e679f4c923914ea"
     },
     {
       "id": "module:src/ui/api/store.ts",
@@ -5909,6 +5932,7 @@
       "title": "store.ts",
       "path": "src/ui/api/store.ts",
       "symbols": [
+        "eventsKey",
         "readCurrentProjection",
         "syncProjection"
       ],
@@ -5917,7 +5941,7 @@
         "ts",
         "api"
       ],
-      "contentHash": "cce292d80ef715a7e61a227863f4183aee7106c7534ac61fd6a2a9f87011f153"
+      "contentHash": "517c79978a0107ab31476ffb3cf0bcea06e251b1efc2066903e6fc7dec60d098"
     },
     {
       "id": "module:src/ui/api/wizard.ts",
@@ -6362,6 +6386,8 @@
         "runStage",
         "saveWizardDraft",
         "searchRecords",
+        "snapshotErrorText",
+        "sseNeedsPolling",
         "tuning",
         "useSnapshot",
         "writeLocalConfig"
@@ -6371,7 +6397,7 @@
         "ts",
         "lib"
       ],
-      "contentHash": "28f87e3ead35a8f9a500dc414ab2911389e7f9a812207dcc49afb895ae66e9fd"
+      "contentHash": "ad42d6f5aaae0140a724c2a7c784d8cd5ecf8c275aff0761089bc63ad55efac6"
     },
     {
       "id": "module:src/ui/app/src/lib/format.ts",
@@ -6514,7 +6540,7 @@
         "tsx",
         "pages"
       ],
-      "contentHash": "95974ca048eb3c2905129f57daecdb35176459a89beb0f353aea8df815613062"
+      "contentHash": "8d3b9d8fb2ec7f041980a1d63fe0eb02f19d65e80c0372ae16bd89c0f47f0908"
     },
     {
       "id": "module:src/ui/app/src/pages/Batch.tsx",
@@ -6618,14 +6644,15 @@
       "title": "System.tsx",
       "path": "src/ui/app/src/pages/System.tsx",
       "symbols": [
-        "SystemPage"
+        "SystemPage",
+        "stageState"
       ],
       "tags": [
         "module",
         "tsx",
         "pages"
       ],
-      "contentHash": "af648e67ba7023d76ca574de96da1ee1623155219998dffb1be72d83d379c561"
+      "contentHash": "6e1340d04725ce57d42c436cbca5e10c804a19d67fbd8fb7531df7472b7c7f80"
     },
     {
       "id": "module:src/ui/app/src/pages/Trends.tsx",
@@ -6695,7 +6722,7 @@
         "ts",
         "test"
       ],
-      "contentHash": "1a6d502a95d701c0fa12fc9eef4c4c410f516ce3cb74f99efa1e2b329f14c8ad"
+      "contentHash": "f6d40e596d4a8676d9250180e6d39c5aa1da72a3785cf00e1be606638ddb83a5"
     },
     {
       "id": "module:test/adapters-command.test.ts",
@@ -6731,7 +6758,7 @@
         "ts",
         "test"
       ],
-      "contentHash": "a93bec7ee03a715347757aeeec4fccdedaf0c1c34afe193401e956fdb0ee6f29"
+      "contentHash": "cc253760d4c2d7567bc6442a51989f11a282af821c2cdec111d9047200be5a79"
     },
     {
       "id": "module:test/adapters-linear-orca-gaps.test.ts",
@@ -6866,6 +6893,18 @@
       "contentHash": "c335801192ad5f12714410f2379d2f9d21680d8baf1263ae3a0a3fe7c5c53114"
     },
     {
+      "id": "module:test/cli-exit-codes.test.ts",
+      "type": "module",
+      "title": "cli-exit-codes.test.ts",
+      "path": "test/cli-exit-codes.test.ts",
+      "tags": [
+        "module",
+        "ts",
+        "test"
+      ],
+      "contentHash": "0458e64110f7adc74ed371cbb5b8a8316c82f33663bf91398b7d68f0f481da6e"
+    },
+    {
       "id": "module:test/compatibility.test.ts",
       "type": "module",
       "title": "compatibility.test.ts",
@@ -6971,7 +7010,7 @@
         "ts",
         "test"
       ],
-      "contentHash": "0de42dba47c469438555fc8b4ce92088b9103e0cc3480cc2a5ebfcd5cee2d2f7"
+      "contentHash": "205fa40b5ee0e00374f4228e5dd07af6ea920a9ee5b66b08821da858e7239a3f"
     },
     {
       "id": "module:test/discovery.test.ts",
@@ -7697,7 +7736,7 @@
         "ts",
         "test"
       ],
-      "contentHash": "91982a123f79f2ba3b6e56dd9b93420b056e4fad74ff7055282e2a0fb8dfac17"
+      "contentHash": "75f50d52adbc04b7a5681ec928f42e50364544e5463fd742e313be655ec4913e"
     },
     {
       "id": "module:test/loop-contract-gaps.test.ts",
@@ -7757,7 +7796,7 @@
         "ts",
         "test"
       ],
-      "contentHash": "3c572a2ca9f2cc725ca61c06b3e47c894ae113fc6be9ccf9273b44864ae753e0"
+      "contentHash": "e1fb279fa62c714d3dbb1edb791d7682e65deff418245a7707c53589b968d040"
     },
     {
       "id": "module:test/loop-doctor-gaps.test.ts",
@@ -7817,7 +7856,7 @@
         "ts",
         "test"
       ],
-      "contentHash": "7b49c9b64c37e3abdaf6a62efd38622a65246993fd672d2257ebda7a692b7693"
+      "contentHash": "eee62fff8b72ed3f8dcd17e9da7472911b840a097f43d4a88dbb28b97bf7428f"
     },
     {
       "id": "module:test/loop-event-vocabulary.test.ts",
@@ -7973,7 +8012,7 @@
         "ts",
         "test"
       ],
-      "contentHash": "2fc6b68ed2f7a931b051b85351263cab1ff9cc2f52ff6c6299cf263e9a360c42"
+      "contentHash": "e790e3e36a925553fddafeb31fe0934211b77816ff0dc643d2bb675bb473c1d9"
     },
     {
       "id": "module:test/loop-launch-worker.test.ts",
@@ -8285,7 +8324,7 @@
         "ts",
         "test"
       ],
-      "contentHash": "20182aaf0c02b78e0b3c09086528fb92bfb1908cc3edcc33142f3f8af1441f7d"
+      "contentHash": "a1388b4c664b92fadf09abad04f6cc58e413a61efa90f45f307e62ca65a51b93"
     },
     {
       "id": "module:test/loop-tuning.test.ts",
@@ -8525,7 +8564,7 @@
         "ts",
         "test"
       ],
-      "contentHash": "799de4469ad291b7b199121bb411395119ed18c570d6e0f0bad742b1e0626bf8"
+      "contentHash": "806348abb41fcd88b9c36413b9324fada44f02313237e33bd4a1c9f52f024b9f"
     },
     {
       "id": "module:test/review.test.ts",
@@ -8573,7 +8612,7 @@
         "ts",
         "test"
       ],
-      "contentHash": "594e830d79c55af21b25d97f8f44fe3122ad594421b9580a01611ebd0df5a746"
+      "contentHash": "0cae7abe7cbef434422e628f9d3ef64c4a2d276efde78d38f27f28aba25f6511"
     },
     {
       "id": "module:test/stage-lock.test.ts",
@@ -8597,7 +8636,7 @@
         "ts",
         "test"
       ],
-      "contentHash": "57fcc3399d7210ad2429d6af4f85ccc6481b4dc3e9e0c7b74cf8585934c887ed"
+      "contentHash": "f2a649ac8de8735e2fdb898e06116826c09aca982772a8a02e8fd470d447d6d7"
     },
     {
       "id": "module:test/ui-api-actions.test.ts",
@@ -8609,7 +8648,7 @@
         "ts",
         "test"
       ],
-      "contentHash": "cc9b3299e6c3d3f66246c3aa015698bde6ca3ada70f30783ba5c9f26b37ec235"
+      "contentHash": "447402c20d079d211e35975516d572a5b3a6264988da92f2046d03a872244856"
     },
     {
       "id": "module:test/ui-api-jobs.test.ts",
@@ -8693,7 +8732,7 @@
         "ts",
         "test"
       ],
-      "contentHash": "b0e7717a28130f16fee95c9cb87b2fea8dec2a1487c0f3ce5cff6d9ee7a61a9b"
+      "contentHash": "b701458ee05768529d5f3f38ce9e7022b86b485b343dfcb08bd7e592502e879c"
     },
     {
       "id": "module:test/ui-feed.test.ts",
@@ -8744,6 +8783,18 @@
       "contentHash": "3c316085d0bc560520893603f5bb0e477945322b1ca058c3b19cc85d2a819653"
     },
     {
+      "id": "module:test/ui-sse.test.ts",
+      "type": "module",
+      "title": "ui-sse.test.ts",
+      "path": "test/ui-sse.test.ts",
+      "tags": [
+        "module",
+        "ts",
+        "test"
+      ],
+      "contentHash": "ed6cb204fa13a01370248e39693c161f41f3ea9b1aa53bc79a9917b2de7cef65"
+    },
+    {
       "id": "module:test/ui-store.test.ts",
       "type": "module",
       "title": "ui-store.test.ts",
@@ -8753,7 +8804,7 @@
         "ts",
         "test"
       ],
-      "contentHash": "919a3187faaca492329ed89ebb4ff930a818cbcc292aad61862ccc2b4f6bb602"
+      "contentHash": "86a53a20fb4bd476f2223e6c240bae6c1a6536a830b1a17fbddfb8feed3bbca8"
     },
     {
       "id": "module:test/ui-system.test.ts",
@@ -8765,7 +8816,7 @@
         "ts",
         "test"
       ],
-      "contentHash": "fb55a8c3b4ec353d7135eebcf727c922b0591236f5d1d1a482c87aa0d86d5a1a"
+      "contentHash": "fd21af76f15c7129c06ccb6bd24aeb54b2398b2ba53830cb058fc081a1357a68"
     },
     {
       "id": "module:test/wip.test.ts",
@@ -8913,8 +8964,8 @@
     }
   },
   "inputs": {
-    "hash": "1234908ea3b8142930a5591df400f5132b764c53ec814ac8667edab53b970903",
-    "fileCount": 539,
+    "hash": "7efd6f9f6b23dc2f80b0bcd20ed162f7c55b06f1f5106b96cfbb2d73125ceaf9",
+    "fileCount": 542,
     "projectionVersion": 2
   },
   "retrieval": {
@@ -8936,9 +8987,9 @@
   "projection": {
     "type": "retrieval-index",
     "schemaVersion": 1,
-    "contentHash": "7dcb9f2d0a9c543c96c6195de2e7a71a7cb7826685bdb620a3d638564a8a76f7",
+    "contentHash": "8786a77d314a86543f129edc1478495484f91fbf992ae6622a743cf02429f2c6",
     "contentHashAlgo": "sha256-normalized-v1",
-    "snapshotHash": "db40df76c264f819240dc5917db80e6694e19008b37907a07b09fe1bb7898427",
+    "snapshotHash": "4bd40b7d747af8604841a8f3f8bfb1a05fea083c871f10330841a4fd9b59ec99",
     "overlayHash": "f99666ff9119084dd25c2974ae64eb6935ec2aa785ff5ad478fb9d541f7a5e94",
     "configurationHash": "816afaf6a7dc09767f7594d8fd80024612ca0f33becf0e44dde0107fcf2782df",
     "lexiconVersion": 1,
@@ -8958,7 +9009,7 @@
     },
     "lexical": {
       "version": 1,
-      "documentCount": 548,
+      "documentCount": 551,
       "fieldNames": [
         "aliases",
         "body",
@@ -8969,13 +9020,13 @@
         "title"
       ],
       "averageFieldLength": {
-        "aliases": 2.9251824817518246,
-        "body": 44.127737226277375,
-        "headings": 3.866788321167883,
-        "path": 6.114963503649635,
-        "summary": 2.6313868613138687,
-        "symbols": 14.209854014598541,
-        "title": 3.9434306569343067
+        "aliases": 2.9255898366606172,
+        "body": 44,
+        "headings": 3.852994555353902,
+        "path": 6.116152450090744,
+        "summary": 2.6225045372050815,
+        "symbols": 14.225045372050817,
+        "title": 3.9491833030852996
       }
     },
     "entries": [
@@ -9500,7 +9551,7 @@
           ],
           "outbound": []
         },
-        "contentHash": "4963fc13462ab9b3e1a82c623e1bf5334900be192c86faa5f48260419b39dc56",
+        "contentHash": "4549c955cbbcb7c12207702e8b1cc896a0dd7e7deba7b08854ccaa7e3fda257a",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -9615,7 +9666,7 @@
           ],
           "outbound": []
         },
-        "contentHash": "7abe268f6b3d9a74b9f7298d3e20851fa2f506fcd613664eb4c0f02a9059d2e7",
+        "contentHash": "84c3cea16bd5de4d831af6cb406a79a93e05a7b66c15a97c6c42287fce2fadf0",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -11233,11 +11284,11 @@
         ],
         "fields": {
           "title": "events",
-          "headings": "contract.* human.* plan.* worker.* pr.* tracker.* github-intake.* release.* intake.* maintain.* memory.* provider.* queue.* security.* issue.* stage.* config.* agent.* tuning.* cost-guard.* max-duration.* dod.* verify.* ui.* Harness run events",
+          "headings": "contract.* human.* plan.* worker.* pr.* tracker.* github-intake.* release.* intake.* maintain.* memory.* provider.* queue.* security.* issue.* stage.* plugin.* config.* agent.* tuning.* cost-guard.* max-duration.* dod.* verify.* ui.* delivery.* orca.* Harness run events",
           "path": "apps/docs/content/docs/reference/events.mdx",
           "symbols": "",
           "summary": "{/* Generated by `pnpm docs:generate`. Do not edit by hand: edit `src/loop/event-vocabulary.ts` and regenerate. */}",
-          "body": "{/ Generated by pnpm docs:generate . Do not edit by hand: edit src/loop/event-vocabulary.ts and regenerate. /} Every loop event is appended to <stateDir /events.ndjson and emitted on the plugin bus, with at (ISO timestamp) and type on top of the fields below. A plugin subscribes with bus.on('<type ' ' ', listener) ; a notification channel subscribes by listing types in notifications.events . The vocabulary is enforced by the compiler: appendLoopEvent accepts only these names, so an event that is not here cannot be emitted — and a name here that nothing emits fails the test suite. 85 loop events. contract. Event Carries What it means --- --- --- contract.escalated issue , reasons , digest A contract was frozen but is not dispatchable; a human was asked to settle it. contract.failed issue , error Contract generation failed on every candidate provider. contract.generated issue , provider , model , effort , digest A contract was frozen successfully. provider / model / effort are what actually produced it — the join key for comparing how different LLMs (at what reasoning effort) did on the same kind of issue. human. Event Carries What it means --- --- --- human.hitl-requested issue , requestId , batchId , role , stage , question , context , options , recommendedOptionId , digest A structured human decision was requested by an LLM stage. human.hitl-answered issue , requestId , batchId , role , stage , optionId , freeText , digest , actor A human answered one structured HITL request. human.hitl-batch-ready issue , batchId , requestId All requests in a structured HITL batch have answers and the stage may resume. plan. Event Carries What it means --- --- --- plan.voted issue , cycle , approvals , votes , voters One planning cycle finished: how many agents approved the plan, out of how many voted, and who each one was. plan.failed issue , error Planning failed on every candidate provider. plan.escalated issue , cycles , unresolved The cycles ran out without consensus; the unresolved objections are a human's to settle. worker. Event Carries What it means --- --- --- worker.dispatched issue , worktree , worktreeId , branch , terminal , provider , model , effort , contractDigest , briefDigest , command , briefAccepted , tuiIdle , workerGuardInstalled , maxFixRounds A worker was launched in its own worktree. Carries the whole dispatch record plus the command that ran. worker.dispatch-failed issue , error The dispatch itself failed — worktree, terminal or brief — before any work started. worker.setup issue , worktreeId , ok project.setup.command ran in the fresh worktree. worker.nudged issue , kind , reason , worktreeId An idle worker was nudged in its own terminal — and also the terminal outcome nudged , which ends a delivery pass on the same issue. Two emissions, one name: kind is present on the first, reason on the second. worker.permission-wait issue , terminal , reason The worker stopped at a tool-permission prompt: held for a person, never typed into. Once per idle window. worker.reactivated issue , terminal , previousTerminal A stale terminal was relaunched for a worker that was still supposed to be working. worker.hitl-resumed issue , requestIds A human answered a worker HITL request and the decision was sent back to the worker terminal. worker.reopened issue , pr , previousHead , head , previousOutcome A finished issue came back: a new head on a PR the loop had already closed out. worker.handed-off issue , from , to , worktreeId , branch , reason , briefAccepted The task was handed to another provider in the same worktree, on the same branch — and also the terminal outcome handed-off that ends the delivery pass which did it. worker.ci-round issue , pr , head , round CI is red; the failing checks went back to the worker as a fix round. worker.review-round issue , pr , head , round The review found blocking issues; the findings went back to the worker as a fix round. worker.conflict-round issue , pr , head , round The PR conflicts wit",
+          "body": "{/ Generated by pnpm docs:generate . Do not edit by hand: edit src/loop/event-vocabulary.ts and regenerate. /} Every loop event is appended to <stateDir /events.ndjson and emitted on the plugin bus, with at (ISO timestamp) and type on top of the fields below. A plugin subscribes with bus.on('<type ' ' ', listener) ; a notification channel subscribes by listing types in notifications.events . The vocabulary is enforced by the compiler: appendLoopEvent accepts only these names, so an event that is not here cannot be emitted — and a name here that nothing emits fails the test suite. 90 loop events. contract. Event Carries What it means --- --- --- contract.escalated issue , reasons , digest A contract was frozen but is not dispatchable; a human was asked to settle it. contract.failed issue , error Contract generation failed on every candidate provider. contract.generated issue , provider , model , effort , digest A contract was frozen successfully. provider / model / effort are what actually produced it — the join key for comparing how different LLMs (at what reasoning effort) did on the same kind of issue. human. Event Carries What it means --- --- --- human.hitl-requested issue , requestId , batchId , role , stage , question , context , options , recommendedOptionId , digest A structured human decision was requested by an LLM stage. human.hitl-answered issue , requestId , batchId , role , stage , optionId , freeText , digest , actor A human answered one structured HITL request. human.hitl-batch-ready issue , batchId , requestId All requests in a structured HITL batch have answers and the stage may resume. plan. Event Carries What it means --- --- --- plan.voted issue , cycle , approvals , votes , voters One planning cycle finished: how many agents approved the plan, out of how many voted, and who each one was. plan.failed issue , error Planning failed on every candidate provider. plan.escalated issue , cycles , unresolved The cycles ran out without consensus; the unresolved objections are a human's to settle. worker. Event Carries What it means --- --- --- worker.dispatched issue , worktree , worktreeId , branch , terminal , provider , model , effort , contractDigest , briefDigest , command , briefAccepted , tuiIdle , workerGuardInstalled , maxFixRounds A worker was launched in its own worktree. Carries the whole dispatch record plus the command that ran. worker.dispatch-failed issue , error The dispatch itself failed — worktree, terminal or brief — before any work started. worker.setup issue , worktreeId , ok project.setup.command ran in the fresh worktree. worker.nudged issue , kind , reason , worktreeId An idle worker was nudged in its own terminal — and also the terminal outcome nudged , which ends a delivery pass on the same issue. Two emissions, one name: kind is present on the first, reason on the second. worker.permission-wait issue , terminal , reason The worker stopped at a tool-permission prompt: held for a person, never typed into. Once per idle window. worker.reactivated issue , terminal , previousTerminal A stale terminal was relaunched for a worker that was still supposed to be working. worker.hitl-resumed issue , requestIds A human answered a worker HITL request and the decision was sent back to the worker terminal. worker.reopened issue , pr , previousHead , head , previousOutcome A finished issue came back: a new head on a PR the loop had already closed out. worker.handed-off issue , from , to , worktreeId , branch , reason , briefAccepted The task was handed to another provider in the same worktree, on the same branch — and also the terminal outcome handed-off that ends the delivery pass which did it. worker.ci-round issue , pr , head , round CI is red; the failing checks went back to the worker as a fix round. worker.review-round issue , pr , head , round The review found blocking issues; the findings went back to the worker as a fix round. worker.conflict-round issue , pr , head , round The PR conflicts wit",
           "aliases": "events document human"
         },
         "graph": {
@@ -11274,7 +11325,7 @@
             }
           ]
         },
-        "contentHash": "02a48fd1d77209e4c6226b9c4c2b81faa3afd800e9fa7a1e4f8c7e52ffb44fbe",
+        "contentHash": "a5da26a7567cea7783b0befc006623e4e4929720c68baa9ec98883936106fffa",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -11283,7 +11334,7 @@
         "kind": "document",
         "path": "CHANGELOG.md",
         "title": "Changelog",
-        "summary": "Runs you can reconstruct, specs the loop renders, and the fixes merged since 0.21.0.",
+        "summary": "Failures that were invisible, made visible or closed. Every fix ships with a regression test that fails on 0.22.0.",
         "audience": "human",
         "aliases": [],
         "tags": [
@@ -11292,11 +11343,11 @@
         ],
         "fields": {
           "title": "Changelog",
-          "headings": "Changelog [Unreleased] [0.22.0] — 2026-09-27 [0.21.0] — 2026-09-26 [0.20.0] — 2026-09-25 [0.19.0] — 2026-09-23 [0.18.0] - 2026-09-22 Release Hygiene Boundaries Token and time economy Breaking Gates [0.17.0] - 2026-09-22 Worker guard Release can no longer publish past a red gate [0.16.0] - 2026-09-22 Verification and token waste Observability: every deterministic phase, timestamped and attributed Event bus, unified House conventions [0.15.0] - 2026-09-20 The phases of an issue leave evidence behind layers: and documents: — where the work belongs, and where the decisions live Per-role settings, and which phases run at all The four cost levers, finished release.waiting, once per head The event vocabulary, and the compiler that guards it The installed agent is code, not a markdown file to append to Documentation Windows stops being a second-class platform The licence, and a surface for the numbers The harness has a folder of its own The documentation site The twelve steps of the roadmap, in the order they landed loop install reconciles instead of rewriting loop stage observe — the health scan comes into the repository Configuration in four layers, and the loop learns to call a human The roles become installed agents, and the retro can improve them Presets and a grilled loop init intake, maintain, and release notes — the cycle closes Cost: a routing policy, two ceilings, and two of the four levers Connectors: the engine stops naming vendors release — promotion and deploy, with a human in front loop plan — a vague objective becomes issues A plan, voted on, before any worker starts The Definition of Done becomes two lists, both proven on the PR The retro starts improving the loop, within declared limits [0.14.0] - 2026-09-19 The queue stops being \"my issues\" Review strictness that matches the risk Telling the worker the truth about the base branch Memory: recurrence instead of guesswork One human approval covers the goal's own effects Fixes that had never shipped [0.13.0] - 2026-09-14 [0.12.0] - 2026-09-13 [0.11.0] - 2026-09-13 [0.10.0] - 2026-09-12 [0.9.0] - 2026-09-12 [0.8.0] - 2026-09-12 [0.7.0] - 2026-09-12 [0.6.0] - 2026-09-12 [0.5.0] - 2026-09-11",
+          "headings": "Changelog [Unreleased] [0.22.1] — 2026-09-27 [0.22.0] — 2026-09-27 [0.21.0] — 2026-09-26 [0.20.0] — 2026-09-25 [0.19.0] — 2026-09-23 [0.18.0] - 2026-09-22 Release Hygiene Boundaries Token and time economy Breaking Gates [0.17.0] - 2026-09-22 Worker guard Release can no longer publish past a red gate [0.16.0] - 2026-09-22 Verification and token waste Observability: every deterministic phase, timestamped and attributed Event bus, unified House conventions [0.15.0] - 2026-09-20 The phases of an issue leave evidence behind layers: and documents: — where the work belongs, and where the decisions live Per-role settings, and which phases run at all The four cost levers, finished release.waiting, once per head The event vocabulary, and the compiler that guards it The installed agent is code, not a markdown file to append to Documentation Windows stops being a second-class platform The licence, and a surface for the numbers The harness has a folder of its own The documentation site The twelve steps of the roadmap, in the order they landed loop install reconciles instead of rewriting loop stage observe — the health scan comes into the repository Configuration in four layers, and the loop learns to call a human The roles become installed agents, and the retro can improve them Presets and a grilled loop init intake, maintain, and release notes — the cycle closes Cost: a routing policy, two ceilings, and two of the four levers Connectors: the engine stops naming vendors release — promotion and deploy, with a human in front loop plan — a vague objective becomes issues A plan, voted on, before any worker starts The Definition of Done becomes two lists, both proven on the PR The retro starts improving the loop, within declared limits [0.14.0] - 2026-09-19 The queue stops being \"my issues\" Review strictness that matches the risk Telling the worker the truth about the base branch Memory: recurrence instead of guesswork One human approval covers the goal's own effects Fixes that had never shipped [0.13.0] - 2026-09-14 [0.12.0] - 2026-09-13 [0.11.0] - 2026-09-13 [0.10.0] - 2026-09-12 [0.9.0] - 2026-09-12 [0.8.0] - 2026-09-12 [0.7.0] - 2026-09-12 [0.6.0] - 2026-09-12",
           "path": "CHANGELOG.md",
           "symbols": "",
-          "summary": "Runs you can reconstruct, specs the loop renders, and the fixes merged since 0.21.0.",
-          "body": "Changelog [Unreleased] [0.22.0] — 2026-09-27 Runs you can reconstruct, specs the loop renders, and the fixes merged since 0.21.0. - Agent runs (ADR-0041). Every issue gets <stateDir /runs/<issue -<n / : state.json projected from its events (stage, status, fix rounds, next required approval), redacted inputs and outputs of each step (contract and plan prompts with their raw output, the worker brief, plan.md / verify.json /DoD, the terminal tail), machine-written handoffs at every stage change, and evidence linked by sha256. A re-dispatch opens n+1 , which names the run it supersedes. ak-harness loop run list show reconstructs a run without its worktree. Bounded by runs.keep / runs.maxAgeDays / runs.maxIoBytes ; prompts never reach events.ndjson ( 135). - Rendered specs. With spec.enabled (off by default), dispatch renders specs/<issue /requirements.md , design.md and tasks.md (Spec Kit / Kiro layout) from the frozen contract and approved plan; requirement ids are the outcome ids. deliver sends a fix round for a spec that is missing, drifted or uncommitted ( 135). - Run summary on the PR. runs.prSummary (default on) keeps one comment per PR with the run's stage, handoffs and evidence hashes, edited in place. ScmConnector gains upsertComment — a custom connector must implement it ( 135). - Contract HITL schema. The structured-output schema now tells providers each HITL option needs id / title / description ( 130). - Cancel from the UI survives a stale terminal , and cancellation and automation reinstall stick ( 134). - UI batch accepts GitHub issue ids, serializes the base view and resumes batch jobs ( 125). - tick is a restart-surviving Orca automation ( 122); stale or unknown UI links no longer render blank ( 121); vitest skips .ak-loop ( 120) and Windows no longer fails local-only test files ( 124). - Docs pages carry the shared AgentsKit footer ( 126); AgentsKit shell v1 adopted ( 115); @agentskit/doc-bridge 1.12.0 ( 128). [0.21.0] — 2026-09-26 The four gaps left in the control plane v2, closed. - Runs shows fix rounds used. The table reads used/max (or the used count when the run was dispatched without the wizard) instead of —/max . - Time in phase is time in phase. The projection stamps phaseSince when an issue's phase changes; the table, the running cards and the side panel use it instead of the last event's time. - A real event stream on the home page. GET /api/v1/events/recent serves the loop's last 24 h of events, newest first, each summarised from its typed fields; the home stream uses it instead of per-issue changes. - New batch shows contract status. GET /api/v1/contracts?issues= reports each stored contract and whether it is still inside contract.reuseHours ; the list marks issues as cached, expired, needing input or without a contract. - Tracker titles and states survive a restart. The off-board lookup cache is persisted (bounded to 1000 entries), so a restarted UI does not show cancelled work as blocked while it re-learns it. [0.20.0] — 2026-09-25 Control plane v2, and the fixes found running the loop against a real repository in the week since 0.19.0. - Control plane v2 ( ak-harness ui ). The home page is now an attention queue — human decisions, stuck or failed runs, state out of sync with the tracker or Orca, and system problems — each with the reason and the next action. The page reconciles the loop against the tracker and Orca on every refresh, resolves titles and states for issues the board does not list, and refuses destructive actions (409) while an issue is out of sync or its data is stale. Observed on a real loop: 24 \"blocked\" issues shrank to 4 once the cancelled ones were recognised. New screens: Runs (filters, search, paging, issue side panel with per-criterion evidence, review, worker, timeline and cost), Trends, Costs (tokens and plan usage, no dollar estimates), Explore (windowed search over events, contracts, evidence, reviews and learnings), System (doctor, routing, cooldowns, automations, stages",
+          "summary": "Failures that were invisible, made visible or closed. Every fix ships with a regression test that fails on 0.22.0.",
+          "body": "Changelog [Unreleased] [0.22.1] — 2026-09-27 Failures that were invisible, made visible or closed. Every fix ships with a regression test that fails on 0.22.0. - The UI no longer keeps the tracker rate-limited. A failing board was re-read every second and every closed issue off the board was re-fetched every 10 minutes forever (~6 tracker calls/hour per historical issue, with or without viewers). Failures now back off, a rate limit pauses lookups, closed issues are never re-asked, and the snapshot pipeline idles when nobody is watching ( 139, 140). - Tracker cooldown. A Linear/GitHub rate limit records tracker.cooldown (15 min doubling, 2 h cap): tick returns blocked without counting toward the stage auto-pause, deliver skips tracker writes but keeps reviewing and merging, and the review state is set once per PR instead of every pass ( 140). - Gates fail closed. ak-verify run / verify / status exit 1 on a blocked, stale or cancelled run; git failures and 1 MB diffs no longer hash as empty (a stale run could be approved); a review with no parseable result is incomplete , never clean; deliver's verify runs in the PR worktree; plugins that fail to load fail the stage run and a throwing before hook blocks ( 140). - Delivery recovers. One transient gh/Orca error waits and retries ( delivery.error ) instead of finishing the issue as failed forever; failed resumes on a new head; an Orca outage is waiting , not a dead worker; a run where every result failed reports failed and counts toward the pause ( 140, 132). - Detached workers report an unconfirmed spawn and early crashes as failed runs; the worker log rotates at 5 MiB. deliver runs as a detached Orca worker like tick ( 127, 140). - Adapters. Comment dedupe works on threads with more than 30 comments; issue creation dedupes only on its marker; 429 / 502 / 503 and authentication no longer match inside hashes, counts or paths ( 140). - UI. Snapshot errors reach the tab ( snapshot-error ) instead of starting a hidden 2 s poll; an Orca failure shows \"Orca unreachable\", not \"not installed\" ( 140). - Runs (ADR-0041). Approval text and handoff fields are redacted before the PR summary; the spec gate requires the files in the PR; recording failures are reported ( 139). - Worktree creation retries through a transient Orca connection drop ( 129); tracker sync failures settle and the GitHub tracker creates missing labels ( 137). [0.22.0] — 2026-09-27 Runs you can reconstruct, specs the loop renders, and the fixes merged since 0.21.0. - Agent runs (ADR-0041). Every issue gets <stateDir /runs/<issue -<n / : state.json projected from its events (stage, status, fix rounds, next required approval), redacted inputs and outputs of each step (contract and plan prompts with their raw output, the worker brief, plan.md / verify.json /DoD, the terminal tail), machine-written handoffs at every stage change, and evidence linked by sha256. A re-dispatch opens n+1 , which names the run it supersedes. ak-harness loop run list show reconstructs a run without its worktree. Bounded by runs.keep / runs.maxAgeDays / runs.maxIoBytes ; prompts never reach events.ndjson ( 135). - Rendered specs. With spec.enabled (off by default), dispatch renders specs/<issue /requirements.md , design.md and tasks.md (Spec Kit / Kiro layout) from the frozen contract and approved plan; requirement ids are the outcome ids. deliver sends a fix round for a spec that is missing, drifted or uncommitted ( 135). - Run summary on the PR. runs.prSummary (default on) keeps one comment per PR with the run's stage, handoffs and evidence hashes, edited in place. ScmConnector gains upsertComment — a custom connector must implement it ( 135). - Contract HITL schema. The structured-output schema now tells providers each HITL option needs id / title / description ( 130). - Cancel from the UI survives a stale terminal , and cancellation and automation reinstall stick ( 134). - UI batch accepts GitHub issue ids, serializes the base view and resumes ba",
           "aliases": "document project"
         },
         "graph": {
@@ -11572,7 +11623,7 @@
             }
           ]
         },
-        "contentHash": "c932c063dcb22918610812642dfd4f0f8851a0111c4f74bc59d4f106fba6b9b2",
+        "contentHash": "3efae54cc470a60e683fcc3f42d95cce75371acdd805add7fc573b6ed12a502f",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -14840,7 +14891,7 @@
         "id": "document:release/notes.md",
         "kind": "document",
         "path": "release/notes.md",
-        "title": "0.22.0 release candidate",
+        "title": "0.22.1 release candidate",
         "summary": "The control plane (ak-harness ui) becomes the operator's single place to see what needs them and act on it safely, plus the loop fixes found running it against a real repository since 0.19.0. CHANGELOG.md has the full list; docs/ADR-0040 records the decisions.",
         "aliases": [],
         "tags": [
@@ -14848,12 +14899,12 @@
           "unclassified"
         ],
         "fields": {
-          "title": "0.22.0 release candidate",
-          "headings": "0.22.0 release candidate",
+          "title": "0.22.1 release candidate",
+          "headings": "0.22.1 release candidate",
           "path": "release/notes.md",
           "symbols": "",
           "summary": "The control plane (ak-harness ui) becomes the operator's single place to see what needs them and act on it safely, plus the loop fixes found running it against a real repository since 0.19.0. CHANGELOG.md has the full list; docs/ADR-0040 records the decisions.",
-          "body": "0.22.0 release candidate The control plane ( ak-harness ui ) becomes the operator's single place to see what needs them and act on it safely, plus the loop fixes found running it against a real repository since 0.19.0. CHANGELOG.md has the full list; docs/ADR-0040 records the decisions. Attention first. The home page is a queue of what needs a person — decisions, stuck or failed runs, state out of sync, system problems — each with its reason and next action. Empty means nothing does. Reconciled, then locked. Every refresh compares the loop with the tracker and Orca, including issues the board does not list. Drift is shown and reconciled explicitly; destructive actions refuse (409) while their issue is out of sync or its data is stale. On a real loop, 24 \"blocked\" issues were 4 once cancelled work was recognised. Every operator action, same kernel. Held-PR approval (pinned to the head), plan, design and release approval, learnings, stage pause and resume, tick/deliver/doctor, automation reinstall and batch enqueue call the functions the CLI calls. There is no deploy from the UI. Insights and configuration. Trends, Costs (tokens and plan usage, no dollar figures) and Explore read at most 30 days of events. Settings shows each value's layer, writes only the personal overlay, returns team changes as a diff, and records every run queued under a weakened gate. Loop. A worktree kept for inspection no longer blocks its issue forever ( 112); scheduled stages run the harness that installed them and a crashed precheck is reported ( 114). Behaviour change. The UI no longer installs Orca automations when it starts; missing or drifted automations appear as system items and reinstall on request. 0.21.0. Runs shows fix rounds used and real time in phase; the home event stream reads the loop's event log ( GET /api/v1/events/recent ); New batch shows which issues already have a fresh contract ( GET /api/v1/contracts ); tracker titles and states survive a UI restart. 0.22.0. Every issue gets a run under <stateDir /runs/<issue -<n / — projected state, redacted inputs and outputs, machine-written handoffs and evidence by hash — reconstructable with ak-harness loop run show (ADR-0041). spec.enabled renders specs/<issue / (requirements, design, tasks) from the frozen contract and plan and holds a PR whose copy drifted; runs.prSummary keeps one edited comment with the run on the PR. ScmConnector gains upsertComment . The blockers in release/manifest.json ( ecosystem-compatibility , pilot-benchmark ) are unchanged.",
+          "body": "0.22.1 release candidate The control plane ( ak-harness ui ) becomes the operator's single place to see what needs them and act on it safely, plus the loop fixes found running it against a real repository since 0.19.0. CHANGELOG.md has the full list; docs/ADR-0040 records the decisions. Attention first. The home page is a queue of what needs a person — decisions, stuck or failed runs, state out of sync, system problems — each with its reason and next action. Empty means nothing does. Reconciled, then locked. Every refresh compares the loop with the tracker and Orca, including issues the board does not list. Drift is shown and reconciled explicitly; destructive actions refuse (409) while their issue is out of sync or its data is stale. On a real loop, 24 \"blocked\" issues were 4 once cancelled work was recognised. Every operator action, same kernel. Held-PR approval (pinned to the head), plan, design and release approval, learnings, stage pause and resume, tick/deliver/doctor, automation reinstall and batch enqueue call the functions the CLI calls. There is no deploy from the UI. Insights and configuration. Trends, Costs (tokens and plan usage, no dollar figures) and Explore read at most 30 days of events. Settings shows each value's layer, writes only the personal overlay, returns team changes as a diff, and records every run queued under a weakened gate. Loop. A worktree kept for inspection no longer blocks its issue forever ( 112); scheduled stages run the harness that installed them and a crashed precheck is reported ( 114). Behaviour change. The UI no longer installs Orca automations when it starts; missing or drifted automations appear as system items and reinstall on request. 0.21.0. Runs shows fix rounds used and real time in phase; the home event stream reads the loop's event log ( GET /api/v1/events/recent ); New batch shows which issues already have a fresh contract ( GET /api/v1/contracts ); tracker titles and states survive a UI restart. 0.22.0. Every issue gets a run under <stateDir /runs/<issue -<n / — projected state, redacted inputs and outputs, machine-written handoffs and evidence by hash — reconstructable with ak-harness loop run show (ADR-0041). spec.enabled renders specs/<issue / (requirements, design, tasks) from the frozen contract and plan and holds a PR whose copy drifted; runs.prSummary keeps one edited comment with the run on the PR. ScmConnector gains upsertComment . 0.22.1. Fixes for failures that were silent. The control plane no longer keeps a tracker rate-limited (it backed off nothing and re-fetched every closed issue forever); the loop gets a tracker cooldown instead of a permanent stage pause. ak-verify run exits non-zero on a blocked run; git errors, missing review results, a verify run outside the PR worktree and failing plugins now fail closed. One transient error no longer ends a delivery for good, and an Orca outage is not a dead worker. The blockers in release/manifest.json ( ecosystem-compatibility , pilot-benchmark ) are unchanged.",
           "aliases": "document unclassified"
         },
         "graph": {
@@ -14888,7 +14939,7 @@
             }
           ]
         },
-        "contentHash": "1aa12514ee50a59f952bf6243ad35a17a1161117dc5fe5d3ac26249864bc37fe",
+        "contentHash": "47761afc98768820feb18a0ef9759550cbef3fb59ff8f4a61b5d1005bc093e49",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -17319,7 +17370,7 @@
             }
           ]
         },
-        "contentHash": "9107ba696e3cb2bed87d9e7b6f6255d64a567efb116ea68d246da3458763e993",
+        "contentHash": "b9e02e6a7dea75b02b549bc40c360a8d60de09de45e9b845a79cd48a4297d6a6",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -17897,7 +17948,7 @@
             }
           ]
         },
-        "contentHash": "d090b768a9f76c5bf805d4866d47fd941b644d9415fc56793b953827fa529656",
+        "contentHash": "929d51a8a995a801baec9337503f2ad38ebc6512efa0ed5d9804a039dc87aace",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -18495,6 +18546,11 @@
             },
             {
               "kind": "imports",
+              "id": "module:src/loop/tracker-cooldown.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
               "id": "module:src/ui/api/routes-actions.ts",
               "confidence": "observed"
             },
@@ -18753,6 +18809,11 @@
           "packageId": "package:@agentskit/harness",
           "inbound": [
             {
+              "kind": "imports",
+              "id": "module:test/cli-exit-codes.test.ts",
+              "confidence": "observed"
+            },
+            {
               "kind": "mentions",
               "id": "document:AGENTS.md",
               "confidence": "observed"
@@ -18816,7 +18877,7 @@
             }
           ]
         },
-        "contentHash": "3627a5aa47ee4b5e7ef369489c660a113337a668f9d8dbad9255d62562a9ee5f",
+        "contentHash": "38dafd70017fdc198c4942465f6e6527caab984ed63197300a270adf42004698",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -20173,7 +20234,7 @@
             }
           ]
         },
-        "contentHash": "d742dc4146644a2c7b6c77346fe0babd82309351715a3df1de41d40d54257386",
+        "contentHash": "4917025d2cd90bd194ab490920756b87de00fec9965a53c67f799a28a92e4b14",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -20691,6 +20752,11 @@
             },
             {
               "kind": "imports",
+              "id": "module:test/cli-exit-codes.test.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
               "id": "module:test/compatibility.test.ts",
               "confidence": "observed"
             },
@@ -20922,11 +20988,6 @@
             {
               "kind": "imports",
               "id": "module:test/loop-adapters.test.ts",
-              "confidence": "observed"
-            },
-            {
-              "kind": "imports",
-              "id": "module:test/loop-agent-improvement.test.ts",
               "confidence": "observed"
             }
           ],
@@ -23002,6 +23063,11 @@
             },
             {
               "kind": "imports",
+              "id": "module:src/loop/tracker-cooldown.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
               "id": "module:src/ui/api/alerts.ts",
               "confidence": "observed"
             },
@@ -24059,7 +24125,7 @@
             }
           ]
         },
-        "contentHash": "5b069911b3eb40b1f796c9107ea1cac7777460e6af3a665c2d7825b96bfa7ea7",
+        "contentHash": "9c067625601376b44855aa3b07ce02bb9fef7d6a6d711ed770ec63efda61b746",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -25428,11 +25494,9 @@
         },
         "graph": {
           "pagerank": 0,
-          "inboundLinks": 1,
+          "inboundLinks": 0,
           "coveredBy": [],
-          "mentionedBy": [
-            "document:apps/docs/content/docs/reference/configuration.mdx"
-          ],
+          "mentionedBy": [],
           "areaId": "area:src/loop",
           "packageId": "package:@agentskit/harness",
           "inbound": [
@@ -25748,12 +25812,12 @@
             },
             {
               "kind": "imports",
-              "id": "module:test/ui-system.test.ts",
+              "id": "module:test/ui-sse.test.ts",
               "confidence": "observed"
             },
             {
-              "kind": "mentions",
-              "id": "document:apps/docs/content/docs/reference/configuration.mdx",
+              "kind": "imports",
+              "id": "module:test/ui-system.test.ts",
               "confidence": "observed"
             }
           ],
@@ -25859,6 +25923,11 @@
             {
               "kind": "imports",
               "id": "module:src/loop/tick.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
+              "id": "module:src/loop/tracker-cooldown.ts",
               "confidence": "observed"
             },
             {
@@ -26260,7 +26329,7 @@
             }
           ]
         },
-        "contentHash": "85501d1d631ecba6eb9fe31ec3851797bcaaf9d23f0cbc4504f94311a23c271e",
+        "contentHash": "f49b21f3aa9b229b9c26ddc69baf1fc4e04d1b4864c5c91cb18df3806d769b07",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -26780,12 +26849,17 @@
             },
             {
               "kind": "imports",
+              "id": "module:src/loop/tracker-cooldown.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
               "id": "module:src/loop/worker-guard.ts",
               "confidence": "observed"
             }
           ]
         },
-        "contentHash": "097712a258d079745ba1f6265ad408a5964a5b7d51500fd9f86b96f0ad2fcda3",
+        "contentHash": "85de520a762bdd65292a3a40b3d3083a6df4125d485ad3a85940c40b1aa9c612",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -26841,7 +26915,7 @@
           ],
           "outbound": []
         },
-        "contentHash": "a1995dfb4cdce91ab952542b59ca9f432579c7ddfabedc680859528772e2e0a0",
+        "contentHash": "df495c982280fae2ae89361a1fd3eccab90a833c1f077a39aae2e70d6ed60305",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -27414,7 +27488,7 @@
             }
           ]
         },
-        "contentHash": "aa46dc01bb5228c83faa60279f671d8090c957f85cc8067c2b9578cf461baa29",
+        "contentHash": "66aa6ffc92a8e671bdd5599c2e549a580a69b5e2a0f24d5b58f95a48374309d8",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -27506,7 +27580,7 @@
           ],
           "outbound": []
         },
-        "contentHash": "1af8c17f7f785fc9b5f45adb5867739a026bbf6081a67387d9b7cf0db9553d91",
+        "contentHash": "19ed966f077fe87e7266ac1d9e60baa6c13091413c7d8b224df32a27872a32df",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -27694,6 +27768,11 @@
             {
               "kind": "imports",
               "id": "module:src/loop/tick.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
+              "id": "module:src/loop/tracker-cooldown.ts",
               "confidence": "observed"
             },
             {
@@ -29021,7 +29100,7 @@
             }
           ]
         },
-        "contentHash": "7385145555f417227a69a10cdac227d4974a7c1a13ff71ecf8ca3b3de8b7ad5a",
+        "contentHash": "ee6f40ca982d49232360a1a4c08d93e4411189523eb9bfaab851ea4b6ba8c06d",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -29607,6 +29686,11 @@
             {
               "kind": "imports",
               "id": "module:src/ui/api/alerts.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
+              "id": "module:src/ui/api/server.ts",
               "confidence": "observed"
             },
             {
@@ -31761,6 +31845,7 @@
         "symbols": [
           "StageLockStatus",
           "acquireStageLock",
+          "lastStageLockOwner",
           "peekStageLock"
         ],
         "tags": [
@@ -31772,7 +31857,7 @@
           "title": "stage-lock.ts",
           "headings": "",
           "path": "src/loop/stage-lock.ts",
-          "symbols": "StageLockStatus acquireStageLock peekStageLock",
+          "symbols": "StageLockStatus acquireStageLock lastStageLockOwner peekStageLock",
           "summary": "",
           "body": "",
           "aliases": "module ts loop"
@@ -31800,6 +31885,11 @@
             },
             {
               "kind": "imports",
+              "id": "module:test/cli-exit-codes.test.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
               "id": "module:test/stage-lock.test.ts",
               "confidence": "observed"
             },
@@ -31822,7 +31912,7 @@
             }
           ]
         },
-        "contentHash": "bfc4502d2b8d5f8a37caf395d23b9187ae42f7b8cdc7806b52b9ac86688c24b7",
+        "contentHash": "50d915b8d250befdb7c64ea35f6c667a81b254a9ff25686ca944939552e8ac6a",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -32203,6 +32293,11 @@
             },
             {
               "kind": "imports",
+              "id": "module:src/loop/tracker-cooldown.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
               "id": "module:src/loop/tracker.ts",
               "confidence": "observed"
             },
@@ -32213,7 +32308,88 @@
             }
           ]
         },
-        "contentHash": "2db19d7a9c0c5ab73c1af7029abb8b2b173757ff92a0174f4b0d19c971bf32aa",
+        "contentHash": "f8cf26205ffcea7ebf8c227d2612b9f65af4a6b57ec518de0744b6f5024365af",
+        "provenance": "observed",
+        "confidence": "observed"
+      },
+      {
+        "id": "module:src/loop/tracker-cooldown.ts",
+        "kind": "module",
+        "path": "src/loop/tracker-cooldown.ts",
+        "title": "tracker-cooldown.ts",
+        "aliases": [],
+        "symbols": [
+          "TRACKER_RATE_LIMIT",
+          "TrackerCooldown",
+          "TrackerCooldownError",
+          "activeTrackerCooldown",
+          "guardTracker",
+          "isTrackerRateLimit",
+          "markTrackerRateLimited",
+          "trackerCooldownPath"
+        ],
+        "tags": [
+          "module",
+          "ts",
+          "loop"
+        ],
+        "fields": {
+          "title": "tracker-cooldown.ts",
+          "headings": "",
+          "path": "src/loop/tracker-cooldown.ts",
+          "symbols": "TRACKER_RATE_LIMIT TrackerCooldown TrackerCooldownError activeTrackerCooldown guardTracker isTrackerRateLimit markTrackerRateLimited trackerCooldownPath",
+          "summary": "",
+          "body": "",
+          "aliases": "module ts loop"
+        },
+        "graph": {
+          "pagerank": 0,
+          "inboundLinks": 0,
+          "coveredBy": [],
+          "mentionedBy": [],
+          "areaId": "area:src/loop",
+          "packageId": "package:@agentskit/harness",
+          "inbound": [
+            {
+              "kind": "imports",
+              "id": "module:src/loop/deliver.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
+              "id": "module:src/loop/tick.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
+              "id": "module:test/loop-deliver.test.ts",
+              "confidence": "observed"
+            }
+          ],
+          "outbound": [
+            {
+              "kind": "imports",
+              "id": "module:src/adapters/providers.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
+              "id": "module:src/kernel/json-file.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
+              "id": "module:src/loop/connectors.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
+              "id": "module:src/loop/fs-atomic.ts",
+              "confidence": "observed"
+            }
+          ]
+        },
+        "contentHash": "da10d0654eb0d3249e8c6c3d866a8e8975e77cf3ef9e3af4d7a469a362a932e4",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -32793,7 +32969,6 @@
           "IssueDecision",
           "answerDecision",
           "archiveRun",
-          "canReuseContract",
           "cancelRun",
           "cleanupRun",
           "decideIssue",
@@ -32814,7 +32989,7 @@
           "title": "actions.ts",
           "headings": "",
           "path": "src/ui/api/actions.ts",
-          "symbols": "ActionContext AnswerDecisionInput AnswerDecisionResult ContractResult EnqueueRunInput IssueDecision answerDecision archiveRun canReuseContract cancelRun cleanupRun decideIssue enqueueRun generateOrReuseContract reconcileIssue resolveTrackerSync restoreRun resumePausedIssue retryRun",
+          "symbols": "ActionContext AnswerDecisionInput AnswerDecisionResult ContractResult EnqueueRunInput IssueDecision answerDecision archiveRun cancelRun cleanupRun decideIssue enqueueRun generateOrReuseContract reconcileIssue resolveTrackerSync restoreRun resumePausedIssue retryRun",
           "summary": "",
           "body": "",
           "aliases": "module ts api"
@@ -32961,7 +33136,7 @@
             }
           ]
         },
-        "contentHash": "4bf2f444d05eaaa4fcb30d9b0bc76a5d6bb301dcacfacd78b438c451c6f63996",
+        "contentHash": "be4180f775a921ab68dd940ffe2eae06b5305c2e6a3fd4da864fbb06803e6ace",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -33221,6 +33396,11 @@
             },
             {
               "kind": "imports",
+              "id": "module:test/ui-sse.test.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
               "id": "module:test/ui-system.test.ts",
               "confidence": "observed"
             },
@@ -33453,6 +33633,7 @@
           "MetricsReport",
           "MetricsWindow",
           "RecentEvent",
+          "SNAPSHOT_ERROR_EVENT",
           "SearchHit",
           "SearchResult",
           "SearchType",
@@ -33470,7 +33651,7 @@
           "title": "contract.ts",
           "headings": "",
           "path": "src/ui/api/contract.ts",
-          "symbols": "AttentionAction AttentionActionId AttentionGroup AttentionItem AttentionKind BatchRequest BatchRunSettings CachedContract CheckStatus ConfigChange ConfigField ConfigLayer ConfigProposal ConfigWriteRequest CriterionStatus Drift DriftKind EffectiveConfig FieldClass Freshness FreshnessSource IssueDetail MetricsReport MetricsWindow RecentEvent SearchHit SearchResult SearchType SnapshotExtras SystemReport TimePoint TuningRevertResult",
+          "symbols": "AttentionAction AttentionActionId AttentionGroup AttentionItem AttentionKind BatchRequest BatchRunSettings CachedContract CheckStatus ConfigChange ConfigField ConfigLayer ConfigProposal ConfigWriteRequest CriterionStatus Drift DriftKind EffectiveConfig FieldClass Freshness FreshnessSource IssueDetail MetricsReport MetricsWindow RecentEvent SNAPSHOT_ERROR_EVENT SearchHit SearchResult SearchType SnapshotExtras SystemReport TimePoint TuningRevertResult",
           "summary": "",
           "body": "",
           "aliases": "module ts api"
@@ -33602,7 +33783,7 @@
             }
           ]
         },
-        "contentHash": "0a962f1a8a9ad73820c04e6dc90261da73381a90f381e5f7330f099008663e6f",
+        "contentHash": "8c6596f2d97937f8d549ded274362f7188b7613aec6c8c196893d7870f1a80c7",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -33667,6 +33848,11 @@
             {
               "kind": "imports",
               "id": "module:test/ui-core-reconcile.test.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
+              "id": "module:test/ui-core-server.test.ts",
               "confidence": "observed"
             },
             {
@@ -33780,10 +33966,15 @@
               "kind": "imports",
               "id": "module:src/ui/api/running-harness.ts",
               "confidence": "observed"
+            },
+            {
+              "kind": "imports",
+              "id": "module:src/ui/api/store.ts",
+              "confidence": "observed"
             }
           ]
         },
-        "contentHash": "0cfc60515c68683a12734fe06e2fe5fe956c83d5806c737f5bf64662771b1993",
+        "contentHash": "d5117394355bc5381e2e9245a2f385601f4e973f4342a2aef8beeaf84b95175c",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -34505,7 +34696,7 @@
             }
           ]
         },
-        "contentHash": "d98c02ee72f5ba8b9c5c9397ad235a457acaafbd00ba82c394a0643f0d84ee66",
+        "contentHash": "d81a3570bb2bc4c1525a228138f490358ad28d475e55d1da2eae4857418dea21",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -34994,7 +35185,7 @@
             }
           ]
         },
-        "contentHash": "d693356cdd0d969c211353c57fc272a235e1097f54579e6aca82fc0442b671d5",
+        "contentHash": "28310d10aad16689646040f683f9af11025b53cb8cfd380ff88f2c55e0e3cf37",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -35342,6 +35533,11 @@
               "confidence": "observed"
             },
             {
+              "kind": "imports",
+              "id": "module:test/ui-sse.test.ts",
+              "confidence": "observed"
+            },
+            {
               "kind": "re-exports",
               "id": "module:src/index.ts",
               "confidence": "observed"
@@ -35396,6 +35592,11 @@
             {
               "kind": "imports",
               "id": "module:src/loop/install.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
+              "id": "module:src/loop/notify.ts",
               "confidence": "observed"
             },
             {
@@ -35490,7 +35691,7 @@
             }
           ]
         },
-        "contentHash": "f9343faa7601b23f8adf013394cb3fe858e331a55487b75b8eb03ae1e07cc0be",
+        "contentHash": "ed6dc6443fc813d8d6b0c17ca5f4ed54e3a140acdb369c0a3e679f4c923914ea",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -35501,6 +35702,7 @@
         "title": "store.ts",
         "aliases": [],
         "symbols": [
+          "eventsKey",
           "readCurrentProjection",
           "syncProjection"
         ],
@@ -35513,7 +35715,7 @@
           "title": "store.ts",
           "headings": "",
           "path": "src/ui/api/store.ts",
-          "symbols": "readCurrentProjection syncProjection",
+          "symbols": "eventsKey readCurrentProjection syncProjection",
           "summary": "",
           "body": "",
           "aliases": "module ts api"
@@ -35529,6 +35731,11 @@
             {
               "kind": "imports",
               "id": "module:src/ui/api/actions.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
+              "id": "module:src/ui/api/extras.ts",
               "confidence": "observed"
             },
             {
@@ -35600,7 +35807,7 @@
             }
           ]
         },
-        "contentHash": "cce292d80ef715a7e61a227863f4183aee7106c7534ac61fd6a2a9f87011f153",
+        "contentHash": "517c79978a0107ab31476ffb3cf0bcea06e251b1efc2066903e6fc7dec60d098",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -36671,6 +36878,8 @@
           "runStage",
           "saveWizardDraft",
           "searchRecords",
+          "snapshotErrorText",
+          "sseNeedsPolling",
           "tuning",
           "useSnapshot",
           "writeLocalConfig"
@@ -36684,7 +36893,7 @@
           "title": "api.ts",
           "headings": "",
           "path": "src/ui/app/src/lib/api.ts",
-          "symbols": "ApiError BoardIssue BoardSnapshot Decision DispatchRef EnqueueRunInput IssuePhase IssueRecord PullRequestRef ReviewSubstatus RunRecord TimelineEvent UiJobRecord UiSnapshot UiWizardDraft UiWizardDraftPatch answerDecision approveDesign approveHeldPr approvePlan approveRelease archiveRun cancelRun decideIssue enqueueBatch enqueueRun generateContract getCachedContracts getConfig getIssueDetail getJob getJobs getMetrics getRecentEvents getState getSystem getTimeline getWizard pauseStage promoteLearnings proposeConfig reconcileIssue reinstallAutomations rejectLearnings resolveTrackerSync restoreRun resumePausedIssue resumeStage retryRun runDoctor runStage saveWizardDraft searchRecords tuning useSnapshot writeLocalConfig",
+          "symbols": "ApiError BoardIssue BoardSnapshot Decision DispatchRef EnqueueRunInput IssuePhase IssueRecord PullRequestRef ReviewSubstatus RunRecord TimelineEvent UiJobRecord UiSnapshot UiWizardDraft UiWizardDraftPatch answerDecision approveDesign approveHeldPr approvePlan approveRelease archiveRun cancelRun decideIssue enqueueBatch enqueueRun generateContract getCachedContracts getConfig getIssueDetail getJob getJobs getMetrics getRecentEvents getState getSystem getTimeline getWizard pauseStage promoteLearnings proposeConfig reconcileIssue reinstallAutomations rejectLearnings resolveTrackerSync restoreRun resumePausedIssue resumeStage retryRun runDoctor runStage saveWizardDraft searchRecords snapshotErrorText sseNeedsPolling tuning useSnapshot writeLocalConfig",
           "summary": "",
           "body": "",
           "aliases": "module ts lib"
@@ -36714,6 +36923,11 @@
             {
               "kind": "imports",
               "id": "module:src/ui/app/src/lib/snapshot.tsx",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
+              "id": "module:test/ui-sse.test.ts",
               "confidence": "observed"
             },
             {
@@ -36780,7 +36994,7 @@
             }
           ]
         },
-        "contentHash": "28f87e3ead35a8f9a500dc414ab2911389e7f9a812207dcc49afb895ae66e9fd",
+        "contentHash": "ad42d6f5aaae0140a724c2a7c784d8cd5ecf8c275aff0761089bc63ad55efac6",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -37125,7 +37339,7 @@
           "inbound": [],
           "outbound": []
         },
-        "contentHash": "95974ca048eb3c2905129f57daecdb35176459a89beb0f353aea8df815613062",
+        "contentHash": "8d3b9d8fb2ec7f041980a1d63fe0eb02f19d65e80c0372ae16bd89c0f47f0908",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -37364,7 +37578,8 @@
         "title": "System.tsx",
         "aliases": [],
         "symbols": [
-          "SystemPage"
+          "SystemPage",
+          "stageState"
         ],
         "tags": [
           "module",
@@ -37375,7 +37590,7 @@
           "title": "System.tsx",
           "headings": "",
           "path": "src/ui/app/src/pages/System.tsx",
-          "symbols": "SystemPage",
+          "symbols": "SystemPage stageState",
           "summary": "",
           "body": "",
           "aliases": "module tsx pages"
@@ -37387,10 +37602,16 @@
           "mentionedBy": [],
           "areaId": "area:src/ui",
           "packageId": "package:@agentskit/harness",
-          "inbound": [],
+          "inbound": [
+            {
+              "kind": "imports",
+              "id": "module:test/ui-system.test.ts",
+              "confidence": "observed"
+            }
+          ],
           "outbound": []
         },
-        "contentHash": "af648e67ba7023d76ca574de96da1ee1623155219998dffb1be72d83d379c561",
+        "contentHash": "6e1340d04725ce57d42c436cbca5e10c804a19d67fbd8fb7531df7472b7c7f80",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -37582,7 +37803,7 @@
             }
           ]
         },
-        "contentHash": "1a6d502a95d701c0fa12fc9eef4c4c410f516ce3cb74f99efa1e2b329f14c8ad",
+        "contentHash": "f6d40e596d4a8676d9250180e6d39c5aa1da72a3785cf00e1be606638ddb83a5",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -37702,7 +37923,7 @@
             }
           ]
         },
-        "contentHash": "a93bec7ee03a715347757aeeec4fccdedaf0c1c34afe193401e956fdb0ee6f29",
+        "contentHash": "cc253760d4c2d7567bc6442a51989f11a282af821c2cdec111d9047200be5a79",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -38172,6 +38393,56 @@
         "confidence": "observed"
       },
       {
+        "id": "module:test/cli-exit-codes.test.ts",
+        "kind": "module",
+        "path": "test/cli-exit-codes.test.ts",
+        "title": "cli-exit-codes.test.ts",
+        "aliases": [],
+        "tags": [
+          "module",
+          "ts",
+          "test"
+        ],
+        "fields": {
+          "title": "cli-exit-codes.test.ts",
+          "headings": "",
+          "path": "test/cli-exit-codes.test.ts",
+          "symbols": "",
+          "summary": "",
+          "body": "",
+          "aliases": "module ts test"
+        },
+        "graph": {
+          "pagerank": 0,
+          "inboundLinks": 0,
+          "coveredBy": [],
+          "mentionedBy": [],
+          "areaId": "area:test",
+          "packageId": "package:@agentskit/harness",
+          "inbound": [],
+          "outbound": [
+            {
+              "kind": "imports",
+              "id": "module:src/cli.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
+              "id": "module:src/index.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
+              "id": "module:src/loop/stage-lock.ts",
+              "confidence": "observed"
+            }
+          ]
+        },
+        "contentHash": "0458e64110f7adc74ed371cbb5b8a8316c82f33663bf91398b7d68f0f481da6e",
+        "provenance": "observed",
+        "confidence": "observed"
+      },
+      {
         "id": "module:test/compatibility.test.ts",
         "kind": "module",
         "path": "test/compatibility.test.ts",
@@ -38537,7 +38808,7 @@
             }
           ]
         },
-        "contentHash": "0de42dba47c469438555fc8b4ce92088b9103e0cc3480cc2a5ebfcd5cee2d2f7",
+        "contentHash": "205fa40b5ee0e00374f4228e5dd07af6ea920a9ee5b66b08821da858e7239a3f",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -41041,7 +41312,7 @@
             }
           ]
         },
-        "contentHash": "91982a123f79f2ba3b6e56dd9b93420b056e4fad74ff7055282e2a0fb8dfac17",
+        "contentHash": "75f50d52adbc04b7a5681ec928f42e50364544e5463fd742e313be655ec4913e",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -41248,10 +41519,15 @@
               "kind": "imports",
               "id": "module:src/loop/spec.ts",
               "confidence": "observed"
+            },
+            {
+              "kind": "imports",
+              "id": "module:src/loop/tracker-cooldown.ts",
+              "confidence": "observed"
             }
           ]
         },
-        "contentHash": "3c572a2ca9f2cc725ca61c06b3e47c894ae113fc6be9ccf9273b44864ae753e0",
+        "contentHash": "e1fb279fa62c714d3dbb1edb791d7682e65deff418245a7707c53589b968d040",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -41451,7 +41727,7 @@
             }
           ]
         },
-        "contentHash": "7b49c9b64c37e3abdaf6a62efd38622a65246993fd672d2257ebda7a692b7693",
+        "contentHash": "eee62fff8b72ed3f8dcd17e9da7472911b840a097f43d4a88dbb28b97bf7428f",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -41971,7 +42247,7 @@
             }
           ]
         },
-        "contentHash": "2fc6b68ed2f7a931b051b85351263cab1ff9cc2f52ff6c6299cf263e9a360c42",
+        "contentHash": "e790e3e36a925553fddafeb31fe0934211b77816ff0dc643d2bb675bb473c1d9",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -43070,7 +43346,7 @@
             }
           ]
         },
-        "contentHash": "20182aaf0c02b78e0b3c09086528fb92bfb1908cc3edcc33142f3f8af1441f7d",
+        "contentHash": "a1388b4c664b92fadf09abad04f6cc58e413a61efa90f45f307e62ca65a51b93",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -43880,7 +44156,7 @@
             }
           ]
         },
-        "contentHash": "799de4469ad291b7b199121bb411395119ed18c570d6e0f0bad742b1e0626bf8",
+        "contentHash": "806348abb41fcd88b9c36413b9324fada44f02313237e33bd4a1c9f52f024b9f",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -44063,7 +44339,7 @@
             }
           ]
         },
-        "contentHash": "594e830d79c55af21b25d97f8f44fe3122ad594421b9580a01611ebd0df5a746",
+        "contentHash": "0cae7abe7cbef434422e628f9d3ef64c4a2d276efde78d38f27f28aba25f6511",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -44213,7 +44489,7 @@
             }
           ]
         },
-        "contentHash": "57fcc3399d7210ad2429d6af4f85ccc6481b4dc3e9e0c7b74cf8585934c887ed",
+        "contentHash": "f2a649ac8de8735e2fdb898e06116826c09aca982772a8a02e8fd470d447d6d7",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -44293,7 +44569,7 @@
             }
           ]
         },
-        "contentHash": "cc9b3299e6c3d3f66246c3aa015698bde6ca3ada70f30783ba5c9f26b37ec235",
+        "contentHash": "447402c20d079d211e35975516d572a5b3a6264988da92f2046d03a872244856",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -44722,12 +44998,17 @@
             },
             {
               "kind": "imports",
+              "id": "module:src/ui/api/extras.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
               "id": "module:src/ui/api/server.ts",
               "confidence": "observed"
             }
           ]
         },
-        "contentHash": "b0e7717a28130f16fee95c9cb87b2fea8dec2a1487c0f3ce5cff6d9ee7a61a9b",
+        "contentHash": "b701458ee05768529d5f3f38ce9e7022b86b485b343dfcb08bd7e592502e879c",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -44962,6 +45243,61 @@
         "confidence": "observed"
       },
       {
+        "id": "module:test/ui-sse.test.ts",
+        "kind": "module",
+        "path": "test/ui-sse.test.ts",
+        "title": "ui-sse.test.ts",
+        "aliases": [],
+        "tags": [
+          "module",
+          "ts",
+          "test"
+        ],
+        "fields": {
+          "title": "ui-sse.test.ts",
+          "headings": "",
+          "path": "test/ui-sse.test.ts",
+          "symbols": "",
+          "summary": "",
+          "body": "",
+          "aliases": "module ts test"
+        },
+        "graph": {
+          "pagerank": 0,
+          "inboundLinks": 0,
+          "coveredBy": [],
+          "mentionedBy": [],
+          "areaId": "area:test",
+          "packageId": "package:@agentskit/harness",
+          "inbound": [],
+          "outbound": [
+            {
+              "kind": "imports",
+              "id": "module:src/loop/config.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
+              "id": "module:src/ui/api/board.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
+              "id": "module:src/ui/api/server.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
+              "id": "module:src/ui/app/src/lib/api.ts",
+              "confidence": "observed"
+            }
+          ]
+        },
+        "contentHash": "ed6cb204fa13a01370248e39693c161f41f3ea9b1aa53bc79a9917b2de7cef65",
+        "provenance": "observed",
+        "confidence": "observed"
+      },
+      {
         "id": "module:test/ui-store.test.ts",
         "kind": "module",
         "path": "test/ui-store.test.ts",
@@ -45002,7 +45338,7 @@
             }
           ]
         },
-        "contentHash": "919a3187faaca492329ed89ebb4ff930a818cbcc292aad61862ccc2b4f6bb602",
+        "contentHash": "86a53a20fb4bd476f2223e6c240bae6c1a6536a830b1a17fbddfb8feed3bbca8",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -45104,10 +45440,15 @@
               "kind": "imports",
               "id": "module:src/ui/api/routes.ts",
               "confidence": "observed"
+            },
+            {
+              "kind": "imports",
+              "id": "module:src/ui/app/src/pages/System.tsx",
+              "confidence": "observed"
             }
           ]
         },
-        "contentHash": "fb55a8c3b4ec353d7135eebcf727c922b0591236f5d1d1a482c87aa0d86d5a1a",
+        "contentHash": "fd21af76f15c7129c06ccb6bd24aeb54b2398b2ba53830cb058fc081a1357a68",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -45333,7 +45674,7 @@
           ],
           "outbound": []
         },
-        "contentHash": "aeb1080fe3f3bc2b62736716bdc0a00d7e3a76f3a6246b9fa98835713aa2785d",
+        "contentHash": "9e5fcfe3a723912ef17df7e03740e9c68eddeddec7c641446656a8f8037800be",
         "provenance": "observed",
         "confidence": "observed"
       },

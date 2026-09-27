@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { githubComment, githubCommentExists, githubCompare, githubLabelRemove, githubOpenPullRequests, githubPullRequest, parsePullRequest, touchesProtectedPaths } from '../src/index.js'
+import { githubComment, githubCommentExists, githubCompare, githubIssueCommentExists, githubIssueCreate, githubLabelRemove, githubOpenPullRequests, githubPullRequest, parsePullRequest, touchesProtectedPaths } from '../src/index.js'
 import type { CommandResult, CommandRunner } from '../src/index.js'
 
 const recorder = (respond: (argv: readonly string[]) => CommandResult): CommandRunner & { readonly calls: string[][] } => {
@@ -115,5 +115,44 @@ describe('githubCompare', () => {
   it('tolerates a response with no files array', async () => {
     const runner = recorder(() => ok({}))
     expect(await githubCompare(runner, { repo: 'o/r', base: 'sha1', head: 'sha2' })).toEqual({ files: [], changedLines: 0 })
+  })
+})
+
+describe('paginated comment listings (regression: gh applies --jq per page)', () => {
+  // Real `gh api --paginate` output for 31+ comments: the filter's output for page 1, then page 2, concatenated.
+  const pages = (filter: string, first: readonly string[], second: readonly string[]): string =>
+    filter === '[.[].body]' ? `${JSON.stringify(first)}\n${JSON.stringify(second)}\n` : [...first, ...second].map((body) => JSON.stringify(body)).join('\n') + '\n'
+  const paged = (first: readonly string[], second: readonly string[]) => recorder((argv) => ({ code: 0, stdout: pages(argv[argv.indexOf('--jq') + 1] ?? '', first, second), stderr: '', timedOut: false, durationMs: 1 }))
+  const page1 = Array.from({ length: 30 }, (_, index) => `comment ${index}`)
+
+  it('githubCommentExists finds a marker on the second page instead of throwing "did not return JSON"', async () => {
+    expect(await githubCommentExists(paged(page1, ['has <!-- loop:ENG-1 --> "quoted"\nmultiline']), { repo: 'o/r', number: 1, marker: '<!-- loop:ENG-1 -->' })).toBe(true)
+    expect(await githubCommentExists(paged(page1, ['other']), { repo: 'o/r', number: 1, marker: '<!-- loop:ENG-1 -->' })).toBe(false)
+  })
+
+  it('githubIssueCommentExists finds a marker on the second page instead of throwing "did not return JSON"', async () => {
+    expect(await githubIssueCommentExists(paged(page1, ['<!-- harness:k -->']), { repo: 'o/r', identifier: 'o/r#7', marker: '<!-- harness:k -->' })).toBe(true)
+  })
+
+  it('still fails closed when gh exits non-zero', async () => {
+    const failing = recorder(() => ({ code: 1, stdout: '', stderr: 'boom', timedOut: false, durationMs: 1 }))
+    await expect(githubIssueCommentExists(failing, { repo: 'o/r', identifier: 'o/r#7', marker: 'x' })).rejects.toThrow(/boom/)
+  })
+})
+
+describe('githubIssueCreate dedupe (regression: fuzzy search hit treated as duplicate)', () => {
+  const tracker = (hits: readonly unknown[]) => recorder((argv) => argv[2] === 'list' ? ok(hits) : { code: 0, stdout: 'https://github.com/o/r/issues/99\n', stderr: '', timedOut: false, durationMs: 1 })
+  const input = { repo: 'o/r', title: 'Plan', body: 'x\n\n<!-- harness:plan-ENG-1 -->', dedupeKey: 'plan-ENG-1' }
+
+  it('creates the issue when the search hit does not carry the marker', async () => {
+    const runner = tracker([{ number: 5, url: 'https://github.com/o/r/issues/5', body: 'unrelated issue mentioning plan ENG 1' }])
+    expect(await githubIssueCreate(runner, input)).toEqual({ identifier: 'o/r#99', url: 'https://github.com/o/r/issues/99' })
+    expect(runner.calls.some((argv) => argv[2] === 'create')).toBe(true)
+  })
+
+  it('dedupes onto the hit whose body carries the marker', async () => {
+    const runner = tracker([{ number: 5, url: 'u5', body: 'unrelated' }, { number: 6, url: 'u6', body: 'x\n\n<!-- harness:plan-ENG-1 -->' }])
+    expect(await githubIssueCreate(runner, input)).toEqual({ identifier: 'o/r#6', url: 'u6' })
+    expect(runner.calls.some((argv) => argv[2] === 'create')).toBe(false)
   })
 })

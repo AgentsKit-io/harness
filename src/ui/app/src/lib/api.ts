@@ -5,6 +5,7 @@ import type {
   BatchRequest, CachedContract, ConfigChange, IssueDetail, RecentEvent, ConfigProposal, ConfigWriteRequest, EffectiveConfig, MetricsReport, MetricsWindow,
   SearchResult, SearchType, SystemReport,
 } from '../../../api/contract'
+import { SNAPSHOT_ERROR_EVENT } from '../../../api/contract'
 
 export type * from '../../../api/contract'
 
@@ -66,6 +67,18 @@ export const resumePausedIssue = (issue: string): Promise<unknown> => api(`issue
 export const answerDecision = (issue: string, requestId: string, input: { readonly optionId: string; readonly freeText?: string; readonly expectedDigest: string }): Promise<{ readonly batchReady: boolean }> =>
   api(`issues/${encodeURIComponent(issue)}/decisions/${encodeURIComponent(requestId)}/answer`, { method: 'POST', body: JSON.stringify({ ...input, actor: 'ui' }) })
 
+const messageOf = (cause: unknown): string => cause instanceof Error ? cause.message : String(cause)
+
+/** `EventSource.OPEN`, spelled out so this is testable without a DOM. An `error` on an open source is not a
+ * dropped connection; CONNECTING (reconnecting) or CLOSED (given up) is, and polling covers the gap. */
+export const sseNeedsPolling = (readyState: number): boolean => readyState !== 1
+
+/** The server's `snapshot-error` payload, as the text the tab shows. */
+export const snapshotErrorText = (data: string): string => {
+  try { const error = (JSON.parse(data) as { error?: unknown }).error; return typeof error === 'string' ? error : 'The server could not build a snapshot.' }
+  catch { return 'The server could not build a snapshot.' }
+}
+
 /** Live state: an SSE connection when the browser has one, falling back to polling on the same interval the
  * server already broadcasts at if the connection drops — the server is the single source of truth either way,
  * this only decides how quickly the tab notices. */
@@ -80,10 +93,11 @@ export const useSnapshot = (): { readonly snapshot: UiSnapshot | null; readonly 
     let cancelled = false
     getState().then((value) => { if (!cancelled) setSnapshot(value) }).catch((cause: unknown) => { if (!cancelled) setError(cause instanceof Error ? cause.message : String(cause)) })
     const source = new EventSource(`/api/v1/events?session=${encodeURIComponent(token())}`)
-    source.addEventListener('snapshot', (event) => { try { setSnapshot(JSON.parse((event as MessageEvent<string>).data) as UiSnapshot); setError(null) } catch (cause) { setError(cause instanceof Error ? cause.message : String(cause)) } })
+    source.addEventListener('snapshot', (event) => { try { setSnapshot(JSON.parse((event as MessageEvent<string>).data) as UiSnapshot); setError(null) } catch (cause) { setError(messageOf(cause)) } })
+    source.addEventListener(SNAPSHOT_ERROR_EVENT, (event) => setError(snapshotErrorText((event as MessageEvent<string>).data)))
     source.onerror = () => {
-      if (pollTimer.current) return
-      pollTimer.current = setInterval(() => { getState().then(setSnapshot).catch(() => { /* try again next tick */ }) }, 2_000)
+      if (pollTimer.current || !sseNeedsPolling(source.readyState)) return
+      pollTimer.current = setInterval(() => { getState().then((value) => { setSnapshot(value); setError(null) }).catch((cause: unknown) => setError(messageOf(cause))) }, 2_000)
     }
     source.onopen = () => { if (pollTimer.current) { clearInterval(pollTimer.current); pollTimer.current = null } }
     return () => { cancelled = true; source.close(); if (pollTimer.current) clearInterval(pollTimer.current) }
