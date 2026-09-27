@@ -13,7 +13,7 @@ timestamp) and `type` on top of the fields below. A plugin subscribes with
 The vocabulary is enforced by the compiler: `appendLoopEvent` accepts only these names, so an event that is not
 here cannot be emitted — and a name here that nothing emits fails the test suite.
 
-90 loop events.
+92 loop events.
 
 ## `contract.*`
 
@@ -59,6 +59,8 @@ here cannot be emitted — and a name here that nothing emits fails the test sui
 | `worker.held` | `issue`, `reason`, `worktreeId` | Held for a human: protected paths, a secret-shaped file, a crossed layer boundary, or a gate the config demands. |
 | `worker.blocked` | `issue`, `reason`, `worktreeId` | Blocked: the fix rounds ran out, or a circuit breaker stopped the dispatch. |
 | `worker.stuck` | `issue`, `reason`, `worktreeId` | The worker stopped producing output for longer than the idle timeout and could not be revived. |
+| `worker.lost-tracking` | `issue`, `evidence`, `worktreeId` | Before any PR, the run's records and Orca stopped describing one live worker (`evidence` says how). |
+| `worker.restarted` | `issue`, `attempt`, `restarts`, `reason` | The lost run was aborted (terminal, worktree, lease cleared) and a fresh attempt queued; `restarts` counts them. |
 | `worker.abandoned` | `issue`, `reason`, `worktreeId` | The pull request was closed without merging, or the branch disappeared. |
 | `worker.failed` | `issue`, `reason`, `worktreeId` | The delivery pass itself failed - a tool, a credential, an unexpected state. |
 | `worker.waiting` | `issue`, `reason`, `worktreeId` | Nothing to do at this head: the pass ended waiting for CI, a push, or a human. |
