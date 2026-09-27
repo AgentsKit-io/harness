@@ -160,7 +160,8 @@ describe('a close-or-reopen decision on an abandoned delivery', () => {
     for (const [issue, action, phase] of [['ENG-20', 'close-issue', 'completed'], ['ENG-21', 'reopen', 'available']] as const) {
       const stateDir = stateDirFor()
       writeDispatch(stateDir, issue)
-      writeFileSync(join(stateDir, 'issues', issue, 'delivery.json'), JSON.stringify({ issue, prNumber: 5, reviews: {}, fixRounds: 0, nudges: [], handoffs: [], heldFor: null, finishedAt: '2026-01-01T00:40:00.000Z', finalOutcome: 'abandoned', cancelledAt: null }))
+      writeFileSync(join(stateDir, 'issues', issue, 'delivery.json'), JSON.stringify({ issue, prNumber: 5, reviews: {}, fixRounds: 0, nudges: [], handoffs: [], heldFor: null, finishedAt: '2026-01-01T00:40:00.000Z', finalOutcome: 'abandoned', cancelledAt: '2025-12-01T00:00:00.000Z' }))
+      // (a stale cancelledAt from an earlier attempt, older than this delivery, must not hide the new decision)
       expect(syncProjection(stateDir).issues[issue]!.phase).toBe('needs-decision')
       markDispatchCancelled(stateDir, issue, new Date('2026-01-02T00:00:00.000Z'))
       appendLoopEvent(stateDir, { at: '2026-01-02T00:00:01.000Z', type: 'ui.issue-decided', issue, action })
