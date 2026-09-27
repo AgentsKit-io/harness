@@ -83,6 +83,16 @@ const statePathFor = (stateDir: string, runId: string): string => join(runDirFor
 const safeIssue = (issue: string): string => issue.replace(/[^A-Za-z0-9._-]/g, '_')
 const lockPath = (stateDir: string): string => join(runsRoot(stateDir), '.lock')
 
+let reportedFailure = false
+/** A record that failed says so once per process on stderr — the stage report / worker log — instead of vanishing. */
+const recordFailed = (what: string, error: unknown): null => {
+  if (!reportedFailure) {
+    reportedFailure = true
+    process.stderr.write(`ak-harness: ${what} failed; runs/ is incomplete from here: ${error instanceof Error ? error.message : String(error)}\n`)
+  }
+  return null
+}
+
 const withRunsLock = <T>(stateDir: string, fn: () => T): T => {
   // ponytail: a lock still contended after ~0.5s is written through anyway; the worst case is one lost fold of a
   // local, derived view — never of the event log it is projected from.
@@ -153,7 +163,8 @@ interface Transition {
 }
 
 const text = (value: unknown): string => typeof value === 'string' ? value : Array.isArray(value) ? value.map(String).join('; ') : ''
-const short = (value: string, max = 240): string => value.length > max ? `${value.slice(0, max - 1)}…` : value
+// Redacted before clipping: this text reaches `nextRequiredApproval`, and from there the PR comment (runs.prSummary).
+const short = (value: string, max = 240): string => { const clean = scanForPii(value).redacted; return clean.length > max ? `${clean.slice(0, max - 1)}…` : clean }
 
 /** The stage machine's view of one event. Pure: the whole projection is this function folded over the log. */
 export const classifyRunEvent = (event: Readonly<Record<string, unknown>>): Transition => {
@@ -199,7 +210,10 @@ const nextFile = (dir: string, name: string): { readonly path: string; readonly 
 }
 
 const eventFields = (event: Readonly<Record<string, unknown>>): Readonly<Record<string, unknown>> =>
-  Object.fromEntries(Object.entries(event).filter(([key]) => key !== 'at' && key !== 'type').map(([key, value]) => [key, typeof value === 'string' ? short(value, 600) : value]))
+  Object.fromEntries(Object.entries(event).filter(([key]) => key !== 'at' && key !== 'type').map(([key, value]) => [key,
+    typeof value === 'string' ? short(value, 600)
+      : value !== null && typeof value === 'object' ? short(JSON.stringify(value), 600)
+        : value]))
 
 /** What the next stage is handed, written by the machine from state it already holds — never by a model. */
 const writeHandoff = (stateDir: string, run: AgentRunState, from: AgentRunStage, to: AgentRunStage, event: Readonly<Record<string, unknown>>): AgentRunState => {
@@ -287,7 +301,7 @@ export const recordRunEvent = (stateDir: string, event: Readonly<Record<string, 
       save(stateDir, run)
       return run
     })
-  } catch { return null }
+  } catch (error) { return recordFailed('recording a run event', error) }
 }
 
 export interface RunIoInput {
@@ -333,7 +347,7 @@ export const recordRunIo = (stateDir: string, issue: string, input: RunIoInput, 
       })
       return entry
     })
-  } catch { return null }
+  } catch (error) { return recordFailed('recording run I/O', error) }
 }
 
 /** Link a proof file (verify.json, the DoD evidence) into the run by hash; the file itself stays where it is. */
@@ -346,7 +360,7 @@ export const recordRunEvidence = (stateDir: string, issue: string, kind: string,
       const next = addEvidence(run, kind, path, stateDir, at)
       if (next !== run) save(stateDir, { ...next, updatedAt: at })
     })
-  } catch { /* best-effort */ }
+  } catch (error) { recordFailed('linking run evidence', error) }
 }
 
 export const markRunSummaryPosted = (stateDir: string, runId: string, digest: string): void => {
@@ -355,7 +369,7 @@ export const markRunSummaryPosted = (stateDir: string, runId: string, digest: st
       const run = readAgentRun(stateDir, runId)
       if (run) save(stateDir, { ...run, summaryDigest: digest })
     })
-  } catch { /* best-effort */ }
+  } catch (error) { recordFailed('marking the run summary posted', error) }
 }
 
 /**

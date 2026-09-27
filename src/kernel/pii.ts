@@ -28,7 +28,7 @@ const PATTERNS: readonly { readonly kind: PiiKind; readonly regex: RegExp }[] = 
   // `sk-` body allows `-`/`_` (not just alnum) so a project/scoped key like `sk-proj-...`/`sk-live-...` matches
   // as one token instead of the hyphen splitting it into a too-short fragment. `github_pat_` (fine-grained PAT)
   // and `AIza…` (Google API key) are current real-world formats missing from the original list entirely.
-  { kind: 'api-key', regex: /\b(?:sk-[A-Za-z0-9_-]{16,}|sk_(?:live|test)_[A-Za-z0-9]{16,}|pk_(?:live|test)_[A-Za-z0-9]{16,}|gh[opsu]_[A-Za-z0-9]{20,}|github_pat_[A-Za-z0-9_]{20,}|AKIA[0-9A-Z]{16}|AIza[A-Za-z0-9_-]{30,}|xox[baprs]-[A-Za-z0-9-]{10,})\b/g },
+  { kind: 'api-key', regex: /\b(?:sk-[A-Za-z0-9_-]{16,}|sk_(?:live|test)_[A-Za-z0-9]{16,}|pk_(?:live|test)_[A-Za-z0-9]{16,}|gh[opsu]_[A-Za-z0-9]{20,}|lin_(?:api|oauth)_[A-Za-z0-9]{20,}|github_pat_[A-Za-z0-9_]{20,}|AKIA[0-9A-Z]{16}|AIza[A-Za-z0-9_-]{30,}|xox[baprs]-[A-Za-z0-9-]{10,})\b/g },
   // The AWS *secret* half (as opposed to the `AKIA…` access-key id above) has no recognizable prefix — a bare
   // 40-char base64-shaped run is too generic to scan for on its own (matches hashes, tokens, arbitrary base64).
   // Anchoring on the conventional key name it's almost always assigned to/from keeps this pattern high-signal.

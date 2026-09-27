@@ -2,7 +2,7 @@ import { existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, 
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
-import { appendLoopEvent, githubUpsertComment, classifyRunEvent, listAgentRuns, pruneAgentRuns, readAgentRunReport, renderAgentRunMarkdown, runDirFor } from '../src/index.js'
+import { appendLoopEvent, githubUpsertComment, renderRunSummaryMarkdown, classifyRunEvent, listAgentRuns, pruneAgentRuns, readAgentRunReport, renderAgentRunMarkdown, runDirFor } from '../src/index.js'
 import { recordRunEvidence, recordRunIo } from '../src/loop/agent-runs.js'
 import type { LoopEventPayload } from '../src/loop/event-bus.js'
 
@@ -123,5 +123,15 @@ describe('agent runs (ADR-0041)', () => {
     const runner = { run: async (argv: readonly string[]) => { calls.push([...argv]); return { code: 1, stdout: '', stderr: 'HTTP 502', timedOut: false, durationMs: 1 } } }
     await expect(githubUpsertComment(runner, { repo: 'o/r', number: 7, body: 'b', marker: '<!-- m -->' })).rejects.toThrow(/HTTP 502/)
     expect(calls).toHaveLength(1)
+  })
+
+  it('redacts secrets from the approval text and handoff fields that reach the PR summary', () => {
+    const dir = stateDir()
+    emit(dir, 'worker.dispatched', {})
+    emit(dir, 'worker.permission-wait', { terminal: 't', reason: 'Allow `curl -H "Authorization: token ghp_abcdefghijklmnopqrstuvwxyz0123"`?', context: { key: 'lin_api_abcdefghijklmnopqrstuvwxyz' } })
+    const report = readAgentRunReport(dir, 'ENG-1')!
+    expect(report.state.nextRequiredApproval).toContain('[REDACTED:api-key]')
+    expect(renderRunSummaryMarkdown(report)).not.toContain('ghp_')
+    expect(JSON.stringify(report.handoffs)).not.toMatch(/ghp_|lin_api_/)
   })
 })
