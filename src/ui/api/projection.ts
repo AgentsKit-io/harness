@@ -174,8 +174,16 @@ export const reduce = (state: ProjectionState, event: LoopEvent): ProjectionStat
     // (law-os AGE-1751/1753, brief typed into a bare shell) as work awaiting review.
     case 'worker.waiting':
     case 'worker.nudged':
-    case 'worker.handed-off':
       return withIssue(state, issue, at, (record) => ({ ...record, phase: record.pullRequest ? 'review' : 'running' }))
+    // The worker now runs on another provider/model: the dispatch the UI shows must say so (`to` is `provider/model`).
+    case 'worker.handed-off': {
+      const to = strOrNull(event['to'])
+      const slash = to ? to.indexOf('/') : -1
+      return withIssue(state, issue, at, (record) => ({
+        ...record, phase: record.pullRequest ? 'review' : 'running',
+        dispatch: record.dispatch && to && slash > 0 ? { ...record.dispatch, provider: to.slice(0, slash), model: to.slice(slash + 1) } : record.dispatch,
+      }))
+    }
     case 'worker.reviewed':
     case 'worker.fix-round':
     case 'worker.needs-input':

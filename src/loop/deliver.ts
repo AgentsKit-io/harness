@@ -319,7 +319,12 @@ const sendToWorker = async (ctx: Context, record: DispatchRecordFile, text: stri
     // No agent attached to the worktree at all: the CLI never started or exited, and what is left is a bare shell —
     // even when Orca still records the agent command the terminal was created with. Typing a prompt there runs it as
     // a shell command (observed on Windows: the brief pointer ran in PowerShell, "Your" is not a command).
-    const noAgent = await orcaWorktrees(ctx.runner, orcaOptions(ctx.config)).then((items) => items.find((item) => item.id === record.worktreeId)?.agentCount === 0, () => false)
+    // Not every CLI registers as an Orca agent (pi runs with `agents: []` while Orca reports the worktree `working`):
+    // zero agents only means "no agent" when the worktree is not actively producing output either.
+    const noAgent = await orcaWorktrees(ctx.runner, orcaOptions(ctx.config)).then((items) => {
+      const own = items.find((item) => item.id === record.worktreeId)
+      return own?.agentCount === 0 && own.activity !== 'working' && own.activity !== 'permission'
+    }, () => false)
     const terminal = (await orcaTerminalList(ctx.runner, { worktree: `id:${record.worktreeId}` }, orcaOptions(ctx.config))).find((item) => item.handle === record.terminal)
     // ponytail: a live Orca shell with no recorded agent command cannot make progress; reactivate it once.
     staleShell = noAgent || Boolean(terminal && !terminal.command && (SHELL_PROMPT.test(terminal.preview) || (!terminal.preview.trim() && terminal.lastOutputAt === null)))

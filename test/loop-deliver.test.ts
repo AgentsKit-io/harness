@@ -42,6 +42,8 @@ interface Scenario {
   readonly sendRejects?: number
   /** `orca worktree ps` agents for the worker worktree; omitted = no ps fixture (worktree unknown). */
   readonly worktreeAgents?: readonly Record<string, unknown>[]
+  /** `orca worktree ps` status (activity) for the worker worktree, with `worktreeAgents`. */
+  readonly worktreeStatus?: string
   readonly orcaWorktreeMissing?: boolean
   readonly pluginSource?: string
   readonly initialRemainingPercent?: number | null
@@ -141,7 +143,7 @@ const setup = (initial: Scenario = {}) => {
         return { code: 1, stdout: '', stderr: `no fixture for pr view ${number}`, timedOut: false, durationMs: 1 }
       }
       if (argv[0] === 'gh' && argv[1] === 'pr' && argv[2] === 'edit') return { code: 0, stdout: '', stderr: '', timedOut: false, durationMs: 1 }
-      if (key.startsWith('orca worktree ps') && scenario.worktreeAgents) return okResult({ worktrees: [{ worktreeId: 'repo-1::/w/eng-10-demo', path: '/w/eng-10-demo', agents: scenario.worktreeAgents }] })
+      if (key.startsWith('orca worktree ps') && scenario.worktreeAgents) return okResult({ worktrees: [{ worktreeId: 'repo-1::/w/eng-10-demo', path: '/w/eng-10-demo', agents: scenario.worktreeAgents, ...(scenario.worktreeStatus ? { status: scenario.worktreeStatus } : {}) }] })
       if (key.startsWith('orca terminal list') && scenario.orcaDown) return { code: 1, stdout: '', stderr: 'orca runtime unavailable: connect ECONNREFUSED', timedOut: false, durationMs: 1 }
       if (key.startsWith('orca terminal list')) return okResult({ terminals: scenario.terminals ?? [{ handle: 'term_w', connected: true, orphaned: false, lastOutputAt: Date.parse('2026-09-11T10:30:00.000Z'), worktreeId: 'repo-1::/w/eng-10-demo' }] })
       if (key.startsWith('orca terminal read')) return scenario.terminalScreen === undefined ? { code: 127, stdout: '', stderr: 'no fixture for terminal read', timedOut: false, durationMs: 1 } : okResult({ tail: scenario.terminalScreen })
@@ -573,6 +575,15 @@ describe('deliver', () => {
     expect(report.results[0]?.actions.join(' ')).toContain('a shell with no agent attached')
     expect(env.runner.calls.some((argv) => argv[1] === 'terminal' && argv[2] === 'create')).toBe(true)
     expect(env.runner.calls.some((argv) => argv[1] === 'terminal' && argv[2] === 'send' && argv.includes('term_w'))).toBe(false)
+  })
+
+  it('treats a worktree Orca reports as working as alive even with no registered agent (pi)', async () => {
+    const env = setup({ pr: null, dispatchedAt: '2026-09-11T11:59:00.000Z', worktreeAgents: [], worktreeStatus: 'working' })
+    const path = dispatchRecordPath(env.loaded.stateDir, 'ENG-10')
+    writeFileSync(path, JSON.stringify({ ...JSON.parse(readFileSync(path, 'utf8')), briefAccepted: false }))
+    const report = await deliver(env, { assumeIdle: true })
+    expect(report.results[0]?.actions.join(' ')).not.toContain('no agent attached')
+    expect(env.runner.calls.some((argv) => argv[1] === 'terminal' && argv[2] === 'create')).toBe(false)
   })
 
   it('re-sends a brief the terminal never confirmed at once, instead of waiting out the idle timeout', async () => {
