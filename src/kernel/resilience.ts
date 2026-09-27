@@ -49,7 +49,8 @@ export const classifyFailure = (error: unknown): FailureClassification => {
   if (/timeout|timed out|deadline/.test(text)) return { class: 'timeout', retryable: true, reason: message }
   if (/policy|forbidden|permission|approval/.test(text)) return { class: 'policy', retryable: false, reason: message }
   if (/invalid|schema|argument|config|validation/.test(text)) return { class: 'validation', retryable: false, reason: message }
-  if (/network|connection|econn|503|502|external/.test(text)) return { class: 'external', retryable: true, reason: message }
+  // 502/503 anchored like 429 above: bare digits in a hash or count are not a gateway error.
+  if (code === '502' || code === '503' || /network|connection|econn|external|bad gateway|service unavailable|(?:^|[^\w.])50[23](?![\w.])/.test(text)) return { class: 'external', retryable: true, reason: message }
   return { class: 'unknown', retryable: false, reason: message }
 }
 

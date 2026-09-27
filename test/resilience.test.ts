@@ -77,6 +77,14 @@ describe('classifyFailure 429 anchoring (regression: bare digits put a provider 
     expect(classifyFailure(new Error('prompt was 87429 tokens')).class).not.toBe('quota')
   })
 
+  it('does not read 502/503 inside a hash or count as an external failure, but still reads the HTTP status', () => {
+    expect(classifyFailure(new Error('commit a5033f2 failed lint')).class).not.toBe('external')
+    expect(classifyFailure(new Error('used 15023 tokens')).class).not.toBe('external')
+    expect(classifyFailure(new Error('HTTP/1.1 503 Service Unavailable')).class).toBe('external')
+    expect(classifyFailure(new Error('status code 502')).class).toBe('external')
+    expect(classifyFailure(Object.assign(new Error('upstream'), { code: '503' })).class).toBe('external')
+  })
+
   it('still reads 429 as an HTTP status as quota', () => {
     expect(classifyFailure(new Error('HTTP/1.1 429')).class).toBe('quota')
     expect(classifyFailure(new Error('request failed with status code 429')).class).toBe('quota')
