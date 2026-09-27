@@ -137,3 +137,24 @@ describe('the control-plane action surface', () => {
     await expect(decideIssue(context, 'ENG-8', 'close-issue')).rejects.toThrow(/not waiting on a close-or-reopen decision/)
   })
 })
+
+describe('retry after a failed delivery', () => {
+  it('resumes delivery on the open PR when the delivery of a completed run ended blocked, and still refuses one that merged', async () => {
+    // Live (law-os AGE-1837): the run completed when its PR opened, delivery then hit the fix-round cap. Attention
+    // offered Retry and the queue refused ("got completed"); a fresh attempt could not dispatch past the open PR either.
+    const { createIssueQueue } = await import('../src/loop/queue.js')
+    const { deliveryStatePath, readDeliveryState } = await import('../src/loop/deliver.js')
+    const context = contextFor()
+    const issue = 'AGE-1837'
+    const { runId } = enqueueRun(context, { issue, configHash: 'hash', flow: null, builder: { provider: 'codex', model: 'gpt' }, contractDigest: 'd', maxFixRounds: 2, perIssueTokens: 0 })
+    createIssueQueue({ stateDir: context.loaded.stateDir }).update(runId, { status: 'completed', projection: { stage: 'pr-open', pullRequest: 3 } })
+    const delivery = (finalOutcome: string) => writeJsonAtomic(deliveryStatePath(context.loaded.stateDir, issue), { issue, prNumber: 3, reviews: { abc1234: { status: 'findings' } }, fixRounds: 2, nudges: [{ kind: 'ci' }], handoffs: [], heldFor: null, finishedAt: '2026-09-27T00:00:00.000Z', finalOutcome, cancelledAt: null })
+    delivery('merged')
+    expect(() => retryRun(context, issue, runId)).toThrow(/got completed/)
+    delivery('blocked')
+    expect(retryRun(context, issue, runId)).toEqual({ runId })
+    expect(readDeliveryState(context.loaded.stateDir, issue)).toMatchObject({ prNumber: 3, finishedAt: null, finalOutcome: null, fixRounds: 0, nudges: [] })
+    expect(createIssueQueue({ stateDir: context.loaded.stateDir }).list().filter((run) => run.issue === issue)).toHaveLength(1)
+    expect(readCurrentProjection(context.loaded.stateDir).issues[issue]).toMatchObject({ phase: 'review', error: null })
+  })
+})
