@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
-  "contentHash": "692aa8945a10e06d97dd56beae1cad08aab943bb9953ab89be9644aa7fbe11d9",
+  "contentHash": "22b2529d383a155cb844037b2bcbdffd484cda2f4acae1822a6e3bcc86467653",
   "contentHashAlgo": "sha256-normalized-v1",
-  "generatedAt": "2026-09-27T12:05:38.305Z",
+  "generatedAt": "2026-09-27T12:07:05.844Z",
   "project": {
     "name": "AgentsKit Harness",
     "root": "."
@@ -8911,7 +8911,7 @@
     }
   },
   "inputs": {
-    "hash": "9e74f3a0dc9632c8b5b875d1253fc8fc266499b903b78a5c3336e9bf7c1ca1ae",
+    "hash": "7d93d9b4ff1f92f1292fe1860e9632f32fb76a6c4f4cf4146d94ae98fce7f562",
     "fileCount": 539,
     "projectionVersion": 2
   },
@@ -8934,9 +8934,9 @@
   "projection": {
     "type": "retrieval-index",
     "schemaVersion": 1,
-    "contentHash": "eb20d6c6e2ea35a7d1514a361500994fdc343086a0eea93cb21f8275a10f503c",
+    "contentHash": "a304f3f846b95ab7e4e4ae3f305a1847e70d4e83a7221c65e6c5e8f306d5d24f",
     "contentHashAlgo": "sha256-normalized-v1",
-    "snapshotHash": "b7f105158e8a07afb4f177c93513306b68fd9a23a78cbc6e5b309f2f6b804525",
+    "snapshotHash": "70fa1258351989e2c16460f7737a7f66b2a1cc5d525f2cfed402f09eaf947b12",
     "overlayHash": "f99666ff9119084dd25c2974ae64eb6935ec2aa785ff5ad478fb9d541f7a5e94",
     "configurationHash": "816afaf6a7dc09767f7594d8fd80024612ca0f33becf0e44dde0107fcf2782df",
     "lexiconVersion": 1,
@@ -8969,7 +8969,7 @@
       "averageFieldLength": {
         "aliases": 2.9251824817518246,
         "body": 44.127737226277375,
-        "headings": 3.8649635036496353,
+        "headings": 3.866788321167883,
         "path": 6.114963503649635,
         "summary": 2.6313868613138687,
         "symbols": 14.19890510948905,
@@ -11114,7 +11114,7 @@
         ],
         "fields": {
           "title": "cli",
-          "headings": "ak-harness doctor ak-harness ui ak-harness plan ak-harness context ak-harness context resolve ak-harness discovery ak-harness discovery assess ak-harness wip ak-harness wip assess ak-harness experiment ak-harness experiment select ak-harness delivery ak-harness delivery preflight ak-harness delivery pr ak-harness delivery integration ak-harness delivery production ak-harness delivery acceptance ak-harness delivery cleanup ak-harness pilot ak-harness cycle ak-harness cycle assess ak-harness block ak-harness block validate ak-harness block assess ak-harness preflight ak-harness preflight files ak-harness snapshot ak-harness snapshot validate ak-harness learning ak-harness learning parse ak-harness coordination ak-harness coordination claim ak-harness artifacts ak-harness artifacts inspect ak-harness artifacts list ak-harness artifacts schema ak-harness loop ak-harness loop validate ak-harness loop doctor ak-harness loop precheck ak-harness loop deliver ak-harness loop stage ak-harness loop tick-worker ak-harness loop tick ak-harness loop contract ak-harness loop init ak-harness loop install ak-harness loop uninstall ak-harness loop status ak-harness loop approve ak-harness loop resume ak-harness loop paused ak-harness loop hook ak-harness loop debrief ak-harness loop issue-timeline ak-harness loop run ak-harness loop run list ak-harness loop run show ak-harness loop worker-guard ak-harness loop observe ak-harness loop watch ak-harness loop retro ak-harness loop plan ak-harness loop plan start",
+          "headings": "ak-harness doctor ak-harness ui ak-harness plan ak-harness context ak-harness context resolve ak-harness discovery ak-harness discovery assess ak-harness wip ak-harness wip assess ak-harness experiment ak-harness experiment select ak-harness delivery ak-harness delivery preflight ak-harness delivery pr ak-harness delivery integration ak-harness delivery production ak-harness delivery acceptance ak-harness delivery cleanup ak-harness pilot ak-harness cycle ak-harness cycle assess ak-harness block ak-harness block validate ak-harness block assess ak-harness preflight ak-harness preflight files ak-harness snapshot ak-harness snapshot validate ak-harness learning ak-harness learning parse ak-harness coordination ak-harness coordination claim ak-harness artifacts ak-harness artifacts inspect ak-harness artifacts list ak-harness artifacts schema ak-harness loop ak-harness loop validate ak-harness loop doctor ak-harness loop precheck ak-harness loop deliver ak-harness loop stage ak-harness loop tick-worker ak-harness loop deliver-worker ak-harness loop tick ak-harness loop contract ak-harness loop init ak-harness loop install ak-harness loop uninstall ak-harness loop status ak-harness loop approve ak-harness loop resume ak-harness loop paused ak-harness loop hook ak-harness loop debrief ak-harness loop issue-timeline ak-harness loop run ak-harness loop run list ak-harness loop run show ak-harness loop worker-guard ak-harness loop observe ak-harness loop watch ak-harness loop retro ak-harness loop plan",
           "path": "apps/docs/content/docs/reference/cli.mdx",
           "symbols": "",
           "summary": "{/* Generated by `pnpm docs:generate`. Do not edit by hand: edit `src/cli.ts` and regenerate. */}",
@@ -11135,7 +11135,7 @@
             }
           ]
         },
-        "contentHash": "8689157838b26fc7200bb97a4c56d88a4617ce6b856c3eda5033e3ad7187726f",
+        "contentHash": "3694af71a5a76f12a2a4c1c9f05bb939147a5a1af31d28bda0c44d851a103df7",
         "provenance": "observed",
         "confidence": "observed"
       },
