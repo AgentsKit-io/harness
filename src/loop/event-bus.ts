@@ -81,8 +81,9 @@ export const createLoopEventBus = (): LoopEventBus => {
 /**
  * Load `plugins.modules` (local `.mjs` files, the same trust level as `agents.registry.yaml`: files the project
  * owner put in their own repo, never fetched over the network) and give each one the bus to subscribe to. A
- * module that fails to load or whose `apply` throws is reported, not fatal — one broken plugin must not stop tick
- * or deliver from running.
+ * module that fails to load or whose `apply` throws is returned in `errors`, not thrown here. Scheduled stage runs
+ * (`loop stage`, the tick/deliver workers) treat any error as a failed run: a plugin that did not load gates nothing,
+ * and running as if its `before*` hooks were there would be failing open.
  */
 export interface LoopPluginModule { readonly id: string; readonly apply: (bus: LoopEventBus) => void | Promise<void> }
 

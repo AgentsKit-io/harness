@@ -100,6 +100,8 @@ const loadStagePlugins = async (loaded: ReturnType<typeof loadLoopConfig>, bus: 
   for (const error of errors) appendLoopEvent(loaded.stateDir, { at: new Date().toISOString(), type: 'plugin.load-failed', path: error.path, error: error.error }, bus)
   return errors.length ? `plugin(s) failed to load: ${errors.map((error) => `${error.path} (${error.error})`).join('; ')}` : null
 }
+const stageFailureReason = (report: { readonly results: readonly unknown[] }): string =>
+  `every result failed: ${report.results.map((result) => { const row = result as { readonly issue?: unknown; readonly reason?: unknown }; return `${String(row.issue)}: ${String(row.reason)}` }).join('; ')}`.slice(0, 500)
 // One failed tick/deliver run: counts toward the stage auto-pause and says so, the same way whatever the cause.
 const failStageRun = (loaded: ReturnType<typeof loadLoopConfig>, stage: LoopStageName, reason: string, bus: ReturnType<typeof createLoopEventBus>, completed: (status: string, count: number) => void): void => {
   const entry = recordStageRunResult(loaded.stateDir, stage, { succeeded: false, reason }, loaded.config.resilience.stagePauseAfterRuns)
@@ -284,8 +286,13 @@ const runDetachedStageWorker = async (input: {
     try {
       if (pluginFailure) fail(pluginFailure)
       const report = await run({ loaded, runner, budgetMs, bus })
-      recordStageRunResult(loaded.stateDir, stage, { succeeded: true }, loaded.config.resilience.stagePauseAfterRuns)
-      completed(report.status, report.results.length)
+      // A run whose every result failed is a failed run, so it counts toward the auto-pause. `blocked` (a tracker
+      // cooldown) is not: a rate limit waits itself out instead of becoming a permanent stage pause.
+      if (report.status === 'failed') failStageRun(loaded, stage, stageFailureReason(report), bus, completed)
+      else {
+        recordStageRunResult(loaded.stateDir, stage, { succeeded: true }, loaded.config.resilience.stagePauseAfterRuns)
+        completed(report.status, report.results.length)
+      }
       console.log(JSON.stringify(report, null, 2))
     } catch (error) {
       failStageRun(loaded, stage, error instanceof Error ? error.message : String(error), bus, completed)

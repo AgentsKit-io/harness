@@ -13,12 +13,12 @@ process.env['AK_HARNESS_NO_GLOBAL'] = '1'
 
 const spawnWorker = vi.hoisted(() => ({ fn: (_input: { readonly logPath: string; readonly cwd: string }): { readonly pid: number | null; readonly logPath: string } => ({ pid: null, logPath: '' }) }))
 vi.mock('../src/loop/detached-worker.js', () => ({ spawnDetachedWorker: (input: { readonly logPath: string; readonly cwd: string }) => spawnWorker.fn(input) }))
-const stages = vi.hoisted(() => ({ tick: 0, retro: 0, notifierThrows: false }))
+const stages = vi.hoisted(() => ({ tick: 0, retro: 0, notifierThrows: false, tickReport: null as unknown }))
 vi.mock('../src/index.js', async (importOriginal) => {
   const original = await importOriginal<typeof import('../src/index.js')>()
   return {
     ...original,
-    runTick: async () => { stages.tick += 1; return { status: 'idle', results: [] } },
+    runTick: async () => { stages.tick += 1; return stages.tickReport ?? { status: 'idle', results: [] } },
     runRetroStage: async () => { stages.retro += 1; return { status: 'ok', learningsProposed: 0 } },
     attachNotifier: (...args: Parameters<typeof original.attachNotifier>) => { if (stages.notifierThrows) throw new Error('notifier exploded'); return original.attachNotifier(...args) },
   }
@@ -30,7 +30,7 @@ beforeAll(async () => { cli = (await import('../src/cli.js')).cliProgram })
 const cleanups: string[] = []
 afterEach(() => {
   process.exitCode = undefined
-  stages.tick = 0; stages.retro = 0; stages.notifierThrows = false
+  stages.tick = 0; stages.retro = 0; stages.notifierThrows = false; stages.tickReport = null
   vi.restoreAllMocks()
   for (const dir of cleanups.splice(0)) rmSync(dir, { recursive: true, force: true })
 })
@@ -117,6 +117,16 @@ describe('scheduled loop stages', () => {
     expect(stages.tick).toBe(0)
     expect(stageEntry(stateDir(file), 'tick')).toMatchObject({ consecutiveFailures: 1, lastReason: expect.stringContaining('missing-gate.mjs') })
     expect(events(file, 'plugin.load-failed')).toHaveLength(1)
+  })
+
+  it('counts a tick worker run whose every result failed as a failed run, but not a tracker cooldown', async () => {
+    const file = loopConfig()
+    stages.tickReport = { status: 'failed', results: [{ issue: 'ENG-1', outcome: 'failed', reason: 'issue fetch failed: 502' }] }
+    await quietly(['loop', '-f', file, 'tick-worker'])
+    expect(stageEntry(stateDir(file), 'tick')).toMatchObject({ consecutiveFailures: 1, lastReason: expect.stringContaining('ENG-1: issue fetch failed') })
+    stages.tickReport = { status: 'blocked', results: [] }
+    await quietly(['loop', '-f', file, 'tick-worker'])
+    expect(stageEntry(stateDir(file), 'tick').consecutiveFailures).toBe(0)
   })
 
   it('records a worker that crashes before taking the stage lock as a failed run', async () => {
