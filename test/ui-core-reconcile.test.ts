@@ -25,7 +25,7 @@ const board = (issues: readonly { identifier: string; state: string; lane: Board
 
 const input = (patch: Partial<ReconcileInput> = {}): ReconcileInput => ({
   now: NOW, staleAfterMs: 600_000, issues: [], board: board([]), boardRefreshMs: 60_000, dispatches: [], claims: [],
-  orca: { at: ago(1_000), worktreeIds: [] }, orcaStaleAfterMs: 600_000, loopAt: ago(1_000), maxAgents: 4, ...patch,
+  orca: { at: ago(1_000), worktreeIds: [] }, orcaStaleAfterMs: 600_000, loopAt: ago(1_000), running: 0, maxAgents: 4, ...patch,
 })
 
 describe('reconciliation between the loop and the outside world', () => {
@@ -44,8 +44,14 @@ describe('reconciliation between the loop and the outside world', () => {
 
   it('reports running above the ceiling ("5/4 workers") as capacity overcount', () => {
     const dispatches = [1, 2, 3, 4, 5].map((n) => ({ issue: `ENG-${n}`, worktreeId: `wt-${n}`, finished: false }))
-    const result = reconcile(input({ dispatches, orca: { at: ago(1_000), worktreeIds: dispatches.map((item) => item.worktreeId) } }))
+    const result = reconcile(input({ dispatches, running: 5, orca: { at: ago(1_000), worktreeIds: dispatches.map((item) => item.worktreeId) } }))
     expect(result.drift).toEqual([expect.objectContaining({ issue: null, kind: 'capacity-overcount', detail: expect.stringContaining('5/4') })])
+  })
+
+  it('counts slots as the tick does, so unfinished deliveries waiting in review are not an overcount', () => {
+    // Live (law-os): 4 unfinished deliveries, 3 of them PRs in review, against ceiling 1 read "4/1" while the tick saw 1.
+    const dispatches = [1, 2, 3, 4].map((n) => ({ issue: `ENG-${n}`, worktreeId: `wt-${n}`, finished: false }))
+    expect(reconcile(input({ dispatches, running: 1, maxAgents: 1, orca: { at: ago(1_000), worktreeIds: dispatches.map((item) => item.worktreeId) } })).drift).toEqual([])
   })
 
   it('treats a lease without a dispatch as a leak only past the stale window (dispatch writes its record after claiming)', () => {
