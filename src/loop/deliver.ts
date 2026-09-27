@@ -1,4 +1,4 @@
-import { existsSync, mkdirSync, readdirSync, readFileSync } from 'node:fs'
+import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync } from 'node:fs'
 import { z } from 'zod'
 import { dirname, join, relative, sep } from 'node:path'
 import type { CommandRunner } from '../adapters/command.js'
@@ -90,6 +90,8 @@ export interface DeliveryState {
   readonly failedAtHead?: string | null
   /** The tracker state this loop last set for the open PR, so it is not re-set on every pass. */
   readonly trackerState?: string | null
+  /** When a pass first saw lost-track evidence before any PR; a restart needs a second pass to confirm it. */
+  readonly lostTrackSince?: string | null
 }
 
 export interface DeliverInput {
@@ -170,6 +172,21 @@ const unpushedCommits = async (ctx: Context, record: DispatchRecordFile): Promis
     const out = await ctx.runner.run(['git', 'rev-list', '--count', `origin/${ctx.config.project.baseBranch}..HEAD`, '--not', '--remotes'], { cwd: record.worktreePath, timeoutMs: 10_000 })
     return out.code === 0 ? Number.parseInt(out.stdout.trim(), 10) || 0 : 0
   } catch { return 0 }
+}
+
+/** Why the worktree may hold work a restart would destroy (uncommitted edits, unpushed commits), or null when it is
+ * verifiably clean. Fails closed: no path to check, or a git call that fails, is reported as possible work. */
+const unsavedWork = async (ctx: Context, record: DispatchRecordFile): Promise<string | null> => {
+  if (!record.worktreePath) return 'no worktree path recorded to check'
+  try {
+    const status = await ctx.runner.run(['git', 'status', '--porcelain'], { cwd: record.worktreePath, timeoutMs: 10_000 })
+    if (status.code !== 0) return `git status failed (exit ${status.code})`
+    if (status.stdout.trim()) return 'uncommitted changes'
+    const out = await ctx.runner.run(['git', 'rev-list', '--count', `origin/${ctx.config.project.baseBranch}..HEAD`, '--not', '--remotes'], { cwd: record.worktreePath, timeoutMs: 10_000 })
+    const count = out.code === 0 ? Number.parseInt(out.stdout.trim(), 10) : Number.NaN
+    if (Number.isNaN(count)) return `could not count unpushed commits (exit ${out.code})`
+    return count > 0 ? `${count} unpushed commit(s)` : null
+  } catch (error) { return `work check failed: ${message(error)}` }
 }
 
 const resumableOutcomes = new Set<DeliverOutcome>(['blocked', 'stuck', 'abandoned', 'held', 'failed'])
@@ -276,6 +293,16 @@ const PERMISSION_PROMPT = /Permission required|Allow once|Allow always|Do you wa
  * whatever the agent asked for — typically the one command its own config marks as dangerous (`rm -rf`,
  * `git reset --hard`). Orca's `worktree ps` reports it as `permission`; the screen is the fallback.
  */
+/** The reason a worker gave when it stopped itself: the check-in prompt tells it to set an Orca worktree comment
+ * `BLOCKED: <reason>` and stop. The loop's own escalation writes `LOOP BLOCKED: …`, which does not match. */
+export const workerDeclaredBlocked = async (ctx: Pick<Context, 'runner' | 'config'>, record: Pick<DispatchRecordFile, 'worktreeId'>): Promise<string | null> => {
+  try {
+    const own = (await orcaWorktrees(ctx.runner, orcaOptions(ctx.config))).find((item) => item.id === record.worktreeId)
+    const match = /^\s*BLOCKED:\s*([\s\S]+)/i.exec(own?.comment ?? '')
+    return match ? match[1]!.trim().slice(0, 500) : null
+  } catch { return null }
+}
+
 export const workerAwaitingPermission = async (ctx: Pick<Context, 'runner' | 'config'>, record: Pick<DispatchRecordFile, 'worktreeId' | 'terminal'>): Promise<string | null> => {
   try {
     const own = (await orcaWorktrees(ctx.runner, orcaOptions(ctx.config))).find((item) => item.id === record.worktreeId)
@@ -329,8 +356,11 @@ const sendToWorker = async (ctx: Context, record: DispatchRecordFile, text: stri
       return own?.agentCount === 0 && own.activity !== 'working' && own.activity !== 'permission'
     }, () => false)
     const terminal = (await orcaTerminalList(ctx.runner, { worktree: `id:${record.worktreeId}` }, orcaOptions(ctx.config))).find((item) => item.handle === record.terminal)
+    // Zero agents alone is also what an idle agent from a CLI that never registers with Orca looks like: only a shell
+    // prompt on screen makes it a bare shell, or every nudge would start a second agent in the same worktree.
+    const shellOnScreen = Boolean(terminal && SHELL_PROMPT.test(terminal.preview))
     // ponytail: a live Orca shell with no recorded agent command cannot make progress; reactivate it once.
-    staleShell = noAgent || Boolean(terminal && !terminal.command && (SHELL_PROMPT.test(terminal.preview) || (!terminal.preview.trim() && terminal.lastOutputAt === null)))
+    staleShell = (noAgent && shellOnScreen) || Boolean(terminal && !terminal.command && (shellOnScreen || (!terminal.preview.trim() && terminal.lastOutputAt === null)))
     if (staleShell) actions.push(`worker terminal ${record.terminal} is ${noAgent ? 'a shell with no agent attached' : 'stale or a shell'}, not an active agent; reactivating`)
   } catch { /* send below remains the fallback when terminal metadata is unavailable */ }
   if (!staleShell) {
@@ -341,6 +371,10 @@ const sendToWorker = async (ctx: Context, record: DispatchRecordFile, text: stri
     } catch (error) { actions.push(`terminal send failed: ${message(error)}`) }
   }
   if (!ctx.builder) return false
+  // Whatever still runs in the old terminal goes first: relaunching beside it puts two agents in one worktree.
+  try { await orcaTerminalClose(ctx.runner, { terminal: record.terminal }, orcaOptions(ctx.config)) } catch (error) {
+    if (!/selector_not_found|terminal_handle_stale/.test(message(error))) { actions.push(`not reactivating: terminal ${record.terminal} could not be closed (${message(error)})`); return false }
+  }
   try {
     let brief: string
     try { brief = readFileSync(briefPath(ctx.loaded.stateDir, record.issue), 'utf8') }
@@ -456,30 +490,43 @@ const restartsPath = (stateDir: string, issue: string): string => join(stateDir,
 /** Restarts survive a redispatch (delivery.json is reset then), so the cap holds across attempts. */
 export const readRestarts = (stateDir: string, issue: string): readonly string[] =>
   readJsonFile(restartsPath(stateDir, issue), z.object({ at: z.array(z.string()) }))?.at ?? []
+/** A person's Retry starts the restart budget over: the cap counts automatic restarts since a human last looked. */
+export const clearRestarts = (stateDir: string, issue: string): void => rmSync(restartsPath(stateDir, issue), { force: true })
 
 /**
  * The run lost track of its worker before any PR existed (terminal gone, or idle with nothing to show after a
  * check-in): the dispatch records, the queue and Orca no longer describe one live worker, and nudging or waiting
  * only kept a phantom "running" on screen (law-os AGE-1751/1753). Abort everything and start that run over:
- * close the terminal, remove the worktree (uncommitted work is discarded on purpose), release the lease, return the
- * issue to the tracker's return state, and queue a fresh attempt the next tick dispatches from scratch. After
- * `MAX_LOST_TRACKING_RESTARTS`, fall back to `onCapReached` (the existing stuck escalation) for a person.
+ * return the issue to the tracker's return state, close the terminal, remove the (verified clean) worktree, release
+ * the lease, and queue a fresh attempt the next tick dispatches from scratch. After `MAX_LOST_TRACKING_RESTARTS`, or
+ * when the worktree may hold work, fall back to `escalate` (the existing stuck escalation, worktree kept) for a person.
  */
-const restartLostRun = async (ctx: Context, record: DispatchRecordFile, lease: DispatchLease | undefined, state: DeliveryState, evidence: string, actions: string[], onCapReached: () => Promise<DeliverResult>): Promise<DeliverResult> => {
+const restartLostRun = async (ctx: Context, record: DispatchRecordFile, lease: DispatchLease | undefined, state: DeliveryState, evidence: string, actions: string[], escalate: (why: string) => Promise<DeliverResult>): Promise<DeliverResult> => {
+  // One observation is not lost tracking (a terminal Orca briefly reports disconnected): act only when the previous
+  // pass saw it too. A pass that sees the worker alive clears the mark.
+  if (!ctx.dryRun && !state.lostTrackSince) {
+    saveState(ctx, { ...state, lostTrackSince: ctx.now().toISOString() })
+    actions.push(`lost-track evidence seen once (${evidence}); confirming on the next pass`)
+    return { issue: record.issue, outcome: 'waiting', reason: `lost tracking suspected: ${evidence}`, actions }
+  }
   const previous = readRestarts(ctx.loaded.stateDir, record.issue)
   if (previous.length >= MAX_LOST_TRACKING_RESTARTS) {
     actions.push(`lost tracking again after ${previous.length} restart(s); escalating to a person`)
-    return onCapReached()
+    return escalate(`after ${previous.length} automatic restart(s)`)
   }
   if (ctx.dryRun) { actions.push(`would abort and restart (${evidence})`); return { issue: record.issue, outcome: 'dry-run', reason: `lost tracking: ${evidence}`, actions } }
-  const at = ctx.now().toISOString()
-  event(ctx, { type: 'worker.lost-tracking', issue: record.issue, evidence, worktreeId: record.worktreeId })
-  const orca = orcaOptions(ctx.config)
-  if (record.terminal) { try { await orcaTerminalClose(ctx.runner, { terminal: record.terminal }, orca) } catch { /* already gone is the usual case here */ } }
-  try { await orcaWorktreeRemove(ctx.runner, { worktree: `id:${record.worktreeId}`, force: true }, orca); actions.push('worktree removed') } catch (error) {
-    if (!isMissingOrcaWorktree(error)) actions.push(`worktree removal failed: ${message(error)}`)
+  // The restart's tracker writes would be skipped: destroying the worker first left the issue In Progress and
+  // assigned with nothing behind it. Wait the cooldown out with everything intact.
+  const cooling = activeTrackerCooldown(ctx.loaded.stateDir, ctx.now())
+  if (cooling) return { issue: record.issue, outcome: 'waiting', reason: `lost tracking (${evidence}); restart waits for the ${ctx.tracker.id} cooldown until ${cooling.until}`, actions }
+  // Committed-but-unpushed or uncommitted work is never discarded; a check that cannot tell counts as work.
+  const work = await unsavedWork(ctx, record)
+  if (work) {
+    actions.push(`not restarting: ${work}`)
+    return escalate(`and it was not restarted because the worktree may hold work (${work})`)
   }
-  if (lease) { try { createDispatchLedger(ctx.loaded.stateDir).release(lease, `restart: ${evidence}`) } catch (error) { actions.push(`lease release failed: ${message(error)}`) } }
+  const at = ctx.now().toISOString()
+  // Tracker first: if it refuses, nothing is destroyed and the run stays unfinished, so the next pass retries.
   try {
     await ctx.tracker.comment({ issue: record.issue, body: `**Loop: restarted from scratch** — ${evidence}. The worker, its terminal and worktree were discarded; a fresh attempt is queued (restart ${previous.length + 1}/${MAX_LOST_TRACKING_RESTARTS}).\n\n<!-- loop:restarted:${record.leaseId} -->`, dedupeKey: `restarted:${record.issue}:${record.leaseId}` })
     await ctx.tracker.transitions.transition({ tracker: ctx.tracker.id, issue: record.issue, to: ctx.config.delivery.returnState, reason: `loop restart: ${evidence}` })
@@ -489,19 +536,27 @@ const restartLostRun = async (ctx: Context, record: DispatchRecordFile, lease: D
   } catch (error) {
     actions.push(`${ctx.tracker.id} restart update failed: ${message(error)}`)
     event(ctx, { type: 'tracker.sync-failed', issue: record.issue, operation: 'restart', error: message(error) })
+    return { issue: record.issue, outcome: 'waiting', reason: `lost tracking (${evidence}); restart deferred, ${ctx.tracker.id} update failed`, actions }
   }
+  event(ctx, { type: 'worker.lost-tracking', issue: record.issue, evidence, worktreeId: record.worktreeId })
+  const workerOutput = await captureWorkerOutput(ctx, record.terminal)
+  if (workerOutput) { actions.push('captured worker terminal output'); recordRunIo(ctx.loaded.stateDir, record.issue, { direction: 'output', stage: 'build', role: 'worker-terminal', content: workerOutput, extension: 'txt', maxBytes: ctx.config.runs.maxIoBytes }, ctx.now) }
+  const orca = orcaOptions(ctx.config)
+  if (record.terminal) { try { await orcaTerminalClose(ctx.runner, { terminal: record.terminal }, orca) } catch { /* already gone is the usual case here */ } }
+  try { await orcaWorktreeRemove(ctx.runner, { worktree: `id:${record.worktreeId}` }, orca); actions.push('worktree removed') } catch (error) {
+    if (!isMissingOrcaWorktree(error)) actions.push(`worktree removal failed: ${message(error)}`)
+  }
+  if (lease) { try { createDispatchLedger(ctx.loaded.stateDir).release(lease, `restart: ${evidence}`) } catch (error) { actions.push(`lease release failed: ${message(error)}`) } }
   saveState(ctx, { ...state, finishedAt: at, finalOutcome: 'restarted', cancelledAt: at })
   writeJsonAtomic(restartsPath(ctx.loaded.stateDir, record.issue), { at: [...previous, at] })
   // Explicit queue: fail the lost attempt and queue a fresh one. Backlog mode needs nothing more — the issue is
-  // back in the tracker's return state and the next tick picks it up like any other.
+  // back in the tracker's return state and the next tick picks it up like any other. A run waiting on a person
+  // (needs-input, blocked) is theirs to settle, never converted here.
   const queue = createIssueQueue({ stateDir: ctx.loaded.stateDir })
   const run = queue.getLatestByIssue(record.issue)
   let attempt: number | null = null
-  if (run && ['queued', 'dispatching', 'running', 'needs-input', 'blocked', 'failed'].includes(run.status)) {
-    try {
-      const failed = ['failed', 'blocked'].includes(run.status) ? run : queue.update(run.id, { status: 'failed', error: `lost tracking: ${evidence}`, projection: { stage: 'failed' } })
-      attempt = queue.retry(failed.id).attempt
-    } catch (error) { actions.push(`queue retry failed: ${message(error)}`) }
+  if (run && ['dispatching', 'running'].includes(run.status)) {
+    try { attempt = queue.retry(queue.update(run.id, { status: 'failed', error: `lost tracking: ${evidence}`, projection: { stage: 'failed' } }).id).attempt } catch (error) { actions.push(`queue retry failed: ${message(error)}`) }
   }
   event(ctx, { type: 'worker.restarted', issue: record.issue, attempt, restarts: previous.length + 1, reason: evidence })
   actions.push(`aborted and restarted from scratch (restart ${previous.length + 1}/${MAX_LOST_TRACKING_RESTARTS})`)
@@ -654,13 +709,29 @@ const handleNoPullRequest = async (ctx: Context, record: DispatchRecordFile, lea
   const nextBuilder = pickHandoffBuilder(ctx, record)
   const unavailable = providerUnavailable(ctx, record.provider)
 
+  // The worker stopped on purpose and said why. Nudging it again is noise, and the idle path would restart it from
+  // scratch, discarding work the blocker says nothing about (law-os AGE-1750: committed, unpushed, blocked on a
+  // registry 403 only a person can fix). Escalate like a stuck worker: worktree kept, lease released. Checked on the terminal-gone path too, so a worker
+  // that wrote BLOCKED: and exited is escalated, not handed off or restarted.
+  const escalateIfDeclaredBlocked = async (): Promise<DeliverResult | null> => {
+    const declared = await workerDeclaredBlocked(ctx, record)
+    if (!declared) return null
+    const reason = `worker declared blocked: ${declared.split('\n')[0]!.slice(0, 200)}`
+    await escalateTracker(ctx, record, 'blocked', `**Loop: worker blocked** — the worker stopped and reported: ${declared}\n\nThe worktree was preserved (its committed work is still there) and the lease was released; the issue returned to ${ctx.config.delivery.returnState}. Clear the blocker, then resume in that worktree — Retry starts a fresh attempt, which does not reuse unpushed work.`, actions)
+    finish(ctx, record, lease, state, 'blocked', reason)
+    return { issue: record.issue, outcome: ctx.dryRun ? 'dry-run' : 'blocked', reason, actions }
+  }
+
   if (!terminalAlive) {
     if (sinceDispatch < 5) return { issue: record.issue, outcome: 'waiting', reason: 'worker terminal not visible yet', actions }
+    // A worker that wrote BLOCKED: and exited left its terminal gone: that is a person's decision, not a restart.
+    const blocked = await escalateIfDeclaredBlocked()
+    if (blocked) return blocked
     if (canHandoff(ctx, record, state, nextBuilder)) {
       return performHandoff(ctx, record, state, nextBuilder, unavailable ? 'previous terminal gone and provider unavailable' : 'previous terminal gone', actions)
     }
-    return restartLostRun(ctx, record, lease, state, 'worker terminal gone before a PR was opened', actions, async () => {
-      await escalateTracker(ctx, record, 'stuck', `**Loop: worker stuck** — the worker terminal for \`${record.worktree}\` is gone and no pull request was opened, after ${MAX_LOST_TRACKING_RESTARTS} automatic restart(s). The worktree was preserved for inspection; the slot was released.`, actions)
+    return restartLostRun(ctx, record, lease, state, 'worker terminal gone before a PR was opened', actions, async (why) => {
+      await escalateTracker(ctx, record, 'stuck', `**Loop: worker stuck** — the worker terminal for \`${record.worktree}\` is gone and no pull request was opened, ${why}. The worktree was preserved for inspection; the slot was released.`, actions)
       finish(ctx, record, lease, state, 'stuck', 'terminal gone before PR')
       return { issue: record.issue, outcome: ctx.dryRun ? 'dry-run' : 'stuck', reason: 'worker terminal gone before a PR was opened', actions }
     })
@@ -700,6 +771,9 @@ const handleNoPullRequest = async (ctx: Context, record: DispatchRecordFile, lea
     return performHandoff(ctx, record, state, other, `${record.provider} out of usage (${limitLine.slice(0, 80)})`, actions)
   }
 
+  const blocked = await escalateIfDeclaredBlocked()
+  if (blocked) return blocked
+
   let idle = ctx.assumeIdle ?? false
   if (ctx.assumeIdle === undefined && record.terminal) {
     try { idle = (await orcaTerminalWait(ctx.runner, { terminal: record.terminal, for: 'tui-idle', timeoutMs: 1_500 }, orcaOptions(ctx.config))).satisfied } catch { idle = false }
@@ -714,6 +788,7 @@ const handleNoPullRequest = async (ctx: Context, record: DispatchRecordFile, lea
     return { issue: record.issue, outcome: ctx.dryRun ? 'dry-run' : sent ? 'nudged' : 'waiting', reason: 'brief never confirmed; sent again', actions }
   }
   if (!idle || sinceOutput < idleTimeout) {
+    if (state.lostTrackSince) saveState(ctx, { ...state, lostTrackSince: null })
     return { issue: record.issue, outcome: 'waiting', reason: idle ? `worker idle for ${Math.round(sinceOutput)} min (< ${idleTimeout})` : 'worker active', actions }
   }
 
@@ -746,8 +821,8 @@ const handleNoPullRequest = async (ctx: Context, record: DispatchRecordFile, lea
     return performHandoff(ctx, record, state, nextBuilder, `idle after nudge and ${record.provider} unavailable`, actions)
   }
 
-  return restartLostRun(ctx, record, lease, state, `idle ${Math.round(sinceOutput)} min after a check-in with no pull request`, actions, async () => {
-    await escalateTracker(ctx, record, 'stuck', `**Loop: worker stuck** — idle for ${Math.round(sinceOutput)} minutes after a check-in, no pull request on \`${record.branch}\`, after ${MAX_LOST_TRACKING_RESTARTS} automatic restart(s). Worktree \`${record.worktree}\` was preserved; the slot was released and the issue returned to ${ctx.config.delivery.returnState}.`, actions)
+  return restartLostRun(ctx, record, lease, state, `idle ${Math.round(sinceOutput)} min after a check-in with no pull request`, actions, async (why) => {
+    await escalateTracker(ctx, record, 'stuck', `**Loop: worker stuck** — idle for ${Math.round(sinceOutput)} minutes after a check-in, no pull request on \`${record.branch}\`, ${why}. Worktree \`${record.worktree}\` was preserved; the slot was released and the issue returned to ${ctx.config.delivery.returnState}.`, actions)
     finish(ctx, record, lease, state, 'stuck', 'idle after nudge without PR')
     return { issue: record.issue, outcome: ctx.dryRun ? 'dry-run' : 'stuck', reason: 'idle after nudge without PR', actions }
   })

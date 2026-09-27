@@ -1,6 +1,6 @@
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { createServer, type Server } from 'node:http'
-import { tmpdir } from 'node:os'
+import { tmpdir, cpus } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
 import type { CommandResult, CommandRunner } from '../src/adapters/command.js'
@@ -83,7 +83,8 @@ describe('GET /system', () => {
     expect(status).toBe(200)
     expect(report.doctor).toBeNull()
     expect(existsSync(doctorReportPath(stateDir))).toBe(false)
-    expect(report.machine.slots).toBe(loaded.config.machine.ceiling ?? loaded.config.machine.floor)
+    // Same ceiling the tick and the capacity bar use: `ceiling ?? max(floor, cpus/2)`, not `ceiling ?? floor`.
+    expect(report.machine.slots).toBe(loaded.config.machine.ceiling ?? Math.max(loaded.config.machine.floor, Math.floor((cpus().length || 1) / 2)))
     expect(report.routing.map((row) => row.role)).toContain('builder')
     expect(report.cooldowns).toEqual([{ provider: 'claude', until: '2026-09-20T13:00:00Z', reason: 'usage exhausted' }])
     expect(report.handoffs).toBe(1)

@@ -132,6 +132,34 @@ describe('the control-plane action surface', () => {
     expect(readIssueFailures(context.loaded.stateDir, 'ENG-7').pausedAt).toBeNull()
   })
 
+  it('a close-or-reopen decision releases the lease the abandoned delivery kept, so the issue is dispatchable again', async () => {
+    const { createDispatchLedger } = await import('../src/execution/coordination.js')
+    const { deliveryStatePath } = await import('../src/loop/deliver.js')
+    const issue = 'acme/app#90'
+    const base = contextFor()
+    const runner: CommandRunner = { run: async (): Promise<CommandResult> => ({ code: 0, stdout: JSON.stringify({ number: 90, title: 't', body: '', state: 'OPEN', url: 'u', labels: [], assignees: [], createdAt: '2026-01-01T00:00:00Z', updatedAt: '2026-01-01T00:00:00Z' }), stderr: '', timedOut: false, durationMs: 1 }) }
+    const loaded = { ...base.loaded, config: { ...base.loaded.config, connectors: { tracker: 'github', scm: 'github' }, linear: { doneState: 'Done', states: ['Todo'], inProgressState: 'In Progress', reviewState: 'In Review', blockedLabel: 'blocked' }, github: { issues: { labels: { todo: 'ai-ready', inProgress: 'ai-working', review: 'ai-pr', done: 'ai-done', blocked: 'ai-blocked' } } } } } as unknown as LoadedLoopConfig
+    const ledger = createDispatchLedger(loaded.stateDir)
+    const claim = ledger.claim({ tracker: 'github', repository: 'acme/app', issue, worktree: 'app-90', branch: 'you/app-90', owner: 'test' })
+    writeJsonAtomic(dispatchRecordPath(loaded.stateDir, issue), { issue, worktreeId: 'wt-90', worktree: 'app-90', branch: 'you/app-90', provider: 'codex', model: 'gpt', terminal: 't', contractDigest: 'd', leaseId: claim.lease.leaseId, dispatchedAt: '2026-01-01T00:00:00.000Z' })
+    writeJsonAtomic(deliveryStatePath(loaded.stateDir, issue), { issue, prNumber: 5, reviews: {}, fixRounds: 0, nudges: [], handoffs: [], heldFor: null, finishedAt: '2026-01-01T00:40:00.000Z', finalOutcome: 'abandoned', cancelledAt: null })
+    expect(ledger.active()).toHaveLength(1)
+    await decideIssue({ loaded, runner }, issue, 'reopen')
+    expect(ledger.active()).toEqual([])
+  })
+
+  it('a human retry starts the automatic-restart budget over', async () => {
+    const { readRestarts } = await import('../src/loop/deliver.js')
+    const { writeFileSync } = await import('node:fs')
+    const context = contextFor()
+    const first = enqueueRun(context, { issue: 'ENG-31', configHash: 'hash', flow: null, builder: { provider: 'codex', model: 'gpt' }, contractDigest: 'd', maxFixRounds: 3, perIssueTokens: 0 })
+    await cancelRun(context, 'ENG-31', first.runId)
+    mkdirSync(join(context.loaded.stateDir, 'issues', 'ENG-31'), { recursive: true })
+    writeFileSync(join(context.loaded.stateDir, 'issues', 'ENG-31', 'restarts.json'), JSON.stringify({ at: ['2026-09-10T00:00:00.000Z', '2026-09-10T01:00:00.000Z'] }))
+    retryRun(context, 'ENG-31', first.runId)
+    expect(readRestarts(context.loaded.stateDir, 'ENG-31')).toEqual([])
+  })
+
   it('refuses to decide an issue that is not waiting on a close-or-reopen decision', async () => {
     const context = contextFor()
     await expect(decideIssue(context, 'ENG-8', 'close-issue')).rejects.toThrow(/not waiting on a close-or-reopen decision/)
