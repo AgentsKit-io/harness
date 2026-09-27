@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
-  "contentHash": "c3d8cf2a1cc62d7202efd1642ea08374c3e96b73a87e8d474f40d7ef740ddb6b",
+  "contentHash": "0b27b448ea1c4756a3eb3ea8c4b228cfe779f8de5fa48a047c53bcfcaa796f8c",
   "contentHashAlgo": "sha256-normalized-v1",
-  "generatedAt": "2026-09-27T14:33:47.814Z",
+  "generatedAt": "2026-09-27T14:49:34.298Z",
   "project": {
     "name": "AgentsKit Harness",
     "root": "."
@@ -3942,7 +3942,7 @@
         "ts",
         "loop"
       ],
-      "contentHash": "483c3c5cbb19f095faef15507198eb4db8ecda13259006837215b77c360c1e12"
+      "contentHash": "9729fef0e5f19135c02ea0de9d238a17dcd251af60a3c2bbd9af1fce990b4145"
     },
     {
       "id": "module:src/loop/detached-worker.ts",
@@ -5442,7 +5442,7 @@
         "ts",
         "api"
       ],
-      "contentHash": "4bf2f444d05eaaa4fcb30d9b0bc76a5d6bb301dcacfacd78b438c451c6f63996"
+      "contentHash": "ff6da820a2f875aedb116434def06577aa7f6eec062a1406fc5ff432057b2ea1"
     },
     {
       "id": "module:src/ui/api/alerts.ts",
@@ -5928,7 +5928,7 @@
         "ts",
         "api"
       ],
-      "contentHash": "517c79978a0107ab31476ffb3cf0bcea06e251b1efc2066903e6fc7dec60d098"
+      "contentHash": "05b35851b5d998f0539f07abd16eb456d6e40bc6446a5343884f082c2f7590fd"
     },
     {
       "id": "module:src/ui/api/wizard.ts",
@@ -8791,7 +8791,7 @@
         "ts",
         "test"
       ],
-      "contentHash": "86a53a20fb4bd476f2223e6c240bae6c1a6536a830b1a17fbddfb8feed3bbca8"
+      "contentHash": "aa4bf4025ad784232cb48a57e4391c68bd4fda8471865a5042e26daf9e224efa"
     },
     {
       "id": "module:test/ui-system.test.ts",
@@ -8951,7 +8951,7 @@
     }
   },
   "inputs": {
-    "hash": "3773f553bdfbb9a0ddf65e02553fb843dc50494faafac0bc6a5337f53952b330",
+    "hash": "b9884b075ee6155ac8bb8d772726d4a65e6a8d337172b64b60aba37ce3dc87c2",
     "fileCount": 541,
     "projectionVersion": 2
   },
@@ -8974,9 +8974,9 @@
   "projection": {
     "type": "retrieval-index",
     "schemaVersion": 1,
-    "contentHash": "ff3f171fc23f6e4bcc6c7dcef92738c74b7a5be63b5167aa075aabd35afd061c",
+    "contentHash": "34f762e3fe4c37cec50bbcbc6b5ab1e2eaa82eb5786e09833c035b6ac72ee8b8",
     "contentHashAlgo": "sha256-normalized-v1",
-    "snapshotHash": "30bf03e2b22111f7a75b575e8b87be6d227fa8c1dee3b8afbceb643c7ec5db13",
+    "snapshotHash": "ff34548bcfe5a28fe7684070ad7cf73935494f6adf6db2fa03cd7421a1f3a371",
     "overlayHash": "f99666ff9119084dd25c2974ae64eb6935ec2aa785ff5ad478fb9d541f7a5e94",
     "configurationHash": "816afaf6a7dc09767f7594d8fd80024612ca0f33becf0e44dde0107fcf2782df",
     "lexiconVersion": 1,
@@ -26651,6 +26651,11 @@
               "confidence": "observed"
             },
             {
+              "kind": "imports",
+              "id": "module:test/ui-store.test.ts",
+              "confidence": "observed"
+            },
+            {
               "kind": "mentions",
               "id": "document:AGENTS.md",
               "confidence": "observed"
@@ -26859,7 +26864,7 @@
             }
           ]
         },
-        "contentHash": "483c3c5cbb19f095faef15507198eb4db8ecda13259006837215b77c360c1e12",
+        "contentHash": "9729fef0e5f19135c02ea0de9d238a17dcd251af60a3c2bbd9af1fce990b4145",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -33132,7 +33137,7 @@
             }
           ]
         },
-        "contentHash": "4bf2f444d05eaaa4fcb30d9b0bc76a5d6bb301dcacfacd78b438c451c6f63996",
+        "contentHash": "ff6da820a2f875aedb116434def06577aa7f6eec062a1406fc5ff432057b2ea1",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -35729,7 +35734,7 @@
             }
           ]
         },
-        "contentHash": "517c79978a0107ab31476ffb3cf0bcea06e251b1efc2066903e6fc7dec60d098",
+        "contentHash": "05b35851b5d998f0539f07abd16eb456d6e40bc6446a5343884f082c2f7590fd",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -45255,6 +45260,11 @@
           "outbound": [
             {
               "kind": "imports",
+              "id": "module:src/loop/deliver.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
               "id": "module:src/loop/tick.ts",
               "confidence": "observed"
             },
@@ -45265,7 +45275,7 @@
             }
           ]
         },
-        "contentHash": "86a53a20fb4bd476f2223e6c240bae6c1a6536a830b1a17fbddfb8feed3bbca8",
+        "contentHash": "aa4bf4025ad784232cb48a57e4391c68bd4fda8471865a5042e26daf9e224efa",
         "provenance": "observed",
         "confidence": "observed"
       },
