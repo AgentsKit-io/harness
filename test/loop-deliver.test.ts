@@ -895,8 +895,10 @@ describe('rendered spec gate (ADR-0041)', () => {
     return { env, loaded, expected }
   }
 
+  const specFiles = ['requirements.md', 'design.md', 'tasks.md'].map((file) => ({ path: `specs/ENG-10/${file}` }))
+
   it('merges a PR that commits the spec exactly as rendered', async () => {
-    const { env, loaded, expected } = specEnv()
+    const { env, loaded, expected } = specEnv({ pr: basePr({ files: [{ path: 'packages/demo/src/index.ts' }, ...specFiles] }) })
     writeSpec(env.worktreePath ?? '', loaded.config, 'ENG-10', expected)
     const report = await deliver(env)
     expect(report.results[0]).toMatchObject({ outcome: 'merged' })
@@ -915,7 +917,12 @@ describe('rendered spec gate (ADR-0041)', () => {
     writeSpec(drifted.env.worktreePath ?? '', drifted.loaded.config, 'ENG-10', { ...drifted.expected, 'requirements.md': `${drifted.expected['requirements.md']}\n### o2\n\nsomething the contract never said\n` })
     expect((await deliver(drifted.env)).results[0]).toMatchObject({ outcome: 'fix-round', reason: expect.stringContaining('requirements.md` differs from what the frozen contract renders') })
 
-    const uncommitted = specEnv({ gitStatus: '?? specs/ENG-10/\n' })
+    // Correct and committed locally, but gitignored or never pushed: the PR the reviewer reads has no spec.
+    const unpushed = specEnv()
+    writeSpec(unpushed.env.worktreePath ?? '', unpushed.loaded.config, 'ENG-10', unpushed.expected)
+    expect((await deliver(unpushed.env)).results[0]).toMatchObject({ outcome: 'fix-round', reason: expect.stringContaining('`specs/ENG-10/requirements.md` is not in the PR') })
+
+    const uncommitted = specEnv({ gitStatus: '?? specs/ENG-10/\n', pr: basePr({ files: [{ path: 'packages/demo/src/index.ts' }, ...specFiles] }) })
     writeSpec(uncommitted.env.worktreePath ?? '', uncommitted.loaded.config, 'ENG-10', uncommitted.expected)
     expect((await deliver(uncommitted.env)).results[0]).toMatchObject({ outcome: 'fix-round', reason: expect.stringContaining('`specs/ENG-10/` is not committed') })
   })

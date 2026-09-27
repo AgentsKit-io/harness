@@ -69,6 +69,30 @@ describe('provider-selected board cache', () => {
     expect(readFileSync(join(root, 'ui', 'github-issues.json'), 'utf8')).toContain('acme/app#7')
   })
 
+  it('backs off a failing board instead of re-reading it on every snapshot, and recovers on success', async () => {
+    const root = mkdtempSync(join(tmpdir(), 'agentskit-github-board-')); cleanups.push(root)
+    const loaded = loadedFor(root)
+    let current = new Date('2026-09-23T12:00:00Z')
+    let fail = true
+    const calls: string[][] = []
+    const runner: CommandRunner = { run: async (argv) => { calls.push([...argv]); return fail ? { code: 1, stdout: '', stderr: 'API rate limit exceeded', timedOut: false, durationMs: 1 } : runnerFor([issue(7, '2026-09-23T11:59:00Z')]).run(argv) } }
+    const cache = createIssueBoardCache({ loaded, reader: createIssueBoardReader({ loaded, runner }), now: () => current, path: join(root, 'ui', 'github-issues.json') })
+    // 30 one-second snapshots against a failing tracker: one request, not thirty.
+    for (let second = 0; second < 30; second += 1) { current = new Date(current.getTime() + 1_000); await expect(cache.read()).resolves.toMatchObject({ status: 'unavailable', error: expect.stringContaining('rate limit') }) }
+    expect(calls).toHaveLength(1)
+    // Past the first backoff (refreshSeconds) it tries again; a second failure doubles the wait.
+    current = new Date(current.getTime() + loaded.config.github.issues.refreshSeconds * 1_000)
+    await cache.read()
+    expect(calls).toHaveLength(2)
+    current = new Date(current.getTime() + loaded.config.github.issues.refreshSeconds * 1_000)
+    await cache.read()
+    expect(calls).toHaveLength(2)
+    // A forced refresh (the operator's button) is never held back, and success clears the backoff.
+    fail = false
+    await expect(cache.read(true)).resolves.toMatchObject({ status: 'fresh' })
+    expect(calls).toHaveLength(3)
+  })
+
   it('returns unavailable when no snapshot exists and the GitHub CLI is not authenticated', async () => {
     const root = mkdtempSync(join(tmpdir(), 'agentskit-github-board-')); cleanups.push(root)
     const loaded = loadedFor(root)

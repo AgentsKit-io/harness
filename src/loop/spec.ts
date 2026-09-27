@@ -108,10 +108,12 @@ export interface SpecCheck {
   readonly missing: readonly string[]
   readonly drifted: readonly string[]
   readonly uncommitted: readonly string[]
+  /** Correct in the worktree but not in the PR (gitignored, or committed and never pushed), and not already on the base. */
+  readonly notInPr: readonly string[]
 }
 
 /** What `deliver` holds a PR for: a spec file absent, edited, or left out of the commits. */
-export const checkSpec = async (runner: CommandRunner, worktreePath: string, config: LoopConfig, issue: string, expected: RenderedSpec): Promise<SpecCheck> => {
+export const checkSpec = async (runner: CommandRunner, worktreePath: string, config: LoopConfig, issue: string, expected: RenderedSpec, prFiles: readonly string[]): Promise<SpecCheck> => {
   const dir = specDirFor(config, issue)
   const missing: string[] = []
   const drifted: string[] = []
@@ -123,7 +125,16 @@ export const checkSpec = async (runner: CommandRunner, worktreePath: string, con
   const status = await runner.run(['git', 'status', '--porcelain', '--', dir], { cwd: worktreePath, timeoutMs: 10_000 })
   // Fails closed: a status nobody could read is not proof the files were committed.
   const uncommitted = status.code === 0 ? status.stdout.split(/\r?\n/).map((line) => line.slice(3).trim()).filter(Boolean) : [`${dir} (git status failed: ${status.stderr.trim().slice(0, 120) || `exit ${status.code ?? 'null'}`})`]
-  return { missing, drifted, uncommitted }
+  // The worktree is not the PR: a gitignored or unpushed spec reads fine locally and never reaches the reviewer. Each
+  // file must be in the PR's diff, or already identical on the base (a re-dispatch of an issue whose spec merged).
+  const notInPr: string[] = []
+  for (const file of SPEC_FILES) {
+    const path = posix.join(dir, file)
+    if (missing.includes(path) || prFiles.includes(path)) continue
+    const base = await runner.run(['git', 'show', `origin/${config.project.baseBranch}:${path}`], { cwd: worktreePath, timeoutMs: 10_000 })
+    if (base.code !== 0 || base.stdout !== expected[file]) notInPr.push(path)
+  }
+  return { missing, drifted, uncommitted, notInPr }
 }
 
 export const renderSpecForBrief = (config: LoopConfig, issue: string): string => `
