@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
-  "contentHash": "297125168c88b1693836eccb1cedf7c0634526f4f78794dec1cee2ee1a0d91cc",
+  "contentHash": "3c2d61c4b5b88faaa48fcaf97cc5c15c491e48da49afb84e73cdedb6a59f5629",
   "contentHashAlgo": "sha256-normalized-v1",
-  "generatedAt": "2026-09-27T12:13:54.465Z",
+  "generatedAt": "2026-09-27T12:31:19.115Z",
   "project": {
     "name": "AgentsKit Harness",
     "root": "."
@@ -5480,7 +5480,7 @@
         "ts",
         "api"
       ],
-      "contentHash": "09d40282403d6919cc3809d4679c5d36e4ca59007956d95aee36802376d7ac6a"
+      "contentHash": "1a83dca67479c004b1ee6a39b813b4a374ffa940181964d475956a50839bdee2"
     },
     {
       "id": "module:src/ui/api/config-fields.ts",
@@ -5591,7 +5591,7 @@
         "ts",
         "api"
       ],
-      "contentHash": "b6f77cd37faa211e3b3d99e904610b4d379c46886ebc12a07f0f2bd9bf100ad1"
+      "contentHash": "236532b9ea770e5ce6f326b98f4865ed10223f0111daeee297b15814b53961e6"
     },
     {
       "id": "module:src/ui/api/http.ts",
@@ -7188,7 +7188,7 @@
         "ts",
         "test"
       ],
-      "contentHash": "fcb2c1e5745504c7a4f07b60930d93ff6e57dd25de407b2da6a815c2ec697250"
+      "contentHash": "f00d983366e352a5a7d7f0125b20541f369ab428fa0ad003610209edf00fa000"
     },
     {
       "id": "module:test/github-tracker.test.ts",
@@ -8679,7 +8679,7 @@
         "ts",
         "test"
       ],
-      "contentHash": "5ce83a05f27594d64cc80d1fb5c9267fd703aed7c81c60495c0229ed4df1135a"
+      "contentHash": "4a3fd34465cb65ecc65d9d9b75e545dc033f1091c7431a5f7347e135f5b004c6"
     },
     {
       "id": "module:test/ui-core-server.test.ts",
@@ -8911,7 +8911,7 @@
     }
   },
   "inputs": {
-    "hash": "fc1e9e34c13cacd65c72fd210e11d4553dd73f2e16751a201e9dee8862b67315",
+    "hash": "ac99871705e144ba741e2612915761b01e9e49937aa18a58b960e42db11ee97f",
     "fileCount": 539,
     "projectionVersion": 2
   },
@@ -8934,9 +8934,9 @@
   "projection": {
     "type": "retrieval-index",
     "schemaVersion": 1,
-    "contentHash": "3108b2a346e18c6c36a7ff269bdf7d7e46645dddeb2bca962003db05c4f83e6d",
+    "contentHash": "4be9e8fe7e30c632c4951847335ce64cd56568d78f14044c501598846133afb7",
     "contentHashAlgo": "sha256-normalized-v1",
-    "snapshotHash": "7a5b47af6c00e8afa845c8dcbad6232c9e1bebbf5eeed316caa6b6c5475a1d53",
+    "snapshotHash": "981f829a8669b9bcf356e05ec4c7d00604cd40982ca917109857c9b251aba1e3",
     "overlayHash": "f99666ff9119084dd25c2974ae64eb6935ec2aa785ff5ad478fb9d541f7a5e94",
     "configurationHash": "816afaf6a7dc09767f7594d8fd80024612ca0f33becf0e44dde0107fcf2782df",
     "lexiconVersion": 1,
@@ -33255,7 +33255,7 @@
             }
           ]
         },
-        "contentHash": "09d40282403d6919cc3809d4679c5d36e4ca59007956d95aee36802376d7ac6a",
+        "contentHash": "1a83dca67479c004b1ee6a39b813b4a374ffa940181964d475956a50839bdee2",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -33780,7 +33780,7 @@
             }
           ]
         },
-        "contentHash": "b6f77cd37faa211e3b3d99e904610b4d379c46886ebc12a07f0f2bd9bf100ad1",
+        "contentHash": "236532b9ea770e5ce6f326b98f4865ed10223f0111daeee297b15814b53961e6",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -39324,7 +39324,7 @@
             }
           ]
         },
-        "contentHash": "fcb2c1e5745504c7a4f07b60930d93ff6e57dd25de407b2da6a815c2ec697250",
+        "contentHash": "f00d983366e352a5a7d7f0125b20541f369ab428fa0ad003610209edf00fa000",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -44618,7 +44618,7 @@
             }
           ]
         },
-        "contentHash": "5ce83a05f27594d64cc80d1fb5c9267fd703aed7c81c60495c0229ed4df1135a",
+        "contentHash": "4a3fd34465cb65ecc65d9d9b75e545dc033f1091c7431a5f7347e135f5b004c6",
         "provenance": "observed",
         "confidence": "observed"
       },

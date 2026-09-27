@@ -117,4 +117,29 @@ describe('tracker state for issues off the board', () => {
     read(['ISSUE-1'])
     expect(asked).toHaveLength(11)
   })
+
+  it('does not re-ask the tracker on every cycle after a failure, and pauses entirely on a rate limit', async () => {
+    const { createTrackerStateCache } = await import('../src/ui/api/extras.js')
+    let asked = 0
+    let clock = 0
+    let limited = false
+    const read = createTrackerStateCache(async () => { asked += 1; throw new Error(limited ? 'orca linear issue exited 1: Rate limit exceeded' : 'orca linear issue exited 1: timeout') }, () => clock)
+    const ids = ['ISSUE-1', 'ISSUE-2']
+    read(ids)
+    await new Promise((resolve) => setTimeout(resolve, 0))
+    for (let cycle = 0; cycle < 10; cycle += 1) { clock += 1_000; read(ids); await new Promise((resolve) => setTimeout(resolve, 0)) }
+    expect(asked).toBe(2)
+    clock += 11 * 60_000
+    limited = true
+    read([...ids, 'ISSUE-3'])
+    await new Promise((resolve) => setTimeout(resolve, 0))
+    expect(asked).toBe(5)
+    // Rate limited: nothing at all for the pause, even for an issue never asked about.
+    clock += 11 * 60_000
+    read(['ISSUE-4'])
+    expect(asked).toBe(5)
+    clock += 5 * 60_000
+    read(['ISSUE-4'])
+    expect(asked).toBe(6)
+  })
 })

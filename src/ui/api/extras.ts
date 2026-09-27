@@ -156,15 +156,33 @@ const TRACKER_LOOKUPS_PER_CYCLE = 8
  */
 export interface TrackerCacheStore<T> { readonly load: () => Readonly<Record<string, { readonly state: T; readonly at: number }>>; readonly save: (entries: Readonly<Record<string, { readonly state: T; readonly at: number }>>) => void }
 
+/** A tracker that answered "rate limited" gets no lookups at all for this long — retrying is what keeps the limit on. */
+const TRACKER_RATE_LIMIT_PAUSE_MS = 15 * 60_000
+const RATE_LIMITED = /rate.?limit|too many requests|\b429\b|quota/i
+
 export const createTrackerStateCache = <T>(lookup: (issue: string) => Promise<T>, now: () => number = Date.now, store?: TrackerCacheStore<T>) => {
   // Persisted so a restarted UI shows known titles/states at once instead of re-learning them 8 per cycle.
   const states = new Map<string, { readonly state: T; readonly at: number }>(Object.entries(store?.load() ?? {}))
   const pending = new Set<string>()
+  // A failed lookup waits out the same TTL as a successful one. Without this, a failure recorded nothing, the issue
+  // stayed "due", and the next 1 s snapshot asked again: a rate-limited tracker was hit up to 8×/s until the limit
+  // never reset (observed: Linear limited for 12+ hours by the UI alone).
+  const failedAt = new Map<string, number>()
+  let pausedUntil = 0
   return (issues: readonly string[]): Readonly<Record<string, T>> => {
-    const due = issues.filter((issue) => !pending.has(issue) && (now() - (states.get(issue)?.at ?? -Infinity)) > TRACKER_TTL_MS).slice(0, TRACKER_LOOKUPS_PER_CYCLE)
+    const at = now()
+    const due = at < pausedUntil ? [] : issues.filter((issue) => !pending.has(issue)
+      && (at - (states.get(issue)?.at ?? -Infinity)) > TRACKER_TTL_MS
+      && (at - (failedAt.get(issue) ?? -Infinity)) > TRACKER_TTL_MS).slice(0, TRACKER_LOOKUPS_PER_CYCLE)
     for (const issue of due) {
       pending.add(issue)
-      void lookup(issue).then((state) => { states.set(issue, { state, at: now() }); store?.save(Object.fromEntries(states)) }).catch(() => { /* unknown stays unknown */ }).finally(() => pending.delete(issue))
+      void lookup(issue)
+        .then((state) => { failedAt.delete(issue); states.set(issue, { state, at: now() }); store?.save(Object.fromEntries(states)) })
+        .catch((error: unknown) => {
+          failedAt.set(issue, now())
+          if (RATE_LIMITED.test(error instanceof Error ? error.message : String(error))) pausedUntil = now() + TRACKER_RATE_LIMIT_PAUSE_MS
+        })
+        .finally(() => pending.delete(issue))
     }
     return Object.fromEntries(issues.flatMap((issue) => { const hit = states.get(issue); return hit ? [[issue, hit.state]] : [] }))
   }
