@@ -83,7 +83,20 @@ export const CONTRACT_JSON_SCHEMA = {
         properties: {
           question: { type: 'string', minLength: 1 },
           context: { type: 'string' },
-          options: { type: 'array', minItems: 3, maxItems: 4 },
+          options: {
+            type: 'array',
+            minItems: 3,
+            maxItems: 4,
+            items: {
+              type: 'object',
+              properties: {
+                id: { type: 'string', minLength: 1 },
+                title: { type: 'string', minLength: 1 },
+                description: { type: 'string', minLength: 1 },
+              },
+              required: ['id', 'title', 'description'],
+            },
+          },
           recommendedOptionId: { type: 'string', minLength: 1 },
         },
         required: ['question', 'options', 'recommendedOptionId'],
