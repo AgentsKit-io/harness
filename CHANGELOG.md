@@ -2,6 +2,35 @@
 
 ## [Unreleased]
 
+## [0.22.1] — 2026-09-27
+
+Failures that were invisible, made visible or closed. Every fix ships with a regression test that fails on 0.22.0.
+
+- **The UI no longer keeps the tracker rate-limited.** A failing board was re-read every second and every closed
+  issue off the board was re-fetched every 10 minutes forever (~6 tracker calls/hour per historical issue, with or
+  without viewers). Failures now back off, a rate limit pauses lookups, closed issues are never re-asked, and the
+  snapshot pipeline idles when nobody is watching (#139, #140).
+- **Tracker cooldown.** A Linear/GitHub rate limit records `tracker.cooldown` (15 min doubling, 2 h cap): tick
+  returns `blocked` without counting toward the stage auto-pause, deliver skips tracker writes but keeps reviewing
+  and merging, and the review state is set once per PR instead of every pass (#140).
+- **Gates fail closed.** `ak-verify run`/`verify`/`status` exit 1 on a blocked, stale or cancelled run; git
+  failures and >1 MB diffs no longer hash as empty (a stale run could be approved); a review with no parseable
+  result is `incomplete`, never clean; deliver's verify runs in the PR worktree; plugins that fail to load fail the
+  stage run and a throwing `before*` hook blocks (#140).
+- **Delivery recovers.** One transient gh/Orca error waits and retries (`delivery.error`) instead of finishing the
+  issue as failed forever; `failed` resumes on a new head; an Orca outage is `waiting`, not a dead worker; a run
+  where every result failed reports `failed` and counts toward the pause (#140, #132).
+- **Detached workers** report an unconfirmed spawn and early crashes as failed runs; the worker log rotates at
+  5 MiB. `deliver` runs as a detached Orca worker like `tick` (#127, #140).
+- **Adapters.** Comment dedupe works on threads with more than 30 comments; issue creation dedupes only on its
+  marker; `429`/`502`/`503` and `authentication` no longer match inside hashes, counts or paths (#140).
+- **UI.** Snapshot errors reach the tab (`snapshot-error`) instead of starting a hidden 2 s poll; an Orca failure
+  shows "Orca unreachable", not "not installed" (#140).
+- **Runs (ADR-0041).** Approval text and handoff fields are redacted before the PR summary; the spec gate requires
+  the files in the PR; recording failures are reported (#139).
+- Worktree creation retries through a transient Orca connection drop (#129); tracker sync failures settle and the
+  GitHub tracker creates missing labels (#137).
+
 ## [0.22.0] — 2026-09-27
 
 Runs you can reconstruct, specs the loop renders, and the fixes merged since 0.21.0.
