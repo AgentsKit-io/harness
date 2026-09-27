@@ -160,6 +160,8 @@ describe('a run restarted after losing track', () => {
     appendLoopEvent(stateDir, { at: '2026-01-02T00:00:00.000Z', type: 'worker.lost-tracking', issue: 'ENG-30', evidence: 'worker terminal gone before a PR was opened', worktreeId: 'wt-ENG-30' })
     appendLoopEvent(stateDir, { at: '2026-01-02T00:00:01.000Z', type: 'worker.restarted', issue: 'ENG-30', attempt: 2, restarts: 1, reason: 'worker terminal gone before a PR was opened' })
     for (let sync = 0; sync < 2; sync += 1) expect(syncProjection(stateDir).issues['ENG-30']).toMatchObject({ phase: 'running', dispatch: null, error: expect.stringContaining('restarted') })
+  })
+})
 
 describe('a close-or-reopen decision on an abandoned delivery', () => {
   it('sticks across syncs instead of reverting to needs-decision', async () => {
