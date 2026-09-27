@@ -13,7 +13,7 @@ timestamp) and `type` on top of the fields below. A plugin subscribes with
 The vocabulary is enforced by the compiler: `appendLoopEvent` accepts only these names, so an event that is not
 here cannot be emitted — and a name here that nothing emits fails the test suite.
 
-85 loop events.
+86 loop events.
 
 ## `contract.*`
 
@@ -163,6 +163,12 @@ here cannot be emitted — and a name here that nothing emits fails the test sui
 |---|---|---|
 | `stage.paused` | `stage`, `reason`, `consecutiveFailures` | A whole stage was paused after consecutive failures. |
 | `stage.completed` | `stage`, `durationMs`, `status`, `count` | One scheduled stage run finished — the entrypoint every scheduler (cron, Orca) calls, so this is the one event that always exists regardless of what the stage itself did. |
+
+## `plugin.*`
+
+| Event | Carries | What it means |
+|---|---|---|
+| `plugin.load-failed` | `path`, `error` | A `plugins.modules` entry failed to import or apply; the scheduled stage run fails instead of running ungated. |
 
 ## `config.*`
 

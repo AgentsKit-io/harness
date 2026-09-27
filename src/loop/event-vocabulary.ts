@@ -164,6 +164,8 @@ export const LOOP_EVENT_TYPES = {
   /** One scheduled stage run finished — the entrypoint every scheduler (cron, Orca) calls, so this is the one
    * event that always exists regardless of what the stage itself did. */
   'stage.completed': ['stage', 'durationMs', 'status', 'count'],
+  /** A `plugins.modules` entry failed to import or apply; the scheduled stage run fails instead of running ungated. */
+  'plugin.load-failed': ['path', 'error'],
   /** `loop.config.yaml` changed since the last stage run; `from`/`to` are its digest before and after. */
   'config.changed': ['from', 'to'],
 

@@ -48,6 +48,7 @@ export const acquireStageLock = (stateDir: string, stage: string): (() => void) 
     const fd = openSync(path, 'wx')
     writeFileSync(fd, `${JSON.stringify({ pid: process.pid, stage, at: new Date().toISOString() })}\n`, 'utf8')
     closeSync(fd)
+    writeFileSync(join(stateDir, `.stage-${stage}.last`), `${JSON.stringify({ pid: process.pid, at: new Date().toISOString() })}\n`, 'utf8')
     return () => { try { unlinkSync(path) } catch { /* another run recovered the stale lock */ } }
   } catch (error) {
     if ((error as NodeJS.ErrnoException).code !== 'EEXIST') throw error
@@ -81,3 +82,9 @@ export const peekStageLock = (stateDir: string, stage: string): StageLockStatus 
     return { held: false, pid: null, ageMs: null }
   }
 }
+
+/**
+ * The pid that most recently acquired this stage's lock, kept after release. Lets a caller that spawned a worker
+ * confirm it started even when the worker finished (and released the lock) between two polls.
+ */
+export const lastStageLockOwner = (stateDir: string, stage: string): number | null => readOwner(join(stateDir, `.stage-${stage}.last`))
