@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
-  "contentHash": "7af8c6f2d54211de71ac25f7016e053b865b88da555c324a8e013d7fc546090f",
+  "contentHash": "301685645ced3a57e5d4dc1bf7f666ddc835550750c7f139286f676b6f6a92cb",
   "contentHashAlgo": "sha256-normalized-v1",
-  "generatedAt": "2026-09-27T15:37:39.645Z",
+  "generatedAt": "2026-09-27T19:36:38.286Z",
   "project": {
     "name": "AgentsKit Harness",
     "root": "."
@@ -3944,7 +3944,7 @@
         "ts",
         "loop"
       ],
-      "contentHash": "6ca531b2e7a9d3f8a3200169c46abf434e2abecac7acc066ab2384b3eeafcde6"
+      "contentHash": "aff970d45b9d6a832e41641293e3ab3d1977caa2dc4e9a1a131532ad936c5944"
     },
     {
       "id": "module:src/loop/detached-worker.ts",
@@ -5444,7 +5444,7 @@
         "ts",
         "api"
       ],
-      "contentHash": "58ebc1a83f800922b0c2a9ab838f339288f745fdeff6cf4c1526faf068b164b7"
+      "contentHash": "3e9fbd765d7dd375fbe90851df562c9c1a9f36d355561652d5cd31d417baae15"
     },
     {
       "id": "module:src/ui/api/alerts.ts",
@@ -7785,7 +7785,7 @@
         "ts",
         "test"
       ],
-      "contentHash": "0e5688e20413e6d8ff08ac9038acf9c4753b84e55e61b35bef402cf34f811c0e"
+      "contentHash": "92b437a03c698af954839dd3d97683f5863f1fa809a703eb90bb7db25244ee03"
     },
     {
       "id": "module:test/loop-doctor-gaps.test.ts",
@@ -8637,7 +8637,7 @@
         "ts",
         "test"
       ],
-      "contentHash": "d19b0ca30e564fdd48ef533bbd247c3d8cacf4c5959392574c33736f1de06a7c"
+      "contentHash": "d001bb91f82d5b1fb63133ebd98eddde77fcf5060fc4ff2b03366c307d81d082"
     },
     {
       "id": "module:test/ui-api-jobs.test.ts",
@@ -8953,7 +8953,7 @@
     }
   },
   "inputs": {
-    "hash": "fd116ce8866a5477fbdb8da03c3d18a67a57a2d4ea251bdc6ba77ed2f2a48212",
+    "hash": "6560f0d2d9e507a21a9c1278764edd0a4c58a40d6b2a1051f6f072e50e270336",
     "fileCount": 541,
     "projectionVersion": 2
   },
@@ -8976,9 +8976,9 @@
   "projection": {
     "type": "retrieval-index",
     "schemaVersion": 1,
-    "contentHash": "0177c15497024d1ef550b09539b708abc3eedd293d64add144256ca3a3f0e824",
+    "contentHash": "190ab7253ecedf5af56b07db7c5207694749823446e0cf2e9366e4df3b42f458",
     "contentHashAlgo": "sha256-normalized-v1",
-    "snapshotHash": "e9472dd5e742fe2353f51bbef41abaaa971df227fae3ea851b8e5f8842b26d34",
+    "snapshotHash": "a1e8a4f9452d8cf765a9927d17a8ee2202a56c6b21cf02c7632c36deaef97eb0",
     "overlayHash": "f99666ff9119084dd25c2974ae64eb6935ec2aa785ff5ad478fb9d541f7a5e94",
     "configurationHash": "816afaf6a7dc09767f7594d8fd80024612ca0f33becf0e44dde0107fcf2782df",
     "lexiconVersion": 1,
@@ -26873,7 +26873,7 @@
             }
           ]
         },
-        "contentHash": "6ca531b2e7a9d3f8a3200169c46abf434e2abecac7acc066ab2384b3eeafcde6",
+        "contentHash": "aff970d45b9d6a832e41641293e3ab3d1977caa2dc4e9a1a131532ad936c5944",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -33161,7 +33161,7 @@
             }
           ]
         },
-        "contentHash": "58ebc1a83f800922b0c2a9ab838f339288f745fdeff6cf4c1526faf068b164b7",
+        "contentHash": "3e9fbd765d7dd375fbe90851df562c9c1a9f36d355561652d5cd31d417baae15",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -41478,7 +41478,7 @@
             }
           ]
         },
-        "contentHash": "0e5688e20413e6d8ff08ac9038acf9c4753b84e55e61b35bef402cf34f811c0e",
+        "contentHash": "92b437a03c698af954839dd3d97683f5863f1fa809a703eb90bb7db25244ee03",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -44535,7 +44535,7 @@
             }
           ]
         },
-        "contentHash": "d19b0ca30e564fdd48ef533bbd247c3d8cacf4c5959392574c33736f1de06a7c",
+        "contentHash": "d001bb91f82d5b1fb63133ebd98eddde77fcf5060fc4ff2b03366c307d81d082",
         "provenance": "observed",
         "confidence": "observed"
       },
