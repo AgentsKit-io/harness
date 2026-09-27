@@ -202,6 +202,20 @@ export type IssueDecision = 'close-issue' | 'reopen'
 
 /** Only legal from `needs-decision` — a PR closed without merge, with nothing left to retry automatically.
  * `close-issue` sets the tracker to done; `reopen` returns it to the entry state for a fresh wizard run. */
+/**
+ * Settle a `tracker.sync-failed` from the control plane. `retry` re-applies the failed completion — the issue's move
+ * to the done state — and throws, recording nothing, if the tracker still refuses (e.g. a missing lifecycle label).
+ * `dismiss` records that a person accepted the tracker as it is. Either way Attention stops showing earlier failures.
+ */
+export const resolveTrackerSync = async (context: ActionContext, issue: string, action: 'retry' | 'dismiss'): Promise<void> => {
+  const { loaded, runner } = context
+  if (action === 'retry') {
+    const tracker = resolveConnectors({ runner, config: loaded.config }).tracker
+    await tracker.setState({ issue, to: loaded.config.linear?.doneState ?? 'Done', reason: 'control plane: retry tracker sync' })
+  }
+  appendLoopEvent(loaded.stateDir, { at: nowIso(), type: 'ui.tracker-sync-resolved', issue, action })
+}
+
 export const decideIssue = async (context: ActionContext, issue: string, decision: IssueDecision): Promise<void> => {
   const { loaded, runner } = context
   const record = syncProjection(loaded.stateDir).issues[issue]

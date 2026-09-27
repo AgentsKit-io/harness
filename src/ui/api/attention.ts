@@ -34,6 +34,8 @@ export interface AttentionInput {
   readonly stagePauses: readonly { readonly stage: string; readonly since: string; readonly reason: string | null }[]
   readonly cooldowns: readonly { readonly provider: string; readonly until: string; readonly reason: string; readonly since: string }[]
   readonly syncFailures: readonly { readonly issue: string | null; readonly operation: string | null; readonly error: string | null; readonly at: string }[]
+  /** `ui.tracker-sync-resolved` per issue: a sync failure at or before it is settled. Optional for older callers. */
+  readonly syncResolutions?: readonly { readonly issue: string; readonly at: string }[]
   readonly pii: readonly { readonly issue: string | null; readonly kinds: readonly string[]; readonly at: string }[]
   readonly automations: readonly { readonly name: string; readonly stage: string | null; readonly state: 'missing' | 'drifted' | 'undeclared'; readonly fields: readonly string[]; readonly since: string }[]
 }
@@ -79,9 +81,11 @@ const LABELS: Readonly<Record<AttentionActionId, string>> = {
   answer: 'Answer', 'approve-pr': 'Approve PR', 'approve-plan': 'Approve plan', 'approve-design': 'Approve design', 'approve-release': 'Approve release',
   retry: 'Retry', cancel: 'Cancel run', resume: 'Resume', open: 'Open', reconcile: 'Reconcile',
   'reinstall-automations': 'Reinstall automations', 'resume-stage': 'Resume stage', 'run-doctor': 'Run doctor',
+  'retry-sync': 'Retry sync', 'dismiss-sync': 'Dismiss',
 }
 const DESTRUCTIVE = new Set<AttentionActionId>(['cancel', 'reconcile'])
-const GATES = new Set<AttentionActionId>(['approve-pr', 'approve-plan', 'approve-design', 'approve-release'])
+// Dismiss is a gate: it records a human judgment that the tracker is fine as it is, so it goes through confirmation.
+const GATES = new Set<AttentionActionId>(['approve-pr', 'approve-plan', 'approve-design', 'approve-release', 'dismiss-sync'])
 
 const actions = (...ids: readonly AttentionActionId[]): readonly AttentionAction[] => ids.map((id, index) => ({ id, label: LABELS[id], primary: index === 0, destructive: DESTRUCTIVE.has(id), gate: GATES.has(id) }))
 
@@ -157,7 +161,14 @@ export const buildAttention = (input: AttentionInput): readonly AttentionItem[] 
   for (const cooldown of input.cooldowns) push({ id: `provider-cooldown:${cooldown.provider}`, group: 'system', kind: 'provider-cooldown', issue: null, title: `${cooldown.provider} cooling down`, reason: `${cooldown.provider} is unavailable until ${cooldown.until}; work routes to other providers meanwhile.`, detail: cooldown.reason, since: cooldown.since, actions: actions('run-doctor') })
   const latestSync = new Map<string, AttentionInput['syncFailures'][number]>()
   for (const failure of input.syncFailures) { const key = failure.issue ?? 'global'; const current = latestSync.get(key); if (!current || current.at < failure.at) latestSync.set(key, failure) }
-  for (const [key, failure] of latestSync) push({ id: `tracker-sync:${key}`, group: 'system', kind: 'tracker-sync', issue: failure.issue, title: failure.issue ?? 'Tracker', reason: 'The loop could not update the tracker; its state there may be behind.', detail: [failure.operation, failure.error].filter(Boolean).join(': ') || null, since: failure.at, actions: actions('open') })
+  const resolvedAt = new Map<string, string>()
+  for (const resolution of input.syncResolutions ?? []) { const current = resolvedAt.get(resolution.issue); if (!current || current < resolution.at) resolvedAt.set(resolution.issue, resolution.at) }
+  for (const [key, failure] of latestSync) {
+    if (failure.issue && (resolvedAt.get(failure.issue) ?? '') >= failure.at) continue
+    // Only a failed completion (→ done state) has a single, safe re-apply; any failure can be dismissed by a person.
+    const ids: AttentionActionId[] = failure.issue ? (failure.operation === 'completion' ? ['retry-sync', 'dismiss-sync', 'open'] : ['dismiss-sync', 'open']) : ['open']
+    push({ id: `tracker-sync:${key}`, group: 'system', kind: 'tracker-sync', issue: failure.issue, title: failure.issue ?? 'Tracker', reason: 'The loop could not update the tracker; its state there may be behind.', detail: [failure.operation, failure.error].filter(Boolean).join(': ') || null, since: failure.at, actions: actions(...ids) })
+  }
   const latestPii = new Map<string, AttentionInput['pii'][number]>()
   for (const hit of input.pii) { const key = hit.issue ?? 'global'; const current = latestPii.get(key); if (!current || current.at < hit.at) latestPii.set(key, hit) }
   for (const [key, hit] of latestPii) push({ id: `pii:${key}`, group: 'system', kind: 'pii', issue: hit.issue, title: hit.issue ?? 'Personal data', reason: 'Issue text looks like it contains personal data; redact it at the source.', detail: hit.kinds.join(', ') || null, since: hit.at, actions: actions('open') })

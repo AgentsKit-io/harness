@@ -39,7 +39,7 @@ const TEMPLATE_FAMILIES = [
  * `type: '<name>'` shape (e.g. `parseUiAction({ type: 'loop.contract', ... })`), which the plain-text scan cannot
  * tell apart from an actual `appendLoopEvent` call.
  */
-const UI_ORIGINATED_EVENTS = ['ui.run-enqueued', 'ui.cleanup-completed', 'ui.cleanup-failed', 'ui.issue-decided']
+const UI_ORIGINATED_EVENTS = ['ui.run-enqueued', 'ui.cleanup-completed', 'ui.cleanup-failed', 'ui.issue-decided', 'ui.tracker-sync-resolved']
 
 describe('the loop event vocabulary', () => {
   it('declares exactly the events the loop emits, and nothing it does not', () => {

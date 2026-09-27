@@ -108,6 +108,7 @@ export const pauseStage = (stage: string, reason: string): Promise<unknown> => p
 export const resumeStage = (stage: string): Promise<unknown> => post(`stages/${enc(stage)}/resume`)
 export const reinstallAutomations = (): Promise<unknown> => post('automations/reinstall')
 export const reconcileIssue = (issue: string): Promise<unknown> => post(`issues/${enc(issue)}/reconcile`)
+export const resolveTrackerSync = (issue: string, action: 'retry' | 'dismiss'): Promise<unknown> => post(`issues/${enc(issue)}/tracker-sync`, { action })
 export const approveHeldPr = (issue: string, head: string): Promise<unknown> => post(`issues/${enc(issue)}/approve`, { head })
 export const approvePlan = (planId: string): Promise<unknown> => post(`plans/${enc(planId)}/approve`)
 export const approveDesign = (planId: string): Promise<unknown> => post(`plans/${enc(planId)}/approve-design`)

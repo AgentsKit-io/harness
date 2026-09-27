@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
-  "contentHash": "c7d5350a8d35b71c27d90fb33134220a3cd6fc4e3630c3702e830521454a1493",
+  "contentHash": "ad2587fd4540b4e2e003842fe11d31450b7748e078625dbd7eb149e3f4a079cd",
   "contentHashAlgo": "sha256-normalized-v1",
-  "generatedAt": "2026-09-27T01:21:58.181Z",
+  "generatedAt": "2026-09-27T04:08:37.479Z",
   "project": {
     "name": "AgentsKit Harness",
     "root": "."
@@ -1917,6 +1917,7 @@
         "githubCommentExists",
         "githubCompare",
         "githubCurrentUser",
+        "githubEnsureLabels",
         "githubIssue",
         "githubIssueClose",
         "githubIssueComment",
@@ -1947,7 +1948,7 @@
         "ts",
         "adapters"
       ],
-      "contentHash": "003bd32c1f10b3569ef138c6e8d00be6c4f0d7715089b02302ecac949161b50a"
+      "contentHash": "d090b768a9f76c5bf805d4866d47fd941b644d9415fc56793b953827fa529656"
     },
     {
       "id": "module:src/adapters/linear-orca.ts",
@@ -3832,7 +3833,7 @@
         "ts",
         "loop"
       ],
-      "contentHash": "71cae329a3ea41855be5adf65671f7bbbac23dc43c59b506b8bc46bbd59d339d"
+      "contentHash": "1b937fafb871fb2b9b9633e19f933541d9e075741965260442a9e46321b83615"
     },
     {
       "id": "module:src/loop/contract.ts",
@@ -4067,7 +4068,7 @@
         "ts",
         "loop"
       ],
-      "contentHash": "0529a6c439445960e8d89cc0820d978396383a3f764eb839bef1d37f639c4a60"
+      "contentHash": "1af8c17f7f785fc9b5f45adb5867739a026bbf6081a67387d9b7cf0db9553d91"
     },
     {
       "id": "module:src/loop/flows.ts",
@@ -5406,6 +5407,7 @@
         "enqueueRun",
         "generateOrReuseContract",
         "reconcileIssue",
+        "resolveTrackerSync",
         "restoreRun",
         "resumePausedIssue",
         "retryRun"
@@ -5415,7 +5417,7 @@
         "ts",
         "api"
       ],
-      "contentHash": "a387c89f42c1502181c2b5cf32345cbeee0c6bb6e3e009c669e6648175fc4031"
+      "contentHash": "be4180f775a921ab68dd940ffe2eae06b5305c2e6a3fd4da864fbb06803e6ace"
     },
     {
       "id": "module:src/ui/api/alerts.ts",
@@ -5453,7 +5455,7 @@
         "ts",
         "api"
       ],
-      "contentHash": "6d774d272e2c973c7919fa7d8139f0c441cf1eb244e9118793972f2040f9a97f"
+      "contentHash": "e08faa2acc3179af2d8c7cb16c6a5e808d4e877f40c6c3c09682403bfdcd8d7f"
     },
     {
       "id": "module:src/ui/api/board.ts",
@@ -5562,7 +5564,7 @@
         "ts",
         "api"
       ],
-      "contentHash": "a54aa8127e2390d1127985d710b5f6bf98a210c848c4eae2952c2e4f68bb2858"
+      "contentHash": "0a962f1a8a9ad73820c04e6dc90261da73381a90f381e5f7330f099008663e6f"
     },
     {
       "id": "module:src/ui/api/extras.ts",
@@ -5589,7 +5591,7 @@
         "ts",
         "api"
       ],
-      "contentHash": "55ead76dce038dbbfadb09a8d65a9e6bdfbb2278088d903bb15dc91892a36ae1"
+      "contentHash": "b6f77cd37faa211e3b3d99e904610b4d379c46886ebc12a07f0f2bd9bf100ad1"
     },
     {
       "id": "module:src/ui/api/http.ts",
@@ -5775,7 +5777,7 @@
         "ts",
         "api"
       ],
-      "contentHash": "ef6fbcaad3ce9ce3a68d7efcb24b2e847be275e96863a80f8663400d082c9dc5"
+      "contentHash": "576c5c2dec3abed795a0bc1db93c955f9c9e03f051d8f03c24007ab56726057d"
     },
     {
       "id": "module:src/ui/api/routes-feed.ts",
@@ -6297,7 +6299,7 @@
         "tsx",
         "lib"
       ],
-      "contentHash": "b039620ce21eb01c5cf08aaf8e583c9ed3a0816a9b7bb9688a1d14fd8188457c"
+      "contentHash": "af23c85c0d765a9046b985420d7557200eb6cfae3a379263cb9b3cae2e3a02c0"
     },
     {
       "id": "module:src/ui/app/src/lib/api.ts",
@@ -6349,6 +6351,7 @@
         "reconcileIssue",
         "reinstallAutomations",
         "rejectLearnings",
+        "resolveTrackerSync",
         "restoreRun",
         "resumePausedIssue",
         "resumeStage",
@@ -6366,7 +6369,7 @@
         "ts",
         "lib"
       ],
-      "contentHash": "d6e6cec1de56a4b2317744ab49037691bcb2a1855de924cd284dd7c872a62a9b"
+      "contentHash": "28f87e3ead35a8f9a500dc414ab2911389e7f9a812207dcc49afb895ae66e9fd"
     },
     {
       "id": "module:src/ui/app/src/lib/format.ts",
@@ -7197,7 +7200,7 @@
         "ts",
         "test"
       ],
-      "contentHash": "7fe2ee10c4811541306000315ce43e3b5c86fb147bbee3482ca6e69be38a1c50"
+      "contentHash": "d376fa5e98381da2826ae76dd61495bf128b5b408a04c02cf135d6d72ecdcacd"
     },
     {
       "id": "module:test/harness.test.ts",
@@ -7824,7 +7827,7 @@
         "ts",
         "test"
       ],
-      "contentHash": "4fadbda7cdf33f8d17cf1717022671128a97fa06ada2e449c67a42a503630164"
+      "contentHash": "cf6f46e6f56cb973d1c616ddf24dc5bc63cd8155d9e0c8b3132a2d951b4f8565"
     },
     {
       "id": "module:test/loop-events-rotation.test.ts",
@@ -8604,7 +8607,7 @@
         "ts",
         "test"
       ],
-      "contentHash": "c4b9b61c635b11edc5436bd19f7e9fe670063a00e25862da97eb1ba0fc1e9cdb"
+      "contentHash": "447402c20d079d211e35975516d572a5b3a6264988da92f2046d03a872244856"
     },
     {
       "id": "module:test/ui-api-jobs.test.ts",
@@ -8664,7 +8667,7 @@
         "ts",
         "test"
       ],
-      "contentHash": "7f72b11435312ff52359b584cc6c74185e9faaa051a2eaacba3ab4aa19ff69d3"
+      "contentHash": "4e76a8a3b7388b1286e4fc57aa60ee06dd4056f66de4eef78be452ac1dcc4ecd"
     },
     {
       "id": "module:test/ui-core-reconcile.test.ts",
@@ -8688,7 +8691,7 @@
         "ts",
         "test"
       ],
-      "contentHash": "8d69ecac4dfc039cce53127d1fc38636cb97a88d422043c9d4019aaf5af6c147"
+      "contentHash": "b0e7717a28130f16fee95c9cb87b2fea8dec2a1487c0f3ce5cff6d9ee7a61a9b"
     },
     {
       "id": "module:test/ui-feed.test.ts",
@@ -8908,7 +8911,7 @@
     }
   },
   "inputs": {
-    "hash": "f78d9da199e28358b241f7cda4021bf3a83e7684cca058383638992120771acf",
+    "hash": "1c3d6831c9849062e1f8ecc3ac1c7733e1565dbf1ebd81962b1b78d82e4556bd",
     "fileCount": 539,
     "projectionVersion": 2
   },
@@ -8931,9 +8934,9 @@
   "projection": {
     "type": "retrieval-index",
     "schemaVersion": 1,
-    "contentHash": "6df4fb8cca01857063cb6c4654e4d8b971c0df3b8fbb27d2ea696649dd6c7561",
+    "contentHash": "f9f9bfda9591fdb02b19701ad76f550b6b3d41373dd8a70fdb7868cb4a1a21e2",
     "contentHashAlgo": "sha256-normalized-v1",
-    "snapshotHash": "f6e99f8c3f3a9f95ed5e704cc9e8b6b80845ccffc57e2a6bcbdc518269bdace6",
+    "snapshotHash": "cd5428f804d6275aae7987c9a0ea678d549e645330d404fad0113746b6fe9b72",
     "overlayHash": "f99666ff9119084dd25c2974ae64eb6935ec2aa785ff5ad478fb9d541f7a5e94",
     "configurationHash": "816afaf6a7dc09767f7594d8fd80024612ca0f33becf0e44dde0107fcf2782df",
     "lexiconVersion": 1,
@@ -8969,7 +8972,7 @@
         "headings": 3.8649635036496353,
         "path": 6.114963503649635,
         "summary": 2.6313868613138687,
-        "symbols": 14.177007299270073,
+        "symbols": 14.19890510948905,
         "title": 3.9434306569343067
       }
     },
@@ -11232,7 +11235,7 @@
           "path": "apps/docs/content/docs/reference/events.mdx",
           "symbols": "",
           "summary": "{/* Generated by `pnpm docs:generate`. Do not edit by hand: edit `src/loop/event-vocabulary.ts` and regenerate. */}",
-          "body": "{/ Generated by pnpm docs:generate . Do not edit by hand: edit src/loop/event-vocabulary.ts and regenerate. /} Every loop event is appended to <stateDir /events.ndjson and emitted on the plugin bus, with at (ISO timestamp) and type on top of the fields below. A plugin subscribes with bus.on('<type ' ' ', listener) ; a notification channel subscribes by listing types in notifications.events . The vocabulary is enforced by the compiler: appendLoopEvent accepts only these names, so an event that is not here cannot be emitted — and a name here that nothing emits fails the test suite. 84 loop events. contract. Event Carries What it means --- --- --- contract.escalated issue , reasons , digest A contract was frozen but is not dispatchable; a human was asked to settle it. contract.failed issue , error Contract generation failed on every candidate provider. contract.generated issue , provider , model , effort , digest A contract was frozen successfully. provider / model / effort are what actually produced it — the join key for comparing how different LLMs (at what reasoning effort) did on the same kind of issue. human. Event Carries What it means --- --- --- human.hitl-requested issue , requestId , batchId , role , stage , question , context , options , recommendedOptionId , digest A structured human decision was requested by an LLM stage. human.hitl-answered issue , requestId , batchId , role , stage , optionId , freeText , digest , actor A human answered one structured HITL request. human.hitl-batch-ready issue , batchId , requestId All requests in a structured HITL batch have answers and the stage may resume. plan. Event Carries What it means --- --- --- plan.voted issue , cycle , approvals , votes , voters One planning cycle finished: how many agents approved the plan, out of how many voted, and who each one was. plan.failed issue , error Planning failed on every candidate provider. plan.escalated issue , cycles , unresolved The cycles ran out without consensus; the unresolved objections are a human's to settle. worker. Event Carries What it means --- --- --- worker.dispatched issue , worktree , worktreeId , branch , terminal , provider , model , effort , contractDigest , briefDigest , command , briefAccepted , tuiIdle , workerGuardInstalled , maxFixRounds A worker was launched in its own worktree. Carries the whole dispatch record plus the command that ran. worker.dispatch-failed issue , error The dispatch itself failed — worktree, terminal or brief — before any work started. worker.setup issue , worktreeId , ok project.setup.command ran in the fresh worktree. worker.nudged issue , kind , reason , worktreeId An idle worker was nudged in its own terminal — and also the terminal outcome nudged , which ends a delivery pass on the same issue. Two emissions, one name: kind is present on the first, reason on the second. worker.permission-wait issue , terminal , reason The worker stopped at a tool-permission prompt: held for a person, never typed into. Once per idle window. worker.reactivated issue , terminal , previousTerminal A stale terminal was relaunched for a worker that was still supposed to be working. worker.hitl-resumed issue , requestIds A human answered a worker HITL request and the decision was sent back to the worker terminal. worker.reopened issue , pr , previousHead , head , previousOutcome A finished issue came back: a new head on a PR the loop had already closed out. worker.handed-off issue , from , to , worktreeId , branch , reason , briefAccepted The task was handed to another provider in the same worktree, on the same branch — and also the terminal outcome handed-off that ends the delivery pass which did it. worker.ci-round issue , pr , head , round CI is red; the failing checks went back to the worker as a fix round. worker.review-round issue , pr , head , round The review found blocking issues; the findings went back to the worker as a fix round. worker.conflict-round issue , pr , head , round The PR conflicts wit",
+          "body": "{/ Generated by pnpm docs:generate . Do not edit by hand: edit src/loop/event-vocabulary.ts and regenerate. /} Every loop event is appended to <stateDir /events.ndjson and emitted on the plugin bus, with at (ISO timestamp) and type on top of the fields below. A plugin subscribes with bus.on('<type ' ' ', listener) ; a notification channel subscribes by listing types in notifications.events . The vocabulary is enforced by the compiler: appendLoopEvent accepts only these names, so an event that is not here cannot be emitted — and a name here that nothing emits fails the test suite. 85 loop events. contract. Event Carries What it means --- --- --- contract.escalated issue , reasons , digest A contract was frozen but is not dispatchable; a human was asked to settle it. contract.failed issue , error Contract generation failed on every candidate provider. contract.generated issue , provider , model , effort , digest A contract was frozen successfully. provider / model / effort are what actually produced it — the join key for comparing how different LLMs (at what reasoning effort) did on the same kind of issue. human. Event Carries What it means --- --- --- human.hitl-requested issue , requestId , batchId , role , stage , question , context , options , recommendedOptionId , digest A structured human decision was requested by an LLM stage. human.hitl-answered issue , requestId , batchId , role , stage , optionId , freeText , digest , actor A human answered one structured HITL request. human.hitl-batch-ready issue , batchId , requestId All requests in a structured HITL batch have answers and the stage may resume. plan. Event Carries What it means --- --- --- plan.voted issue , cycle , approvals , votes , voters One planning cycle finished: how many agents approved the plan, out of how many voted, and who each one was. plan.failed issue , error Planning failed on every candidate provider. plan.escalated issue , cycles , unresolved The cycles ran out without consensus; the unresolved objections are a human's to settle. worker. Event Carries What it means --- --- --- worker.dispatched issue , worktree , worktreeId , branch , terminal , provider , model , effort , contractDigest , briefDigest , command , briefAccepted , tuiIdle , workerGuardInstalled , maxFixRounds A worker was launched in its own worktree. Carries the whole dispatch record plus the command that ran. worker.dispatch-failed issue , error The dispatch itself failed — worktree, terminal or brief — before any work started. worker.setup issue , worktreeId , ok project.setup.command ran in the fresh worktree. worker.nudged issue , kind , reason , worktreeId An idle worker was nudged in its own terminal — and also the terminal outcome nudged , which ends a delivery pass on the same issue. Two emissions, one name: kind is present on the first, reason on the second. worker.permission-wait issue , terminal , reason The worker stopped at a tool-permission prompt: held for a person, never typed into. Once per idle window. worker.reactivated issue , terminal , previousTerminal A stale terminal was relaunched for a worker that was still supposed to be working. worker.hitl-resumed issue , requestIds A human answered a worker HITL request and the decision was sent back to the worker terminal. worker.reopened issue , pr , previousHead , head , previousOutcome A finished issue came back: a new head on a PR the loop had already closed out. worker.handed-off issue , from , to , worktreeId , branch , reason , briefAccepted The task was handed to another provider in the same worktree, on the same branch — and also the terminal outcome handed-off that ends the delivery pass which did it. worker.ci-round issue , pr , head , round CI is red; the failing checks went back to the worker as a fix round. worker.review-round issue , pr , head , round The review found blocking issues; the findings went back to the worker as a fix round. worker.conflict-round issue , pr , head , round The PR conflicts wit",
           "aliases": "events document human"
         },
         "graph": {
@@ -11269,7 +11272,7 @@
             }
           ]
         },
-        "contentHash": "49b9406fee25957619d65f845496f1491793c1593a61cfb1c6186b580add3100",
+        "contentHash": "02a48fd1d77209e4c6226b9c4c2b81faa3afd800e9fa7a1e4f8c7e52ffb44fbe",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -17748,6 +17751,7 @@
           "githubCommentExists",
           "githubCompare",
           "githubCurrentUser",
+          "githubEnsureLabels",
           "githubIssue",
           "githubIssueClose",
           "githubIssueComment",
@@ -17782,7 +17786,7 @@
           "title": "github-cli.ts",
           "headings": "",
           "path": "src/adapters/github-cli.ts",
-          "symbols": "CheckOutcome ChecksAssessment DiffStat GitHubCliOptions GitHubIssueComment GitHubIssueDetail GitHubIssueSnapshot ISSUE_DETAIL_FIELDS ISSUE_FIELDS PR_FIELDS PullRequestCheck PullRequestSnapshot assessChecks githubComment githubCommentArgv githubCommentExists githubCompare githubCurrentUser githubIssue githubIssueClose githubIssueComment githubIssueCommentArgv githubIssueCommentExists githubIssueCreate githubIssueEdit githubIssueEditArgv githubIssueNumber githubIssueReopen githubLabelRemove githubMerge githubMergeArgv githubOpenIssues githubOpenPullRequests githubPreflight githubPullRequest githubPullRequestsForBranch githubPullRequestsForIssue githubUpsertComment parseGitHubIssue parseGitHubIssueDetail parsePullRequest touchesProtectedPaths",
+          "symbols": "CheckOutcome ChecksAssessment DiffStat GitHubCliOptions GitHubIssueComment GitHubIssueDetail GitHubIssueSnapshot ISSUE_DETAIL_FIELDS ISSUE_FIELDS PR_FIELDS PullRequestCheck PullRequestSnapshot assessChecks githubComment githubCommentArgv githubCommentExists githubCompare githubCurrentUser githubEnsureLabels githubIssue githubIssueClose githubIssueComment githubIssueCommentArgv githubIssueCommentExists githubIssueCreate githubIssueEdit githubIssueEditArgv githubIssueNumber githubIssueReopen githubLabelRemove githubMerge githubMergeArgv githubOpenIssues githubOpenPullRequests githubPreflight githubPullRequest githubPullRequestsForBranch githubPullRequestsForIssue githubUpsertComment parseGitHubIssue parseGitHubIssueDetail parsePullRequest touchesProtectedPaths",
           "summary": "",
           "body": "",
           "aliases": "module ts adapters"
@@ -17891,7 +17895,7 @@
             }
           ]
         },
-        "contentHash": "003bd32c1f10b3569ef138c6e8d00be6c4f0d7715089b02302ecac949161b50a",
+        "contentHash": "d090b768a9f76c5bf805d4866d47fd941b644d9415fc56793b953827fa529656",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -25959,7 +25963,7 @@
             }
           ]
         },
-        "contentHash": "71cae329a3ea41855be5adf65671f7bbbac23dc43c59b506b8bc46bbd59d339d",
+        "contentHash": "1b937fafb871fb2b9b9633e19f933541d9e075741965260442a9e46321b83615",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -27500,7 +27504,7 @@
           ],
           "outbound": []
         },
-        "contentHash": "0529a6c439445960e8d89cc0820d978396383a3f764eb839bef1d37f639c4a60",
+        "contentHash": "1af8c17f7f785fc9b5f45adb5867739a026bbf6081a67387d9b7cf0db9553d91",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -30944,6 +30948,11 @@
             },
             {
               "kind": "imports",
+              "id": "module:test/ui-api-actions.test.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
               "id": "module:test/ui-feed.test.ts",
               "confidence": "observed"
             },
@@ -32788,6 +32797,7 @@
           "enqueueRun",
           "generateOrReuseContract",
           "reconcileIssue",
+          "resolveTrackerSync",
           "restoreRun",
           "resumePausedIssue",
           "retryRun"
@@ -32801,7 +32811,7 @@
           "title": "actions.ts",
           "headings": "",
           "path": "src/ui/api/actions.ts",
-          "symbols": "ActionContext AnswerDecisionInput AnswerDecisionResult ContractResult EnqueueRunInput IssueDecision answerDecision archiveRun cancelRun cleanupRun decideIssue enqueueRun generateOrReuseContract reconcileIssue restoreRun resumePausedIssue retryRun",
+          "symbols": "ActionContext AnswerDecisionInput AnswerDecisionResult ContractResult EnqueueRunInput IssueDecision answerDecision archiveRun cancelRun cleanupRun decideIssue enqueueRun generateOrReuseContract reconcileIssue resolveTrackerSync restoreRun resumePausedIssue retryRun",
           "summary": "",
           "body": "",
           "aliases": "module ts api"
@@ -32948,7 +32958,7 @@
             }
           ]
         },
-        "contentHash": "a387c89f42c1502181c2b5cf32345cbeee0c6bb6e3e009c669e6648175fc4031",
+        "contentHash": "be4180f775a921ab68dd940ffe2eae06b5305c2e6a3fd4da864fbb06803e6ace",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -33111,7 +33121,7 @@
             }
           ]
         },
-        "contentHash": "6d774d272e2c973c7919fa7d8139f0c441cf1eb244e9118793972f2040f9a97f",
+        "contentHash": "e08faa2acc3179af2d8c7cb16c6a5e808d4e877f40c6c3c09682403bfdcd8d7f",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -33589,7 +33599,7 @@
             }
           ]
         },
-        "contentHash": "a54aa8127e2390d1127985d710b5f6bf98a210c848c4eae2952c2e4f68bb2858",
+        "contentHash": "0a962f1a8a9ad73820c04e6dc90261da73381a90f381e5f7330f099008663e6f",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -33770,7 +33780,7 @@
             }
           ]
         },
-        "contentHash": "55ead76dce038dbbfadb09a8d65a9e6bdfbb2278088d903bb15dc91892a36ae1",
+        "contentHash": "b6f77cd37faa211e3b3d99e904610b4d379c46886ebc12a07f0f2bd9bf100ad1",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -34686,7 +34696,7 @@
             }
           ]
         },
-        "contentHash": "ef6fbcaad3ce9ce3a68d7efcb24b2e847be275e96863a80f8663400d082c9dc5",
+        "contentHash": "576c5c2dec3abed795a0bc1db93c955f9c9e03f051d8f03c24007ab56726057d",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -36593,7 +36603,7 @@
             }
           ]
         },
-        "contentHash": "b039620ce21eb01c5cf08aaf8e583c9ed3a0816a9b7bb9688a1d14fd8188457c",
+        "contentHash": "af23c85c0d765a9046b985420d7557200eb6cfae3a379263cb9b3cae2e3a02c0",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -36648,6 +36658,7 @@
           "reconcileIssue",
           "reinstallAutomations",
           "rejectLearnings",
+          "resolveTrackerSync",
           "restoreRun",
           "resumePausedIssue",
           "resumeStage",
@@ -36669,7 +36680,7 @@
           "title": "api.ts",
           "headings": "",
           "path": "src/ui/app/src/lib/api.ts",
-          "symbols": "ApiError BoardIssue BoardSnapshot Decision DispatchRef EnqueueRunInput IssuePhase IssueRecord PullRequestRef ReviewSubstatus RunRecord TimelineEvent UiJobRecord UiSnapshot UiWizardDraft UiWizardDraftPatch answerDecision approveDesign approveHeldPr approvePlan approveRelease archiveRun cancelRun decideIssue enqueueBatch enqueueRun generateContract getCachedContracts getConfig getIssueDetail getJob getJobs getMetrics getRecentEvents getState getSystem getTimeline getWizard pauseStage promoteLearnings proposeConfig reconcileIssue reinstallAutomations rejectLearnings restoreRun resumePausedIssue resumeStage retryRun runDoctor runStage saveWizardDraft searchRecords tuning useSnapshot writeLocalConfig",
+          "symbols": "ApiError BoardIssue BoardSnapshot Decision DispatchRef EnqueueRunInput IssuePhase IssueRecord PullRequestRef ReviewSubstatus RunRecord TimelineEvent UiJobRecord UiSnapshot UiWizardDraft UiWizardDraftPatch answerDecision approveDesign approveHeldPr approvePlan approveRelease archiveRun cancelRun decideIssue enqueueBatch enqueueRun generateContract getCachedContracts getConfig getIssueDetail getJob getJobs getMetrics getRecentEvents getState getSystem getTimeline getWizard pauseStage promoteLearnings proposeConfig reconcileIssue reinstallAutomations rejectLearnings resolveTrackerSync restoreRun resumePausedIssue resumeStage retryRun runDoctor runStage saveWizardDraft searchRecords tuning useSnapshot writeLocalConfig",
           "summary": "",
           "body": "",
           "aliases": "module ts lib"
@@ -36765,7 +36776,7 @@
             }
           ]
         },
-        "contentHash": "d6e6cec1de56a4b2317744ab49037691bcb2a1855de924cd284dd7c872a62a9b",
+        "contentHash": "28f87e3ead35a8f9a500dc414ab2911389e7f9a812207dcc49afb895ae66e9fd",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -39353,7 +39364,7 @@
             }
           ]
         },
-        "contentHash": "7fe2ee10c4811541306000315ce43e3b5c86fb147bbee3482ca6e69be38a1c50",
+        "contentHash": "d376fa5e98381da2826ae76dd61495bf128b5b408a04c02cf135d6d72ecdcacd",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -41476,7 +41487,7 @@
             }
           ]
         },
-        "contentHash": "4fadbda7cdf33f8d17cf1717022671128a97fa06ada2e449c67a42a503630164",
+        "contentHash": "cf6f46e6f56cb973d1c616ddf24dc5bc63cd8155d9e0c8b3132a2d951b4f8565",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -44258,6 +44269,11 @@
             },
             {
               "kind": "imports",
+              "id": "module:src/loop/retro.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
               "id": "module:src/loop/tick.ts",
               "confidence": "observed"
             },
@@ -44273,7 +44289,7 @@
             }
           ]
         },
-        "contentHash": "c4b9b61c635b11edc5436bd19f7e9fe670063a00e25862da97eb1ba0fc1e9cdb",
+        "contentHash": "447402c20d079d211e35975516d572a5b3a6264988da92f2046d03a872244856",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -44542,7 +44558,7 @@
             }
           ]
         },
-        "contentHash": "7f72b11435312ff52359b584cc6c74185e9faaa051a2eaacba3ab4aa19ff69d3",
+        "contentHash": "4e76a8a3b7388b1286e4fc57aa60ee06dd4056f66de4eef78be452ac1dcc4ecd",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -44707,7 +44723,7 @@
             }
           ]
         },
-        "contentHash": "8d69ecac4dfc039cce53127d1fc38636cb97a88d422043c9d4019aaf5af6c147",
+        "contentHash": "b0e7717a28130f16fee95c9cb87b2fea8dec2a1487c0f3ce5cff6d9ee7a61a9b",
         "provenance": "observed",
         "confidence": "observed"
       },

@@ -1,7 +1,7 @@
 import * as React from 'react'
 import { useConfirm, type ConfirmBasis, type ConfirmRequest } from '@/components/ConfirmDialog'
 import {
-  approveDesign, approveHeldPr, approvePlan, approveRelease, cancelRun, reconcileIssue, reinstallAutomations, resumePausedIssue,
+  approveDesign, approveHeldPr, approvePlan, approveRelease, cancelRun, reconcileIssue, reinstallAutomations, resolveTrackerSync, resumePausedIssue,
   resumeStage, retryRun, runDoctor, type AttentionAction, type UiSnapshot,
 } from './api'
 import { useLiveSnapshot, useSnapshotAge } from './snapshot'
@@ -60,6 +60,10 @@ const confirmation = (action: AttentionAction, target: ActionTarget): Confirmabl
       title: `Approve the ${action.id === 'approve-plan' ? 'plan' : 'design'} for ${target.planId ?? issue}?`, tone: 'gate', confirmLabel: 'Approve', typeToConfirm: target.planId ?? issue,
       effects: [`Mark the ${action.id === 'approve-plan' ? 'plan' : 'design'} as human-approved`, 'Allow its issues to be dispatched'],
     }
+    case 'dismiss-sync': return {
+      title: <>Dismiss the tracker sync failure for <span className="font-mono text-warning">{issue}</span>?</>, tone: 'gate', confirmLabel: 'Dismiss', typeToConfirm: issue,
+      effects: ['Record that you checked the tracker and accept its current state', 'Nothing is changed in the tracker', 'A later sync failure for this issue shows up again'],
+    }
     case 'approve-release': return { title: 'Approve the release?', tone: 'gate', confirmLabel: 'Approve release', effects: ['Record human approval for the pending release', 'Let the release stage publish it'] }
     default: return action.destructive || action.gate
       ? { title: `${action.label}${issue ? ` · ${issue}` : ''}?`, tone: action.destructive ? 'danger' : 'gate', confirmLabel: action.label, typeToConfirm: issue || undefined, effects: [action.label] }
@@ -78,6 +82,8 @@ const call = (action: AttentionAction, target: ActionTarget): Promise<unknown> =
     case 'cancel': return cancelRun(issue, 'Cancelled from the control plane')
     case 'resume': return resumePausedIssue(issue)
     case 'reconcile': return reconcileIssue(issue)
+    case 'retry-sync': return resolveTrackerSync(issue, 'retry')
+    case 'dismiss-sync': return resolveTrackerSync(issue, 'dismiss')
     case 'reinstall-automations': return reinstallAutomations()
     case 'resume-stage': return resumeStage(target.stage ?? issue)
     case 'run-doctor': return runDoctor()

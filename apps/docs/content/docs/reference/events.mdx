@@ -13,7 +13,7 @@ timestamp) and `type` on top of the fields below. A plugin subscribes with
 The vocabulary is enforced by the compiler: `appendLoopEvent` accepts only these names, so an event that is not
 here cannot be emitted — and a name here that nothing emits fails the test suite.
 
-84 loop events.
+85 loop events.
 
 ## `contract.*`
 
@@ -218,6 +218,7 @@ here cannot be emitted — and a name here that nothing emits fails the test sui
 | `ui.cleanup-completed` | `issue`, `runId` | Cancellation cleanup (terminal, worktree, lease, tracker state) finished for a run. |
 | `ui.cleanup-failed` | `issue`, `runId`, `detail` | Cancellation cleanup failed partway; the run is held for a human to inspect. |
 | `ui.issue-decided` | `issue`, `action` | A human resolved a `needs-decision` issue (a PR closed without merge): close it for good, or reopen it for a fresh run. The only decision type in the control plane that isn't a structured HITL question — there is nothing to ask the LLM, the tracker state already says what happened. |
+| `ui.tracker-sync-resolved` | `issue`, `action` | A human settled a `tracker.sync-failed` for an issue from the control plane: `action` is `retry` (the tracker update was re-applied and succeeded) or `dismiss` (a person accepted the tracker's current state). Earlier sync failures for the issue stop showing in Attention. |
 
 ## Harness run events
 
