@@ -33,7 +33,7 @@ import { sha256 } from '../kernel/hash.js'
 import { markRunSummaryPosted, readAgentRunReport, recordRunEvidence, recordRunIo, renderRunSummaryMarkdown, runSummaryMarker } from './agent-runs.js'
 import { checkSpec, renderSpec, specDirFor, writeSpec } from './spec.js'
 import { readStoredPlan } from './plan-vote.js'
-import { readJsonFile } from '../kernel/json-file.js'
+import { parseJsonFileText, readJsonFile } from '../kernel/json-file.js'
 import { createIssueQueue } from './queue.js'
 import { createLifecycleStore, type LifecyclePullRequest } from './lifecycle.js'
 import { activeTrackerCooldown, guardTracker, TrackerCooldownError } from './tracker-cooldown.js'
@@ -898,7 +898,7 @@ const materializeWorkerHitl = (ctx: Context, record: DispatchRecordFile): { read
   const store = createHitlStore(ctx.loaded.stateDir); let open = false; let invalid = false; const answered: HitlRequest[] = []
   for (const file of readdirSync(root).filter((name) => name.endsWith('.json'))) {
     try {
-      const raw = JSON.parse(readFileSync(join(root, file), 'utf8')) as Record<string, unknown>
+      const raw = parseJsonFileText(join(root, file)) as Record<string, unknown>
       const options = Array.isArray(raw['options']) ? raw['options'].filter((option): option is Record<string, unknown> => typeof option === 'object' && option !== null && !Array.isArray(option)).map((option) => ({ id: String(option['id'] ?? ''), title: String(option['title'] ?? ''), description: String(option['description'] ?? '') })) : []
       const request = store.create({ requestId: typeof raw['requestId'] === 'string' ? raw['requestId'] : `worker:${record.issue}:${file}`, batchId: typeof raw['batchId'] === 'string' ? raw['batchId'] : `worker:${record.issue}:${record.queueRunId ?? record.issue}`, issue: record.issue, role: 'builder', stage: 'worker', question: String(raw['question'] ?? ''), context: String(raw['context'] ?? ''), options, recommendedOptionId: String(raw['recommendedOptionId'] ?? ''), digest: typeof raw['digest'] === 'string' ? raw['digest'] : `${record.contractDigest ?? record.issue}:${file}`, metadata: { runId: record.queueRunId ?? null, worktreePath: record.worktreePath, terminal: record.terminal ?? null, stage: 'worker' } })
       if (request.status === 'open') open = true

@@ -18,10 +18,14 @@ import type { ZodType } from 'zod'
  * without a guard. Restating an entire interface in zod makes the schema a second source of truth that drifts,
  * and turns a record the loop handles today (an optional field an older version never wrote) into an absent one.
  */
+/** `JSON.parse` of a file's text, tolerating the UTF-8 BOM Windows tools prepend (PowerShell `Out-File`/`Set-Content`
+ * write one): a worker's valid HITL request read as "invalid" and blocked its protocol (law-os AGE-1753). */
+export const parseJsonFileText = (path: string): unknown => JSON.parse(readFileSync(path, 'utf8').replace(/^﻿/, ''))
+
 export const readJsonFile = <T>(path: string, schema: ZodType<T>): T | null => {
   if (!existsSync(path)) return null
   let raw: unknown
-  try { raw = JSON.parse(readFileSync(path, 'utf8')) } catch { return null }
+  try { raw = parseJsonFileText(path) } catch { return null }
   const result = schema.safeParse(raw)
   return result.success ? result.data : null
 }

@@ -232,6 +232,13 @@ describe('deliver', () => {
     expect(env.runner.calls.some((argv) => argv[1] === 'terminal' && argv[2] === 'send')).toBe(false)
   })
 
+  it('reads a worker HITL request written with a UTF-8 BOM as a request, not as an invalid file', async () => {
+    // Live (law-os AGE-1753): PowerShell wrote the request with a BOM; JSON.parse threw and the run sat "blocked".
+    const request = { question: 'How should AGE-1753 resume?', context: 'Validation prerequisites are unavailable.', options: [{ id: 'repair', title: 'Repair', description: 'Fix the prerequisites.' }, { id: 'revise', title: 'Revise', description: 'Revise the contract.' }, { id: 'keep', title: 'Keep blocked', description: 'Wait.' }], recommendedOptionId: 'repair' }
+    const env = setup({ pr: null, worktreeFiles: { 'hitl/prerequisites.json': `﻿${JSON.stringify(request)}` } })
+    expect((await deliver(env, { assumeIdle: false })).results[0]).toMatchObject({ outcome: 'needs-input' })
+  })
+
   it('reviews a green PR, squash-merges on a clean review, completes Linear, and releases the lease', async () => {
     const env = setup({ review: { code: 0, findings: [{ severity: 'nit', title: 'style', file: 'x', line: 1 }] } })
     const report = await deliver(env)
