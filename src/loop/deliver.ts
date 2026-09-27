@@ -36,6 +36,7 @@ import { readStoredPlan } from './plan-vote.js'
 import { readJsonFile } from '../kernel/json-file.js'
 import { createIssueQueue } from './queue.js'
 import { createLifecycleStore, type LifecyclePullRequest } from './lifecycle.js'
+import { activeTrackerCooldown, guardTracker, TrackerCooldownError } from './tracker-cooldown.js'
 
 export type DeliverOutcome = 'waiting' | 'reviewed' | 'fix-round' | 'nudged' | 'handed-off' | 'merged' | 'held' | 'needs-input' | 'blocked' | 'stuck' | 'abandoned' | 'failed' | 'dry-run'
 
@@ -86,6 +87,8 @@ export interface DeliveryState {
   readonly consecutiveErrors?: number
   /** The PR head seen when the errors finished the issue as `failed`, so a new push can resume it. */
   readonly failedAtHead?: string | null
+  /** The tracker state this loop last set for the open PR, so it is not re-set on every pass. */
+  readonly trackerState?: string | null
 }
 
 export interface DeliverInput {
@@ -410,7 +413,7 @@ const reopenFinishedIssue = async (ctx: Context, record: DispatchRecordFile, sta
   const failed = state.finalOutcome === 'failed'
   const previousHead = failed ? state.failedAtHead ?? null : lastReviewHead(state)
   if (!state.finishedAt || !state.finalOutcome || !resumableOutcomes.has(state.finalOutcome) || (!previousHead && !failed) || previousHead === pr.headSha) return state
-  const next: DeliveryState = { ...state, finishedAt: null, finalOutcome: null, fixRounds: 0, heldFor: null, nudges: [], consecutiveErrors: 0, failedAtHead: null }
+  const next: DeliveryState = { ...state, finishedAt: null, finalOutcome: null, fixRounds: 0, heldFor: null, nudges: [], consecutiveErrors: 0, failedAtHead: null, trackerState: null }
   saveState(ctx, next)
   event(ctx, { type: 'worker.reopened', issue: record.issue, pr: pr.number, previousHead, head: pr.headSha, previousOutcome: state.finalOutcome })
   ctx.notes.push(`${record.issue}: reopened after a new PR head (${pr.headSha.slice(0, 7)})`)
@@ -778,15 +781,24 @@ const flowFor = (ctx: Context, record: DispatchRecordFile): EffectiveFlowSetting
   }
 }
 
-const syncReviewTracker = async (ctx: Context, record: DispatchRecordFile, pr: PullRequestSnapshot, actions: string[]): Promise<void> => {
-  if (ctx.dryRun) { actions.push(`would move ${ctx.tracker.id} issue to ${ctx.config.linear.reviewState}`); return }
+/** Move the issue to the review state once per open PR — not a tracker write on every pass (a rate limit's worth of them). */
+const syncReviewTracker = async (ctx: Context, record: DispatchRecordFile, state: DeliveryState, pr: PullRequestSnapshot, actions: string[]): Promise<DeliveryState> => {
+  const to = ctx.config.linear.reviewState
+  if (state.trackerState === to) return state
+  if (ctx.dryRun) { actions.push(`would move ${ctx.tracker.id} issue to ${to}`); return state }
   try {
-    await ctx.tracker.setState({ issue: record.issue, to: ctx.config.linear.reviewState, reason: `PR #${pr.number} opened; review lifecycle is now remote-authoritative` })
-    actions.push(`${ctx.tracker.id}: → ${ctx.config.linear.reviewState}`)
+    await ctx.tracker.setState({ issue: record.issue, to, reason: `PR #${pr.number} opened; review lifecycle is now remote-authoritative` })
+    actions.push(`${ctx.tracker.id}: → ${to}`)
+    const next: DeliveryState = { ...state, trackerState: to }
+    saveState(ctx, next)
+    return next
   } catch (error) {
     const detail = message(error)
+    // Skipped for a cooldown, not failed: the next pass after it retries, so there is nothing for a human to settle.
+    if (error instanceof TrackerCooldownError) { actions.push(`${ctx.tracker.id} review sync skipped: ${detail}`); return state }
     actions.push(`${ctx.tracker.id} review sync failed: ${detail}`)
     event(ctx, { type: 'tracker.sync-failed', issue: record.issue, operation: 'review-state', error: detail })
+    return state
   }
 }
 
@@ -1220,7 +1232,13 @@ export const runDeliver = async (input: DeliverInput): Promise<DeliverReport> =>
   // An externally-owned bus (`loop stage`) already has its own notifier attached, and its owner flushes it once
   // for the whole invocation — attaching a second one here would double-send every notification.
   const flushNotifications = ownsBus ? attachNotifier(bus, { config, runner: input.runner, env }) : async () => { /* owner flushes */ }
-  const { tracker, scm } = resolveConnectors({ runner: input.runner, config, env, cwd: loaded.root, dryRun })
+  const connectors = resolveConnectors({ runner: input.runner, config, env, cwd: loaded.root, dryRun })
+  const { scm } = connectors
+  // A rate-limited tracker is skipped (each write says so in its actions), never retried into the limit; PR and merge
+  // work goes on — GitHub is not the tracker that is limited.
+  const tracker = guardTracker(connectors.tracker, { stateDir: loaded.stateDir, now, dryRun, onRateLimited: (entry) => appendLoopEvent(loaded.stateDir, { at: now().toISOString(), type: 'tracker.cooldown', until: entry.until, attempts: entry.attempts, reason: entry.reason }, bus) })
+  const trackerCooling = activeTrackerCooldown(loaded.stateDir, now())
+  if (trackerCooling) notes.push(`${connectors.tracker.id} rate-limited until ${trackerCooling.until}: tracker writes skipped this pass; PR/merge work continues`)
   const ctx: Context = { loaded, config, runner: input.runner, now, dryRun, reviewer, reviewerCandidates, builder, providers, env, tracker, scm, ...(input.assumeIdle === undefined ? {} : { assumeIdle: input.assumeIdle }), notes, reviewDeadlineMs, bus, builderExtras }
   const ledger = createDispatchLedger(loaded.stateDir)
   const leases = new Map(ledger.active().map((lease) => [lease.issue, lease]))
@@ -1288,7 +1306,7 @@ export const runDeliver = async (input: DeliverInput): Promise<DeliverReport> =>
         state = await reopenFinishedIssue(ctx, record, state, pr)
         if (wasFinished && state.finishedAt) continue
         const reviewActions: string[] = []
-        await syncReviewTracker(ctx, record, pr, reviewActions)
+        state = await syncReviewTracker(ctx, record, state, pr, reviewActions)
         if (reviewActions.length) notes.push(`${record.issue}: ${reviewActions.join('; ')}`)
         results.push(await handlePullRequest(ctx, record, lease, state, pr)); continue
       }

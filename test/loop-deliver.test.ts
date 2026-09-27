@@ -6,6 +6,7 @@ import { approveHeldDelivery, atLeast, buildReviewArgv, createDispatchLedger, cr
 import type { CommandResult, CommandRunner, DispatchRecordFile, StoredContract } from '../src/index.js'
 import { renderSpec, writeSpec } from '../src/loop/spec.js'
 import { readAgentRunReport } from '../src/loop/agent-runs.js'
+import { activeTrackerCooldown, isTrackerRateLimit, markTrackerRateLimited } from '../src/loop/tracker-cooldown.js'
 
 const fixture = (name: string): unknown => JSON.parse(readFileSync(join(process.cwd(), 'test/fixtures/loop', `${name}.json`), 'utf8')) as unknown
 const exampleYaml = readFileSync(join(process.cwd(), 'loop.config.example.yaml'), 'utf8').replace('person: my-linear-display-name', 'person: person')
@@ -63,6 +64,8 @@ interface Scenario {
   readonly reviewThrows?: number
   /** `orca terminal list` fails (Orca runtime down). */
   readonly orcaDown?: boolean
+  /** Every Linear write answers with a rate limit. */
+  readonly linearRateLimited?: boolean
 }
 
 const basePr = (over: Record<string, unknown> = {}): Record<string, unknown> => ({ ...(fixture('gh-pr-view') as Record<string, unknown>), headRefName: 'person/eng-10-demo', files: [{ path: 'packages/demo/src/index.ts' }], statusCheckRollup: [{ __typename: 'CheckRun', name: 'ci', conclusion: 'SUCCESS', status: 'COMPLETED' }], mergeable: 'MERGEABLE', mergeStateStatus: 'CLEAN', state: 'OPEN', number: 42, url: 'https://github.com/o/r/pull/42', ...over })
@@ -147,6 +150,7 @@ const setup = (initial: Scenario = {}) => {
         return okResult({ accepted: true, requestId: 'r' })
       }
       if (scenario.orcaWorktreeMissing && (key.startsWith('orca worktree set') || key.startsWith('orca worktree rm'))) return { code: 1, stdout: '', stderr: 'selector_not_found', timedOut: false, durationMs: 1 }
+      if (key.startsWith('orca linear') && scenario.linearRateLimited) return { code: 1, stdout: '', stderr: 'Linear API: HTTP 429 Too Many Requests', timedOut: false, durationMs: 1 }
       if (key.startsWith('orca linear') || key.startsWith('orca worktree set') || key.startsWith('orca worktree rm')) return okResult({ ok: true })
       if (argv[0] === 'agentskit-review' && (scenario.reviewThrows ?? 0) > 0) { scenario.reviewThrows = (scenario.reviewThrows ?? 1) - 1; throw new Error('spawn agentskit-review EAGAIN') }
       if (argv[0] === 'agentskit-review') {
@@ -803,6 +807,49 @@ describe('deliver', () => {
     expect(env.runner.calls.some((argv) => argv[1] === 'terminal' && argv[2] === 'create')).toBe(false)
     expect(env.runner.calls.some((argv) => argv[1] === 'linear' && argv[2] === 'label')).toBe(false)
     expect(readFileSync(join(env.loaded.stateDir, 'events.ndjson'), 'utf8')).toContain('"type":"orca.unavailable","issue":"ENG-10"')
+  })
+
+  it('backs a tracker rate limit off 15 min doubling to a 2 h cap, and matches only rate-limit text (not a 429 inside a hash)', () => {
+    const env = setup()
+    const at = (minutes: number) => new Date(NOW.getTime() + minutes * 60_000)
+    expect(markTrackerRateLimited(env.loaded.stateDir, 'HTTP 429', NOW).until).toBe(at(15).toISOString())
+    expect(markTrackerRateLimited(env.loaded.stateDir, 'HTTP 429', at(15)).until).toBe(at(45).toISOString())
+    let last = at(45)
+    for (let i = 0; i < 5; i++) last = new Date(markTrackerRateLimited(env.loaded.stateDir, 'HTTP 429', last).until)
+    expect(activeTrackerCooldown(env.loaded.stateDir, new Date(last.getTime() - 1))).toMatchObject({ attempts: 6 })
+    const entry = markTrackerRateLimited(env.loaded.stateDir, 'x', last)
+    expect(Date.parse(entry.until) - last.getTime()).toBe(120 * 60_000)
+    expect(['Rate limit exceeded', 'ratelimited', 'Too Many Requests', 'HTTP 429: slow down', '429 Too Many Requests'].every((text) => isTrackerRateLimit(new Error(text)))).toBe(true)
+    expect(['sha 4290af1c', 'issue #429 not found', 'exited 1'].some((text) => isTrackerRateLimit(new Error(text)))).toBe(false)
+  })
+
+  it('while the tracker cools down, deliver skips every tracker write (and says so) but still reviews and merges the PR', async () => {
+    const env = setup({ review: { code: 0 } })
+    markTrackerRateLimited(env.loaded.stateDir, 'HTTP 429', NOW)
+    const report = await deliver(env)
+    expect(report.results[0]).toMatchObject({ outcome: 'merged' })
+    expect(env.runner.calls.some((argv) => argv[0] === 'gh' && argv[1] === 'api' && argv.includes('--method'))).toBe(true)
+    expect(env.runner.calls.some((argv) => argv[1] === 'linear')).toBe(false)
+    expect(report.notes.some((note) => note.includes('rate-limited until') && note.includes('tracker writes skipped'))).toBe(true)
+    expect(report.results[0]?.actions.some((action) => action.includes('cooling down until'))).toBe(true)
+  })
+
+  it('a rate-limited tracker write starts a cooldown (tracker.cooldown) and later writes in the pass are skipped, not retried', async () => {
+    const env = setup({ review: { code: 0 }, linearRateLimited: true })
+    const report = await deliver(env)
+    expect(report.results[0]).toMatchObject({ outcome: 'merged' })
+    expect(env.runner.calls.filter((argv) => argv[1] === 'linear')).toHaveLength(1)
+    expect(readFileSync(join(env.loaded.stateDir, 'events.ndjson'), 'utf8')).toContain('"type":"tracker.cooldown"')
+    expect(activeTrackerCooldown(env.loaded.stateDir, NOW)).not.toBeNull()
+  })
+
+  it('moves an open-PR issue to the review state once, not with a tracker write on every pass', async () => {
+    const env = setup({ pr: basePr({ statusCheckRollup: [{ __typename: 'CheckRun', name: 'ci', status: 'IN_PROGRESS' }] }) })
+    await deliver(env)
+    await deliver(env)
+    await deliver(env)
+    expect(env.runner.calls.filter((argv) => argv[1] === 'linear' && argv[2] === 'status' && argv.includes('In Review'))).toHaveLength(1)
+    expect(readDeliveryState(env.loaded.stateDir, 'ENG-10').trackerState).toBe('In Review')
   })
 
   it('stops a dispatch that has run past delivery.maxDispatchMinutes, even though the terminal is still active', async () => {
