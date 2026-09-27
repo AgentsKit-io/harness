@@ -308,6 +308,9 @@ export const workerAtUsageLimit = async (ctx: Pick<Context, 'runner' | 'config'>
   } catch { return null }
 }
 
+/** A shell prompt, not an agent TUI: zsh/oh-my-zsh, bash (`$ `), PowerShell (`PS C:\…>`) and cmd (`C:\…>`). */
+const SHELL_PROMPT = /git:\(|➜\s|\$\s|(?:^|\n)PS [A-Za-z]:\\[^\n]*>\s*$|(?:^|\n)[A-Za-z]:\\[^\n]*>\s*$/
+
 const sendToWorker = async (ctx: Context, record: DispatchRecordFile, text: string, actions: string[]): Promise<boolean> => {
   if (!record.terminal) { actions.push('no terminal handle recorded; cannot nudge'); return false }
   const permission = ctx.dryRun ? null : await workerAwaitingPermission(ctx, record)
@@ -316,10 +319,19 @@ const sendToWorker = async (ctx: Context, record: DispatchRecordFile, text: stri
   const send = async (terminal: string) => orcaTerminalSend(ctx.runner, { terminal, text, enter: true, waitSubmitSeconds: 10 }, orcaOptions(ctx.config))
   let staleShell = false
   try {
+    // No agent attached to the worktree at all: the CLI never started or exited, and what is left is a bare shell —
+    // even when Orca still records the agent command the terminal was created with. Typing a prompt there runs it as
+    // a shell command (observed on Windows: the brief pointer ran in PowerShell, "Your" is not a command).
+    // Not every CLI registers as an Orca agent (pi runs with `agents: []` while Orca reports the worktree `working`):
+    // zero agents only means "no agent" when the worktree is not actively producing output either.
+    const noAgent = await orcaWorktrees(ctx.runner, orcaOptions(ctx.config)).then((items) => {
+      const own = items.find((item) => item.id === record.worktreeId)
+      return own?.agentCount === 0 && own.activity !== 'working' && own.activity !== 'permission'
+    }, () => false)
     const terminal = (await orcaTerminalList(ctx.runner, { worktree: `id:${record.worktreeId}` }, orcaOptions(ctx.config))).find((item) => item.handle === record.terminal)
     // ponytail: a live Orca shell with no recorded agent command cannot make progress; reactivate it once.
-    staleShell = Boolean(terminal && !terminal.command && (/git:\(|➜\s|\$\s/.test(terminal.preview) || (!terminal.preview.trim() && terminal.lastOutputAt === null)))
-    if (staleShell) actions.push(`worker terminal ${record.terminal} is stale or a shell, not an active agent; reactivating`)
+    staleShell = noAgent || Boolean(terminal && !terminal.command && (SHELL_PROMPT.test(terminal.preview) || (!terminal.preview.trim() && terminal.lastOutputAt === null)))
+    if (staleShell) actions.push(`worker terminal ${record.terminal} is ${noAgent ? 'a shell with no agent attached' : 'stale or a shell'}, not an active agent; reactivating`)
   } catch { /* send below remains the fallback when terminal metadata is unavailable */ }
   if (!staleShell) {
     try {
