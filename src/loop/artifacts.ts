@@ -3,6 +3,7 @@ import { dirname, isAbsolute, join } from 'node:path'
 import { z } from 'zod'
 import type { CommandRunner } from '../adapters/command.js'
 import type { LoopConfig } from './config.js'
+import { parseJsonFileText } from '../kernel/json-file.js'
 
 /**
  * The contract between a worker and the harness: one file per phase, at `.ak-loop/` in the worktree.
@@ -40,7 +41,7 @@ export interface PhaseArtifact {
 
 export const artifactPath = (worktreePath: string, file: string): string => join(worktreePath, ARTIFACT_DIR, file)
 
-const readJson = (path: string): unknown => { try { return JSON.parse(readFileSync(path, 'utf8')) as unknown } catch { return undefined } }
+const readJson = (path: string): unknown => { try { return parseJsonFileText(path) } catch { return undefined } }
 
 /** Read `plan.md` — free text, so presence is the whole check. Empty counts as absent. */
 export const readPlanArtifact = (worktreePath: string | null | undefined): string | null => {
