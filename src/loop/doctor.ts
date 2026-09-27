@@ -7,7 +7,7 @@ import { existsSync, readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { HarnessError } from '../kernel/errors.js'
 import { MODEL_ROLES } from '../kernel/model-policy.js'
-import { automationSpecs, parseAutomationRuns, reconcileAutomations } from './automations.js'
+import { automationSpecs, parseAutomationRuns, reconcileAutomations, withRunningHarness } from './automations.js'
 import { loadAgentRegistry } from './agent-registry.js'
 import { unknownFlowReferences } from './flows.js'
 import { notificationsConfigured } from './notify.js'
@@ -154,6 +154,7 @@ export const runLoopDoctor = async (input: LoopDoctorInput): Promise<LoopDoctorR
     if (tracker.preflight) {
       const access = await tracker.preflight()
       push('tracker.access', 'passed', `${tracker.id} write access for ${access.login} (${access.permission})`)
+      if (access.missingLabels?.length) push('tracker.labels', 'warning', `missing lifecycle label(s) ${access.missingLabels.join(', ')} — the loop creates them the first time it applies one`)
     }
     queue = await tracker.queue({ assignee: person })
     // Say WHICH queue was read. Under `unassigned` ownership the old wording ("for <person>") described
@@ -280,7 +281,11 @@ export const runLoopDoctor = async (input: LoopDoctorInput): Promise<LoopDoctorR
   // while the scheduler runs a command nobody declares any more. Doctor only reports it; `loop install` fixes it.
   try {
     const automations = await orcaAutomationsList(input.runner, orcaOptions)
-    const rows = reconcileAutomations(automationSpecs(loaded, config.schedule.provider ?? ''), automations, config)
+    // Two installs are legitimate: `loop install` writes the declared command, the UI pins the running binary
+    // (withRunningHarness). An automation matching either is in sync; only one matching neither has drifted.
+    const declared = reconcileAutomations(automationSpecs(loaded, config.schedule.provider ?? ''), automations, config)
+    const pinned = reconcileAutomations(automationSpecs(withRunningHarness(loaded), config.schedule.provider ?? ''), automations, config)
+    const rows = declared.map((row) => row.state === 'drifted' && pinned.find((other) => other.name === row.name)?.state === 'in-sync' ? { ...row, state: 'in-sync' as const, fields: [] } : row)
     const drifted = rows.filter((row) => row.state !== 'in-sync')
     if (!drifted.length) push('automations.drift', 'passed', `${rows.length} automation(s) match the config`)
     else push('automations.drift', 'warning', `${drifted.map((row) => `${row.name}: ${row.state}${row.fields.length ? ` (${row.fields.join(', ')})` : ''}`).join('; ')} — reconcile with "${config.schedule.harnessCommand} loop install -f ${loaded.path}"`)

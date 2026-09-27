@@ -268,19 +268,20 @@ export const githubCurrentUser = async (runner: CommandRunner, options: GitHubCl
   return login || fail('GitHub did not return the authenticated user login.', 'HARNESS_ERROR')
 }
 
-export const githubPreflight = async (runner: CommandRunner, input: { readonly repo: string; readonly labels?: readonly string[] }, options: GitHubCliOptions = {}): Promise<{ readonly login: string; readonly permission: string }> => {
+/** `missingLabels` is reported, not refused: the GitHub tracker creates a missing lifecycle label before applying it. */
+export const githubPreflight = async (runner: CommandRunner, input: { readonly repo: string; readonly labels?: readonly string[] }, options: GitHubCliOptions = {}): Promise<{ readonly login: string; readonly permission: string; readonly missingLabels: readonly string[] }> => {
   await ghRun(runner, ['auth', 'status'], options)
   const value = await ghJson(runner, ['repo', 'view', input.repo, '--json', 'nameWithOwner,viewerPermission'], options)
   const record = isRecord(value) ? value : {}
   const permission = str(record['viewerPermission']).toUpperCase()
   if (!['ADMIN', 'MAINTAIN', 'WRITE'].includes(permission)) fail(`GitHub user has "${permission || 'unknown'}" permission for ${input.repo}; write access is required.`, 'POLICY_BLOCKED')
+  let missingLabels: readonly string[] = []
   if (input.labels?.length) {
     const listed = await ghJson(runner, ['label', 'list', '--repo', input.repo, '--limit', '1000', '--json', 'name'], options)
     const available = new Set(Array.isArray(listed) ? listed.filter(isRecord).map((label) => str(label['name'])).filter(Boolean) : [])
-    const missing = input.labels.filter((label) => !available.has(label))
-    if (missing.length) fail(`GitHub lifecycle labels are missing in ${input.repo}: ${missing.join(', ')}.`, 'INVALID_CONFIG')
+    missingLabels = input.labels.filter((label) => !available.has(label))
   }
-  return { login: await githubCurrentUser(runner, options), permission }
+  return { login: await githubCurrentUser(runner, options), permission, missingLabels }
 }
 
 /**

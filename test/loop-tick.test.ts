@@ -20,11 +20,12 @@ interface Env { readonly dir: string; readonly bin: string; readonly runner: Com
 const cleanups: string[] = []
 afterEach(() => { for (const dir of cleanups.splice(0)) rmSync(dir, { recursive: true, force: true }) })
 
-const makeEnv = (options: { readonly contract?: TaskContract | 'garbage'; readonly worktrees?: unknown; readonly failCreate?: boolean; readonly failCreateTransientTimes?: number; readonly claudeAuthFails?: boolean; readonly claudeSessionLimit?: boolean; readonly failAllContracts?: boolean; readonly accountList?: unknown; readonly briefSkills?: readonly string[]; readonly setup?: { readonly exitCode?: number; readonly timedOut?: boolean }; readonly setupRequired?: boolean; readonly pluginSource?: string; readonly issueDescription?: string; readonly securityPii?: { readonly action?: 'redact' | 'warn' | 'block' }; readonly catalogMode?: boolean; readonly queueOwnership?: 'person' | 'unassigned'; readonly queueMode?: 'backlog' | 'explicit'; readonly tracker?: 'linear' | 'github'; readonly hideIssuesFromQueue?: boolean; readonly knownFailures?: readonly { readonly path: string; readonly issue: string; readonly reason: string }[]; /** Which Linear read answers with a rate limit / a plain failure (mutable via `env.tracker`). */ readonly trackerRateLimit?: 'queue' | 'issue'; readonly issueFetchFails?: boolean; /** Issue fetches after this many fail with a rate limit. */ readonly rateLimitAfterIssueFetches?: number } = {}): Env => {
+const makeEnv = (options: { readonly contract?: TaskContract | 'garbage'; readonly worktrees?: unknown; readonly failCreate?: boolean; readonly failCreateTransientTimes?: number; readonly claudeAuthFails?: boolean; readonly claudeSessionLimit?: boolean; readonly failAllContracts?: boolean; readonly accountList?: unknown; readonly briefSkills?: readonly string[]; readonly setup?: { readonly exitCode?: number; readonly timedOut?: boolean }; readonly setupRequired?: boolean; readonly pluginSource?: string; readonly issueDescription?: string; readonly securityPii?: { readonly action?: 'redact' | 'warn' | 'block' }; readonly catalogMode?: boolean; readonly queueOwnership?: 'person' | 'unassigned'; readonly queueMode?: 'backlog' | 'explicit'; readonly tracker?: 'linear' | 'github'; readonly hideIssuesFromQueue?: boolean; readonly knownFailures?: readonly { readonly path: string; readonly issue: string; readonly reason: string }[]; /** Which Linear read answers with a rate limit / a plain failure (mutable via `env.tracker`). */ readonly trackerRateLimit?: 'queue' | 'issue'; readonly issueFetchFails?: boolean; /** Issue fetches after this many fail with a rate limit. */ readonly rateLimitAfterIssueFetches?: number; readonly excludeLabels?: readonly string[] } = {}): Env => {
   const dir = mkdtempSync(join(tmpdir(), 'agentskit-loop-tick-')); cleanups.push(dir)
   const bin = join(dir, 'bin'); rmSync(bin, { recursive: true, force: true })
   let yaml = options.briefSkills?.length ? exampleYaml.replace('skills: []', `skills: [${options.briefSkills.join(', ')}]`) : exampleYaml
   if (options.queueMode) yaml = yaml.replace('  mode: backlog', `  mode: ${options.queueMode}`)
+  if (options.excludeLabels) yaml = yaml.replace('  excludeLabels: [blocked, needs-info]', `  excludeLabels: [${options.excludeLabels.join(', ')}]`)
   if (options.tracker === 'github') yaml = yaml.replace('# connectors:\n#   tracker: linear', 'connectors:\n  tracker: github')
   if (options.securityPii) {
     const piiBlock = 'security:\n  pii:\n    enabled: false                    # scan issue text / worker brief for PII-shaped patterns before embedding them\n    action: redact                    # redact | warn | block\n'
@@ -674,6 +675,38 @@ describe('tick', () => {
     expect(comment).toContain('--write-id')
     expect(comment?.[comment.indexOf('--body') + 1]).toContain('needs information')
     expect(createDispatchLedger(loadLoopConfig(env.configPath).stateDir).active()).toEqual([])
+  })
+
+  it('skips regenerating a contract for an issue with a standing open HITL request instead of re-escalating the identical question every tick (regression: 2026-09-26 — AGE-1858 reached its 12th consecutive identical escalation on a real project, starving the tick of time to reach fresh candidates)', async () => {
+    // needs-info excluded so escalate()'s own label-add would hide the issue on the next tick, masking
+    // whether the open-HITL skip itself works — a real project that wants "unassigned = eligible" with
+    // no label exceptions needs this skip precisely because that label is not doing the job here.
+    const env = makeEnv({ contract: vagueContract, excludeLabels: ['blocked'] })
+    const first = await runTick({ ...tickOptions(env), maxDispatch: 1, onlyIssue: 'ENG-20' })
+    expect(first.results[0]).toMatchObject({ outcome: 'escalated' })
+    const orchestratorCallsAfterFirst = env.runner.calls.filter((argv) => argv[0] === 'claude' && argv[1] === '-p').length
+    expect(orchestratorCallsAfterFirst).toBeGreaterThan(0)
+
+    const second = await runTick({ ...tickOptions(env), maxDispatch: 1, onlyIssue: 'ENG-20' })
+    expect(second.results[0]).toMatchObject({ outcome: 'escalated', reason: expect.stringContaining('awaiting a human answer') })
+    const orchestratorCallsAfterSecond = env.runner.calls.filter((argv) => argv[0] === 'claude' && argv[1] === '-p').length
+    expect(orchestratorCallsAfterSecond).toBe(orchestratorCallsAfterFirst)
+  })
+
+  it('in explicit queue mode, the open-HITL skip leaves the run needs-input, never stuck in dispatching', async () => {
+    const env = makeEnv({ queueMode: 'explicit', contract: vagueContract, excludeLabels: ['blocked'] })
+    const loaded = loadLoopConfig(env.configPath)
+    const builder = parseModelRef('claude/sonnet')
+    const queue = createIssueQueue({ stateDir: loaded.stateDir })
+    const enqueue = () => queue.enqueue({ issue: 'ENG-20', title: 'selected', config: { configHash: loaded.configHash, flow: null, builder, maxFixRounds: loaded.config.delivery.maxFixRounds, perIssueTokens: loaded.config.budget.perIssueTokens, roles: { orchestrator: 'project', reviewer: 'project', watcher: 'project', delivery: 'snapshot' } }, contract: { digest: 'contract', status: 'valid', frozenAt: new Date().toISOString() }, preflight: { status: 'passed', checkedAt: new Date().toISOString() } })
+    const first = enqueue()
+    await runTick({ ...tickOptions(env), maxDispatch: 1 })
+    expect(queue.get(first.id)?.status).toBe('needs-input')
+    // Queued again while the question is still open (a Retry): the skip must not strand it in `dispatching`.
+    const retried = queue.retry(first.id)
+    const second = await runTick({ ...tickOptions(env), maxDispatch: 1 })
+    expect(second.results[0]).toMatchObject({ issue: 'ENG-20', outcome: 'escalated', reason: expect.stringContaining('awaiting a human answer') })
+    expect(createIssueQueue({ stateDir: loaded.stateDir }).get(retried.id)?.status).toBe('needs-input')
   })
 
   it('retries worktree creation through a transient Orca connection drop and still dispatches', async () => {
