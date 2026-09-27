@@ -1,4 +1,4 @@
-import { existsSync } from 'node:fs'
+import { existsSync, statSync } from 'node:fs'
 import { join } from 'node:path'
 import { z } from 'zod'
 import { readJsonFile } from '../../kernel/json-file.js'
@@ -175,6 +175,17 @@ const overlayLiveStores = (state: ProjectionState, stateDir: string): Projection
   return { issues: merged }
 }
 
+/** Changes whenever `events.ndjson` is appended to or rotated; cheap enough for every poll. */
+export const eventsKey = (stateDir: string): string => {
+  const path = join(stateDir, 'events.ndjson')
+  if (!existsSync(path)) return 'none'
+  const stat = statSync(path)
+  return `${stat.mtimeMs}:${stat.size}`
+}
+
+/** `eventsKey` per state dir at its last sync: an unchanged log has nothing past the cursor, so it is not re-parsed. */
+const syncedEvents = new Map<string, string>()
+
 const readCursor = (stateDir: string): { readonly cursor: Cursor; readonly isFirstSync: boolean } => {
   const parsed = readJsonFile(cursorPath(stateDir), cursorSchema)
   return parsed ? { cursor: parsed, isFirstSync: false } : { cursor: emptyCursor(), isFirstSync: true }
@@ -198,12 +209,14 @@ export const readCurrentProjection = (stateDir: string): ProjectionState => over
  */
 export const syncProjection = (stateDir: string): ProjectionState => {
   const { cursor, isFirstSync } = readCursor(stateDir)
-  let state = readProjection(stateDir)
-  if (isFirstSync) state = seedFromEngineState(state, stateDir)
+  const persisted = readProjection(stateDir)
+  let state = isFirstSync ? seedFromEngineState(persisted, stateDir) : persisted
 
+  const logKey = eventsKey(stateDir)
+  const logUnchanged = !isFirstSync && syncedEvents.get(stateDir) === logKey
   const sinceMs = Date.parse(cursor.lastEventAt)
   const seenAtSameMs = new Set(cursor.seenAtSameMs)
-  const fresh = readLoopEvents(stateDir, sinceMs)
+  const fresh = (logUnchanged ? [] : readLoopEvents(stateDir, sinceMs))
     .filter((event) => {
       const eventMs = Date.parse(event.at)
       if (!Number.isFinite(eventMs) || eventMs < sinceMs) return false
@@ -222,7 +235,9 @@ export const syncProjection = (stateDir: string): ProjectionState => {
   const lastAtMs = Date.parse(lastAt)
   const nextCursor: Cursor = { schemaVersion: PROJECTION_SCHEMA_VERSION, lastEventAt: lastAt, seenAtSameMs: fresh.filter((event) => Date.parse(event.at) === lastAtMs).map(eventKey) }
 
-  writeJsonAtomic(projectionPath(stateDir), { schemaVersion: PROJECTION_SCHEMA_VERSION, issues: state.issues })
-  writeJsonAtomic(cursorPath(stateDir), nextCursor)
+  // Nothing new folded in and nothing reconciled: the files on disk already say this, so the 1 s poll writes nothing.
+  if (isFirstSync || state !== persisted) writeJsonAtomic(projectionPath(stateDir), { schemaVersion: PROJECTION_SCHEMA_VERSION, issues: state.issues })
+  if (isFirstSync || fresh.length > 0) writeJsonAtomic(cursorPath(stateDir), nextCursor)
+  syncedEvents.set(stateDir, logKey)
   return overlayLiveStores(state, stateDir)
 }

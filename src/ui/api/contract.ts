@@ -182,9 +182,12 @@ export interface SystemReport {
     readonly lastStatus: string | null
     readonly paused: boolean
     readonly pausedReason: string | null
-    readonly installed: boolean
+    /** `null` = unknown: Orca could not be read (see `orcaError`), which is not "not installed". */
+    readonly installed: boolean | null
     readonly drift: readonly string[]
   }[]
+  /** Why stage status/drift is unknown right now; `null` when Orca answered. */
+  readonly orcaError: string | null
   readonly learnings: readonly { readonly id: string; readonly category: string; readonly text: string; readonly sightings: number; readonly source: string; readonly status: 'proposed' | 'promoted' | 'rejected' }[]
   readonly retroSuggestions: readonly { readonly text: string; readonly knob: string | null; readonly target: 'project' | 'harness' }[]
   readonly alerts: { readonly configured: boolean; readonly lastDelivery: { readonly at: string; readonly status: number | 'error' } | null }
@@ -286,3 +289,7 @@ export interface RecentEvent {
 
 /** `GET /api/v1/contracts?issues=A,B` — a stored contract per issue, `fresh` when inside `contract.reuseHours`. */
 export interface CachedContract { readonly digest: string; readonly generatedAt: string; readonly fresh: boolean; readonly dispatchable: boolean }
+
+/** SSE event for a failed snapshot. Never `error`: per the EventSource spec a message named `error` fires the
+ * source's `onerror`, which the tab cannot tell apart from a dropped connection. */
+export const SNAPSHOT_ERROR_EVENT = 'snapshot-error'

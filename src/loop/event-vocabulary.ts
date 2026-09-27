@@ -164,6 +164,8 @@ export const LOOP_EVENT_TYPES = {
   /** One scheduled stage run finished — the entrypoint every scheduler (cron, Orca) calls, so this is the one
    * event that always exists regardless of what the stage itself did. */
   'stage.completed': ['stage', 'durationMs', 'status', 'count'],
+  /** A `plugins.modules` entry failed to import or apply; the scheduled stage run fails instead of running ungated. */
+  'plugin.load-failed': ['path', 'error'],
   /** `loop.config.yaml` changed since the last stage run; `from`/`to` are its digest before and after. */
   'config.changed': ['from', 'to'],
 
@@ -221,6 +223,14 @@ export const LOOP_EVENT_TYPES = {
    * update was re-applied and succeeded) or `dismiss` (a person accepted the tracker's current state). Earlier
    * sync failures for the issue stop showing in Attention. */
   'ui.tracker-sync-resolved': ['issue', 'action'],
+  /** A delivery pass over one issue threw (gh/Orca/review); `consecutive` counts passes in a row — at 3 the issue is `failed`. */
+  'delivery.error': ['issue', 'error', 'consecutive'],
+  /** Orca could not answer (e.g. `terminal list` failed); the worker's state is unknown, so the pass waits instead of acting. */
+  'orca.unavailable': ['issue', 'operation', 'error'],
+  /** The tracker answered with a rate limit; tick and tracker writes wait until `until` (15 min doubling, 2 h cap). */
+  'tracker.cooldown': ['until', 'attempts', 'reason'],
+  /** A gating `before*` plugin hook threw; the action it guards was blocked (fail closed), not waved through. */
+  'plugin.hook-failed': ['issue', 'hook', 'error'],
 } as const satisfies Readonly<Record<string, readonly string[]>>
 
 export type LoopEventType = keyof typeof LOOP_EVENT_TYPES

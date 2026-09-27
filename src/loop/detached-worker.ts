@@ -1,5 +1,5 @@
 import spawn from 'cross-spawn'
-import { mkdirSync, openSync } from 'node:fs'
+import { mkdirSync, openSync, renameSync, statSync } from 'node:fs'
 import { join } from 'node:path'
 
 export interface DetachedWorkerResult {
@@ -38,8 +38,11 @@ export interface DetachedWorkerResult {
  * reproduced this and may not need to wait at all, but the safe thing is to always wait for that checkpoint
  * rather than assume the platform matters.
  */
-export const spawnDetachedWorker = (input: { readonly command: string; readonly args: readonly string[]; readonly cwd: string; readonly logPath: string; readonly env?: NodeJS.ProcessEnv }): DetachedWorkerResult => {
+export const spawnDetachedWorker = (input: { readonly command: string; readonly args: readonly string[]; readonly cwd: string; readonly logPath: string; readonly env?: NodeJS.ProcessEnv; readonly maxLogBytes?: number }): DetachedWorkerResult => {
   mkdirSync(join(input.logPath, '..'), { recursive: true })
+  // windowed: every scheduled run appends here; past the cap the log moves to `.1` (replacing the one before), so
+  // at most two bounded generations exist instead of one file growing every run forever.
+  try { if (statSync(input.logPath).size > (input.maxLogBytes ?? 5 * 1024 * 1024)) renameSync(input.logPath, `${input.logPath}.1`) } catch { /* no log yet */ }
   const fd = openSync(input.logPath, 'a')
   const child = spawn(input.command, input.args, { cwd: input.cwd, env: input.env ?? process.env, shell: false, stdio: ['ignore', fd, fd], detached: true, windowsHide: true })
   child.unref()
