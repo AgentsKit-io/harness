@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
-  "contentHash": "7af8c6f2d54211de71ac25f7016e053b865b88da555c324a8e013d7fc546090f",
+  "contentHash": "ed4d736f26b4b6369a6a107e31f92e45b4cb22488042bb5ddf5ad3ae48595777",
   "contentHashAlgo": "sha256-normalized-v1",
-  "generatedAt": "2026-09-27T15:37:39.645Z",
+  "generatedAt": "2026-09-27T19:30:31.209Z",
   "project": {
     "name": "AgentsKit Harness",
     "root": "."
@@ -3142,6 +3142,7 @@
       "title": "json-file.ts",
       "path": "src/kernel/json-file.ts",
       "symbols": [
+        "parseJsonFileText",
         "readJsonFile"
       ],
       "tags": [
@@ -3149,7 +3150,7 @@
         "ts",
         "kernel"
       ],
-      "contentHash": "41a9a3bf9c7ef1f71adc4ff4c78ed0ad0ae1c852845c24618b5e5c5f2adf499f"
+      "contentHash": "1d29de5f883d34692bf6490cef30304080538c21ae09dec18eea95cc9adda54c"
     },
     {
       "id": "module:src/kernel/learning.ts",
@@ -3673,7 +3674,7 @@
         "ts",
         "loop"
       ],
-      "contentHash": "c0120335cf35e78f6a9135c27de04132a32b842387eca22ddd55877ad8d1f1da"
+      "contentHash": "ae389b629157451b71f4ca66d514865ca4d7aef4e24d205237f7e11aca8cddd0"
     },
     {
       "id": "module:src/loop/automations.ts",
@@ -3944,7 +3945,7 @@
         "ts",
         "loop"
       ],
-      "contentHash": "6ca531b2e7a9d3f8a3200169c46abf434e2abecac7acc066ab2384b3eeafcde6"
+      "contentHash": "67184ed217c7c8301c67a7be265bf631aec6ea701d60e1b255f5d69dbb7edbbe"
     },
     {
       "id": "module:src/loop/detached-worker.ts",
@@ -7785,7 +7786,7 @@
         "ts",
         "test"
       ],
-      "contentHash": "0e5688e20413e6d8ff08ac9038acf9c4753b84e55e61b35bef402cf34f811c0e"
+      "contentHash": "46ecf63296c72ef1c0daebb72c4c37c610059ad38edcf4f85f88c3817bf56f74"
     },
     {
       "id": "module:test/loop-doctor-gaps.test.ts",
@@ -8953,7 +8954,7 @@
     }
   },
   "inputs": {
-    "hash": "fd116ce8866a5477fbdb8da03c3d18a67a57a2d4ea251bdc6ba77ed2f2a48212",
+    "hash": "46fb104d5ba925a5214b1cf860e560c65c979221677b865042e7ba591bf47b31",
     "fileCount": 541,
     "projectionVersion": 2
   },
@@ -8976,9 +8977,9 @@
   "projection": {
     "type": "retrieval-index",
     "schemaVersion": 1,
-    "contentHash": "0177c15497024d1ef550b09539b708abc3eedd293d64add144256ca3a3f0e824",
+    "contentHash": "13b914a7b7f43d5a34cdd89673caef01dfbc0c640af2b111427e981b9956c087",
     "contentHashAlgo": "sha256-normalized-v1",
-    "snapshotHash": "e9472dd5e742fe2353f51bbef41abaaa971df227fae3ea851b8e5f8842b26d34",
+    "snapshotHash": "f4fa39b493d1889f3b9c44a56c020d6a6e050755dcf700f073f8936f70dd6322",
     "overlayHash": "f99666ff9119084dd25c2974ae64eb6935ec2aa785ff5ad478fb9d541f7a5e94",
     "configurationHash": "816afaf6a7dc09767f7594d8fd80024612ca0f33becf0e44dde0107fcf2782df",
     "lexiconVersion": 1,
@@ -9014,7 +9015,7 @@
         "headings": 3.861818181818182,
         "path": 6.114545454545454,
         "summary": 2.6654545454545455,
-        "symbols": 14.270909090909091,
+        "symbols": 14.28,
         "title": 3.949090909090909
       }
     },
@@ -22956,6 +22957,7 @@
         "title": "json-file.ts",
         "aliases": [],
         "symbols": [
+          "parseJsonFileText",
           "readJsonFile"
         ],
         "tags": [
@@ -22967,7 +22969,7 @@
           "title": "json-file.ts",
           "headings": "",
           "path": "src/kernel/json-file.ts",
-          "symbols": "readJsonFile",
+          "symbols": "parseJsonFileText readJsonFile",
           "summary": "",
           "body": "",
           "aliases": "module ts kernel"
@@ -22988,6 +22990,11 @@
             {
               "kind": "imports",
               "id": "module:src/loop/agent-runs.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
+              "id": "module:src/loop/artifacts.ts",
               "confidence": "observed"
             },
             {
@@ -23083,7 +23090,7 @@
           ],
           "outbound": []
         },
-        "contentHash": "41a9a3bf9c7ef1f71adc4ff4c78ed0ad0ae1c852845c24618b5e5c5f2adf499f",
+        "contentHash": "1d29de5f883d34692bf6490cef30304080538c21ae09dec18eea95cc9adda54c",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -24964,12 +24971,17 @@
             },
             {
               "kind": "imports",
+              "id": "module:src/kernel/json-file.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
               "id": "module:src/loop/config.ts",
               "confidence": "observed"
             }
           ]
         },
-        "contentHash": "c0120335cf35e78f6a9135c27de04132a32b842387eca22ddd55877ad8d1f1da",
+        "contentHash": "ae389b629157451b71f4ca66d514865ca4d7aef4e24d205237f7e11aca8cddd0",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -26873,7 +26885,7 @@
             }
           ]
         },
-        "contentHash": "6ca531b2e7a9d3f8a3200169c46abf434e2abecac7acc066ab2384b3eeafcde6",
+        "contentHash": "67184ed217c7c8301c67a7be265bf631aec6ea701d60e1b255f5d69dbb7edbbe",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -41478,7 +41490,7 @@
             }
           ]
         },
-        "contentHash": "0e5688e20413e6d8ff08ac9038acf9c4753b84e55e61b35bef402cf34f811c0e",
+        "contentHash": "46ecf63296c72ef1c0daebb72c4c37c610059ad38edcf4f85f88c3817bf56f74",
         "provenance": "observed",
         "confidence": "observed"
       },
