@@ -29,7 +29,8 @@ import { attachNotifier } from './notify.js'
 import { applyRoleSettings, resolveFlowSettings, resolveRoleSettings, workerPhaseEnabled, type EffectiveFlowSettings } from './flows.js'
 import { assessDod, readDodEvidence, renderDodMarkdown } from './dod.js'
 import { artifactPath, missingArtifacts, readPhaseArtifacts, readVerifyArtifact, verifyProofs, type PhaseArtifactName } from './artifacts.js'
-import { recordRunEvidence, recordRunIo } from './agent-runs.js'
+import { sha256 } from '../kernel/hash.js'
+import { markRunSummaryPosted, readAgentRunReport, recordRunEvidence, recordRunIo, renderRunSummaryMarkdown, runSummaryMarker } from './agent-runs.js'
 import { checkSpec, renderSpec, specDirFor, writeSpec } from './spec.js'
 import { readStoredPlan } from './plan-vote.js'
 import { readJsonFile } from '../kernel/json-file.js'
@@ -1316,6 +1317,22 @@ export const runDeliver = async (input: DeliverInput): Promise<DeliverReport> =>
       const pullRequest: LifecyclePullRequest | null = result.pr === undefined ? null : { number: result.pr, state: result.outcome === 'merged' ? 'MERGED' : result.outcome === 'abandoned' ? 'CLOSED' : 'OPEN', ...(result.head ? { head: result.head } : {}) }
       const syncError = result.actions.find((action) => action.includes('review sync failed')) ?? null
       lifecycle.upsert({ issue: result.issue, runId: run.id, runStatus: status ?? run.status, stage, deliveryOutcome: result.outcome, pullRequest, error: result.outcome === 'failed' ? result.reason : syncError, finalFailure: ['blocked', 'stuck'].includes(result.outcome), events: [{ type: result.outcome === 'held' ? 'worker.held' : result.outcome === 'waiting' ? 'worker.waiting' : 'worker.reviewed', reason: result.reason }], now: now() })
+    }
+  }
+
+  // ADR-0041: one living comment per PR with the run behind it — edited in place, re-posted only when the run changed.
+  if (!dryRun && config.runs.prSummary) {
+    for (const result of results) {
+      if (result.pr === undefined) continue
+      const report = readAgentRunReport(loaded.stateDir, result.issue)
+      if (!report) continue
+      const body = renderRunSummaryMarkdown(report)
+      const digest = sha256(body)
+      if (report.state.summaryDigest === digest) continue
+      try {
+        await scm.upsertComment({ number: result.pr, body, marker: runSummaryMarker(result.issue) })
+        markRunSummaryPosted(loaded.stateDir, report.state.runId, digest)
+      } catch (error) { notes.push(`run summary on PR #${result.pr} failed: ${message(error)}`) }
     }
   }
 

@@ -307,6 +307,22 @@ export const githubComment = async (runner: CommandRunner, input: Parameters<typ
   if (outcome.code !== 0) fail(`gh pr comment exited ${outcome.code ?? 'null'}: ${outcome.stderr.trim().slice(0, 300)}`, 'HARNESS_ERROR')
 }
 
+/**
+ * One living comment per `marker`: edit the first comment whose body contains it, or create it. A listing that
+ * fails throws rather than posting blind — a second copy of a comment meant to be unique is the bug this prevents.
+ */
+export const githubUpsertComment = async (runner: CommandRunner, input: { readonly repo: string; readonly number: number; readonly body: string; readonly marker: string }, options: GitHubCliOptions = {}): Promise<'created' | 'updated'> => {
+  const bin = options.bin ?? 'gh'
+  const run = (argv: readonly string[]) => runner.run(argv, { timeoutMs: options.timeoutMs ?? 30_000, ...(options.cwd ? { cwd: options.cwd } : {}) })
+  const listed = await run([bin, 'api', '--paginate', `repos/${input.repo}/issues/${input.number}/comments`, '--jq', `.[] | select(.body | contains(${JSON.stringify(input.marker)})) | .id`])
+  if (listed.code !== 0) fail(`gh api comments exited ${listed.code ?? 'null'}: ${listed.stderr.trim().slice(0, 300)}`, 'HARNESS_ERROR')
+  const id = listed.stdout.split(/\r?\n/).map((line) => line.trim()).find((line) => /^\d+$/.test(line))
+  if (!id) { await githubComment(runner, { repo: input.repo, number: input.number, body: input.body }, options); return 'created' }
+  const patched = await run([bin, 'api', '--method', 'PATCH', `repos/${input.repo}/issues/comments/${id}`, '-f', `body=${input.body}`])
+  if (patched.code !== 0) fail(`gh api PATCH comment exited ${patched.code ?? 'null'}: ${patched.stderr.trim().slice(0, 300)}`, 'HARNESS_ERROR')
+  return 'updated'
+}
+
 /** Issue/PR comments whose body contains `marker` — used for one-comment-per-head dedupe. */
 export const githubCommentExists = async (runner: CommandRunner, input: { readonly repo: string; readonly number: number; readonly marker: string }, options: GitHubCliOptions = {}): Promise<boolean> => {
   const list = await ghJson(runner, ['api', '--paginate', `repos/${input.repo}/issues/${input.number}/comments`, '--jq', '[.[].body]'], options)

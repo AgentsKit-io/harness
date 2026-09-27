@@ -4,7 +4,7 @@
   "package": "@agentskit/harness",
   "packageVersion": "0.21.0",
   "entryPoint": "src/index.ts",
-  "sourceDigest": "03bb85c61c5e49e5caa68be5ee9b643665223c96469c5d0b139bb6164ed0d24e",
+  "sourceDigest": "26ba1a57fcc8eb326ba68fedce6f3fdc0f0defc6070ae13f2db7e17948a8adb8",
   "capabilities": [
     {
       "id": "public-surface:adapters/agent",
@@ -110,6 +110,7 @@
         "githubPullRequest",
         "githubPullRequestsForBranch",
         "githubPullRequestsForIssue",
+        "githubUpsertComment",
         "parseGitHubIssue",
         "parseGitHubIssueDetail",
         "parsePullRequest",
@@ -964,7 +965,9 @@
         "pruneAgentRuns",
         "readAgentRunReport",
         "renderAgentRunMarkdown",
-        "runDirFor"
+        "renderRunSummaryMarkdown",
+        "runDirFor",
+        "runSummaryMarker"
       ]
     },
     {
@@ -2086,5 +2089,5 @@
       ]
     }
   ],
-  "digest": "72d055587159e57b7ab58dd58618936d2ac0ebe5803f19cdfcf0dcd5fd505eb5"
+  "digest": "d870b71f1dad2e50f25a0a4ffa9bfc0e6f0979c3b4d5a68616754e931c431f9d"
 }

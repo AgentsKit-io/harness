@@ -5,7 +5,7 @@ import {
   type LinearIssueDetail,
 } from '../adapters/linear-orca.js'
 import {
-  githubComment, githubCommentExists, githubCurrentUser, githubIssue, githubIssueClose, githubIssueComment,
+  githubComment, githubCommentExists, githubUpsertComment, githubCurrentUser, githubIssue, githubIssueClose, githubIssueComment,
   githubIssueCommentExists, githubIssueCreate, githubIssueEdit, githubIssueReopen, githubMerge, githubOpenIssues,
   githubOpenPullRequests, githubPullRequest, githubPullRequestsForBranch, githubPullRequestsForIssue, githubPreflight, githubLabelRemove, type GitHubIssueDetail,
   type PullRequestSnapshot,
@@ -52,6 +52,8 @@ export interface ScmConnector {
   openPullRequests(input?: { readonly limit?: number; readonly label?: string }): Promise<readonly PullRequestSnapshot[]>
   comment(input: { readonly number: number; readonly body: string }): Promise<void>
   commentExists(input: { readonly number: number; readonly marker: string }): Promise<boolean>
+  /** Edit the comment carrying `marker` in place, or create it — one living comment instead of one per pass. */
+  upsertComment(input: { readonly number: number; readonly body: string; readonly marker: string }): Promise<'created' | 'updated'>
   removeLabel(input: { readonly number: number; readonly label: string }): Promise<void>
   merge(input: { readonly number: number; readonly headSha: string; readonly method: 'squash' | 'merge' | 'rebase'; readonly title?: string }): Promise<{ readonly merged: boolean; readonly sha: string | null; readonly message: string }>
 }
@@ -249,6 +251,7 @@ export const createGitHubScm = (input: ConnectorInput): ScmConnector => {
     openPullRequests: async (query) => githubOpenPullRequests(runner, { repo, ...(query?.limit ? { limit: query.limit } : {}), ...(query?.label ? { label: query.label } : {}) }, options),
     comment: async ({ number, body }) => { await githubComment(runner, { repo, number, body }, options) },
     commentExists: async ({ number, marker }) => githubCommentExists(runner, { repo, number, marker }, options),
+    upsertComment: async ({ number, body, marker }) => githubUpsertComment(runner, { repo, number, body, marker }, options),
     removeLabel: async ({ number, label }) => { await githubLabelRemove(runner, { repo, number, label }, options) },
     merge: async ({ number, headSha, method, title }) => githubMerge(runner, { repo, number, headSha, method, ...(title ? { title } : {}) }, options),
   }

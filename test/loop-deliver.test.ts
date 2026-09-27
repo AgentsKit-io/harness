@@ -5,6 +5,7 @@ import { afterEach, describe, expect, it } from 'vitest'
 import { approveHeldDelivery, atLeast, buildReviewArgv, createDispatchLedger, createHitlStore, dispatchRecordPath, listDispatched, loadLoopConfig, parseReviewResult, precheckDeliver, readDeliveryState, renderFindingsForWorker, runCodeReview, runDeliver } from '../src/index.js'
 import type { CommandResult, CommandRunner, DispatchRecordFile, StoredContract } from '../src/index.js'
 import { renderSpec, writeSpec } from '../src/loop/spec.js'
+import { readAgentRunReport } from '../src/loop/agent-runs.js'
 
 const fixture = (name: string): unknown => JSON.parse(readFileSync(join(process.cwd(), 'test/fixtures/loop', `${name}.json`), 'utf8')) as unknown
 const exampleYaml = readFileSync(join(process.cwd(), 'loop.config.example.yaml'), 'utf8').replace('person: my-linear-display-name', 'person: person')
@@ -52,6 +53,8 @@ interface Scenario {
   readonly verifyExitCode?: number
   /** `git status --porcelain` output in the worktree (the spec gate's commit check); clean by default. */
   readonly gitStatus?: string
+  /** Id of an existing run-summary comment on the PR, returned by the marker lookup (`gh api ... --jq`). */
+  readonly summaryCommentId?: number
 }
 
 const basePr = (over: Record<string, unknown> = {}): Record<string, unknown> => ({ ...(fixture('gh-pr-view') as Record<string, unknown>), headRefName: 'person/eng-10-demo', files: [{ path: 'packages/demo/src/index.ts' }], statusCheckRollup: [{ __typename: 'CheckRun', name: 'ci', conclusion: 'SUCCESS', status: 'COMPLETED' }], mergeable: 'MERGEABLE', mergeStateStatus: 'CLEAN', state: 'OPEN', number: 42, url: 'https://github.com/o/r/pull/42', ...over })
@@ -141,6 +144,7 @@ const setup = (initial: Scenario = {}) => {
         return { code: scenario.review?.code ?? 0, stdout: scenario.review?.failureMessage ?? '## Code review — done', stderr: '', timedOut: false, durationMs: 1 }
       }
       if (argv[0] === 'gh' && argv[1] === 'api' && argv.includes('--method')) return scenario.mergeRefused ? { code: 1, stdout: JSON.stringify({ message: 'Head branch was modified.' }), stderr: '', timedOut: false, durationMs: 1 } : ok({ merged: true, sha: 'deadbeef', message: 'merged' })
+      if (argv[0] === 'gh' && argv[1] === 'api' && argv.some((arg) => arg.includes('loop:run-summary'))) return { code: 0, stdout: scenario.summaryCommentId ? `${scenario.summaryCommentId}\n` : '', stderr: '', timedOut: false, durationMs: 1 }
       if (argv[0] === 'gh' && argv[1] === 'api') return ok([])
       if (argv[0] === 'gh' && argv[1] === 'pr' && argv[2] === 'comment') return { code: 0, stdout: '', stderr: '', timedOut: false, durationMs: 1 }
       if (argv[0] === 'git' && argv[1] === 'status') return { code: 0, stdout: scenario.gitStatus ?? '', stderr: '', timedOut: false, durationMs: 1 }
@@ -914,6 +918,42 @@ describe('rendered spec gate (ADR-0041)', () => {
     const uncommitted = specEnv({ gitStatus: '?? specs/ENG-10/\n' })
     writeSpec(uncommitted.env.worktreePath ?? '', uncommitted.loaded.config, 'ENG-10', uncommitted.expected)
     expect((await deliver(uncommitted.env)).results[0]).toMatchObject({ outcome: 'fix-round', reason: expect.stringContaining('`specs/ENG-10/` is not committed') })
+  })
+})
+
+describe('run summary on the PR (ADR-0041)', () => {
+  const summaryPosts = (env: ReturnType<typeof setup>) => env.runner.calls.filter((argv) => !argv.includes('--paginate') && argv.some((arg) => arg.includes('<!-- loop:run-summary:ENG-10 -->')))
+
+  it('creates one summary comment with the run behind the PR, and records what it posted', async () => {
+    const env = setup({ review: { code: 0 } })
+    expect((await deliver(env)).results[0]).toMatchObject({ outcome: 'merged' })
+    const [post] = summaryPosts(env)
+    expect(post?.slice(0, 3)).toEqual(['gh', 'pr', 'comment'])
+    const body = post?.[post.indexOf('--body') + 1] ?? ''
+    expect(body).toContain('**Loop run `ENG-10-1`** — stage `closed`, status `completed`')
+    expect(body).toContain('ak-harness loop run show ENG-10-1')
+    expect(readAgentRunReport(env.loaded.stateDir, 'ENG-10')?.state.summaryDigest).toMatch(/^[0-9a-f]{64}$/)
+  })
+
+  it('edits the existing comment in place instead of adding another', async () => {
+    const env = setup({ review: { code: 0 }, summaryCommentId: 42 })
+    await deliver(env)
+    const [patch] = summaryPosts(env)
+    expect(patch?.slice(0, 5)).toEqual(['gh', 'api', '--method', 'PATCH', 'repos/my-org/my-project/issues/comments/42'])
+    expect(env.runner.calls.some((argv) => argv[1] === 'pr' && argv[2] === 'comment' && argv.some((arg) => arg.includes('loop:run-summary')))).toBe(false)
+  })
+
+  it('does not re-post a run that did not change, and posts nothing with runs.prSummary off', async () => {
+    const env = setup({ review: { code: 0 }, pr: basePr({ reviewDecision: '' }) })
+    writeFileSync(join(env.dir, 'loop.config.local.yaml'), 'delivery:\n  merge:\n    requireHumanApproval: true\n')
+    await deliver(env)
+    await deliver(env)
+    expect(summaryPosts(env).filter((argv) => argv[2] === 'comment')).toHaveLength(1)
+
+    const off = setup({ review: { code: 0 } })
+    writeFileSync(join(off.dir, 'loop.config.local.yaml'), 'runs:\n  prSummary: false\n')
+    await deliver(off)
+    expect(summaryPosts(off)).toHaveLength(0)
   })
 })
 

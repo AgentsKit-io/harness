@@ -421,3 +421,36 @@ export const renderAgentRunMarkdown = (report: AgentRunReport): string => {
   ]
   return `${lines.join('\n')}\n`
 }
+
+export const runSummaryMarker = (issue: string): string => `<!-- loop:run-summary:${issue} -->`
+
+/**
+ * The run as a PR reader needs it: where it stands, what each stage handed the next, and the evidence by hash.
+ * Built from the run on disk only, so the same run renders the same body and an unchanged run is never re-posted.
+ */
+export const renderRunSummaryMarkdown = (report: AgentRunReport): string => {
+  const { state } = report
+  const rows = report.handoffs.map((handoff, index) => {
+    const trigger = (handoff['trigger'] as Record<string, unknown> | undefined) ?? {}
+    const handed = Array.isArray(handoff['handed']) ? handoff['handed'].length : 0
+    return `| ${index + 1} | ${String(handoff['from'])} → ${String(handoff['to'])} | \`${String(trigger['type'] ?? '?')}\` | ${handed} | ${String(handoff['at'] ?? '').slice(0, 19).replace('T', ' ')} |`
+  })
+  return [
+    `**Loop run \`${state.runId}\`** — stage \`${state.currentStage}\`, status \`${state.status}\`, fix rounds ${state.loopCount}${state.maxLoopCount === null ? '' : `/${state.maxLoopCount}`}${state.supersedes ? `, supersedes \`${state.supersedes}\`` : ''}`,
+    ...(state.nextRequiredApproval ? ['', `**Waiting on a human:** ${state.nextRequiredApproval}`] : []),
+    '',
+    '<details><summary>How this was built</summary>',
+    '',
+    '| # | Handoff | Trigger | Items handed | At (UTC) |',
+    '|---|---|---|---|---|',
+    ...(rows.length ? rows : ['| – | none yet | | | |']),
+    '',
+    `Inputs/outputs recorded: ${state.io.length}. Evidence: ${state.evidence.length ? state.evidence.map((item) => `${item.kind} \`${item.sha256.slice(0, 12)}\``).join(', ') : 'none linked yet'}.`,
+    '',
+    `Reconstruct locally: \`ak-harness loop run show ${state.runId}\``,
+    '',
+    '</details>',
+    '',
+    runSummaryMarker(state.issue),
+  ].join('\n')
+}
