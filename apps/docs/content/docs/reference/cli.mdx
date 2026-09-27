@@ -386,10 +386,18 @@ ak-harness loop stage [options] <stage>
 
 ### `ak-harness loop tick-worker`
 
-Internal: the detached background process `loop stage tick` spawns to run a real tick without Orca's 600s precheck ceiling — not meant to be run by hand. Use `loop tick` for a foreground run, or `loop stage tick` for the scheduled entrypoint.
+Internal: the detached background process `loop stage tick` spawns to run a real tick without Orca's precheck ceiling — not meant to be run by hand. Use `loop tick` for a foreground run, or `loop stage tick` for the scheduled entrypoint.
 
 ```bash
 ak-harness loop tick-worker [options]
+```
+
+### `ak-harness loop deliver-worker`
+
+Internal: the detached background process `loop stage deliver` spawns to run a real delivery pass without Orca's precheck ceiling — not meant to be run by hand. Use `loop deliver` for a foreground run, or `loop stage deliver` for the scheduled entrypoint.
+
+```bash
+ak-harness loop deliver-worker [options]
 ```
 
 ### `ak-harness loop tick`

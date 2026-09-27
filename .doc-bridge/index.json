@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
-  "contentHash": "cf7f35760ab8e62f7aed8de9e9b3a1e2061ed35563fd4f2bc9cef4d0ff401d10",
+  "contentHash": "22b2529d383a155cb844037b2bcbdffd484cda2f4acae1822a6e3bcc86467653",
   "contentHashAlgo": "sha256-normalized-v1",
-  "generatedAt": "2026-09-27T12:10:04.144Z",
+  "generatedAt": "2026-09-27T12:07:05.844Z",
   "project": {
     "name": "AgentsKit Harness",
     "root": "."
@@ -2182,7 +2182,7 @@
         "ts",
         "src"
       ],
-      "contentHash": "7f5c6b37f46cf3315db4df7f50ebddd8c981908aa9644b4a9361bda7236b61d4"
+      "contentHash": "3627a5aa47ee4b5e7ef369489c660a113337a668f9d8dbad9255d62562a9ee5f"
     },
     {
       "id": "module:src/context/index.ts",
@@ -5401,7 +5401,6 @@
         "IssueDecision",
         "answerDecision",
         "archiveRun",
-        "canReuseContract",
         "cancelRun",
         "cleanupRun",
         "decideIssue",
@@ -5418,7 +5417,7 @@
         "ts",
         "api"
       ],
-      "contentHash": "4bf2f444d05eaaa4fcb30d9b0bc76a5d6bb301dcacfacd78b438c451c6f63996"
+      "contentHash": "be4180f775a921ab68dd940ffe2eae06b5305c2e6a3fd4da864fbb06803e6ace"
     },
     {
       "id": "module:src/ui/api/alerts.ts",
@@ -8608,7 +8607,7 @@
         "ts",
         "test"
       ],
-      "contentHash": "cc9b3299e6c3d3f66246c3aa015698bde6ca3ada70f30783ba5c9f26b37ec235"
+      "contentHash": "447402c20d079d211e35975516d572a5b3a6264988da92f2046d03a872244856"
     },
     {
       "id": "module:test/ui-api-jobs.test.ts",
@@ -8912,7 +8911,7 @@
     }
   },
   "inputs": {
-    "hash": "c710c6d96234ccaf1303fd3828254c5e02caa98ea14d41b4f41d6daf5a93160d",
+    "hash": "7d93d9b4ff1f92f1292fe1860e9632f32fb76a6c4f4cf4146d94ae98fce7f562",
     "fileCount": 539,
     "projectionVersion": 2
   },
@@ -8935,9 +8934,9 @@
   "projection": {
     "type": "retrieval-index",
     "schemaVersion": 1,
-    "contentHash": "6ec963c90a6c52b0e544eb01f863dad4f552d54abb57f460bf52dede9a5146f6",
+    "contentHash": "a304f3f846b95ab7e4e4ae3f305a1847e70d4e83a7221c65e6c5e8f306d5d24f",
     "contentHashAlgo": "sha256-normalized-v1",
-    "snapshotHash": "fd9c942ecc1a69804a57a6e1659c12845d3fc452cda855fb7be9171e22402c12",
+    "snapshotHash": "70fa1258351989e2c16460f7737a7f66b2a1cc5d525f2cfed402f09eaf947b12",
     "overlayHash": "f99666ff9119084dd25c2974ae64eb6935ec2aa785ff5ad478fb9d541f7a5e94",
     "configurationHash": "816afaf6a7dc09767f7594d8fd80024612ca0f33becf0e44dde0107fcf2782df",
     "lexiconVersion": 1,
@@ -8970,10 +8969,10 @@
       "averageFieldLength": {
         "aliases": 2.9251824817518246,
         "body": 44.127737226277375,
-        "headings": 3.8649635036496353,
+        "headings": 3.866788321167883,
         "path": 6.114963503649635,
         "summary": 2.6313868613138687,
-        "symbols": 14.204379562043796,
+        "symbols": 14.19890510948905,
         "title": 3.9434306569343067
       }
     },
@@ -11115,7 +11114,7 @@
         ],
         "fields": {
           "title": "cli",
-          "headings": "ak-harness doctor ak-harness ui ak-harness plan ak-harness context ak-harness context resolve ak-harness discovery ak-harness discovery assess ak-harness wip ak-harness wip assess ak-harness experiment ak-harness experiment select ak-harness delivery ak-harness delivery preflight ak-harness delivery pr ak-harness delivery integration ak-harness delivery production ak-harness delivery acceptance ak-harness delivery cleanup ak-harness pilot ak-harness cycle ak-harness cycle assess ak-harness block ak-harness block validate ak-harness block assess ak-harness preflight ak-harness preflight files ak-harness snapshot ak-harness snapshot validate ak-harness learning ak-harness learning parse ak-harness coordination ak-harness coordination claim ak-harness artifacts ak-harness artifacts inspect ak-harness artifacts list ak-harness artifacts schema ak-harness loop ak-harness loop validate ak-harness loop doctor ak-harness loop precheck ak-harness loop deliver ak-harness loop stage ak-harness loop tick-worker ak-harness loop tick ak-harness loop contract ak-harness loop init ak-harness loop install ak-harness loop uninstall ak-harness loop status ak-harness loop approve ak-harness loop resume ak-harness loop paused ak-harness loop hook ak-harness loop debrief ak-harness loop issue-timeline ak-harness loop run ak-harness loop run list ak-harness loop run show ak-harness loop worker-guard ak-harness loop observe ak-harness loop watch ak-harness loop retro ak-harness loop plan ak-harness loop plan start",
+          "headings": "ak-harness doctor ak-harness ui ak-harness plan ak-harness context ak-harness context resolve ak-harness discovery ak-harness discovery assess ak-harness wip ak-harness wip assess ak-harness experiment ak-harness experiment select ak-harness delivery ak-harness delivery preflight ak-harness delivery pr ak-harness delivery integration ak-harness delivery production ak-harness delivery acceptance ak-harness delivery cleanup ak-harness pilot ak-harness cycle ak-harness cycle assess ak-harness block ak-harness block validate ak-harness block assess ak-harness preflight ak-harness preflight files ak-harness snapshot ak-harness snapshot validate ak-harness learning ak-harness learning parse ak-harness coordination ak-harness coordination claim ak-harness artifacts ak-harness artifacts inspect ak-harness artifacts list ak-harness artifacts schema ak-harness loop ak-harness loop validate ak-harness loop doctor ak-harness loop precheck ak-harness loop deliver ak-harness loop stage ak-harness loop tick-worker ak-harness loop deliver-worker ak-harness loop tick ak-harness loop contract ak-harness loop init ak-harness loop install ak-harness loop uninstall ak-harness loop status ak-harness loop approve ak-harness loop resume ak-harness loop paused ak-harness loop hook ak-harness loop debrief ak-harness loop issue-timeline ak-harness loop run ak-harness loop run list ak-harness loop run show ak-harness loop worker-guard ak-harness loop observe ak-harness loop watch ak-harness loop retro ak-harness loop plan",
           "path": "apps/docs/content/docs/reference/cli.mdx",
           "symbols": "",
           "summary": "{/* Generated by `pnpm docs:generate`. Do not edit by hand: edit `src/cli.ts` and regenerate. */}",
@@ -11136,7 +11135,7 @@
             }
           ]
         },
-        "contentHash": "8689157838b26fc7200bb97a4c56d88a4617ce6b856c3eda5033e3ad7187726f",
+        "contentHash": "3694af71a5a76f12a2a4c1c9f05bb939147a5a1af31d28bda0c44d851a103df7",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -18815,7 +18814,7 @@
             }
           ]
         },
-        "contentHash": "7f5c6b37f46cf3315db4df7f50ebddd8c981908aa9644b4a9361bda7236b61d4",
+        "contentHash": "3627a5aa47ee4b5e7ef369489c660a113337a668f9d8dbad9255d62562a9ee5f",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -32792,7 +32791,6 @@
           "IssueDecision",
           "answerDecision",
           "archiveRun",
-          "canReuseContract",
           "cancelRun",
           "cleanupRun",
           "decideIssue",
@@ -32813,7 +32811,7 @@
           "title": "actions.ts",
           "headings": "",
           "path": "src/ui/api/actions.ts",
-          "symbols": "ActionContext AnswerDecisionInput AnswerDecisionResult ContractResult EnqueueRunInput IssueDecision answerDecision archiveRun canReuseContract cancelRun cleanupRun decideIssue enqueueRun generateOrReuseContract reconcileIssue resolveTrackerSync restoreRun resumePausedIssue retryRun",
+          "symbols": "ActionContext AnswerDecisionInput AnswerDecisionResult ContractResult EnqueueRunInput IssueDecision answerDecision archiveRun cancelRun cleanupRun decideIssue enqueueRun generateOrReuseContract reconcileIssue resolveTrackerSync restoreRun resumePausedIssue retryRun",
           "summary": "",
           "body": "",
           "aliases": "module ts api"
@@ -32960,7 +32958,7 @@
             }
           ]
         },
-        "contentHash": "4bf2f444d05eaaa4fcb30d9b0bc76a5d6bb301dcacfacd78b438c451c6f63996",
+        "contentHash": "be4180f775a921ab68dd940ffe2eae06b5305c2e6a3fd4da864fbb06803e6ace",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -44291,7 +44289,7 @@
             }
           ]
         },
-        "contentHash": "cc9b3299e6c3d3f66246c3aa015698bde6ca3ada70f30783ba5c9f26b37ec235",
+        "contentHash": "447402c20d079d211e35975516d572a5b3a6264988da92f2046d03a872244856",
         "provenance": "observed",
         "confidence": "observed"
       },

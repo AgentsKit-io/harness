@@ -146,19 +146,22 @@ loop.command('stage <stage>').description('Run one stage (tick | deliver | retro
       process.exitCode = 1
       return
     }
-    if (stage === 'tick') {
-      // `tick`'s own contract-generation gate can legitimately run well past Orca's 600s precheck ceiling (see
-      // `schedule.stageTimeoutSec`'s doc comment) — so, unlike every other stage, this precheck never does the
-      // real work itself. It only peeks whether a tick is already in flight (never acquires — the spawned worker
-      // does that itself, so there is nothing here to race) and, if not, fires a fully detached background
-      // process that does the real work on its own clock, then returns in milliseconds either way.
-      const inFlight = peekStageLock(loaded.stateDir, 'tick')
+    if (stage === 'tick' || stage === 'deliver') {
+      // Both `tick`'s contract-generation gate and `deliver`'s per-issue delivery loop can legitimately run past
+      // Orca's 600s precheck ceiling — `tick` always could (see `schedule.stageTimeoutSec`'s doc comment);
+      // `deliver` didn't used to (it was fast with one or two dispatched issues) but a sequential `for` over every
+      // dispatched record (`runDeliver`) stopped fitting `precheckTimeoutSec` once several issues were in flight
+      // at once (reproduced live: 3 concurrent deliveries timed out 3 runs in a row at 120s). So neither stage's
+      // precheck does the real work itself: it only peeks whether that stage is already in flight (never acquires
+      // — the spawned worker does that itself, so there is nothing here to race) and, if not, fires a fully
+      // detached background process that does the real work on its own clock, then returns in milliseconds either way.
+      const inFlight = peekStageLock(loaded.stateDir, stage)
       if (inFlight.held) {
         console.log(JSON.stringify({ status: 'already-in-flight', stage, pid: inFlight.pid, ageMs: inFlight.ageMs }, null, 2))
         process.exitCode = 1
         return
       }
-      // Spawn `node <this same cli.js> loop tick-worker …` directly with `process.execPath`/`process.argv[1]`,
+      // Spawn `node <this same cli.js> loop <stage>-worker …` directly with `process.execPath`/`process.argv[1]`,
       // never `schedule.harnessCommand` (`ak-harness` by default) itself. On Windows any globally-installed
       // Node CLI is a `.cmd` shim, which `shell: false` cannot exec directly — `cross-spawn` (used by
       // `spawnDetachedWorker`) re-execs those through an extra `cmd.exe /d /s /c` hop, and that hop, however long
@@ -167,8 +170,8 @@ loop.command('stage <stage>').description('Run one stage (tick | deliver | retro
       // spawn — see `spawnDetachedWorker`'s doc comment). `process.argv[1]` is already the real, resolved script
       // path regardless of whether a shim launched this process, so spawning it directly needs no shim, no
       // extra hop, and no dependency on how `harnessCommand` is configured.
-      const logPath = join(loaded.stateDir, 'tick-worker.log')
-      const spawned = spawnDetachedWorker({ command: process.execPath, args: [process.argv[1]!, 'loop', 'tick-worker', '-f', file], cwd: loaded.root, logPath })
+      const logPath = join(loaded.stateDir, `${stage}-worker.log`)
+      const spawned = spawnDetachedWorker({ command: process.execPath, args: [process.argv[1]!, 'loop', `${stage}-worker`, '-f', file], cwd: loaded.root, logPath })
       // Windows needs the detached child to survive a little past this process's own exit to be safely
       // independent of it: reproduced live under real system load — exiting immediately after spawn (even with
       // `detached: true` + `.unref()`) silently kills a still-starting child before its own process/module-load/
@@ -183,7 +186,7 @@ loop.command('stage <stage>').description('Run one stage (tick | deliver | retro
       let confirmed = false
       while (Date.now() < confirmDeadlineAt) {
         await new Promise((resolve) => setTimeout(resolve, 100))
-        if (peekStageLock(loaded.stateDir, 'tick').pid === spawned.pid) { confirmed = true; break }
+        if (peekStageLock(loaded.stateDir, stage).pid === spawned.pid) { confirmed = true; break }
       }
       completed('kicked-off', 0)
       console.log(JSON.stringify({ status: 'kicked-off', stage, pid: spawned.pid, log: spawned.logPath, confirmed }, null, 2))
@@ -196,22 +199,15 @@ loop.command('stage <stage>').description('Run one stage (tick | deliver | retro
       process.exitCode = 1
       return
     }
-    const budgetMs = Math.max(60_000, loaded.config.schedule.stageTimeoutSec * 1000 - 60_000)
-    const threshold = loaded.config.resilience.stagePauseAfterRuns
     try {
-      const report = stage === 'deliver' ? await runDeliver({ loaded, runner, budgetMs, bus }) : await runRetroStage({ loaded, runner, bus })
-      if (stage !== 'retro') recordStageRunResult(loaded.stateDir, trackedStage, { succeeded: true }, threshold)
-      completed(report.status, 'results' in report ? report.results.length : 'learningsProposed' in report ? report.learningsProposed : 0)
+      // Only `retro` still reaches here — `tick` and `deliver` both returned above.
+      const report = await runRetroStage({ loaded, runner, bus })
+      completed(report.status, report.learningsProposed)
       console.log(JSON.stringify(report, null, 2))
     } catch (error) {
       const reason = error instanceof Error ? error.message : String(error)
-      const entry = stage !== 'retro' ? recordStageRunResult(loaded.stateDir, trackedStage, { succeeded: false, reason }, threshold) : null
       completed('error', 0)
-      // A stage that just auto-paused is the loop stopping on its own: it gets an event on the same bus as
-      // everything else, and `stage.paused` is in `notifications.events`' default list, so the configured
-      // channel hears about it exactly the way any other notified event does — no more separate direct call.
-      if (entry?.pausedAt) appendLoopEvent(loaded.stateDir, { at: new Date().toISOString(), type: 'stage.paused', stage, reason, consecutiveFailures: entry.consecutiveFailures }, bus)
-      console.log(JSON.stringify({ status: 'error', stage, error: reason, ...(entry ? { consecutiveFailures: entry.consecutiveFailures, paused: entry.pausedAt !== null } : {}) }, null, 2))
+      console.log(JSON.stringify({ status: 'error', stage, error: reason }, null, 2))
     } finally {
       stageLock()
     }
@@ -220,46 +216,55 @@ loop.command('stage <stage>').description('Run one stage (tick | deliver | retro
     await flushNotifications()
   }
 })
-loop.command('tick-worker').description('Internal: the detached background process `loop stage tick` spawns to run a real tick without Orca\'s 600s precheck ceiling — not meant to be run by hand. Use `loop tick` for a foreground run, or `loop stage tick` for the scheduled entrypoint.').action(async function (this: Command) {
-  const runner = createProcessRunner(); const file = loopFile(this)
+// Shared body for `tick-worker` and `deliver-worker`: both are detached background processes the `stage`
+// precheck spawns (see above) to do the real work outside Orca's precheck ceiling, on the stage's own lock and
+// budget. Not meant to be run by hand — use `loop tick`/`loop deliver` for a foreground run, or `loop stage
+// tick`/`loop stage deliver` for the scheduled entrypoint.
+const runDetachedStageWorker = async (input: {
+  readonly stage: LoopStageName
+  readonly file: string
+  readonly run: (ctx: { readonly loaded: ReturnType<typeof loadLoopConfig>; readonly runner: ReturnType<typeof createProcessRunner>; readonly budgetMs: number; readonly bus: ReturnType<typeof createLoopEventBus> }) => Promise<{ readonly status: string; readonly results: readonly unknown[] }>
+}): Promise<void> => {
+  const { stage, file, run } = input
+  const runner = createProcessRunner()
   const loaded = loadLoopConfig(file)
   const startedAt = Date.now()
   const bus = createLoopEventBus()
   if (loaded.config.plugins.modules.length) await loadLoopPlugins(loaded.root, loaded.config.plugins.modules, bus)
   const flushNotifications = attachNotifier(bus, { config: loaded.config, runner })
-  const completed = (status: string, count: number): void => appendLoopEvent(loaded.stateDir, { at: new Date().toISOString(), type: 'stage.completed', stage: 'tick', durationMs: Date.now() - startedAt, status, count }, bus)
+  const completed = (status: string, count: number): void => appendLoopEvent(loaded.stateDir, { at: new Date().toISOString(), type: 'stage.completed', stage, durationMs: Date.now() - startedAt, status, count }, bus)
   try {
     // A stage that got paused (or resumed) in the gap between the precheck's peek and this process actually
     // starting is rare — the precheck returns in milliseconds — but cheap to catch here too rather than burn a
-    // whole tick budget on work the loop was told to stop.
-    if (isStagePaused(loaded.stateDir, 'tick')) {
-      const entry = stageEntry(loaded.stateDir, 'tick')
-      console.log(JSON.stringify({ status: 'paused', stage: 'tick', pausedAt: entry.pausedAt, pausedReason: entry.pausedReason, consecutiveFailures: entry.consecutiveFailures, resume: `ak-harness loop resume --stage tick -f ${JSON.stringify(file)}` }, null, 2))
+    // whole stage budget on work the loop was told to stop.
+    if (isStagePaused(loaded.stateDir, stage)) {
+      const entry = stageEntry(loaded.stateDir, stage)
+      console.log(JSON.stringify({ status: 'paused', stage, pausedAt: entry.pausedAt, pausedReason: entry.pausedReason, consecutiveFailures: entry.consecutiveFailures, resume: `ak-harness loop resume --stage ${stage} -f ${JSON.stringify(file)}` }, null, 2))
       process.exitCode = 1
       return
     }
-    const stageLock = acquireStageLock(loaded.stateDir, 'tick')
+    const stageLock = acquireStageLock(loaded.stateDir, stage)
     if (!stageLock) {
-      // Lost a race with another tick-worker (or a human's own `loop stage tick` / `loop tick-worker`) that
-      // acquired first — the precheck's peek is advisory, this acquire is the real, atomic mutex. Harmless: the
-      // lock's actual owner is already doing the work this run would have duplicated.
-      console.log(JSON.stringify({ status: 'locked', stage: 'tick', reason: 'another stage run is still active' }, null, 2))
+      // Lost a race with another worker of this stage (or a human's own `loop stage <stage>` / `loop <stage>-worker`)
+      // that acquired first — the precheck's peek is advisory, this acquire is the real, atomic mutex. Harmless:
+      // the lock's actual owner is already doing the work this run would have duplicated.
+      console.log(JSON.stringify({ status: 'locked', stage, reason: 'another stage run is still active' }, null, 2))
       process.exitCode = 1
       return
     }
     const budgetMs = Math.max(60_000, loaded.config.schedule.stageTimeoutSec * 1000 - 60_000)
     const threshold = loaded.config.resilience.stagePauseAfterRuns
     try {
-      const report = await runTick({ loaded, runner, budgetMs, bus })
-      recordStageRunResult(loaded.stateDir, 'tick', { succeeded: true }, threshold)
+      const report = await run({ loaded, runner, budgetMs, bus })
+      recordStageRunResult(loaded.stateDir, stage, { succeeded: true }, threshold)
       completed(report.status, report.results.length)
       console.log(JSON.stringify(report, null, 2))
     } catch (error) {
       const reason = error instanceof Error ? error.message : String(error)
-      const entry = recordStageRunResult(loaded.stateDir, 'tick', { succeeded: false, reason }, threshold)
+      const entry = recordStageRunResult(loaded.stateDir, stage, { succeeded: false, reason }, threshold)
       completed('error', 0)
-      if (entry.pausedAt) appendLoopEvent(loaded.stateDir, { at: new Date().toISOString(), type: 'stage.paused', stage: 'tick', reason, consecutiveFailures: entry.consecutiveFailures }, bus)
-      console.log(JSON.stringify({ status: 'error', stage: 'tick', error: reason, consecutiveFailures: entry.consecutiveFailures, paused: entry.pausedAt !== null }, null, 2))
+      if (entry.pausedAt) appendLoopEvent(loaded.stateDir, { at: new Date().toISOString(), type: 'stage.paused', stage, reason, consecutiveFailures: entry.consecutiveFailures }, bus)
+      console.log(JSON.stringify({ status: 'error', stage, error: reason, consecutiveFailures: entry.consecutiveFailures, paused: entry.pausedAt !== null }, null, 2))
     } finally {
       stageLock()
     }
@@ -267,6 +272,12 @@ loop.command('tick-worker').description('Internal: the detached background proce
   } finally {
     await flushNotifications()
   }
+}
+loop.command('tick-worker').description('Internal: the detached background process `loop stage tick` spawns to run a real tick without Orca\'s precheck ceiling — not meant to be run by hand. Use `loop tick` for a foreground run, or `loop stage tick` for the scheduled entrypoint.').action(async function (this: Command) {
+  await runDetachedStageWorker({ stage: 'tick', file: loopFile(this), run: ({ loaded, runner, budgetMs, bus }) => runTick({ loaded, runner, budgetMs, bus }) })
+})
+loop.command('deliver-worker').description('Internal: the detached background process `loop stage deliver` spawns to run a real delivery pass without Orca\'s precheck ceiling — not meant to be run by hand. Use `loop deliver` for a foreground run, or `loop stage deliver` for the scheduled entrypoint.').action(async function (this: Command) {
+  await runDetachedStageWorker({ stage: 'deliver', file: loopFile(this), run: ({ loaded, runner, budgetMs, bus }) => runDeliver({ loaded, runner, budgetMs, bus }) })
 })
 loop.command('tick').description('One keep-pushing tick: intake → admit → contract → dispatch workers into worktrees.').option('--dry-run', 'plan only; no worktree, no tracker write, no contract cached').option('--max <n>', 'max dispatches this tick', (value: string) => Number(value)).option('--issue <identifier>', 'restrict to one issue').option('--skip-contract', 'do not call the orchestrator when no contract is cached').action(async function (this: Command, command: { readonly dryRun?: boolean; readonly max?: number; readonly issue?: string; readonly skipContract?: boolean }) { const report = await runTick({ configPath: loopFile(this), runner: createProcessRunner(), dryRun: command.dryRun ?? false, maxDispatch: command.max, onlyIssue: command.issue, skipContractGeneration: command.skipContract ?? false }); print(report); if (report.status === 'blocked') process.exitCode = 1 })
 loop.command('contract <identifier>').description('Freeze (or show) the orchestrator contract for one configured-tracker issue.').option('--refresh', 'regenerate even when a cached contract exists').option('--dry-run', 'generate but do not cache').action(async function (this: Command, identifier: string, command: { readonly refresh?: boolean; readonly dryRun?: boolean }) {
