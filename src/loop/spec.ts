@@ -1,5 +1,5 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
-import { dirname, join } from 'node:path'
+import { dirname, join, posix } from 'node:path'
 import type { CommandRunner } from '../adapters/command.js'
 import { sha256 } from '../kernel/hash.js'
 import type { LoopConfig } from './config.js'
@@ -93,14 +93,15 @@ ${contract.outcomes.map((outcome) => `| ${outcome.id} | ${checkOf(outcome).repla
 export const specDigest = (spec: RenderedSpec): string => sha256(SPEC_FILES.map((file) => spec[file]).join('\0'))
 
 /** `specs/<issue>` relative to the worktree root. */
-export const specDirFor = (config: LoopConfig, issue: string): string => join(config.spec.dir, issue)
+// Repository paths, not filesystem paths: `/` on every OS (git pathspecs, PR text, the brief).
+export const specDirFor = (config: LoopConfig, issue: string): string => posix.join(config.spec.dir.replace(/\\/g, '/'), issue)
 
 export const writeSpec = (worktreePath: string, config: LoopConfig, issue: string, spec: RenderedSpec): readonly string[] =>
   SPEC_FILES.map((file) => {
     const path = join(worktreePath, specDirFor(config, issue), file)
     mkdirSync(dirname(path), { recursive: true })
     writeFileSync(path, spec[file], 'utf8')
-    return join(specDirFor(config, issue), file)
+    return posix.join(specDirFor(config, issue), file)
   })
 
 export interface SpecCheck {
@@ -116,8 +117,8 @@ export const checkSpec = async (runner: CommandRunner, worktreePath: string, con
   const drifted: string[] = []
   for (const file of SPEC_FILES) {
     const path = join(worktreePath, dir, file)
-    if (!existsSync(path)) { missing.push(join(dir, file)); continue }
-    if (readFileSync(path, 'utf8') !== expected[file]) drifted.push(join(dir, file))
+    if (!existsSync(path)) { missing.push(posix.join(dir, file)); continue }
+    if (readFileSync(path, 'utf8') !== expected[file]) drifted.push(posix.join(dir, file))
   }
   const status = await runner.run(['git', 'status', '--porcelain', '--', dir], { cwd: worktreePath, timeoutMs: 10_000 })
   // Fails closed: a status nobody could read is not proof the files were committed.

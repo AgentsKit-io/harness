@@ -1,5 +1,5 @@
 import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
-import { join, relative } from 'node:path'
+import { join, relative as relativePath, sep } from 'node:path'
 import { z } from 'zod'
 import { sha256 } from '../kernel/hash.js'
 import { scanForPii } from '../kernel/pii.js'
@@ -71,6 +71,9 @@ export interface AgentRunState {
   /** Digest of the last run summary posted on the PR, so an unchanged run is not re-posted. */
   readonly summaryDigest?: string
 }
+
+/** Paths recorded in a run are `/`-separated on every OS, so a run reads the same wherever it is opened. */
+const relative = (from: string, to: string): string => relativePath(from, to).split(sep).join('/')
 
 const StateSchema = z.object({ schemaVersion: z.literal(AGENT_RUN_SCHEMA_VERSION), runId: z.string().min(1), issue: z.string().min(1), sequence: z.number().int(), io: z.array(z.unknown()), evidence: z.array(z.unknown()), handoffs: z.array(z.unknown()), pending: z.array(z.unknown()) }).loose()
 

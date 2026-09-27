@@ -68,7 +68,7 @@ describe('agent runs (ADR-0041)', () => {
     const tail = readFileSync(join(runDir, log?.file ?? ''), 'utf8')
     expect(tail.startsWith('…[truncated')).toBe(true)
     expect(tail.endsWith('FAILED here')).toBe(true)
-    expect(readAgentRunReport(dir, 'ENG-1')?.state.lastOutput).toBe(join('runs', 'ENG-1-1', 'outputs', '01-build-worker-terminal.txt'))
+    expect(readAgentRunReport(dir, 'ENG-1')?.state.lastOutput).toBe('runs/ENG-1-1/outputs/01-build-worker-terminal.txt')
   })
 
   it('hands the next stage exactly the I/O recorded since the last handoff, plus the frozen contract', () => {
@@ -94,7 +94,7 @@ describe('agent runs (ADR-0041)', () => {
     writeFileSync(join(dir, 'issues', 'ENG-1', 'review-bbbbbbbbbbbb.json'), '{"status":"clean"}')
     emit(dir, 'pr.reviewed', { pr: 7, head: 'bbbbbbbbbbbbbbbb' })
     const state = readAgentRunReport(dir, 'ENG-1')?.state
-    expect(state?.evidence.map((item) => [item.kind, item.path])).toEqual([['verify', 'verify.json'], ['review', join('issues', 'ENG-1', 'review-bbbbbbbbbbbb.json')]])
+    expect(state?.evidence.map((item) => [item.kind, item.path])).toEqual([['verify', 'verify.json'], ['review', 'issues/ENG-1/review-bbbbbbbbbbbb.json']])
     expect(JSON.parse(readFileSync(join(runDirFor(dir, 'ENG-1-1'), 'evidence', 'index.json'), 'utf8'))).toHaveLength(2)
   })
 
