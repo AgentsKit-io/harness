@@ -44,7 +44,8 @@ export const classifyFailure = (error: unknown): FailureClassification => {
   const code = typeof value?.code === 'string' ? value.code.toUpperCase() : ''
   const message = typeof value?.message === 'string' ? value.message : String(error)
   const text = `${code} ${message}`.toLowerCase()
-  if (/quota|rate.?limit|too many requests|429/.test(text)) return { class: 'quota', retryable: true, reason: message }
+  // 429 only as an HTTP status: bare digits also appear in commit hashes and token counts ("87429 tokens").
+  if (code === '429' || /quota|rate.?limit|too many requests|\b(?:http\S*|status(?: code)?|code|error)[:= ]+429\b/.test(text)) return { class: 'quota', retryable: true, reason: message }
   if (/timeout|timed out|deadline/.test(text)) return { class: 'timeout', retryable: true, reason: message }
   if (/policy|forbidden|permission|approval/.test(text)) return { class: 'policy', retryable: false, reason: message }
   if (/invalid|schema|argument|config|validation/.test(text)) return { class: 'validation', retryable: false, reason: message }

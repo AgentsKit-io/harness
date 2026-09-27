@@ -70,3 +70,17 @@ describe('resilience', () => {
     expect(result).toMatchObject({ status: 'completed', value: 'done', attempts: 1 })
   })
 })
+
+describe('classifyFailure 429 anchoring (regression: bare digits put a provider into cooldown)', () => {
+  it('does not read 429 inside a commit hash or a token count as quota', () => {
+    expect(classifyFailure(new Error('checkout of 4f2a4291c failed')).class).not.toBe('quota')
+    expect(classifyFailure(new Error('prompt was 87429 tokens')).class).not.toBe('quota')
+  })
+
+  it('still reads 429 as an HTTP status as quota', () => {
+    expect(classifyFailure(new Error('HTTP/1.1 429')).class).toBe('quota')
+    expect(classifyFailure(new Error('request failed with status code 429')).class).toBe('quota')
+    expect(classifyFailure(new Error('API Error: 429 {"type":"error"}')).class).toBe('quota')
+    expect(classifyFailure({ code: '429', message: 'slow down' }).class).toBe('quota')
+  })
+})
