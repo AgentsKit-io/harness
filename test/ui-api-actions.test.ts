@@ -6,7 +6,9 @@ import type { CommandResult, CommandRunner } from '../src/adapters/command.js'
 import type { LoadedLoopConfig } from '../src/loop/config.js'
 import { createHitlStore } from '../src/loop/hitl.js'
 import { readIssueFailures, pauseIssue } from '../src/loop/resilience-state.js'
-import { answerDecision, archiveRun, cancelRun, decideIssue, enqueueRun, resumePausedIssue, restoreRun, retryRun, type ActionContext } from '../src/ui/api/actions.js'
+import { writeJsonAtomic } from '../src/loop/fs-atomic.js'
+import { dispatchRecordPath } from '../src/loop/tick.js'
+import { answerDecision, archiveRun, cancelRun, cleanupRun, decideIssue, enqueueRun, resumePausedIssue, restoreRun, retryRun, type ActionContext } from '../src/ui/api/actions.js'
 import { readCurrentProjection } from '../src/ui/api/store.js'
 
 const cleanups: string[] = []
@@ -33,6 +35,22 @@ describe('the control-plane action surface', () => {
     const record = readCurrentProjection(context.loaded.stateDir).issues['ENG-1']!
     expect(record.phase).toBe('running')
     expect(record.run).toMatchObject({ id: runId, status: 'queued', builder: 'codex/gpt' })
+  })
+
+  it('cancel cleanup treats a stale terminal handle as already closed and goes on to remove the worktree', async () => {
+    const context = contextFor()
+    writeJsonAtomic(dispatchRecordPath(context.loaded.stateDir, 'acme/app#83'), { issue: 'acme/app#83', worktreeId: 'repo::C:/w/app-83', branch: 'you/app-83', provider: 'codex', model: 'gpt', terminal: 'term_gone', leaseId: 'lease-1', dispatchedAt: '2026-09-26T00:00:00.000Z' })
+    const calls: string[] = []
+    const runner: CommandRunner = { run: async (argv): Promise<CommandResult> => {
+      calls.push(argv.slice(1, 3).join(' '))
+      return argv[1] === 'terminal' && argv[2] === 'close'
+        ? { code: 1, stdout: JSON.stringify({ ok: false, error: { code: 'terminal_handle_stale', message: 'terminal_handle_stale' } }), stderr: '', timedOut: false, durationMs: 1 }
+        : { code: 0, stdout: '{"ok":true,"result":{}}', stderr: '', timedOut: false, durationMs: 1 }
+    } }
+    await cleanupRun({ ...context, runner }, 'acme/app#83', 'run-1').catch((error: unknown) => {
+      expect(String(error)).not.toContain('terminal cleanup failed')
+    })
+    expect(calls).toContain('worktree rm')
   })
 
   it('cancelling a queued run (no dispatch, no active lease) completes cleanup immediately', async () => {

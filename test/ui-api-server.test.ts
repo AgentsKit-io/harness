@@ -149,3 +149,21 @@ describe('the automations the control plane installs', () => {
     expect(withRunningHarness(withCommand('npx @agentskit/harness')).config.schedule.harnessCommand).toBe('npx @agentskit/harness')
   })
 })
+
+describe('automation drift as the Attention inbox sees it', () => {
+  it('an automation exactly as Reinstall writes it (pinned binary) reads as in sync, not drifted', async () => {
+    const { loadLoopConfig } = await import('../src/loop/config.js')
+    const { automationSpecs, reconcileAutomations } = await import('../src/loop/automations.js')
+    const root = mkdtempSync(join(tmpdir(), 'harness-ui-drift-')); cleanups.push(root)
+    const yaml = (await import('node:fs')).readFileSync(join(process.cwd(), 'loop.config.example.yaml'), 'utf8').replace('person: my-linear-display-name', 'person: person')
+    writeFileSync(join(root, 'loop.config.yaml'), yaml)
+    const loaded = loadLoopConfig(join(root, 'loop.config.yaml'))
+    const installed = automationSpecs(withRunningHarness(loaded), 'claude').map((spec, index) => ({
+      id: `id-${index}`, name: spec.name, enabled: true, trigger: spec.trigger, provider: spec.provider,
+      raw: { prompt: spec.prompt, precheck: { command: spec.precheck, timeoutSeconds: spec.precheckTimeoutSec }, workspaceId: `repo::${root}` },
+    }))
+    expect(installed[0]?.raw.precheck.command).not.toMatch(/^ak-harness /)
+    expect(reconcileAutomations(automationSpecs(withRunningHarness(loaded), ''), installed, loaded.config).map((row) => row.state)).toEqual(installed.map(() => 'in-sync'))
+    expect(reconcileAutomations(automationSpecs(loaded, ''), installed, loaded.config).some((row) => row.state === 'drifted')).toBe(true)
+  })
+})

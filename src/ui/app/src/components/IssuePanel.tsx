@@ -3,7 +3,7 @@ import { AlertTriangle, Lock, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { getIssueDetail, getTimeline, type AttentionAction, type IssueDetail, type IssueRecord, type TimelineEvent } from '@/lib/api'
-import { useActionRunner } from '@/lib/actions'
+import { lockedOut, useActionRunner } from '@/lib/actions'
 import { formatAge, useLiveSnapshot } from '@/lib/snapshot'
 import { useIssuePanel } from '@/lib/useIssuePanel'
 import { BUCKET_COLOR, SEGMENT_CLASS, ageMs, capTone, formatTokens, modelOf, phaseLabel, runBucket, segments } from '@/lib/runs'
@@ -170,11 +170,11 @@ export const StatusBox = ({ record, detail, locked, onAction, busy }: {
       {next && next.actions.length > 0 && (
         <div className="flex flex-wrap gap-2">
           {next.actions.map((action) => {
-            const lockedOut = action.destructive && locked !== null
+            const blocked = lockedOut(action, locked !== null)
             return (
               <Button key={action.id} size="sm" variant={action.destructive ? 'destructive-outline' : action.primary ? 'primary' : 'outline'}
-                disabled={lockedOut || busy === `${action.id}:${record.issue}`} title={lockedOut ? locked : undefined} onClick={() => onAction(action)}>
-                {lockedOut ? 'Reconcile first' : action.label}
+                disabled={blocked || busy === `${action.id}:${record.issue}`} title={blocked ? locked ?? undefined : undefined} onClick={() => onAction(action)}>
+                {blocked ? 'Reconcile first' : action.label}
               </Button>
             )
           })}
