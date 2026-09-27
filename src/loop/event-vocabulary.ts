@@ -223,6 +223,8 @@ export const LOOP_EVENT_TYPES = {
   'ui.tracker-sync-resolved': ['issue', 'action'],
   /** A delivery pass over one issue threw (gh/Orca/review); `consecutive` counts passes in a row — at 3 the issue is `failed`. */
   'delivery.error': ['issue', 'error', 'consecutive'],
+  /** Orca could not answer (e.g. `terminal list` failed); the worker's state is unknown, so the pass waits instead of acting. */
+  'orca.unavailable': ['issue', 'operation', 'error'],
   /** A gating `before*` plugin hook threw; the action it guards was blocked (fail closed), not waved through. */
   'plugin.hook-failed': ['issue', 'hook', 'error'],
 } as const satisfies Readonly<Record<string, readonly string[]>>

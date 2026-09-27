@@ -564,7 +564,13 @@ const handleNoPullRequest = async (ctx: Context, record: DispatchRecordFile, lea
     const own = terminals.find((terminal) => terminal.handle === record.terminal) ?? terminals[0]
     terminalAlive = Boolean(own && own.status !== 'orphaned' && own.status !== 'disconnected')
     lastOutputAt = own?.lastOutputAt ?? null
-  } catch (error) { actions.push(`terminal list failed: ${message(error)}`) }
+  } catch (error) {
+    // An Orca outage says nothing about the worker: treating it as "terminal gone" escalated live workers as stuck,
+    // or handed a second agent into the same worktree.
+    const detail = message(error)
+    event(ctx, { type: 'orca.unavailable', issue: record.issue, operation: 'terminal-list', error: detail })
+    return { issue: record.issue, outcome: 'waiting', reason: `orca unavailable: ${detail}`, actions: [...actions, `terminal list failed: ${detail}`] }
+  }
   const sinceDispatch = minutesBetween(now, record.dispatchedAt)
   const sinceOutput = Math.min(sinceDispatch, minutesBetween(now, lastOutputAt))
   const idleTimeout = ctx.config.delivery.workerIdleTimeoutMin

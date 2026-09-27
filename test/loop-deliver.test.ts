@@ -61,6 +61,8 @@ interface Scenario {
   readonly prListFailures?: number
   /** The next N review invocations throw (the runner itself fails, e.g. a spawn error). */
   readonly reviewThrows?: number
+  /** `orca terminal list` fails (Orca runtime down). */
+  readonly orcaDown?: boolean
 }
 
 const basePr = (over: Record<string, unknown> = {}): Record<string, unknown> => ({ ...(fixture('gh-pr-view') as Record<string, unknown>), headRefName: 'person/eng-10-demo', files: [{ path: 'packages/demo/src/index.ts' }], statusCheckRollup: [{ __typename: 'CheckRun', name: 'ci', conclusion: 'SUCCESS', status: 'COMPLETED' }], mergeable: 'MERGEABLE', mergeStateStatus: 'CLEAN', state: 'OPEN', number: 42, url: 'https://github.com/o/r/pull/42', ...over })
@@ -134,6 +136,7 @@ const setup = (initial: Scenario = {}) => {
         return { code: 1, stdout: '', stderr: `no fixture for pr view ${number}`, timedOut: false, durationMs: 1 }
       }
       if (argv[0] === 'gh' && argv[1] === 'pr' && argv[2] === 'edit') return { code: 0, stdout: '', stderr: '', timedOut: false, durationMs: 1 }
+      if (key.startsWith('orca terminal list') && scenario.orcaDown) return { code: 1, stdout: '', stderr: 'orca runtime unavailable: connect ECONNREFUSED', timedOut: false, durationMs: 1 }
       if (key.startsWith('orca terminal list')) return okResult({ terminals: scenario.terminals ?? [{ handle: 'term_w', connected: true, orphaned: false, lastOutputAt: Date.parse('2026-09-11T10:30:00.000Z'), worktreeId: 'repo-1::/w/eng-10-demo' }] })
       if (key.startsWith('orca terminal read')) return scenario.terminalScreen === undefined ? { code: 127, stdout: '', stderr: 'no fixture for terminal read', timedOut: false, durationMs: 1 } : okResult({ tail: scenario.terminalScreen })
       if (key.startsWith('orca terminal create')) return okResult({ handle: 'term_handoff', terminal: { handle: 'term_handoff' } })
@@ -789,6 +792,17 @@ describe('deliver', () => {
     env.scenario.pr = basePr({ headRefOid: '5555555555555555555555555555555555555555' })
     expect((await deliver(env)).results[0]).toMatchObject({ outcome: 'merged' })
     expect(readFileSync(join(env.loaded.stateDir, 'events.ndjson'), 'utf8')).toContain('"type":"worker.reopened"')
+  })
+
+  it('an Orca outage is not a dead worker: waiting with orca.unavailable, no stuck escalation and no handoff', async () => {
+    const env = setup({ pr: null, orcaDown: true, exhaustClaude: true, dispatchedAt: '2026-09-11T09:00:00.000Z' })
+    const result = (await deliver(env)).results[0]
+    expect(result).toMatchObject({ outcome: 'waiting', reason: expect.stringContaining('orca unavailable') })
+    expect(env.ledger.active()).toHaveLength(1)
+    expect(readDeliveryState(env.loaded.stateDir, 'ENG-10')).toMatchObject({ finishedAt: null, handoffs: [] })
+    expect(env.runner.calls.some((argv) => argv[1] === 'terminal' && argv[2] === 'create')).toBe(false)
+    expect(env.runner.calls.some((argv) => argv[1] === 'linear' && argv[2] === 'label')).toBe(false)
+    expect(readFileSync(join(env.loaded.stateDir, 'events.ndjson'), 'utf8')).toContain('"type":"orca.unavailable","issue":"ENG-10"')
   })
 
   it('stops a dispatch that has run past delivery.maxDispatchMinutes, even though the terminal is still active', async () => {
