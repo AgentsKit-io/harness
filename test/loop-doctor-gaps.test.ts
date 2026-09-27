@@ -228,6 +228,15 @@ describe('review.cli and memory checks', () => {
     const drifted = fakeRunner({ 'orca automations list --json': ok({ ok: true, result: { automations: [automation('tick', '0 4 * * *')] } }) })
     expect((await runLoopDoctor({ ...shared, runner: drifted, configPath })).checks.find((check) => check.id === 'automations.drift')).toMatchObject({ status: 'warning', detail: expect.stringContaining('loop-my-project-tick: drifted (trigger)') })
 
+    // Installed by the UI (Reinstall pins the running binary): in sync too, not a drift false positive.
+    const { automationSpecs, withRunningHarness } = await import('../src/loop/automations.js')
+    const loadedConfig = loadLoopConfig(configPath)
+    const pinnedSpecs = automationSpecs(withRunningHarness(loadedConfig), 'claude')
+    expect(pinnedSpecs[0]?.precheck).toMatch(/^node "/)
+    const pinnedAutomations = pinnedSpecs.map((spec) => ({ id: `id-${spec.name}`, name: spec.name, enabled: true, rrule: spec.trigger, agentId: 'claude', prompt: spec.prompt, precheck: { command: spec.precheck, timeoutSeconds: spec.precheckTimeoutSec }, workspaceId: `repo-1::${dir}` }))
+    const pinned = fakeRunner({ 'orca automations list --json': ok({ ok: true, result: { automations: pinnedAutomations } }) })
+    expect((await runLoopDoctor({ ...shared, runner: pinned, configPath })).checks.find((check) => check.id === 'automations.drift')).toMatchObject({ status: 'passed' })
+
     // Orca unreachable is a warning about the check, never a silent pass.
     expect((await runLoopDoctor({ ...shared, runner: fakeRunner({}, { 'orca automations list': 'orca is down' }), configPath })).checks.find((check) => check.id === 'automations.drift')).toMatchObject({ status: 'warning', detail: expect.stringContaining('orca is down') })
 
