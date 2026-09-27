@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
-  "contentHash": "ed8c9a0ee728d7f55657befb05575133fd04c3edf1b92e262c28f44ab7187024",
+  "contentHash": "fd105743d362e66f829226649cf0fb3e83e76d491ef38b8736adc7b444fc310e",
   "contentHashAlgo": "sha256-normalized-v1",
-  "generatedAt": "2026-09-27T20:19:58.331Z",
+  "generatedAt": "2026-09-27T20:16:06.425Z",
   "project": {
     "name": "AgentsKit Harness",
     "root": "."
@@ -3862,6 +3862,7 @@
         "generateContract",
         "parseContractOutput",
         "parseStructuredContractOutput",
+        "providerFailureDetail",
         "readStoredContract",
         "renderContractPrompt",
         "resolveDocContext",
@@ -3873,7 +3874,7 @@
         "ts",
         "loop"
       ],
-      "contentHash": "f49b21f3aa9b229b9c26ddc69baf1fc4e04d1b4864c5c91cb18df3806d769b07"
+      "contentHash": "634a5a2d9eb3c7acff5e505d9420329a44fc2c35707d3d213c8198fe130143cc"
     },
     {
       "id": "module:src/loop/cooldown.ts",
@@ -3946,7 +3947,7 @@
         "ts",
         "loop"
       ],
-      "contentHash": "7d009f08f98896c9fa6457b4fb8a103f88102af25810e1103fcfd7f38ee8f299"
+      "contentHash": "d158b75b20ac34d080658f0219f576477f6b39db87202cecfc257acd1cfa8b90"
     },
     {
       "id": "module:src/loop/detached-worker.ts",
@@ -4846,7 +4847,7 @@
         "ts",
         "loop"
       ],
-      "contentHash": "590ec14311e2b2edbc8626d5a5c782faee394996c63f25b8954b35c8d1a8af64"
+      "contentHash": "e86c4e6e339252f250aef916fa84b8fc52291606837fe3d7532585bd1559dbb2"
     },
     {
       "id": "module:src/loop/plan-vote.ts",
@@ -4884,7 +4885,7 @@
         "ts",
         "loop"
       ],
-      "contentHash": "266956830dbbb7f37163985422c73704e250a0e167389e937cc6cae10ff5e52e"
+      "contentHash": "d5bf179cf0ef6995a8e5df6aa55621c08709adfe0d61ae39ccc7f764124a13c2"
     },
     {
       "id": "module:src/loop/presets.ts",
@@ -7727,7 +7728,7 @@
         "ts",
         "test"
       ],
-      "contentHash": "75f50d52adbc04b7a5681ec928f42e50364544e5463fd742e313be655ec4913e"
+      "contentHash": "3f15195a8ae90bd230b139157d66cf3ffa6b1cf05e947f74d515dae72a08fefc"
     },
     {
       "id": "module:test/loop-contract-gaps.test.ts",
@@ -7787,7 +7788,7 @@
         "ts",
         "test"
       ],
-      "contentHash": "d7248fbbb470732e4d87526b3f0ca128ea81da79da5880cb5a9c8b2308d4ecb8"
+      "contentHash": "14c96f428da757c0ff66df81aaa2e35a49ab5046929ee1a86fc0a5a0ebdebc70"
     },
     {
       "id": "module:test/loop-doctor-gaps.test.ts",
@@ -8955,7 +8956,7 @@
     }
   },
   "inputs": {
-    "hash": "b70af8d7c496cfbcf3c806b6d9d96ac85cd4c41ac1a37703bcc873595b556882",
+    "hash": "c27aa64e052db7ae380724b93bd5c703089d6cd347bf78109eac41f2e20db539",
     "fileCount": 541,
     "projectionVersion": 2
   },
@@ -8978,9 +8979,9 @@
   "projection": {
     "type": "retrieval-index",
     "schemaVersion": 1,
-    "contentHash": "ba9a57fc45d74424a5527bbf875806fb75828f72d0ab00a9dbbc00e13151d901",
+    "contentHash": "3c3c05e6ed57e557e151ce62fbd196a30d005e76e5a5798ce8486a1f139f134d",
     "contentHashAlgo": "sha256-normalized-v1",
-    "snapshotHash": "e25ddf59e7c5d294ceadac7d67ce452ad7b26dc7bc3a32fd74189136edc54fbf",
+    "snapshotHash": "6573fb25d4457c9005693dd47bacc0d3e715b5818441f7b9a287493c863e5402",
     "overlayHash": "f99666ff9119084dd25c2974ae64eb6935ec2aa785ff5ad478fb9d541f7a5e94",
     "configurationHash": "816afaf6a7dc09767f7594d8fd80024612ca0f33becf0e44dde0107fcf2782df",
     "lexiconVersion": 1,
@@ -9016,7 +9017,7 @@
         "headings": 3.8636363636363638,
         "path": 6.114545454545454,
         "summary": 2.6545454545454548,
-        "symbols": 14.283636363636363,
+        "symbols": 14.290909090909091,
         "title": 3.949090909090909
       }
     },
@@ -26074,6 +26075,7 @@
           "generateContract",
           "parseContractOutput",
           "parseStructuredContractOutput",
+          "providerFailureDetail",
           "readStoredContract",
           "renderContractPrompt",
           "resolveDocContext",
@@ -26089,7 +26091,7 @@
           "title": "contract.ts",
           "headings": "",
           "path": "src/loop/contract.ts",
-          "symbols": "CONTRACT_CLOSE CONTRACT_JSON_SCHEMA CONTRACT_OPEN CONTRACT_SCHEMA_VERSION ContractAssessment ContractOutcomeSchema GenerateContractInput ProviderCallIo ProviderFailure StoredContract TaskContract TaskContractSchema assessContract classifyProviderFailure contractIsFresh contractPath extractResetsAt generateContract parseContractOutput parseStructuredContractOutput readStoredContract renderContractPrompt resolveDocContext untrusted writeStoredContract",
+          "symbols": "CONTRACT_CLOSE CONTRACT_JSON_SCHEMA CONTRACT_OPEN CONTRACT_SCHEMA_VERSION ContractAssessment ContractOutcomeSchema GenerateContractInput ProviderCallIo ProviderFailure StoredContract TaskContract TaskContractSchema assessContract classifyProviderFailure contractIsFresh contractPath extractResetsAt generateContract parseContractOutput parseStructuredContractOutput providerFailureDetail readStoredContract renderContractPrompt resolveDocContext untrusted writeStoredContract",
           "summary": "",
           "body": "",
           "aliases": "module ts loop"
@@ -26197,6 +26199,11 @@
             {
               "kind": "imports",
               "id": "module:src/ui/api/server.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
+              "id": "module:test/loop-contract-failure.test.ts",
               "confidence": "observed"
             },
             {
@@ -26338,7 +26345,7 @@
             }
           ]
         },
-        "contentHash": "f49b21f3aa9b229b9c26ddc69baf1fc4e04d1b4864c5c91cb18df3806d769b07",
+        "contentHash": "634a5a2d9eb3c7acff5e505d9420329a44fc2c35707d3d213c8198fe130143cc",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -26882,7 +26889,7 @@
             }
           ]
         },
-        "contentHash": "7d009f08f98896c9fa6457b4fb8a103f88102af25810e1103fcfd7f38ee8f299",
+        "contentHash": "d158b75b20ac34d080658f0219f576477f6b39db87202cecfc257acd1cfa8b90",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -30216,7 +30223,7 @@
             }
           ]
         },
-        "contentHash": "590ec14311e2b2edbc8626d5a5c782faee394996c63f25b8954b35c8d1a8af64",
+        "contentHash": "e86c4e6e339252f250aef916fa84b8fc52291606837fe3d7532585bd1559dbb2",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -30368,7 +30375,7 @@
             }
           ]
         },
-        "contentHash": "266956830dbbb7f37163985422c73704e250a0e167389e937cc6cae10ff5e52e",
+        "contentHash": "d5bf179cf0ef6995a8e5df6aa55621c08709adfe0d61ae39ccc7f764124a13c2",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -41279,10 +41286,15 @@
               "kind": "imports",
               "id": "module:src/index.ts",
               "confidence": "observed"
+            },
+            {
+              "kind": "imports",
+              "id": "module:src/loop/contract.ts",
+              "confidence": "observed"
             }
           ]
         },
-        "contentHash": "75f50d52adbc04b7a5681ec928f42e50364544e5463fd742e313be655ec4913e",
+        "contentHash": "3f15195a8ae90bd230b139157d66cf3ffa6b1cf05e947f74d515dae72a08fefc",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -41497,7 +41509,7 @@
             }
           ]
         },
-        "contentHash": "d7248fbbb470732e4d87526b3f0ca128ea81da79da5880cb5a9c8b2308d4ecb8",
+        "contentHash": "14c96f428da757c0ff66df81aaa2e35a49ab5046929ee1a86fc0a5a0ebdebc70",
         "provenance": "observed",
         "confidence": "observed"
       },
