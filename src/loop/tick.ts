@@ -37,6 +37,7 @@ import { installWorkerGuard } from './worker-guard.js'
 import { createIssueQueue, type IssueRun } from './queue.js'
 import { createLifecycleStore } from './lifecycle.js'
 import { createHitlStore } from './hitl.js'
+import { activeTrackerCooldown, guardTracker, isTrackerRateLimit, TrackerCooldownError, type TrackerCooldown } from './tracker-cooldown.js'
 
 export type TickOutcome = 'dispatched' | 'dry-run' | 'skipped' | 'escalated' | 'failed'
 
@@ -55,7 +56,8 @@ export interface TickCandidateResult {
 }
 
 export interface TickReport {
-  readonly status: 'ok' | 'idle' | 'blocked'
+  /** `blocked`: nothing could run (no builder, or the tracker is cooling down) — not a failure. `failed`: every candidate failed. */
+  readonly status: 'ok' | 'idle' | 'blocked' | 'failed'
   readonly generatedAt: string
   readonly dryRun: boolean
   readonly slots: Pick<SlotAssessment, 'maxAgents' | 'running' | 'free' | 'reasons'>
@@ -317,7 +319,7 @@ const resetDeliveryStateForDispatch = (stateDir: string, issue: string): void =>
   if (!existsSync(path)) return
   try {
     const previous = JSON.parse(readFileSync(path, 'utf8')) as { readonly finalOutcome?: unknown; readonly cancelledAt?: unknown }
-    if (!previous.cancelledAt && !['stuck', 'blocked', 'abandoned'].includes(String(previous.finalOutcome))) return
+    if (!previous.cancelledAt && !['stuck', 'blocked', 'abandoned', 'failed'].includes(String(previous.finalOutcome))) return
   } catch { return }
   // `writeJsonAtomic` e não `writeJson`: o remoto trocou toda escrita de estado por escrita atômica
   // (PR #80), e um reset de estado de entrega escrito pela metade é pior que nenhum reset.
@@ -396,12 +398,17 @@ export interface LoopState {
   readonly extrasByRole: Partial<Record<ModelRole, readonly ModelReference[]>>
 }
 
-export const gatherLoopState = async (input: { readonly loaded: LoadedLoopConfig; readonly runner: CommandRunner; readonly ledger: DispatchLedger; readonly env?: NodeJS.ProcessEnv; readonly platform?: NodeJS.Platform; readonly now: () => Date; readonly onlyIssue?: string; readonly machine?: TickInput['machine'] }): Promise<LoopState> => {
+/** Log a tracker rate limit the moment it starts a cooldown. */
+const trackerCooldownLogger = (stateDir: string, now: () => Date, bus?: LoopEventBus) => (entry: TrackerCooldown): void => {
+  appendLoopEvent(stateDir, { at: now().toISOString(), type: 'tracker.cooldown', until: entry.until, attempts: entry.attempts, reason: entry.reason }, bus)
+}
+
+export const gatherLoopState = async (input: { readonly loaded: LoadedLoopConfig; readonly runner: CommandRunner; readonly ledger: DispatchLedger; readonly env?: NodeJS.ProcessEnv; readonly platform?: NodeJS.Platform; readonly now: () => Date; readonly onlyIssue?: string; readonly machine?: TickInput['machine']; readonly bus?: LoopEventBus }): Promise<LoopState> => {
   const { config } = input.loaded
   requireWritableTracker(config)
   const person = queueOwner(input.loaded)
   const orca = { bin: config.orca.bin, timeoutMs: config.orca.timeoutMs }
-  const tracker = resolveConnectors({ runner: input.runner, config, env: input.env }).tracker
+  const tracker = guardTracker(resolveConnectors({ runner: input.runner, config, env: input.env }).tracker, { stateDir: input.loaded.stateDir, now: input.now, onRateLimited: trackerCooldownLogger(input.loaded.stateDir, input.now, input.bus) })
   const explicitRuns = config.queue.mode === 'explicit'
     ? createIssueQueue({ stateDir: input.loaded.stateDir }).list().filter((run) => run.status === 'queued').sort((left, right) => left.sequence - right.sequence)
     : []
@@ -452,6 +459,8 @@ export const gatherLoopState = async (input: { readonly loaded: LoadedLoopConfig
 export const precheckTick = async (input: Omit<TickInput, 'dryRun' | 'maxDispatch'>): Promise<{ readonly work: boolean; readonly reason: string; readonly free: number; readonly candidates: number }> => {
   const loaded = input.loaded ?? loadLoopConfig(input.configPath)
   const now = input.now ?? (() => new Date())
+  const cooling = activeTrackerCooldown(loaded.stateDir, now())
+  if (cooling) return { work: false, reason: `tracker rate-limited; cooling down until ${cooling.until}`, free: 0, candidates: 0 }
   const state = await gatherLoopState({ loaded, runner: input.runner, ledger: createDispatchLedger(loaded.stateDir), env: input.env, platform: input.platform, now, onlyIssue: input.onlyIssue, machine: input.machine })
   const builder = state.routing['builder']?.selected ?? null
   const reason = !builder ? 'no builder provider available' : !state.candidates.length ? 'queue has no dispatchable candidate' : `${state.candidates.length} dispatch(es) possible; machine capacity is advisory`
@@ -500,7 +509,20 @@ export const runTick = async (input: TickInput): Promise<TickReport> => {
   // An externally-owned bus (`loop stage`) already has its own notifier attached, and its owner flushes it once
   // for the whole invocation — attaching a second one here would double-send every notification.
   const flushNotifications = ownsBus ? attachNotifier(bus, { config, runner: input.runner, ...(input.env === undefined ? {} : { env: input.env }) }) : async () => { /* owner flushes */ }
-  const state = await gatherLoopState({ loaded, runner: input.runner, ledger, env: input.env, platform: input.platform, now, onlyIssue: input.onlyIssue, machine: input.machine })
+  // A rate-limited tracker is waited out, not retried every tick: `blocked` is a returned report, so it never counts
+  // toward the stage auto-pause the way a thrown tick does.
+  const cooledReport = async (cooldown: string): Promise<TickReport> => {
+    notes.push(`tracker rate-limited; ${cooldown}; nothing fetched or dispatched`)
+    await flushNotifications()
+    return { generatedAt: now().toISOString(), dryRun, slots: { maxAgents: 0, running: 0, free: 0, reasons: [] }, routing: { orchestrator: null, builder: null }, queue: { total: 0, busy: [], candidates: [] }, status: 'blocked', results, notes }
+  }
+  const cooling = activeTrackerCooldown(loaded.stateDir, now())
+  if (cooling) return cooledReport(`cooling down until ${cooling.until}`)
+  let state: LoopState
+  try { state = await gatherLoopState({ loaded, runner: input.runner, ledger, env: input.env, platform: input.platform, now, onlyIssue: input.onlyIssue, machine: input.machine, bus }) } catch (error) {
+    if (error instanceof TrackerCooldownError || isTrackerRateLimit(error)) return cooledReport(message(error))
+    throw error
+  }
   const orchestrator = state.routing['orchestrator'] ?? { role: 'orchestrator', selected: null, skipped: [] }
   // `gatherLoopState` already resolved catalog candidates for every role (including orchestrator) to compute
   // `state.routing` — reuse that instead of resolving the same provider/model catalog a second time this tick.
@@ -535,7 +557,8 @@ export const runTick = async (input: TickInput): Promise<TickReport> => {
   const timeBudgetMs = input.budgetMs ?? Number.POSITIVE_INFINITY
   const remainingMs = (): number => timeBudgetMs - (Date.now() - startedAt)
   // Every tracker write in this stage goes through the connector; the engine never names Linear.
-  const { tracker } = resolveConnectors({ runner: input.runner, config, dryRun })
+  const tracker = guardTracker(resolveConnectors({ runner: input.runner, config, dryRun }).tracker, { stateDir: loaded.stateDir, now, dryRun, onRateLimited: trackerCooldownLogger(loaded.stateDir, now, bus) })
+  let trackerCooling = false
   // UI-confirmed runs need status projection even for legacy backlog projects; only explicit mode changes which
   // tracker issues are eligible when a tick is not targeted at one selected request.
   const issueQueue = config.queue.mode === 'explicit' || input.onlyIssue ? createIssueQueue({ stateDir: loaded.stateDir }) : null
@@ -667,7 +690,12 @@ export const runTick = async (input: TickInput): Promise<TickReport> => {
       notes.push(`${candidate.identifier}: resumed (the "${config.resilience.pausedLabel}" label was removed)`)
     }
     let detail: TrackerIssueDetail
-    try { detail = await tracker.issue(candidate.identifier) } catch (error) { results.push({ issue: candidate.identifier, outcome: 'failed', reason: `issue fetch failed: ${message(error)}` }); continue }
+    try { detail = await tracker.issue(candidate.identifier) } catch (error) {
+      if (!dryRun) appendLoopEvent(loaded.stateDir, { at: now().toISOString(), type: 'tracker.sync-failed', issue: candidate.identifier, operation: 'fetch', error: message(error) }, bus)
+      // Rate-limited: every further fetch would hit the same limit — stop here and let the cooldown run out.
+      if (error instanceof TrackerCooldownError || isTrackerRateLimit(error)) { trackerCooling = true; notes.push(`tracker rate-limited fetching ${candidate.identifier}; remaining candidates left for after the cooldown`); break }
+      results.push({ issue: candidate.identifier, outcome: 'failed', reason: `issue fetch failed: ${message(error)}` }); continue
+    }
     const selectedRun = queueRun(detail.identifier)
     // A UI cancellation can land after gatherLoopState read the queue but before the tracker fetch returns.
     // In explicit mode, dispatch only the still-queued reservation; never turn a stale snapshot into a new worker.
@@ -862,6 +890,8 @@ export const runTick = async (input: TickInput): Promise<TickReport> => {
       continue
     }
     const beforeDispatch = await bus.runHook('beforeDispatch', { issue: detail.identifier, provider: worker.provider, model: worker.model, branch, worktree })
+    // A throwing beforeDispatch blocks (fail closed); logged so it is not mistaken for a deliberate plugin block.
+    if (beforeDispatch.errors.length) appendLoopEvent(loaded.stateDir, { at: now().toISOString(), type: 'plugin.hook-failed', issue: detail.identifier, hook: 'beforeDispatch', error: beforeDispatch.errors.join('; ') }, bus)
     if (beforeDispatch.block) {
       ledger.release(claim.lease, `blocked by plugin: ${beforeDispatch.reason}`)
       results.push({ issue: detail.identifier, outcome: 'skipped', reason: `blocked by plugin: ${beforeDispatch.reason}` })
@@ -975,5 +1005,8 @@ export const runTick = async (input: TickInput): Promise<TickReport> => {
   }
   if (!dispatched && !results.length) notes.push('no candidate reached dispatch')
   await flushNotifications()
-  return { ...base, status: dispatched > 0 || results.some((result) => result.outcome === 'escalated') ? 'ok' : 'idle', results, notes }
+  // Every candidate failing is a failed run, not an idle one — the stage's failure count has to see it. A tracker
+  // cooldown stays `blocked`: waiting out a rate limit is not a failure.
+  const allFailed = results.length > 0 && results.every((result) => result.outcome === 'failed')
+  return { ...base, status: dispatched > 0 || results.some((result) => result.outcome === 'escalated') ? 'ok' : trackerCooling ? 'blocked' : allFailed ? 'failed' : 'idle', results, notes }
 }

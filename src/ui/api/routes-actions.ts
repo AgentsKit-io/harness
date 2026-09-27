@@ -142,7 +142,12 @@ const runStage = (context: ActionContext, deps: ActionRouteDeps, stage: LoopStag
   const budgetMs = Math.max(60_000, loaded.config.schedule.stageTimeoutSec * 1000 - 60_000)
   try {
     const report = stage === 'tick' ? await deps.tick({ loaded, runner, budgetMs }) : await deps.deliver({ loaded, runner, budgetMs })
-    recordStageRunResult(loaded.stateDir, stage, { succeeded: true }, threshold)
+    // Same rule as the scheduled worker: every result failed is a failed run; a tracker cooldown (`blocked`) is not.
+    if (report.status === 'failed') {
+      const reason = `every result failed: ${report.results.map((result) => `${result.issue}: ${result.reason}`).join('; ')}`.slice(0, 500)
+      const entry = recordStageRunResult(loaded.stateDir, stage, { succeeded: false, reason }, threshold)
+      if (entry.pausedAt) appendLoopEvent(loaded.stateDir, { at: new Date().toISOString(), type: 'stage.paused', stage, reason, consecutiveFailures: entry.consecutiveFailures })
+    } else recordStageRunResult(loaded.stateDir, stage, { succeeded: true }, threshold)
     return report
   } catch (error) {
     const reason = error instanceof Error ? error.message : String(error)

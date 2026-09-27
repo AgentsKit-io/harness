@@ -3,7 +3,8 @@ import { existsSync, readFileSync, statSync } from 'node:fs'
 import { createServer, request as httpRequest, type IncomingMessage, type Server, type ServerResponse } from 'node:http'
 import { extname, join, normalize, sep } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { hashJson } from '../../kernel/hash.js'
+import { sha256 } from '../../kernel/hash.js'
+import { notificationsConfigured } from '../../loop/notify.js'
 import { detectProviders } from '../../adapters/providers.js'
 import { resolveConnectors } from '../../loop/connectors.js'
 import { loadLoopConfig, parseModelRef, type LoadedLoopConfig, type ModelReference } from '../../loop/config.js'
@@ -22,7 +23,7 @@ import { readCurrentProjection, syncProjection } from './store.js'
 import { json, readRequestBody, recordOf, SAFE_IDENTIFIER, sendJson, sendText, stringOf } from './http.js'
 import { ROUTE_MODULES } from './route-modules.js'
 import type { RouteContext } from './routes.js'
-import type { SnapshotExtras } from './contract.js'
+import { SNAPSHOT_ERROR_EVENT, type SnapshotExtras } from './contract.js'
 import { createExtrasBuilder, type ExtrasBuilder } from './extras.js'
 import { createAlertSender, type AlertSender } from './alerts.js'
 import { overlayRunnerObservation, type IssueRecord } from './projection.js'
@@ -44,6 +45,12 @@ import {
 const DEFAULT_HOST = '127.0.0.1'
 const DEFAULT_PORT = 4321
 const POLL_INTERVAL_MS = 1_000
+/** With no tab open the snapshot only feeds attention alerts (`alerts.observe`), which do not need 1 s latency. */
+const IDLE_INTERVAL_MS = 60_000
+/** An unchanged snapshot is still resent this often, so the tab's "updated Ns ago" (from `generatedAt`) stays honest. */
+const HEARTBEAT_MS = 15_000
+/** `generatedAt`/`ageMs` change on every build; hashing them made the SSE dedupe never match. */
+const withoutClockFields = (key: string, value: unknown): unknown => key === 'generatedAt' || key === 'ageMs' ? undefined : value
 const SESSION_HEADER = 'x-harness-session'
 
 export const UI_SNAPSHOT_SCHEMA_VERSION = 1 as const
@@ -59,6 +66,8 @@ export interface UiSnapshot {
   readonly board: BoardSnapshot | null
   readonly issues: readonly IssueRecord[]
   readonly automations: readonly UiAutomationHealth[]
+  /** Set when Orca could not be read: `automations` is then unknown, not "no stage failed". */
+  readonly automationsError?: string | null
   /** Attention, reconciliation and freshness — see `contract.ts`. Absent only from test snapshots. */
   readonly extras?: SnapshotExtras
 }
@@ -218,28 +227,31 @@ const parseEnqueueBody = (body: unknown, loaded: LoadedLoopConfig): EnqueueBody 
 
 // ---- snapshot -----------------------------------------------------------------------------------------------
 
-/** Memoizes an async read that is too costly for the 1 s poll. A failed read yields `fallback` for one TTL — a
+/** Memoizes an async read that is too costly for the 1 s poll. A failed read yields `fallback(error)` for one TTL — a
  * broken Orca must degrade the page to "no observation", never fail the snapshot. */
-const memo = <T>(ttlMs: number, read: () => Promise<T>, fallback: T): ((force?: boolean) => Promise<T>) => {
+const memo = <T>(ttlMs: number, read: () => Promise<T>, fallback: (error: unknown) => T): ((force?: boolean) => Promise<T>) => {
   let value: { readonly at: number; readonly data: T } | null = null
   let inFlight: Promise<T> | null = null
   return async (force = false) => {
     if (!force && value && Date.now() - value.at < ttlMs) return value.data
-    inFlight ??= read().catch(() => fallback).then((data) => { value = { at: Date.now(), data }; inFlight = null; return data })
+    inFlight ??= read().catch(fallback).then((data) => { value = { at: Date.now(), data }; inFlight = null; return data })
     return inFlight
   }
 }
 
+interface AutomationsRead { readonly rows: readonly UiAutomationHealth[]; readonly error: string | null }
+
 interface SnapshotSources {
   readonly board: IssueBoardCache
   readonly workspaces: (force?: boolean) => Promise<ReadonlyMap<string, WorkspaceObservation['pullRequest']>>
-  readonly automations: (force?: boolean) => Promise<readonly UiAutomationHealth[]>
+  readonly automations: (force?: boolean) => Promise<AutomationsRead>
 }
 
 const snapshotSources = (context: ActionContext, board: IssueBoardCache): SnapshotSources => ({
   board,
-  workspaces: memo(10_000, async () => new Map((await createRunnerConnector(context).observeWorkspaces()).map((workspace) => [workspace.id, workspace.pullRequest])), new Map()),
-  automations: memo(60_000, async () => (await loopStatus(context)).automations.map((automation) => ({ name: automation.name, stage: automation.stage, installed: automation.installed && automation.enabled, lastRunAt: automation.lastRun?.at ?? null, error: automation.lastRun?.error ?? null })), []),
+  workspaces: memo(10_000, async () => new Map((await createRunnerConnector(context).observeWorkspaces()).map((workspace) => [workspace.id, workspace.pullRequest])), () => new Map()),
+  automations: memo<AutomationsRead>(60_000, async () => ({ rows: (await loopStatus(context)).automations.map((automation) => ({ name: automation.name, stage: automation.stage, installed: automation.installed && automation.enabled, lastRunAt: automation.lastRun?.at ?? null, error: automation.lastRun?.error ?? null })), error: null }),
+    (error) => ({ rows: [], error: `Orca unreachable: ${error instanceof Error ? error.message : String(error)}` })),
 })
 
 const buildSnapshot = async (context: ActionContext, sources: SnapshotSources, extras: ExtrasBuilder, alerts: AlertSender, force = false): Promise<UiSnapshot> => {
@@ -258,7 +270,7 @@ const buildSnapshot = async (context: ActionContext, sources: SnapshotSources, e
     schemaVersion: UI_SNAPSHOT_SCHEMA_VERSION, generatedAt: new Date().toISOString(),
     project: { name: loaded.config.project.name, repo: loaded.config.project.repo, baseBranch: loaded.config.project.baseBranch, root: loaded.root, stateDir: loaded.stateDir, configHash: loaded.configHash },
     capacity: { maxAgents, running, free: Math.max(0, maxAgents - running) },
-    board: boardSnapshot, issues: enriched, automations, extras: snapshotExtras,
+    board: boardSnapshot, issues: enriched, automations: automations.rows, automationsError: automations.error, extras: snapshotExtras,
   }
 }
 
@@ -271,6 +283,8 @@ const bestEffortTick = (loaded: LoadedLoopConfig, runner: CommandRunner, issue: 
 }
 
 // ---- server ---------------------------------------------------------------------------------------------------
+
+const snapshotErrorMessage = (error: unknown): string => `event: ${SNAPSHOT_ERROR_EVENT}\ndata: ${json({ error: error instanceof Error ? error.message : String(error) })}\n\n`
 
 const isApiRoute = (pathname: string): boolean => pathname.startsWith('/api/v1/')
 
@@ -429,7 +443,7 @@ export const startUiServer = async (options: UiServerOptions = {}): Promise<UiSe
         clients.add(response)
         request.on('close', () => clients.delete(response))
         try { response.write(`event: snapshot\ndata: ${json(await snapshot())}\n\n`) }
-        catch (error) { response.write(`event: error\ndata: ${json({ error: error instanceof Error ? error.message : String(error) })}\n\n`) }
+        catch (error) { response.write(snapshotErrorMessage(error)) }
         return
       }
       if (routeContext) {
@@ -453,21 +467,28 @@ export const startUiServer = async (options: UiServerOptions = {}): Promise<UiSe
     })
   })
   const expectedUrl = `${requestOrigin(host, boundPort)}/`
+  // Nobody watching: run the pipeline (tracker, Orca, projection sync) only as often as alerts need it, or not at all.
+  const alertsWatch = Boolean(loaded?.config.notifications && notificationsConfigured(loaded.config))
   let previousDigest = ''
+  let sentAtMs = Number.NEGATIVE_INFINITY
+  let ranAtMs = Number.NEGATIVE_INFINITY
   let timerInFlight = false
   const timer = setInterval(() => {
     if (timerInFlight) return
+    if (clients.size === 0 && (!alertsWatch || Date.now() - ranAtMs < IDLE_INTERVAL_MS)) return
     timerInFlight = true
+    ranAtMs = Date.now()
     void (async () => {
       try {
         const current = await snapshot()
-        const digest = hashJson(current)
-        if (digest === previousDigest) return
+        const digest = sha256(JSON.stringify(current, withoutClockFields))
+        if (digest === previousDigest && Date.now() - sentAtMs < HEARTBEAT_MS) return
         previousDigest = digest
+        sentAtMs = Date.now()
         const message = `event: snapshot\ndata: ${json(current)}\n\n`
         for (const client of clients) { try { client.write(message) } catch { clients.delete(client) } }
       } catch (error) {
-        const message = `event: error\ndata: ${json({ error: error instanceof Error ? error.message : String(error) })}\n\n`
+        const message = snapshotErrorMessage(error)
         for (const client of clients) { try { client.write(message) } catch { clients.delete(client) } }
       } finally { timerInFlight = false }
     })()

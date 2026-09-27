@@ -54,3 +54,21 @@ describe('extractResetsAt', () => {
     expect(extractResetsAt('', new Date())).toBeNull()
   })
 })
+
+describe('classifyProviderFailure false positives (regression: provider cooled down for unrelated failures)', () => {
+  it('does not classify a path or word containing "authentication"/"oauth" as auth', () => {
+    expect(classifyProviderFailure('TypeError in src/authentication.ts:12')).toBe('other')
+    expect(classifyProviderFailure('test failed: src/oauth/callback.test.ts')).toBe('other')
+  })
+
+  it('does not classify a commit hash or token count containing 429 as quota', () => {
+    expect(classifyProviderFailure('fatal: bad object 4f2a4291c')).toBe('other')
+    expect(classifyProviderFailure('context: 87429 tokens used')).toBe('other')
+  })
+
+  it('still classifies auth-failure phrasing as auth', () => {
+    expect(classifyProviderFailure('Authentication failed: invalid x-api-key')).toBe('auth')
+    expect(classifyProviderFailure('OAuth token has expired')).toBe('auth')
+    expect(classifyProviderFailure('401 Unauthorized')).toBe('auth')
+  })
+})
