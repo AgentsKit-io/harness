@@ -906,8 +906,11 @@ ${marker}` }); actions.push('secret-file hold commented') } catch (error) { acti
     }
     // Cost lever: the cheap verifier runs before the expensive one. A build that does not compile does not
     // deserve a two-vote review, and `delivery.verify.argv` is the project's own check, not a guess.
-    if (config.delivery.verify.argv.length && workerPhaseEnabled(config, flow.flow, 'verify', true) && !ctx.dryRun) {
-      const verify = await ctx.runner.run(config.delivery.verify.argv, { timeoutMs: 600_000, cwd: ctx.loaded.root })
+    // It runs in the worker's worktree — the operator's checkout is not this PR's code, so passing there vouches for nothing.
+    const verifyWanted = config.delivery.verify.argv.length > 0 && workerPhaseEnabled(config, flow.flow, 'verify', true) && !ctx.dryRun
+    if (verifyWanted && !record.worktreePath) actions.push('local verify skipped: no worktree recorded for this dispatch, so it cannot run against the PR\'s code (not counted as evidence)')
+    if (verifyWanted && record.worktreePath) {
+      const verify = await ctx.runner.run(config.delivery.verify.argv, { timeoutMs: 600_000, cwd: record.worktreePath })
       if (verify.code !== 0) {
         actions.push(`local verify failed before review: ${(verify.stderr || verify.stdout).trim().slice(0, 200)}`)
         return fixRound(ctx, record, lease, state, pr, 'ci', `Loop: the project verification failed on PR #${pr.number} before the review was even requested: \`${config.delivery.verify.argv.join(' ')}\`. Fix it, re-run it locally, commit and push. No review is spent on a build that does not pass.`, 'local verify failed before review', actions)

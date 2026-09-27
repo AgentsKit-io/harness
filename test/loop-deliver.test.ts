@@ -51,6 +51,8 @@ interface Scenario {
   readonly worktreeFiles?: Readonly<Record<string, string>>
   /** Exit code the fake `delivery.verify.argv` command (`agentskit-verify-fixture`) returns; 0 by default. */
   readonly verifyExitCode?: number
+  /** Set by the fake: the cwd the verify command last ran in. */
+  readonly verifyCwd?: string
   /** `git status --porcelain` output in the worktree (the spec gate's commit check); clean by default. */
   readonly gitStatus?: string
   /** Id of an existing run-summary comment on the PR, returned by the marker lookup (`gh api ... --jq`). */
@@ -149,6 +151,7 @@ const setup = (initial: Scenario = {}) => {
       if (argv[0] === 'gh' && argv[1] === 'pr' && argv[2] === 'comment') return { code: 0, stdout: '', stderr: '', timedOut: false, durationMs: 1 }
       if (argv[0] === 'git' && argv[1] === 'status') return { code: 0, stdout: scenario.gitStatus ?? '', stderr: '', timedOut: false, durationMs: 1 }
       if (argv[0] === 'git' && argv[1] === 'rev-list') return { code: 0, stdout: `${scenario.unpushedCommits ?? 0}\n`, stderr: '', timedOut: false, durationMs: 1 }
+      if (key === 'agentskit-verify-fixture') scenario.verifyCwd = options?.cwd
       if (key === 'agentskit-verify-fixture') return { code: scenario.verifyExitCode ?? 0, stdout: 'verify output', stderr: '', timedOut: false, durationMs: 1 }
       return { code: 127, stdout: '', stderr: `no fixture for ${key} ${options?.cwd ?? ''}`, timedOut: false, durationMs: 1 }
     },
@@ -793,14 +796,27 @@ describe('deliver', () => {
     expect(observed).toMatchObject({ issue: 'ENG-10', provider: 'claude', initialRemainingPercent: 90, currentRemainingPercent: 80, deltaPercent: 10 })
   })
 
-  it('logs verify.passed and merges normally when delivery.verify.argv passes before the review', async () => {
-    const env = setup({ review: { code: 0 } })
+  it('logs verify.passed and merges normally when delivery.verify.argv passes before the review — run in the worker\'s worktree, not the operator checkout', async () => {
+    const env = setup({ review: { code: 0 }, worktreeFiles: { 'verify.json': JSON.stringify({ command: 'pnpm test', exitCode: 0, outcomes: [{ id: 'o1', status: 'passed', evidence: 'green' }] }) } })
     writeFileSync(join(env.dir, 'loop.config.local.yaml'), 'delivery:\n  verify:\n    argv: [agentskit-verify-fixture]\n')
     const report = await deliver(env)
     expect(report.results[0]).toMatchObject({ outcome: 'merged', pr: 42 })
+    expect(env.scenario.verifyCwd).toBe(env.worktreePath)
+    expect(report.results[0]?.actions).toContain('vouched for by: CI, the project verify, the review')
     const events = readFileSync(join(env.loaded.stateDir, 'events.ndjson'), 'utf8').split('\n').filter(Boolean).map((line) => JSON.parse(line) as Record<string, unknown>)
     const passed = events.find((event) => event['type'] === 'verify.passed')
     expect(passed).toMatchObject({ issue: 'ENG-10', pr: 42 })
+  })
+
+  it('does not run or vouch with delivery.verify.argv when the dispatch has no worktree to run it in', async () => {
+    const env = setup({ review: { code: 0 } })
+    writeFileSync(join(env.dir, 'loop.config.local.yaml'), 'delivery:\n  verify:\n    argv: [agentskit-verify-fixture]\n')
+    const report = await deliver(env)
+    expect(env.runner.calls.some((argv) => argv[0] === 'agentskit-verify-fixture')).toBe(false)
+    expect(report.results[0]?.actions.some((action) => action.startsWith('local verify skipped: no worktree'))).toBe(true)
+    expect(report.results[0]?.actions.some((action) => action.startsWith('vouched for by:') && action.includes('the project verify'))).toBe(false)
+    const events = readFileSync(join(env.loaded.stateDir, 'events.ndjson'), 'utf8')
+    expect(events).not.toContain('"verify.passed"')
   })
 
   it('logs dod.assessed with how many lines were proven when the definition of done is judged', async () => {
