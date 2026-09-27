@@ -1,4 +1,4 @@
-# 0.22.2 release candidate
+# 0.22.3 release candidate
 
 The control plane (`ak-harness ui`) becomes the operator's single place to see what needs them and act on it
 safely, plus the loop fixes found running it against a real repository since 0.19.0. `CHANGELOG.md` has the full
@@ -44,5 +44,10 @@ delivery for good, and an Orca outage is not a dead worker.
 **0.22.2.** Operational fixes: a nit-only review no longer leaves delivery waiting forever, answered contract
 questions regenerate the contract, an open question no longer re-escalates every tick, Retry resumes a blocked
 delivery on its open PR, and doctor accepts UI-pinned automations.
+
+**0.22.3.** A run that loses track is restarted from scratch — only after two consecutive observations, never over
+unpushed or uncommitted work, never past a worker's declared blocker, never while the tracker is cooling down. A
+worker that declares itself blocked is escalated to a person; the loop never types into a bare shell or launches a
+second agent into a worktree; close-or-reopen decisions stick and free the issue.
 
 The blockers in `release/manifest.json` (`ecosystem-compatibility`, `pilot-benchmark`) are unchanged.

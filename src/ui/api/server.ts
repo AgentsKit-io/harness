@@ -1,4 +1,5 @@
 import { randomBytes } from 'node:crypto'
+import { cpus } from 'node:os'
 import { existsSync, readFileSync, statSync } from 'node:fs'
 import { createServer, request as httpRequest, type IncomingMessage, type Server, type ServerResponse } from 'node:http'
 import { extname, join, normalize, sep } from 'node:path'
@@ -24,7 +25,7 @@ import { json, readRequestBody, recordOf, SAFE_IDENTIFIER, sendJson, sendText, s
 import { ROUTE_MODULES } from './route-modules.js'
 import type { RouteContext } from './routes.js'
 import { SNAPSHOT_ERROR_EVENT, type SnapshotExtras } from './contract.js'
-import { createExtrasBuilder, type ExtrasBuilder } from './extras.js'
+import { createExtrasBuilder, orcaCacheFor, type ExtrasBuilder } from './extras.js'
 import { createAlertSender, type AlertSender } from './alerts.js'
 import { overlayRunnerObservation, type IssueRecord } from './projection.js'
 import { loopStatus } from '../../loop/install.js'
@@ -164,6 +165,20 @@ const contractSummary = (stored: StoredContract): string => [
   ...(stored.contract.outcomes.length ? [`Verifiable outcomes: ${stored.contract.outcomes.map((outcome) => `${outcome.id} — ${outcome.description}`).join('; ')}`] : []),
 ].join('\n')
 
+/**
+ * The count and ceiling the tick dispatches against: live Orca agents with in-review worktrees excluded
+ * (`countRunningWorkers`) and `machine.ceiling ?? max(floor, cpus/2)`. Counting unfinished deliveries instead
+ * held a slot for every PR waiting in review, and `ceiling ?? floor` read 1 wherever no ceiling was set.
+ */
+const capacityFor = async ({ loaded, runner }: ActionContext): Promise<UiSnapshot['capacity']> => {
+  // ponytail: Orca not answered yet → unfinished deliveries; over-counts PRs in review until the first read lands.
+  const running = (await orcaCacheFor(loaded, runner).read()).running
+    ?? listDispatched(loaded.stateDir).filter((dispatch) => !readDeliveryState(loaded.stateDir, dispatch.issue).finishedAt).length
+  // ponytail: static ceiling; the tick also lowers it under machine pressure, which the UI does not show.
+  const maxAgents = loaded.config.machine.ceiling ?? Math.max(loaded.config.machine.floor, Math.floor(cpus().length / 2))
+  return { maxAgents, running, free: Math.max(0, maxAgents - running) }
+}
+
 const issueWizard = async (context: ActionContext, issue: string): Promise<Record<string, unknown>> => {
   const { loaded, runner } = context
   const tracker = resolveConnectors({ runner, config: loaded.config }).tracker
@@ -177,16 +192,15 @@ const issueWizard = async (context: ActionContext, issue: string): Promise<Recor
     : cached
       ? { status: 'expired', digest: cached.digest, summary: 'The stored contract expired or the issue changed. Generate a new contract to continue.' }
       : { status: 'missing', digest: null }
-  const maxAgents = loaded.config.machine.ceiling ?? loaded.config.machine.floor
-  const running = listDispatched(loaded.stateDir).filter((dispatch) => !readDeliveryState(loaded.stateDir, dispatch.issue).finishedAt).length
-  const free = Math.max(0, maxAgents - running)
+  const capacity = await capacityFor(context)
+  const { free } = capacity
   const preflight = candidates.length > 0
     ? { status: 'passed', checkedAt: new Date().toISOString(), ...(free <= 0 ? { reason: 'No slot is free right now; the run will be queued.' } : {}) }
     : { status: 'blocked', checkedAt: new Date().toISOString(), reason: 'No builder model is routable right now.' }
   return {
     issue: detail, configHash: loaded.configHash, contract, flows: Object.keys(loaded.config.flows.profiles), defaultFlow: loaded.config.flows.default ?? null,
     builderModels: candidates, limits: { maxFixRounds: loaded.config.delivery.maxFixRounds, perIssueTokens: loaded.config.budget.perIssueTokens },
-    capacity: { maxAgents, running, free }, preflight,
+    capacity, preflight,
   }
 }
 
@@ -260,16 +274,15 @@ const buildSnapshot = async (context: ActionContext, sources: SnapshotSources, e
   const [boardSnapshot, workspaces, automations] = await Promise.all([sources.board.read(force), sources.workspaces(force), sources.automations(force)])
   const dispatches = listDispatched(loaded.stateDir)
   const deliveries = new Map(dispatches.map((dispatch) => [dispatch.issue, readDeliveryState(loaded.stateDir, dispatch.issue)]))
-  const running = dispatches.filter((dispatch) => !deliveries.get(dispatch.issue)?.finishedAt).length
-  const maxAgents = loaded.config.machine.ceiling ?? loaded.config.machine.floor
+  const capacity = await capacityFor(context)
   const issues = Object.values(projection.issues).map((record) => overlayRunnerObservation(record, record.dispatch?.worktreeId ? workspaces.get(record.dispatch.worktreeId) ?? null : null))
   const enriched = extras.enrich(issues, boardSnapshot)
-  const snapshotExtras = await extras.build({ issues: enriched, board: boardSnapshot, dispatches, deliveries, maxAgents })
+  const snapshotExtras = await extras.build({ issues: enriched, board: boardSnapshot, dispatches, deliveries, running: capacity.running, maxAgents: capacity.maxAgents })
   void alerts.observe(snapshotExtras.attention)
   return {
     schemaVersion: UI_SNAPSHOT_SCHEMA_VERSION, generatedAt: new Date().toISOString(),
     project: { name: loaded.config.project.name, repo: loaded.config.project.repo, baseBranch: loaded.config.project.baseBranch, root: loaded.root, stateDir: loaded.stateDir, configHash: loaded.configHash },
-    capacity: { maxAgents, running, free: Math.max(0, maxAgents - running) },
+    capacity,
     board: boardSnapshot, issues: enriched, automations: automations.rows, automationsError: automations.error, extras: snapshotExtras,
   }
 }
