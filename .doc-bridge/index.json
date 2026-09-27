@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
-  "contentHash": "3a94c1f889e18fdaaf4869d07d2ee0f32e1c794c3839135d0d24636d6ecb8ed6",
+  "contentHash": "a7c3839848f5c5ae105b6f5c2d763cca71848991cda13f0e5e780416b5a171b8",
   "contentHashAlgo": "sha256-normalized-v1",
-  "generatedAt": "2026-09-27T12:43:27.247Z",
+  "generatedAt": "2026-09-27T13:36:22.927Z",
   "project": {
     "name": "AgentsKit Harness",
     "root": "."
@@ -5417,7 +5417,7 @@
         "ts",
         "api"
       ],
-      "contentHash": "be4180f775a921ab68dd940ffe2eae06b5305c2e6a3fd4da864fbb06803e6ace"
+      "contentHash": "d2e25aad76da33b4378ac9c2ad63c9c319f3b654f9bec95bc26a5ed2ebaf4366"
     },
     {
       "id": "module:src/ui/api/alerts.ts",
@@ -5689,7 +5689,7 @@
         "ts",
         "api"
       ],
-      "contentHash": "c11bc034bcbdebab46e80f0da68a092c2cb87af46e28331bf954cced86136c6e"
+      "contentHash": "edf7fcb8bef2967efaa0c82eb23860801ebbc61a2d5479b8e60c80a32b250704"
     },
     {
       "id": "module:src/ui/api/reconcile.ts",
@@ -8608,7 +8608,7 @@
         "ts",
         "test"
       ],
-      "contentHash": "447402c20d079d211e35975516d572a5b3a6264988da92f2046d03a872244856"
+      "contentHash": "b0cdffd9de00b0e59691246df0ecabe03dc3008e58b313379eb14f53032cd2da"
     },
     {
       "id": "module:test/ui-api-jobs.test.ts",
@@ -8912,7 +8912,7 @@
     }
   },
   "inputs": {
-    "hash": "7ab52b980005335da4d899f920b90cdeb4b9442521afc4e8894f42b6d3024aff",
+    "hash": "8cd0ae9dce26b8366ac8e8132afb6fe8fc5234eed424041227b543a506a31328",
     "fileCount": 539,
     "projectionVersion": 2
   },
@@ -8935,9 +8935,9 @@
   "projection": {
     "type": "retrieval-index",
     "schemaVersion": 1,
-    "contentHash": "e250f6d274b97eb12c68e5eac6ba825fabbdf0d51c8344bd3f5c7d73ffccd80a",
+    "contentHash": "48449606d9b21d84b17f1ccf6507a8bb83836bcdc5f1c30c6348876fb9366c32",
     "contentHashAlgo": "sha256-normalized-v1",
-    "snapshotHash": "5d7259cf0420451bc62b397fe992e6d6829d9393b34555f0869dfa63370d17e1",
+    "snapshotHash": "21ee1b2973800acce722cb13faee0169ef647266af13784b417c6a115858171b",
     "overlayHash": "f99666ff9119084dd25c2974ae64eb6935ec2aa785ff5ad478fb9d541f7a5e94",
     "configurationHash": "816afaf6a7dc09767f7594d8fd80024612ca0f33becf0e44dde0107fcf2782df",
     "lexiconVersion": 1,
@@ -26577,6 +26577,11 @@
             },
             {
               "kind": "imports",
+              "id": "module:test/ui-api-actions.test.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
               "id": "module:test/ui-core-server.test.ts",
               "confidence": "observed"
             },
@@ -27698,6 +27703,11 @@
             {
               "kind": "imports",
               "id": "module:src/loop/tuning.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
+              "id": "module:src/ui/api/actions.ts",
               "confidence": "observed"
             },
             {
@@ -30541,6 +30551,11 @@
             },
             {
               "kind": "imports",
+              "id": "module:test/ui-api-actions.test.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
               "id": "module:test/ui-config.test.ts",
               "confidence": "observed"
             },
@@ -32919,6 +32934,11 @@
             },
             {
               "kind": "imports",
+              "id": "module:src/loop/fs-atomic.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
               "id": "module:src/loop/hitl.ts",
               "confidence": "observed"
             },
@@ -32959,7 +32979,7 @@
             }
           ]
         },
-        "contentHash": "be4180f775a921ab68dd940ffe2eae06b5305c2e6a3fd4da864fbb06803e6ace",
+        "contentHash": "d2e25aad76da33b4378ac9c2ad63c9c319f3b654f9bec95bc26a5ed2ebaf4366",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -34189,7 +34209,7 @@
             }
           ]
         },
-        "contentHash": "c11bc034bcbdebab46e80f0da68a092c2cb87af46e28331bf954cced86136c6e",
+        "contentHash": "edf7fcb8bef2967efaa0c82eb23860801ebbc61a2d5479b8e60c80a32b250704",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -44256,12 +44276,22 @@
             },
             {
               "kind": "imports",
+              "id": "module:src/loop/deliver.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
               "id": "module:src/loop/fs-atomic.ts",
               "confidence": "observed"
             },
             {
               "kind": "imports",
               "id": "module:src/loop/hitl.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
+              "id": "module:src/loop/queue.ts",
               "confidence": "observed"
             },
             {
@@ -44291,7 +44321,7 @@
             }
           ]
         },
-        "contentHash": "447402c20d079d211e35975516d572a5b3a6264988da92f2046d03a872244856",
+        "contentHash": "b0cdffd9de00b0e59691246df0ecabe03dc3008e58b313379eb14f53032cd2da",
         "provenance": "observed",
         "confidence": "observed"
       },
