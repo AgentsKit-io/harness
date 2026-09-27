@@ -975,11 +975,12 @@ ${marker}` }); actions.push('secret-file hold commented') } catch (error) { acti
     if (stored) {
       const plan = workerPhaseEnabled(config, flow.flow, 'planner', config.worker.plan.enabled) ? readStoredPlan(ctx.loaded.stateDir, record.issue) : null
       const expected = renderSpec({ issue: record.issue, url: record.url, contract: stored, plan })
-      const spec = await checkSpec(ctx.runner, record.worktreePath, config, record.issue, expected)
+      const spec = await checkSpec(ctx.runner, record.worktreePath, config, record.issue, expected, pr.files)
       const problems = [
         ...spec.missing.map((file) => `\`${file}\` is missing`),
         ...spec.drifted.map((file) => `\`${file}\` differs from what the frozen contract renders`),
         ...spec.uncommitted.map((file) => `\`${file}\` is not committed`),
+        ...spec.notInPr.map((file) => `\`${file}\` is not in the PR (gitignored or not pushed)`),
       ]
       if (problems.length) {
         if (spec.missing.length || spec.drifted.length) writeSpec(record.worktreePath, config, record.issue, expected)

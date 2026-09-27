@@ -893,11 +893,12 @@ export const runTick = async (input: TickInput): Promise<TickReport> => {
         }
         if (setupFailed) notes.push(`${detail.identifier}: setup command failed but project.setup.required is false — continuing`)
       }
+      let specText: string | null = null
       if (config.spec.enabled) {
         // ADR-0041: the spec is rendered from what was just frozen and approved — no model writes it.
         const spec = renderSpec({ issue: detail.identifier, url: detail.url, contract: stored, plan: approvedPlan })
         writeSpec(created.path, config, detail.identifier, spec)
-        recordRunIo(loaded.stateDir, detail.identifier, { direction: 'input', stage: 'build', role: 'spec', content: SPEC_FILES.map((file) => spec[file]).join('\n'), maxBytes: config.runs.maxIoBytes }, now)
+        specText = SPEC_FILES.map((file) => spec[file]).join('\n')
       }
       const briefMemory = memoryPlan ?? { memoryBlock: '', issueCharBudget: config.contract.maxIssueChars, hits: [] as const }
       const guidanceRefs = config.contract.maxBriefReferences > 0 && config.contract.briefScopes.length
@@ -927,7 +928,6 @@ export const runTick = async (input: TickInput): Promise<TickReport> => {
       })
       const briefDigest = skillDigest(brief)
       writeFileSync(briefPath(loaded.stateDir, detail.identifier), brief, 'utf8')
-      recordRunIo(loaded.stateDir, detail.identifier, { direction: 'input', stage: 'build', role: 'worker', content: brief, maxBytes: config.runs.maxIoBytes }, now)
       const launched = await launchWorkerTerminal({ runner: input.runner, config, worktreeId: created.id, worktreePath: created.path, command: worker.tui, title, brief })
       if (!launched.accepted) notes.push(`${detail.identifier}: terminal ${launched.terminal} did not confirm the brief; deliver will nudge it if it stays idle`)
       ledger.recordDispatch({ lease: claim.lease, idempotencyKey: plan.idempotencyKey, commandDigest: plan.commandDigest })
@@ -935,6 +935,10 @@ export const runTick = async (input: TickInput): Promise<TickReport> => {
       resetDeliveryStateForDispatch(loaded.stateDir, detail.identifier)
       writeJsonAtomic(dispatchRecordPath(loaded.stateDir, detail.identifier), record)
       appendLoopEvent(loaded.stateDir, { at: record.dispatchedAt, type: 'worker.dispatched', ...record, command: worker.tui, briefAccepted: launched.accepted, tuiIdle: launched.idle, maxFixRounds: selectedRun?.config.maxFixRounds ?? flow.profile?.maxFixRounds ?? config.delivery.maxFixRounds }, bus)
+      // After `worker.dispatched`, which is what opens run n+1 on a re-dispatch: recorded before it, the new attempt's
+      // brief and spec landed in the superseded run and the new one started with no inputs.
+      if (specText) recordRunIo(loaded.stateDir, detail.identifier, { direction: 'input', stage: 'build', role: 'spec', content: specText, maxBytes: config.runs.maxIoBytes }, now)
+      recordRunIo(loaded.stateDir, detail.identifier, { direction: 'input', stage: 'build', role: 'worker', content: brief, maxBytes: config.runs.maxIoBytes }, now)
       await bus.runHook('afterDispatch', { issue: detail.identifier, provider: record.provider, model: record.model, branch: record.branch, worktreeId: record.worktreeId })
       clearIssueFailures(loaded.stateDir, detail.identifier)
       // The claim, under `queueOwnership: 'unassigned'`: written only AFTER the dispatch succeeded, so a
