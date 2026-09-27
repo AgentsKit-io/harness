@@ -156,6 +156,11 @@ describe('retry after a failed delivery', () => {
     expect(readDeliveryState(context.loaded.stateDir, issue)).toMatchObject({ prNumber: 3, finishedAt: null, finalOutcome: null, fixRounds: 0, nudges: [] })
     expect(createIssueQueue({ stateDir: context.loaded.stateDir }).list().filter((run) => run.issue === issue)).toHaveLength(1)
     expect(readCurrentProjection(context.loaded.stateDir).issues[issue]).toMatchObject({ phase: 'review', error: null })
+
+    // Blocked after two incomplete reviews (law-os AGE-1839): Retry drops the incomplete attempts, keeps real verdicts.
+    writeJsonAtomic(deliveryStatePath(context.loaded.stateDir, issue), { issue, prNumber: 3, reviews: { abc1234: { status: 'findings' }, def5678: { status: 'incomplete', attempts: 2 } }, fixRounds: 0, nudges: [], handoffs: [], heldFor: null, finishedAt: '2026-09-27T02:00:00.000Z', finalOutcome: 'blocked', cancelledAt: null })
+    expect(retryRun(context, issue, runId)).toEqual({ runId })
+    expect(Object.keys(readDeliveryState(context.loaded.stateDir, issue).reviews)).toEqual(['abc1234'])
   })
 
   it('a resumed failed delivery gets its error budget, failed-at head and tracker state back; a cancelled run is never resumed', async () => {

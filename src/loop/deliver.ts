@@ -1011,7 +1011,12 @@ ${marker}` }); actions.push('secret-file hold commented') } catch (error) { acti
     if (prior && prior.attempts >= 2 && prior.provider === reviewProvider && prior.model === chosen.model) {
       const known = readBlockingReviewFindings(ctx.loaded.stateDir, record.issue, pr.headSha, reviewSettings.minSeverity)
       if (known.length && !state.nudges.some((nudge) => nudge.kind === 'review' && nudge.head === pr.headSha)) return fixRound(ctx, record, lease, state, pr, 'review', `Loop: the last review was incomplete after ${prior.attempts} attempts, but it recorded ${known.length} blocking issue(s). Address the findings below, re-run \`${closes}\`, commit and push; a complete review is still required before merge. Findings:\n${renderFindingsForWorker(known)}\nThe full review is on the PR.`, `replaying ${known.length} blocking finding(s) from incomplete review`, actions)
-      return { issue: record.issue, outcome: 'held', reason: `review incomplete twice at this head; needs a human look${prior.reason ? ` (${prior.reason})` : ''}`, pr: pr.number, head: pr.headSha, actions }
+      // Returned as a bare `held` every pass, this emitted nothing: the UI kept showing "review pending" for hours
+      // (law-os AGE-1839, two reviews lost to `spawn ENAMETOOLONG`). Finished as blocked it reaches Attention, and
+      // Retry there drops the incomplete attempts so the head is reviewed again once the cause is gone.
+      const reason = `review incomplete twice at this head; needs a human look${prior.reason ? ` (${prior.reason})` : ''}`
+      finish(ctx, record, lease, state, 'blocked', reason)
+      return { issue: record.issue, outcome: ctx.dryRun ? 'dry-run' : 'blocked', reason, pr: pr.number, head: pr.headSha, actions }
     }
     // Cost lever: the cheap verifier runs before the expensive one. A build that does not compile does not
     // deserve a two-vote review, and `delivery.verify.argv` is the project's own check, not a guess.

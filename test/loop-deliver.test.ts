@@ -370,12 +370,15 @@ describe('deliver', () => {
     expect(events).toContain('"source":"review"')
   })
 
-  it('never merges on a review that wrote no result file: incomplete, then held after two attempts (fail-closed)', async () => {
+  it('never merges on a review that wrote no result file: incomplete, then blocked for a person after two attempts (fail-closed)', async () => {
     const env = setup({ review: { code: 0, noResultFile: true } })
     const first = (await deliver(env)).results[0]
     expect(first).toMatchObject({ outcome: 'waiting', review: { status: 'incomplete' } })
     await deliver(env)
-    expect((await deliver(env)).results[0]).toMatchObject({ outcome: 'held' })
+    expect((await deliver(env)).results[0]).toMatchObject({ outcome: 'blocked' })
+    // Finished, so the UI hears of it (`worker.blocked`) instead of showing "review pending" forever.
+    expect(readDeliveryState(env.loaded.stateDir, 'ENG-10')).toMatchObject({ finalOutcome: 'blocked' })
+    expect(readFileSync(join(env.loaded.stateDir, 'events.ndjson'), 'utf8')).toContain('"type":"worker.blocked"')
     expect(env.runner.calls.some((argv) => argv[0] === 'gh' && argv[1] === 'api' && argv.includes('--method'))).toBe(false)
     const exitOne = setup({ review: { code: 1, noResultFile: true } })
     expect((await deliver(exitOne)).results[0]).toMatchObject({ outcome: 'waiting', review: { status: 'incomplete' } })
@@ -390,7 +393,7 @@ describe('deliver', () => {
     expect(review).toMatchObject({ status: 'incomplete', attempts: 2 })
     expect(review?.reason).toContain('zero successful lenses: scripts/check-quality-gates.mjs')
     const held = (await deliver(env)).results[0]
-    expect(held).toMatchObject({ outcome: 'held' })
+    expect(held).toMatchObject({ outcome: 'blocked' })
     expect(held?.reason).toContain('zero successful lenses')
     const reviewed = readFileSync(join(env.loaded.stateDir, 'events.ndjson'), 'utf8').split('\n').filter(Boolean).map((line) => JSON.parse(line) as Record<string, unknown>).filter((event) => event['type'] === 'pr.reviewed')
     expect(reviewed.every((event) => String(event['reason']).includes('lens executions'))).toBe(true)
