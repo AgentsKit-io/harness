@@ -30,6 +30,8 @@ import { applyRoleSettings, resolveFlowSettings, resolveRoleSettings, workerPhas
 import { assessDod, readDodEvidence, renderDodMarkdown } from './dod.js'
 import { artifactPath, missingArtifacts, readPhaseArtifacts, readVerifyArtifact, verifyProofs, type PhaseArtifactName } from './artifacts.js'
 import { recordRunEvidence, recordRunIo } from './agent-runs.js'
+import { checkSpec, renderSpec, specDirFor, writeSpec } from './spec.js'
+import { readStoredPlan } from './plan-vote.js'
 import { readJsonFile } from '../kernel/json-file.js'
 import { createIssueQueue } from './queue.js'
 import { createLifecycleStore, type LifecyclePullRequest } from './lifecycle.js'
@@ -963,6 +965,27 @@ ${marker}` }); actions.push('secret-file hold commented') } catch (error) { acti
   if (absentArtifacts.length) {
     const detail = absentArtifacts.map((artifact) => `\`${artifact.file}\` — ${artifact.detail}`).join('; ')
     return fixRound(ctx, record, lease, state, pr, 'review', `Loop: PR #${pr.number} cannot be checked because the phase artifact(s) the loop reads are not there: ${detail}. Write each file at the root of this worktree, commit and push. \`verify.json\` is \`{ "ranAt": "<iso>", "command": "<what you ran>", "exitCode": 0, "outcomes": [{ "id": "<outcome id>", "status": "passed", "evidence": "<the line that proves it>" }] }\`.`, `missing phase artifact(s): ${absentArtifacts.map((artifact) => artifact.file).join(', ')}`, actions)
+  }
+
+  // ADR-0041: the rendered spec travels in the PR unchanged. Re-rendered from the same frozen contract and plan, so a
+  // copy that differs is drift from the contract, not a formatting nit — it goes back as a fix round naming the file.
+  if (config.spec.enabled && record.worktreePath) {
+    const stored = readStoredContract(ctx.loaded.stateDir, record.issue)
+    if (stored) {
+      const plan = workerPhaseEnabled(config, flow.flow, 'planner', config.worker.plan.enabled) ? readStoredPlan(ctx.loaded.stateDir, record.issue) : null
+      const expected = renderSpec({ issue: record.issue, url: record.url, contract: stored, plan })
+      const spec = await checkSpec(ctx.runner, record.worktreePath, config, record.issue, expected)
+      const problems = [
+        ...spec.missing.map((file) => `\`${file}\` is missing`),
+        ...spec.drifted.map((file) => `\`${file}\` differs from what the frozen contract renders`),
+        ...spec.uncommitted.map((file) => `\`${file}\` is not committed`),
+      ]
+      if (problems.length) {
+        if (spec.missing.length || spec.drifted.length) writeSpec(record.worktreePath, config, record.issue, expected)
+        return fixRound(ctx, record, lease, state, pr, 'review', `Loop: the spec for ${record.issue} is not in PR #${pr.number} as rendered: ${problems.join('; ')}. The loop has restored the rendered files in \`${specDirFor(config, record.issue)}/\` — commit them unchanged and push. If the spec itself is wrong, say so in the PR body; it changes when the contract does.`, `spec not as rendered: ${problems.join('; ')}`, actions)
+      }
+      actions.push(`spec ${specDirFor(config, record.issue)}/ committed as rendered`)
+    }
   }
 
   // Both DoD lists, proven, before anything merges: the project's (`dod.items`) and the issue's (the frozen

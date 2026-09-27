@@ -3,7 +3,8 @@ import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
 import { approveHeldDelivery, atLeast, buildReviewArgv, createDispatchLedger, createHitlStore, dispatchRecordPath, listDispatched, loadLoopConfig, parseReviewResult, precheckDeliver, readDeliveryState, renderFindingsForWorker, runCodeReview, runDeliver } from '../src/index.js'
-import type { CommandResult, CommandRunner, DispatchRecordFile } from '../src/index.js'
+import type { CommandResult, CommandRunner, DispatchRecordFile, StoredContract } from '../src/index.js'
+import { renderSpec, writeSpec } from '../src/loop/spec.js'
 
 const fixture = (name: string): unknown => JSON.parse(readFileSync(join(process.cwd(), 'test/fixtures/loop', `${name}.json`), 'utf8')) as unknown
 const exampleYaml = readFileSync(join(process.cwd(), 'loop.config.example.yaml'), 'utf8').replace('person: my-linear-display-name', 'person: person')
@@ -49,6 +50,8 @@ interface Scenario {
   readonly worktreeFiles?: Readonly<Record<string, string>>
   /** Exit code the fake `delivery.verify.argv` command (`agentskit-verify-fixture`) returns; 0 by default. */
   readonly verifyExitCode?: number
+  /** `git status --porcelain` output in the worktree (the spec gate's commit check); clean by default. */
+  readonly gitStatus?: string
 }
 
 const basePr = (over: Record<string, unknown> = {}): Record<string, unknown> => ({ ...(fixture('gh-pr-view') as Record<string, unknown>), headRefName: 'person/eng-10-demo', files: [{ path: 'packages/demo/src/index.ts' }], statusCheckRollup: [{ __typename: 'CheckRun', name: 'ci', conclusion: 'SUCCESS', status: 'COMPLETED' }], mergeable: 'MERGEABLE', mergeStateStatus: 'CLEAN', state: 'OPEN', number: 42, url: 'https://github.com/o/r/pull/42', ...over })
@@ -140,6 +143,7 @@ const setup = (initial: Scenario = {}) => {
       if (argv[0] === 'gh' && argv[1] === 'api' && argv.includes('--method')) return scenario.mergeRefused ? { code: 1, stdout: JSON.stringify({ message: 'Head branch was modified.' }), stderr: '', timedOut: false, durationMs: 1 } : ok({ merged: true, sha: 'deadbeef', message: 'merged' })
       if (argv[0] === 'gh' && argv[1] === 'api') return ok([])
       if (argv[0] === 'gh' && argv[1] === 'pr' && argv[2] === 'comment') return { code: 0, stdout: '', stderr: '', timedOut: false, durationMs: 1 }
+      if (argv[0] === 'git' && argv[1] === 'status') return { code: 0, stdout: scenario.gitStatus ?? '', stderr: '', timedOut: false, durationMs: 1 }
       if (argv[0] === 'git' && argv[1] === 'rev-list') return { code: 0, stdout: `${scenario.unpushedCommits ?? 0}\n`, stderr: '', timedOut: false, durationMs: 1 }
       if (key === 'agentskit-verify-fixture') return { code: scenario.verifyExitCode ?? 0, stdout: 'verify output', stderr: '', timedOut: false, durationMs: 1 }
       return { code: 127, stdout: '', stderr: `no fixture for ${key} ${options?.cwd ?? ''}`, timedOut: false, durationMs: 1 }
@@ -867,6 +871,49 @@ describe('deliver', () => {
     const env = setup({ review: { code: 0 } })
     const report = await deliver(env)
     expect(report.results[0]).toMatchObject({ outcome: 'merged' })
+  })
+})
+
+describe('rendered spec gate (ADR-0041)', () => {
+  const contract: StoredContract = {
+    schemaVersion: 1, issue: 'ENG-10', issueUpdatedAt: '2026-09-10T00:00:00.000Z', generatedAt: '2026-09-10T00:00:00.000Z', provider: 'claude', model: 'opus', source: 'llm', digest: 'c0ffee000000beef',
+    assessment: { dispatchable: true, reasons: [] },
+    contract: { intent: 'Expose a health endpoint', scope: { inScope: ['GET /health'], outOfScope: [] }, outcomes: [{ id: 'o1', description: 'health returns 200', check: { kind: 'command', command: 'pnpm test' } }], ambiguities: [], hitl: [], touchpoints: ['src/health.ts'], risks: [] },
+  }
+  const verify = JSON.stringify({ command: 'pnpm test', exitCode: 0, outcomes: [{ id: 'o1', status: 'passed', evidence: 'green' }] })
+  const specEnv = (scenario: Scenario = {}) => {
+    const env = setup({ review: { code: 0 }, worktreeFiles: { 'verify.json': verify }, ...scenario })
+    writeFileSync(join(env.dir, 'loop.config.local.yaml'), 'spec:\n  enabled: true\n')
+    mkdirSync(join(env.loaded.stateDir, 'issues', 'ENG-10'), { recursive: true })
+    writeFileSync(join(env.loaded.stateDir, 'issues', 'ENG-10', 'contract.json'), JSON.stringify(contract))
+    const loaded = loadLoopConfig(env.loaded.path)
+    const expected = renderSpec({ issue: 'ENG-10', url: env.record.url, contract, plan: null })
+    return { env, loaded, expected }
+  }
+
+  it('merges a PR that commits the spec exactly as rendered', async () => {
+    const { env, loaded, expected } = specEnv()
+    writeSpec(env.worktreePath ?? '', loaded.config, 'ENG-10', expected)
+    const report = await deliver(env)
+    expect(report.results[0]).toMatchObject({ outcome: 'merged' })
+    expect(report.results[0]?.actions).toContain('spec specs/ENG-10/ committed as rendered')
+  })
+
+  it('sends a missing spec back as a fix round and restores the rendered files', async () => {
+    const { env, expected } = specEnv()
+    const report = await deliver(env)
+    expect(report.results[0]).toMatchObject({ outcome: 'fix-round', reason: expect.stringContaining('specs/ENG-10/requirements.md` is missing') })
+    expect(readFileSync(join(env.worktreePath ?? '', 'specs', 'ENG-10', 'tasks.md'), 'utf8')).toBe(expected['tasks.md'])
+  })
+
+  it('holds a spec that drifted from the frozen contract, or that was never committed', async () => {
+    const drifted = specEnv()
+    writeSpec(drifted.env.worktreePath ?? '', drifted.loaded.config, 'ENG-10', { ...drifted.expected, 'requirements.md': `${drifted.expected['requirements.md']}\n### o2\n\nsomething the contract never said\n` })
+    expect((await deliver(drifted.env)).results[0]).toMatchObject({ outcome: 'fix-round', reason: expect.stringContaining('requirements.md` differs from what the frozen contract renders') })
+
+    const uncommitted = specEnv({ gitStatus: '?? specs/ENG-10/\n' })
+    writeSpec(uncommitted.env.worktreePath ?? '', uncommitted.loaded.config, 'ENG-10', uncommitted.expected)
+    expect((await deliver(uncommitted.env)).results[0]).toMatchObject({ outcome: 'fix-round', reason: expect.stringContaining('`specs/ENG-10/` is not committed') })
   })
 })
 

@@ -1,6 +1,6 @@
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
-import { join } from 'node:path'
+import { dirname, join } from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
 import {
   readAgentRunReport,
@@ -362,6 +362,19 @@ describe('tick', () => {
     expect(second.queue.busy).toContain(result?.issue)
     expect(env.runner.calls.filter((argv) => argv[1] === 'worktree' && argv[2] === 'create')).toHaveLength(2)
     expect(env.runner.calls.filter((argv) => argv[0] === 'claude' && argv[1] === '-p')).toHaveLength(2)
+  })
+
+  it('renders the spec into the worktree and briefs the worker to commit it, when spec.enabled (ADR-0041)', async () => {
+    const env = makeEnv()
+    writeFileSync(join(dirname(env.configPath), 'loop.config.local.yaml'), 'spec:\n  enabled: true\n')
+    const [result] = (await runTick({ ...tickOptions(env), maxDispatch: 1 })).results
+    expect(result).toMatchObject({ outcome: 'dispatched' })
+    const loaded = loadLoopConfig(env.configPath)
+    const stored = readStoredContract(loaded.stateDir, result?.issue ?? '')
+    const requirements = readFileSync(join(env.dir, 'w', 'specs', result?.issue ?? '', 'requirements.md'), 'utf8')
+    for (const outcome of stored?.contract.outcomes ?? []) expect(requirements).toContain(`### ${outcome.id}`)
+    expect(readFileSync(join(env.dir, 'w', '.ak-loop', 'brief.md'), 'utf8')).toContain(`## Spec (\`specs/${result?.issue}/\`)`)
+    expect(readAgentRunReport(loaded.stateDir, result?.issue ?? '')?.state.io.some((entry) => entry.role === 'spec')).toBe(true)
   })
 
   // Under `queueOwnership: 'unassigned'` the assignee is a claim, not ownership. What makes it safe is the

@@ -14,6 +14,7 @@ import { renderWorkerBrief } from './brief.js'
 import { readStoredPlan, runPlanWithVotes, writeStoredPlan, type StoredPlan } from './plan-vote.js'
 import { acquireFileLock, releaseFileLock, writeJsonAtomic } from './fs-atomic.js'
 import { pruneAgentRuns, recordRunEvent, recordRunIo, type RunIoInput } from './agent-runs.js'
+import { renderSpec, SPEC_FILES, writeSpec } from './spec.js'
 import { loadPinnedSkills, skillRefs, skillDigest, type PinnedSkillRef } from './skills.js'
 import { loadLoopConfig, providerIdentity, type EffortLevel, type LoadedLoopConfig, type LoopConfig, type ModelReference } from './config.js'
 import { assessContract, contractIsFresh, extractResetsAt, generateContract, readStoredContract, resolveDocContext, writeStoredContract, type StoredContract } from './contract.js'
@@ -866,6 +867,12 @@ export const runTick = async (input: TickInput): Promise<TickReport> => {
           throw new Error(`setup command failed (${detailMsg}): ${[...setupResult.command].join(' ')}${setupRun.stderr ? ` — ${setupRun.stderr.slice(-300)}` : ''}`)
         }
         if (setupFailed) notes.push(`${detail.identifier}: setup command failed but project.setup.required is false — continuing`)
+      }
+      if (config.spec.enabled) {
+        // ADR-0041: the spec is rendered from what was just frozen and approved — no model writes it.
+        const spec = renderSpec({ issue: detail.identifier, url: detail.url, contract: stored, plan: approvedPlan })
+        writeSpec(created.path, config, detail.identifier, spec)
+        recordRunIo(loaded.stateDir, detail.identifier, { direction: 'input', stage: 'build', role: 'spec', content: SPEC_FILES.map((file) => spec[file]).join('\n'), maxBytes: config.runs.maxIoBytes }, now)
       }
       const briefMemory = memoryPlan ?? { memoryBlock: '', issueCharBudget: config.contract.maxIssueChars, hits: [] as const }
       const guidanceRefs = config.contract.maxBriefReferences > 0 && config.contract.briefScopes.length

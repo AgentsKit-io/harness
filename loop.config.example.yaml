@@ -334,6 +334,13 @@ memory:
 #   maxIoBytes: 262144                # ceiling per recorded input/output (inputs keep the head, outputs the tail)
 #   prSummary: true                   # one PR comment with the run's steps and evidence hashes, edited in place
 
+# Spec-driven development: render specs/<issue>/{requirements,design,tasks}.md from the frozen contract and the
+# approved plan at dispatch (no model writes them). The worker commits them unchanged; deliver sends a fix round for
+# a copy that is missing, uncommitted or drifted. Off by default — it adds files to every PR.
+# spec:
+#   enabled: false
+#   dir: specs
+
 # Knobs the retro may move by itself, each inside a declared range and justified by a declared metric — and
 # reverted by the same metric when the next cycle is worse (that knob is then frozen until a human clears it).
 # Never auto-adjustable, whatever is listed here: models, providers, gates and branches.

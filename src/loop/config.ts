@@ -835,6 +835,17 @@ export const LoopConfigSchema = z.object({
     prSummary: z.boolean().default(true),
   }).prefault({}),
   /**
+   * Spec-driven development (ADR-0041): at dispatch the loop renders `<dir>/<issue>/{requirements,design,tasks}.md`
+   * into the worktree from the frozen contract and the approved plan; the worker commits them unchanged and
+   * `deliver` sends a fix round for a copy that is missing, uncommitted or drifted. Off by default — it adds files
+   * to every PR.
+   */
+  spec: z.object({
+    enabled: z.boolean().default(false),
+    /** Directory at the repository root that holds one folder per issue. */
+    dir: nonEmpty.default('specs'),
+  }).prefault({}),
+  /**
    * Knobs the retro is allowed to move by itself, each inside a declared range and justified by a declared metric.
    *
    * A knob with no metric is not auto-adjustable: the metric is what proves the change helped, and it is the same
