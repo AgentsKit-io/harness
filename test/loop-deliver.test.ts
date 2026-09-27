@@ -852,6 +852,15 @@ describe('deliver', () => {
     expect(readDeliveryState(env.loaded.stateDir, 'ENG-10').trackerState).toBe('In Review')
   })
 
+  it('reports a pass whose every result failed as failed, not ok', async () => {
+    const env = setup({ review: { code: 0 }, reviewThrows: 3 })
+    expect((await deliver(env)).status).toBe('ok')
+    await deliver(env)
+    const third = await deliver(env)
+    expect(third.results.map((result) => result.outcome)).toEqual(['failed'])
+    expect(third.status).toBe('failed')
+  })
+
   it('stops a dispatch that has run past delivery.maxDispatchMinutes, even though the terminal is still active', async () => {
     const env = setup({ pr: null, dispatchedAt: '2026-09-11T00:00:00.000Z' }) // 12h before NOW
     writeFileSync(join(env.dir, 'loop.config.local.yaml'), 'delivery:\n  maxDispatchMinutes: 60\n')

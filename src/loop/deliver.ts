@@ -51,7 +51,8 @@ export interface DeliverResult {
 }
 
 export interface DeliverReport {
-  readonly status: 'ok' | 'idle'
+  /** `failed`: there were results and every one of them failed. */
+  readonly status: 'ok' | 'idle' | 'failed'
   readonly generatedAt: string
   readonly dryRun: boolean
   readonly reviewer: string | null
@@ -1435,5 +1436,6 @@ export const runDeliver = async (input: DeliverInput): Promise<DeliverReport> =>
   }
 
   await flushNotifications()
-  return { status: results.length ? 'ok' : 'idle', generatedAt: now().toISOString(), dryRun, reviewer: reviewer ? `${reviewer.provider}/${reviewer.model}` : null, results, notes }
+  const allFailed = results.length > 0 && results.every((result) => result.outcome === 'failed')
+  return { status: allFailed ? 'failed' : results.length ? 'ok' : 'idle', generatedAt: now().toISOString(), dryRun, reviewer: reviewer ? `${reviewer.provider}/${reviewer.model}` : null, results, notes }
 }

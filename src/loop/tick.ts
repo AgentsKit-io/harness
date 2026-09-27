@@ -1005,5 +1005,8 @@ export const runTick = async (input: TickInput): Promise<TickReport> => {
   }
   if (!dispatched && !results.length) notes.push('no candidate reached dispatch')
   await flushNotifications()
-  return { ...base, status: dispatched > 0 || results.some((result) => result.outcome === 'escalated') ? 'ok' : trackerCooling ? 'blocked' : 'idle', results, notes }
+  // Every candidate failing is a failed run, not an idle one — the stage's failure count has to see it. A tracker
+  // cooldown stays `blocked`: waiting out a rate limit is not a failure.
+  const allFailed = results.length > 0 && results.every((result) => result.outcome === 'failed')
+  return { ...base, status: dispatched > 0 || results.some((result) => result.outcome === 'escalated') ? 'ok' : trackerCooling ? 'blocked' : allFailed ? 'failed' : 'idle', results, notes }
 }

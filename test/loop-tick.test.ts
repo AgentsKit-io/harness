@@ -20,7 +20,7 @@ interface Env { readonly dir: string; readonly bin: string; readonly runner: Com
 const cleanups: string[] = []
 afterEach(() => { for (const dir of cleanups.splice(0)) rmSync(dir, { recursive: true, force: true }) })
 
-const makeEnv = (options: { readonly contract?: TaskContract | 'garbage'; readonly worktrees?: unknown; readonly failCreate?: boolean; readonly failCreateTransientTimes?: number; readonly claudeAuthFails?: boolean; readonly claudeSessionLimit?: boolean; readonly failAllContracts?: boolean; readonly accountList?: unknown; readonly briefSkills?: readonly string[]; readonly setup?: { readonly exitCode?: number; readonly timedOut?: boolean }; readonly setupRequired?: boolean; readonly pluginSource?: string; readonly issueDescription?: string; readonly securityPii?: { readonly action?: 'redact' | 'warn' | 'block' }; readonly catalogMode?: boolean; readonly queueOwnership?: 'person' | 'unassigned'; readonly queueMode?: 'backlog' | 'explicit'; readonly tracker?: 'linear' | 'github'; readonly hideIssuesFromQueue?: boolean; readonly knownFailures?: readonly { readonly path: string; readonly issue: string; readonly reason: string }[]; /** Which Linear read answers with a rate limit / a plain failure (mutable via `env.tracker`). */ readonly trackerRateLimit?: 'queue' | 'issue'; readonly issueFetchFails?: boolean } = {}): Env => {
+const makeEnv = (options: { readonly contract?: TaskContract | 'garbage'; readonly worktrees?: unknown; readonly failCreate?: boolean; readonly failCreateTransientTimes?: number; readonly claudeAuthFails?: boolean; readonly claudeSessionLimit?: boolean; readonly failAllContracts?: boolean; readonly accountList?: unknown; readonly briefSkills?: readonly string[]; readonly setup?: { readonly exitCode?: number; readonly timedOut?: boolean }; readonly setupRequired?: boolean; readonly pluginSource?: string; readonly issueDescription?: string; readonly securityPii?: { readonly action?: 'redact' | 'warn' | 'block' }; readonly catalogMode?: boolean; readonly queueOwnership?: 'person' | 'unassigned'; readonly queueMode?: 'backlog' | 'explicit'; readonly tracker?: 'linear' | 'github'; readonly hideIssuesFromQueue?: boolean; readonly knownFailures?: readonly { readonly path: string; readonly issue: string; readonly reason: string }[]; /** Which Linear read answers with a rate limit / a plain failure (mutable via `env.tracker`). */ readonly trackerRateLimit?: 'queue' | 'issue'; readonly issueFetchFails?: boolean; /** Issue fetches after this many fail with a rate limit. */ readonly rateLimitAfterIssueFetches?: number } = {}): Env => {
   const dir = mkdtempSync(join(tmpdir(), 'agentskit-loop-tick-')); cleanups.push(dir)
   const bin = join(dir, 'bin'); rmSync(bin, { recursive: true, force: true })
   let yaml = options.briefSkills?.length ? exampleYaml.replace('skills: []', `skills: [${options.briefSkills.join(', ')}]`) : exampleYaml
@@ -88,6 +88,7 @@ const makeEnv = (options: { readonly contract?: TaskContract | 'garbage'; readon
       }
       if (key.startsWith('orca linear list-issues') && trackerState.rateLimit === 'queue') return { code: 1, stdout: '', stderr: 'Linear API: HTTP 429 Too Many Requests', timedOut: false, durationMs: 1 }
       if (key.startsWith('orca linear issue') && trackerState.rateLimit === 'issue') return { code: 1, stdout: '', stderr: 'Linear API: Rate limit exceeded, retry later', timedOut: false, durationMs: 1 }
+      if (key.startsWith('orca linear issue') && options.rateLimitAfterIssueFetches !== undefined && calls.filter((call) => call[1] === 'linear' && call[2] === 'issue').length > options.rateLimitAfterIssueFetches) return { code: 1, stdout: '', stderr: 'Too Many Requests', timedOut: false, durationMs: 1 }
       if (key.startsWith('orca linear issue') && options.issueFetchFails) return { code: 1, stdout: '', stderr: 'upstream connect error (sha 4290af1c)', timedOut: false, durationMs: 1 }
       if (key.startsWith('orca linear list-issues')) {
         const payload = applyExtraLabels(fixture(key.includes('--state Ready') ? 'list-issues-ready' : 'list-issues-todo') as never)
@@ -516,10 +517,22 @@ describe('tick', () => {
     const report = await runTick({ ...tickOptions(env) })
     expect(report.results.length).toBeGreaterThan(1)
     expect(report.results.every((result) => result.outcome === 'failed')).toBe(true)
+    expect(report.status).toBe('failed')
     const stateDir = loadLoopConfig(env.configPath).stateDir
     const events = readFileSync(join(stateDir, 'events.ndjson'), 'utf8').split('\n').filter(Boolean).map((line) => JSON.parse(line) as Record<string, unknown>)
     expect(events.filter((event) => event['type'] === 'tracker.sync-failed' && event['operation'] === 'fetch')).toHaveLength(report.results.length)
     expect(events.some((event) => event['type'] === 'tracker.cooldown')).toBe(false)
+  })
+
+  it('reports a tick whose every candidate failed as failed, but a tracker cooldown as blocked even after earlier failures', async () => {
+    const failed = await runTick({ ...tickOptions(makeEnv({ failCreate: true })) })
+    expect(failed.results.length).toBeGreaterThan(0)
+    expect(failed.results.every((result) => result.outcome === 'failed')).toBe(true)
+    expect(failed.status).toBe('failed')
+    const env = makeEnv({ issueFetchFails: true, rateLimitAfterIssueFetches: 1 })
+    const cooled = await runTick({ ...tickOptions(env) })
+    expect(cooled.results).toEqual([expect.objectContaining({ outcome: 'failed' })])
+    expect(cooled.status).toBe('blocked')
   })
 
   it('a plugin module that fails to load is reported as a note and does not stop the tick', async () => {
