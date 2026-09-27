@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
-  "contentHash": "7af8c6f2d54211de71ac25f7016e053b865b88da555c324a8e013d7fc546090f",
+  "contentHash": "c9aa4db5b03cf71e9b881022caadd040373a6e950e34e17f44fbf551f53b5b7f",
   "contentHashAlgo": "sha256-normalized-v1",
-  "generatedAt": "2026-09-27T15:37:39.645Z",
+  "generatedAt": "2026-09-27T16:48:46.382Z",
   "project": {
     "name": "AgentsKit Harness",
     "root": "."
@@ -3937,14 +3937,15 @@
         "readRestarts",
         "runDeliver",
         "workerAtUsageLimit",
-        "workerAwaitingPermission"
+        "workerAwaitingPermission",
+        "workerDeclaredBlocked"
       ],
       "tags": [
         "module",
         "ts",
         "loop"
       ],
-      "contentHash": "6ca531b2e7a9d3f8a3200169c46abf434e2abecac7acc066ab2384b3eeafcde6"
+      "contentHash": "b20e76c1c8b25fcc33b668e525ddd48b0be65f6f50343df7e811aace38e1e724"
     },
     {
       "id": "module:src/loop/detached-worker.ts",
@@ -7785,7 +7786,7 @@
         "ts",
         "test"
       ],
-      "contentHash": "0e5688e20413e6d8ff08ac9038acf9c4753b84e55e61b35bef402cf34f811c0e"
+      "contentHash": "feae92ff589af4abe82f1d60535428a76a1d1a84bc3fb4ef27b62a50210a78e7"
     },
     {
       "id": "module:test/loop-doctor-gaps.test.ts",
@@ -8953,7 +8954,7 @@
     }
   },
   "inputs": {
-    "hash": "fd116ce8866a5477fbdb8da03c3d18a67a57a2d4ea251bdc6ba77ed2f2a48212",
+    "hash": "54447c147bb4fdfe2b43346a06779c26c16ed38f92924d06a87cea29647c6b22",
     "fileCount": 541,
     "projectionVersion": 2
   },
@@ -8976,9 +8977,9 @@
   "projection": {
     "type": "retrieval-index",
     "schemaVersion": 1,
-    "contentHash": "0177c15497024d1ef550b09539b708abc3eedd293d64add144256ca3a3f0e824",
+    "contentHash": "d008747bf7c0ba1377e0868c5d0d621c66de283ce84d9d5bef8f27b69263e936",
     "contentHashAlgo": "sha256-normalized-v1",
-    "snapshotHash": "e9472dd5e742fe2353f51bbef41abaaa971df227fae3ea851b8e5f8842b26d34",
+    "snapshotHash": "42e1cc64fc286b662a22e562f5d2442a157761481dcdfce62e8ae8e01602e5a2",
     "overlayHash": "f99666ff9119084dd25c2974ae64eb6935ec2aa785ff5ad478fb9d541f7a5e94",
     "configurationHash": "816afaf6a7dc09767f7594d8fd80024612ca0f33becf0e44dde0107fcf2782df",
     "lexiconVersion": 1,
@@ -9014,7 +9015,7 @@
         "headings": 3.861818181818182,
         "path": 6.114545454545454,
         "summary": 2.6654545454545455,
-        "symbols": 14.270909090909091,
+        "symbols": 14.278181818181817,
         "title": 3.949090909090909
       }
     },
@@ -26566,7 +26567,8 @@
           "readRestarts",
           "runDeliver",
           "workerAtUsageLimit",
-          "workerAwaitingPermission"
+          "workerAwaitingPermission",
+          "workerDeclaredBlocked"
         ],
         "tags": [
           "module",
@@ -26577,7 +26579,7 @@
           "title": "deliver.ts",
           "headings": "",
           "path": "src/loop/deliver.ts",
-          "symbols": "DeliverInput DeliverOutcome DeliverReport DeliverResult DeliveryHandoff DeliveryState MAX_LOST_TRACKING_RESTARTS approveHeldDelivery deliveryStatePath listDispatched markDispatchCancelled precheckDeliver readDeliveryState readRestarts runDeliver workerAtUsageLimit workerAwaitingPermission",
+          "symbols": "DeliverInput DeliverOutcome DeliverReport DeliverResult DeliveryHandoff DeliveryState MAX_LOST_TRACKING_RESTARTS approveHeldDelivery deliveryStatePath listDispatched markDispatchCancelled precheckDeliver readDeliveryState readRestarts runDeliver workerAtUsageLimit workerAwaitingPermission workerDeclaredBlocked",
           "summary": "",
           "body": "",
           "aliases": "module ts loop"
@@ -26873,7 +26875,7 @@
             }
           ]
         },
-        "contentHash": "6ca531b2e7a9d3f8a3200169c46abf434e2abecac7acc066ab2384b3eeafcde6",
+        "contentHash": "b20e76c1c8b25fcc33b668e525ddd48b0be65f6f50343df7e811aace38e1e724",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -41478,7 +41480,7 @@
             }
           ]
         },
-        "contentHash": "0e5688e20413e6d8ff08ac9038acf9c4753b84e55e61b35bef402cf34f811c0e",
+        "contentHash": "feae92ff589af4abe82f1d60535428a76a1d1a84bc3fb4ef27b62a50210a78e7",
         "provenance": "observed",
         "confidence": "observed"
       },
