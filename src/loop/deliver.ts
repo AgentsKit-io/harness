@@ -1314,18 +1314,17 @@ export const runDeliver = async (input: DeliverInput): Promise<DeliverReport> =>
       // Once a PR was observed, this run is historical. A later delivery/API failure belongs to the issue's review
       // projection and Inbox, not to rewriting the completed execution attempt into a different terminal run.
       //
-      // The reverse (failed -> completed) is equally illegal and, unlike the case above, was actually hit live:
-      // `getLatestByIssue` can still point at an older, terminal `failed` run (e.g. attempt 1 crashed on "orca
-      // terminal create failed: Terminal creation timed out") for an issue a *later*, separately-tracked retry
-      // went on to deliver — `openPullRequest` is computed from the issue's current GitHub state, not from this
-      // specific run, so it doesn't know the PR belongs to a different attempt. `queue.update` itself refuses a
-      // failed->completed transition (queue.ts's own invariant — only running/dispatching/queued may become
-      // completed) and throws, which this call site was letting propagate: 3 consecutive throws auto-paused the
-      // entire deliver stage for ~2 hours on a real project, well after the actual delivery had already succeeded.
-      if (status && run.status !== status && !(run.status === 'completed' && status === 'failed') && !(run.status === 'failed' && status === 'completed')) queue.update(run.id, { status, error: status === 'completed' ? null : result.reason, projection: { stage, pullRequest: result.pr ?? run.projection.pullRequest } })
+      // The reverse is refused by the queue itself: only running/dispatching/queued may become `completed`, and
+      // `queue.update` throws otherwise. `getLatestByIssue` can point at a run that is already terminal — an older
+      // failed attempt a later retry went on to deliver, or a run a human blocked or cancelled — while
+      // `openPullRequest` reads the issue's current GitHub state. Letting that throw abort the pass auto-paused the
+      // whole deliver stage for ~2 hours on a real project. Apply the queue's own rule here instead of one pair.
+      const completable = ['running', 'dispatching', 'queued'].includes(run.status)
+      const applies = status !== null && run.status !== status && !(run.status === 'completed' && status === 'failed') && (status !== 'completed' || completable)
+      if (applies) queue.update(run.id, { status, error: status === 'completed' ? null : result.reason, projection: { stage, pullRequest: result.pr ?? run.projection.pullRequest } })
       const pullRequest: LifecyclePullRequest | null = result.pr === undefined ? null : { number: result.pr, state: result.outcome === 'merged' ? 'MERGED' : result.outcome === 'abandoned' ? 'CLOSED' : 'OPEN', ...(result.head ? { head: result.head } : {}) }
       const syncError = result.actions.find((action) => action.includes('review sync failed')) ?? null
-      lifecycle.upsert({ issue: result.issue, runId: run.id, runStatus: status ?? run.status, stage, deliveryOutcome: result.outcome, pullRequest, error: result.outcome === 'failed' ? result.reason : syncError, finalFailure: ['blocked', 'stuck'].includes(result.outcome), events: [{ type: result.outcome === 'held' ? 'worker.held' : result.outcome === 'waiting' ? 'worker.waiting' : 'worker.reviewed', reason: result.reason }], now: now() })
+      lifecycle.upsert({ issue: result.issue, runId: run.id, runStatus: applies ? status : run.status, stage, deliveryOutcome: result.outcome, pullRequest, error: result.outcome === 'failed' ? result.reason : syncError, finalFailure: ['blocked', 'stuck'].includes(result.outcome), events: [{ type: result.outcome === 'held' ? 'worker.held' : result.outcome === 'waiting' ? 'worker.waiting' : 'worker.reviewed', reason: result.reason }], now: now() })
     }
   }
 

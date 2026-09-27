@@ -2,7 +2,7 @@ import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync
 import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
-import { approveHeldDelivery, atLeast, buildReviewArgv, createDispatchLedger, createHitlStore, dispatchRecordPath, listDispatched, loadLoopConfig, parseReviewResult, precheckDeliver, readDeliveryState, renderFindingsForWorker, runCodeReview, runDeliver } from '../src/index.js'
+import { approveHeldDelivery, atLeast, buildReviewArgv, createDispatchLedger, createHitlStore, dispatchRecordPath, listDispatched, loadLoopConfig, parseReviewResult, precheckDeliver, readDeliveryState, renderFindingsForWorker, runCodeReview, runDeliver, createIssueQueue } from '../src/index.js'
 import type { CommandResult, CommandRunner, DispatchRecordFile, StoredContract } from '../src/index.js'
 import { renderSpec, writeSpec } from '../src/loop/spec.js'
 import { readAgentRunReport } from '../src/loop/agent-runs.js'
@@ -955,6 +955,24 @@ describe('run summary on the PR (ADR-0041)', () => {
     await deliver(off)
     expect(summaryPosts(off)).toHaveLength(0)
   })
+})
+
+describe('queue projection after delivery', () => {
+  // A PR observed for an issue whose latest queue run is already terminal (an older failed attempt, a run a human
+  // blocked or cancelled) must not be forced to `completed`: the queue refuses it, and the throw used to abort the
+  // whole deliver pass — three in a row auto-paused the stage.
+  for (const terminal of ['failed', 'blocked', 'needs-input', 'cancelled'] as const) {
+    it(`leaves a ${terminal} queue run as it is when its issue has an open PR`, async () => {
+      const env = setup({ review: { code: 0 }, pr: basePr({ reviewDecision: '' }) })
+      writeFileSync(join(env.dir, 'loop.config.local.yaml'), 'delivery:\n  merge:\n    requireHumanApproval: true\n')
+      const queue = createIssueQueue({ stateDir: env.loaded.stateDir })
+      const run = queue.enqueue({ issue: 'ENG-10', title: 'ENG-10', config: { configHash: 'c', flow: null, builder: { provider: 'claude', model: 'sonnet' }, maxFixRounds: 2, perIssueTokens: 10_000, roles: { orchestrator: 'project', reviewer: 'project', watcher: 'project', delivery: 'snapshot' } }, contract: { digest: 'd', status: 'valid', frozenAt: NOW.toISOString() }, preflight: { status: 'passed', checkedAt: NOW.toISOString() }, now: NOW })
+      queue.update(run.id, { status: terminal, now: NOW })
+      const report = await deliver(env)
+      expect(report.results[0]).toMatchObject({ outcome: 'held', pr: expect.any(Number) })
+      expect(createIssueQueue({ stateDir: env.loaded.stateDir }).getLatestByIssue('ENG-10')?.status).toBe(terminal)
+    })
+  }
 })
 
 describe('github label intake', () => {
