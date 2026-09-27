@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
-  "contentHash": "c9aa4db5b03cf71e9b881022caadd040373a6e950e34e17f44fbf551f53b5b7f",
+  "contentHash": "78377f17c3acb5c31114fe173e40fd1c91211e336cfbc9eef01ce9701d0a9ce8",
   "contentHashAlgo": "sha256-normalized-v1",
-  "generatedAt": "2026-09-27T16:48:46.382Z",
+  "generatedAt": "2026-09-27T16:02:07.659Z",
   "project": {
     "name": "AgentsKit Harness",
     "root": "."
@@ -3937,15 +3937,14 @@
         "readRestarts",
         "runDeliver",
         "workerAtUsageLimit",
-        "workerAwaitingPermission",
-        "workerDeclaredBlocked"
+        "workerAwaitingPermission"
       ],
       "tags": [
         "module",
         "ts",
         "loop"
       ],
-      "contentHash": "b20e76c1c8b25fcc33b668e525ddd48b0be65f6f50343df7e811aace38e1e724"
+      "contentHash": "6ca531b2e7a9d3f8a3200169c46abf434e2abecac7acc066ab2384b3eeafcde6"
     },
     {
       "id": "module:src/loop/detached-worker.ts",
@@ -5931,7 +5930,7 @@
         "ts",
         "api"
       ],
-      "contentHash": "05b35851b5d998f0539f07abd16eb456d6e40bc6446a5343884f082c2f7590fd"
+      "contentHash": "3d2a13d0b4c87935e8c483b48ea9eb1ebecada11c6e12749f9159de3645bc7ea"
     },
     {
       "id": "module:src/ui/api/wizard.ts",
@@ -7786,7 +7785,7 @@
         "ts",
         "test"
       ],
-      "contentHash": "feae92ff589af4abe82f1d60535428a76a1d1a84bc3fb4ef27b62a50210a78e7"
+      "contentHash": "0e5688e20413e6d8ff08ac9038acf9c4753b84e55e61b35bef402cf34f811c0e"
     },
     {
       "id": "module:test/loop-doctor-gaps.test.ts",
@@ -8794,7 +8793,7 @@
         "ts",
         "test"
       ],
-      "contentHash": "d150d4938401c0371bf6a951aba985d66ad5afd6f6539c319879701565adeae2"
+      "contentHash": "0c8c01310b19c54c54de812dc0ef14a74b038c062bb043c40b1120864b5a8d5e"
     },
     {
       "id": "module:test/ui-system.test.ts",
@@ -8954,7 +8953,7 @@
     }
   },
   "inputs": {
-    "hash": "54447c147bb4fdfe2b43346a06779c26c16ed38f92924d06a87cea29647c6b22",
+    "hash": "b51b0f0bb583d72de9a4ff77195c7f72e56811e39f87343dec643462728bab4e",
     "fileCount": 541,
     "projectionVersion": 2
   },
@@ -8977,9 +8976,9 @@
   "projection": {
     "type": "retrieval-index",
     "schemaVersion": 1,
-    "contentHash": "d008747bf7c0ba1377e0868c5d0d621c66de283ce84d9d5bef8f27b69263e936",
+    "contentHash": "7f80951c04ecaf4a6bdefdc5a5020a2e7171a27b45a9e20d2f79aa1b2f8fa70c",
     "contentHashAlgo": "sha256-normalized-v1",
-    "snapshotHash": "42e1cc64fc286b662a22e562f5d2442a157761481dcdfce62e8ae8e01602e5a2",
+    "snapshotHash": "36c3614a4776fbb1e653195007531ba3fdd11c1589ce13253442853b7ad27d61",
     "overlayHash": "f99666ff9119084dd25c2974ae64eb6935ec2aa785ff5ad478fb9d541f7a5e94",
     "configurationHash": "816afaf6a7dc09767f7594d8fd80024612ca0f33becf0e44dde0107fcf2782df",
     "lexiconVersion": 1,
@@ -9015,7 +9014,7 @@
         "headings": 3.861818181818182,
         "path": 6.114545454545454,
         "summary": 2.6654545454545455,
-        "symbols": 14.278181818181817,
+        "symbols": 14.270909090909091,
         "title": 3.949090909090909
       }
     },
@@ -26567,8 +26566,7 @@
           "readRestarts",
           "runDeliver",
           "workerAtUsageLimit",
-          "workerAwaitingPermission",
-          "workerDeclaredBlocked"
+          "workerAwaitingPermission"
         ],
         "tags": [
           "module",
@@ -26579,7 +26577,7 @@
           "title": "deliver.ts",
           "headings": "",
           "path": "src/loop/deliver.ts",
-          "symbols": "DeliverInput DeliverOutcome DeliverReport DeliverResult DeliveryHandoff DeliveryState MAX_LOST_TRACKING_RESTARTS approveHeldDelivery deliveryStatePath listDispatched markDispatchCancelled precheckDeliver readDeliveryState readRestarts runDeliver workerAtUsageLimit workerAwaitingPermission workerDeclaredBlocked",
+          "symbols": "DeliverInput DeliverOutcome DeliverReport DeliverResult DeliveryHandoff DeliveryState MAX_LOST_TRACKING_RESTARTS approveHeldDelivery deliveryStatePath listDispatched markDispatchCancelled precheckDeliver readDeliveryState readRestarts runDeliver workerAtUsageLimit workerAwaitingPermission",
           "summary": "",
           "body": "",
           "aliases": "module ts loop"
@@ -26875,7 +26873,7 @@
             }
           ]
         },
-        "contentHash": "b20e76c1c8b25fcc33b668e525ddd48b0be65f6f50343df7e811aace38e1e724",
+        "contentHash": "6ca531b2e7a9d3f8a3200169c46abf434e2abecac7acc066ab2384b3eeafcde6",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -35760,7 +35758,7 @@
             }
           ]
         },
-        "contentHash": "05b35851b5d998f0539f07abd16eb456d6e40bc6446a5343884f082c2f7590fd",
+        "contentHash": "3d2a13d0b4c87935e8c483b48ea9eb1ebecada11c6e12749f9159de3645bc7ea",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -41480,7 +41478,7 @@
             }
           ]
         },
-        "contentHash": "feae92ff589af4abe82f1d60535428a76a1d1a84bc3fb4ef27b62a50210a78e7",
+        "contentHash": "0e5688e20413e6d8ff08ac9038acf9c4753b84e55e61b35bef402cf34f811c0e",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -45311,7 +45309,7 @@
             }
           ]
         },
-        "contentHash": "d150d4938401c0371bf6a951aba985d66ad5afd6f6539c319879701565adeae2",
+        "contentHash": "0c8c01310b19c54c54de812dc0ef14a74b038c062bb043c40b1120864b5a8d5e",
         "provenance": "observed",
         "confidence": "observed"
       },
