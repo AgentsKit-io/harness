@@ -20,6 +20,7 @@ import { buildAttention, latestStops, type AttentionInput } from './attention.js
 import type { BoardSnapshot } from './board.js'
 import type { SnapshotExtras } from './contract.js'
 import type { IssueRecord } from './projection.js'
+import { withRunningHarness } from './running-harness.js'
 import { computeLocks, cronCadenceMs, reconcile } from './reconcile.js'
 
 /**
@@ -129,7 +130,9 @@ const createAutomationsCache = (loaded: LoadedLoopConfig, runner: CommandRunner)
         try {
           const existing = await orcaAutomationsList(runner, { bin: loaded.config.orca?.bin, timeoutMs: loaded.config.orca?.timeoutMs ?? 20_000 })
           const since = new Date().toISOString()
-          rows = reconcileAutomations(automationSpecs(loaded, ''), existing, loaded.config)
+          // Same spec the Reinstall action writes (#114 pins the running binary); comparing against the unpinned
+          // default made every reinstalled automation look drifted forever.
+          rows = reconcileAutomations(automationSpecs(withRunningHarness(loaded), ''), existing, loaded.config)
             .filter((row) => row.state !== 'in-sync')
             .map((row) => ({ name: row.name, stage: row.stage, state: row.state as 'missing' | 'drifted' | 'undeclared', fields: row.fields, since: rows.find((old) => old.name === row.name && old.state === row.state)?.since ?? since }))
         } catch { /* Orca unreachable: its freshness already says so; no automation claims either way */ }

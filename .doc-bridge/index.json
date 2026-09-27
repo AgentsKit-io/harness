@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
-  "contentHash": "d986765f46568193d273ccdcc50aedf000b38ffcd65cea6e800c14cb7e5157a8",
+  "contentHash": "0825ea3ef448536e2154dda990ac0ec5a604fbedc5a5c3573311d1c1a670ba15",
   "contentHashAlgo": "sha256-normalized-v1",
-  "generatedAt": "2026-09-26T16:07:44.822Z",
+  "generatedAt": "2026-09-27T00:42:11.365Z",
   "project": {
     "name": "AgentsKit Harness",
     "root": "."
@@ -3668,7 +3668,7 @@
         "ts",
         "loop"
       ],
-      "contentHash": "ce3666ddb1e1a511896f71b571c83b6a48966a0c0a403eadd5eaa1fc7ab044d2"
+      "contentHash": "8edd4c1a58e0f00cac23df66dc728b87127e263bcd7eea31e7f635850fe4decb"
     },
     {
       "id": "module:src/loop/brief.ts",
@@ -5333,7 +5333,7 @@
         "ts",
         "api"
       ],
-      "contentHash": "1b9895e15cc8297fc86d242daccd50ebdb17220f33da332fdb15481f482f19bb"
+      "contentHash": "a387c89f42c1502181c2b5cf32345cbeee0c6bb6e3e009c669e6648175fc4031"
     },
     {
       "id": "module:src/ui/api/alerts.ts",
@@ -5507,7 +5507,7 @@
         "ts",
         "api"
       ],
-      "contentHash": "c2f454f5c20fd63e2af8a88c184bce5a6c7ee2b24451dd7372ebd6deab285fae"
+      "contentHash": "55ead76dce038dbbfadb09a8d65a9e6bdfbb2278088d903bb15dc91892a36ae1"
     },
     {
       "id": "module:src/ui/api/http.ts",
@@ -5661,7 +5661,7 @@
         "ts",
         "api"
       ],
-      "contentHash": "6369cf9f035eeff7e1c7e56ff8204424d02735a93c6b0530afc84218eb992107"
+      "contentHash": "d98c02ee72f5ba8b9c5c9397ad235a457acaafbd00ba82c394a0643f0d84ee66"
     },
     {
       "id": "module:src/ui/api/routes-config.ts",
@@ -5831,7 +5831,7 @@
         "ts",
         "api"
       ],
-      "contentHash": "18d88e77e0332d5f0b8778faaffe5461e60e9724ba47e98a25a24ff433e6dc0b"
+      "contentHash": "cce292d80ef715a7e61a227863f4183aee7106c7534ac61fd6a2a9f87011f153"
     },
     {
       "id": "module:src/ui/api/wizard.ts",
@@ -6066,7 +6066,7 @@
         "tsx",
         "components"
       ],
-      "contentHash": "56b8e6fb434d7eb9ff8ffd5271d4089cd1946bed0760f99975b9958a8a506a6f"
+      "contentHash": "26976d9126c01d43cd552a3597240950eaeccab64b1aef3d24f0f6977f15ef25"
     },
     {
       "id": "module:src/ui/app/src/components/Shell.tsx",
@@ -6207,6 +6207,7 @@
       "symbols": [
         "ActionTarget",
         "confirmBasis",
+        "lockedOut",
         "useActionRunner"
       ],
       "tags": [
@@ -6214,7 +6215,7 @@
         "tsx",
         "lib"
       ],
-      "contentHash": "928b29e24377c189d037dd05ee46f72be1064c6d628ae93f0344011375a20bff"
+      "contentHash": "b039620ce21eb01c5cf08aaf8e583c9ed3a0816a9b7bb9688a1d14fd8188457c"
     },
     {
       "id": "module:src/ui/app/src/lib/api.ts",
@@ -6253,6 +6254,7 @@
         "getConfig",
         "getIssueDetail",
         "getJob",
+        "getJobs",
         "getMetrics",
         "getRecentEvents",
         "getState",
@@ -6282,7 +6284,7 @@
         "ts",
         "lib"
       ],
-      "contentHash": "bc50c32094cbef96f595b4d0532317f31f80993e22b7ddc1fc9af2e9a3878274"
+      "contentHash": "d6e6cec1de56a4b2317744ab49037691bcb2a1855de924cd284dd7c872a62a9b"
     },
     {
       "id": "module:src/ui/app/src/lib/format.ts",
@@ -6425,7 +6427,7 @@
         "tsx",
         "pages"
       ],
-      "contentHash": "56337685cda5d8494bb0c7ca610ec45299dbc8fc4dbe0f3b08095ee4c41dfce3"
+      "contentHash": "95974ca048eb3c2905129f57daecdb35176459a89beb0f353aea8df815613062"
     },
     {
       "id": "module:src/ui/app/src/pages/Batch.tsx",
@@ -6441,7 +6443,7 @@
         "tsx",
         "pages"
       ],
-      "contentHash": "1b2cf29857177918c382b6988e6deb130ff07038266c347e4b8dd7c8297845d6"
+      "contentHash": "d6e08e366526468b9b1acd490fe3157ee6724224430c03eb7d10beb28691b814"
     },
     {
       "id": "module:src/ui/app/src/pages/Costs.tsx",
@@ -7524,7 +7526,7 @@
         "ts",
         "test"
       ],
-      "contentHash": "521e7b72a53c984e6410b98c5df9a91be4749737ce0f50be45f5dd5b3f16788f"
+      "contentHash": "afeebc6fbe56bf0ed5bad8887475e5b09f855631a53c192da86752315b6dd4d5"
     },
     {
       "id": "module:test/loop-brief-cache.test.ts",
@@ -8484,7 +8486,7 @@
         "ts",
         "test"
       ],
-      "contentHash": "e5d90062e2497f1e7c6c7cb4e335468cc70aa8de224a4b88d8d0af39b9327c5c"
+      "contentHash": "57fcc3399d7210ad2429d6af4f85ccc6481b4dc3e9e0c7b74cf8585934c887ed"
     },
     {
       "id": "module:test/ui-api-actions.test.ts",
@@ -8496,7 +8498,7 @@
         "ts",
         "test"
       ],
-      "contentHash": "121c8781dafd4163432e0fa3fe95dd3e085ebdb6a49f9ae4246607229d901e21"
+      "contentHash": "c4b9b61c635b11edc5436bd19f7e9fe670063a00e25862da97eb1ba0fc1e9cdb"
     },
     {
       "id": "module:test/ui-api-jobs.test.ts",
@@ -8520,7 +8522,7 @@
         "ts",
         "test"
       ],
-      "contentHash": "4bc1e6a2ac3018393ab10a953246a629447765b542dc76d34ab80a71bfa0f58f"
+      "contentHash": "6b1612bf44d8147797292ec74b0b0c54f04b9c9c187c57e87ae5a35f3ac3328b"
     },
     {
       "id": "module:test/ui-app-ops.test.tsx",
@@ -8532,7 +8534,7 @@
         "tsx",
         "test"
       ],
-      "contentHash": "86f6c600cbaf7aad67414dbe50ec6b08519a09463265e1c8f0f822a7b501c30f"
+      "contentHash": "94172d43cd686b4f771c6cc1953f605aec2d4bdcf46afe9d4aceada8f3d6e84f"
     },
     {
       "id": "module:test/ui-config.test.ts",
@@ -8640,7 +8642,7 @@
         "ts",
         "test"
       ],
-      "contentHash": "ec959d3f7887c5e1a3ea8a035e296a3f939bddda615bae54fc1db099ebd0cf2b"
+      "contentHash": "919a3187faaca492329ed89ebb4ff930a818cbcc292aad61862ccc2b4f6bb602"
     },
     {
       "id": "module:test/ui-system.test.ts",
@@ -8800,7 +8802,7 @@
     }
   },
   "inputs": {
-    "hash": "c13acfcea7ed0e282568072444bba08fa996178459f51d6ebe3be1a5eeca0056",
+    "hash": "a0a9aaa63cfd5a0fce17e143409140a424cffb1a80f8027811b8ba968492cffa",
     "fileCount": 534,
     "projectionVersion": 2
   },
@@ -8823,9 +8825,9 @@
   "projection": {
     "type": "retrieval-index",
     "schemaVersion": 1,
-    "contentHash": "fc8e2f98e51b034c47e010c3ff61eaa124298d386fe5ac5af7f2567c7422c359",
+    "contentHash": "927c40b5af53d9814bf4ca061269686b11da1bcdc68aea9d3bdb8522aa7fe5c6",
     "contentHashAlgo": "sha256-normalized-v1",
-    "snapshotHash": "fe727fde951b11a377b83789033cd3b021c6306ed596b71678b2389ba36de202",
+    "snapshotHash": "5d77228be5e94145f570bb7f68d1b5429bd7e8a6722719e34a2b522ce79b92c9",
     "overlayHash": "f99666ff9119084dd25c2974ae64eb6935ec2aa785ff5ad478fb9d541f7a5e94",
     "configurationHash": "816afaf6a7dc09767f7594d8fd80024612ca0f33becf0e44dde0107fcf2782df",
     "lexiconVersion": 1,
@@ -8861,7 +8863,7 @@
         "headings": 3.858195211786372,
         "path": 6.110497237569061,
         "summary": 2.6500920810313073,
-        "symbols": 13.976058931860036,
+        "symbols": 13.985267034990791,
         "title": 3.9355432780847144
       }
     },
@@ -24627,6 +24629,11 @@
             },
             {
               "kind": "imports",
+              "id": "module:test/ui-api-server.test.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
               "id": "module:test/ui-system.test.ts",
               "confidence": "observed"
             },
@@ -24735,7 +24742,7 @@
             }
           ]
         },
-        "contentHash": "ce3666ddb1e1a511896f71b571c83b6a48966a0c0a403eadd5eaa1fc7ab044d2",
+        "contentHash": "8edd4c1a58e0f00cac23df66dc728b87127e263bcd7eea31e7f635850fe4decb",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -27314,6 +27321,11 @@
             {
               "kind": "imports",
               "id": "module:test/ui-actions.test.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
+              "id": "module:test/ui-api-actions.test.ts",
               "confidence": "observed"
             },
             {
@@ -31401,6 +31413,11 @@
             },
             {
               "kind": "imports",
+              "id": "module:test/ui-api-actions.test.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
               "id": "module:test/ui-core-server.test.ts",
               "confidence": "observed"
             },
@@ -32369,7 +32386,7 @@
             }
           ]
         },
-        "contentHash": "1b9895e15cc8297fc86d242daccd50ebdb17220f33da332fdb15481f482f19bb",
+        "contentHash": "a387c89f42c1502181c2b5cf32345cbeee0c6bb6e3e009c669e6648175fc4031",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -33183,10 +33200,15 @@
               "kind": "imports",
               "id": "module:src/ui/api/reconcile.ts",
               "confidence": "observed"
+            },
+            {
+              "kind": "imports",
+              "id": "module:src/ui/api/running-harness.ts",
+              "confidence": "observed"
             }
           ]
         },
-        "contentHash": "c2f454f5c20fd63e2af8a88c184bce5a6c7ee2b24451dd7372ebd6deab285fae",
+        "contentHash": "55ead76dce038dbbfadb09a8d65a9e6bdfbb2278088d903bb15dc91892a36ae1",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -33907,7 +33929,7 @@
             }
           ]
         },
-        "contentHash": "6369cf9f035eeff7e1c7e56ff8204424d02735a93c6b0530afc84218eb992107",
+        "contentHash": "d98c02ee72f5ba8b9c5c9397ad235a457acaafbd00ba82c394a0643f0d84ee66",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -34548,6 +34570,11 @@
           "inbound": [
             {
               "kind": "imports",
+              "id": "module:src/ui/api/extras.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
               "id": "module:src/ui/api/routes-system.ts",
               "confidence": "observed"
             },
@@ -34997,7 +35024,7 @@
             }
           ]
         },
-        "contentHash": "18d88e77e0332d5f0b8778faaffe5461e60e9724ba47e98a25a24ff433e6dc0b",
+        "contentHash": "cce292d80ef715a7e61a227863f4183aee7106c7534ac61fd6a2a9f87011f153",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -35641,7 +35668,7 @@
           "inbound": [],
           "outbound": []
         },
-        "contentHash": "56b8e6fb434d7eb9ff8ffd5271d4089cd1946bed0760f99975b9958a8a506a6f",
+        "contentHash": "26976d9126c01d43cd552a3597240950eaeccab64b1aef3d24f0f6977f15ef25",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -35961,6 +35988,7 @@
         "symbols": [
           "ActionTarget",
           "confirmBasis",
+          "lockedOut",
           "useActionRunner"
         ],
         "tags": [
@@ -35972,7 +36000,7 @@
           "title": "actions.tsx",
           "headings": "",
           "path": "src/ui/app/src/lib/actions.tsx",
-          "symbols": "ActionTarget confirmBasis useActionRunner",
+          "symbols": "ActionTarget confirmBasis lockedOut useActionRunner",
           "summary": "",
           "body": "",
           "aliases": "module tsx lib"
@@ -36003,7 +36031,7 @@
             }
           ]
         },
-        "contentHash": "928b29e24377c189d037dd05ee46f72be1064c6d628ae93f0344011375a20bff",
+        "contentHash": "b039620ce21eb01c5cf08aaf8e583c9ed3a0816a9b7bb9688a1d14fd8188457c",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -36045,6 +36073,7 @@
           "getConfig",
           "getIssueDetail",
           "getJob",
+          "getJobs",
           "getMetrics",
           "getRecentEvents",
           "getState",
@@ -36078,7 +36107,7 @@
           "title": "api.ts",
           "headings": "",
           "path": "src/ui/app/src/lib/api.ts",
-          "symbols": "ApiError BoardIssue BoardSnapshot Decision DispatchRef EnqueueRunInput IssuePhase IssueRecord PullRequestRef ReviewSubstatus RunRecord TimelineEvent UiJobRecord UiSnapshot UiWizardDraft UiWizardDraftPatch answerDecision approveDesign approveHeldPr approvePlan approveRelease archiveRun cancelRun decideIssue enqueueBatch enqueueRun generateContract getCachedContracts getConfig getIssueDetail getJob getMetrics getRecentEvents getState getSystem getTimeline getWizard pauseStage promoteLearnings proposeConfig reconcileIssue reinstallAutomations rejectLearnings restoreRun resumePausedIssue resumeStage retryRun runDoctor runStage saveWizardDraft searchRecords tuning useSnapshot writeLocalConfig",
+          "symbols": "ApiError BoardIssue BoardSnapshot Decision DispatchRef EnqueueRunInput IssuePhase IssueRecord PullRequestRef ReviewSubstatus RunRecord TimelineEvent UiJobRecord UiSnapshot UiWizardDraft UiWizardDraftPatch answerDecision approveDesign approveHeldPr approvePlan approveRelease archiveRun cancelRun decideIssue enqueueBatch enqueueRun generateContract getCachedContracts getConfig getIssueDetail getJob getJobs getMetrics getRecentEvents getState getSystem getTimeline getWizard pauseStage promoteLearnings proposeConfig reconcileIssue reinstallAutomations rejectLearnings restoreRun resumePausedIssue resumeStage retryRun runDoctor runStage saveWizardDraft searchRecords tuning useSnapshot writeLocalConfig",
           "summary": "",
           "body": "",
           "aliases": "module ts lib"
@@ -36174,7 +36203,7 @@
             }
           ]
         },
-        "contentHash": "bc50c32094cbef96f595b4d0532317f31f80993e22b7ddc1fc9af2e9a3878274",
+        "contentHash": "d6e6cec1de56a4b2317744ab49037691bcb2a1855de924cd284dd7c872a62a9b",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -36519,7 +36548,7 @@
           "inbound": [],
           "outbound": []
         },
-        "contentHash": "56337685cda5d8494bb0c7ca610ec45299dbc8fc4dbe0f3b08095ee4c41dfce3",
+        "contentHash": "95974ca048eb3c2905129f57daecdb35176459a89beb0f353aea8df815613062",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -36557,7 +36586,7 @@
           "inbound": [],
           "outbound": []
         },
-        "contentHash": "1b2cf29857177918c382b6988e6deb130ff07038266c347e4b8dd7c8297845d6",
+        "contentHash": "d6e08e366526468b9b1acd490fe3157ee6724224430c03eb7d10beb28691b814",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -40145,7 +40174,7 @@
             }
           ]
         },
-        "contentHash": "521e7b72a53c984e6410b98c5df9a91be4749737ce0f50be45f5dd5b3f16788f",
+        "contentHash": "afeebc6fbe56bf0ed5bad8887475e5b09f855631a53c192da86752315b6dd4d5",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -43492,7 +43521,7 @@
             }
           ]
         },
-        "contentHash": "e5d90062e2497f1e7c6c7cb4e335468cc70aa8de224a4b88d8d0af39b9327c5c",
+        "contentHash": "57fcc3399d7210ad2429d6af4f85ccc6481b4dc3e9e0c7b74cf8585934c887ed",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -43537,12 +43566,22 @@
             },
             {
               "kind": "imports",
+              "id": "module:src/loop/fs-atomic.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
               "id": "module:src/loop/hitl.ts",
               "confidence": "observed"
             },
             {
               "kind": "imports",
               "id": "module:src/loop/resilience-state.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
+              "id": "module:src/loop/tick.ts",
               "confidence": "observed"
             },
             {
@@ -43557,7 +43596,7 @@
             }
           ]
         },
-        "contentHash": "121c8781dafd4163432e0fa3fe95dd3e085ebdb6a49f9ae4246607229d901e21",
+        "contentHash": "c4b9b61c635b11edc5436bd19f7e9fe670063a00e25862da97eb1ba0fc1e9cdb",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -43637,6 +43676,11 @@
             },
             {
               "kind": "imports",
+              "id": "module:src/loop/automations.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
               "id": "module:src/loop/config.ts",
               "confidence": "observed"
             },
@@ -43657,7 +43701,7 @@
             }
           ]
         },
-        "contentHash": "4bc1e6a2ac3018393ab10a953246a629447765b542dc76d34ab80a71bfa0f58f",
+        "contentHash": "6b1612bf44d8147797292ec74b0b0c54f04b9c9c187c57e87ae5a35f3ac3328b",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -43691,7 +43735,7 @@
           "inbound": [],
           "outbound": []
         },
-        "contentHash": "86f6c600cbaf7aad67414dbe50ec6b08519a09463265e1c8f0f822a7b501c30f",
+        "contentHash": "94172d43cd686b4f771c6cc1953f605aec2d4bdcf46afe9d4aceada8f3d6e84f",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -44261,7 +44305,7 @@
             }
           ]
         },
-        "contentHash": "ec959d3f7887c5e1a3ea8a035e296a3f939bddda615bae54fc1db099ebd0cf2b",
+        "contentHash": "919a3187faaca492329ed89ebb4ff930a818cbcc292aad61862ccc2b4f6bb602",
         "provenance": "observed",
         "confidence": "observed"
       },
