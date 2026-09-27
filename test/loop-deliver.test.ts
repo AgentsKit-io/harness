@@ -433,6 +433,22 @@ describe('deliver', () => {
     expect(env.runner.calls.filter((argv) => argv[0] === 'agentskit-review')).toHaveLength(0)
   })
 
+  it('replays a head\'s review findings the worker was never sent (Retry after the fix-round cap), then waits', async () => {
+    // Live (vivva #86): blocked at the cap without sending the last findings; Retry cleared the nudges; the worker sat
+    // idle waiting for instructions while deliver waited for a push.
+    const env = setup()
+    const head = String((basePr() as Record<string, unknown>).headRefOid)
+    writeFileSync(join(env.loaded.stateDir, 'issues', 'ENG-10', 'delivery.json'), JSON.stringify({
+      ...readDeliveryState(env.loaded.stateDir, 'ENG-10'),
+      prNumber: 42, nudges: [],
+      reviews: { [head]: { status: 'findings', at: '2026-09-11T11:00:00.000Z', provider: 'codex-cli', model: 'gpt-5.6-sol', blocking: 1, attempts: 1 } },
+    }))
+    writeFileSync(join(env.loaded.stateDir, 'issues', 'ENG-10', `review-${head.slice(0, 12)}.json`), JSON.stringify({ findings: [{ severity: 'high', title: 'Known bug', file: 'a.ts', line: 2 }] }))
+    expect((await deliver(env)).results[0]).toMatchObject({ outcome: 'fix-round', reason: 'replaying 1 blocking finding(s) the worker was never sent' })
+    expect(env.runner.calls.filter((argv) => argv[0] === 'agentskit-review')).toHaveLength(0)
+    expect((await deliver(env)).results[0]).toMatchObject({ outcome: 'waiting', reason: expect.stringContaining('pending a new push') })
+  })
+
   it('reactivates a stale worker terminal before replaying findings', async () => {
     const env = setup({ sendRejects: 1 })
     const head = String((basePr() as Record<string, unknown>).headRefOid)

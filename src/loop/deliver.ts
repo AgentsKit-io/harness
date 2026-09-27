@@ -1067,7 +1067,14 @@ ${marker}` }); actions.push('secret-file hold commented') } catch (error) { acti
     // from being stuck forever in "waiting: review findings pending a new push" — a push that never comes
     // because there is nothing left to fix.
     if (review.status === 'findings' && review.blocking.length) return fixRound(ctx, record, lease, state, pr, 'review', `Loop: the code review of PR #${pr.number} (head ${pr.headSha.slice(0, 7)}) found ${review.blocking.length} issue(s) at or above "${reviewSettings.minSeverity}". Address each one (or explain in the PR why it is not applicable), re-run \`${closes}\`, commit and push. Findings:\n${renderFindingsForWorker(review.blocking)}\nThe full review is on the PR. Reply here when pushed.`, `review found ${review.blocking.length} blocking finding(s)`, actions, review.blocking)
-  } else if (reviewPhase && prior?.status === 'findings' && prior.blocking > 0) return { issue: record.issue, outcome: 'waiting', reason: `review findings pending a new push (head ${pr.headSha.slice(0, 7)})`, pr: pr.number, head: pr.headSha, actions }
+  } else if (reviewPhase && prior?.status === 'findings' && prior.blocking > 0) {
+    // The worker must have been told this head's findings. A delivery blocked at the fix-round cap never sent them,
+    // and Retry clears the nudges: without a replay the worker waits for instructions and deliver waits for a push
+    // (vivva #86 sat idle after Retry). Same replay the incomplete-review path does.
+    const known = readBlockingReviewFindings(ctx.loaded.stateDir, record.issue, pr.headSha, flow.review.minSeverity)
+    if (known.length && !state.nudges.some((nudge) => nudge.kind === 'review' && nudge.head === pr.headSha)) return fixRound(ctx, record, lease, state, pr, 'review', `Loop: the code review of PR #${pr.number} (head ${pr.headSha.slice(0, 7)}) found ${known.length} issue(s) at or above "${flow.review.minSeverity}". Address each one (or explain in the PR why it is not applicable), re-run \`${closes}\`, commit and push. Findings:\n${renderFindingsForWorker(known)}\nThe full review is on the PR. Reply here when pushed.`, `replaying ${known.length} blocking finding(s) the worker was never sent`, actions, known)
+    return { issue: record.issue, outcome: 'waiting', reason: `review findings pending a new push (head ${pr.headSha.slice(0, 7)})`, pr: pr.number, head: pr.headSha, actions }
+  }
 
   // The phase artifacts are the contract between the worker and the harness: the machine advances on files it can
   // check, never on what a terminal said. A missing one comes back as a fix round **naming the file** — "which
