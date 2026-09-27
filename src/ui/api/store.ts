@@ -122,6 +122,14 @@ const reconcileAgainstEngineState = (state: ProjectionState, stateDir: string): 
   for (const issue of known) {
     const delivery = readDeliveryState(stateDir, issue)
     if (!delivery.finishedAt || !delivery.finalOutcome) continue
+    // A cancellation after the delivery finished is the newer decision: the old outcome must not re-block the issue.
+    // Until the next dispatch clears `cancelledAt` (tick's resetDeliveryStateForDispatch), the issue is available —
+    // unless a fresh run was already enqueued for it.
+    if (delivery.cancelledAt && delivery.cancelledAt >= delivery.finishedAt) {
+      const record = next.issues[issue]
+      if (record && record.phase !== 'available' && record.phase !== 'running') next = { issues: { ...next.issues, [issue]: { ...record, phase: 'available', reviewState: null, dispatch: null, error: null } } }
+      continue
+    }
     const enginePhase = phaseForDeliveryOutcome(delivery.finalOutcome, 'review')
     const engineReviewState = reviewStateForDeliveryOutcome(delivery.finalOutcome)
     const record = next.issues[issue] ?? { issue, title: null, url: null, trackerState: null, phase: 'available' as const, reviewState: null, run: null, dispatch: null, pullRequest: null, pendingDecisions: [], error: null, updatedAt: new Date(0).toISOString() }

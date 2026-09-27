@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
-  "contentHash": "757febda7406f0f8f5207f4217dee121d5f8102c45dea7ba71f009417037cd43",
+  "contentHash": "0825ea3ef448536e2154dda990ac0ec5a604fbedc5a5c3573311d1c1a670ba15",
   "contentHashAlgo": "sha256-normalized-v1",
-  "generatedAt": "2026-09-26T23:40:02.426Z",
+  "generatedAt": "2026-09-27T00:42:11.365Z",
   "project": {
     "name": "AgentsKit Harness",
     "root": "."
@@ -5333,7 +5333,7 @@
         "ts",
         "api"
       ],
-      "contentHash": "1b9895e15cc8297fc86d242daccd50ebdb17220f33da332fdb15481f482f19bb"
+      "contentHash": "a387c89f42c1502181c2b5cf32345cbeee0c6bb6e3e009c669e6648175fc4031"
     },
     {
       "id": "module:src/ui/api/alerts.ts",
@@ -5507,7 +5507,7 @@
         "ts",
         "api"
       ],
-      "contentHash": "c2f454f5c20fd63e2af8a88c184bce5a6c7ee2b24451dd7372ebd6deab285fae"
+      "contentHash": "55ead76dce038dbbfadb09a8d65a9e6bdfbb2278088d903bb15dc91892a36ae1"
     },
     {
       "id": "module:src/ui/api/http.ts",
@@ -5831,7 +5831,7 @@
         "ts",
         "api"
       ],
-      "contentHash": "18d88e77e0332d5f0b8778faaffe5461e60e9724ba47e98a25a24ff433e6dc0b"
+      "contentHash": "cce292d80ef715a7e61a227863f4183aee7106c7534ac61fd6a2a9f87011f153"
     },
     {
       "id": "module:src/ui/api/wizard.ts",
@@ -6066,7 +6066,7 @@
         "tsx",
         "components"
       ],
-      "contentHash": "56b8e6fb434d7eb9ff8ffd5271d4089cd1946bed0760f99975b9958a8a506a6f"
+      "contentHash": "26976d9126c01d43cd552a3597240950eaeccab64b1aef3d24f0f6977f15ef25"
     },
     {
       "id": "module:src/ui/app/src/components/Shell.tsx",
@@ -6207,6 +6207,7 @@
       "symbols": [
         "ActionTarget",
         "confirmBasis",
+        "lockedOut",
         "useActionRunner"
       ],
       "tags": [
@@ -6214,7 +6215,7 @@
         "tsx",
         "lib"
       ],
-      "contentHash": "928b29e24377c189d037dd05ee46f72be1064c6d628ae93f0344011375a20bff"
+      "contentHash": "b039620ce21eb01c5cf08aaf8e583c9ed3a0816a9b7bb9688a1d14fd8188457c"
     },
     {
       "id": "module:src/ui/app/src/lib/api.ts",
@@ -6426,7 +6427,7 @@
         "tsx",
         "pages"
       ],
-      "contentHash": "56337685cda5d8494bb0c7ca610ec45299dbc8fc4dbe0f3b08095ee4c41dfce3"
+      "contentHash": "95974ca048eb3c2905129f57daecdb35176459a89beb0f353aea8df815613062"
     },
     {
       "id": "module:src/ui/app/src/pages/Batch.tsx",
@@ -8497,7 +8498,7 @@
         "ts",
         "test"
       ],
-      "contentHash": "121c8781dafd4163432e0fa3fe95dd3e085ebdb6a49f9ae4246607229d901e21"
+      "contentHash": "c4b9b61c635b11edc5436bd19f7e9fe670063a00e25862da97eb1ba0fc1e9cdb"
     },
     {
       "id": "module:test/ui-api-jobs.test.ts",
@@ -8521,7 +8522,7 @@
         "ts",
         "test"
       ],
-      "contentHash": "4bc1e6a2ac3018393ab10a953246a629447765b542dc76d34ab80a71bfa0f58f"
+      "contentHash": "6b1612bf44d8147797292ec74b0b0c54f04b9c9c187c57e87ae5a35f3ac3328b"
     },
     {
       "id": "module:test/ui-app-ops.test.tsx",
@@ -8533,7 +8534,7 @@
         "tsx",
         "test"
       ],
-      "contentHash": "86f6c600cbaf7aad67414dbe50ec6b08519a09463265e1c8f0f822a7b501c30f"
+      "contentHash": "94172d43cd686b4f771c6cc1953f605aec2d4bdcf46afe9d4aceada8f3d6e84f"
     },
     {
       "id": "module:test/ui-config.test.ts",
@@ -8641,7 +8642,7 @@
         "ts",
         "test"
       ],
-      "contentHash": "ec959d3f7887c5e1a3ea8a035e296a3f939bddda615bae54fc1db099ebd0cf2b"
+      "contentHash": "919a3187faaca492329ed89ebb4ff930a818cbcc292aad61862ccc2b4f6bb602"
     },
     {
       "id": "module:test/ui-system.test.ts",
@@ -8801,7 +8802,7 @@
     }
   },
   "inputs": {
-    "hash": "388e3eaec3908345d8dbe1b3b33a1fd82004598fe015f880313df99952f3e3a1",
+    "hash": "a0a9aaa63cfd5a0fce17e143409140a424cffb1a80f8027811b8ba968492cffa",
     "fileCount": 534,
     "projectionVersion": 2
   },
@@ -8824,9 +8825,9 @@
   "projection": {
     "type": "retrieval-index",
     "schemaVersion": 1,
-    "contentHash": "57af32d6f96da809acbef32c5626a01cb51d03fbef2d2bae65d112cea6a36f68",
+    "contentHash": "927c40b5af53d9814bf4ca061269686b11da1bcdc68aea9d3bdb8522aa7fe5c6",
     "contentHashAlgo": "sha256-normalized-v1",
-    "snapshotHash": "1ced5f6458cff54a25c341e7d12bef433e520281f707c6c7e65289cb7a059ce3",
+    "snapshotHash": "5d77228be5e94145f570bb7f68d1b5429bd7e8a6722719e34a2b522ce79b92c9",
     "overlayHash": "f99666ff9119084dd25c2974ae64eb6935ec2aa785ff5ad478fb9d541f7a5e94",
     "configurationHash": "816afaf6a7dc09767f7594d8fd80024612ca0f33becf0e44dde0107fcf2782df",
     "lexiconVersion": 1,
@@ -8862,7 +8863,7 @@
         "headings": 3.858195211786372,
         "path": 6.110497237569061,
         "summary": 2.6500920810313073,
-        "symbols": 13.98158379373849,
+        "symbols": 13.985267034990791,
         "title": 3.9355432780847144
       }
     },
@@ -24628,6 +24629,11 @@
             },
             {
               "kind": "imports",
+              "id": "module:test/ui-api-server.test.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
               "id": "module:test/ui-system.test.ts",
               "confidence": "observed"
             },
@@ -27315,6 +27321,11 @@
             {
               "kind": "imports",
               "id": "module:test/ui-actions.test.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
+              "id": "module:test/ui-api-actions.test.ts",
               "confidence": "observed"
             },
             {
@@ -31402,6 +31413,11 @@
             },
             {
               "kind": "imports",
+              "id": "module:test/ui-api-actions.test.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
               "id": "module:test/ui-core-server.test.ts",
               "confidence": "observed"
             },
@@ -32370,7 +32386,7 @@
             }
           ]
         },
-        "contentHash": "1b9895e15cc8297fc86d242daccd50ebdb17220f33da332fdb15481f482f19bb",
+        "contentHash": "a387c89f42c1502181c2b5cf32345cbeee0c6bb6e3e009c669e6648175fc4031",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -33184,10 +33200,15 @@
               "kind": "imports",
               "id": "module:src/ui/api/reconcile.ts",
               "confidence": "observed"
+            },
+            {
+              "kind": "imports",
+              "id": "module:src/ui/api/running-harness.ts",
+              "confidence": "observed"
             }
           ]
         },
-        "contentHash": "c2f454f5c20fd63e2af8a88c184bce5a6c7ee2b24451dd7372ebd6deab285fae",
+        "contentHash": "55ead76dce038dbbfadb09a8d65a9e6bdfbb2278088d903bb15dc91892a36ae1",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -34549,6 +34570,11 @@
           "inbound": [
             {
               "kind": "imports",
+              "id": "module:src/ui/api/extras.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
               "id": "module:src/ui/api/routes-system.ts",
               "confidence": "observed"
             },
@@ -34998,7 +35024,7 @@
             }
           ]
         },
-        "contentHash": "18d88e77e0332d5f0b8778faaffe5461e60e9724ba47e98a25a24ff433e6dc0b",
+        "contentHash": "cce292d80ef715a7e61a227863f4183aee7106c7534ac61fd6a2a9f87011f153",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -35642,7 +35668,7 @@
           "inbound": [],
           "outbound": []
         },
-        "contentHash": "56b8e6fb434d7eb9ff8ffd5271d4089cd1946bed0760f99975b9958a8a506a6f",
+        "contentHash": "26976d9126c01d43cd552a3597240950eaeccab64b1aef3d24f0f6977f15ef25",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -35962,6 +35988,7 @@
         "symbols": [
           "ActionTarget",
           "confirmBasis",
+          "lockedOut",
           "useActionRunner"
         ],
         "tags": [
@@ -35973,7 +36000,7 @@
           "title": "actions.tsx",
           "headings": "",
           "path": "src/ui/app/src/lib/actions.tsx",
-          "symbols": "ActionTarget confirmBasis useActionRunner",
+          "symbols": "ActionTarget confirmBasis lockedOut useActionRunner",
           "summary": "",
           "body": "",
           "aliases": "module tsx lib"
@@ -36004,7 +36031,7 @@
             }
           ]
         },
-        "contentHash": "928b29e24377c189d037dd05ee46f72be1064c6d628ae93f0344011375a20bff",
+        "contentHash": "b039620ce21eb01c5cf08aaf8e583c9ed3a0816a9b7bb9688a1d14fd8188457c",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -36521,7 +36548,7 @@
           "inbound": [],
           "outbound": []
         },
-        "contentHash": "56337685cda5d8494bb0c7ca610ec45299dbc8fc4dbe0f3b08095ee4c41dfce3",
+        "contentHash": "95974ca048eb3c2905129f57daecdb35176459a89beb0f353aea8df815613062",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -43539,12 +43566,22 @@
             },
             {
               "kind": "imports",
+              "id": "module:src/loop/fs-atomic.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
               "id": "module:src/loop/hitl.ts",
               "confidence": "observed"
             },
             {
               "kind": "imports",
               "id": "module:src/loop/resilience-state.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
+              "id": "module:src/loop/tick.ts",
               "confidence": "observed"
             },
             {
@@ -43559,7 +43596,7 @@
             }
           ]
         },
-        "contentHash": "121c8781dafd4163432e0fa3fe95dd3e085ebdb6a49f9ae4246607229d901e21",
+        "contentHash": "c4b9b61c635b11edc5436bd19f7e9fe670063a00e25862da97eb1ba0fc1e9cdb",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -43639,6 +43676,11 @@
             },
             {
               "kind": "imports",
+              "id": "module:src/loop/automations.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
               "id": "module:src/loop/config.ts",
               "confidence": "observed"
             },
@@ -43659,7 +43701,7 @@
             }
           ]
         },
-        "contentHash": "4bc1e6a2ac3018393ab10a953246a629447765b542dc76d34ab80a71bfa0f58f",
+        "contentHash": "6b1612bf44d8147797292ec74b0b0c54f04b9c9c187c57e87ae5a35f3ac3328b",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -43693,7 +43735,7 @@
           "inbound": [],
           "outbound": []
         },
-        "contentHash": "86f6c600cbaf7aad67414dbe50ec6b08519a09463265e1c8f0f822a7b501c30f",
+        "contentHash": "94172d43cd686b4f771c6cc1953f605aec2d4bdcf46afe9d4aceada8f3d6e84f",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -44263,7 +44305,7 @@
             }
           ]
         },
-        "contentHash": "ec959d3f7887c5e1a3ea8a035e296a3f939bddda615bae54fc1db099ebd0cf2b",
+        "contentHash": "919a3187faaca492329ed89ebb4ff930a818cbcc292aad61862ccc2b4f6bb602",
         "provenance": "observed",
         "confidence": "observed"
       },
