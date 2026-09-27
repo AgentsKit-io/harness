@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
-  "contentHash": "7ad575f2e68ae2cdfaa5475f3d9cbade1778b5b205015f2022b4f1bdee8d88e7",
+  "contentHash": "c7d5350a8d35b71c27d90fb33134220a3cd6fc4e3630c3702e830521454a1493",
   "contentHashAlgo": "sha256-normalized-v1",
-  "generatedAt": "2026-09-27T01:14:27.819Z",
+  "generatedAt": "2026-09-27T01:21:58.181Z",
   "project": {
     "name": "AgentsKit Harness",
     "root": "."
@@ -298,12 +298,12 @@
       "type": "document",
       "title": "Changelog",
       "path": "CHANGELOG.md",
-      "description": "The four gaps left in the control plane v2, closed.",
+      "description": "Runs you can reconstruct, specs the loop renders, and the fixes merged since 0.21.0.",
       "tags": [
         "document",
         "project"
       ],
-      "contentHash": "116798e20b9053537be2cbc87db55fda22adb0327c519b61e0bf7a595236ed9f"
+      "contentHash": "c932c063dcb22918610812642dfd4f0f8851a0111c4f74bc59d4f106fba6b9b2"
     },
     {
       "id": "document:CLAUDE.md",
@@ -992,14 +992,14 @@
     {
       "id": "document:release/notes.md",
       "type": "document",
-      "title": "0.21.0 release candidate",
+      "title": "0.22.0 release candidate",
       "path": "release/notes.md",
       "description": "The control plane (ak-harness ui) becomes the operator's single place to see what needs them and act on it safely, plus the loop fixes found running it against a real repository since 0.19.0. CHANGELOG.md has the full list; docs/ADR-0040 records the decisions.",
       "tags": [
         "document",
         "unclassified"
       ],
-      "contentHash": "8313116e4c10739632b6700d531698a2c9e94171d1cafe671109c59d93a64bde"
+      "contentHash": "1aa12514ee50a59f952bf6243ad35a17a1161117dc5fe5d3ac26249864bc37fe"
     },
     {
       "id": "document:SECURITY.md",
@@ -8908,7 +8908,7 @@
     }
   },
   "inputs": {
-    "hash": "f9f872d090cc6590f289a456dd37dab1c704a97f30d30a176d30301e5a0e9361",
+    "hash": "f78d9da199e28358b241f7cda4021bf3a83e7684cca058383638992120771acf",
     "fileCount": 539,
     "projectionVersion": 2
   },
@@ -8931,9 +8931,9 @@
   "projection": {
     "type": "retrieval-index",
     "schemaVersion": 1,
-    "contentHash": "3e1137e3aa7657085cc119362e5b9dfd9dcee6d2cb80452c9a17fb191c4120cc",
+    "contentHash": "6df4fb8cca01857063cb6c4654e4d8b971c0df3b8fbb27d2ea696649dd6c7561",
     "contentHashAlgo": "sha256-normalized-v1",
-    "snapshotHash": "3c1253fb7a444831cb9499f5281aa2942ff05891c29571760c3d60dce14b1919",
+    "snapshotHash": "f6e99f8c3f3a9f95ed5e704cc9e8b6b80845ccffc57e2a6bcbdc518269bdace6",
     "overlayHash": "f99666ff9119084dd25c2974ae64eb6935ec2aa785ff5ad478fb9d541f7a5e94",
     "configurationHash": "816afaf6a7dc09767f7594d8fd80024612ca0f33becf0e44dde0107fcf2782df",
     "lexiconVersion": 1,
@@ -8965,10 +8965,10 @@
       ],
       "averageFieldLength": {
         "aliases": 2.9251824817518246,
-        "body": 43.93978102189781,
-        "headings": 3.863138686131387,
+        "body": 44.127737226277375,
+        "headings": 3.8649635036496353,
         "path": 6.114963503649635,
-        "summary": 2.627737226277372,
+        "summary": 2.6313868613138687,
         "symbols": 14.177007299270073,
         "title": 3.9434306569343067
       }
@@ -11278,7 +11278,7 @@
         "kind": "document",
         "path": "CHANGELOG.md",
         "title": "Changelog",
-        "summary": "The four gaps left in the control plane v2, closed.",
+        "summary": "Runs you can reconstruct, specs the loop renders, and the fixes merged since 0.21.0.",
         "audience": "human",
         "aliases": [],
         "tags": [
@@ -11287,11 +11287,11 @@
         ],
         "fields": {
           "title": "Changelog",
-          "headings": "Changelog [Unreleased] [0.21.0] — 2026-09-26 [0.20.0] — 2026-09-25 [0.19.0] — 2026-09-23 [0.18.0] - 2026-09-22 Release Hygiene Boundaries Token and time economy Breaking Gates [0.17.0] - 2026-09-22 Worker guard Release can no longer publish past a red gate [0.16.0] - 2026-09-22 Verification and token waste Observability: every deterministic phase, timestamped and attributed Event bus, unified House conventions [0.15.0] - 2026-09-20 The phases of an issue leave evidence behind layers: and documents: — where the work belongs, and where the decisions live Per-role settings, and which phases run at all The four cost levers, finished release.waiting, once per head The event vocabulary, and the compiler that guards it The installed agent is code, not a markdown file to append to Documentation Windows stops being a second-class platform The licence, and a surface for the numbers The harness has a folder of its own The documentation site The twelve steps of the roadmap, in the order they landed loop install reconciles instead of rewriting loop stage observe — the health scan comes into the repository Configuration in four layers, and the loop learns to call a human The roles become installed agents, and the retro can improve them Presets and a grilled loop init intake, maintain, and release notes — the cycle closes Cost: a routing policy, two ceilings, and two of the four levers Connectors: the engine stops naming vendors release — promotion and deploy, with a human in front loop plan — a vague objective becomes issues A plan, voted on, before any worker starts The Definition of Done becomes two lists, both proven on the PR The retro starts improving the loop, within declared limits [0.14.0] - 2026-09-19 The queue stops being \"my issues\" Review strictness that matches the risk Telling the worker the truth about the base branch Memory: recurrence instead of guesswork One human approval covers the goal's own effects Fixes that had never shipped [0.13.0] - 2026-09-14 [0.12.0] - 2026-09-13 [0.11.0] - 2026-09-13 [0.10.0] - 2026-09-12 [0.9.0] - 2026-09-12 [0.8.0] - 2026-09-12 [0.7.0] - 2026-09-12 [0.6.0] - 2026-09-12 [0.5.0] - 2026-09-11 [0.4.0] - 2026-09-10",
+          "headings": "Changelog [Unreleased] [0.22.0] — 2026-09-27 [0.21.0] — 2026-09-26 [0.20.0] — 2026-09-25 [0.19.0] — 2026-09-23 [0.18.0] - 2026-09-22 Release Hygiene Boundaries Token and time economy Breaking Gates [0.17.0] - 2026-09-22 Worker guard Release can no longer publish past a red gate [0.16.0] - 2026-09-22 Verification and token waste Observability: every deterministic phase, timestamped and attributed Event bus, unified House conventions [0.15.0] - 2026-09-20 The phases of an issue leave evidence behind layers: and documents: — where the work belongs, and where the decisions live Per-role settings, and which phases run at all The four cost levers, finished release.waiting, once per head The event vocabulary, and the compiler that guards it The installed agent is code, not a markdown file to append to Documentation Windows stops being a second-class platform The licence, and a surface for the numbers The harness has a folder of its own The documentation site The twelve steps of the roadmap, in the order they landed loop install reconciles instead of rewriting loop stage observe — the health scan comes into the repository Configuration in four layers, and the loop learns to call a human The roles become installed agents, and the retro can improve them Presets and a grilled loop init intake, maintain, and release notes — the cycle closes Cost: a routing policy, two ceilings, and two of the four levers Connectors: the engine stops naming vendors release — promotion and deploy, with a human in front loop plan — a vague objective becomes issues A plan, voted on, before any worker starts The Definition of Done becomes two lists, both proven on the PR The retro starts improving the loop, within declared limits [0.14.0] - 2026-09-19 The queue stops being \"my issues\" Review strictness that matches the risk Telling the worker the truth about the base branch Memory: recurrence instead of guesswork One human approval covers the goal's own effects Fixes that had never shipped [0.13.0] - 2026-09-14 [0.12.0] - 2026-09-13 [0.11.0] - 2026-09-13 [0.10.0] - 2026-09-12 [0.9.0] - 2026-09-12 [0.8.0] - 2026-09-12 [0.7.0] - 2026-09-12 [0.6.0] - 2026-09-12 [0.5.0] - 2026-09-11",
           "path": "CHANGELOG.md",
           "symbols": "",
-          "summary": "The four gaps left in the control plane v2, closed.",
-          "body": "Changelog [Unreleased] [0.21.0] — 2026-09-26 The four gaps left in the control plane v2, closed. - Runs shows fix rounds used. The table reads used/max (or the used count when the run was dispatched without the wizard) instead of —/max . - Time in phase is time in phase. The projection stamps phaseSince when an issue's phase changes; the table, the running cards and the side panel use it instead of the last event's time. - A real event stream on the home page. GET /api/v1/events/recent serves the loop's last 24 h of events, newest first, each summarised from its typed fields; the home stream uses it instead of per-issue changes. - New batch shows contract status. GET /api/v1/contracts?issues= reports each stored contract and whether it is still inside contract.reuseHours ; the list marks issues as cached, expired, needing input or without a contract. - Tracker titles and states survive a restart. The off-board lookup cache is persisted (bounded to 1000 entries), so a restarted UI does not show cancelled work as blocked while it re-learns it. [0.20.0] — 2026-09-25 Control plane v2, and the fixes found running the loop against a real repository in the week since 0.19.0. - Control plane v2 ( ak-harness ui ). The home page is now an attention queue — human decisions, stuck or failed runs, state out of sync with the tracker or Orca, and system problems — each with the reason and the next action. The page reconciles the loop against the tracker and Orca on every refresh, resolves titles and states for issues the board does not list, and refuses destructive actions (409) while an issue is out of sync or its data is stale. Observed on a real loop: 24 \"blocked\" issues shrank to 4 once the cancelled ones were recognised. New screens: Runs (filters, search, paging, issue side panel with per-criterion evidence, review, worker, timeline and cost), Trends, Costs (tokens and plan usage, no dollar estimates), Explore (windowed search over events, contracts, evidence, reviews and learnings), System (doctor, routing, cooldowns, automations, stages, learnings) and Settings (effective config with provenance, personal overrides, team diffs, tuning freeze). CLI-only actions are now in the UI and call the same kernel functions: approve a held PR, plan/design/release approval, learning promotion, stage pause/resume, tick/deliver/doctor, automation reinstall, batch enqueue. See ADR-0040. - The UI no longer installs Orca automations on start. Missing or drifted automations show up as system items and reinstall on request, pinned to the running harness binary. - Weakening a gate is a personal, recorded choice. Settings writes only loop.config.local.yaml ; lowering a gate there needs explicit confirmation, and every run queued under it records weakenedGates and shows a badge. Team values come back as a diff to commit, never written by the UI. - Attention alerts reuse notifications . A new human-decision or failure item posts attention.entered through the existing webhook or command channel, once per item. - The ui verification check runs the real UI suites. It pointed at test/ui.test.ts , which 111 removed. - UI copy is English. - plan approved supersedes a stale finished run by itself. A COMPLETE (or approval-pending) run whose source or contract had moved on still blocked a new plan with ACTIVE RUN until someone ran status , which only reconciles. Planning now marks it STALE and supersedes it; a fresh finished run still blocks. - An idle worker with committed but unpushed work is told exactly that. Observed: a worker committed the whole change and stopped before pushing; the generic idle check-in did not see it and the dispatch was marked stuck 40 minutes later with the work sitting in the worktree. Deliver now counts local commits no remote has and asks the worker to push and open the PR. - Control plane rewrite ( 111). One projection over the loop's event log replaced the lifecycle guesses the old page made from free text; the frontend is a React app",
+          "summary": "Runs you can reconstruct, specs the loop renders, and the fixes merged since 0.21.0.",
+          "body": "Changelog [Unreleased] [0.22.0] — 2026-09-27 Runs you can reconstruct, specs the loop renders, and the fixes merged since 0.21.0. - Agent runs (ADR-0041). Every issue gets <stateDir /runs/<issue -<n / : state.json projected from its events (stage, status, fix rounds, next required approval), redacted inputs and outputs of each step (contract and plan prompts with their raw output, the worker brief, plan.md / verify.json /DoD, the terminal tail), machine-written handoffs at every stage change, and evidence linked by sha256. A re-dispatch opens n+1 , which names the run it supersedes. ak-harness loop run list show reconstructs a run without its worktree. Bounded by runs.keep / runs.maxAgeDays / runs.maxIoBytes ; prompts never reach events.ndjson ( 135). - Rendered specs. With spec.enabled (off by default), dispatch renders specs/<issue /requirements.md , design.md and tasks.md (Spec Kit / Kiro layout) from the frozen contract and approved plan; requirement ids are the outcome ids. deliver sends a fix round for a spec that is missing, drifted or uncommitted ( 135). - Run summary on the PR. runs.prSummary (default on) keeps one comment per PR with the run's stage, handoffs and evidence hashes, edited in place. ScmConnector gains upsertComment — a custom connector must implement it ( 135). - Contract HITL schema. The structured-output schema now tells providers each HITL option needs id / title / description ( 130). - Cancel from the UI survives a stale terminal , and cancellation and automation reinstall stick ( 134). - UI batch accepts GitHub issue ids, serializes the base view and resumes batch jobs ( 125). - tick is a restart-surviving Orca automation ( 122); stale or unknown UI links no longer render blank ( 121); vitest skips .ak-loop ( 120) and Windows no longer fails local-only test files ( 124). - Docs pages carry the shared AgentsKit footer ( 126); AgentsKit shell v1 adopted ( 115); @agentskit/doc-bridge 1.12.0 ( 128). [0.21.0] — 2026-09-26 The four gaps left in the control plane v2, closed. - Runs shows fix rounds used. The table reads used/max (or the used count when the run was dispatched without the wizard) instead of —/max . - Time in phase is time in phase. The projection stamps phaseSince when an issue's phase changes; the table, the running cards and the side panel use it instead of the last event's time. - A real event stream on the home page. GET /api/v1/events/recent serves the loop's last 24 h of events, newest first, each summarised from its typed fields; the home stream uses it instead of per-issue changes. - New batch shows contract status. GET /api/v1/contracts?issues= reports each stored contract and whether it is still inside contract.reuseHours ; the list marks issues as cached, expired, needing input or without a contract. - Tracker titles and states survive a restart. The off-board lookup cache is persisted (bounded to 1000 entries), so a restarted UI does not show cancelled work as blocked while it re-learns it. [0.20.0] — 2026-09-25 Control plane v2, and the fixes found running the loop against a real repository in the week since 0.19.0. - Control plane v2 ( ak-harness ui ). The home page is now an attention queue — human decisions, stuck or failed runs, state out of sync with the tracker or Orca, and system problems — each with the reason and the next action. The page reconciles the loop against the tracker and Orca on every refresh, resolves titles and states for issues the board does not list, and refuses destructive actions (409) while an issue is out of sync or its data is stale. Observed on a real loop: 24 \"blocked\" issues shrank to 4 once the cancelled ones were recognised. New screens: Runs (filters, search, paging, issue side panel with per-criterion evidence, review, worker, timeline and cost), Trends, Costs (tokens and plan usage, no dollar estimates), Explore (windowed search over events, contracts, evidence, reviews and learnings), System (doctor, routing, cooldowns, automations, stages",
           "aliases": "document project"
         },
         "graph": {
@@ -11373,6 +11373,11 @@
             {
               "kind": "mentions",
               "id": "document:CONTRIBUTING.md",
+              "confidence": "observed"
+            },
+            {
+              "kind": "mentions",
+              "id": "document:design.md",
               "confidence": "observed"
             },
             {
@@ -11562,7 +11567,7 @@
             }
           ]
         },
-        "contentHash": "116798e20b9053537be2cbc87db55fda22adb0327c519b61e0bf7a595236ed9f",
+        "contentHash": "c932c063dcb22918610812642dfd4f0f8851a0111c4f74bc59d4f106fba6b9b2",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -11915,13 +11920,19 @@
         },
         "graph": {
           "pagerank": 0,
-          "inboundLinks": 2,
+          "inboundLinks": 3,
           "coveredBy": [],
           "mentionedBy": [
+            "document:CHANGELOG.md",
             "document:docs/ADR-0041-agent-runs-and-rendered-specs.md",
             "document:docs/LOOP.md"
           ],
           "inbound": [
+            {
+              "kind": "mentions",
+              "id": "document:CHANGELOG.md",
+              "confidence": "observed"
+            },
             {
               "kind": "mentions",
               "id": "document:docs/ADR-0041-agent-runs-and-rendered-specs.md",
@@ -14824,7 +14835,7 @@
         "id": "document:release/notes.md",
         "kind": "document",
         "path": "release/notes.md",
-        "title": "0.21.0 release candidate",
+        "title": "0.22.0 release candidate",
         "summary": "The control plane (ak-harness ui) becomes the operator's single place to see what needs them and act on it safely, plus the loop fixes found running it against a real repository since 0.19.0. CHANGELOG.md has the full list; docs/ADR-0040 records the decisions.",
         "aliases": [],
         "tags": [
@@ -14832,12 +14843,12 @@
           "unclassified"
         ],
         "fields": {
-          "title": "0.21.0 release candidate",
-          "headings": "0.21.0 release candidate",
+          "title": "0.22.0 release candidate",
+          "headings": "0.22.0 release candidate",
           "path": "release/notes.md",
           "symbols": "",
           "summary": "The control plane (ak-harness ui) becomes the operator's single place to see what needs them and act on it safely, plus the loop fixes found running it against a real repository since 0.19.0. CHANGELOG.md has the full list; docs/ADR-0040 records the decisions.",
-          "body": "0.21.0 release candidate The control plane ( ak-harness ui ) becomes the operator's single place to see what needs them and act on it safely, plus the loop fixes found running it against a real repository since 0.19.0. CHANGELOG.md has the full list; docs/ADR-0040 records the decisions. Attention first. The home page is a queue of what needs a person — decisions, stuck or failed runs, state out of sync, system problems — each with its reason and next action. Empty means nothing does. Reconciled, then locked. Every refresh compares the loop with the tracker and Orca, including issues the board does not list. Drift is shown and reconciled explicitly; destructive actions refuse (409) while their issue is out of sync or its data is stale. On a real loop, 24 \"blocked\" issues were 4 once cancelled work was recognised. Every operator action, same kernel. Held-PR approval (pinned to the head), plan, design and release approval, learnings, stage pause and resume, tick/deliver/doctor, automation reinstall and batch enqueue call the functions the CLI calls. There is no deploy from the UI. Insights and configuration. Trends, Costs (tokens and plan usage, no dollar figures) and Explore read at most 30 days of events. Settings shows each value's layer, writes only the personal overlay, returns team changes as a diff, and records every run queued under a weakened gate. Loop. A worktree kept for inspection no longer blocks its issue forever ( 112); scheduled stages run the harness that installed them and a crashed precheck is reported ( 114). Behaviour change. The UI no longer installs Orca automations when it starts; missing or drifted automations appear as system items and reinstall on request. 0.21.0. Runs shows fix rounds used and real time in phase; the home event stream reads the loop's event log ( GET /api/v1/events/recent ); New batch shows which issues already have a fresh contract ( GET /api/v1/contracts ); tracker titles and states survive a UI restart. The blockers in release/manifest.json ( ecosystem-compatibility , pilot-benchmark ) are unchanged.",
+          "body": "0.22.0 release candidate The control plane ( ak-harness ui ) becomes the operator's single place to see what needs them and act on it safely, plus the loop fixes found running it against a real repository since 0.19.0. CHANGELOG.md has the full list; docs/ADR-0040 records the decisions. Attention first. The home page is a queue of what needs a person — decisions, stuck or failed runs, state out of sync, system problems — each with its reason and next action. Empty means nothing does. Reconciled, then locked. Every refresh compares the loop with the tracker and Orca, including issues the board does not list. Drift is shown and reconciled explicitly; destructive actions refuse (409) while their issue is out of sync or its data is stale. On a real loop, 24 \"blocked\" issues were 4 once cancelled work was recognised. Every operator action, same kernel. Held-PR approval (pinned to the head), plan, design and release approval, learnings, stage pause and resume, tick/deliver/doctor, automation reinstall and batch enqueue call the functions the CLI calls. There is no deploy from the UI. Insights and configuration. Trends, Costs (tokens and plan usage, no dollar figures) and Explore read at most 30 days of events. Settings shows each value's layer, writes only the personal overlay, returns team changes as a diff, and records every run queued under a weakened gate. Loop. A worktree kept for inspection no longer blocks its issue forever ( 112); scheduled stages run the harness that installed them and a crashed precheck is reported ( 114). Behaviour change. The UI no longer installs Orca automations when it starts; missing or drifted automations appear as system items and reinstall on request. 0.21.0. Runs shows fix rounds used and real time in phase; the home event stream reads the loop's event log ( GET /api/v1/events/recent ); New batch shows which issues already have a fresh contract ( GET /api/v1/contracts ); tracker titles and states survive a UI restart. 0.22.0. Every issue gets a run under <stateDir /runs/<issue -<n / — projected state, redacted inputs and outputs, machine-written handoffs and evidence by hash — reconstructable with ak-harness loop run show (ADR-0041). spec.enabled renders specs/<issue / (requirements, design, tasks) from the frozen contract and plan and holds a PR whose copy drifted; runs.prSummary keeps one edited comment with the run on the PR. ScmConnector gains upsertComment . The blockers in release/manifest.json ( ecosystem-compatibility , pilot-benchmark ) are unchanged.",
           "aliases": "document unclassified"
         },
         "graph": {
@@ -14864,10 +14875,15 @@
               "kind": "mentions",
               "id": "document:CHANGELOG.md",
               "confidence": "observed"
+            },
+            {
+              "kind": "mentions-symbol",
+              "id": "module:src/loop/connectors.ts",
+              "confidence": "observed"
             }
           ]
         },
-        "contentHash": "8313116e4c10739632b6700d531698a2c9e94171d1cafe671109c59d93a64bde",
+        "contentHash": "1aa12514ee50a59f952bf6243ad35a17a1161117dc5fe5d3ac26249864bc37fe",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -25794,7 +25810,7 @@
         },
         "graph": {
           "pagerank": 0,
-          "inboundLinks": 7,
+          "inboundLinks": 8,
           "coveredBy": [],
           "mentionedBy": [
             "document:apps/docs/content/docs/concepts/connectors.mdx",
@@ -25803,7 +25819,8 @@
             "document:CHANGELOG.md",
             "document:docs/ADR-0034-connectors-tracker-scm-runner.md",
             "document:docs/LOOP.md",
-            "document:HOME-BRIEF.md"
+            "document:HOME-BRIEF.md",
+            "document:release/notes.md"
           ],
           "areaId": "area:src/loop",
           "packageId": "package:@agentskit/harness",
@@ -25886,6 +25903,11 @@
             {
               "kind": "mentions-symbol",
               "id": "document:HOME-BRIEF.md",
+              "confidence": "observed"
+            },
+            {
+              "kind": "mentions-symbol",
+              "id": "document:release/notes.md",
               "confidence": "observed"
             },
             {
@@ -45291,7 +45313,7 @@
           ],
           "outbound": []
         },
-        "contentHash": "d95e70d66393590e1d517d92ef893e2885b4f18ff75aae1673d97508e82ba84c",
+        "contentHash": "aeb1080fe3f3bc2b62736716bdc0a00d7e3a76f3a6246b9fa98835713aa2785d",
         "provenance": "observed",
         "confidence": "observed"
       },
