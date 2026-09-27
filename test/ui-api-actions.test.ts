@@ -157,4 +157,25 @@ describe('retry after a failed delivery', () => {
     expect(createIssueQueue({ stateDir: context.loaded.stateDir }).list().filter((run) => run.issue === issue)).toHaveLength(1)
     expect(readCurrentProjection(context.loaded.stateDir).issues[issue]).toMatchObject({ phase: 'review', error: null })
   })
+
+  it('a resumed failed delivery gets its error budget, failed-at head and tracker state back; a cancelled run is never resumed', async () => {
+    const { createIssueQueue } = await import('../src/loop/queue.js')
+    const { deliveryStatePath, readDeliveryState } = await import('../src/loop/deliver.js')
+    const context = contextFor()
+    const issue = 'AGE-1900'
+    const { runId } = enqueueRun(context, { issue, configHash: 'hash', flow: null, builder: { provider: 'codex', model: 'gpt' }, contractDigest: 'd', maxFixRounds: 2, perIssueTokens: 0 })
+    const queue = createIssueQueue({ stateDir: context.loaded.stateDir })
+    queue.update(runId, { status: 'completed', projection: { stage: 'pr-open', pullRequest: 3 } })
+    const failed = { issue, prNumber: 3, reviews: {}, fixRounds: 1, nudges: [], handoffs: [], heldFor: null, finishedAt: '2026-09-27T00:00:00.000Z', finalOutcome: 'failed', cancelledAt: null, consecutiveErrors: 3, failedAtHead: 'feed123', trackerState: 'Blocked' }
+    writeJsonAtomic(deliveryStatePath(context.loaded.stateDir, issue), failed)
+    expect(retryRun(context, issue, runId)).toEqual({ runId })
+    expect(readDeliveryState(context.loaded.stateDir, issue)).toMatchObject({ finalOutcome: null, consecutiveErrors: 0, failedAtHead: null, trackerState: null })
+
+    // Cancelled after its delivery gave up: cleanup already tore it down, so Retry starts a fresh attempt instead.
+    writeJsonAtomic(deliveryStatePath(context.loaded.stateDir, issue), { ...failed, cancelledAt: '2026-09-27T01:00:00.000Z' })
+    queue.update(runId, { status: 'cancelled' })
+    const fresh = retryRun(context, issue, runId)
+    expect(readDeliveryState(context.loaded.stateDir, issue)).toMatchObject({ finalOutcome: 'failed', cancelledAt: '2026-09-27T01:00:00.000Z' })
+    expect(fresh.runId).not.toBe(runId)
+  })
 })

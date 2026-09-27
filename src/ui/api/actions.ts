@@ -195,9 +195,13 @@ export const retryRun = (context: ActionContext, issue: string, runId: string): 
   const delivery = readDeliveryState(loaded.stateDir, issue)
   const status = queue.get(runId)?.status
   const idle = status !== undefined && !['queued', 'dispatching', 'running'].includes(status)
-  if (idle && delivery.prNumber !== null && delivery.finishedAt && (delivery.finalOutcome === 'blocked' || delivery.finalOutcome === 'stuck' || delivery.finalOutcome === 'failed')) {
-    const head = Object.keys(delivery.reviews).at(-1) ?? null
-    writeJsonAtomic(deliveryStatePath(loaded.stateDir, issue), { ...delivery, finishedAt: null, finalOutcome: null, fixRounds: 0, heldFor: null, nudges: [] })
+  // A cancelled run went through cleanup (terminal, worktree, lease): resuming its delivery would act on nothing. It
+  // takes a fresh attempt, below.
+  if (idle && status !== 'cancelled' && !delivery.cancelledAt && delivery.prNumber !== null && delivery.finishedAt && (delivery.finalOutcome === 'blocked' || delivery.finalOutcome === 'stuck' || delivery.finalOutcome === 'failed')) {
+    const head = (delivery.finalOutcome === 'failed' ? delivery.failedAtHead : null) ?? Object.keys(delivery.reviews).at(-1) ?? null
+    // The same reset `reopenFinishedIssue` applies: the error budget, the failed-at head and the last tracker state
+    // it set start over, or the first transient error after a Retry re-finishes it and the tracker is never moved back.
+    writeJsonAtomic(deliveryStatePath(loaded.stateDir, issue), { ...delivery, finishedAt: null, finalOutcome: null, fixRounds: 0, heldFor: null, nudges: [], consecutiveErrors: 0, failedAtHead: null, trackerState: null })
     appendLoopEvent(loaded.stateDir, { at: new Date().toISOString(), type: 'worker.reopened', issue, pr: delivery.prNumber, previousHead: head, head, previousOutcome: delivery.finalOutcome })
     syncProjection(loaded.stateDir)
     return { runId }
