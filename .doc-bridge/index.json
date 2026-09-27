@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
-  "contentHash": "7af8c6f2d54211de71ac25f7016e053b865b88da555c324a8e013d7fc546090f",
+  "contentHash": "acf2be63f2a688e1a544a58ab105200a3de4c7591d79f01c815a807bb46b4ae2",
   "contentHashAlgo": "sha256-normalized-v1",
-  "generatedAt": "2026-09-27T15:37:39.645Z",
+  "generatedAt": "2026-09-27T15:54:59.747Z",
   "project": {
     "name": "AgentsKit Harness",
     "root": "."
@@ -5619,7 +5619,7 @@
         "ts",
         "api"
       ],
-      "contentHash": "b4b0c1166befd3c04ae588c8ef42d83ac371b3de3f7e012fed4ed351677a5e6f"
+      "contentHash": "d8f3a269486f00f390ba0c0a7c2f530be345c79ad56402017d2bd9a13056ba19"
     },
     {
       "id": "module:src/ui/api/http.ts",
@@ -5741,7 +5741,7 @@
         "ts",
         "api"
       ],
-      "contentHash": "8738c37b9b582fbc653f4048e3e1d46e84225d9b88f5283a261e7980bb8eae2e"
+      "contentHash": "19bcf170ee35e5a92a0979359902e5f565f313d018a52c9d4d214f55bcc8c1f8"
     },
     {
       "id": "module:src/ui/api/route-modules.ts",
@@ -5913,7 +5913,7 @@
         "ts",
         "api"
       ],
-      "contentHash": "3ff188fc2d0cd8731fa1ad849d586f1c9526b778cf4009852645f47fd32a7f5c"
+      "contentHash": "450b3baa3a7cba985b68cc9ea7a77777857ef7699bcbdd328c211b29f330139d"
     },
     {
       "id": "module:src/ui/api/store.ts",
@@ -8709,7 +8709,7 @@
         "ts",
         "test"
       ],
-      "contentHash": "98224353eb3066bedf5a63a646bc3941116fa6c2399816fa6bfe62e77efc04b9"
+      "contentHash": "969a84e849e3874842673b60ac6f41f98cce2c8aafbd3f7510f957737a92f81f"
     },
     {
       "id": "module:test/ui-core-server.test.ts",
@@ -8953,7 +8953,7 @@
     }
   },
   "inputs": {
-    "hash": "fd116ce8866a5477fbdb8da03c3d18a67a57a2d4ea251bdc6ba77ed2f2a48212",
+    "hash": "dd0888d3a83c6ac67be31ed617ff10c67d6a925a183a89639aae1293074b217b",
     "fileCount": 541,
     "projectionVersion": 2
   },
@@ -8976,9 +8976,9 @@
   "projection": {
     "type": "retrieval-index",
     "schemaVersion": 1,
-    "contentHash": "0177c15497024d1ef550b09539b708abc3eedd293d64add144256ca3a3f0e824",
+    "contentHash": "af9fa5bd73d6711449174d669c7508b4ee4c53bceb9a3c92fd9ff65e75cf9a2a",
     "contentHashAlgo": "sha256-normalized-v1",
-    "snapshotHash": "e9472dd5e742fe2353f51bbef41abaaa971df227fae3ea851b8e5f8842b26d34",
+    "snapshotHash": "aa110fabeda0038fb5e69369f0ee6516d212613d893093455d84e3c41e249712",
     "overlayHash": "f99666ff9119084dd25c2974ae64eb6935ec2aa785ff5ad478fb9d541f7a5e94",
     "configurationHash": "816afaf6a7dc09767f7594d8fd80024612ca0f33becf0e44dde0107fcf2782df",
     "lexiconVersion": 1,
@@ -27015,6 +27015,11 @@
             },
             {
               "kind": "imports",
+              "id": "module:src/ui/api/extras.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
               "id": "module:src/ui/api/routes-actions.ts",
               "confidence": "observed"
             },
@@ -33934,6 +33939,11 @@
             },
             {
               "kind": "imports",
+              "id": "module:src/loop/doctor.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
               "id": "module:src/loop/fs-atomic.ts",
               "confidence": "observed"
             },
@@ -33994,7 +34004,7 @@
             }
           ]
         },
-        "contentHash": "b4b0c1166befd3c04ae588c8ef42d83ac371b3de3f7e012fed4ed351677a5e6f",
+        "contentHash": "d8f3a269486f00f390ba0c0a7c2f530be345c79ad56402017d2bd9a13056ba19",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -34480,7 +34490,7 @@
             }
           ]
         },
-        "contentHash": "8738c37b9b582fbc653f4048e3e1d46e84225d9b88f5283a261e7980bb8eae2e",
+        "contentHash": "19bcf170ee35e5a92a0979359902e5f565f313d018a52c9d4d214f55bcc8c1f8",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -35642,7 +35652,7 @@
             }
           ]
         },
-        "contentHash": "3ff188fc2d0cd8731fa1ad849d586f1c9526b778cf4009852645f47fd32a7f5c",
+        "contentHash": "450b3baa3a7cba985b68cc9ea7a77777857ef7699bcbdd328c211b29f330139d",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -44864,7 +44874,7 @@
             }
           ]
         },
-        "contentHash": "98224353eb3066bedf5a63a646bc3941116fa6c2399816fa6bfe62e77efc04b9",
+        "contentHash": "969a84e849e3874842673b60ac6f41f98cce2c8aafbd3f7510f957737a92f81f",
         "provenance": "observed",
         "confidence": "observed"
       },
