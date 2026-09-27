@@ -20,6 +20,7 @@ import { buildAttention, latestStops, type AttentionInput } from './attention.js
 import type { BoardSnapshot } from './board.js'
 import type { SnapshotExtras } from './contract.js'
 import type { IssueRecord } from './projection.js'
+import { withRunningHarness } from './running-harness.js'
 import { computeLocks, cronCadenceMs, reconcile } from './reconcile.js'
 
 /**
@@ -129,7 +130,9 @@ const createAutomationsCache = (loaded: LoadedLoopConfig, runner: CommandRunner)
         try {
           const existing = await orcaAutomationsList(runner, { bin: loaded.config.orca?.bin, timeoutMs: loaded.config.orca?.timeoutMs ?? 20_000 })
           const since = new Date().toISOString()
-          rows = reconcileAutomations(automationSpecs(loaded, ''), existing, loaded.config)
+          // Same spec the Reinstall action writes (#114 pins the running binary); comparing against the unpinned
+          // default made every reinstalled automation look drifted forever.
+          rows = reconcileAutomations(automationSpecs(withRunningHarness(loaded), ''), existing, loaded.config)
             .filter((row) => row.state !== 'in-sync')
             .map((row) => ({ name: row.name, stage: row.stage, state: row.state as 'missing' | 'drifted' | 'undeclared', fields: row.fields, since: rows.find((old) => old.name === row.name && old.state === row.state)?.since ?? since }))
         } catch { /* Orca unreachable: its freshness already says so; no automation claims either way */ }
@@ -257,6 +260,7 @@ export const createExtrasBuilder = (loaded: LoadedLoopConfig, runner: CommandRun
         stagePauses: Object.entries(stagePause).flatMap(([stage, entry]) => entry?.pausedAt ? [{ stage, since: entry.pausedAt, reason: entry.pausedReason }] : []),
         cooldowns: Object.entries(cooldowns).filter(([provider]) => provider in activeCooldowns(cooldowns, at)).map(([provider, entry]) => ({ provider, until: entry.until, reason: entry.reason, since: entry.markedAt })),
         syncFailures: recent.filter((event) => event.type === 'tracker.sync-failed').map((event) => ({ issue: typeof event.issue === 'string' ? event.issue : null, operation: typeof event['operation'] === 'string' ? event['operation'] : null, error: typeof event['error'] === 'string' ? event['error'] : null, at: event.at })),
+        syncResolutions: recent.flatMap((event) => event.type === 'ui.tracker-sync-resolved' && typeof event.issue === 'string' ? [{ issue: event.issue, at: event.at }] : []),
         pii: recent.filter((event) => event.type === 'security.pii-detected').map((event) => ({ issue: typeof event.issue === 'string' ? event.issue : null, kinds: Array.isArray(event['kinds']) ? event['kinds'].filter((kind): kind is string => typeof kind === 'string') : [], at: event.at })),
         automations: automations(at),
       })

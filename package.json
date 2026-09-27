@@ -1,6 +1,6 @@
 {
   "name": "@agentskit/harness",
-  "version": "0.21.0",
+  "version": "0.22.0",
   "description": "Portable, evidence-backed development harness for coding agents.",
   "type": "module",
   "bin": {
@@ -109,7 +109,7 @@
     "zod": "^4.6.5"
   },
   "devDependencies": {
-    "@agentskit/doc-bridge": "^1.11.2",
+    "@agentskit/doc-bridge": "^1.12.0",
     "@radix-ui/react-radio-group": "^1.4.7",
     "@radix-ui/react-slot": "^1.3.3",
     "@tailwindcss/vite": "^4.3.3",

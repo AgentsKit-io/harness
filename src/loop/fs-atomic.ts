@@ -1,4 +1,4 @@
-import { mkdirSync, renameSync, writeFileSync } from 'node:fs'
+import { closeSync, mkdirSync, openSync, renameSync, statSync, unlinkSync, writeFileSync } from 'node:fs'
 import { basename, dirname, join } from 'node:path'
 
 const RETRYABLE_RENAME_CODES: ReadonlySet<string> = new Set(['EPERM', 'EBUSY', 'EACCES'])
@@ -45,4 +45,29 @@ export const writeJsonAtomic = (path: string, value: unknown): void => {
   const tmp = join(dir, `.${basename(path)}.${process.pid}.${Date.now()}.tmp`)
   writeFileSync(tmp, `${JSON.stringify(value, null, 2)}\n`, 'utf8')
   renameWithRetry(tmp, path)
+}
+
+/**
+ * Cross-process advisory lock: an exclusively-created file, reclaimed once older than `staleMs`. Returns the fd, or
+ * null when it stayed contended for every attempt — callers decide whether that means "skip" or "go ahead anyway".
+ */
+export const acquireFileLock = (lockPath: string, options: { readonly staleMs?: number; readonly attempts?: number; readonly retryMs?: number } = {}): number | null => {
+  const { staleMs = 5_000, attempts = 100, retryMs = 10 } = options
+  mkdirSync(dirname(lockPath), { recursive: true })
+  for (let attempt = 0; attempt < attempts; attempt += 1) {
+    try {
+      return openSync(lockPath, 'wx')
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code !== 'EEXIST') throw error
+      try { if (Date.now() - statSync(lockPath).mtimeMs > staleMs) unlinkSync(lockPath) } catch { /* another process already cleared it, or still holds it */ }
+      sleepSync(retryMs)
+    }
+  }
+  return null
+}
+
+export const releaseFileLock = (lockPath: string, fd: number | null): void => {
+  if (fd === null) return
+  try { closeSync(fd) } catch { /* already closed */ }
+  try { unlinkSync(lockPath) } catch { /* already removed */ }
 }

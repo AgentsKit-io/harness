@@ -95,6 +95,27 @@ describe('the projection store', () => {
     expect(state.issues['ENG-8']).toMatchObject({ phase: 'review', reviewState: 'human-approval' })
   })
 
+  it('engine-state reconciliation: a cancellation newer than the final outcome is not undone by it', () => {
+    // Live: a run failed on a GitHub rate limit, then was cancelled from the UI; the old `failed` kept re-blocking it.
+    const stateDir = stateDirFor()
+    writeDispatch(stateDir, 'ENG-10')
+    writeFileSync(join(stateDir, 'issues', 'ENG-10', 'delivery.json'), JSON.stringify({ issue: 'ENG-10', prNumber: 220, reviews: {}, fixRounds: 1, nudges: [], handoffs: [], heldFor: null, finishedAt: '2026-01-01T00:40:00.000Z', finalOutcome: 'failed', cancelledAt: '2026-01-02T00:00:00.000Z' }))
+    appendLoopEvent(stateDir, { at: '2026-01-02T00:00:01.000Z', type: 'ui.cleanup-completed', issue: 'ENG-10', runId: 'run-1' })
+    expect(syncProjection(stateDir).issues['ENG-10']!.phase).toBe('available')
+    expect(syncProjection(stateDir).issues['ENG-10']!.phase).toBe('available')
+  })
+
+  it('engine-state reconciliation: heals a projection persisted as blocked before the cancellation fix, but leaves a re-enqueued run alone', () => {
+    const stateDir = stateDirFor()
+    writeDispatch(stateDir, 'ENG-11')
+    writeFileSync(join(stateDir, 'issues', 'ENG-11', 'delivery.json'), JSON.stringify({ issue: 'ENG-11', prNumber: 220, reviews: {}, fixRounds: 1, nudges: [], handoffs: [], heldFor: null, finishedAt: '2026-01-01T00:40:00.000Z', finalOutcome: 'failed', cancelledAt: null }))
+    expect(syncProjection(stateDir).issues['ENG-11']!.phase).toBe('blocked')
+    writeFileSync(join(stateDir, 'issues', 'ENG-11', 'delivery.json'), JSON.stringify({ issue: 'ENG-11', prNumber: 220, reviews: {}, fixRounds: 1, nudges: [], handoffs: [], heldFor: null, finishedAt: '2026-01-01T00:40:00.000Z', finalOutcome: 'failed', cancelledAt: '2026-01-02T00:00:00.000Z' }))
+    expect(syncProjection(stateDir).issues['ENG-11']).toMatchObject({ phase: 'available', error: null, dispatch: null })
+    appendLoopEvent(stateDir, { at: '2026-01-03T00:00:00.000Z', type: 'ui.run-enqueued', issue: 'ENG-11' })
+    expect(syncProjection(stateDir).issues['ENG-11']!.phase).toBe('running')
+  })
+
   it('engine-state reconciliation: an issue with no delivery.json and no events stays at the reducer\u2019s guess', () => {
     const stateDir = stateDirFor()
     writeDispatch(stateDir, 'ENG-9')

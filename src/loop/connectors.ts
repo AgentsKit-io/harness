@@ -5,8 +5,8 @@ import {
   type LinearIssueDetail,
 } from '../adapters/linear-orca.js'
 import {
-  githubComment, githubCommentExists, githubCurrentUser, githubIssue, githubIssueClose, githubIssueComment,
-  githubIssueCommentExists, githubIssueCreate, githubIssueEdit, githubIssueReopen, githubMerge, githubOpenIssues,
+  githubComment, githubCommentExists, githubUpsertComment, githubCurrentUser, githubIssue, githubIssueClose, githubIssueComment,
+  githubEnsureLabels, githubIssueCommentExists, githubIssueCreate, githubIssueEdit, githubIssueReopen, githubMerge, githubOpenIssues,
   githubOpenPullRequests, githubPullRequest, githubPullRequestsForBranch, githubPullRequestsForIssue, githubPreflight, githubLabelRemove, type GitHubIssueDetail,
   type PullRequestSnapshot,
 } from '../adapters/github-cli.js'
@@ -52,6 +52,8 @@ export interface ScmConnector {
   openPullRequests(input?: { readonly limit?: number; readonly label?: string }): Promise<readonly PullRequestSnapshot[]>
   comment(input: { readonly number: number; readonly body: string }): Promise<void>
   commentExists(input: { readonly number: number; readonly marker: string }): Promise<boolean>
+  /** Edit the comment carrying `marker` in place, or create it — one living comment instead of one per pass. */
+  upsertComment(input: { readonly number: number; readonly body: string; readonly marker: string }): Promise<'created' | 'updated'>
   removeLabel(input: { readonly number: number; readonly label: string }): Promise<void>
   merge(input: { readonly number: number; readonly headSha: string; readonly method: 'squash' | 'merge' | 'rebase'; readonly title?: string }): Promise<{ readonly merged: boolean; readonly sha: string | null; readonly message: string }>
 }
@@ -153,8 +155,18 @@ export const createGitHubTracker = (input: ConnectorInput): TrackerConnector => 
     return cachedAssignee ?? fail('No GitHub assignee could be resolved.', 'HARNESS_ERROR')
   }
   const readDetail = async (identifier: string): Promise<TrackerIssueDetail> => githubIssueToTracker(config, await githubIssue(runner, { repo, identifier }, options))
+  // Labels the loop applies are its own: create a missing one instead of failing the edit. One label listing per
+  // connector instance (a stage run), and only when something is actually labelled.
+  const ensured = new Set<string>()
+  const ensureLabels = async (labels: readonly string[]): Promise<void> => {
+    const pending = labels.filter((label) => !ensured.has(label))
+    if (!pending.length || input.dryRun) return
+    await githubEnsureLabels(runner, { repo, labels: [...new Set([...lifecycleLabels, ...pending])] }, options)
+    for (const label of [...lifecycleLabels, ...pending]) ensured.add(label)
+  }
   const setState = async ({ issue, to }: { readonly issue: string; readonly to: string }): Promise<void> => {
     const target = githubLifecycleLabel(config, to)
+    await ensureLabels([target])
     const current = await githubIssue(runner, { repo, identifier: issue }, options)
     const currentKnown = current.labels.filter((label) => lifecycleLabels.includes(label))
     if (currentKnown.length !== 1 || currentKnown[0] !== target) await githubIssueEdit(runner, { repo, identifier: issue, removeLabels: currentKnown.filter((label) => label !== target), addLabels: [target] }, options)
@@ -187,7 +199,9 @@ export const createGitHubTracker = (input: ConnectorInput): TrackerConnector => 
     addLabels: async (issue, labels) => {
       const lifecycle = labels.filter((label) => lifecycleLabels.includes(label))
       if (lifecycle.length) fail(`Use setState to change GitHub lifecycle labels; direct add would violate exclusivity: ${lifecycle.join(', ')}.`, 'INVALID_INPUT')
-      if (labels.length) await githubIssueEdit(runner, { repo, identifier: issue, addLabels: labels }, options)
+      if (!labels.length) return
+      await ensureLabels(labels)
+      await githubIssueEdit(runner, { repo, identifier: issue, addLabels: labels }, options)
     },
     removeLabels: async (issue, labels) => { if (labels.length) await githubIssueEdit(runner, { repo, identifier: issue, removeLabels: labels }, options) },
     setState,
@@ -249,6 +263,7 @@ export const createGitHubScm = (input: ConnectorInput): ScmConnector => {
     openPullRequests: async (query) => githubOpenPullRequests(runner, { repo, ...(query?.limit ? { limit: query.limit } : {}), ...(query?.label ? { label: query.label } : {}) }, options),
     comment: async ({ number, body }) => { await githubComment(runner, { repo, number, body }, options) },
     commentExists: async ({ number, marker }) => githubCommentExists(runner, { repo, number, marker }, options),
+    upsertComment: async ({ number, body, marker }) => githubUpsertComment(runner, { repo, number, body, marker }, options),
     removeLabel: async ({ number, label }) => { await githubLabelRemove(runner, { repo, number, label }, options) },
     merge: async ({ number, headSha, method, title }) => githubMerge(runner, { repo, number, headSha, method, ...(title ? { title } : {}) }, options),
   }
