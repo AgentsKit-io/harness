@@ -2,6 +2,20 @@
 
 ## [Unreleased]
 
+## [0.22.2] — 2026-09-27
+
+- **Review floor decides.** A reviewer that exits 1 (or reports `blocking`) on findings all below
+  `delivery.review.minSeverity` is clean, not "findings" with nothing to fix — delivery no longer waits forever for a
+  push nobody needs. A reviewer claiming blocking with no finding at all is `incomplete`, never a merge (#133).
+- **Answered contract questions regenerate the contract** instead of returning the same blocked one (#138).
+- **An open contract question is not re-asked every tick.** Contract regeneration is skipped while a contract-stage
+  question is open (no more repeated escalations and orchestrator calls); an explicit-queue run is left
+  `needs-input`, never stuck in `dispatching`; superseded contract questions are marked stale (#131).
+- **Retry resumes a blocked delivery on its open PR** (fix-round cap, stuck, failed), resetting its error budget and
+  tracker state; a cancelled run still gets a fresh attempt. Holds that need a person are not bypassed (#142).
+- **doctor** accepts automations pinned by the UI; GitHub preflight reports missing lifecycle labels as a warning
+  instead of failing the queue read (#143).
+
 ## [0.22.1] — 2026-09-27
 
 Failures that were invisible, made visible or closed. Every fix ships with a regression test that fails on 0.22.0.
