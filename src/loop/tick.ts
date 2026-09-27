@@ -862,6 +862,8 @@ export const runTick = async (input: TickInput): Promise<TickReport> => {
       continue
     }
     const beforeDispatch = await bus.runHook('beforeDispatch', { issue: detail.identifier, provider: worker.provider, model: worker.model, branch, worktree })
+    // A throwing beforeDispatch blocks (fail closed); logged so it is not mistaken for a deliberate plugin block.
+    if (beforeDispatch.errors.length) appendLoopEvent(loaded.stateDir, { at: now().toISOString(), type: 'plugin.hook-failed', issue: detail.identifier, hook: 'beforeDispatch', error: beforeDispatch.errors.join('; ') }, bus)
     if (beforeDispatch.block) {
       ledger.release(claim.lease, `blocked by plugin: ${beforeDispatch.reason}`)
       results.push({ issue: detail.identifier, outcome: 'skipped', reason: `blocked by plugin: ${beforeDispatch.reason}` })

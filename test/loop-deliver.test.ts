@@ -744,6 +744,18 @@ describe('deliver', () => {
     expect(held.runner.calls.some((argv) => argv[0] === 'gh' && argv[1] === 'api' && argv.includes('--method'))).toBe(false)
   })
 
+  it('fails closed when a beforeReview or beforeMerge hook throws: no review / no merge, plugin.hook-failed logged', async () => {
+    const review = setup({ review: { code: 0 }, pluginSource: `export default { id: 'broken', apply(bus) { bus.hook('beforeReview', () => { throw new Error('boom') }) } }` })
+    expect((await deliver(review)).results[0]).toMatchObject({ outcome: 'waiting', reason: expect.stringContaining('beforeReview hook failed: boom') })
+    expect(review.runner.calls.some((argv) => argv[0] === 'agentskit-review')).toBe(false)
+    expect(readFileSync(join(review.loaded.stateDir, 'events.ndjson'), 'utf8')).toContain('"type":"plugin.hook-failed","issue":"ENG-10","hook":"beforeReview","error":"boom"')
+
+    const merge = setup({ review: { code: 0 }, pluginSource: `export default { id: 'broken', apply(bus) { bus.hook('beforeMerge', () => { throw new Error('boom') }) } }` })
+    expect((await deliver(merge)).results[0]).toMatchObject({ outcome: 'held', reason: expect.stringContaining('beforeMerge hook failed: boom') })
+    expect(merge.runner.calls.some((argv) => argv[0] === 'gh' && argv[1] === 'api' && argv.includes('--method'))).toBe(false)
+    expect(readFileSync(join(merge.loaded.stateDir, 'events.ndjson'), 'utf8')).toContain('"type":"plugin.hook-failed","issue":"ENG-10","hook":"beforeMerge"')
+  })
+
   it('stops a dispatch that has run past delivery.maxDispatchMinutes, even though the terminal is still active', async () => {
     const env = setup({ pr: null, dispatchedAt: '2026-09-11T00:00:00.000Z' }) // 12h before NOW
     writeFileSync(join(env.dir, 'loop.config.local.yaml'), 'delivery:\n  maxDispatchMinutes: 60\n')

@@ -221,6 +221,8 @@ export const LOOP_EVENT_TYPES = {
    * update was re-applied and succeeded) or `dismiss` (a person accepted the tracker's current state). Earlier
    * sync failures for the issue stop showing in Attention. */
   'ui.tracker-sync-resolved': ['issue', 'action'],
+  /** A gating `before*` plugin hook threw; the action it guards was blocked (fail closed), not waved through. */
+  'plugin.hook-failed': ['issue', 'hook', 'error'],
 } as const satisfies Readonly<Record<string, readonly string[]>>
 
 export type LoopEventType = keyof typeof LOOP_EVENT_TYPES

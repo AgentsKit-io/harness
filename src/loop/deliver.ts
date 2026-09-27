@@ -218,6 +218,11 @@ const orcaOptions = (config: LoopConfig) => ({ bin: config.orca.bin, timeoutMs: 
 const saveState = (ctx: Context, state: DeliveryState): void => { if (!ctx.dryRun) writeJsonAtomic(deliveryStatePath(ctx.loaded.stateDir, state.issue), state) }
 const event = (ctx: Context, payload: LoopEventPayload): void => { if (!ctx.dryRun) appendLoopEvent(ctx.loaded.stateDir, { at: ctx.now().toISOString(), ...payload }, ctx.bus) }
 
+/** A gating hook that threw blocked the action (fail closed); say so, or it reads as a plugin's deliberate block. */
+const reportHookErrors = (ctx: Context, issue: string, hook: string, result: { readonly errors: readonly string[] }): void => {
+  if (result.errors.length) event(ctx, { type: 'plugin.hook-failed', issue, hook, error: result.errors.join('; ') })
+}
+
 /** Recover a merge recorded by this loop when GitHub no longer lists the deleted head branch. */
 const readMergedEvent = (stateDir: string, issue: string): { readonly pr: number; readonly head?: string; readonly sha?: string } | null => {
   const path = join(stateDir, 'events.ndjson')
@@ -922,6 +927,7 @@ ${marker}` }); actions.push('secret-file hold commented') } catch (error) { acti
     if (prior && prior.attempts >= 2) actions.push(`retrying incomplete review with ${reviewProvider}/${chosen.model}`)
     if (ctx.dryRun) { actions.push(`would review with ${chosen.provider}/${chosen.model}`); return { issue: record.issue, outcome: 'dry-run', reason: 'review pending', pr: pr.number, head: pr.headSha, actions } }
     const beforeReview = await ctx.bus.runHook('beforeReview', { issue: record.issue, pr: pr.number, head: pr.headSha, provider: chosen.provider, model: chosen.model })
+    reportHookErrors(ctx, record.issue, 'beforeReview', beforeReview)
     if (beforeReview.block) return { issue: record.issue, outcome: 'waiting', reason: `review blocked by plugin: ${beforeReview.reason}`, pr: pr.number, head: pr.headSha, actions }
     const resultFile = join(ctx.loaded.stateDir, 'issues', record.issue, `review-${pr.headSha.slice(0, 12)}.json`)
     mkdirSync(dirname(resultFile), { recursive: true })
@@ -1048,6 +1054,7 @@ ${marker}` }); actions.push('secret-file hold commented') } catch (error) { acti
 
   if (ctx.dryRun) { actions.push('would squash-merge'); return { issue: record.issue, outcome: 'dry-run', reason: 'ready to merge', pr: pr.number, head: pr.headSha, actions } }
   const beforeMerge = await ctx.bus.runHook('beforeMerge', { issue: record.issue, pr: pr.number, head: pr.headSha })
+  reportHookErrors(ctx, record.issue, 'beforeMerge', beforeMerge)
   if (beforeMerge.block) return { issue: record.issue, outcome: 'held', reason: `merge blocked by plugin: ${beforeMerge.reason}`, pr: pr.number, head: pr.headSha, actions }
   const merged = await githubMerge(ctx.runner, { repo: config.project.repo, number: pr.number, headSha: pr.headSha, method: config.delivery.merge.method, title: `${pr.title} (#${pr.number})` })
   if (!merged.merged) { actions.push(`merge refused: ${merged.message}`); event(ctx, { type: 'pr.merge-refused', issue: record.issue, pr: pr.number, head: pr.headSha, message: merged.message }); return { issue: record.issue, outcome: 'waiting', reason: `merge refused: ${merged.message}`, pr: pr.number, head: pr.headSha, actions } }
@@ -1122,6 +1129,7 @@ const handleIntakePullRequest = async (ctx: Context, identifier: string, pr: Pul
     if (ctx.dryRun) { actions.push(`would review with ${ctx.reviewer.provider}/${ctx.reviewer.model}`); return { issue: identifier, outcome: 'dry-run', reason: 'review pending', pr: pr.number, head: pr.headSha, actions } }
     const { settings } = providerIdentity(config, ctx.reviewer.provider)
     const beforeReview = await ctx.bus.runHook('beforeReview', { issue: identifier, pr: pr.number, head: pr.headSha, provider: ctx.reviewer.provider, model: ctx.reviewer.model, source: 'github-intake' })
+    reportHookErrors(ctx, identifier, 'beforeReview', beforeReview)
     if (beforeReview.block) return { issue: identifier, outcome: 'waiting', reason: `review blocked by plugin: ${beforeReview.reason}`, pr: pr.number, head: pr.headSha, actions }
     const resultFile = join(ctx.loaded.stateDir, 'issues', identifier, `review-${pr.headSha.slice(0, 12)}.json`)
     mkdirSync(dirname(resultFile), { recursive: true })

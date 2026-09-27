@@ -453,6 +453,19 @@ describe('tick', () => {
     expect(createDispatchLedger(loadLoopConfig(env.configPath).stateDir).active()).toEqual([])
   })
 
+  it('a beforeDispatch hook that throws fails closed: dispatch skipped with the error, plugin.hook-failed logged', async () => {
+    const env = makeEnv({ pluginSource: `
+      export default { id: 'broken', apply(bus) { bus.hook('beforeDispatch', () => { throw new Error('policy service down') }) } }
+    ` })
+    const report = await runTick({ ...tickOptions(env), maxDispatch: 1 })
+    expect(report.results[0]).toMatchObject({ outcome: 'skipped', reason: expect.stringContaining('beforeDispatch hook failed: policy service down') })
+    expect(env.runner.calls.some((argv) => argv[1] === 'worktree' && argv[2] === 'create')).toBe(false)
+    const stateDir = loadLoopConfig(env.configPath).stateDir
+    expect(createDispatchLedger(stateDir).active()).toEqual([])
+    const events = readFileSync(join(stateDir, 'events.ndjson'), 'utf8').split('\n').filter(Boolean).map((line) => JSON.parse(line) as Record<string, unknown>)
+    expect(events.find((event) => event['type'] === 'plugin.hook-failed')).toMatchObject({ hook: 'beforeDispatch', error: 'policy service down', issue: report.results[0]?.issue })
+  })
+
   it('a plugin module that fails to load is reported as a note and does not stop the tick', async () => {
     const env = makeEnv()
     writeFileSync(env.configPath, readFileSync(env.configPath, 'utf8').replace('modules: []', 'modules: [missing-plugin.mjs]'))
