@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
-  "contentHash": "9c971bcc8d64a0b2906257cb94bdcadaa8a70cd6dfb157cb6570e78f1b82364d",
+  "contentHash": "cf7f35760ab8e62f7aed8de9e9b3a1e2061ed35563fd4f2bc9cef4d0ff401d10",
   "contentHashAlgo": "sha256-normalized-v1",
-  "generatedAt": "2026-09-27T11:58:59.098Z",
+  "generatedAt": "2026-09-27T12:10:04.144Z",
   "project": {
     "name": "AgentsKit Harness",
     "root": "."
@@ -5401,6 +5401,7 @@
         "IssueDecision",
         "answerDecision",
         "archiveRun",
+        "canReuseContract",
         "cancelRun",
         "cleanupRun",
         "decideIssue",
@@ -5417,7 +5418,7 @@
         "ts",
         "api"
       ],
-      "contentHash": "be4180f775a921ab68dd940ffe2eae06b5305c2e6a3fd4da864fbb06803e6ace"
+      "contentHash": "4bf2f444d05eaaa4fcb30d9b0bc76a5d6bb301dcacfacd78b438c451c6f63996"
     },
     {
       "id": "module:src/ui/api/alerts.ts",
@@ -8607,7 +8608,7 @@
         "ts",
         "test"
       ],
-      "contentHash": "447402c20d079d211e35975516d572a5b3a6264988da92f2046d03a872244856"
+      "contentHash": "cc9b3299e6c3d3f66246c3aa015698bde6ca3ada70f30783ba5c9f26b37ec235"
     },
     {
       "id": "module:test/ui-api-jobs.test.ts",
@@ -8911,7 +8912,7 @@
     }
   },
   "inputs": {
-    "hash": "355efbeac395b571164805f9cfd36a48c515eebef4be133dbe4685deff887f9c",
+    "hash": "c710c6d96234ccaf1303fd3828254c5e02caa98ea14d41b4f41d6daf5a93160d",
     "fileCount": 539,
     "projectionVersion": 2
   },
@@ -8934,9 +8935,9 @@
   "projection": {
     "type": "retrieval-index",
     "schemaVersion": 1,
-    "contentHash": "b42721c6e9b666215331a41be7c243d3b11c2ab9a94f06e42fc2ddcf626cb480",
+    "contentHash": "6ec963c90a6c52b0e544eb01f863dad4f552d54abb57f460bf52dede9a5146f6",
     "contentHashAlgo": "sha256-normalized-v1",
-    "snapshotHash": "a40fbd8c91c76f7ae1a6abbce458418ad88aa0b1e31e98855f4c262fcaf71bf9",
+    "snapshotHash": "fd9c942ecc1a69804a57a6e1659c12845d3fc452cda855fb7be9171e22402c12",
     "overlayHash": "f99666ff9119084dd25c2974ae64eb6935ec2aa785ff5ad478fb9d541f7a5e94",
     "configurationHash": "816afaf6a7dc09767f7594d8fd80024612ca0f33becf0e44dde0107fcf2782df",
     "lexiconVersion": 1,
@@ -8972,7 +8973,7 @@
         "headings": 3.8649635036496353,
         "path": 6.114963503649635,
         "summary": 2.6313868613138687,
-        "symbols": 14.19890510948905,
+        "symbols": 14.204379562043796,
         "title": 3.9434306569343067
       }
     },
@@ -32791,6 +32792,7 @@
           "IssueDecision",
           "answerDecision",
           "archiveRun",
+          "canReuseContract",
           "cancelRun",
           "cleanupRun",
           "decideIssue",
@@ -32811,7 +32813,7 @@
           "title": "actions.ts",
           "headings": "",
           "path": "src/ui/api/actions.ts",
-          "symbols": "ActionContext AnswerDecisionInput AnswerDecisionResult ContractResult EnqueueRunInput IssueDecision answerDecision archiveRun cancelRun cleanupRun decideIssue enqueueRun generateOrReuseContract reconcileIssue resolveTrackerSync restoreRun resumePausedIssue retryRun",
+          "symbols": "ActionContext AnswerDecisionInput AnswerDecisionResult ContractResult EnqueueRunInput IssueDecision answerDecision archiveRun canReuseContract cancelRun cleanupRun decideIssue enqueueRun generateOrReuseContract reconcileIssue resolveTrackerSync restoreRun resumePausedIssue retryRun",
           "summary": "",
           "body": "",
           "aliases": "module ts api"
@@ -32958,7 +32960,7 @@
             }
           ]
         },
-        "contentHash": "be4180f775a921ab68dd940ffe2eae06b5305c2e6a3fd4da864fbb06803e6ace",
+        "contentHash": "4bf2f444d05eaaa4fcb30d9b0bc76a5d6bb301dcacfacd78b438c451c6f63996",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -44289,7 +44291,7 @@
             }
           ]
         },
-        "contentHash": "447402c20d079d211e35975516d572a5b3a6264988da92f2046d03a872244856",
+        "contentHash": "cc9b3299e6c3d3f66246c3aa015698bde6ca3ada70f30783ba5c9f26b37ec235",
         "provenance": "observed",
         "confidence": "observed"
       },
