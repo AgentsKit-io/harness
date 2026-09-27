@@ -8,7 +8,8 @@ import { createHitlStore } from '../src/loop/hitl.js'
 import { readIssueFailures, pauseIssue } from '../src/loop/resilience-state.js'
 import { writeJsonAtomic } from '../src/loop/fs-atomic.js'
 import { dispatchRecordPath } from '../src/loop/tick.js'
-import { answerDecision, archiveRun, cancelRun, cleanupRun, decideIssue, enqueueRun, resumePausedIssue, restoreRun, retryRun, type ActionContext } from '../src/ui/api/actions.js'
+import { answerDecision, archiveRun, cancelRun, cleanupRun, decideIssue, enqueueRun, resolveTrackerSync, resumePausedIssue, restoreRun, retryRun, type ActionContext } from '../src/ui/api/actions.js'
+import { readLoopEvents } from '../src/loop/retro.js'
 import { readCurrentProjection } from '../src/ui/api/store.js'
 
 const cleanups: string[] = []
@@ -35,6 +36,18 @@ describe('the control-plane action surface', () => {
     const record = readCurrentProjection(context.loaded.stateDir).issues['ENG-1']!
     expect(record.phase).toBe('running')
     expect(record.run).toMatchObject({ id: runId, status: 'queued', builder: 'codex/gpt' })
+  })
+
+  it('a tracker sync retry the tracker still refuses records nothing, so the failure stays visible', async () => {
+    const base = contextFor()
+    const loaded = { ...base.loaded, config: { ...base.loaded.config, github: { issues: { labels: { todo: 'ai-ready', inProgress: 'ai-working', review: 'ai-pr', done: 'ai-done', blocked: 'ai-blocked' } } } } } as unknown as LoadedLoopConfig
+    const runner: CommandRunner = { run: async (argv): Promise<CommandResult> => argv.includes('edit')
+      ? { code: 1, stdout: '', stderr: "failed to update: 'ai-done' not found", timedOut: false, durationMs: 1 }
+      : { code: 0, stdout: JSON.stringify({ number: 76, title: 't', body: '', state: 'OPEN', url: 'u', labels: [{ name: 'ai-pr' }], assignees: [], createdAt: '2026-01-01T00:00:00Z', updatedAt: '2026-01-01T00:00:00Z' }), stderr: '', timedOut: false, durationMs: 1 } }
+    await expect(resolveTrackerSync({ loaded, runner }, 'acme/app#76', 'retry')).rejects.toThrow()
+    expect(readLoopEvents(loaded.stateDir, 0).some((event) => event.type === 'ui.tracker-sync-resolved')).toBe(false)
+    await resolveTrackerSync({ loaded, runner }, 'acme/app#76', 'dismiss')
+    expect(readLoopEvents(loaded.stateDir, 0).filter((event) => event.type === 'ui.tracker-sync-resolved')).toMatchObject([{ issue: 'acme/app#76', action: 'dismiss' }])
   })
 
   it('cancel cleanup treats a stale terminal handle as already closed and goes on to remove the worktree', async () => {

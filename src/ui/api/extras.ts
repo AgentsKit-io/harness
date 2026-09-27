@@ -260,6 +260,7 @@ export const createExtrasBuilder = (loaded: LoadedLoopConfig, runner: CommandRun
         stagePauses: Object.entries(stagePause).flatMap(([stage, entry]) => entry?.pausedAt ? [{ stage, since: entry.pausedAt, reason: entry.pausedReason }] : []),
         cooldowns: Object.entries(cooldowns).filter(([provider]) => provider in activeCooldowns(cooldowns, at)).map(([provider, entry]) => ({ provider, until: entry.until, reason: entry.reason, since: entry.markedAt })),
         syncFailures: recent.filter((event) => event.type === 'tracker.sync-failed').map((event) => ({ issue: typeof event.issue === 'string' ? event.issue : null, operation: typeof event['operation'] === 'string' ? event['operation'] : null, error: typeof event['error'] === 'string' ? event['error'] : null, at: event.at })),
+        syncResolutions: recent.flatMap((event) => event.type === 'ui.tracker-sync-resolved' && typeof event.issue === 'string' ? [{ issue: event.issue, at: event.at }] : []),
         pii: recent.filter((event) => event.type === 'security.pii-detected').map((event) => ({ issue: typeof event.issue === 'string' ? event.issue : null, kinds: Array.isArray(event['kinds']) ? event['kinds'].filter((kind): kind is string => typeof kind === 'string') : [], at: event.at })),
         automations: automations(at),
       })

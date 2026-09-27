@@ -266,6 +266,22 @@ export const githubPreflight = async (runner: CommandRunner, input: { readonly r
   return { login: await githubCurrentUser(runner, options), permission }
 }
 
+/**
+ * Create whichever of `labels` the repository does not have yet, and return the ones created. The loop owns its
+ * lifecycle labels; a missing one (observed: `ai-done`) made every completion fail after the merge, silently, with
+ * nothing retrying it. A label created concurrently by another machine is not an error.
+ */
+export const githubEnsureLabels = async (runner: CommandRunner, input: { readonly repo: string; readonly labels: readonly string[] }, options: GitHubCliOptions = {}): Promise<readonly string[]> => {
+  const listed = await ghJson(runner, ['label', 'list', '--repo', input.repo, '--limit', '1000', '--json', 'name'], options)
+  const available = new Set(Array.isArray(listed) ? listed.filter(isRecord).map((label) => str(label['name'])).filter(Boolean) : [])
+  const missing = [...new Set(input.labels)].filter((label) => !available.has(label))
+  for (const label of missing) {
+    try { await ghRun(runner, ['label', 'create', label, '--repo', input.repo, '--description', 'AgentsKit loop lifecycle label'], options) }
+    catch (error) { if (!/already exists/i.test(error instanceof Error ? error.message : String(error))) throw error }
+  }
+  return missing
+}
+
 export interface DiffStat { readonly files: readonly string[]; readonly changedLines: number }
 
 /** Files and changed-line count between two commits — used to size a fix-round review off what actually changed

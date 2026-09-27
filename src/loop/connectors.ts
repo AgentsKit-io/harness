@@ -6,7 +6,7 @@ import {
 } from '../adapters/linear-orca.js'
 import {
   githubComment, githubCommentExists, githubUpsertComment, githubCurrentUser, githubIssue, githubIssueClose, githubIssueComment,
-  githubIssueCommentExists, githubIssueCreate, githubIssueEdit, githubIssueReopen, githubMerge, githubOpenIssues,
+  githubEnsureLabels, githubIssueCommentExists, githubIssueCreate, githubIssueEdit, githubIssueReopen, githubMerge, githubOpenIssues,
   githubOpenPullRequests, githubPullRequest, githubPullRequestsForBranch, githubPullRequestsForIssue, githubPreflight, githubLabelRemove, type GitHubIssueDetail,
   type PullRequestSnapshot,
 } from '../adapters/github-cli.js'
@@ -155,8 +155,18 @@ export const createGitHubTracker = (input: ConnectorInput): TrackerConnector => 
     return cachedAssignee ?? fail('No GitHub assignee could be resolved.', 'HARNESS_ERROR')
   }
   const readDetail = async (identifier: string): Promise<TrackerIssueDetail> => githubIssueToTracker(config, await githubIssue(runner, { repo, identifier }, options))
+  // Labels the loop applies are its own: create a missing one instead of failing the edit. One label listing per
+  // connector instance (a stage run), and only when something is actually labelled.
+  const ensured = new Set<string>()
+  const ensureLabels = async (labels: readonly string[]): Promise<void> => {
+    const pending = labels.filter((label) => !ensured.has(label))
+    if (!pending.length || input.dryRun) return
+    await githubEnsureLabels(runner, { repo, labels: [...new Set([...lifecycleLabels, ...pending])] }, options)
+    for (const label of [...lifecycleLabels, ...pending]) ensured.add(label)
+  }
   const setState = async ({ issue, to }: { readonly issue: string; readonly to: string }): Promise<void> => {
     const target = githubLifecycleLabel(config, to)
+    await ensureLabels([target])
     const current = await githubIssue(runner, { repo, identifier: issue }, options)
     const currentKnown = current.labels.filter((label) => lifecycleLabels.includes(label))
     if (currentKnown.length !== 1 || currentKnown[0] !== target) await githubIssueEdit(runner, { repo, identifier: issue, removeLabels: currentKnown.filter((label) => label !== target), addLabels: [target] }, options)
@@ -189,7 +199,9 @@ export const createGitHubTracker = (input: ConnectorInput): TrackerConnector => 
     addLabels: async (issue, labels) => {
       const lifecycle = labels.filter((label) => lifecycleLabels.includes(label))
       if (lifecycle.length) fail(`Use setState to change GitHub lifecycle labels; direct add would violate exclusivity: ${lifecycle.join(', ')}.`, 'INVALID_INPUT')
-      if (labels.length) await githubIssueEdit(runner, { repo, identifier: issue, addLabels: labels }, options)
+      if (!labels.length) return
+      await ensureLabels(labels)
+      await githubIssueEdit(runner, { repo, identifier: issue, addLabels: labels }, options)
     },
     removeLabels: async (issue, labels) => { if (labels.length) await githubIssueEdit(runner, { repo, identifier: issue, removeLabels: labels }, options) },
     setState,

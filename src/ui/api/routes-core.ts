@@ -8,10 +8,10 @@ import { readDeliveryState } from '../../loop/deliver.js'
 import { assessDod, readDodEvidence } from '../../loop/dod.js'
 import { readLoopEvents } from '../../loop/retro.js'
 import { readDispatchRecord, type DispatchRecordFile } from '../../loop/tick.js'
-import { reconcileIssue } from './actions.js'
+import { reconcileIssue, resolveTrackerSync } from './actions.js'
 import type { AttentionItem, IssueDetail } from './contract.js'
 import { orcaCacheFor, type OrcaView } from './extras.js'
-import { SAFE_IDENTIFIER, sendJson } from './http.js'
+import { readRequestBody, recordOf, SAFE_IDENTIFIER, sendJson } from './http.js'
 import type { IssueRecord } from './projection.js'
 import type { RouteModule } from './routes.js'
 import { readCurrentProjection } from './store.js'
@@ -80,7 +80,7 @@ export const buildIssueDetail = (loaded: LoadedLoopConfig, record: IssueRecord |
 }
 
 export const coreRoutes: RouteModule = async (context, request, response, url) => {
-  const match = /^\/api\/v1\/issues\/([^/]+)\/(detail|reconcile)$/.exec(url.pathname)
+  const match = /^\/api\/v1\/issues\/([^/]+)\/(detail|reconcile|tracker-sync)$/.exec(url.pathname)
   if (!match) return false
   const issue = decodeURIComponent(match[1]!)
   if (!SAFE_IDENTIFIER.test(issue)) { sendJson(response, 400, { error: 'invalid_issue' }); return true }
@@ -98,6 +98,16 @@ export const coreRoutes: RouteModule = async (context, request, response, url) =
     const { actions } = reconcileIssue(context, issue, before)
     const after = (await context.snapshot()).extras?.drift ?? []
     sendJson(response, 200, { issue, actions, drift: after.filter((item) => item.issue === issue) })
+    return true
+  }
+  if (match[2] === 'tracker-sync' && request.method === 'POST') {
+    const action = recordOf(await readRequestBody(request))['action']
+    if (action !== 'retry' && action !== 'dismiss') { sendJson(response, 400, { error: 'action must be retry or dismiss' }); return true }
+    try { await resolveTrackerSync(context, issue, action) }
+    // `error` is what the app shows; the code alone told the operator nothing (e.g. a missing lifecycle label).
+    catch (error) { sendJson(response, 502, { error: `Tracker still refused the update: ${error instanceof Error ? error.message : String(error)}`, code: 'tracker_sync_failed' }); return true }
+    await context.snapshot(true)
+    sendJson(response, 200, { issue, action })
     return true
   }
   return false
