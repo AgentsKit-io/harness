@@ -307,6 +307,16 @@ describe('tick', () => {
     expect(readStoredContract(loaded.stateDir, result?.issue ?? '')).toBeNull()
   })
 
+  it('re-dispatching an issue whose last delivery finished as failed starts it from a clean delivery state', async () => {
+    const env = makeEnv()
+    const initial = loadLoopConfig(env.configPath)
+    mkdirSync(join(initial.stateDir, 'issues', 'ENG-10'), { recursive: true })
+    writeFileSync(deliveryStatePath(initial.stateDir, 'ENG-10'), JSON.stringify({ issue: 'ENG-10', prNumber: null, reviews: {}, fixRounds: 0, nudges: [], handoffs: [], heldFor: null, finishedAt: 'old', finalOutcome: 'failed', consecutiveErrors: 3 }))
+    const report = await runTick({ ...tickOptions(env), maxDispatch: 1 })
+    expect(report.results[0]).toMatchObject({ issue: 'ENG-10', outcome: 'dispatched' })
+    expect(readDeliveryState(initial.stateDir, 'ENG-10')).toMatchObject({ finishedAt: null, finalOutcome: null })
+  })
+
   it('dispatches into a worktree, records the lease, moves Linear, and never double-dispatches', async () => {
     const env = makeEnv()
     const initial = loadLoopConfig(env.configPath)

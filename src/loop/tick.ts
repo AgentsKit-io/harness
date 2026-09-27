@@ -319,7 +319,7 @@ const resetDeliveryStateForDispatch = (stateDir: string, issue: string): void =>
   if (!existsSync(path)) return
   try {
     const previous = JSON.parse(readFileSync(path, 'utf8')) as { readonly finalOutcome?: unknown; readonly cancelledAt?: unknown }
-    if (!previous.cancelledAt && !['stuck', 'blocked', 'abandoned'].includes(String(previous.finalOutcome))) return
+    if (!previous.cancelledAt && !['stuck', 'blocked', 'abandoned', 'failed'].includes(String(previous.finalOutcome))) return
   } catch { return }
   // `writeJsonAtomic` e não `writeJson`: o remoto trocou toda escrita de estado por escrita atômica
   // (PR #80), e um reset de estado de entrega escrito pela metade é pior que nenhum reset.
