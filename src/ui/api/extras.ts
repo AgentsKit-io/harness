@@ -7,6 +7,7 @@ import { join } from 'node:path'
 import type { CommandRunner } from '../../adapters/command.js'
 import { orcaAutomationsList, orcaTerminalList, orcaWorktrees, type OrcaTerminal } from '../../adapters/orca-cli.js'
 import { readActiveClaims } from '../../execution/coordination.js'
+import { countRunningWorkers } from '../../loop/doctor.js'
 import { resolveConnectors } from '../../loop/connectors.js'
 import { automationSpecs, reconcileAutomations } from '../../loop/automations.js'
 import type { LoadedLoopConfig } from '../../loop/config.js'
@@ -47,6 +48,8 @@ export interface OrcaView {
   /** When `worktreeIds` was last read successfully. */
   readonly at: string | null
   readonly worktreeIds: readonly string[] | null
+  /** Workers holding a slot, counted exactly as the tick counts them (`countRunningWorkers`); `null` until Orca answers. */
+  readonly running: number | null
   /** When `terminals` was last read successfully: a failed terminal list keeps the old ones, never re-dated. */
   readonly terminalsAt: string | null
   readonly terminals: readonly OrcaTerminal[]
@@ -58,7 +61,7 @@ export interface OrcaCache {
 }
 
 export const createOrcaCache = (loaded: LoadedLoopConfig, runner: CommandRunner, now: () => Date = () => new Date(), ttlMs = ORCA_TTL_MS): OrcaCache => {
-  let view: OrcaView = { at: null, worktreeIds: null, terminalsAt: null, terminals: [] }
+  let view: OrcaView = { at: null, worktreeIds: null, running: null, terminalsAt: null, terminals: [] }
   let fetchedAtMs = Number.NEGATIVE_INFINITY
   let inFlight: Promise<OrcaView> | null = null
   const refresh = (): Promise<OrcaView> => {
@@ -67,7 +70,7 @@ export const createOrcaCache = (loaded: LoadedLoopConfig, runner: CommandRunner,
       try {
         const [worktrees, terminals] = await Promise.all([orcaWorktrees(runner, options), orcaTerminalList(runner, {}, options).catch(() => null)])
         const at = now().toISOString()
-        view = { at, worktreeIds: worktrees.map((worktree) => worktree.id), ...(terminals ? { terminalsAt: at, terminals } : { terminalsAt: view.terminalsAt, terminals: view.terminals }) }
+        view = { at, worktreeIds: worktrees.map((worktree) => worktree.id), running: countRunningWorkers(worktrees), ...(terminals ? { terminalsAt: at, terminals } : { terminalsAt: view.terminalsAt, terminals: view.terminals }) }
       } catch { /* keep the last good view; freshness goes stale on its own */ }
       fetchedAtMs = now().getTime()
       inFlight = null
@@ -212,6 +215,7 @@ export interface ExtrasInput {
   readonly board: BoardSnapshot | null
   readonly dispatches: readonly DispatchRecordFile[]
   readonly deliveries: ReadonlyMap<string, DeliveryState>
+  readonly running: number
   readonly maxAgents: number
 }
 
@@ -253,7 +257,7 @@ export const createExtrasBuilder = (loaded: LoadedLoopConfig, runner: CommandRun
         dispatches: input.dispatches.map((dispatch) => ({ issue: dispatch.issue, worktreeId: dispatch.worktreeId, finished: Boolean(input.deliveries.get(dispatch.issue)?.finishedAt) })),
         claims: readActiveClaims(stateDir).map((claim) => ({ issue: claim.issue, claimedAt: claim.claimedAt })),
         orca: { at: orcaView.at, worktreeIds: orcaView.worktreeIds }, orcaStaleAfterMs: Math.max(staleAfterMs, 4 * ORCA_TTL_MS),
-        loopAt: loopHeartbeat(stateDir), maxAgents: input.maxAgents,
+        loopAt: loopHeartbeat(stateDir), running: input.running, maxAgents: input.maxAgents,
       })
       const locks = computeLocks(input.issues, drift, freshness)
 
