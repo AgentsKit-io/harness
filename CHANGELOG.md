@@ -2,6 +2,23 @@
 
 ## [Unreleased]
 
+## [0.22.3] — 2026-09-27
+
+- **Lost-track restart.** A run whose worker terminal is gone, or that stays idle after a check-in, before any PR is
+  aborted and re-dispatched from scratch (bounded, `worker.lost-tracking`/`worker.restarted`) (#147). It never
+  destroys work: it needs the evidence on two consecutive passes, escalates stuck and keeps the worktree when there
+  are unpushed commits or uncommitted edits (the check fails closed), removes a clean worktree without `--force`,
+  captures the worker screen into the run first, waits while the tracker is cooling down, and does nothing
+  destructive until its tracker writes succeed. A human Retry resets the restart budget (#151).
+- **A worker that declares itself blocked** (`BLOCKED:` worktree comment) is escalated to a person — also when it
+  exited afterwards — instead of being nudged, handed off or restarted (#150, #151).
+- **Never type into a bare shell.** A nudge into a terminal that is only a shell prompt relaunches the agent (the old
+  terminal is closed first; an idle agent from a CLI that does not register with Orca is never mistaken for a shell);
+  no-PR worker events keep the issue `running` in the UI (#144, #151).
+- **Close-or-reopen decisions** on an abandoned delivery stick and release the issue's lease (#145, #151).
+- **UI.** Worker slots are counted the way the tick counts them (#148); the projection rebuilds itself when the
+  reducer changes (#149).
+
 ## [0.22.2] — 2026-09-27
 
 - **Review floor decides.** A reviewer that exits 1 (or reports `blocking`) on findings all below

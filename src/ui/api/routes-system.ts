@@ -122,7 +122,7 @@ export const createSystemRoutes = (deps: SystemRouteDeps = { doctor: runLoopDoct
     const alertsConfigured = Boolean(config.notifications?.webhook || config.notifications?.command)
     return {
       doctor: (() => { const saved = readJsonFile(doctorReportPath(stateDir), doctorSchema); return saved ? { ranAt: saved.ranAt, checks: saved.checks } : null })(),
-      machine: { loadPercent: process.platform === 'win32' ? null : Math.round(((loadavg()[0] ?? 0) / cpuCount) * 100), freeRamGb: Math.round((freemem() / 1024 ** 3) * 10) / 10, liveTerminals: null, slots: config.machine.ceiling ?? config.machine.floor },
+      machine: { loadPercent: process.platform === 'win32' ? null : Math.round(((loadavg()[0] ?? 0) / cpuCount) * 100), freeRamGb: Math.round((freemem() / 1024 ** 3) * 10) / 10, liveTerminals: null, slots: config.machine.ceiling ?? Math.max(config.machine.floor, Math.floor(cpuCount / 2)) },
       routing,
       cooldowns: Object.entries(cooldownState).filter(([, entry]) => Date.parse(entry.until) > now.getTime()).map(([provider, entry]) => ({ provider, until: entry.until, reason: entry.reason })),
       handoffs, stages, learnings, retroSuggestions, orcaError: orcaStages.error,
