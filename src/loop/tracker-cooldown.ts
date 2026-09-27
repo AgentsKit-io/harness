@@ -1,5 +1,6 @@
-import { existsSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
+import { z } from 'zod'
+import { readJsonFile } from '../kernel/json-file.js'
 import { cooldownUntil } from '../adapters/providers.js'
 import type { TrackerConnector } from './connectors.js'
 import { writeJsonAtomic } from './fs-atomic.js'
@@ -23,13 +24,11 @@ export const isTrackerRateLimit = (error: unknown): boolean => TRACKER_RATE_LIMI
 
 export const trackerCooldownPath = (stateDir: string): string => join(stateDir, 'tracker-cooldown.json')
 
+const CooldownSchema = z.object({ until: z.string(), attempts: z.number().int().optional(), reason: z.string().optional(), markedAt: z.string().optional() }).loose()
+
 const readEntry = (stateDir: string): TrackerCooldown | null => {
-  const path = trackerCooldownPath(stateDir)
-  if (!existsSync(path)) return null
-  try {
-    const parsed = JSON.parse(readFileSync(path, 'utf8')) as Partial<TrackerCooldown> | null
-    return parsed && typeof parsed.until === 'string' ? { attempts: parsed.attempts ?? 0, until: parsed.until, reason: parsed.reason ?? '', markedAt: parsed.markedAt ?? parsed.until } : null
-  } catch { return null }
+  const parsed = readJsonFile(trackerCooldownPath(stateDir), CooldownSchema)
+  return parsed ? { attempts: parsed.attempts ?? 0, until: parsed.until, reason: parsed.reason ?? '', markedAt: parsed.markedAt ?? parsed.until } : null
 }
 
 /** The cooldown in force now, or null. */
