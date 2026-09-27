@@ -1,4 +1,4 @@
-import { appendFileSync, closeSync, existsSync, mkdirSync, openSync, readdirSync, readFileSync, renameSync, statSync, unlinkSync, writeFileSync } from 'node:fs'
+import { appendFileSync, existsSync, mkdirSync, readdirSync, readFileSync, renameSync, statSync, unlinkSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { z } from 'zod'
 import type { CommandRunner } from '../adapters/command.js'
@@ -12,7 +12,9 @@ import { createDispatchLedger, type DispatchLedger, type DispatchLease } from '.
 import { HarnessError } from '../kernel/errors.js'
 import { renderWorkerBrief } from './brief.js'
 import { readStoredPlan, runPlanWithVotes, writeStoredPlan, type StoredPlan } from './plan-vote.js'
-import { writeJsonAtomic } from './fs-atomic.js'
+import { acquireFileLock, releaseFileLock, writeJsonAtomic } from './fs-atomic.js'
+import { pruneAgentRuns, recordRunEvent, recordRunIo, type RunIoInput } from './agent-runs.js'
+import { renderSpec, SPEC_FILES, writeSpec } from './spec.js'
 import { loadPinnedSkills, skillRefs, skillDigest, type PinnedSkillRef } from './skills.js'
 import { loadLoopConfig, providerIdentity, type EffortLevel, type LoadedLoopConfig, type LoopConfig, type ModelReference } from './config.js'
 import { assessContract, contractIsFresh, extractResetsAt, generateContract, readStoredContract, resolveDocContext, writeStoredContract, type StoredContract } from './contract.js'
@@ -139,6 +141,8 @@ export interface TickInput {
   readonly owner?: string
   /** Test seam: override live machine sampling. */
   readonly machine?: Pick<SlotInput, 'sample' | 'freeBytes' | 'totalBytes' | 'osRelease'>
+  /** Test seam: base delay between worktree-create retries (see `createWorktreeWithRetry`); production default 5000ms. */
+  readonly worktreeCreateRetryDelayMs?: number
   /** Wall-clock budget for this tick; candidates that would not fit are left for the next tick. */
   readonly budgetMs?: number
   /** An externally-owned event bus (e.g. `loop stage`, unifying every stage's events on one bus for that
@@ -215,6 +219,29 @@ export const launchWorkerTerminal = async (input: { readonly runner: CommandRunn
 }
 
 const message = (error: unknown): string => error instanceof HarnessError ? `${error.code}: ${error.message}` : error instanceof Error ? error.message : String(error)
+
+// Orca's own worktree-create IPC intermittently drops mid-call under concurrent load — reproduced live against a
+// real project (agentskit-os) under 3 simultaneous dispatches: "The Orca runtime closed the connection before
+// responding." Not this issue's fault, and a bounded retry costs nothing tick can no longer afford — the
+// detached-worker architecture (see cli.ts's `stage`/`tick-worker`) gives this tick minutes, not the ~2s an Orca
+// precheck once had. Retrying here means the loop self-heals instead of spending one of
+// resilience.maxConsecutiveFailures on Orca's own transient hiccup.
+const isTransientOrcaConnectionError = (error: unknown): boolean =>
+  error instanceof Error && error.message.includes('closed the connection before responding')
+const createWorktreeWithRetry = async (runner: CommandRunner, argv: readonly string[], options: { readonly timeoutMs: number }, baseDelayMs = 5_000): ReturnType<typeof orcaWorktreeCreate> => {
+  const attempts = 3
+  let lastError: unknown
+  for (let attempt = 1; attempt <= attempts; attempt += 1) {
+    try {
+      return await orcaWorktreeCreate(runner, argv, options)
+    } catch (error) {
+      lastError = error
+      if (!isTransientOrcaConnectionError(error)) throw error
+      if (attempt < attempts) await new Promise((resolve) => setTimeout(resolve, attempt * baseDelayMs))
+    }
+  }
+  throw lastError
+}
 
 /** Worktree name: last branch segment, lowercase, safe charset, ≤ 60 chars. */
 export const worktreeNameFor = (issue: Pick<LoopIssue, 'identifier' | 'branchName'>): string => {
@@ -326,18 +353,7 @@ const pruneEventArchives = (stateDir: string, nowMs: number): void => {
  * lands in the archive instead of the fresh file mid-rotation is not data loss, since `readLoopEvents` merges
  * archives back in — the lock only needs to stop two processes from racing the rename itself.
  */
-const acquireEventsLock = (lockFilePath: string): number | null => {
-  for (let attempt = 0; attempt < EVENTS_LOCK_MAX_ATTEMPTS; attempt += 1) {
-    try {
-      return openSync(lockFilePath, 'wx')
-    } catch (error) {
-      if ((error as NodeJS.ErrnoException).code !== 'EEXIST') throw error
-      try { if (Date.now() - statSync(lockFilePath).mtimeMs > EVENTS_LOCK_STALE_MS) unlinkSync(lockFilePath) } catch { /* another process already cleared it, or still holds it */ }
-      Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, EVENTS_LOCK_RETRY_MS)
-    }
-  }
-  return null
-}
+const acquireEventsLock = (lockFilePath: string): number | null => acquireFileLock(lockFilePath, { staleMs: EVENTS_LOCK_STALE_MS, attempts: EVENTS_LOCK_MAX_ATTEMPTS, retryMs: EVENTS_LOCK_RETRY_MS })
 
 export const appendLoopEvent = (stateDir: string, event: LoopEventPayload, bus?: LoopEventBus, now: () => Date = () => new Date()): void => {
   const path = join(stateDir, 'events.ndjson')
@@ -359,11 +375,10 @@ export const appendLoopEvent = (stateDir: string, event: LoopEventPayload, bus?:
     }
     appendFileSync(path, `${JSON.stringify(event)}\n`, 'utf8')
   } finally {
-    if (lockFd !== null) {
-      try { closeSync(lockFd) } catch { /* already closed */ }
-      try { unlinkSync(lockFilePath) } catch { /* already removed */ }
-    }
+    releaseFileLock(lockFilePath, lockFd)
   }
+  // ADR-0041: fold the event into its issue's run (`runs/<issue>-<n>/state.json`). Best-effort by construction.
+  recordRunEvent(stateDir, event)
   if (bus && typeof event['type'] === 'string') bus.emit(event as LoopEventPayload)
 }
 
@@ -497,6 +512,12 @@ export const runTick = async (input: TickInput): Promise<TickReport> => {
     notes.push(`provider ${failure.provider} marked cooling down until ${entry.until} (${failure.kind})`)
     appendLoopEvent(loaded.stateDir, { at: now().toISOString(), type: 'provider.cooldown', provider: failure.provider, kind: failure.kind, until: entry.until }, bus)
   }
+  const recordProviderIo = (issue: string, stage: RunIoInput['stage'], role: string, io: { readonly prompt: string; readonly stdout: string }): void => {
+    recordRunIo(loaded.stateDir, issue, { direction: 'input', stage, role, content: io.prompt, maxBytes: config.runs.maxIoBytes }, now)
+    recordRunIo(loaded.stateDir, issue, { direction: 'output', stage, role, content: io.stdout, extension: 'txt', maxBytes: config.runs.maxIoBytes }, now)
+  }
+  // windowed: the run directories are pruned here, the one stage that opens runs, so they never outgrow `runs.keep`.
+  if (!dryRun) pruneAgentRuns(loaded.stateDir, { keep: config.runs.keep, maxAgeDays: config.runs.maxAgeDays, now: now() })
   const builder = state.routing['builder']?.selected ?? null
   const summary = { orchestrator: orchestrator.selected ? `${orchestrator.selected.provider}/${orchestrator.selected.model}` : null, builder: builder ? `${builder.provider}/${builder.model}` : null }
   const base = { generatedAt: now().toISOString(), dryRun, slots: { maxAgents: state.slots.maxAgents, running: state.slots.running, free: state.slots.free, reasons: state.slots.reasons }, routing: summary, queue: { total: state.queue.length, busy: [...state.busy], candidates: state.candidates.map((issue) => issue.identifier) } }
@@ -728,8 +749,10 @@ export const runTick = async (input: TickInput): Promise<TickReport> => {
           onPiiDetected: (matches) => {
             if (!dryRun) appendLoopEvent(loaded.stateDir, { at: now().toISOString(), type: 'security.pii-detected', issue: detail.identifier, source: 'issue-text', kinds: [...new Set(matches.map((match) => match.kind))], count: matches.length }, bus)
           },
-          onProviderCall: (event) => {
-            if (!dryRun) appendLoopEvent(loaded.stateDir, { at: now().toISOString(), type: 'provider.call', role: 'orchestrator', issue: detail.identifier, ...event }, bus)
+          onProviderCall: ({ io, ...event }) => {
+            if (dryRun) return
+            recordProviderIo(detail.identifier, 'contract', 'orchestrator', io)
+            appendLoopEvent(loaded.stateDir, { at: now().toISOString(), type: 'provider.call', role: 'orchestrator', issue: detail.identifier, ...event }, bus)
           },
         })
         if (!dryRun) {
@@ -786,8 +809,10 @@ export const runTick = async (input: TickInput): Promise<TickReport> => {
             humanDecisions,
             now, onProviderFailure,
             onCycle: (cycle, votes) => { if (!dryRun) appendLoopEvent(loaded.stateDir, { at: now().toISOString(), type: 'plan.voted', issue: detail.identifier, cycle, approvals: votes.filter((vote) => vote.vote === 'approve').length, votes: votes.length, voters: votes.map((vote) => ({ provider: vote.provider, model: vote.model, vote: vote.vote })) }, bus) },
-            onProviderCall: (event) => {
-              if (!dryRun) appendLoopEvent(loaded.stateDir, { at: now().toISOString(), type: 'provider.call', issue: detail.identifier, ...event }, bus)
+            onProviderCall: ({ io, ...event }) => {
+              if (dryRun) return
+              recordProviderIo(detail.identifier, 'plan', event.role, io)
+              appendLoopEvent(loaded.stateDir, { at: now().toISOString(), type: 'provider.call', issue: detail.identifier, ...event }, bus)
             },
           })
           if (!dryRun) writeStoredPlan(loaded.stateDir, approvedPlan)
@@ -846,7 +871,7 @@ export const runTick = async (input: TickInput): Promise<TickReport> => {
     try {
       const fetched = await input.runner.run(['git', 'fetch', '--quiet', 'origin', config.project.baseBranch], { cwd: loaded.root, timeoutMs: 120_000 })
       if (fetched.timedOut || fetched.code !== 0) throw new Error(`git fetch origin ${config.project.baseBranch} failed before creating the worktree; a worker must not start from a stale base: ${`${fetched.stderr}${fetched.stdout}`.trim().slice(0, 200)}`)
-      created = await orcaWorktreeCreate(input.runner, plan.argv, { timeoutMs: Math.max(config.orca.timeoutMs, 120_000) })
+      created = await createWorktreeWithRetry(input.runner, plan.argv, { timeoutMs: Math.max(config.orca.timeoutMs, 120_000) }, input.worktreeCreateRetryDelayMs)
       // Orca names the branch `<git user>/<worktree>`; the Linear branchName is only a hint. Record and brief the real one.
       const actualBranch = created.branch || branch
       // Real-time enforcement, before the worker's own setup command (let alone the worker itself) ever runs —
@@ -867,6 +892,12 @@ export const runTick = async (input: TickInput): Promise<TickReport> => {
           throw new Error(`setup command failed (${detailMsg}): ${[...setupResult.command].join(' ')}${setupRun.stderr ? ` — ${setupRun.stderr.slice(-300)}` : ''}`)
         }
         if (setupFailed) notes.push(`${detail.identifier}: setup command failed but project.setup.required is false — continuing`)
+      }
+      if (config.spec.enabled) {
+        // ADR-0041: the spec is rendered from what was just frozen and approved — no model writes it.
+        const spec = renderSpec({ issue: detail.identifier, url: detail.url, contract: stored, plan: approvedPlan })
+        writeSpec(created.path, config, detail.identifier, spec)
+        recordRunIo(loaded.stateDir, detail.identifier, { direction: 'input', stage: 'build', role: 'spec', content: SPEC_FILES.map((file) => spec[file]).join('\n'), maxBytes: config.runs.maxIoBytes }, now)
       }
       const briefMemory = memoryPlan ?? { memoryBlock: '', issueCharBudget: config.contract.maxIssueChars, hits: [] as const }
       const guidanceRefs = config.contract.maxBriefReferences > 0 && config.contract.briefScopes.length
@@ -896,13 +927,14 @@ export const runTick = async (input: TickInput): Promise<TickReport> => {
       })
       const briefDigest = skillDigest(brief)
       writeFileSync(briefPath(loaded.stateDir, detail.identifier), brief, 'utf8')
+      recordRunIo(loaded.stateDir, detail.identifier, { direction: 'input', stage: 'build', role: 'worker', content: brief, maxBytes: config.runs.maxIoBytes }, now)
       const launched = await launchWorkerTerminal({ runner: input.runner, config, worktreeId: created.id, worktreePath: created.path, command: worker.tui, title, brief })
       if (!launched.accepted) notes.push(`${detail.identifier}: terminal ${launched.terminal} did not confirm the brief; deliver will nudge it if it stays idle`)
       ledger.recordDispatch({ lease: claim.lease, idempotencyKey: plan.idempotencyKey, commandDigest: plan.commandDigest })
       const record: DispatchRecordFile = { issue: detail.identifier, worktreeId: created.id, worktree, branch: actualBranch, terminal: launched.terminal, provider: worker.provider, model: worker.model, contractDigest: stored.digest, leaseKey: claim.lease.key, leaseId: claim.lease.leaseId, dispatchedAt: now().toISOString(), url: detail.url, briefDigest, skills: skillRefs(pinnedSkills), ...(delegation ? { delegation } : {}), setup: setupResult, effort: worker.effort, briefAccepted: launched.accepted, initialRemainingPercent: worker.remainingPercent, worktreePath: created.path, labels: [...detail.labels], project: detail.project, priorityLabel: detail.priorityLabel, workerGuardInstalled: workerGuard.installed, ...(selectedRun ? { queueRunId: selectedRun.id, frozenFlow: selectedRun.config.flow, frozenMaxFixRounds: selectedRun.config.maxFixRounds, frozenPerIssueTokens: selectedRun.config.perIssueTokens } : {}) }
       resetDeliveryStateForDispatch(loaded.stateDir, detail.identifier)
       writeJsonAtomic(dispatchRecordPath(loaded.stateDir, detail.identifier), record)
-      appendLoopEvent(loaded.stateDir, { at: record.dispatchedAt, type: 'worker.dispatched', ...record, command: worker.tui, briefAccepted: launched.accepted, tuiIdle: launched.idle }, bus)
+      appendLoopEvent(loaded.stateDir, { at: record.dispatchedAt, type: 'worker.dispatched', ...record, command: worker.tui, briefAccepted: launched.accepted, tuiIdle: launched.idle, maxFixRounds: selectedRun?.config.maxFixRounds ?? flow.profile?.maxFixRounds ?? config.delivery.maxFixRounds }, bus)
       await bus.runHook('afterDispatch', { issue: detail.identifier, provider: record.provider, model: record.model, branch: record.branch, worktreeId: record.worktreeId })
       clearIssueFailures(loaded.stateDir, detail.identifier)
       // The claim, under `queueOwnership: 'unassigned'`: written only AFTER the dispatch succeeded, so a

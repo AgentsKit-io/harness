@@ -48,6 +48,7 @@ export type AttentionActionId =
   | 'answer' | 'approve-pr' | 'approve-plan' | 'approve-design' | 'approve-release'
   | 'retry' | 'cancel' | 'resume' | 'open' | 'reconcile'
   | 'reinstall-automations' | 'resume-stage' | 'run-doctor'
+  | 'retry-sync' | 'dismiss-sync'
 
 export interface AttentionAction {
   readonly id: AttentionActionId

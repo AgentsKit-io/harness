@@ -266,6 +266,22 @@ export const githubPreflight = async (runner: CommandRunner, input: { readonly r
   return { login: await githubCurrentUser(runner, options), permission }
 }
 
+/**
+ * Create whichever of `labels` the repository does not have yet, and return the ones created. The loop owns its
+ * lifecycle labels; a missing one (observed: `ai-done`) made every completion fail after the merge, silently, with
+ * nothing retrying it. A label created concurrently by another machine is not an error.
+ */
+export const githubEnsureLabels = async (runner: CommandRunner, input: { readonly repo: string; readonly labels: readonly string[] }, options: GitHubCliOptions = {}): Promise<readonly string[]> => {
+  const listed = await ghJson(runner, ['label', 'list', '--repo', input.repo, '--limit', '1000', '--json', 'name'], options)
+  const available = new Set(Array.isArray(listed) ? listed.filter(isRecord).map((label) => str(label['name'])).filter(Boolean) : [])
+  const missing = [...new Set(input.labels)].filter((label) => !available.has(label))
+  for (const label of missing) {
+    try { await ghRun(runner, ['label', 'create', label, '--repo', input.repo, '--description', 'AgentsKit loop lifecycle label'], options) }
+    catch (error) { if (!/already exists/i.test(error instanceof Error ? error.message : String(error))) throw error }
+  }
+  return missing
+}
+
 export interface DiffStat { readonly files: readonly string[]; readonly changedLines: number }
 
 /** Files and changed-line count between two commits — used to size a fix-round review off what actually changed
@@ -305,6 +321,22 @@ export const githubComment = async (runner: CommandRunner, input: Parameters<typ
   const argv = githubCommentArgv(input, options.bin)
   const outcome = await runner.run(argv, { timeoutMs: options.timeoutMs ?? 30_000, ...(options.cwd ? { cwd: options.cwd } : {}) })
   if (outcome.code !== 0) fail(`gh pr comment exited ${outcome.code ?? 'null'}: ${outcome.stderr.trim().slice(0, 300)}`, 'HARNESS_ERROR')
+}
+
+/**
+ * One living comment per `marker`: edit the first comment whose body contains it, or create it. A listing that
+ * fails throws rather than posting blind — a second copy of a comment meant to be unique is the bug this prevents.
+ */
+export const githubUpsertComment = async (runner: CommandRunner, input: { readonly repo: string; readonly number: number; readonly body: string; readonly marker: string }, options: GitHubCliOptions = {}): Promise<'created' | 'updated'> => {
+  const bin = options.bin ?? 'gh'
+  const run = (argv: readonly string[]) => runner.run(argv, { timeoutMs: options.timeoutMs ?? 30_000, ...(options.cwd ? { cwd: options.cwd } : {}) })
+  const listed = await run([bin, 'api', '--paginate', `repos/${input.repo}/issues/${input.number}/comments`, '--jq', `.[] | select(.body | contains(${JSON.stringify(input.marker)})) | .id`])
+  if (listed.code !== 0) fail(`gh api comments exited ${listed.code ?? 'null'}: ${listed.stderr.trim().slice(0, 300)}`, 'HARNESS_ERROR')
+  const id = listed.stdout.split(/\r?\n/).map((line) => line.trim()).find((line) => /^\d+$/.test(line))
+  if (!id) { await githubComment(runner, { repo: input.repo, number: input.number, body: input.body }, options); return 'created' }
+  const patched = await run([bin, 'api', '--method', 'PATCH', `repos/${input.repo}/issues/comments/${id}`, '-f', `body=${input.body}`])
+  if (patched.code !== 0) fail(`gh api PATCH comment exited ${patched.code ?? 'null'}: ${patched.stderr.trim().slice(0, 300)}`, 'HARNESS_ERROR')
+  return 'updated'
 }
 
 /** Issue/PR comments whose body contains `marker` — used for one-comment-per-head dedupe. */

@@ -2,6 +2,31 @@
 
 ## [Unreleased]
 
+## [0.22.0] — 2026-09-27
+
+Runs you can reconstruct, specs the loop renders, and the fixes merged since 0.21.0.
+
+- **Agent runs (ADR-0041).** Every issue gets `<stateDir>/runs/<issue>-<n>/`: `state.json` projected from its
+  events (stage, status, fix rounds, next required approval), redacted inputs and outputs of each step (contract
+  and plan prompts with their raw output, the worker brief, `plan.md`/`verify.json`/DoD, the terminal tail),
+  machine-written handoffs at every stage change, and evidence linked by sha256. A re-dispatch opens `n+1`, which
+  names the run it supersedes. `ak-harness loop run list|show` reconstructs a run without its worktree. Bounded by
+  `runs.keep`/`runs.maxAgeDays`/`runs.maxIoBytes`; prompts never reach `events.ndjson` (#135).
+- **Rendered specs.** With `spec.enabled` (off by default), dispatch renders `specs/<issue>/requirements.md`,
+  `design.md` and `tasks.md` (Spec Kit / Kiro layout) from the frozen contract and approved plan; requirement ids
+  are the outcome ids. `deliver` sends a fix round for a spec that is missing, drifted or uncommitted (#135).
+- **Run summary on the PR.** `runs.prSummary` (default on) keeps one comment per PR with the run's stage, handoffs
+  and evidence hashes, edited in place. `ScmConnector` gains `upsertComment` — a custom connector must implement it
+  (#135).
+- **Contract HITL schema.** The structured-output schema now tells providers each HITL option needs
+  `id`/`title`/`description` (#130).
+- **Cancel from the UI survives a stale terminal**, and cancellation and automation reinstall stick (#134).
+- **UI batch** accepts GitHub issue ids, serializes the base view and resumes batch jobs (#125).
+- **tick is a restart-surviving Orca automation** (#122); stale or unknown UI links no longer render blank (#121);
+  vitest skips `.ak-loop` (#120) and Windows no longer fails local-only test files (#124).
+- Docs pages carry the shared AgentsKit footer (#126); AgentsKit shell v1 adopted (#115); `@agentskit/doc-bridge`
+  1.12.0 (#128).
+
 ## [0.21.0] — 2026-09-26
 
 The four gaps left in the control plane v2, closed.

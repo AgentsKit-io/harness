@@ -108,4 +108,18 @@ describe('the attention list', () => {
     expect(items[1]).toMatchObject({ detail: 'review-state: HTTP 502' })
     expect(items.find((item) => item.kind === 'automation-missing')).toMatchObject({ stage: 'tick', actions: [{ id: 'reinstall-automations' }] })
   })
+
+  it('tracker sync failures can be settled: completion offers retry, a resolution hides older failures only', () => {
+    const syncFailures = [{ issue: 'ENG-1', operation: 'completion', error: "'ai-done' not found", at: at(9) }, { issue: 'ENG-2', operation: 'review-state', error: 'HTTP 502', at: at(8) }]
+    const open = buildAttention(input({ syncFailures }))
+    expect(open.find((item) => item.issue === 'ENG-1')?.actions.map((action) => action.id)).toEqual(['retry-sync', 'dismiss-sync', 'open'])
+    expect(open.find((item) => item.issue === 'ENG-2')?.actions.map((action) => action.id)).toEqual(['dismiss-sync', 'open'])
+    expect(open.find((item) => item.issue === 'ENG-1')?.actions.find((action) => action.id === 'dismiss-sync')).toMatchObject({ gate: true })
+
+    const settled = buildAttention(input({ syncFailures, syncResolutions: [{ issue: 'ENG-1', at: at(5) }] }))
+    expect(settled.map((item) => item.issue)).toEqual(['ENG-2'])
+    // A failure after the resolution is a new problem and shows again.
+    const again = buildAttention(input({ syncFailures: [...syncFailures, { issue: 'ENG-1', operation: 'completion', error: 'HTTP 500', at: at(1) }], syncResolutions: [{ issue: 'ENG-1', at: at(5) }] }))
+    expect(again.some((item) => item.issue === 'ENG-1')).toBe(true)
+  })
 })

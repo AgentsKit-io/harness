@@ -28,7 +28,11 @@ import { createLoopEventBus, loadLoopPlugins, type LoopEventBus, type LoopEventP
 import { attachNotifier } from './notify.js'
 import { applyRoleSettings, resolveFlowSettings, resolveRoleSettings, workerPhaseEnabled, type EffectiveFlowSettings } from './flows.js'
 import { assessDod, readDodEvidence, renderDodMarkdown } from './dod.js'
-import { missingArtifacts, readPhaseArtifacts, readVerifyArtifact, verifyProofs, type PhaseArtifactName } from './artifacts.js'
+import { artifactPath, missingArtifacts, readPhaseArtifacts, readVerifyArtifact, verifyProofs, type PhaseArtifactName } from './artifacts.js'
+import { sha256 } from '../kernel/hash.js'
+import { markRunSummaryPosted, readAgentRunReport, recordRunEvidence, recordRunIo, renderRunSummaryMarkdown, runSummaryMarker } from './agent-runs.js'
+import { checkSpec, renderSpec, specDirFor, writeSpec } from './spec.js'
+import { readStoredPlan } from './plan-vote.js'
 import { readJsonFile } from '../kernel/json-file.js'
 import { createIssueQueue } from './queue.js'
 import { createLifecycleStore, type LifecyclePullRequest } from './lifecycle.js'
@@ -343,11 +347,30 @@ const captureWorkerOutput = async (ctx: Context, terminal: string | null): Promi
   } catch { return null }
 }
 
+/** ADR-0041: what the worker left behind, copied into its run (deduplicated by hash) and linked as evidence. */
+const recordWorkerArtifacts = (ctx: Context, record: DispatchRecordFile): void => {
+  if (!record.worktreePath) return
+  const { stateDir } = ctx.loaded
+  const dodFile = ctx.config.dod.evidenceFile.replace(/^\.ak-loop[\\/]/, '')
+  const files = [
+    { file: 'plan.md', stage: 'build', extension: 'md', evidence: null },
+    { file: 'verify.json', stage: 'verify', extension: 'json', evidence: 'verify' },
+    { file: dodFile, stage: 'dod', extension: 'json', evidence: 'dod' },
+  ] as const
+  for (const item of files) {
+    const path = artifactPath(record.worktreePath, item.file)
+    let content: string
+    try { content = readFileSync(path, 'utf8') } catch { continue }
+    recordRunIo(stateDir, record.issue, { direction: 'output', stage: item.stage, role: 'worker', content, extension: item.extension, maxBytes: ctx.config.runs.maxIoBytes }, ctx.now)
+    if (item.evidence) recordRunEvidence(stateDir, record.issue, item.evidence, path, ctx.now)
+  }
+}
+
 const escalateTracker = async (ctx: Context, record: DispatchRecordFile, kind: 'stuck' | 'blocked' | 'abandoned', body: string, actions: string[]): Promise<void> => {
   if (ctx.dryRun) { actions.push(`would mark ${kind} in ${ctx.tracker.id} and Orca`); return }
   const workerOutput = await captureWorkerOutput(ctx, record.terminal)
   const fullBody = workerOutput ? `${body}\n\n<details><summary>Worker's last terminal output</summary>\n\n\`\`\`\n${workerOutput}\n\`\`\`\n\n</details>` : body
-  if (workerOutput) actions.push('captured worker terminal output for the escalation')
+  if (workerOutput) { actions.push('captured worker terminal output for the escalation'); recordRunIo(ctx.loaded.stateDir, record.issue, { direction: 'output', stage: 'build', role: 'worker-terminal', content: workerOutput, extension: 'txt', maxBytes: ctx.config.runs.maxIoBytes }, ctx.now) }
   try {
     await ctx.tracker.comment({ issue: record.issue, body: `${fullBody}\n\n<!-- loop:${kind}:${record.leaseId} -->`, dedupeKey: `${kind}:${record.issue}:${record.leaseId}` })
     if (ctx.tracker.id === 'github') await ctx.tracker.transitions.transition({ tracker: ctx.tracker.id, issue: record.issue, to: ctx.config.linear.blockedLabel, reason: `loop ${kind}` })
@@ -934,6 +957,7 @@ ${marker}` }); actions.push('secret-file hold commented') } catch (error) { acti
   // A record with no worktree path predates the worktree or lost it: the harness cannot read anything there, and
   // blaming the worker for a file nobody can look for is how a loop invents work.
   const artifacts = record.worktreePath ? readPhaseArtifacts(record.worktreePath, config) : []
+  if (!ctx.dryRun) recordWorkerArtifacts(ctx, record)
   // Same source as `tick` used when it decided whether to run the planner at all (`tick.ts:554`). Reading
   // `worker.plan.enabled` directly here meant a flow that turned the planner off still had deliver demand a
   // `plan.md` the worker was never asked to write, and send it back a fix round for the omission.
@@ -942,6 +966,27 @@ ${marker}` }); actions.push('secret-file hold commented') } catch (error) { acti
   if (absentArtifacts.length) {
     const detail = absentArtifacts.map((artifact) => `\`${artifact.file}\` — ${artifact.detail}`).join('; ')
     return fixRound(ctx, record, lease, state, pr, 'review', `Loop: PR #${pr.number} cannot be checked because the phase artifact(s) the loop reads are not there: ${detail}. Write each file at the root of this worktree, commit and push. \`verify.json\` is \`{ "ranAt": "<iso>", "command": "<what you ran>", "exitCode": 0, "outcomes": [{ "id": "<outcome id>", "status": "passed", "evidence": "<the line that proves it>" }] }\`.`, `missing phase artifact(s): ${absentArtifacts.map((artifact) => artifact.file).join(', ')}`, actions)
+  }
+
+  // ADR-0041: the rendered spec travels in the PR unchanged. Re-rendered from the same frozen contract and plan, so a
+  // copy that differs is drift from the contract, not a formatting nit — it goes back as a fix round naming the file.
+  if (config.spec.enabled && record.worktreePath) {
+    const stored = readStoredContract(ctx.loaded.stateDir, record.issue)
+    if (stored) {
+      const plan = workerPhaseEnabled(config, flow.flow, 'planner', config.worker.plan.enabled) ? readStoredPlan(ctx.loaded.stateDir, record.issue) : null
+      const expected = renderSpec({ issue: record.issue, url: record.url, contract: stored, plan })
+      const spec = await checkSpec(ctx.runner, record.worktreePath, config, record.issue, expected)
+      const problems = [
+        ...spec.missing.map((file) => `\`${file}\` is missing`),
+        ...spec.drifted.map((file) => `\`${file}\` differs from what the frozen contract renders`),
+        ...spec.uncommitted.map((file) => `\`${file}\` is not committed`),
+      ]
+      if (problems.length) {
+        if (spec.missing.length || spec.drifted.length) writeSpec(record.worktreePath, config, record.issue, expected)
+        return fixRound(ctx, record, lease, state, pr, 'review', `Loop: the spec for ${record.issue} is not in PR #${pr.number} as rendered: ${problems.join('; ')}. The loop has restored the rendered files in \`${specDirFor(config, record.issue)}/\` — commit them unchanged and push. If the spec itself is wrong, say so in the PR body; it changes when the contract does.`, `spec not as rendered: ${problems.join('; ')}`, actions)
+      }
+      actions.push(`spec ${specDirFor(config, record.issue)}/ committed as rendered`)
+    }
   }
 
   // Both DoD lists, proven, before anything merges: the project's (`dod.items`) and the issue's (the frozen
@@ -1281,6 +1326,22 @@ export const runDeliver = async (input: DeliverInput): Promise<DeliverReport> =>
       const pullRequest: LifecyclePullRequest | null = result.pr === undefined ? null : { number: result.pr, state: result.outcome === 'merged' ? 'MERGED' : result.outcome === 'abandoned' ? 'CLOSED' : 'OPEN', ...(result.head ? { head: result.head } : {}) }
       const syncError = result.actions.find((action) => action.includes('review sync failed')) ?? null
       lifecycle.upsert({ issue: result.issue, runId: run.id, runStatus: status ?? run.status, stage, deliveryOutcome: result.outcome, pullRequest, error: result.outcome === 'failed' ? result.reason : syncError, finalFailure: ['blocked', 'stuck'].includes(result.outcome), events: [{ type: result.outcome === 'held' ? 'worker.held' : result.outcome === 'waiting' ? 'worker.waiting' : 'worker.reviewed', reason: result.reason }], now: now() })
+    }
+  }
+
+  // ADR-0041: one living comment per PR with the run behind it — edited in place, re-posted only when the run changed.
+  if (!dryRun && config.runs.prSummary) {
+    for (const result of results) {
+      if (result.pr === undefined) continue
+      const report = readAgentRunReport(loaded.stateDir, result.issue)
+      if (!report) continue
+      const body = renderRunSummaryMarkdown(report)
+      const digest = sha256(body)
+      if (report.state.summaryDigest === digest) continue
+      try {
+        await scm.upsertComment({ number: result.pr, body, marker: runSummaryMarker(result.issue) })
+        markRunSummaryPosted(loaded.stateDir, report.state.runId, digest)
+      } catch (error) { notes.push(`run summary on PR #${result.pr} failed: ${message(error)}`) }
     }
   }
 

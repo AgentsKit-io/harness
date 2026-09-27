@@ -13,7 +13,7 @@ timestamp) and `type` on top of the fields below. A plugin subscribes with
 The vocabulary is enforced by the compiler: `appendLoopEvent` accepts only these names, so an event that is not
 here cannot be emitted — and a name here that nothing emits fails the test suite.
 
-84 loop events.
+85 loop events.
 
 ## `contract.*`
 
@@ -43,7 +43,7 @@ here cannot be emitted — and a name here that nothing emits fails the test sui
 
 | Event | Carries | What it means |
 |---|---|---|
-| `worker.dispatched` | `issue`, `worktree`, `worktreeId`, `branch`, `terminal`, `provider`, `model`, `effort`, `contractDigest`, `briefDigest`, `command`, `briefAccepted`, `tuiIdle`, `workerGuardInstalled` | A worker was launched in its own worktree. Carries the whole dispatch record plus the command that ran. |
+| `worker.dispatched` | `issue`, `worktree`, `worktreeId`, `branch`, `terminal`, `provider`, `model`, `effort`, `contractDigest`, `briefDigest`, `command`, `briefAccepted`, `tuiIdle`, `workerGuardInstalled`, `maxFixRounds` | A worker was launched in its own worktree. Carries the whole dispatch record plus the command that ran. |
 | `worker.dispatch-failed` | `issue`, `error` | The dispatch itself failed — worktree, terminal or brief — before any work started. |
 | `worker.setup` | `issue`, `worktreeId`, `ok` | `project.setup.command` ran in the fresh worktree. |
 | `worker.nudged` | `issue`, `kind`, `reason`, `worktreeId` | An idle worker was nudged in its own terminal — and also the terminal outcome `nudged`, which ends a delivery pass on the same issue. Two emissions, one name: `kind` is present on the first, `reason` on the second. |
@@ -218,6 +218,7 @@ here cannot be emitted — and a name here that nothing emits fails the test sui
 | `ui.cleanup-completed` | `issue`, `runId` | Cancellation cleanup (terminal, worktree, lease, tracker state) finished for a run. |
 | `ui.cleanup-failed` | `issue`, `runId`, `detail` | Cancellation cleanup failed partway; the run is held for a human to inspect. |
 | `ui.issue-decided` | `issue`, `action` | A human resolved a `needs-decision` issue (a PR closed without merge): close it for good, or reopen it for a fresh run. The only decision type in the control plane that isn't a structured HITL question — there is nothing to ask the LLM, the tracker state already says what happened. |
+| `ui.tracker-sync-resolved` | `issue`, `action` | A human settled a `tracker.sync-failed` for an issue from the control plane: `action` is `retry` (the tracker update was re-applied and succeeded) or `dismiss` (a person accepted the tracker's current state). Earlier sync failures for the issue stop showing in Attention. |
 
 ## Harness run events
 

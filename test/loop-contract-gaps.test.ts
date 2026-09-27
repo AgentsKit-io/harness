@@ -3,9 +3,16 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import {
-  extractResetsAt, generateContract, parseLinearIssueDetail, parseStructuredContractOutput, readStoredContract, resolveDocContext, validateLoopConfig,
+  CONTRACT_JSON_SCHEMA, extractResetsAt, generateContract, parseLinearIssueDetail, parseStructuredContractOutput, readStoredContract, resolveDocContext, validateLoopConfig,
 } from '../src/index.js'
 import type { CommandResult, CommandRunner, RankedModel } from '../src/index.js'
+
+describe('CONTRACT_JSON_SCHEMA', () => {
+  it('requires id/title/description on every hitl option (regression: 2026-09-26 — a bare `{ type: "array" }` with no `items` shape let providers omit them, which TaskContractSchema\'s Zod then rejected as "expected string, received undefined" on every retry, e.g. AGE-1872 and AGE-1612 on a real project)', () => {
+    const optionsSchema = CONTRACT_JSON_SCHEMA.properties.hitl.items.properties.options as { readonly items?: { readonly required?: readonly string[] } }
+    expect(optionsSchema.items?.required).toEqual(['id', 'title', 'description'])
+  })
+})
 
 describe('extractResetsAt', () => {
   it('parses a relative "resets in Nh" or "resets in Nm" phrase', () => {
@@ -106,7 +113,8 @@ describe('generateContract', () => {
     const calls: Array<{ provider: string; model: string; exitCode: number | null; timedOut: boolean }> = []
     const runner: CommandRunner = { run: async (): Promise<CommandResult> => ({ code: 0, stdout: `<<<LOOP_CONTRACT\n${JSON.stringify({ intent: 'x', scope: { inScope: ['a'] }, outcomes: [], ambiguities: [], touchpoints: [], risks: [] })}\nLOOP_CONTRACT>>>`, stderr: '', timedOut: false, durationMs: 42 }) }
     await generateContract({ runner, config, root: '/tmp', issue, candidates: [candidate()], references: [], onProviderCall: (event) => { calls.push(event) } })
-    expect(calls).toEqual([{ provider: 'codex', model: candidate().model, effort: candidate().effort, durationMs: 42, exitCode: 0, timedOut: false, stdoutBytes: expect.any(Number), stderrBytes: expect.any(Number) }])
+    expect(calls).toEqual([{ provider: 'codex', model: candidate().model, effort: candidate().effort, durationMs: 42, exitCode: 0, timedOut: false, stdoutBytes: expect.any(Number), stderrBytes: expect.any(Number), io: { prompt: expect.stringContaining(issue.identifier), stdout: expect.stringContaining('LOOP_CONTRACT') } }])
+    // `io` is for the issue's run (ADR-0041), redacted there; `tick` strips it before the event reaches events.ndjson.
   })
 
   it('reports a missing headless argv template as a failure and exhausts all candidates', async () => {
