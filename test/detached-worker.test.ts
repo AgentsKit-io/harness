@@ -1,4 +1,4 @@
-import { mkdtempSync, readFileSync, rmSync } from 'node:fs'
+import { mkdtempSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { EventEmitter } from 'node:events'
@@ -57,5 +57,17 @@ describe('spawnDetachedWorker', () => {
     state.pid = undefined
     const result = spawnDetachedWorker({ command: 'ak-harness', args: [], cwd: dir, logPath: join(dir, 'a.log') })
     expect(result.pid).toBeNull()
+  })
+
+  it('rotates the log to one previous generation once it passes the size cap, instead of growing forever', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'agentskit-detached-worker-')); cleanups.push(dir)
+    const logPath = join(dir, 'tick-worker.log')
+    writeFileSync(logPath, 'x'.repeat(200))
+    spawnDetachedWorker({ command: 'ak-harness', args: [], cwd: dir, logPath, maxLogBytes: 100 })
+    expect(statSync(logPath).size).toBe(0)
+    expect(readFileSync(`${logPath}.1`, 'utf8')).toBe('x'.repeat(200))
+    writeFileSync(logPath, 'y'.repeat(50))
+    spawnDetachedWorker({ command: 'ak-harness', args: [], cwd: dir, logPath, maxLogBytes: 100 })
+    expect(readFileSync(logPath, 'utf8')).toBe('y'.repeat(50))
   })
 })

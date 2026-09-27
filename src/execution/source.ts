@@ -7,8 +7,10 @@ import { fail } from '../kernel/errors.js'
 import type { SourceSnapshot } from '../kernel/types.js'
 
 const execFileAsync = promisify(execFile)
+// A failed git call (or output past execFile's 1 MiB default maxBuffer) used to read as '' and hash as
+// "unchanged", approving a stale run as current. It now fails closed, with room for any realistic diff.
 const git = async (root: string, args: readonly string[]): Promise<string> => {
-  try { return (await execFileAsync('git', ['-C', root, ...args], { encoding: 'utf8' })).stdout.trim() } catch { return '' }
+  try { return (await execFileAsync('git', ['-C', root, ...args], { encoding: 'utf8', maxBuffer: 256 * 1024 * 1024 })).stdout.trim() } catch (error) { return fail(`git ${args[0] ?? ''} failed: ${error instanceof Error ? error.message : String(error)}`) }
 }
 
 /**
@@ -25,7 +27,7 @@ export const statusLineIsPath = (line: string, relativePath: string): boolean =>
 }
 
 export const sourceSnapshot = async (root: string, stateDir: string): Promise<SourceSnapshot> => {
-  const revision = await git(root, ['rev-parse', 'HEAD'])
+  const revision = await git(root, ['rev-parse', 'HEAD']).catch(() => '')
   if (!revision) fail('Current-source evidence requires a Git repository with a committed HEAD.', 'GIT_REQUIRED')
   const stateRelative = relative(root, stateDir).replaceAll('\\', '/')
   const pathspec = ['--', '.']
