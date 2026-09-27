@@ -6,7 +6,7 @@ import { fail } from '../kernel/errors.js'
 import { extractOutputBlock } from './output-block.js'
 import { hashJson } from '../kernel/hash.js'
 import { providerIdentity, renderHeadlessArgv, type LoadedLoopConfig, type LoopConfig } from './config.js'
-import { classifyProviderFailure, untrusted, type ProviderFailure } from './contract.js'
+import { classifyProviderFailure, providerFailureDetail, untrusted, type ProviderFailure } from './contract.js'
 import { writeJsonAtomic } from './fs-atomic.js'
 import { designExcerptFor } from './documents.js'
 import { renderLayersForPrompt } from './layers.js'
@@ -247,7 +247,7 @@ const callHeadless = async (input: { readonly runner: CommandRunner; readonly co
   const argv = renderHeadlessArgv(settings, input.candidate.model, input.prompt, input.candidate.effort)
   if (!argv) return { failure: { provider: input.candidate.provider, model: input.candidate.model, kind: 'other', detail: `no headless argv template (models.providers.${input.candidate.provider}.headless)` } }
   const outcome = await input.runner.run(argv, { timeoutMs: input.timeoutMs, cwd: input.root, promptOnStdin: true })
-  const detail = `${outcome.stderr.trim()}\n${outcome.stdout.trim()}`.trim().slice(0, 600)
+  const detail = providerFailureDetail(outcome)
   if (outcome.timedOut || outcome.code !== 0) return { failure: { provider: input.candidate.provider, model: input.candidate.model, kind: classifyProviderFailure(detail, outcome.timedOut), detail: outcome.timedOut ? `timed out after ${input.timeoutMs}ms` : `exited ${outcome.code ?? 'null'}: ${detail || 'no output'}` } }
   return { stdout: outcome.stdout }
 }
