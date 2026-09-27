@@ -18,7 +18,13 @@ import { emptyProjection, overlayLiveState, reduce, type Decision, type IssueRec
  * read) — `queue.json` and `hitl/requests/*.json` stay exactly where the engine already keeps them.
  */
 
-const PROJECTION_SCHEMA_VERSION = 1 as const
+/**
+ * Bump whenever `reduce()` or the seed/reconcile mapping changes what a stored record means. A persisted projection
+ * or cursor from another version fails its schema, so the next sync rebuilds from engine state plus a full event
+ * replay. Without the bump a reducer fix never reaches records already folded by the old reducer: law-os kept
+ * AGE-1751 in `review` (old `worker.nudged` mapping) and AGE-1753 on its pre-handoff model after #144 shipped.
+ */
+const PROJECTION_SCHEMA_VERSION = 2 as const
 
 interface Cursor { readonly schemaVersion: typeof PROJECTION_SCHEMA_VERSION; readonly lastEventAt: string; readonly seenAtSameMs: readonly string[] }
 const cursorSchema = z.object({ schemaVersion: z.literal(PROJECTION_SCHEMA_VERSION), lastEventAt: z.string(), seenAtSameMs: z.array(z.string()) })
