@@ -173,11 +173,23 @@ export const reduce = (state: ProjectionState, event: LoopEvent): ProjectionStat
       return withIssue(state, issue, at, (record) => ({ ...record, phase: 'needs-decision' }))
     case 'worker.failed':
       return withIssue(state, issue, at, (record) => ({ ...record, phase: 'blocked', error: strOrNull(event['reason']) ?? record.error }))
+    // Deliver emits these before a PR exists too (nudging an idle worker, handing off, waiting): without a PR the
+    // worker is still implementing, so the issue stays `running` — calling it review showed never-started workers
+    // (law-os AGE-1751/1753, brief typed into a bare shell) as work awaiting review.
     case 'worker.waiting':
+    case 'worker.nudged':
+      return withIssue(state, issue, at, (record) => ({ ...record, phase: record.pullRequest ? 'review' : 'running' }))
+    // The worker now runs on another provider/model: the dispatch the UI shows must say so (`to` is `provider/model`).
+    case 'worker.handed-off': {
+      const to = strOrNull(event['to'])
+      const slash = to ? to.indexOf('/') : -1
+      return withIssue(state, issue, at, (record) => ({
+        ...record, phase: record.pullRequest ? 'review' : 'running',
+        dispatch: record.dispatch && to && slash > 0 ? { ...record.dispatch, provider: to.slice(0, slash), model: to.slice(slash + 1) } : record.dispatch,
+      }))
+    }
     case 'worker.reviewed':
     case 'worker.fix-round':
-    case 'worker.nudged':
-    case 'worker.handed-off':
     case 'worker.needs-input':
       return withIssue(state, issue, at, (record) => ({ ...record, phase: 'review' }))
     // A finished (blocked/stuck) delivery resumed on its open PR — by a new head or by the operator's Retry.

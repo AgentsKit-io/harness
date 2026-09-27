@@ -153,3 +153,22 @@ describe('the runner observation overlay', () => {
     expect(overlayRunnerObservation(reviewed, { number: 226, state: 'OPEN' })).toBe(reviewed)
   })
 })
+
+describe('worker events before a PR exists', () => {
+  it('keeps an issue running while deliver nudges or waits on a worker with no PR, and moves it to review once one exists', () => {
+    // Live (law-os AGE-1751/1753): a brief nudge on a worker that never started showed the issue as in review.
+    const nudged = fold([enqueued, dispatched, { at: at(2), type: 'worker.nudged', issue: 'ENG-1', kind: 'brief' }])
+    expect(nudged.issues['ENG-1']!.phase).toBe('running')
+    const waiting = fold([enqueued, dispatched, { at: at(2), type: 'worker.waiting', issue: 'ENG-1', reason: 'worker active' }])
+    expect(waiting.issues['ENG-1']!.phase).toBe('running')
+    const withPr = fold([enqueued, dispatched, { at: at(2), type: 'worker.ci-round', issue: 'ENG-1', pr: 7, head: 'h', round: 1 }, { at: at(3), type: 'worker.nudged', issue: 'ENG-1', kind: 'ci' }])
+    expect(withPr.issues['ENG-1']!.phase).toBe('review')
+  })
+})
+
+describe('handoff', () => {
+  it('shows the provider/model the worker was handed off to', () => {
+    const state = fold([enqueued, dispatched, { at: at(2), type: 'worker.handed-off', issue: 'ENG-1', from: 'codex/gpt', to: 'pi-minimax/M3', worktreeId: 'wt-1', branch: 'you/eng-1', reason: 'codex stalled', briefAccepted: true }])
+    expect(state.issues['ENG-1']).toMatchObject({ phase: 'running', dispatch: { provider: 'pi-minimax', model: 'M3', worktreeId: 'wt-1' } })
+  })
+})
