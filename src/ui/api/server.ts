@@ -400,7 +400,7 @@ export const startUiServer = async (options: UiServerOptions = {}): Promise<UiSe
           }
           if (request.method === 'POST' && operation === 'retry') {
             if (!record?.run) return sendJson(response, 404, { error: 'run_not_found' })
-            retryRun(context, issue, record.run.id)
+            await retryRun(context, issue, record.run.id)
             bestEffortTick(context.loaded, context.runner, issue)
             return sendJson(response, 202, { issue })
           }

@@ -81,7 +81,7 @@ describe('the control-plane action surface', () => {
     const first = enqueueRun(context, { issue: 'ENG-3', configHash: 'hash', flow: null, builder: { provider: 'codex', model: 'gpt' }, contractDigest: 'digest-1', maxFixRounds: 3, perIssueTokens: 0 })
     // queue.ts only allows retrying a non-active run — cancel it first, the same way the UI would before a retry.
     await cancelRun(context, 'ENG-3', first.runId)
-    const { runId } = retryRun(context, 'ENG-3', first.runId)
+    const { runId } = await retryRun(context, 'ENG-3', first.runId)
     expect(runId).not.toBe(first.runId)
     expect(readCurrentProjection(context.loaded.stateDir).issues['ENG-3']!.run).toMatchObject({ id: runId, attempt: 2 })
     // Archiving requires a terminal run — the original (already cancelled) attempt, not the freshly retried one.
@@ -156,7 +156,7 @@ describe('the control-plane action surface', () => {
     await cancelRun(context, 'ENG-31', first.runId)
     mkdirSync(join(context.loaded.stateDir, 'issues', 'ENG-31'), { recursive: true })
     writeFileSync(join(context.loaded.stateDir, 'issues', 'ENG-31', 'restarts.json'), JSON.stringify({ at: ['2026-09-10T00:00:00.000Z', '2026-09-10T01:00:00.000Z'] }))
-    retryRun(context, 'ENG-31', first.runId)
+    await retryRun(context, 'ENG-31', first.runId)
     expect(readRestarts(context.loaded.stateDir, 'ENG-31')).toEqual([])
   })
 
@@ -178,17 +178,36 @@ describe('retry after a failed delivery', () => {
     createIssueQueue({ stateDir: context.loaded.stateDir }).update(runId, { status: 'completed', projection: { stage: 'pr-open', pullRequest: 3 } })
     const delivery = (finalOutcome: string) => writeJsonAtomic(deliveryStatePath(context.loaded.stateDir, issue), { issue, prNumber: 3, reviews: { abc1234: { status: 'findings' } }, fixRounds: 2, nudges: [{ kind: 'ci' }], handoffs: [], heldFor: null, finishedAt: '2026-09-27T00:00:00.000Z', finalOutcome, cancelledAt: null })
     delivery('merged')
-    expect(() => retryRun(context, issue, runId)).toThrow(/got completed/)
+    await expect(retryRun(context, issue, runId)).rejects.toThrow(/got completed/)
     delivery('blocked')
-    expect(retryRun(context, issue, runId)).toEqual({ runId })
+    expect(await retryRun(context, issue, runId)).toEqual({ runId })
     expect(readDeliveryState(context.loaded.stateDir, issue)).toMatchObject({ prNumber: 3, finishedAt: null, finalOutcome: null, fixRounds: 0, nudges: [] })
     expect(createIssueQueue({ stateDir: context.loaded.stateDir }).list().filter((run) => run.issue === issue)).toHaveLength(1)
     expect(readCurrentProjection(context.loaded.stateDir).issues[issue]).toMatchObject({ phase: 'review', error: null })
 
     // Blocked after two incomplete reviews (law-os AGE-1839): Retry drops the incomplete attempts, keeps real verdicts.
     writeJsonAtomic(deliveryStatePath(context.loaded.stateDir, issue), { issue, prNumber: 3, reviews: { abc1234: { status: 'findings' }, def5678: { status: 'incomplete', attempts: 2 } }, fixRounds: 0, nudges: [], handoffs: [], heldFor: null, finishedAt: '2026-09-27T02:00:00.000Z', finalOutcome: 'blocked', cancelledAt: null })
-    expect(retryRun(context, issue, runId)).toEqual({ runId })
+    expect(await retryRun(context, issue, runId)).toEqual({ runId })
     expect(Object.keys(readDeliveryState(context.loaded.stateDir, issue).reviews)).toEqual(['abc1234'])
+  })
+
+  it('resumes on a PR the worker opened after its delivery had already stopped, instead of queueing a fresh attempt', async () => {
+    // Live (law-os AGE-1753): blocked with prNumber null, then the worker opened PR #30; Retry queued attempt 2.
+    const { createIssueQueue } = await import('../src/loop/queue.js')
+    const { deliveryStatePath, readDeliveryState } = await import('../src/loop/deliver.js')
+    const { writeFileSync } = await import('node:fs')
+    const context = contextFor()
+    const issue = 'AGE-1753'
+    const branch = 'you/age-1753-keystone'
+    const runner: CommandRunner = { run: async (argv): Promise<CommandResult> => ({ code: 0, stdout: argv[0] === 'gh' && argv[1] === 'pr' && argv[2] === 'list' ? JSON.stringify([{ number: 30, state: 'OPEN', headRefName: branch, headRefOid: 'abc1234' }]) : '', stderr: '', timedOut: false, durationMs: 1 }) }
+    const { runId } = enqueueRun(context, { issue, configHash: 'hash', flow: null, builder: { provider: 'pi-minimax', model: 'M3' }, contractDigest: 'd', maxFixRounds: 2, perIssueTokens: 0 })
+    createIssueQueue({ stateDir: context.loaded.stateDir }).update(runId, { status: 'blocked' })
+    mkdirSync(join(context.loaded.stateDir, 'issues', issue), { recursive: true })
+    writeFileSync(join(context.loaded.stateDir, 'issues', issue, 'dispatch.json'), JSON.stringify({ issue, worktreeId: 'wt', worktree: 'w', branch, provider: 'pi-minimax', model: 'M3', dispatchedAt: '2026-09-27T00:00:00.000Z' }))
+    writeJsonAtomic(deliveryStatePath(context.loaded.stateDir, issue), { issue, prNumber: null, reviews: {}, fixRounds: 0, nudges: [], handoffs: [], heldFor: null, finishedAt: '2026-09-27T01:00:00.000Z', finalOutcome: 'blocked', cancelledAt: null })
+    expect(await retryRun({ ...context, runner }, issue, runId)).toEqual({ runId })
+    expect(readDeliveryState(context.loaded.stateDir, issue)).toMatchObject({ prNumber: 30, finishedAt: null, finalOutcome: null })
+    expect(createIssueQueue({ stateDir: context.loaded.stateDir }).list().filter((run) => run.issue === issue)).toHaveLength(1)
   })
 
   it('a resumed failed delivery gets its error budget, failed-at head and tracker state back; a cancelled run is never resumed', async () => {
@@ -201,13 +220,13 @@ describe('retry after a failed delivery', () => {
     queue.update(runId, { status: 'completed', projection: { stage: 'pr-open', pullRequest: 3 } })
     const failed = { issue, prNumber: 3, reviews: {}, fixRounds: 1, nudges: [], handoffs: [], heldFor: null, finishedAt: '2026-09-27T00:00:00.000Z', finalOutcome: 'failed', cancelledAt: null, consecutiveErrors: 3, failedAtHead: 'feed123', trackerState: 'Blocked' }
     writeJsonAtomic(deliveryStatePath(context.loaded.stateDir, issue), failed)
-    expect(retryRun(context, issue, runId)).toEqual({ runId })
+    expect(await retryRun(context, issue, runId)).toEqual({ runId })
     expect(readDeliveryState(context.loaded.stateDir, issue)).toMatchObject({ finalOutcome: null, consecutiveErrors: 0, failedAtHead: null, trackerState: null })
 
     // Cancelled after its delivery gave up: cleanup already tore it down, so Retry starts a fresh attempt instead.
     writeJsonAtomic(deliveryStatePath(context.loaded.stateDir, issue), { ...failed, cancelledAt: '2026-09-27T01:00:00.000Z' })
     queue.update(runId, { status: 'cancelled' })
-    const fresh = retryRun(context, issue, runId)
+    const fresh = await retryRun(context, issue, runId)
     expect(readDeliveryState(context.loaded.stateDir, issue)).toMatchObject({ finalOutcome: 'failed', cancelledAt: '2026-09-27T01:00:00.000Z' })
     expect(fresh.runId).not.toBe(runId)
   })
