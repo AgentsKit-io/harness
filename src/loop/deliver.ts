@@ -128,7 +128,10 @@ export const readDeliveryState = (stateDir: string, identifier: string): Deliver
 /** Keep a cancelled dispatch visible as historical evidence without letting it consume a worker slot. */
 export const markDispatchCancelled = (stateDir: string, identifier: string, at = new Date()): DeliveryState => {
   const state = readDeliveryState(stateDir, identifier)
-  const next: DeliveryState = { ...state, finishedAt: state.finishedAt ?? at.toISOString(), heldFor: null, cancelledAt: state.cancelledAt ?? at.toISOString() }
+  // Keep an existing mark only while it still postdates the delivery it cancels; one left over from an earlier attempt
+  // (older than this delivery's finishedAt) would make the new cancellation invisible to every reader (vivva #217).
+  const current = state.cancelledAt && (!state.finishedAt || state.cancelledAt >= state.finishedAt) ? state.cancelledAt : null
+  const next: DeliveryState = { ...state, finishedAt: state.finishedAt ?? at.toISOString(), heldFor: null, cancelledAt: current ?? at.toISOString() }
   writeJsonAtomic(deliveryStatePath(stateDir, identifier), next)
   return next
 }
