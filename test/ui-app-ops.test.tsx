@@ -98,6 +98,12 @@ describe('confirm basis', () => {
     expect(basis.find((row) => row.label === 'PR head')?.value).toBe('abcdef1')
   })
 
+  it('does not count the lock itself as stale when the action is reconcile (explicit lockReason: null)', () => {
+    const snap = snapshot([record()], { freshness: [], drift: [], attention: [], locks: { 'AK-1': 'Loop and tracker disagree' }, staleAfterMs: 60_000 })
+    expect(confirmBasis(snap, 2_000, { issue: 'AK-1', lockReason: null }).some((row) => row.label === 'out of sync')).toBe(false)
+    expect(confirmBasis(snap, 2_000, { issue: 'AK-1' }).some((row) => row.label === 'out of sync')).toBe(true)
+  })
+
   it('treats an older server without extras as fresh rather than blocking every action', () => {
     expect(confirmBasis(snapshot([record()]), 2_000, { issue: 'AK-1' }).every((row) => !row.stale)).toBe(true)
   })
@@ -130,6 +136,13 @@ describe('attention components', () => {
     const html = renderToStaticMarkup(<AttentionCard color="text-drift" now={Date.parse(AT)} busy={null} onAction={noop} onAnswer={noop}
       item={item({ group: 'drift', locked: true, lockReason: 'Locked until reconciled', actions: [{ id: 'cancel', label: 'Cancel', primary: false, destructive: true, gate: false }] })} />)
     expect(html).toContain('Locked until reconciled')
+    expect(html).toMatch(/<button[^>]*disabled=""[^>]*>Cancel<\/button>/)
+  })
+
+  it('keeps Reconcile enabled on a locked drift item — it is the action that clears the lock', () => {
+    const html = renderToStaticMarkup(<AttentionCard color="text-drift" now={Date.parse(AT)} busy={null} onAction={noop} onAnswer={noop}
+      item={item({ group: 'drift', locked: true, lockReason: 'Loop and tracker disagree', actions: [{ id: 'reconcile', label: 'Reconcile', primary: true, destructive: true, gate: false }, { id: 'cancel', label: 'Cancel', primary: false, destructive: true, gate: false }] })} />)
+    expect(html).not.toMatch(/<button[^>]*disabled=""[^>]*>Reconcile<\/button>/)
     expect(html).toMatch(/<button[^>]*disabled=""[^>]*>Cancel<\/button>/)
   })
 
