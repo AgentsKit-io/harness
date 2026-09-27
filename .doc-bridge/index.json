@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
-  "contentHash": "693578e87275c1aee78a8135cdca7cd6bac5f5646250932b024a487ebf0cfb6f",
+  "contentHash": "b24cf68f348cbde0274d40e6f18d9dea209faaced50a7f4e0062c61373ca0a68",
   "contentHashAlgo": "sha256-normalized-v1",
-  "generatedAt": "2026-09-27T17:57:57.282Z",
+  "generatedAt": "2026-09-27T17:56:52.366Z",
   "project": {
     "name": "AgentsKit Harness",
     "root": "."
@@ -298,12 +298,12 @@
       "type": "document",
       "title": "Changelog",
       "path": "CHANGELOG.md",
-      "description": "Review floor decides. A reviewer that exits 1 (or reports blocking) on findings all below delivery.review.minSeverity is clean, not \"findings\" with nothing to fix — delivery no longer waits forever for a push nobody needs. A reviewer claiming blocking with no finding at all is incomplete, never a merge (#133).",
+      "description": "Lost-track restart. A run whose worker terminal is gone, or that stays idle after a check-in, before any PR is aborted and re-dispatched from scratch (bounded, worker.lost-tracking/worker.restarted) (#147).",
       "tags": [
         "document",
         "project"
       ],
-      "contentHash": "c3e3834524ed8aca11404c8e5d8c8b925e5ad954b70dbc4dd8cdb7bc91a8803e"
+      "contentHash": "90cbd7b1f0832f5bd095d71723e6e8d6c53b30d96be597562949c31706ce3042"
     },
     {
       "id": "document:CLAUDE.md",
@@ -992,14 +992,14 @@
     {
       "id": "document:release/notes.md",
       "type": "document",
-      "title": "0.22.2 release candidate",
+      "title": "0.22.3 release candidate",
       "path": "release/notes.md",
       "description": "The control plane (ak-harness ui) becomes the operator's single place to see what needs them and act on it safely, plus the loop fixes found running it against a real repository since 0.19.0. CHANGELOG.md has the full list; docs/ADR-0040 records the decisions.",
       "tags": [
         "document",
         "unclassified"
       ],
-      "contentHash": "64e6b95f9fb8fac561c81bdf4fca0e4fc18665c57f0be3174773e13fdd483efa"
+      "contentHash": "f06c62a2c75a5eb3420056f6c63c55b3fdb44fdab94f950e1aa985fa10d3ef3e"
     },
     {
       "id": "document:SECURITY.md",
@@ -3862,7 +3862,6 @@
         "generateContract",
         "parseContractOutput",
         "parseStructuredContractOutput",
-        "providerFailureDetail",
         "readStoredContract",
         "renderContractPrompt",
         "resolveDocContext",
@@ -3874,7 +3873,7 @@
         "ts",
         "loop"
       ],
-      "contentHash": "634a5a2d9eb3c7acff5e505d9420329a44fc2c35707d3d213c8198fe130143cc"
+      "contentHash": "f49b21f3aa9b229b9c26ddc69baf1fc4e04d1b4864c5c91cb18df3806d769b07"
     },
     {
       "id": "module:src/loop/cooldown.ts",
@@ -3930,6 +3929,7 @@
         "DeliveryState",
         "MAX_LOST_TRACKING_RESTARTS",
         "approveHeldDelivery",
+        "clearRestarts",
         "deliveryStatePath",
         "listDispatched",
         "markDispatchCancelled",
@@ -3938,14 +3938,15 @@
         "readRestarts",
         "runDeliver",
         "workerAtUsageLimit",
-        "workerAwaitingPermission"
+        "workerAwaitingPermission",
+        "workerDeclaredBlocked"
       ],
       "tags": [
         "module",
         "ts",
         "loop"
       ],
-      "contentHash": "6ca531b2e7a9d3f8a3200169c46abf434e2abecac7acc066ab2384b3eeafcde6"
+      "contentHash": "d158b75b20ac34d080658f0219f576477f6b39db87202cecfc257acd1cfa8b90"
     },
     {
       "id": "module:src/loop/detached-worker.ts",
@@ -4845,7 +4846,7 @@
         "ts",
         "loop"
       ],
-      "contentHash": "e86c4e6e339252f250aef916fa84b8fc52291606837fe3d7532585bd1559dbb2"
+      "contentHash": "590ec14311e2b2edbc8626d5a5c782faee394996c63f25b8954b35c8d1a8af64"
     },
     {
       "id": "module:src/loop/plan-vote.ts",
@@ -4883,7 +4884,7 @@
         "ts",
         "loop"
       ],
-      "contentHash": "d5bf179cf0ef6995a8e5df6aa55621c08709adfe0d61ae39ccc7f764124a13c2"
+      "contentHash": "266956830dbbb7f37163985422c73704e250a0e167389e937cc6cae10ff5e52e"
     },
     {
       "id": "module:src/loop/presets.ts",
@@ -5445,7 +5446,7 @@
         "ts",
         "api"
       ],
-      "contentHash": "58ebc1a83f800922b0c2a9ab838f339288f745fdeff6cf4c1526faf068b164b7"
+      "contentHash": "c38b4cff4d190e25736a33339a4610f83b0f8dd2c4026b3360f028418b639cc9"
     },
     {
       "id": "module:src/ui/api/alerts.ts",
@@ -5620,7 +5621,7 @@
         "ts",
         "api"
       ],
-      "contentHash": "b4b0c1166befd3c04ae588c8ef42d83ac371b3de3f7e012fed4ed351677a5e6f"
+      "contentHash": "d8f3a269486f00f390ba0c0a7c2f530be345c79ad56402017d2bd9a13056ba19"
     },
     {
       "id": "module:src/ui/api/http.ts",
@@ -5742,7 +5743,7 @@
         "ts",
         "api"
       ],
-      "contentHash": "8738c37b9b582fbc653f4048e3e1d46e84225d9b88f5283a261e7980bb8eae2e"
+      "contentHash": "19bcf170ee35e5a92a0979359902e5f565f313d018a52c9d4d214f55bcc8c1f8"
     },
     {
       "id": "module:src/ui/api/route-modules.ts",
@@ -5859,7 +5860,7 @@
         "ts",
         "api"
       ],
-      "contentHash": "e5cac85b566b18817c8b74217ad5cb78f35ddd856d5c5962da47ceb68924a3cb"
+      "contentHash": "62bbb50f7627e4ef116ab5d01503483955100fbfbac083d2371ff6602d63cf54"
     },
     {
       "id": "module:src/ui/api/routes.ts",
@@ -5914,7 +5915,7 @@
         "ts",
         "api"
       ],
-      "contentHash": "3ff188fc2d0cd8731fa1ad849d586f1c9526b778cf4009852645f47fd32a7f5c"
+      "contentHash": "450b3baa3a7cba985b68cc9ea7a77777857ef7699bcbdd328c211b29f330139d"
     },
     {
       "id": "module:src/ui/api/store.ts",
@@ -5931,7 +5932,7 @@
         "ts",
         "api"
       ],
-      "contentHash": "05b35851b5d998f0539f07abd16eb456d6e40bc6446a5343884f082c2f7590fd"
+      "contentHash": "3d2a13d0b4c87935e8c483b48ea9eb1ebecada11c6e12749f9159de3645bc7ea"
     },
     {
       "id": "module:src/ui/api/wizard.ts",
@@ -7726,7 +7727,7 @@
         "ts",
         "test"
       ],
-      "contentHash": "3f15195a8ae90bd230b139157d66cf3ffa6b1cf05e947f74d515dae72a08fefc"
+      "contentHash": "75f50d52adbc04b7a5681ec928f42e50364544e5463fd742e313be655ec4913e"
     },
     {
       "id": "module:test/loop-contract-gaps.test.ts",
@@ -7786,7 +7787,7 @@
         "ts",
         "test"
       ],
-      "contentHash": "0e5688e20413e6d8ff08ac9038acf9c4753b84e55e61b35bef402cf34f811c0e"
+      "contentHash": "14c96f428da757c0ff66df81aaa2e35a49ab5046929ee1a86fc0a5a0ebdebc70"
     },
     {
       "id": "module:test/loop-doctor-gaps.test.ts",
@@ -8638,7 +8639,7 @@
         "ts",
         "test"
       ],
-      "contentHash": "d19b0ca30e564fdd48ef533bbd247c3d8cacf4c5959392574c33736f1de06a7c"
+      "contentHash": "bcd526d071ac8bde05778fe9454d1699a42bb5756ba6f4d4d07513e5cbd85f6f"
     },
     {
       "id": "module:test/ui-api-jobs.test.ts",
@@ -8710,7 +8711,7 @@
         "ts",
         "test"
       ],
-      "contentHash": "98224353eb3066bedf5a63a646bc3941116fa6c2399816fa6bfe62e77efc04b9"
+      "contentHash": "969a84e849e3874842673b60ac6f41f98cce2c8aafbd3f7510f957737a92f81f"
     },
     {
       "id": "module:test/ui-core-server.test.ts",
@@ -8794,7 +8795,7 @@
         "ts",
         "test"
       ],
-      "contentHash": "d150d4938401c0371bf6a951aba985d66ad5afd6f6539c319879701565adeae2"
+      "contentHash": "0c8c01310b19c54c54de812dc0ef14a74b038c062bb043c40b1120864b5a8d5e"
     },
     {
       "id": "module:test/ui-system.test.ts",
@@ -8806,7 +8807,7 @@
         "ts",
         "test"
       ],
-      "contentHash": "fd21af76f15c7129c06ccb6bd24aeb54b2398b2ba53830cb058fc081a1357a68"
+      "contentHash": "2cc5639b812de6dd5d1821d2613c5498f885f1f82cf3a34aad321b736a5556cc"
     },
     {
       "id": "module:test/wip.test.ts",
@@ -8954,7 +8955,7 @@
     }
   },
   "inputs": {
-    "hash": "8ca174c5a377ab11ad5e0e818fc6f807bced78122a7ff84a8c44fd50ecc35bd1",
+    "hash": "8afa85039fb5c43667a96f2dd8b908426432e2bd77a8a2a9f28ace82db99a48c",
     "fileCount": 541,
     "projectionVersion": 2
   },
@@ -8977,9 +8978,9 @@
   "projection": {
     "type": "retrieval-index",
     "schemaVersion": 1,
-    "contentHash": "a474215de7b5d78ecf57deff12bc17c0d2dd449027dae56939755d987bcf5ca7",
+    "contentHash": "ac02880708c3df686aa1a58cbfc74c35257be3d92947e567f34cb858ccaad5ba",
     "contentHashAlgo": "sha256-normalized-v1",
-    "snapshotHash": "fac22c3f94b4da212186ecf7f83f042c465c410bf5ab151e8e42e962a4a486f7",
+    "snapshotHash": "360908a6bcdd4b1f62f437064981c9338760fa1d2b3413caa1e4f71fe4f668f7",
     "overlayHash": "f99666ff9119084dd25c2974ae64eb6935ec2aa785ff5ad478fb9d541f7a5e94",
     "configurationHash": "816afaf6a7dc09767f7594d8fd80024612ca0f33becf0e44dde0107fcf2782df",
     "lexiconVersion": 1,
@@ -9011,11 +9012,11 @@
       ],
       "averageFieldLength": {
         "aliases": 2.9254545454545453,
-        "body": 44.11454545454546,
-        "headings": 3.861818181818182,
+        "body": 44.158181818181816,
+        "headings": 3.8636363636363638,
         "path": 6.114545454545454,
-        "summary": 2.6654545454545455,
-        "symbols": 14.278181818181817,
+        "summary": 2.6545454545454548,
+        "symbols": 14.283636363636363,
         "title": 3.949090909090909
       }
     },
@@ -11324,7 +11325,7 @@
         "kind": "document",
         "path": "CHANGELOG.md",
         "title": "Changelog",
-        "summary": "Review floor decides. A reviewer that exits 1 (or reports blocking) on findings all below delivery.review.minSeverity is clean, not \"findings\" with nothing to fix — delivery no longer waits forever for a push nobody needs. A reviewer claiming blocking with no finding at all is incomplete, never a merge (#133).",
+        "summary": "Lost-track restart. A run whose worker terminal is gone, or that stays idle after a check-in, before any PR is aborted and re-dispatched from scratch (bounded, worker.lost-tracking/worker.restarted) (#147).",
         "audience": "human",
         "aliases": [],
         "tags": [
@@ -11333,11 +11334,11 @@
         ],
         "fields": {
           "title": "Changelog",
-          "headings": "Changelog [Unreleased] [0.22.2] — 2026-09-27 [0.22.1] — 2026-09-27 [0.22.0] — 2026-09-27 [0.21.0] — 2026-09-26 [0.20.0] — 2026-09-25 [0.19.0] — 2026-09-23 [0.18.0] - 2026-09-22 Release Hygiene Boundaries Token and time economy Breaking Gates [0.17.0] - 2026-09-22 Worker guard Release can no longer publish past a red gate [0.16.0] - 2026-09-22 Verification and token waste Observability: every deterministic phase, timestamped and attributed Event bus, unified House conventions [0.15.0] - 2026-09-20 The phases of an issue leave evidence behind layers: and documents: — where the work belongs, and where the decisions live Per-role settings, and which phases run at all The four cost levers, finished release.waiting, once per head The event vocabulary, and the compiler that guards it The installed agent is code, not a markdown file to append to Documentation Windows stops being a second-class platform The licence, and a surface for the numbers The harness has a folder of its own The documentation site The twelve steps of the roadmap, in the order they landed loop install reconciles instead of rewriting loop stage observe — the health scan comes into the repository Configuration in four layers, and the loop learns to call a human The roles become installed agents, and the retro can improve them Presets and a grilled loop init intake, maintain, and release notes — the cycle closes Cost: a routing policy, two ceilings, and two of the four levers Connectors: the engine stops naming vendors release — promotion and deploy, with a human in front loop plan — a vague objective becomes issues A plan, voted on, before any worker starts The Definition of Done becomes two lists, both proven on the PR The retro starts improving the loop, within declared limits [0.14.0] - 2026-09-19 The queue stops being \"my issues\" Review strictness that matches the risk Telling the worker the truth about the base branch Memory: recurrence instead of guesswork One human approval covers the goal's own effects Fixes that had never shipped [0.13.0] - 2026-09-14 [0.12.0] - 2026-09-13 [0.11.0] - 2026-09-13 [0.10.0] - 2026-09-12 [0.9.0] - 2026-09-12 [0.8.0] - 2026-09-12 [0.7.0] - 2026-09-12",
+          "headings": "Changelog [Unreleased] [0.22.3] — 2026-09-27 [0.22.2] — 2026-09-27 [0.22.1] — 2026-09-27 [0.22.0] — 2026-09-27 [0.21.0] — 2026-09-26 [0.20.0] — 2026-09-25 [0.19.0] — 2026-09-23 [0.18.0] - 2026-09-22 Release Hygiene Boundaries Token and time economy Breaking Gates [0.17.0] - 2026-09-22 Worker guard Release can no longer publish past a red gate [0.16.0] - 2026-09-22 Verification and token waste Observability: every deterministic phase, timestamped and attributed Event bus, unified House conventions [0.15.0] - 2026-09-20 The phases of an issue leave evidence behind layers: and documents: — where the work belongs, and where the decisions live Per-role settings, and which phases run at all The four cost levers, finished release.waiting, once per head The event vocabulary, and the compiler that guards it The installed agent is code, not a markdown file to append to Documentation Windows stops being a second-class platform The licence, and a surface for the numbers The harness has a folder of its own The documentation site The twelve steps of the roadmap, in the order they landed loop install reconciles instead of rewriting loop stage observe — the health scan comes into the repository Configuration in four layers, and the loop learns to call a human The roles become installed agents, and the retro can improve them Presets and a grilled loop init intake, maintain, and release notes — the cycle closes Cost: a routing policy, two ceilings, and two of the four levers Connectors: the engine stops naming vendors release — promotion and deploy, with a human in front loop plan — a vague objective becomes issues A plan, voted on, before any worker starts The Definition of Done becomes two lists, both proven on the PR The retro starts improving the loop, within declared limits [0.14.0] - 2026-09-19 The queue stops being \"my issues\" Review strictness that matches the risk Telling the worker the truth about the base branch Memory: recurrence instead of guesswork One human approval covers the goal's own effects Fixes that had never shipped [0.13.0] - 2026-09-14 [0.12.0] - 2026-09-13 [0.11.0] - 2026-09-13 [0.10.0] - 2026-09-12 [0.9.0] - 2026-09-12 [0.8.0] - 2026-09-12",
           "path": "CHANGELOG.md",
           "symbols": "",
-          "summary": "Review floor decides. A reviewer that exits 1 (or reports blocking) on findings all below delivery.review.minSeverity is clean, not \"findings\" with nothing to fix — delivery no longer waits forever for a push nobody needs. A reviewer claiming blocking with no finding at all is incomplete, never a merge (#133).",
-          "body": "Changelog [Unreleased] [0.22.2] — 2026-09-27 - Review floor decides. A reviewer that exits 1 (or reports blocking ) on findings all below delivery.review.minSeverity is clean, not \"findings\" with nothing to fix — delivery no longer waits forever for a push nobody needs. A reviewer claiming blocking with no finding at all is incomplete , never a merge ( 133). - Answered contract questions regenerate the contract instead of returning the same blocked one ( 138). - An open contract question is not re-asked every tick. Contract regeneration is skipped while a contract-stage question is open (no more repeated escalations and orchestrator calls); an explicit-queue run is left needs-input , never stuck in dispatching ; superseded contract questions are marked stale ( 131). - Retry resumes a blocked delivery on its open PR (fix-round cap, stuck, failed), resetting its error budget and tracker state; a cancelled run still gets a fresh attempt. Holds that need a person are not bypassed ( 142). - doctor accepts automations pinned by the UI; GitHub preflight reports missing lifecycle labels as a warning instead of failing the queue read ( 143). [0.22.1] — 2026-09-27 Failures that were invisible, made visible or closed. Every fix ships with a regression test that fails on 0.22.0. - The UI no longer keeps the tracker rate-limited. A failing board was re-read every second and every closed issue off the board was re-fetched every 10 minutes forever (~6 tracker calls/hour per historical issue, with or without viewers). Failures now back off, a rate limit pauses lookups, closed issues are never re-asked, and the snapshot pipeline idles when nobody is watching ( 139, 140). - Tracker cooldown. A Linear/GitHub rate limit records tracker.cooldown (15 min doubling, 2 h cap): tick returns blocked without counting toward the stage auto-pause, deliver skips tracker writes but keeps reviewing and merging, and the review state is set once per PR instead of every pass ( 140). - Gates fail closed. ak-verify run / verify / status exit 1 on a blocked, stale or cancelled run; git failures and 1 MB diffs no longer hash as empty (a stale run could be approved); a review with no parseable result is incomplete , never clean; deliver's verify runs in the PR worktree; plugins that fail to load fail the stage run and a throwing before hook blocks ( 140). - Delivery recovers. One transient gh/Orca error waits and retries ( delivery.error ) instead of finishing the issue as failed forever; failed resumes on a new head; an Orca outage is waiting , not a dead worker; a run where every result failed reports failed and counts toward the pause ( 140, 132). - Detached workers report an unconfirmed spawn and early crashes as failed runs; the worker log rotates at 5 MiB. deliver runs as a detached Orca worker like tick ( 127, 140). - Adapters. Comment dedupe works on threads with more than 30 comments; issue creation dedupes only on its marker; 429 / 502 / 503 and authentication no longer match inside hashes, counts or paths ( 140). - UI. Snapshot errors reach the tab ( snapshot-error ) instead of starting a hidden 2 s poll; an Orca failure shows \"Orca unreachable\", not \"not installed\" ( 140). - Runs (ADR-0041). Approval text and handoff fields are redacted before the PR summary; the spec gate requires the files in the PR; recording failures are reported ( 139). - Worktree creation retries through a transient Orca connection drop ( 129); tracker sync failures settle and the GitHub tracker creates missing labels ( 137). [0.22.0] — 2026-09-27 Runs you can reconstruct, specs the loop renders, and the fixes merged since 0.21.0. - Agent runs (ADR-0041). Every issue gets <stateDir /runs/<issue -<n / : state.json projected from its events (stage, status, fix rounds, next required approval), redacted inputs and outputs of each step (contract and plan prompts with their raw output, the worker brief, plan.md / verify.json /DoD, the terminal tail), machine-written handoffs at every stag",
+          "summary": "Lost-track restart. A run whose worker terminal is gone, or that stays idle after a check-in, before any PR is aborted and re-dispatched from scratch (bounded, worker.lost-tracking/worker.restarted) (#147).",
+          "body": "Changelog [Unreleased] [0.22.3] — 2026-09-27 - Lost-track restart. A run whose worker terminal is gone, or that stays idle after a check-in, before any PR is aborted and re-dispatched from scratch (bounded, worker.lost-tracking / worker.restarted ) ( 147). It never destroys work: it needs the evidence on two consecutive passes, escalates stuck and keeps the worktree when there are unpushed commits or uncommitted edits (the check fails closed), removes a clean worktree without --force , captures the worker screen into the run first, waits while the tracker is cooling down, and does nothing destructive until its tracker writes succeed. A human Retry resets the restart budget ( 151). - A worker that declares itself blocked ( BLOCKED: worktree comment) is escalated to a person — also when it exited afterwards — instead of being nudged, handed off or restarted ( 150, 151). - Never type into a bare shell. A nudge into a terminal that is only a shell prompt relaunches the agent (the old terminal is closed first; an idle agent from a CLI that does not register with Orca is never mistaken for a shell); no-PR worker events keep the issue running in the UI ( 144, 151). - Close-or-reopen decisions on an abandoned delivery stick and release the issue's lease ( 145, 151). - UI. Worker slots are counted the way the tick counts them ( 148); the projection rebuilds itself when the reducer changes ( 149). [0.22.2] — 2026-09-27 - Review floor decides. A reviewer that exits 1 (or reports blocking ) on findings all below delivery.review.minSeverity is clean, not \"findings\" with nothing to fix — delivery no longer waits forever for a push nobody needs. A reviewer claiming blocking with no finding at all is incomplete , never a merge ( 133). - Answered contract questions regenerate the contract instead of returning the same blocked one ( 138). - An open contract question is not re-asked every tick. Contract regeneration is skipped while a contract-stage question is open (no more repeated escalations and orchestrator calls); an explicit-queue run is left needs-input , never stuck in dispatching ; superseded contract questions are marked stale ( 131). - Retry resumes a blocked delivery on its open PR (fix-round cap, stuck, failed), resetting its error budget and tracker state; a cancelled run still gets a fresh attempt. Holds that need a person are not bypassed ( 142). - doctor accepts automations pinned by the UI; GitHub preflight reports missing lifecycle labels as a warning instead of failing the queue read ( 143). [0.22.1] — 2026-09-27 Failures that were invisible, made visible or closed. Every fix ships with a regression test that fails on 0.22.0. - The UI no longer keeps the tracker rate-limited. A failing board was re-read every second and every closed issue off the board was re-fetched every 10 minutes forever (~6 tracker calls/hour per historical issue, with or without viewers). Failures now back off, a rate limit pauses lookups, closed issues are never re-asked, and the snapshot pipeline idles when nobody is watching ( 139, 140). - Tracker cooldown. A Linear/GitHub rate limit records tracker.cooldown (15 min doubling, 2 h cap): tick returns blocked without counting toward the stage auto-pause, deliver skips tracker writes but keeps reviewing and merging, and the review state is set once per PR instead of every pass ( 140). - Gates fail closed. ak-verify run / verify / status exit 1 on a blocked, stale or cancelled run; git failures and 1 MB diffs no longer hash as empty (a stale run could be approved); a review with no parseable result is incomplete , never clean; deliver's verify runs in the PR worktree; plugins that fail to load fail the stage run and a throwing before hook blocks ( 140). - Delivery recovers. One transient gh/Orca error waits and retries ( delivery.error ) instead of finishing the issue as failed forever; failed resumes on a new head; an Orca outage is waiting , not a dead worker; a run where every result failed reports fa",
           "aliases": "document project"
         },
         "graph": {
@@ -11613,7 +11614,7 @@
             }
           ]
         },
-        "contentHash": "c3e3834524ed8aca11404c8e5d8c8b925e5ad954b70dbc4dd8cdb7bc91a8803e",
+        "contentHash": "90cbd7b1f0832f5bd095d71723e6e8d6c53b30d96be597562949c31706ce3042",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -14881,7 +14882,7 @@
         "id": "document:release/notes.md",
         "kind": "document",
         "path": "release/notes.md",
-        "title": "0.22.2 release candidate",
+        "title": "0.22.3 release candidate",
         "summary": "The control plane (ak-harness ui) becomes the operator's single place to see what needs them and act on it safely, plus the loop fixes found running it against a real repository since 0.19.0. CHANGELOG.md has the full list; docs/ADR-0040 records the decisions.",
         "aliases": [],
         "tags": [
@@ -14889,12 +14890,12 @@
           "unclassified"
         ],
         "fields": {
-          "title": "0.22.2 release candidate",
-          "headings": "0.22.2 release candidate",
+          "title": "0.22.3 release candidate",
+          "headings": "0.22.3 release candidate",
           "path": "release/notes.md",
           "symbols": "",
           "summary": "The control plane (ak-harness ui) becomes the operator's single place to see what needs them and act on it safely, plus the loop fixes found running it against a real repository since 0.19.0. CHANGELOG.md has the full list; docs/ADR-0040 records the decisions.",
-          "body": "0.22.2 release candidate The control plane ( ak-harness ui ) becomes the operator's single place to see what needs them and act on it safely, plus the loop fixes found running it against a real repository since 0.19.0. CHANGELOG.md has the full list; docs/ADR-0040 records the decisions. Attention first. The home page is a queue of what needs a person — decisions, stuck or failed runs, state out of sync, system problems — each with its reason and next action. Empty means nothing does. Reconciled, then locked. Every refresh compares the loop with the tracker and Orca, including issues the board does not list. Drift is shown and reconciled explicitly; destructive actions refuse (409) while their issue is out of sync or its data is stale. On a real loop, 24 \"blocked\" issues were 4 once cancelled work was recognised. Every operator action, same kernel. Held-PR approval (pinned to the head), plan, design and release approval, learnings, stage pause and resume, tick/deliver/doctor, automation reinstall and batch enqueue call the functions the CLI calls. There is no deploy from the UI. Insights and configuration. Trends, Costs (tokens and plan usage, no dollar figures) and Explore read at most 30 days of events. Settings shows each value's layer, writes only the personal overlay, returns team changes as a diff, and records every run queued under a weakened gate. Loop. A worktree kept for inspection no longer blocks its issue forever ( 112); scheduled stages run the harness that installed them and a crashed precheck is reported ( 114). Behaviour change. The UI no longer installs Orca automations when it starts; missing or drifted automations appear as system items and reinstall on request. 0.21.0. Runs shows fix rounds used and real time in phase; the home event stream reads the loop's event log ( GET /api/v1/events/recent ); New batch shows which issues already have a fresh contract ( GET /api/v1/contracts ); tracker titles and states survive a UI restart. 0.22.0. Every issue gets a run under <stateDir /runs/<issue -<n / — projected state, redacted inputs and outputs, machine-written handoffs and evidence by hash — reconstructable with ak-harness loop run show (ADR-0041). spec.enabled renders specs/<issue / (requirements, design, tasks) from the frozen contract and plan and holds a PR whose copy drifted; runs.prSummary keeps one edited comment with the run on the PR. ScmConnector gains upsertComment . 0.22.1. Fixes for failures that were silent. The control plane no longer keeps a tracker rate-limited (it backed off nothing and re-fetched every closed issue forever); the loop gets a tracker cooldown instead of a permanent stage pause. ak-verify run exits non-zero on a blocked run; git errors, missing review results, a verify run outside the PR worktree and failing plugins now fail closed. One transient error no longer ends a delivery for good, and an Orca outage is not a dead worker. 0.22.2. Operational fixes: a nit-only review no longer leaves delivery waiting forever, answered contract questions regenerate the contract, an open question no longer re-escalates every tick, Retry resumes a blocked delivery on its open PR, and doctor accepts UI-pinned automations. The blockers in release/manifest.json ( ecosystem-compatibility , pilot-benchmark ) are unchanged.",
+          "body": "0.22.3 release candidate The control plane ( ak-harness ui ) becomes the operator's single place to see what needs them and act on it safely, plus the loop fixes found running it against a real repository since 0.19.0. CHANGELOG.md has the full list; docs/ADR-0040 records the decisions. Attention first. The home page is a queue of what needs a person — decisions, stuck or failed runs, state out of sync, system problems — each with its reason and next action. Empty means nothing does. Reconciled, then locked. Every refresh compares the loop with the tracker and Orca, including issues the board does not list. Drift is shown and reconciled explicitly; destructive actions refuse (409) while their issue is out of sync or its data is stale. On a real loop, 24 \"blocked\" issues were 4 once cancelled work was recognised. Every operator action, same kernel. Held-PR approval (pinned to the head), plan, design and release approval, learnings, stage pause and resume, tick/deliver/doctor, automation reinstall and batch enqueue call the functions the CLI calls. There is no deploy from the UI. Insights and configuration. Trends, Costs (tokens and plan usage, no dollar figures) and Explore read at most 30 days of events. Settings shows each value's layer, writes only the personal overlay, returns team changes as a diff, and records every run queued under a weakened gate. Loop. A worktree kept for inspection no longer blocks its issue forever ( 112); scheduled stages run the harness that installed them and a crashed precheck is reported ( 114). Behaviour change. The UI no longer installs Orca automations when it starts; missing or drifted automations appear as system items and reinstall on request. 0.21.0. Runs shows fix rounds used and real time in phase; the home event stream reads the loop's event log ( GET /api/v1/events/recent ); New batch shows which issues already have a fresh contract ( GET /api/v1/contracts ); tracker titles and states survive a UI restart. 0.22.0. Every issue gets a run under <stateDir /runs/<issue -<n / — projected state, redacted inputs and outputs, machine-written handoffs and evidence by hash — reconstructable with ak-harness loop run show (ADR-0041). spec.enabled renders specs/<issue / (requirements, design, tasks) from the frozen contract and plan and holds a PR whose copy drifted; runs.prSummary keeps one edited comment with the run on the PR. ScmConnector gains upsertComment . 0.22.1. Fixes for failures that were silent. The control plane no longer keeps a tracker rate-limited (it backed off nothing and re-fetched every closed issue forever); the loop gets a tracker cooldown instead of a permanent stage pause. ak-verify run exits non-zero on a blocked run; git errors, missing review results, a verify run outside the PR worktree and failing plugins now fail closed. One transient error no longer ends a delivery for good, and an Orca outage is not a dead worker. 0.22.2. Operational fixes: a nit-only review no longer leaves delivery waiting forever, answered contract questions regenerate the contract, an open question no longer re-escalates every tick, Retry resumes a blocked delivery on its open PR, and doctor accepts UI-pinned automations. 0.22.3. A run that loses track is restarted from scratch — only after two consecutive observations, never over unpushed or uncommitted work, never past a worker's declared blocker, never while the tracker is cooling down. A worker that declares itself blocked is escalated to a person; the loop never types into a bare shell or launches a second agent into a worktree; close-or-reopen decisions stick and free the issue. The blockers in release/manifest.json ( ecosystem-compatibility , pilot-benchmark ) are unchanged.",
           "aliases": "document unclassified"
         },
         "graph": {
@@ -14929,7 +14930,7 @@
             }
           ]
         },
-        "contentHash": "64e6b95f9fb8fac561c81bdf4fca0e4fc18665c57f0be3174773e13fdd483efa",
+        "contentHash": "f06c62a2c75a5eb3420056f6c63c55b3fdb44fdab94f950e1aa985fa10d3ef3e",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -19546,6 +19547,11 @@
             {
               "kind": "imports",
               "id": "module:src/ui/api/extras.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
+              "id": "module:test/ui-api-actions.test.ts",
               "confidence": "observed"
             },
             {
@@ -26068,7 +26074,6 @@
           "generateContract",
           "parseContractOutput",
           "parseStructuredContractOutput",
-          "providerFailureDetail",
           "readStoredContract",
           "renderContractPrompt",
           "resolveDocContext",
@@ -26084,7 +26089,7 @@
           "title": "contract.ts",
           "headings": "",
           "path": "src/loop/contract.ts",
-          "symbols": "CONTRACT_CLOSE CONTRACT_JSON_SCHEMA CONTRACT_OPEN CONTRACT_SCHEMA_VERSION ContractAssessment ContractOutcomeSchema GenerateContractInput ProviderCallIo ProviderFailure StoredContract TaskContract TaskContractSchema assessContract classifyProviderFailure contractIsFresh contractPath extractResetsAt generateContract parseContractOutput parseStructuredContractOutput providerFailureDetail readStoredContract renderContractPrompt resolveDocContext untrusted writeStoredContract",
+          "symbols": "CONTRACT_CLOSE CONTRACT_JSON_SCHEMA CONTRACT_OPEN CONTRACT_SCHEMA_VERSION ContractAssessment ContractOutcomeSchema GenerateContractInput ProviderCallIo ProviderFailure StoredContract TaskContract TaskContractSchema assessContract classifyProviderFailure contractIsFresh contractPath extractResetsAt generateContract parseContractOutput parseStructuredContractOutput readStoredContract renderContractPrompt resolveDocContext untrusted writeStoredContract",
           "summary": "",
           "body": "",
           "aliases": "module ts loop"
@@ -26192,11 +26197,6 @@
             {
               "kind": "imports",
               "id": "module:src/ui/api/server.ts",
-              "confidence": "observed"
-            },
-            {
-              "kind": "imports",
-              "id": "module:test/loop-contract-failure.test.ts",
               "confidence": "observed"
             },
             {
@@ -26338,7 +26338,7 @@
             }
           ]
         },
-        "contentHash": "634a5a2d9eb3c7acff5e505d9420329a44fc2c35707d3d213c8198fe130143cc",
+        "contentHash": "f49b21f3aa9b229b9c26ddc69baf1fc4e04d1b4864c5c91cb18df3806d769b07",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -26565,6 +26565,7 @@
           "DeliveryState",
           "MAX_LOST_TRACKING_RESTARTS",
           "approveHeldDelivery",
+          "clearRestarts",
           "deliveryStatePath",
           "listDispatched",
           "markDispatchCancelled",
@@ -26573,7 +26574,8 @@
           "readRestarts",
           "runDeliver",
           "workerAtUsageLimit",
-          "workerAwaitingPermission"
+          "workerAwaitingPermission",
+          "workerDeclaredBlocked"
         ],
         "tags": [
           "module",
@@ -26584,7 +26586,7 @@
           "title": "deliver.ts",
           "headings": "",
           "path": "src/loop/deliver.ts",
-          "symbols": "DeliverInput DeliverOutcome DeliverReport DeliverResult DeliveryHandoff DeliveryState MAX_LOST_TRACKING_RESTARTS approveHeldDelivery deliveryStatePath listDispatched markDispatchCancelled precheckDeliver readDeliveryState readRestarts runDeliver workerAtUsageLimit workerAwaitingPermission",
+          "symbols": "DeliverInput DeliverOutcome DeliverReport DeliverResult DeliveryHandoff DeliveryState MAX_LOST_TRACKING_RESTARTS approveHeldDelivery clearRestarts deliveryStatePath listDispatched markDispatchCancelled precheckDeliver readDeliveryState readRestarts runDeliver workerAtUsageLimit workerAwaitingPermission workerDeclaredBlocked",
           "summary": "",
           "body": "",
           "aliases": "module ts loop"
@@ -26880,7 +26882,7 @@
             }
           ]
         },
-        "contentHash": "6ca531b2e7a9d3f8a3200169c46abf434e2abecac7acc066ab2384b3eeafcde6",
+        "contentHash": "d158b75b20ac34d080658f0219f576477f6b39db87202cecfc257acd1cfa8b90",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -27018,6 +27020,11 @@
             {
               "kind": "imports",
               "id": "module:src/ui/api/actions.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
+              "id": "module:src/ui/api/extras.ts",
               "confidence": "observed"
             },
             {
@@ -30209,7 +30216,7 @@
             }
           ]
         },
-        "contentHash": "e86c4e6e339252f250aef916fa84b8fc52291606837fe3d7532585bd1559dbb2",
+        "contentHash": "590ec14311e2b2edbc8626d5a5c782faee394996c63f25b8954b35c8d1a8af64",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -30361,7 +30368,7 @@
             }
           ]
         },
-        "contentHash": "d5bf179cf0ef6995a8e5df6aa55621c08709adfe0d61ae39ccc7f764124a13c2",
+        "contentHash": "266956830dbbb7f37163985422c73704e250a0e167389e937cc6cae10ff5e52e",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -33168,7 +33175,7 @@
             }
           ]
         },
-        "contentHash": "58ebc1a83f800922b0c2a9ab838f339288f745fdeff6cf4c1526faf068b164b7",
+        "contentHash": "c38b4cff4d190e25736a33339a4610f83b0f8dd2c4026b3360f028418b639cc9",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -33941,6 +33948,11 @@
             },
             {
               "kind": "imports",
+              "id": "module:src/loop/doctor.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
               "id": "module:src/loop/fs-atomic.ts",
               "confidence": "observed"
             },
@@ -34001,7 +34013,7 @@
             }
           ]
         },
-        "contentHash": "b4b0c1166befd3c04ae588c8ef42d83ac371b3de3f7e012fed4ed351677a5e6f",
+        "contentHash": "d8f3a269486f00f390ba0c0a7c2f530be345c79ad56402017d2bd9a13056ba19",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -34487,7 +34499,7 @@
             }
           ]
         },
-        "contentHash": "8738c37b9b582fbc653f4048e3e1d46e84225d9b88f5283a261e7980bb8eae2e",
+        "contentHash": "19bcf170ee35e5a92a0979359902e5f565f313d018a52c9d4d214f55bcc8c1f8",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -35207,7 +35219,7 @@
             }
           ]
         },
-        "contentHash": "e5cac85b566b18817c8b74217ad5cb78f35ddd856d5c5962da47ceb68924a3cb",
+        "contentHash": "62bbb50f7627e4ef116ab5d01503483955100fbfbac083d2371ff6602d63cf54",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -35649,7 +35661,7 @@
             }
           ]
         },
-        "contentHash": "3ff188fc2d0cd8731fa1ad849d586f1c9526b778cf4009852645f47fd32a7f5c",
+        "contentHash": "450b3baa3a7cba985b68cc9ea7a77777857ef7699bcbdd328c211b29f330139d",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -35765,7 +35777,7 @@
             }
           ]
         },
-        "contentHash": "05b35851b5d998f0539f07abd16eb456d6e40bc6446a5343884f082c2f7590fd",
+        "contentHash": "3d2a13d0b4c87935e8c483b48ea9eb1ebecada11c6e12749f9159de3645bc7ea",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -41267,15 +41279,10 @@
               "kind": "imports",
               "id": "module:src/index.ts",
               "confidence": "observed"
-            },
-            {
-              "kind": "imports",
-              "id": "module:src/loop/contract.ts",
-              "confidence": "observed"
             }
           ]
         },
-        "contentHash": "3f15195a8ae90bd230b139157d66cf3ffa6b1cf05e947f74d515dae72a08fefc",
+        "contentHash": "75f50d52adbc04b7a5681ec928f42e50364544e5463fd742e313be655ec4913e",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -41490,7 +41497,7 @@
             }
           ]
         },
-        "contentHash": "0e5688e20413e6d8ff08ac9038acf9c4753b84e55e61b35bef402cf34f811c0e",
+        "contentHash": "14c96f428da757c0ff66df81aaa2e35a49ab5046929ee1a86fc0a5a0ebdebc70",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -44497,6 +44504,11 @@
             },
             {
               "kind": "imports",
+              "id": "module:src/execution/coordination.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
               "id": "module:src/loop/config.ts",
               "confidence": "observed"
             },
@@ -44547,7 +44559,7 @@
             }
           ]
         },
-        "contentHash": "d19b0ca30e564fdd48ef533bbd247c3d8cacf4c5959392574c33736f1de06a7c",
+        "contentHash": "bcd526d071ac8bde05778fe9454d1699a42bb5756ba6f4d4d07513e5cbd85f6f",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -44876,7 +44888,7 @@
             }
           ]
         },
-        "contentHash": "98224353eb3066bedf5a63a646bc3941116fa6c2399816fa6bfe62e77efc04b9",
+        "contentHash": "969a84e849e3874842673b60ac6f41f98cce2c8aafbd3f7510f957737a92f81f",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -45321,7 +45333,7 @@
             }
           ]
         },
-        "contentHash": "d150d4938401c0371bf6a951aba985d66ad5afd6f6539c319879701565adeae2",
+        "contentHash": "0c8c01310b19c54c54de812dc0ef14a74b038c062bb043c40b1120864b5a8d5e",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -45431,7 +45443,7 @@
             }
           ]
         },
-        "contentHash": "fd21af76f15c7129c06ccb6bd24aeb54b2398b2ba53830cb058fc081a1357a68",
+        "contentHash": "2cc5639b812de6dd5d1821d2613c5498f885f1f82cf3a34aad321b736a5556cc",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -45657,7 +45669,7 @@
           ],
           "outbound": []
         },
-        "contentHash": "0fb005e511df2daa5766fb07912a1622f64d08157f58b87300ebbf763df2f920",
+        "contentHash": "db2fbdf5414ff8bbbe53c9d98068917ac826cc8f8a239e5778895488d6310cc5",
         "provenance": "observed",
         "confidence": "observed"
       },

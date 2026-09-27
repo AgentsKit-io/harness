@@ -40,6 +40,8 @@ export interface ReconcileInput {
   readonly orcaStaleAfterMs: number
   /** Last sign of life from the loop's stages (see `extras.ts`); `null` = none on disk. */
   readonly loopAt: string | null
+  /** Workers holding a slot as the tick counts them (live Orca agents; in-review worktrees excluded). */
+  readonly running: number
   readonly maxAgents: number
 }
 
@@ -83,7 +85,7 @@ export const reconcile = (input: ReconcileInput): ReconcileResult => {
   const tracker = freshness('tracker', input.board?.fetchedAt ?? null, now, Math.max(input.staleAfterMs, 2 * input.boardRefreshMs), input.board !== null && input.board.status !== 'fresh')
   const loop = freshness('loop', input.loopAt, now, input.staleAfterMs)
 
-  const running = input.dispatches.filter((dispatch) => !dispatch.finished).length
+  const { running } = input
   if (running > input.maxAgents) drift.push({ issue: null, kind: 'capacity-overcount', detail: `${running}/${input.maxAgents} workers hold a slot; the ceiling is ${input.maxAgents}.`, trackerState: null, loopPhase: null })
 
   const issues = new Set([...records.keys(), ...dispatchByIssue.keys(), ...claimsByIssue.keys()])
