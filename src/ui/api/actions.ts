@@ -253,6 +253,9 @@ export const decideIssue = async (context: ActionContext, issue: string, decisio
   const tracker = resolveConnectors({ runner, config: loaded.config }).tracker
   const target = decision === 'close-issue' ? loaded.config.linear.doneState : loaded.config.delivery.returnState
   await tracker.setState({ issue, to: target, reason: decision === 'close-issue' ? 'PR closed without merge; human closed the issue' : 'PR closed without merge; human reopened for a fresh run' })
+  // The human decision supersedes delivery's `abandoned`: without this marker, the next sync re-read delivery.json and
+  // put the issue straight back into needs-decision. The next dispatch clears it (resetDeliveryStateForDispatch).
+  if (listDispatched(loaded.stateDir).some((dispatch) => dispatch.issue === issue)) markDispatchCancelled(loaded.stateDir, issue)
   appendLoopEvent(loaded.stateDir, { at: nowIso(), type: 'ui.issue-decided', issue, action: decision })
   syncProjection(loaded.stateDir)
 }

@@ -151,3 +151,22 @@ describe('the projection store', () => {
     expect(state.issues['pr-220']).toMatchObject({ phase: 'review', reviewState: 'human-approval', pullRequest: { number: 220, state: 'OPEN' } })
   })
 })
+
+describe('a close-or-reopen decision on an abandoned delivery', () => {
+  it('sticks across syncs instead of reverting to needs-decision', async () => {
+    // Live (vivva #217, #92): PRs superseded and closed; "close issue" was recorded, the next sync re-read
+    // delivery.json (`abandoned`) and put both back into needs-decision.
+    const { markDispatchCancelled } = await import('../src/loop/deliver.js')
+    for (const [issue, action, phase] of [['ENG-20', 'close-issue', 'completed'], ['ENG-21', 'reopen', 'available']] as const) {
+      const stateDir = stateDirFor()
+      writeDispatch(stateDir, issue)
+      writeFileSync(join(stateDir, 'issues', issue, 'delivery.json'), JSON.stringify({ issue, prNumber: 5, reviews: {}, fixRounds: 0, nudges: [], handoffs: [], heldFor: null, finishedAt: '2026-01-01T00:40:00.000Z', finalOutcome: 'abandoned', cancelledAt: '2025-12-01T00:00:00.000Z' }))
+      // (a stale cancelledAt from an earlier attempt, older than this delivery, must not hide the new decision)
+      expect(syncProjection(stateDir).issues[issue]!.phase).toBe('needs-decision')
+      markDispatchCancelled(stateDir, issue, new Date('2026-01-02T00:00:00.000Z'))
+      appendLoopEvent(stateDir, { at: '2026-01-02T00:00:01.000Z', type: 'ui.issue-decided', issue, action })
+      expect(syncProjection(stateDir).issues[issue]!.phase).toBe(phase)
+      expect(syncProjection(stateDir).issues[issue]!.phase).toBe(phase)
+    }
+  })
+})
