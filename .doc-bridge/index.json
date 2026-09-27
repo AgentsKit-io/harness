@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
-  "contentHash": "78fbcaf7ab158c0f7d72a8dcdce9aaba6b7f40e8bf21bcccce243c9733894563",
+  "contentHash": "9f33fbb1d713056c1abd04e30509604094a08c9970f1dd748c605188f0deee01",
   "contentHashAlgo": "sha256-normalized-v1",
-  "generatedAt": "2026-09-27T17:41:48.563Z",
+  "generatedAt": "2026-09-27T17:49:46.159Z",
   "project": {
     "name": "AgentsKit Harness",
     "root": "."
@@ -3929,6 +3929,7 @@
         "DeliveryState",
         "MAX_LOST_TRACKING_RESTARTS",
         "approveHeldDelivery",
+        "clearRestarts",
         "deliveryStatePath",
         "listDispatched",
         "markDispatchCancelled",
@@ -3945,7 +3946,7 @@
         "ts",
         "loop"
       ],
-      "contentHash": "2a56a75031d8beb390adfccf06ab7dc0bc9c010b0dd159aeb334b38f7a3cdce6"
+      "contentHash": "d158b75b20ac34d080658f0219f576477f6b39db87202cecfc257acd1cfa8b90"
     },
     {
       "id": "module:src/loop/detached-worker.ts",
@@ -5445,7 +5446,7 @@
         "ts",
         "api"
       ],
-      "contentHash": "58ebc1a83f800922b0c2a9ab838f339288f745fdeff6cf4c1526faf068b164b7"
+      "contentHash": "c38b4cff4d190e25736a33339a4610f83b0f8dd2c4026b3360f028418b639cc9"
     },
     {
       "id": "module:src/ui/api/alerts.ts",
@@ -7786,7 +7787,7 @@
         "ts",
         "test"
       ],
-      "contentHash": "ae7c4e0e9277537538cb9bff3a4052f3bceba7cd17b80224ba4adc8b95825455"
+      "contentHash": "14c96f428da757c0ff66df81aaa2e35a49ab5046929ee1a86fc0a5a0ebdebc70"
     },
     {
       "id": "module:test/loop-doctor-gaps.test.ts",
@@ -8638,7 +8639,7 @@
         "ts",
         "test"
       ],
-      "contentHash": "d19b0ca30e564fdd48ef533bbd247c3d8cacf4c5959392574c33736f1de06a7c"
+      "contentHash": "bcd526d071ac8bde05778fe9454d1699a42bb5756ba6f4d4d07513e5cbd85f6f"
     },
     {
       "id": "module:test/ui-api-jobs.test.ts",
@@ -8954,7 +8955,7 @@
     }
   },
   "inputs": {
-    "hash": "b2a3c8fd478de57ad46784812d296ccda3a151e89fc5ffecfd859bfb6ffb12d9",
+    "hash": "04172ec62f32fb475241d4c94c4f2291c2d53276950ae850078d490aa1d313d4",
     "fileCount": 541,
     "projectionVersion": 2
   },
@@ -8977,9 +8978,9 @@
   "projection": {
     "type": "retrieval-index",
     "schemaVersion": 1,
-    "contentHash": "a9a77ae3e9c892c6472135d57636e6ed7e6a3720e2ec8b4865779b78033030f5",
+    "contentHash": "4f3b7150805d6c241176201f4f33c2f7b23267ffbe41919a9c7c292f04a4fa02",
     "contentHashAlgo": "sha256-normalized-v1",
-    "snapshotHash": "9838b51732b76943bb62a3e3c8e0577ba63bf5b1df298013f18d45559da70774",
+    "snapshotHash": "2b7c11af039de0d8695e266233461091dbf0e5066a4a23df337480f3c3bf72c6",
     "overlayHash": "f99666ff9119084dd25c2974ae64eb6935ec2aa785ff5ad478fb9d541f7a5e94",
     "configurationHash": "816afaf6a7dc09767f7594d8fd80024612ca0f33becf0e44dde0107fcf2782df",
     "lexiconVersion": 1,
@@ -9015,7 +9016,7 @@
         "headings": 3.861818181818182,
         "path": 6.114545454545454,
         "summary": 2.6654545454545455,
-        "symbols": 14.278181818181817,
+        "symbols": 14.283636363636363,
         "title": 3.949090909090909
       }
     },
@@ -19550,6 +19551,11 @@
             },
             {
               "kind": "imports",
+              "id": "module:test/ui-api-actions.test.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
               "id": "module:test/ui-core-reconcile.test.ts",
               "confidence": "observed"
             },
@@ -26559,6 +26565,7 @@
           "DeliveryState",
           "MAX_LOST_TRACKING_RESTARTS",
           "approveHeldDelivery",
+          "clearRestarts",
           "deliveryStatePath",
           "listDispatched",
           "markDispatchCancelled",
@@ -26579,7 +26586,7 @@
           "title": "deliver.ts",
           "headings": "",
           "path": "src/loop/deliver.ts",
-          "symbols": "DeliverInput DeliverOutcome DeliverReport DeliverResult DeliveryHandoff DeliveryState MAX_LOST_TRACKING_RESTARTS approveHeldDelivery deliveryStatePath listDispatched markDispatchCancelled precheckDeliver readDeliveryState readRestarts runDeliver workerAtUsageLimit workerAwaitingPermission workerDeclaredBlocked",
+          "symbols": "DeliverInput DeliverOutcome DeliverReport DeliverResult DeliveryHandoff DeliveryState MAX_LOST_TRACKING_RESTARTS approveHeldDelivery clearRestarts deliveryStatePath listDispatched markDispatchCancelled precheckDeliver readDeliveryState readRestarts runDeliver workerAtUsageLimit workerAwaitingPermission workerDeclaredBlocked",
           "summary": "",
           "body": "",
           "aliases": "module ts loop"
@@ -26875,7 +26882,7 @@
             }
           ]
         },
-        "contentHash": "2a56a75031d8beb390adfccf06ab7dc0bc9c010b0dd159aeb334b38f7a3cdce6",
+        "contentHash": "d158b75b20ac34d080658f0219f576477f6b39db87202cecfc257acd1cfa8b90",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -33168,7 +33175,7 @@
             }
           ]
         },
-        "contentHash": "58ebc1a83f800922b0c2a9ab838f339288f745fdeff6cf4c1526faf068b164b7",
+        "contentHash": "c38b4cff4d190e25736a33339a4610f83b0f8dd2c4026b3360f028418b639cc9",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -41490,7 +41497,7 @@
             }
           ]
         },
-        "contentHash": "ae7c4e0e9277537538cb9bff3a4052f3bceba7cd17b80224ba4adc8b95825455",
+        "contentHash": "14c96f428da757c0ff66df81aaa2e35a49ab5046929ee1a86fc0a5a0ebdebc70",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -44497,6 +44504,11 @@
             },
             {
               "kind": "imports",
+              "id": "module:src/execution/coordination.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
               "id": "module:src/loop/config.ts",
               "confidence": "observed"
             },
@@ -44547,7 +44559,7 @@
             }
           ]
         },
-        "contentHash": "d19b0ca30e564fdd48ef533bbd247c3d8cacf4c5959392574c33736f1de06a7c",
+        "contentHash": "bcd526d071ac8bde05778fe9454d1699a42bb5756ba6f4d4d07513e5cbd85f6f",
         "provenance": "observed",
         "confidence": "observed"
       },
