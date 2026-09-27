@@ -588,8 +588,9 @@ describe('deliver', () => {
     expect((await deliver(none, { assumeIdle: true })).results[0]).toMatchObject({ outcome: 'nudged', reason: 'idle without PR; nudged once' })
   })
 
-  it('nudges an idle worker without a PR once, then marks it stuck and frees the slot while keeping the worktree', async () => {
+  it('nudges an idle worker without a PR once, then — past the restart cap — marks it stuck and frees the slot while keeping the worktree', async () => {
     const env = setup({ pr: null, dispatchedAt: '2026-09-11T09:00:00.000Z' })
+    writeFileSync(join(env.loaded.stateDir, 'issues', 'ENG-10', 'restarts.json'), JSON.stringify({ at: ['2026-09-10T00:00:00.000Z', '2026-09-10T01:00:00.000Z'] }))
     const first = await deliver(env, { assumeIdle: true })
     expect(first.results[0]).toMatchObject({ outcome: 'nudged' })
     const second = await deliver(env, { assumeIdle: true })
@@ -602,6 +603,7 @@ describe('deliver', () => {
     const busy = setup({ pr: null })
     expect((await deliver(busy, { assumeIdle: false })).results[0]).toMatchObject({ outcome: 'waiting', reason: 'worker active' })
     const gone = setup({ pr: null, terminals: [] })
+    writeFileSync(join(gone.loaded.stateDir, 'issues', 'ENG-10', 'restarts.json'), JSON.stringify({ at: ['2026-09-10T00:00:00.000Z', '2026-09-10T01:00:00.000Z'] }))
     expect((await deliver(gone)).results[0]).toMatchObject({ outcome: 'stuck', reason: expect.stringContaining('terminal gone') })
   })
 
@@ -610,6 +612,7 @@ describe('deliver', () => {
   // "no assignee" — it would sit in the dispatchable state forever, held by a worker that is gone.
   it('releases the assignee claim when it returns a stuck issue to the queue', async () => {
     const env = setup({ pr: null, dispatchedAt: '2026-09-11T09:00:00.000Z', queueOwnership: 'unassigned' })
+    writeFileSync(join(env.loaded.stateDir, 'issues', 'ENG-10', 'restarts.json'), JSON.stringify({ at: ['2026-09-10T00:00:00.000Z', '2026-09-10T01:00:00.000Z'] }))
     await deliver(env, { assumeIdle: true })
     const stuck = await deliver(env, { assumeIdle: true, now: () => new Date('2026-09-11T13:00:00.000Z') })
     expect(stuck.results[0]).toMatchObject({ outcome: 'stuck' })
@@ -625,6 +628,7 @@ describe('deliver', () => {
 
   it('includes the worker\'s own terminal output in the stuck escalation, when available', async () => {
     const env = setup({ pr: null, dispatchedAt: '2026-09-11T09:00:00.000Z', terminalScreen: 'BLOCKED: Orca runtime remains unavailable (runtime_unavailable). I could not reconcile Linear or GitHub.' })
+    writeFileSync(join(env.loaded.stateDir, 'issues', 'ENG-10', 'restarts.json'), JSON.stringify({ at: ['2026-09-10T00:00:00.000Z', '2026-09-10T01:00:00.000Z'] }))
     await deliver(env, { assumeIdle: true })
     await deliver(env, { assumeIdle: true })
     await deliver(env, { assumeIdle: true, now: () => new Date('2026-09-11T13:00:00.000Z') })
@@ -1202,5 +1206,50 @@ describe('github label intake', () => {
     const report = await runDeliver({ loaded: local, runner: env.runner, env: { PATH: env.bin, XAI_API_KEY: 'k' }, platform: 'darwin', now: () => NOW })
     expect(report.results.some((result) => result.issue === 'pr-77')).toBe(false)
     expect(env.runner.calls.some((argv) => argv[0] === 'gh' && argv[1] === 'pr' && argv[2] === 'list' && argv.includes('--label'))).toBe(false)
+  })
+})
+
+describe('lost tracking: abort and restart from scratch', () => {
+  const runningRun = (stateDir: string) => {
+    const queue = createIssueQueue({ stateDir })
+    const run = queue.enqueue({ issue: 'ENG-10', title: 'ENG-10', config: { configHash: 'c', flow: null, builder: { provider: 'claude', model: 'sonnet' }, maxFixRounds: 2, perIssueTokens: 10_000, roles: { orchestrator: 'project', reviewer: 'project', watcher: 'project', delivery: 'snapshot' } }, contract: { digest: 'd', status: 'valid', frozenAt: NOW.toISOString() }, preflight: { status: 'passed', checkedAt: NOW.toISOString() }, now: NOW })
+    queue.update(run.id, { status: 'dispatching', now: NOW })
+    return queue.update(run.id, { status: 'running', now: NOW })
+  }
+  const events = (stateDir: string) => readFileSync(join(stateDir, 'events.ndjson'), 'utf8').split('\n').filter(Boolean).map((line) => JSON.parse(line) as Record<string, unknown>)
+
+  it('aborts a worker idle after a check-in with no PR and queues a fresh attempt, discarding the worktree', async () => {
+    // Live (law-os AGE-1751/1753): workers with no agent and no PR sat "running" on screen for hours.
+    const env = setup({ pr: null, dispatchedAt: '2026-09-11T09:00:00.000Z' })
+    const run = runningRun(env.loaded.stateDir)
+    await deliver(env, { assumeIdle: true })
+    const report = await deliver(env, { assumeIdle: true, now: () => new Date('2026-09-11T13:00:00.000Z') })
+    expect(report.results[0]).toMatchObject({ outcome: 'restarted' })
+    expect(env.runner.calls.some((argv) => argv[1] === 'worktree' && argv[2] === 'rm')).toBe(true)
+    expect(env.ledger.active()).toEqual([])
+    const queue = createIssueQueue({ stateDir: env.loaded.stateDir })
+    expect(queue.get(run.id)?.status).toBe('failed')
+    expect(queue.getLatestByIssue('ENG-10')).toMatchObject({ status: 'queued', attempt: 2 })
+    expect(readDeliveryState(env.loaded.stateDir, 'ENG-10')).toMatchObject({ finalOutcome: 'restarted' })
+    const types = events(env.loaded.stateDir).map((event) => event['type'])
+    expect(types).toEqual(expect.arrayContaining(['worker.lost-tracking', 'worker.restarted']))
+    // A human is not needed yet: no blocked label on the first restart.
+    expect(env.runner.calls.some((argv) => argv[1] === 'linear' && argv[2] === 'label' && argv.includes('blocked'))).toBe(false)
+  })
+
+  it('restarts a run whose worker terminal is gone before any PR', async () => {
+    const env = setup({ pr: null, terminals: [] })
+    runningRun(env.loaded.stateDir)
+    expect((await deliver(env)).results[0]).toMatchObject({ outcome: 'restarted', reason: expect.stringContaining('terminal gone') })
+  })
+
+  it('escalates to a person once the restart cap is reached', async () => {
+    const env = setup({ pr: null, terminals: [] })
+    runningRun(env.loaded.stateDir)
+    writeFileSync(join(env.loaded.stateDir, 'issues', 'ENG-10', 'restarts.json'), JSON.stringify({ at: ['2026-09-10T00:00:00.000Z', '2026-09-10T01:00:00.000Z'] }))
+    const report = await deliver(env)
+    expect(report.results[0]).toMatchObject({ outcome: 'stuck' })
+    expect(report.results[0]?.actions.join(' ')).toContain('escalating to a person')
+    expect(env.runner.calls.some((argv) => argv[1] === 'worktree' && argv[2] === 'rm')).toBe(false)
   })
 })
