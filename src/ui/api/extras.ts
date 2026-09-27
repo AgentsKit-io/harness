@@ -1,3 +1,4 @@
+import { CLOSED_STATES } from './reconcile.js'
 import { existsSync, statSync } from 'node:fs'
 import { z } from 'zod'
 import { readJsonFile } from '../../kernel/json-file.js'
@@ -160,7 +161,12 @@ export interface TrackerCacheStore<T> { readonly load: () => Readonly<Record<str
 const TRACKER_RATE_LIMIT_PAUSE_MS = 15 * 60_000
 const RATE_LIMITED = /rate.?limit|too many requests|\b429\b|quota/i
 
-export const createTrackerStateCache = <T>(lookup: (issue: string) => Promise<T>, now: () => number = Date.now, store?: TrackerCacheStore<T>) => {
+/**
+ * `settled`: a cached answer that can no longer change the UI (the issue is closed in the tracker) is never asked
+ * again. Without it every issue the loop ever touched — the projection keeps them all, and none is on the board once
+ * closed — was re-fetched every TTL, forever: ~6 tracker calls an hour per historical issue with nobody watching.
+ */
+export const createTrackerStateCache = <T>(lookup: (issue: string) => Promise<T>, now: () => number = Date.now, store?: TrackerCacheStore<T>, settled: (state: T) => boolean = () => false) => {
   // Persisted so a restarted UI shows known titles/states at once instead of re-learning them 8 per cycle.
   const states = new Map<string, { readonly state: T; readonly at: number }>(Object.entries(store?.load() ?? {}))
   const pending = new Set<string>()
@@ -172,6 +178,7 @@ export const createTrackerStateCache = <T>(lookup: (issue: string) => Promise<T>
   return (issues: readonly string[]): Readonly<Record<string, T>> => {
     const at = now()
     const due = at < pausedUntil ? [] : issues.filter((issue) => !pending.has(issue)
+      && !(states.has(issue) && settled(states.get(issue)!.state))
       && (at - (states.get(issue)?.at ?? -Infinity)) > TRACKER_TTL_MS
       && (at - (failedAt.get(issue) ?? -Infinity)) > TRACKER_TTL_MS).slice(0, TRACKER_LOOKUPS_PER_CYCLE)
     for (const issue of due) {
@@ -223,7 +230,7 @@ export const createExtrasBuilder = (loaded: LoadedLoopConfig, runner: CommandRun
   const orca = options.orca ?? orcaCacheFor(loaded, runner)
   const tail = createEventTail(loaded.stateDir)
   const automations = createAutomationsCache(loaded, runner)
-  const trackerFacts = options.trackerState ?? createTrackerStateCache(async (issue): Promise<TrackerFacts> => { const detail = await resolveConnectors({ runner, config: loaded.config }).tracker.issue(issue); return { state: detail.state, title: detail.title } }, Date.now, trackerFactsStore(loaded.stateDir))
+  const trackerFacts = options.trackerState ?? createTrackerStateCache(async (issue): Promise<TrackerFacts> => { const detail = await resolveConnectors({ runner, config: loaded.config }).tracker.issue(issue); return { state: detail.state, title: detail.title } }, Date.now, trackerFactsStore(loaded.stateDir), (facts) => CLOSED_STATES.test(facts.state.trim()))
   const { stateDir, config } = loaded
 
   return {

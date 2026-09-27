@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
-  "contentHash": "3c2d61c4b5b88faaa48fcaf97cc5c15c491e48da49afb84e73cdedb6a59f5629",
+  "contentHash": "1dcaf27512ca736c3b1942064eb4e0c4679d0e8090a1eb8d0bc762702439066d",
   "contentHashAlgo": "sha256-normalized-v1",
-  "generatedAt": "2026-09-27T12:31:19.115Z",
+  "generatedAt": "2026-09-27T12:37:45.787Z",
   "project": {
     "name": "AgentsKit Harness",
     "root": "."
@@ -5591,7 +5591,7 @@
         "ts",
         "api"
       ],
-      "contentHash": "236532b9ea770e5ce6f326b98f4865ed10223f0111daeee297b15814b53961e6"
+      "contentHash": "0cfc60515c68683a12734fe06e2fe5fe956c83d5806c737f5bf64662771b1993"
     },
     {
       "id": "module:src/ui/api/http.ts",
@@ -5697,6 +5697,7 @@
       "title": "reconcile.ts",
       "path": "src/ui/api/reconcile.ts",
       "symbols": [
+        "CLOSED_STATES",
         "ClaimFact",
         "DispatchFact",
         "OrcaFact",
@@ -5712,7 +5713,7 @@
         "ts",
         "api"
       ],
-      "contentHash": "49457103b9bd2f014de2659ff54a3998c85af28eb009599eebce607dc8511a17"
+      "contentHash": "8738c37b9b582fbc653f4048e3e1d46e84225d9b88f5283a261e7980bb8eae2e"
     },
     {
       "id": "module:src/ui/api/route-modules.ts",
@@ -8679,7 +8680,7 @@
         "ts",
         "test"
       ],
-      "contentHash": "4a3fd34465cb65ecc65d9d9b75e545dc033f1091c7431a5f7347e135f5b004c6"
+      "contentHash": "98224353eb3066bedf5a63a646bc3941116fa6c2399816fa6bfe62e77efc04b9"
     },
     {
       "id": "module:test/ui-core-server.test.ts",
@@ -8911,7 +8912,7 @@
     }
   },
   "inputs": {
-    "hash": "ac99871705e144ba741e2612915761b01e9e49937aa18a58b960e42db11ee97f",
+    "hash": "45d9b959237f522f12626b7bc454143a98da5f48caed309cab56b1b8b55497be",
     "fileCount": 539,
     "projectionVersion": 2
   },
@@ -8934,9 +8935,9 @@
   "projection": {
     "type": "retrieval-index",
     "schemaVersion": 1,
-    "contentHash": "4be9e8fe7e30c632c4951847335ce64cd56568d78f14044c501598846133afb7",
+    "contentHash": "79710074f39b3cb850613a68ff3a4c852055bcb39e0d1fae641ab418e5c96745",
     "contentHashAlgo": "sha256-normalized-v1",
-    "snapshotHash": "981f829a8669b9bcf356e05ec4c7d00604cd40982ca917109857c9b251aba1e3",
+    "snapshotHash": "f586998ac26599a8c26cc68e073a7d7c8dad4bb554302fb626eb9719c867baca",
     "overlayHash": "f99666ff9119084dd25c2974ae64eb6935ec2aa785ff5ad478fb9d541f7a5e94",
     "configurationHash": "816afaf6a7dc09767f7594d8fd80024612ca0f33becf0e44dde0107fcf2782df",
     "lexiconVersion": 1,
@@ -8972,7 +8973,7 @@
         "headings": 3.866788321167883,
         "path": 6.114963503649635,
         "summary": 2.6313868613138687,
-        "symbols": 14.19890510948905,
+        "symbols": 14.204379562043796,
         "title": 3.9434306569343067
       }
     },
@@ -33780,7 +33781,7 @@
             }
           ]
         },
-        "contentHash": "236532b9ea770e5ce6f326b98f4865ed10223f0111daeee297b15814b53961e6",
+        "contentHash": "0cfc60515c68683a12734fe06e2fe5fe956c83d5806c737f5bf64662771b1993",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -34199,6 +34200,7 @@
         "title": "reconcile.ts",
         "aliases": [],
         "symbols": [
+          "CLOSED_STATES",
           "ClaimFact",
           "DispatchFact",
           "OrcaFact",
@@ -34218,7 +34220,7 @@
           "title": "reconcile.ts",
           "headings": "",
           "path": "src/ui/api/reconcile.ts",
-          "symbols": "ClaimFact DispatchFact OrcaFact ReconcileInput ReconcileResult computeLocks cronCadenceMs reconcile trackerClosed",
+          "symbols": "CLOSED_STATES ClaimFact DispatchFact OrcaFact ReconcileInput ReconcileResult computeLocks cronCadenceMs reconcile trackerClosed",
           "summary": "",
           "body": "",
           "aliases": "module ts api"
@@ -34265,7 +34267,7 @@
             }
           ]
         },
-        "contentHash": "49457103b9bd2f014de2659ff54a3998c85af28eb009599eebce607dc8511a17",
+        "contentHash": "8738c37b9b582fbc653f4048e3e1d46e84225d9b88f5283a261e7980bb8eae2e",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -44618,7 +44620,7 @@
             }
           ]
         },
-        "contentHash": "4a3fd34465cb65ecc65d9d9b75e545dc033f1091c7431a5f7347e135f5b004c6",
+        "contentHash": "98224353eb3066bedf5a63a646bc3941116fa6c2399816fa6bfe62e77efc04b9",
         "provenance": "observed",
         "confidence": "observed"
       },
