@@ -4,7 +4,7 @@
   "package": "@agentskit/harness",
   "packageVersion": "0.21.0",
   "entryPoint": "src/index.ts",
-  "sourceDigest": "cdb8e7b48daf6909f0dc16fe7187937450b7416b5324818354cce75f25b8fd57",
+  "sourceDigest": "26ba1a57fcc8eb326ba68fedce6f3fdc0f0defc6070ae13f2db7e17948a8adb8",
   "capabilities": [
     {
       "id": "public-surface:adapters/agent",
@@ -110,6 +110,7 @@
         "githubPullRequest",
         "githubPullRequestsForBranch",
         "githubPullRequestsForIssue",
+        "githubUpsertComment",
         "parseGitHubIssue",
         "parseGitHubIssueDetail",
         "parsePullRequest",
@@ -944,6 +945,29 @@
         "loadAgentRegistry",
         "parseAgentRegistryText",
         "resolveAgentForRole"
+      ]
+    },
+    {
+      "id": "public-surface:loop/agent-runs",
+      "version": "0.21.0",
+      "kind": "composition",
+      "entryPoint": "src/index.ts",
+      "exports": [
+        "AgentRunEvidence",
+        "AgentRunIoEntry",
+        "AgentRunReport",
+        "AgentRunStage",
+        "AgentRunState",
+        "AgentRunStatus",
+        "RUNS_DIR",
+        "classifyRunEvent",
+        "listAgentRuns",
+        "pruneAgentRuns",
+        "readAgentRunReport",
+        "renderAgentRunMarkdown",
+        "renderRunSummaryMarkdown",
+        "runDirFor",
+        "runSummaryMarker"
       ]
     },
     {
@@ -2065,5 +2089,5 @@
       ]
     }
   ],
-  "digest": "727415ccc09c8f4504aa37933d6fc2cdfb6930f042a98df99e84aa097f750614"
+  "digest": "d870b71f1dad2e50f25a0a4ffa9bfc0e6f0979c3b4d5a68616754e931c431f9d"
 }

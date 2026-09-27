@@ -821,6 +821,31 @@ export const LoopConfigSchema = z.object({
     evidenceFile: nonEmpty.default('.ak-loop/dod.json'),
   }).prefault({}),
   /**
+   * Per-issue run records under `<stateDir>/runs/<issue>-<n>/` (ADR-0041): the projected state, what each step was
+   * handed and produced (redacted), the machine-written handoffs and the evidence links. Local, never committed.
+   */
+  runs: z.object({
+    /** windowed: runs kept per issue; older ones are pruned at the start of each tick. */
+    keep: z.number().int().min(1).default(3),
+    /** Closed runs older than this are pruned, whatever `keep` says. */
+    maxAgeDays: z.number().int().min(1).default(30),
+    /** Ceiling for one recorded input or output; an input keeps its head, an output its tail. */
+    maxIoBytes: z.number().int().min(1024).default(256 * 1024),
+    /** Keep one comment on the PR with the run's steps, handoffs and evidence hashes, edited as the run moves. */
+    prSummary: z.boolean().default(true),
+  }).prefault({}),
+  /**
+   * Spec-driven development (ADR-0041): at dispatch the loop renders `<dir>/<issue>/{requirements,design,tasks}.md`
+   * into the worktree from the frozen contract and the approved plan; the worker commits them unchanged and
+   * `deliver` sends a fix round for a copy that is missing, uncommitted or drifted. Off by default — it adds files
+   * to every PR.
+   */
+  spec: z.object({
+    enabled: z.boolean().default(false),
+    /** Directory at the repository root that holds one folder per issue. */
+    dir: nonEmpty.default('specs'),
+  }).prefault({}),
+  /**
    * Knobs the retro is allowed to move by itself, each inside a declared range and justified by a declared metric.
    *
    * A knob with no metric is not auto-adjustable: the metric is what proves the change helped, and it is the same
