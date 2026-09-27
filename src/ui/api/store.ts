@@ -127,7 +127,8 @@ const reconcileAgainstEngineState = (state: ProjectionState, stateDir: string): 
     // unless a fresh run was already enqueued for it.
     if (delivery.cancelledAt && delivery.cancelledAt >= delivery.finishedAt) {
       const record = next.issues[issue]
-      if (record && record.phase !== 'available' && record.phase !== 'running') next = { issues: { ...next.issues, [issue]: { ...record, phase: 'available', reviewState: null, dispatch: null, error: null } } }
+      // `completed` too: a human closing the issue ("close-issue" decision) marks the delivery the same way.
+      if (record && record.phase !== 'available' && record.phase !== 'running' && record.phase !== 'completed') next = { issues: { ...next.issues, [issue]: { ...record, phase: 'available', reviewState: null, dispatch: null, error: null } } }
       continue
     }
     const enginePhase = phaseForDeliveryOutcome(delivery.finalOutcome, 'review')
