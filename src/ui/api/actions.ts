@@ -1,5 +1,6 @@
 import type { CommandRunner } from '../../adapters/command.js'
 import { orcaTerminalClose, orcaWorktreeRemove } from '../../adapters/orca-cli.js'
+import { githubPullRequestsForBranch } from '../../adapters/github-cli.js'
 import { createDispatchLedger, readActiveClaims } from '../../execution/coordination.js'
 import { ensureBaseView } from '../../loop/base-view.js'
 import type { LoadedLoopConfig, ModelReference } from '../../loop/config.js'
@@ -197,14 +198,24 @@ export const cancelRun = async (context: ActionContext, issue: string, runId: st
 
 /** `queue.ts`'s own `retry` issues a fresh run id for the new attempt (its own attempt-chain bookkeeping);
  * `ui.run-enqueued` is re-emitted for the same reason a fresh confirm emits it — a new attempt is queued. */
-export const retryRun = (context: ActionContext, issue: string, runId: string): { readonly runId: string } => {
+/** The open PR on an issue's dispatch branch, for a worker that opened it after its delivery had already stopped
+ * (law-os AGE-1753: blocked, then PR #30). Without it Retry queued a fresh attempt that could never dispatch past
+ * the busy worktree. `null` when there is none or GitHub cannot be asked. */
+const openPrForDispatch = async (context: ActionContext, issue: string): Promise<number | null> => {
+  const branch = listDispatched(context.loaded.stateDir).find((dispatch) => dispatch.issue === issue)?.branch
+  if (!branch) return null
+  try { return (await githubPullRequestsForBranch(context.runner, { repo: context.loaded.config.project.repo, head: branch }))[0]?.number ?? null } catch { return null }
+}
+
+export const retryRun = async (context: ActionContext, issue: string, runId: string): Promise<{ readonly runId: string }> => {
   const { loaded } = context
   const queue = createIssueQueue({ stateDir: loaded.stateDir })
   clearRestarts(loaded.stateDir, issue)
   // A run turns `completed` once its PR is observed. If delivery then gave up (fix-round cap, stuck, a failed
   // pass), the PR is still open and its worktree still in review — a fresh attempt could never dispatch past it.
   // Retry resumes delivery on that PR instead: the same reset deliver applies itself when a new head arrives.
-  const delivery = readDeliveryState(loaded.stateDir, issue)
+  const recorded = readDeliveryState(loaded.stateDir, issue)
+  const delivery = recorded.prNumber === null && recorded.finishedAt ? { ...recorded, prNumber: await openPrForDispatch(context, issue) } : recorded
   const status = queue.get(runId)?.status
   const idle = status !== undefined && !['queued', 'dispatching', 'running'].includes(status)
   // A cancelled run went through cleanup (terminal, worktree, lease): resuming its delivery would act on nothing. It
