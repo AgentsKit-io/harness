@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
-  "contentHash": "86b080b854995915bb68a948a3a0dd8779970294915ae8e0b740ab087c582a7d",
+  "contentHash": "079313b034f3985177a7094063c37c6bf612c9a4bcc47362c1f2a5dc26f25c94",
   "contentHashAlgo": "sha256-normalized-v1",
-  "generatedAt": "2026-09-27T22:16:59.251Z",
+  "generatedAt": "2026-09-27T22:49:32.341Z",
   "project": {
     "name": "AgentsKit Harness",
     "root": "."
@@ -5934,7 +5934,7 @@
         "ts",
         "api"
       ],
-      "contentHash": "3d2a13d0b4c87935e8c483b48ea9eb1ebecada11c6e12749f9159de3645bc7ea"
+      "contentHash": "342022bb688b44c1d695b44b289f27742ac9f7e37b0d3f05e172e04d549caf29"
     },
     {
       "id": "module:src/ui/api/wizard.ts",
@@ -8797,7 +8797,7 @@
         "ts",
         "test"
       ],
-      "contentHash": "0c8c01310b19c54c54de812dc0ef14a74b038c062bb043c40b1120864b5a8d5e"
+      "contentHash": "a70312fb398142d09774e181ee21b36fe304fa82175f0b9d0f99a24e6dc662f1"
     },
     {
       "id": "module:test/ui-system.test.ts",
@@ -8957,7 +8957,7 @@
     }
   },
   "inputs": {
-    "hash": "c3cb4ee1717cfa819359d1b8f19bf84105df48a488a098c3e84d095e3cf56638",
+    "hash": "1a514a8028d3d56cfc79666d6d16adf2865dd80963a0c9689947f968d71dc605",
     "fileCount": 541,
     "projectionVersion": 2
   },
@@ -8980,9 +8980,9 @@
   "projection": {
     "type": "retrieval-index",
     "schemaVersion": 1,
-    "contentHash": "089dbf6f122966859a99cd04caa65177e8fc7d71fdffd14e29b15a5b955497f5",
+    "contentHash": "c2b2398964b4d79889b91bc01a122b74ba81d54bfddf450874306b83b570ce4c",
     "contentHashAlgo": "sha256-normalized-v1",
-    "snapshotHash": "fdb028f0eff869e741e9359423a2a9fa40839ac51383875d71a1999b05418ffa",
+    "snapshotHash": "6b242463675df1118e1ba28deb7d0dde0b48a9acc240d1861a5edce631e26f77",
     "overlayHash": "f99666ff9119084dd25c2974ae64eb6935ec2aa785ff5ad478fb9d541f7a5e94",
     "configurationHash": "816afaf6a7dc09767f7594d8fd80024612ca0f33becf0e44dde0107fcf2782df",
     "lexiconVersion": 1,
@@ -30687,6 +30687,11 @@
               "confidence": "observed"
             },
             {
+              "kind": "imports",
+              "id": "module:test/ui-store.test.ts",
+              "confidence": "observed"
+            },
+            {
               "kind": "re-exports",
               "id": "module:src/index.ts",
               "confidence": "observed"
@@ -35796,7 +35801,7 @@
             }
           ]
         },
-        "contentHash": "3d2a13d0b4c87935e8c483b48ea9eb1ebecada11c6e12749f9159de3645bc7ea",
+        "contentHash": "342022bb688b44c1d695b44b289f27742ac9f7e37b0d3f05e172e04d549caf29",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -45347,6 +45352,11 @@
             },
             {
               "kind": "imports",
+              "id": "module:src/loop/queue.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
               "id": "module:src/loop/tick.ts",
               "confidence": "observed"
             },
@@ -45357,7 +45367,7 @@
             }
           ]
         },
-        "contentHash": "0c8c01310b19c54c54de812dc0ef14a74b038c062bb043c40b1120864b5a8d5e",
+        "contentHash": "a70312fb398142d09774e181ee21b36fe304fa82175f0b9d0f99a24e6dc662f1",
         "provenance": "observed",
         "confidence": "observed"
       },
