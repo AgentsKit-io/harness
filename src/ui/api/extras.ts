@@ -22,6 +22,7 @@ import type { BoardSnapshot } from './board.js'
 import type { SnapshotExtras } from './contract.js'
 import type { IssueRecord } from './projection.js'
 import { withRunningHarness } from './running-harness.js'
+import { eventsKey } from './store.js'
 import { computeLocks, cronCadenceMs, reconcile } from './reconcile.js'
 
 /**
@@ -88,13 +89,6 @@ export const orcaCacheFor = (loaded: LoadedLoopConfig, runner: CommandRunner): O
 }
 
 // ---- windowed event tail, re-parsed only when the file changes -----------------------------------------------
-
-const eventsKey = (stateDir: string): string => {
-  const path = join(stateDir, 'events.ndjson')
-  if (!existsSync(path)) return 'none'
-  const stat = statSync(path)
-  return `${stat.mtimeMs}:${stat.size}`
-}
 
 export const createEventTail = (stateDir: string) => {
   let key = ''

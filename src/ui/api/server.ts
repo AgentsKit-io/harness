@@ -3,7 +3,8 @@ import { existsSync, readFileSync, statSync } from 'node:fs'
 import { createServer, request as httpRequest, type IncomingMessage, type Server, type ServerResponse } from 'node:http'
 import { extname, join, normalize, sep } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { hashJson } from '../../kernel/hash.js'
+import { sha256 } from '../../kernel/hash.js'
+import { notificationsConfigured } from '../../loop/notify.js'
 import { detectProviders } from '../../adapters/providers.js'
 import { resolveConnectors } from '../../loop/connectors.js'
 import { loadLoopConfig, parseModelRef, type LoadedLoopConfig, type ModelReference } from '../../loop/config.js'
@@ -44,6 +45,12 @@ import {
 const DEFAULT_HOST = '127.0.0.1'
 const DEFAULT_PORT = 4321
 const POLL_INTERVAL_MS = 1_000
+/** With no tab open the snapshot only feeds attention alerts (`alerts.observe`), which do not need 1 s latency. */
+const IDLE_INTERVAL_MS = 60_000
+/** An unchanged snapshot is still resent this often, so the tab's "updated Ns ago" (from `generatedAt`) stays honest. */
+const HEARTBEAT_MS = 15_000
+/** `generatedAt`/`ageMs` change on every build; hashing them made the SSE dedupe never match. */
+const withoutClockFields = (key: string, value: unknown): unknown => key === 'generatedAt' || key === 'ageMs' ? undefined : value
 const SESSION_HEADER = 'x-harness-session'
 
 export const UI_SNAPSHOT_SCHEMA_VERSION = 1 as const
@@ -455,17 +462,24 @@ export const startUiServer = async (options: UiServerOptions = {}): Promise<UiSe
     })
   })
   const expectedUrl = `${requestOrigin(host, boundPort)}/`
+  // Nobody watching: run the pipeline (tracker, Orca, projection sync) only as often as alerts need it, or not at all.
+  const alertsWatch = Boolean(loaded?.config.notifications && notificationsConfigured(loaded.config))
   let previousDigest = ''
+  let sentAtMs = Number.NEGATIVE_INFINITY
+  let ranAtMs = Number.NEGATIVE_INFINITY
   let timerInFlight = false
   const timer = setInterval(() => {
     if (timerInFlight) return
+    if (clients.size === 0 && (!alertsWatch || Date.now() - ranAtMs < IDLE_INTERVAL_MS)) return
     timerInFlight = true
+    ranAtMs = Date.now()
     void (async () => {
       try {
         const current = await snapshot()
-        const digest = hashJson(current)
-        if (digest === previousDigest) return
+        const digest = sha256(JSON.stringify(current, withoutClockFields))
+        if (digest === previousDigest && Date.now() - sentAtMs < HEARTBEAT_MS) return
         previousDigest = digest
+        sentAtMs = Date.now()
         const message = `event: snapshot\ndata: ${json(current)}\n\n`
         for (const client of clients) { try { client.write(message) } catch { clients.delete(client) } }
       } catch (error) {
