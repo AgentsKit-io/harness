@@ -46,6 +46,12 @@ export interface OrcaWorktree {
    * escalation preserved for human inspection, with its agent already finished — not one still doing work.
    */
   readonly activeAgentCount: number | null
+  /**
+   * Agents in the worktree in any state (working, waiting, done), from `worktree ps`'s `agents`; `null` when not
+   * reported. `0` means no agent process is attached at all — e.g. the CLI never started or exited, leaving a bare
+   * shell behind whatever command the terminal was created with.
+   */
+  readonly agentCount: number | null
 }
 
 export interface OrcaLinkedPullRequest { readonly number: number; readonly state: 'OPEN' | 'CLOSED' | 'MERGED' | null }
@@ -119,6 +125,7 @@ export const parseOrcaWorktrees = (result: unknown): readonly OrcaWorktree[] => 
     comment: str(item['comment']),
     activity: str(item['status'], 'unknown'),
     activeAgentCount: activeAgentCount(item['agents']),
+    agentCount: Array.isArray(item['agents']) ? item['agents'].length : null,
   })).filter((item) => item.id)
 }
 

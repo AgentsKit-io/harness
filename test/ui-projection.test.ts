@@ -153,3 +153,15 @@ describe('the runner observation overlay', () => {
     expect(overlayRunnerObservation(reviewed, { number: 226, state: 'OPEN' })).toBe(reviewed)
   })
 })
+
+describe('worker events before a PR exists', () => {
+  it('keeps an issue running while deliver nudges or waits on a worker with no PR, and moves it to review once one exists', () => {
+    // Live (law-os AGE-1751/1753): a brief nudge on a worker that never started showed the issue as in review.
+    const nudged = fold([enqueued, dispatched, { at: at(2), type: 'worker.nudged', issue: 'ENG-1', kind: 'brief' }])
+    expect(nudged.issues['ENG-1']!.phase).toBe('running')
+    const waiting = fold([enqueued, dispatched, { at: at(2), type: 'worker.waiting', issue: 'ENG-1', reason: 'worker active' }])
+    expect(waiting.issues['ENG-1']!.phase).toBe('running')
+    const withPr = fold([enqueued, dispatched, { at: at(2), type: 'worker.ci-round', issue: 'ENG-1', pr: 7, head: 'h', round: 1 }, { at: at(3), type: 'worker.nudged', issue: 'ENG-1', kind: 'ci' }])
+    expect(withPr.issues['ENG-1']!.phase).toBe('review')
+  })
+})

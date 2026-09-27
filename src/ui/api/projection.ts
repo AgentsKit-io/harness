@@ -169,11 +169,15 @@ export const reduce = (state: ProjectionState, event: LoopEvent): ProjectionStat
       return withIssue(state, issue, at, (record) => ({ ...record, phase: 'needs-decision' }))
     case 'worker.failed':
       return withIssue(state, issue, at, (record) => ({ ...record, phase: 'blocked', error: strOrNull(event['reason']) ?? record.error }))
+    // Deliver emits these before a PR exists too (nudging an idle worker, handing off, waiting): without a PR the
+    // worker is still implementing, so the issue stays `running` — calling it review showed never-started workers
+    // (law-os AGE-1751/1753, brief typed into a bare shell) as work awaiting review.
     case 'worker.waiting':
-    case 'worker.reviewed':
-    case 'worker.fix-round':
     case 'worker.nudged':
     case 'worker.handed-off':
+      return withIssue(state, issue, at, (record) => ({ ...record, phase: record.pullRequest ? 'review' : 'running' }))
+    case 'worker.reviewed':
+    case 'worker.fix-round':
     case 'worker.needs-input':
       return withIssue(state, issue, at, (record) => ({ ...record, phase: 'review' }))
     case 'worker.ci-round':
