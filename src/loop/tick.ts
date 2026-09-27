@@ -588,10 +588,10 @@ export const runTick = async (input: TickInput): Promise<TickReport> => {
     if (dryRun) return true
     const store = createHitlStore(loaded.stateDir)
     // A request's id is keyed by this contract's own digest, so a superseding contract (a new blocking
-    // ambiguity, or the same one re-asked before the open-HITL skip above existed) always creates new
+    // ambiguity, or the same one re-asked before the open-HITL skip in runTick existed) always creates new
     // request ids rather than reusing the old ones — leaving the previous batch open forever otherwise.
-    // Confirmed live: 110 open requests had accumulated this way before the skip above was added.
-    for (const stale of store.list({ status: 'open', issue })) store.markStale(stale.requestId, 'superseded by a newer contract for the same issue')
+    // Confirmed live: 110 open requests had accumulated this way before that skip was added.
+    for (const stale of store.list({ status: 'open', issue }).filter((request) => request.stage === 'contract')) store.markStale(stale.requestId, 'superseded by a newer contract for the same issue')
     const batchId = `contract:${issue}:${stored.digest}`
     for (const [index, request] of requests.entries()) {
       const requestId = `${batchId}:${index}`
@@ -742,10 +742,15 @@ export const runTick = async (input: TickInput): Promise<TickReport> => {
     // evaluations ran long enough that fresh, never-yet-evaluated candidates never got reached in the same tick.
     // Skip cheaply instead — until `store.answer(...)` marks the request no longer 'open', at which point the
     // normal path below regenerates with `priorHitlAnswers` folded in.
-    const openHitl = createHitlStore(loaded.stateDir).list({ status: 'open', issue: detail.identifier })
+    // Contract questions only: an open plan or review question belongs to its own stage and must not freeze this one.
+    const openHitl = createHitlStore(loaded.stateDir).list({ status: 'open', issue: detail.identifier }).filter((request) => request.stage === 'contract')
     if (openHitl.length) {
       const request = openHitl[0]!
-      results.push({ issue: detail.identifier, outcome: 'escalated', reason: `awaiting a human answer to a standing question (asked ${request.createdAt}): ${request.question}` })
+      const reason = `awaiting a human answer to a standing question (asked ${request.createdAt}): ${request.question}`
+      // Same bookkeeping as the escalation path: a queue run left in `dispatching` is never picked up again
+      // (`queue.mode: explicit` reports "no longer queued" every tick, even after the answer).
+      updateQueueRun(selectedRun, { status: 'needs-input', error: reason, projection: { stage: 'needs-input' } })
+      results.push({ issue: detail.identifier, outcome: 'escalated', reason })
       continue
     }
     let stored = cachedContract
