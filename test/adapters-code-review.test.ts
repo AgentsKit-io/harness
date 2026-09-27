@@ -137,6 +137,19 @@ describe('runCodeReview', () => {
     expect(outcome).toMatchObject({ status: 'incomplete', resultParsed: false, blocking: [] })
   })
 
+  it('reports clean when the CLI exits 1 on findings that are all below the harness severity floor', async () => {
+    const resultFile = tempResultFile()
+    const outcome = await runCodeReview(writes(resultFile, JSON.stringify({ blocking: true, findings: [{ severity: 'nit', title: 'rename x' }, { severity: 'low', title: 'comment typo' }] }), cmd({ code: 1 })), { ...baseInput, resultFile })
+    expect(outcome).toMatchObject({ status: 'clean', exitCode: 1, resultParsed: true, blocking: [] })
+  })
+
+  it('reports incomplete when the reviewer claims blocking but lists no finding at all', async () => {
+    const resultFile = tempResultFile()
+    const outcome = await runCodeReview(writes(resultFile, JSON.stringify({ blocking: true, findings: [] }), cmd({ code: 1 })), { ...baseInput, resultFile })
+    expect(outcome).toMatchObject({ status: 'incomplete', resultParsed: true })
+    expect(outcome.summary).toContain('blocking reported with no findings')
+  })
+
   it('reports incomplete, never clean, when the CLI exits 0 with a missing or unparseable result file', async () => {
     const missing = await runCodeReview(runner(cmd({ code: 0 })), { ...baseInput, resultFile: tempResultFile() })
     expect(missing).toMatchObject({ status: 'incomplete', resultParsed: false })

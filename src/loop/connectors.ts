@@ -40,7 +40,8 @@ export interface TrackerConnector {
   /** The attested transition adapter, for the state changes that are recorded as decisions. */
   readonly transitions: TrackingAdapter
   /** Validate authenticated identity, repository access and write permission before a mutating run. */
-  readonly preflight?: () => Promise<{ readonly login: string; readonly permission: string }>
+  /** `missingLabels`: lifecycle labels absent in the tracker today (created on first use where the tracker can). */
+  readonly preflight?: () => Promise<{ readonly login: string; readonly permission: string; readonly missingLabels?: readonly string[] }>
 }
 
 /** Everything the loop needs from the code host: pull requests, their checks, comments and the merge. */

@@ -28,7 +28,7 @@ import { createExtrasBuilder, type ExtrasBuilder } from './extras.js'
 import { createAlertSender, type AlertSender } from './alerts.js'
 import { overlayRunnerObservation, type IssueRecord } from './projection.js'
 import { loopStatus } from '../../loop/install.js'
-export { withRunningHarness } from './running-harness.js'
+export { withRunningHarness } from '../../loop/automations.js'
 import { createRunnerConnector, type WorkspaceObservation } from '../../loop/runner-connector.js'
 import {
   answerDecision, archiveRun, cancelRun, decideIssue, enqueueRun, generateOrReuseContract, resumePausedIssue,
