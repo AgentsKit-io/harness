@@ -56,6 +56,8 @@ const idsOf = (body: Record<string, unknown>): readonly string[] => {
 const reply = (response: ServerResponse, status: number, body: unknown): true => { sendJson(response, status, body); return true }
 /** Ids that become path segments under the state dir: no separators, no parent references. */
 const safeName = (value: string | undefined): value is string => value !== undefined && SAFE_IDENTIFIER.test(value) && !value.includes('/') && !value.includes('..')
+/** An issue id keeps its `/`: the GitHub tracker names issues `owner/repo#N`, stored nested under `issues/` as elsewhere. */
+const safeIssue = (value: string | null | undefined): value is string => typeof value === 'string' && SAFE_IDENTIFIER.test(value) && !value.includes('..')
 
 const stageOf = (value: string | undefined): LoopStageName | null => STAGES.find((stage) => stage === value) ?? null
 
@@ -109,7 +111,7 @@ const parseBatch = async (loaded: LoadedLoopConfig, body: unknown): Promise<read
   if (!entries.length || entries.length > MAX_BATCH) throw new Error(`A batch lists 1–${MAX_BATCH} issues.`)
   const seen = new Set<string>()
   for (const { issue } of entries) {
-    if (issue === null || !safeName(issue)) throw new Error('Every batch entry needs a valid issue identifier.')
+    if (!safeIssue(issue)) throw new Error('Every batch entry needs a valid issue identifier.')
     if (seen.has(issue)) throw new Error(`${issue} is listed twice.`)
     seen.add(issue)
   }
@@ -167,7 +169,7 @@ export const createActionRoutes = (deps: ActionRouteDeps = { contract: (context,
 
   try {
     if (area === 'issues' && operation === 'approve' && parts.length === 3) {
-      if (!safeName(id)) return reply(response, 400, { error: 'invalid_issue' })
+      if (!safeIssue(id)) return reply(response, 400, { error: 'invalid_issue' })
       const head = stringOf(recordOf(await readRequestBody(request))['head'])
       if (!head || !HEAD.test(head)) return reply(response, 400, { error: 'An approval names the exact head commit it reviewed (7+ hex characters).' })
       const state = approveHeldDelivery(loaded, id, { head, by: actor })

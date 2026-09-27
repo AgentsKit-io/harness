@@ -8,6 +8,7 @@ const config = () => validateLoopConfig({
   models: { orchestrator: [['codex/model']], reviewer: [['codex/model']], builder: [['codex/model']], watcher: [['codex/model']], providers: { codex: { bin: 'codex', tui: 'codex' } } },
 })
 
+const PRESENT_LABELS = ['loop:todo', 'loop:in-progress', 'loop:review', 'loop:done', 'loop:blocked', 'ai-ready', 'ai-working', 'ai-pr', 'ai-done', 'ai-blocked'].map((name) => ({ name }))
 const detail = (labels = [{ name: 'loop:todo' }]) => ({ number: 7, url: 'https://github.com/acme/app/issues/7', title: 'Fix queue', state: 'OPEN', body: 'description', labels, assignees: [{ login: 'alice' }], createdAt: '2026-09-20T00:00:00Z', updatedAt: '2026-09-23T00:00:00Z', comments: [] })
 
 describe('GitHub tracker adapter', () => {
@@ -20,6 +21,7 @@ describe('GitHub tracker adapter', () => {
     const calls: string[][] = []
     const runner: CommandRunner = { run: async (argv): Promise<CommandResult> => {
       calls.push([...argv])
+      if (argv.includes('label') && argv.includes('list')) return { code: 0, stdout: JSON.stringify(PRESENT_LABELS), stderr: '', timedOut: false, durationMs: 1 }
       if (argv.includes('user')) return { code: 0, stdout: JSON.stringify({ login: 'alice' }), stderr: '', timedOut: false, durationMs: 1 }
       if (argv.includes('issue') && argv.includes('list')) return { code: 0, stdout: JSON.stringify([detail()]), stderr: '', timedOut: false, durationMs: 1 }
       if (argv.includes('issue') && argv.includes('view')) return { code: 0, stdout: JSON.stringify(detail()), stderr: '', timedOut: false, durationMs: 1 }
@@ -39,6 +41,7 @@ describe('GitHub tracker adapter', () => {
     const calls: string[][] = []
     const runner: CommandRunner = { run: async (argv): Promise<CommandResult> => {
       calls.push([...argv])
+      if (argv.includes('label') && argv.includes('list')) return { code: 0, stdout: JSON.stringify(PRESENT_LABELS), stderr: '', timedOut: false, durationMs: 1 }
       if (argv.includes('issue') && argv.includes('view')) return { code: 0, stdout: JSON.stringify(detail([{ name: 'ai-working' }])), stderr: '', timedOut: false, durationMs: 1 }
       return { code: 0, stdout: '', stderr: '', timedOut: false, durationMs: 1 }
     } }
@@ -47,6 +50,38 @@ describe('GitHub tracker adapter', () => {
     const edit = calls.find((argv) => argv.includes('issue') && argv.includes('edit'))
     expect(edit).toEqual(expect.arrayContaining(['--remove-label', 'ai-working', '--add-label', 'ai-ready']))
     expect(edit).not.toContain('ai-done')
+  })
+
+  it('creates a missing lifecycle label before applying it, instead of failing the transition', async () => {
+    // Live: `ai-done` did not exist, so every completion after a merge failed with "'ai-done' not found".
+    const calls: string[][] = []
+    const runner: CommandRunner = { run: async (argv): Promise<CommandResult> => {
+      calls.push([...argv])
+      if (argv.includes('label') && argv.includes('list')) return { code: 0, stdout: JSON.stringify(['ai-ready', 'ai-working', 'ai-pr', 'ai-blocked'].map((name) => ({ name }))), stderr: '', timedOut: false, durationMs: 1 }
+      if (argv.includes('label') && argv.includes('create')) return { code: 0, stdout: '', stderr: '', timedOut: false, durationMs: 1 }
+      if (argv.includes('issue') && argv.includes('view')) return { code: 0, stdout: JSON.stringify(detail([{ name: 'ai-pr' }])), stderr: '', timedOut: false, durationMs: 1 }
+      return { code: 0, stdout: '', stderr: '', timedOut: false, durationMs: 1 }
+    } }
+    const github = validateLoopConfig({ ...config(), github: { ...config().github, issues: { ...config().github.issues, labels: { todo: 'ai-ready', inProgress: 'ai-working', review: 'ai-pr', done: 'ai-done', blocked: 'ai-blocked' } } } })
+    const tracker = createGitHubTracker({ runner, config: github })
+    await tracker.setState({ issue: 'acme/app#7', to: 'Done' })
+    const created = calls.filter((argv) => argv.includes('label') && argv.includes('create'))
+    expect(created.map((argv) => argv[argv.indexOf('create') + 1])).toEqual(['ai-done'])
+    expect(calls.indexOf(created[0]!)).toBeLessThan(calls.findIndex((argv) => argv.includes('issue') && argv.includes('edit')))
+    // Cached per connector: a second transition does not list or create labels again.
+    await tracker.setState({ issue: 'acme/app#8', to: 'Done' })
+    expect(calls.filter((argv) => argv.includes('label') && argv.includes('list'))).toHaveLength(1)
+  })
+
+  it('treats a label another machine created in the meantime as present', async () => {
+    const runner: CommandRunner = { run: async (argv): Promise<CommandResult> => {
+      if (argv.includes('label') && argv.includes('list')) return { code: 0, stdout: '[]', stderr: '', timedOut: false, durationMs: 1 }
+      if (argv.includes('label') && argv.includes('create')) return { code: 1, stdout: '', stderr: 'label with name "ai-done" already exists; use `--force` to update its color and description', timedOut: false, durationMs: 1 }
+      if (argv.includes('issue') && argv.includes('view')) return { code: 0, stdout: JSON.stringify(detail([{ name: 'ai-pr' }])), stderr: '', timedOut: false, durationMs: 1 }
+      return { code: 0, stdout: '', stderr: '', timedOut: false, durationMs: 1 }
+    } }
+    const github = validateLoopConfig({ ...config(), github: { ...config().github, issues: { ...config().github.issues, labels: { todo: 'ai-ready', inProgress: 'ai-working', review: 'ai-pr', done: 'ai-done', blocked: 'ai-blocked' } } } })
+    await expect(createGitHubTracker({ runner, config: github }).setState({ issue: 'acme/app#7', to: 'Done' })).resolves.toBeUndefined()
   })
 
   it('deduplicates comments and fails preflight without write permission', async () => {

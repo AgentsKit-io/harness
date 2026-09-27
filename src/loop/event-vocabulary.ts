@@ -31,7 +31,7 @@ export const LOOP_EVENT_TYPES = {
   'plan.escalated': ['issue', 'cycles', 'unresolved'],
 
   /** A worker was launched in its own worktree. Carries the whole dispatch record plus the command that ran. */
-  'worker.dispatched': ['issue', 'worktree', 'worktreeId', 'branch', 'terminal', 'provider', 'model', 'effort', 'contractDigest', 'briefDigest', 'command', 'briefAccepted', 'tuiIdle', 'workerGuardInstalled'],
+  'worker.dispatched': ['issue', 'worktree', 'worktreeId', 'branch', 'terminal', 'provider', 'model', 'effort', 'contractDigest', 'briefDigest', 'command', 'briefAccepted', 'tuiIdle', 'workerGuardInstalled', 'maxFixRounds'],
   /** The dispatch itself failed — worktree, terminal or brief — before any work started. */
   'worker.dispatch-failed': ['issue', 'error'],
   /** `project.setup.command` ran in the fresh worktree. */
@@ -217,6 +217,10 @@ export const LOOP_EVENT_TYPES = {
    * a fresh run. The only decision type in the control plane that isn't a structured HITL question — there is
    * nothing to ask the LLM, the tracker state already says what happened. */
   'ui.issue-decided': ['issue', 'action'],
+  /** A human settled a `tracker.sync-failed` for an issue from the control plane: `action` is `retry` (the tracker
+   * update was re-applied and succeeded) or `dismiss` (a person accepted the tracker's current state). Earlier
+   * sync failures for the issue stop showing in Attention. */
+  'ui.tracker-sync-resolved': ['issue', 'action'],
 } as const satisfies Readonly<Record<string, readonly string[]>>
 
 export type LoopEventType = keyof typeof LOOP_EVENT_TYPES

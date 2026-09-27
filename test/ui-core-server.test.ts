@@ -106,6 +106,18 @@ describe('control plane core: extras, locks, reconcile, issue detail', () => {
     expect((await api(server, 'api/v1/issues/ENG-1/reconcile', { method: 'POST', body: '{}' })).status).toBe(409)
   })
 
+  it('settles a tracker sync failure from the control plane: dismiss clears the item, an unknown action is refused', async () => {
+    const root = mkdtempSync(join(tmpdir(), 'harness-ui-core-')); cleanups.push(root)
+    const loaded = loadedFor(root)
+    appendLoopEvent(loaded.stateDir, { at: new Date(Date.now() - 60_000).toISOString(), type: 'tracker.sync-failed', issue: 'ENG-3', operation: 'completion', error: "'ai-done' not found" })
+    const server = await start(loaded, boardOf([]))
+    expect((await extrasOf(server)).attention.find((item) => item.id === 'tracker-sync:ENG-3')?.actions.map((action) => action.id)).toEqual(['retry-sync', 'dismiss-sync', 'open'])
+    expect((await api(server, 'api/v1/issues/ENG-3/tracker-sync', { method: 'POST', body: JSON.stringify({ action: 'nope' }) })).status).toBe(400)
+    const dismissed = await api(server, 'api/v1/issues/ENG-3/tracker-sync', { method: 'POST', body: JSON.stringify({ action: 'dismiss' }) })
+    expect(dismissed.status).toBe(200)
+    expect((await extrasOf(server)).attention.some((item) => item.id === 'tracker-sync:ENG-3')).toBe(false)
+  })
+
   it('returns the issue detail: contract, criteria joined with DoD proofs, latest review, spend, fix rounds, next step', async () => {
     const root = mkdtempSync(join(tmpdir(), 'harness-ui-core-')); cleanups.push(root)
     const loaded = loadedFor(root)
