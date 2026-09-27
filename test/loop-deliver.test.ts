@@ -21,7 +21,7 @@ interface Scenario {
   readonly mergedPr?: Record<string, unknown>
   readonly closedPr?: Record<string, unknown>
   readonly terminals?: readonly Record<string, unknown>[]
-  readonly review?: { readonly code: number; readonly findings?: readonly Record<string, unknown>[]; readonly incomplete?: boolean; readonly failureMessage?: string }
+  readonly review?: { readonly code: number; readonly findings?: readonly Record<string, unknown>[]; readonly incomplete?: boolean; readonly failureMessage?: string; /** The CLI exits without writing `--result`. */ readonly noResultFile?: boolean }
   readonly mergeRefused?: boolean
   readonly dispatchedAt?: string
   readonly reviewerAvailable?: boolean
@@ -140,7 +140,7 @@ const setup = (initial: Scenario = {}) => {
       if (key.startsWith('orca linear') || key.startsWith('orca worktree set') || key.startsWith('orca worktree rm')) return okResult({ ok: true })
       if (argv[0] === 'agentskit-review') {
         const resultFile = argv[argv.indexOf('--result') + 1]
-        if (resultFile && scenario.review) writeFileSync(resultFile, JSON.stringify({ blocking: scenario.review.code === 1, incomplete: scenario.review.incomplete ?? false, findings: scenario.review.findings ?? [] }))
+        if (resultFile && scenario.review && !scenario.review.noResultFile) writeFileSync(resultFile, JSON.stringify({ blocking: scenario.review.code === 1, incomplete: scenario.review.incomplete ?? false, findings: scenario.review.findings ?? [] }))
         return { code: scenario.review?.code ?? 0, stdout: scenario.review?.failureMessage ?? '## Code review — done', stderr: '', timedOut: false, durationMs: 1 }
       }
       if (argv[0] === 'gh' && argv[1] === 'api' && argv.includes('--method')) return scenario.mergeRefused ? { code: 1, stdout: JSON.stringify({ message: 'Head branch was modified.' }), stderr: '', timedOut: false, durationMs: 1 } : ok({ merged: true, sha: 'deadbeef', message: 'merged' })
@@ -334,6 +334,18 @@ describe('deliver', () => {
     const events = readFileSync(join(env.loaded.stateDir, 'events.ndjson'), 'utf8')
     expect(events).toContain('"type":"provider.cooldown"')
     expect(events).toContain('"source":"review"')
+  })
+
+  it('never merges on a review that wrote no result file: incomplete, then held after two attempts (fail-closed)', async () => {
+    const env = setup({ review: { code: 0, noResultFile: true } })
+    const first = (await deliver(env)).results[0]
+    expect(first).toMatchObject({ outcome: 'waiting', review: { status: 'incomplete' } })
+    await deliver(env)
+    expect((await deliver(env)).results[0]).toMatchObject({ outcome: 'held' })
+    expect(env.runner.calls.some((argv) => argv[0] === 'gh' && argv[1] === 'api' && argv.includes('--method'))).toBe(false)
+    const exitOne = setup({ review: { code: 1, noResultFile: true } })
+    expect((await deliver(exitOne)).results[0]).toMatchObject({ outcome: 'waiting', review: { status: 'incomplete' } })
+    expect(exitOne.runner.calls.some((argv) => argv[1] === 'terminal' && argv[2] === 'send')).toBe(false)
   })
 
   it('keeps why a review was incomplete, and says it when holding the PR for a human', async () => {
