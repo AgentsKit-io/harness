@@ -326,6 +326,14 @@ const AUTH_PATTERN = /failed to authenticate|not logged in|unauthori[sz]ed|inval
  */
 const QUOTA_PATTERN = /hit your (?:session|weekly|monthly|usage)?\s?limit|usage limit|session limit|credit balance|spend limit|out of (?:credits|quota)|temporarily limiting|overloaded/i
 
+/**
+ * What a failed CLI call said, bounded. A CLI prints its banner first and the error last — Codex emits ~10 KB of
+ * model/sandbox/hook lines, then "ERROR: You've hit your usage limit … try again at 3:23 PM" — so the tail is kept.
+ * Keeping the head classified a quota failure as `other` (no cooldown; law-os contract generation failed outright).
+ */
+export const providerFailureDetail = (outcome: { readonly stderr: string; readonly stdout: string }): string =>
+  `${outcome.stderr.trim()}\n${outcome.stdout.trim()}`.trim().slice(-600)
+
 export const classifyProviderFailure = (detail: string, timedOut = false): ProviderFailure['kind'] => {
   if (timedOut) return 'timeout'
   if (AUTH_PATTERN.test(detail)) return 'auth'
@@ -348,7 +356,7 @@ export const extractResetsAt = (detail: string, now: Date = new Date()): string 
     const totalMs = [...(relative[1] ?? '').matchAll(/(\d+)\s*(d|days?|h|hrs?|hours?|m|mins?|minutes?)\b/gi)].reduce((sum, part) => sum + Number(part[1]) * unitMs(part[2] ?? ''), 0)
     if (totalMs > 0) return new Date(now.getTime() + totalMs).toISOString()
   }
-  const clockMatch = detail.match(/resets?\s+(?:at\s+)?(\d{1,2}):(\d{2})\s*(am|pm)?/i)
+  const clockMatch = detail.match(/(?:resets?|try again)\s+(?:at\s+)?(\d{1,2}):(\d{2})\s*(am|pm)?/i)
   if (clockMatch) {
     let hour = Number(clockMatch[1])
     const minute = Number(clockMatch[2])
@@ -417,7 +425,7 @@ export const generateContract = async (input: GenerateContractInput): Promise<St
     const timeoutMs = input.timeoutMs ?? input.config.contract.timeoutMs
     const outcome = await input.runner.run(argv, { timeoutMs, cwd: input.root, promptOnStdin: true })
     input.onProviderCall?.({ provider: candidate.provider, model: candidate.model, effort: candidate.effort, durationMs: outcome.durationMs, exitCode: outcome.code, timedOut: outcome.timedOut, stdoutBytes: outcome.stdout.length, stderrBytes: outcome.stderr.length, io: { prompt, stdout: outcome.stdout } })
-    const detail = `${outcome.stderr.trim()}\n${outcome.stdout.trim()}`.trim().slice(0, 600)
+    const detail = providerFailureDetail(outcome)
     if (outcome.timedOut || outcome.code !== 0) {
       const failure: ProviderFailure = { provider: candidate.provider, model: candidate.model, kind: classifyProviderFailure(detail, outcome.timedOut), detail: outcome.timedOut ? `timed out after ${timeoutMs}ms` : `exited ${outcome.code ?? 'null'}: ${detail || 'no output'}` }
       failures.push(failure)
