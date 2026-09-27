@@ -165,6 +165,10 @@ export const reduce = (state: ProjectionState, event: LoopEvent): ProjectionStat
     case 'worker.blocked':
     case 'worker.stuck':
       return withIssue(state, issue, at, (record) => ({ ...record, phase: 'blocked', error: strOrNull(event['reason']) ?? record.error }))
+    // Aborted and queued again from scratch: the old dispatch (terminal, worktree) no longer exists; the next
+    // `worker.dispatched` fills a new one. Running, not blocked — the loop is already on it.
+    case 'worker.restarted':
+      return withIssue(state, issue, at, (record) => ({ ...record, phase: 'running', reviewState: null, dispatch: null, pullRequest: null, error: `restarted: ${strOrNull(event['reason']) ?? 'lost tracking'}` }))
     case 'worker.abandoned':
       return withIssue(state, issue, at, (record) => ({ ...record, phase: 'needs-decision' }))
     case 'worker.failed':

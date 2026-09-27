@@ -152,6 +152,17 @@ describe('the projection store', () => {
   })
 })
 
+describe('a run restarted after losing track', () => {
+  it('shows running with no stale dispatch, and reconcile does not undo it', () => {
+    const stateDir = stateDirFor()
+    writeDispatch(stateDir, 'ENG-30')
+    writeFileSync(join(stateDir, 'issues', 'ENG-30', 'delivery.json'), JSON.stringify({ issue: 'ENG-30', prNumber: null, reviews: {}, fixRounds: 0, nudges: [], handoffs: [], heldFor: null, finishedAt: '2026-01-02T00:00:00.000Z', finalOutcome: 'restarted', cancelledAt: '2026-01-02T00:00:00.000Z' }))
+    appendLoopEvent(stateDir, { at: '2026-01-02T00:00:00.000Z', type: 'worker.lost-tracking', issue: 'ENG-30', evidence: 'worker terminal gone before a PR was opened', worktreeId: 'wt-ENG-30' })
+    appendLoopEvent(stateDir, { at: '2026-01-02T00:00:01.000Z', type: 'worker.restarted', issue: 'ENG-30', attempt: 2, restarts: 1, reason: 'worker terminal gone before a PR was opened' })
+    for (let sync = 0; sync < 2; sync += 1) expect(syncProjection(stateDir).issues['ENG-30']).toMatchObject({ phase: 'running', dispatch: null, error: expect.stringContaining('restarted') })
+  })
+})
+
 describe('a close-or-reopen decision on an abandoned delivery', () => {
   it('sticks across syncs instead of reverting to needs-decision', async () => {
     // Live (vivva #217, #92): PRs superseded and closed; "close issue" was recorded, the next sync re-read

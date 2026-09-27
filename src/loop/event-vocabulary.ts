@@ -70,6 +70,10 @@ export const LOOP_EVENT_TYPES = {
   'worker.blocked': ['issue', 'reason', 'worktreeId'],
   /** The worker stopped producing output for longer than the idle timeout and could not be revived. */
   'worker.stuck': ['issue', 'reason', 'worktreeId'],
+  /** Before any PR, the run's records and Orca stopped describing one live worker (`evidence` says how). */
+  'worker.lost-tracking': ['issue', 'evidence', 'worktreeId'],
+  /** The lost run was aborted (terminal, worktree, lease cleared) and a fresh attempt queued; `restarts` counts them. */
+  'worker.restarted': ['issue', 'attempt', 'restarts', 'reason'],
   /** The pull request was closed without merging, or the branch disappeared. */
   'worker.abandoned': ['issue', 'reason', 'worktreeId'],
   /** The delivery pass itself failed - a tool, a credential, an unexpected state. */
