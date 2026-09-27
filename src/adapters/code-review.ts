@@ -195,8 +195,12 @@ const finishCodeReview = (input: CodeReviewInput, outcome: Awaited<ReturnType<Co
   const findings = parsed?.findings ?? []
   const blocking = findings.filter((finding) => atLeast(finding.severity, input.minSeverity))
   const tail = `${outcome.stderr.trim()}\n${outcome.stdout.trim()}`.trim().slice(-800)
-  const status: CodeReviewOutcome['status'] = outcome.timedOut || outcome.code === 2 || outcome.code === null || (outcome.code !== 0 && outcome.code !== 1) || parsed === null || parsed.incomplete === true ? 'incomplete' : blocking.length || outcome.code === 1 || parsed?.blocking === true ? 'findings' : 'clean'
-  const summary = status === 'incomplete' ? `review incomplete (exit ${outcome.timedOut ? 'timeout' : outcome.code ?? 'null'}${parsed === null ? ', no parseable result file' : ''}): ${tail.split('\n').slice(-3).join(' ').slice(0, 300)}` : status === 'findings' ? `${blocking.length || 'unknown number of'} finding(s) at/above ${input.minSeverity}` : `clean at/above ${input.minSeverity} (${findings.length} lower-severity note(s))`
+  // The harness's own floor decides: exit 1 (or `blocking: true`) on findings that are all below `minSeverity` is
+  // clean here, not "findings" with nothing to fix — that left deliver waiting forever for a push nobody needed.
+  // A reviewer that claims blocking but lists no finding at all is contradicting itself: not evidence either way.
+  const selfContradicting = parsed !== null && parsed.blocking === true && findings.length === 0
+  const status: CodeReviewOutcome['status'] = outcome.timedOut || outcome.code === 2 || outcome.code === null || (outcome.code !== 0 && outcome.code !== 1) || parsed === null || parsed.incomplete === true || selfContradicting ? 'incomplete' : blocking.length ? 'findings' : 'clean'
+  const summary = status === 'incomplete' ? `review incomplete (exit ${outcome.timedOut ? 'timeout' : outcome.code ?? 'null'}${parsed === null ? ', no parseable result file' : selfContradicting ? ', blocking reported with no findings' : ''}): ${tail.split('\n').slice(-3).join(' ').slice(0, 300)}` : status === 'findings' ? `${blocking.length || 'unknown number of'} finding(s) at/above ${input.minSeverity}` : `clean at/above ${input.minSeverity} (${findings.length} lower-severity note(s))`
   return { status, exitCode: outcome.timedOut ? null : outcome.code, findings, blocking, summary, provider: input.provider, model: input.model ?? null, resultParsed: parsed !== null, rawTail: tail, usage, ...(hitl.length ? { hitl } : {}) }
 }
 
