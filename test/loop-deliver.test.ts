@@ -57,6 +57,10 @@ interface Scenario {
   readonly gitStatus?: string
   /** Id of an existing run-summary comment on the PR, returned by the marker lookup (`gh api ... --jq`). */
   readonly summaryCommentId?: number
+  /** The next N `gh pr list` calls fail (a transient GitHub error). */
+  readonly prListFailures?: number
+  /** The next N review invocations throw (the runner itself fails, e.g. a spawn error). */
+  readonly reviewThrows?: number
 }
 
 const basePr = (over: Record<string, unknown> = {}): Record<string, unknown> => ({ ...(fixture('gh-pr-view') as Record<string, unknown>), headRefName: 'person/eng-10-demo', files: [{ path: 'packages/demo/src/index.ts' }], statusCheckRollup: [{ __typename: 'CheckRun', name: 'ci', conclusion: 'SUCCESS', status: 'COMPLETED' }], mergeable: 'MERGEABLE', mergeStateStatus: 'CLEAN', state: 'OPEN', number: 42, url: 'https://github.com/o/r/pull/42', ...over })
@@ -112,6 +116,7 @@ const setup = (initial: Scenario = {}) => {
       if (key.startsWith('orca account list')) return okResult(account)
       if (key.startsWith('orca agent hooks status')) return ok(fixture('agent-hooks'))
       if (key === 'gh auth token') return { code: 0, stdout: 'ghp_test\n', stderr: '', timedOut: false, durationMs: 1 }
+      if (argv[0] === 'gh' && argv[1] === 'pr' && argv[2] === 'list' && (scenario.prListFailures ?? 0) > 0) { scenario.prListFailures = (scenario.prListFailures ?? 1) - 1; return { code: 1, stdout: '', stderr: 'HTTP 502: Bad Gateway', timedOut: false, durationMs: 1 } }
       if (argv[0] === 'gh' && argv[1] === 'pr' && argv[2] === 'list') {
         const state = argv[argv.indexOf('--state') + 1]
         const byHead = argv.includes('--head')
@@ -140,6 +145,7 @@ const setup = (initial: Scenario = {}) => {
       }
       if (scenario.orcaWorktreeMissing && (key.startsWith('orca worktree set') || key.startsWith('orca worktree rm'))) return { code: 1, stdout: '', stderr: 'selector_not_found', timedOut: false, durationMs: 1 }
       if (key.startsWith('orca linear') || key.startsWith('orca worktree set') || key.startsWith('orca worktree rm')) return okResult({ ok: true })
+      if (argv[0] === 'agentskit-review' && (scenario.reviewThrows ?? 0) > 0) { scenario.reviewThrows = (scenario.reviewThrows ?? 1) - 1; throw new Error('spawn agentskit-review EAGAIN') }
       if (argv[0] === 'agentskit-review') {
         const resultFile = argv[argv.indexOf('--result') + 1]
         if (resultFile && scenario.review && !scenario.review.noResultFile) writeFileSync(resultFile, JSON.stringify({ blocking: scenario.review.code === 1, incomplete: scenario.review.incomplete ?? false, findings: scenario.review.findings ?? [] }))
@@ -754,6 +760,35 @@ describe('deliver', () => {
     expect((await deliver(merge)).results[0]).toMatchObject({ outcome: 'held', reason: expect.stringContaining('beforeMerge hook failed: boom') })
     expect(merge.runner.calls.some((argv) => argv[0] === 'gh' && argv[1] === 'api' && argv.includes('--method'))).toBe(false)
     expect(readFileSync(join(merge.loaded.stateDir, 'events.ndjson'), 'utf8')).toContain('"type":"plugin.hook-failed","issue":"ENG-10","hook":"beforeMerge"')
+  })
+
+  it('treats one thrown pass as transient: waiting (lease kept, delivery.error logged), and the next pass proceeds normally', async () => {
+    const env = setup({ review: { code: 0 }, prListFailures: 1 })
+    const first = (await deliver(env)).results[0]
+    expect(first).toMatchObject({ outcome: 'waiting', reason: expect.stringContaining('transient error 1/3') })
+    expect(env.ledger.active()).toHaveLength(1)
+    expect(readDeliveryState(env.loaded.stateDir, 'ENG-10')).toMatchObject({ finishedAt: null, consecutiveErrors: 1 })
+    expect(readFileSync(join(env.loaded.stateDir, 'events.ndjson'), 'utf8')).toContain('"type":"delivery.error","issue":"ENG-10"')
+    expect((await deliver(env)).results[0]).toMatchObject({ outcome: 'merged' })
+    expect(readDeliveryState(env.loaded.stateDir, 'ENG-10').consecutiveErrors).toBe(0)
+  })
+
+  it('finishes as failed only after 3 consecutive thrown passes, and a new PR head resumes a failed issue', async () => {
+    const env = setup({ review: { code: 0 }, reviewThrows: 3 })
+    expect((await deliver(env)).results[0]).toMatchObject({ outcome: 'waiting' })
+    expect((await deliver(env)).results[0]).toMatchObject({ outcome: 'waiting', reason: expect.stringContaining('transient error 2/3') })
+    expect((await deliver(env)).results[0]).toMatchObject({ outcome: 'failed', reason: expect.stringContaining('3 consecutive errors') })
+    expect(env.ledger.active()).toEqual([])
+    const failed = readDeliveryState(env.loaded.stateDir, 'ENG-10')
+    expect(failed).toMatchObject({ finalOutcome: 'failed', consecutiveErrors: 3, failedAtHead: expect.stringMatching(/^c74d687e/) })
+    const events = readFileSync(join(env.loaded.stateDir, 'events.ndjson'), 'utf8').split('\n').filter(Boolean).map((line) => JSON.parse(line) as Record<string, unknown>)
+    expect(events.filter((event) => event['type'] === 'delivery.error').map((event) => event['consecutive'])).toEqual([1, 2, 3])
+    // Same head: stays failed, nothing re-run.
+    expect((await deliver(env)).results).toEqual([])
+    // New head: resumed and delivered.
+    env.scenario.pr = basePr({ headRefOid: '5555555555555555555555555555555555555555' })
+    expect((await deliver(env)).results[0]).toMatchObject({ outcome: 'merged' })
+    expect(readFileSync(join(env.loaded.stateDir, 'events.ndjson'), 'utf8')).toContain('"type":"worker.reopened"')
   })
 
   it('stops a dispatch that has run past delivery.maxDispatchMinutes, even though the terminal is still active', async () => {

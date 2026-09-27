@@ -82,6 +82,10 @@ export interface DeliveryState {
   readonly finalOutcome: DeliverOutcome | null
   /** Cancellation is a UI/control-plane terminal marker, not a delivery outcome. */
   readonly cancelledAt?: string | null
+  /** Passes in a row that threw (gh/Orca/review exception); reset by a pass that does not. */
+  readonly consecutiveErrors?: number
+  /** The PR head seen when the errors finished the issue as `failed`, so a new push can resume it. */
+  readonly failedAtHead?: string | null
 }
 
 export interface DeliverInput {
@@ -161,7 +165,9 @@ const unpushedCommits = async (ctx: Context, record: DispatchRecordFile): Promis
   } catch { return 0 }
 }
 
-const resumableOutcomes = new Set<DeliverOutcome>(['blocked', 'stuck', 'abandoned', 'held'])
+const resumableOutcomes = new Set<DeliverOutcome>(['blocked', 'stuck', 'abandoned', 'held', 'failed'])
+// ponytail: fixed, not configurable; one transient gh/Orca/review exception is `waiting`, this many in a row is `failed`.
+const DELIVERY_ERROR_LIMIT = 3
 const lastReviewHead = (state: DeliveryState): string | null => {
   const heads = Object.keys(state.reviews)
   return heads.at(-1) ?? state.heldFor
@@ -400,9 +406,11 @@ const escalateTracker = async (ctx: Context, record: DispatchRecordFile, kind: '
 }
 
 const reopenFinishedIssue = async (ctx: Context, record: DispatchRecordFile, state: DeliveryState, pr: PullRequestSnapshot): Promise<DeliveryState> => {
-  const previousHead = lastReviewHead(state)
-  if (!state.finishedAt || !state.finalOutcome || !resumableOutcomes.has(state.finalOutcome) || !previousHead || previousHead === pr.headSha) return state
-  const next: DeliveryState = { ...state, finishedAt: null, finalOutcome: null, fixRounds: 0, heldFor: null, nudges: [] }
+  // A `failed` issue compares against the head it failed at; failing before any PR was seen, any PR head is new to it.
+  const failed = state.finalOutcome === 'failed'
+  const previousHead = failed ? state.failedAtHead ?? null : lastReviewHead(state)
+  if (!state.finishedAt || !state.finalOutcome || !resumableOutcomes.has(state.finalOutcome) || (!previousHead && !failed) || previousHead === pr.headSha) return state
+  const next: DeliveryState = { ...state, finishedAt: null, finalOutcome: null, fixRounds: 0, heldFor: null, nudges: [], consecutiveErrors: 0, failedAtHead: null }
   saveState(ctx, next)
   event(ctx, { type: 'worker.reopened', issue: record.issue, pr: pr.number, previousHead, head: pr.headSha, previousOutcome: state.finalOutcome })
   ctx.notes.push(`${record.issue}: reopened after a new PR head (${pr.headSha.slice(0, 7)})`)
@@ -1248,6 +1256,8 @@ export const runDeliver = async (input: DeliverInput): Promise<DeliverReport> =>
         }
       }
     }
+    let threw = false
+    let seenHead: string | null = null
     try {
       const workerHitl = materializeWorkerHitl(ctx, record)
       if (workerHitl.invalid) { results.push({ issue: record.issue, outcome: 'blocked', reason: 'worker HITL request file is invalid; the worker protocol is blocked', actions: [] }); continue }
@@ -1267,6 +1277,7 @@ export const runDeliver = async (input: DeliverInput): Promise<DeliverReport> =>
       }
       const pr = open[0]
       if (pr) {
+        seenHead = pr.headSha
         const wasFinished = Boolean(state.finishedAt)
         state = await reopenFinishedIssue(ctx, record, state, pr)
         if (wasFinished && state.finishedAt) continue
@@ -1305,11 +1316,24 @@ export const runDeliver = async (input: DeliverInput): Promise<DeliverReport> =>
       if (state.finishedAt) continue
       results.push(await handleNoPullRequest(ctx, record, lease, state))
     } catch (error) {
+      threw = true
       const reason = message(error)
-      // Common tool/API failures are retryable. Finish the local attempt so its lease and capacity slot are released;
-      // the queue projection puts the issue back in Available and keeps this failed attempt in History.
-      finish(ctx, record, lease, state, 'failed', reason)
-      results.push({ issue: record.issue, outcome: 'failed', reason, actions: [] })
+      // Re-checking an already finished issue failed: its terminal outcome stands; try again next pass.
+      if (state.finishedAt) { notes.push(`${record.issue}: re-check failed: ${reason}`); continue }
+      // One gh/Orca/review exception is transient: keep the lease and wait. Only DELIVERY_ERROR_LIMIT in a row finish
+      // the attempt as `failed` (lease and slot released; a new PR head resumes it) instead of skipping it forever.
+      const consecutive = (state.consecutiveErrors ?? 0) + 1
+      const latest = readDeliveryState(loaded.stateDir, record.issue)
+      event(ctx, { type: 'delivery.error', issue: record.issue, error: reason, consecutive })
+      if (consecutive >= DELIVERY_ERROR_LIMIT) {
+        finish(ctx, record, lease, { ...latest, consecutiveErrors: consecutive, failedAtHead: seenHead }, 'failed', reason)
+        results.push({ issue: record.issue, outcome: 'failed', reason: `${consecutive} consecutive errors; last: ${reason}`, actions: [] })
+      } else {
+        saveState(ctx, { ...latest, consecutiveErrors: consecutive })
+        results.push({ issue: record.issue, outcome: 'waiting', reason: `transient error ${consecutive}/${DELIVERY_ERROR_LIMIT}: ${reason}`, actions: [] })
+      }
+    } finally {
+      if (!threw && (state.consecutiveErrors ?? 0) > 0) saveState(ctx, { ...readDeliveryState(loaded.stateDir, record.issue), consecutiveErrors: 0 })
     }
   }
 
