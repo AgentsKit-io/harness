@@ -21,7 +21,7 @@ import { buildAttention, latestStops, type AttentionInput } from './attention.js
 import type { BoardSnapshot } from './board.js'
 import type { SnapshotExtras } from './contract.js'
 import type { IssueRecord } from './projection.js'
-import { withRunningHarness } from './running-harness.js'
+import { withRunningHarness } from '../../loop/automations.js'
 import { eventsKey } from './store.js'
 import { computeLocks, cronCadenceMs, reconcile } from './reconcile.js'
 
