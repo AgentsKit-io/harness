@@ -286,3 +286,7 @@ export interface RecentEvent {
 
 /** `GET /api/v1/contracts?issues=A,B` — a stored contract per issue, `fresh` when inside `contract.reuseHours`. */
 export interface CachedContract { readonly digest: string; readonly generatedAt: string; readonly fresh: boolean; readonly dispatchable: boolean }
+
+/** SSE event for a failed snapshot. Never `error`: per the EventSource spec a message named `error` fires the
+ * source's `onerror`, which the tab cannot tell apart from a dropped connection. */
+export const SNAPSHOT_ERROR_EVENT = 'snapshot-error'

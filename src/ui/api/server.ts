@@ -22,7 +22,7 @@ import { readCurrentProjection, syncProjection } from './store.js'
 import { json, readRequestBody, recordOf, SAFE_IDENTIFIER, sendJson, sendText, stringOf } from './http.js'
 import { ROUTE_MODULES } from './route-modules.js'
 import type { RouteContext } from './routes.js'
-import type { SnapshotExtras } from './contract.js'
+import { SNAPSHOT_ERROR_EVENT, type SnapshotExtras } from './contract.js'
 import { createExtrasBuilder, type ExtrasBuilder } from './extras.js'
 import { createAlertSender, type AlertSender } from './alerts.js'
 import { overlayRunnerObservation, type IssueRecord } from './projection.js'
@@ -272,6 +272,8 @@ const bestEffortTick = (loaded: LoadedLoopConfig, runner: CommandRunner, issue: 
 
 // ---- server ---------------------------------------------------------------------------------------------------
 
+const snapshotErrorMessage = (error: unknown): string => `event: ${SNAPSHOT_ERROR_EVENT}\ndata: ${json({ error: error instanceof Error ? error.message : String(error) })}\n\n`
+
 const isApiRoute = (pathname: string): boolean => pathname.startsWith('/api/v1/')
 
 export const startUiServer = async (options: UiServerOptions = {}): Promise<UiServerHandle> => {
@@ -429,7 +431,7 @@ export const startUiServer = async (options: UiServerOptions = {}): Promise<UiSe
         clients.add(response)
         request.on('close', () => clients.delete(response))
         try { response.write(`event: snapshot\ndata: ${json(await snapshot())}\n\n`) }
-        catch (error) { response.write(`event: error\ndata: ${json({ error: error instanceof Error ? error.message : String(error) })}\n\n`) }
+        catch (error) { response.write(snapshotErrorMessage(error)) }
         return
       }
       if (routeContext) {
@@ -467,7 +469,7 @@ export const startUiServer = async (options: UiServerOptions = {}): Promise<UiSe
         const message = `event: snapshot\ndata: ${json(current)}\n\n`
         for (const client of clients) { try { client.write(message) } catch { clients.delete(client) } }
       } catch (error) {
-        const message = `event: error\ndata: ${json({ error: error instanceof Error ? error.message : String(error) })}\n\n`
+        const message = snapshotErrorMessage(error)
         for (const client of clients) { try { client.write(message) } catch { clients.delete(client) } }
       } finally { timerInFlight = false }
     })()
