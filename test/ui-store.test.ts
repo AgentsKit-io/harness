@@ -193,3 +193,21 @@ describe('a close-or-reopen decision on an abandoned delivery', () => {
     }
   })
 })
+
+describe('an archived attempt', () => {
+  it('does not shadow the attempt before it; an issue whose runs are all archived keeps its latest', async () => {
+    // Live (law-os AGE-1837): stray attempt 2 cancelled and archived; the issue stayed off Attention, Retry unreachable.
+    const { createIssueQueue } = await import('../src/loop/queue.js')
+    const stateDir = stateDirFor()
+    const queue = createIssueQueue({ stateDir })
+    const input = { issue: 'ENG-40', title: 'ENG-40', config: { configHash: 'c', flow: null, builder: { provider: 'codex', model: 'gpt' }, maxFixRounds: 2, perIssueTokens: 0, roles: { orchestrator: 'project', reviewer: 'project', watcher: 'project', delivery: 'snapshot' } }, contract: { digest: 'd', status: 'valid', frozenAt: '2026-01-01T00:00:00.000Z' }, preflight: { status: 'passed', checkedAt: '2026-01-01T00:00:00.000Z' } } as const
+    const first = queue.enqueue(input)
+    queue.update(first.id, { status: 'dispatching' }); queue.update(first.id, { status: 'running' }); queue.update(first.id, { status: 'failed' })
+    const second = queue.retry(first.id)
+    queue.update(second.id, { status: 'cancelled' })
+    queue.archive(second.id)
+    expect(syncProjection(stateDir).issues['ENG-40']!.run).toMatchObject({ id: first.id, status: 'failed' })
+    queue.archive(first.id)
+    expect(syncProjection(stateDir).issues['ENG-40']!.run).toMatchObject({ id: second.id, archived: true })
+  })
+})

@@ -166,7 +166,10 @@ const reconcileAgainstEngineState = (state: ProjectionState, stateDir: string): 
  * that only exists in one of those two stores so far (a run enqueued, or a worker HITL materialized, before its
  * next event landed). */
 const overlayLiveStores = (state: ProjectionState, stateDir: string): ProjectionState => {
-  const runsByIssue = new Map(createIssueQueue({ stateDir }).list().map((run) => [run.issue, run]))
+  // An archived attempt does not shadow the one before it (law-os AGE-1837: a stray attempt 2 was archived, and the
+  // issue stayed hidden from Attention with no Retry reaching attempt 1's blocked PR). All archived: the latest wins.
+  const runs = createIssueQueue({ stateDir }).list()
+  const runsByIssue = new Map([...runs, ...runs.filter((run) => !run.archived)].map((run) => [run.issue, run]))
   const openHitl = createHitlStore(stateDir).list({ status: 'open' })
   const decisionsByIssue = new Map<string, Decision[]>()
   for (const request of openHitl) { const list = decisionsByIssue.get(request.issue) ?? []; list.push(decisionFrom(request)); decisionsByIssue.set(request.issue, list) }
