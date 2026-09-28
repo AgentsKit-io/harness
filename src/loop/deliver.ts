@@ -653,6 +653,8 @@ const performHandoff = async (
     terminal: launched.terminal,
     provider: next.provider,
     model: next.model,
+    // The old provider's remaining usage is no baseline for the new one; the next pass records a fresh one.
+    initialRemainingPercent: null,
     workerGuardInstalled: workerGuard.installed,
     briefAccepted: launched.accepted,
   }
@@ -1428,7 +1430,7 @@ export const runDeliver = async (input: DeliverInput): Promise<DeliverReport> =>
   const ledger = createDispatchLedger(loaded.stateDir)
   const leases = new Map(ledger.active().map((lease) => [lease.issue, lease]))
   const results: DeliverResult[] = []
-  for (const record of listDispatched(loaded.stateDir)) {
+  for (let record of listDispatched(loaded.stateDir)) {
     if (input.onlyIssue && record.issue !== input.onlyIssue) continue
     let state = readDeliveryState(loaded.stateDir, record.issue)
     // A merged issue is never in `resumableOutcomes` (blocked/stuck/abandoned/held) and can never legitimately
@@ -1449,10 +1451,16 @@ export const runDeliver = async (input: DeliverInput): Promise<DeliverReport> =>
         results.push(await tripCircuitBreaker(ctx, record, lease, state, 'cost-guard', spend.reason ?? 'per-issue budget exhausted'))
         continue
       }
+      const currentProvider = ctx.providers.find((provider) => provider.id === record.provider)
+      const currentRemaining = currentProvider ? remainingUsagePercent(currentProvider.usage, config.models.routing.usageMetric) : null
       const initialRemaining = record.initialRemainingPercent
+      // No baseline (unknown at dispatch, or cleared by a handoff/Retry): this pass's reading becomes it. A baseline
+      // from another provider, or from before a Retry, re-trips the guard on usage this attempt never spent.
+      if ((initialRemaining === null || initialRemaining === undefined) && currentRemaining !== null && !ctx.dryRun) {
+        record = { ...record, initialRemainingPercent: currentRemaining }
+        writeDispatchRecord(ctx.loaded.stateDir, record)
+      }
       if (initialRemaining !== null && initialRemaining !== undefined) {
-        const currentProvider = ctx.providers.find((provider) => provider.id === record.provider)
-        const currentRemaining = currentProvider ? remainingUsagePercent(currentProvider.usage, config.models.routing.usageMetric) : null
         if (currentRemaining !== null) {
           const delta = initialRemaining - currentRemaining
           // windowed visibility: logged every pass regardless of the breaker below, so the trend is visible

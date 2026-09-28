@@ -805,6 +805,8 @@ describe('deliver', () => {
     const updated = JSON.parse(readFileSync(dispatchRecordPath(env.loaded.stateDir, 'ENG-10'), 'utf8')) as DispatchRecordFile
     expect(updated.terminal).toBe('term_handoff')
     expect(updated.provider).not.toBe('claude')
+    // claude's baseline (recorded this pass) is no baseline for the next builder's usage (law-os AGE-1753: MiniMax 88% vs Codex 32% tripped).
+    expect(updated.initialRemainingPercent).toBeNull()
     expect(updated.branch).toBe('person/eng-10-demo')
     expect(updated.worktreeId).toBe(env.record.worktreeId)
     const delivery = readDeliveryState(env.loaded.stateDir, 'ENG-10')
@@ -1027,6 +1029,12 @@ describe('deliver', () => {
     const env = setup({ pr: null, initialRemainingPercent: 90, claudeUsedPercent: 55 }) // remaining now 45%, dropped 45 points
     const report = await deliver(env)
     expect(report.results[0]).toMatchObject({ outcome: 'blocked', reason: expect.stringContaining('resilience.maxUsageDeltaPercent') })
+  })
+
+  it('records the first known usage reading as the baseline when the dispatch has none', async () => {
+    const env = setup({ pr: null, initialRemainingPercent: null, claudeUsedPercent: 20 })
+    await deliver(env, { assumeIdle: false })
+    expect((JSON.parse(readFileSync(dispatchRecordPath(env.loaded.stateDir, 'ENG-10'), 'utf8')) as DispatchRecordFile).initialRemainingPercent).toBe(80)
   })
 
   it('logs provider.usage-observed on every pass a usage delta is known, whether or not it trips', async () => {

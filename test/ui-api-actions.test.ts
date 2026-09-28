@@ -180,7 +180,11 @@ describe('retry after a failed delivery', () => {
     delivery('merged')
     await expect(retryRun(context, issue, runId)).rejects.toThrow(/got completed/)
     delivery('blocked')
+    const { writeDispatchRecord, readDispatchRecord } = await import('../src/loop/tick.js')
+    writeDispatchRecord(context.loaded.stateDir, { issue, worktreeId: 'w', branch: 'b', provider: 'codex', model: 'gpt', initialRemainingPercent: 88 } as never)
     expect(await retryRun(context, issue, runId)).toEqual({ runId })
+    // A cost-guard stop resumed by Retry measures from now, not from the usage it already counted.
+    expect(readDispatchRecord(context.loaded.stateDir, issue)?.initialRemainingPercent).toBeNull()
     expect(readDeliveryState(context.loaded.stateDir, issue)).toMatchObject({ prNumber: 3, finishedAt: null, finalOutcome: null, fixRounds: 0, nudges: [] })
     expect(createIssueQueue({ stateDir: context.loaded.stateDir }).list().filter((run) => run.issue === issue)).toHaveLength(1)
     expect(readCurrentProjection(context.loaded.stateDir).issues[issue]).toMatchObject({ phase: 'review', error: null })
