@@ -1,6 +1,6 @@
 import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync } from 'node:fs'
 import { z } from 'zod'
-import { dirname, join, relative, sep } from 'node:path'
+import { dirname, join, relative } from 'node:path'
 import type { CommandRunner } from '../adapters/command.js'
 import { atLeast, parseReviewResult, renderFindingsForWorker, runCodeReview, type CodeReviewOutcome } from '../adapters/code-review.js'
 import { createHitlStore, HITL_ANCHOR_ID, HITL_ANCHOR_TITLE, type HitlRequest } from './hitl.js'
@@ -28,6 +28,7 @@ import { createLoopEventBus, loadLoopPlugins, type LoopEventBus, type LoopEventP
 import { attachNotifier } from './notify.js'
 import { applyRoleSettings, resolveFlowSettings, resolveRoleSettings, workerPhaseEnabled, type EffectiveFlowSettings } from './flows.js'
 import { assessDod, readDodEvidence, renderDodMarkdown } from './dod.js'
+import { splitLines, toPosix } from '@agentskit/cross-platform'
 import { artifactPath, missingArtifacts, readPhaseArtifacts, readVerifyArtifact, verifyProofs, type PhaseArtifactName } from './artifacts.js'
 import { sha256 } from '../kernel/hash.js'
 import { markRunSummaryPosted, readAgentRunReport, recordRunEvidence, recordRunIo, renderRunSummaryMarkdown, runSummaryMarker } from './agent-runs.js'
@@ -213,7 +214,7 @@ export const listDispatched = (stateDir: string): readonly DispatchRecordFile[] 
   return paths.map((path) => {
     // Provider identifiers such as `owner/repository#217` are stored as nested folders.
     // Reconstruct the identifier before using the canonical dispatch reader.
-    const identifier = relative(dir, dirname(path)).split(sep).join('/')
+    const identifier = toPosix(relative(dir, dirname(path)))
     return readDispatchRecord(stateDir, identifier)
   }).filter((record): record is DispatchRecordFile => record !== null && existsSync(dispatchRecordPath(stateDir, record.issue)))
 }
@@ -257,7 +258,7 @@ const reportHookErrors = (ctx: Context, issue: string, hook: string, result: { r
 const readMergedEvent = (stateDir: string, issue: string): { readonly pr: number; readonly head?: string; readonly sha?: string } | null => {
   const path = join(stateDir, 'events.ndjson')
   if (!existsSync(path)) return null
-  const lines = readFileSync(path, 'utf8').split('\n')
+  const lines = splitLines(readFileSync(path, 'utf8'))
   for (const line of lines.reverse()) {
     if (!line.trim()) continue
     try {

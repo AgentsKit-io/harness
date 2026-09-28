@@ -1,4 +1,4 @@
-import spawn from 'cross-spawn'
+import { spawnNodeChild } from '@agentskit/cross-platform'
 import { mkdirSync, openSync, renameSync, statSync } from 'node:fs'
 import { join } from 'node:path'
 
@@ -17,7 +17,7 @@ export interface DetachedWorkerResult {
  * real, potentially many-minutes-long contract-generation-and-dispatch work runs here, in a child Orca never
  * waits on and this process does not hold pipes open to.
  *
- * Uses `cross-spawn` for the same reason `loop/process.ts` does — see its doc comment: a bare `.cmd` shim
+ * Uses `spawnNodeChild` (`@agentskit/cross-platform`) for the same reason `loop/process.ts` does — see its doc comment: a bare `.cmd` shim
  * (any globally-installed Node CLI on Windows, `ak-harness` included) cannot be spawned with `shell: false`
  * without it. `windowsHide` avoids a console window flashing open every few minutes.
  *
@@ -44,7 +44,7 @@ export const spawnDetachedWorker = (input: { readonly command: string; readonly 
   // at most two bounded generations exist instead of one file growing every run forever.
   try { if (statSync(input.logPath).size > (input.maxLogBytes ?? 5 * 1024 * 1024)) renameSync(input.logPath, `${input.logPath}.1`) } catch { /* no log yet */ }
   const fd = openSync(input.logPath, 'a')
-  const child = spawn(input.command, input.args, { cwd: input.cwd, env: input.env ?? process.env, shell: false, stdio: ['ignore', fd, fd], detached: true, windowsHide: true })
+  const child = spawnNodeChild(input.command, input.args, { cwd: input.cwd, env: input.env ?? process.env, stdio: ['ignore', fd, fd], detached: true, windowsHide: true })
   child.unref()
   return { pid: child.pid ?? null, logPath: input.logPath }
 }

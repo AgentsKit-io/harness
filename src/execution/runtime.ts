@@ -1,5 +1,5 @@
-import { execFile, type ChildProcessWithoutNullStreams } from 'node:child_process'
-import spawn from 'cross-spawn'
+import { execFile } from 'node:child_process'
+import { spawnNodeChild, toPosix } from '@agentskit/cross-platform'
 import { promisify } from 'node:util'
 import { hashJson } from '../kernel/hash.js'
 import { fail } from '../kernel/errors.js'
@@ -108,7 +108,7 @@ export const hostAbsolutePath = (value: string, label: string): string => {
   const normalized = required(value, label)
   if (normalized.includes(',')) fail(`${label} must be an absolute path without commas.`, 'INVALID_INPUT')
   if (!normalized.startsWith('/') && !WINDOWS_DRIVE_PATH.test(normalized) && !WINDOWS_UNC_PATH.test(normalized)) fail(`${label} must be an absolute path without commas.`, 'INVALID_INPUT')
-  return normalized.replaceAll('\\', '/')
+  return toPosix(normalized)
 }
 
 // A Windows process started without these dies inside the loader — winsock, crypto and DLL resolution all read
@@ -211,10 +211,10 @@ export const createProcessToolRuntime = ({ tools, timeoutMs = 30_000, maxOutputB
       let input: string
       try { input = JSON.stringify({ actionId, turnId, toolId, argumentsHash, arguments: request.arguments }) } catch { return { status: 'failed', errorCode: 'SERIALIZATION_ERROR', retryable: false, durationMs: Date.now() - started } }
       return new Promise((resolve) => {
-        // `cross-spawn` for the same reason the loop runner uses it: a tool configured as a globally
+        // `spawnNodeChild` for the same reason the loop runner uses it: a tool configured as a globally
         // npm-installed Node CLI is a `.cmd` shim on Windows, which CreateProcess cannot execute without
-        // an interpreter. The cast is safe because `stdio` pipes all three streams.
-        const child = spawn(tool.command, [...tool.args], { cwd: tool.cwd, env: tool.env, shell: false, stdio: ['pipe', 'pipe', 'pipe'] }) as ChildProcessWithoutNullStreams
+        // an interpreter.
+        const child = spawnNodeChild(tool.command, [...tool.args], { cwd: tool.cwd, env: tool.env, stdio: ['pipe', 'pipe', 'pipe'] })
         let stdout = ''
         let timedOut = false
         let outputLimit = false

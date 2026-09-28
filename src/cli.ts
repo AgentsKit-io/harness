@@ -187,7 +187,7 @@ loop.command('stage <stage>').description('Run one stage (tick | deliver | retro
       }
       // Spawn `node <this same cli.js> loop <stage>-worker …` directly with `process.execPath`/`process.argv[1]`,
       // never `schedule.harnessCommand` (`ak-harness` by default) itself. On Windows any globally-installed
-      // Node CLI is a `.cmd` shim, which `shell: false` cannot exec directly — `cross-spawn` (used by
+      // Node CLI is a `.cmd` shim, which `shell: false` cannot exec directly — `spawnNodeChild` (cross-spawn underneath, used by
       // `spawnDetachedWorker`) re-execs those through an extra `cmd.exe /d /s /c` hop, and that hop, however long
       // this precheck then waits before exiting, never reliably outlives this process's own exit (reproduced
       // live: even 5s did not help, where the same wait reliably worked for a direct, shim-free `node <script>`

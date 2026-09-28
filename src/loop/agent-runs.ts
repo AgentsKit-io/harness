@@ -1,5 +1,5 @@
 import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
-import { join, relative as relativePath, sep } from 'node:path'
+import { join, relative as relativePath } from 'node:path'
 import { z } from 'zod'
 import { sha256 } from '../kernel/hash.js'
 import { scanForPii } from '../kernel/pii.js'
@@ -7,6 +7,7 @@ import { readJsonFile } from '../kernel/json-file.js'
 import { acquireFileLock, releaseFileLock, writeJsonAtomic } from './fs-atomic.js'
 import { readStoredContract } from './contract.js'
 import { readStoredPlan } from './plan-vote.js'
+import { toPosix } from '@agentskit/cross-platform'
 
 /**
  * One issue, one run: `<stateDir>/runs/<issue>-<n>/` holds what the event log and `issues/<id>/` do not — what each
@@ -73,7 +74,7 @@ export interface AgentRunState {
 }
 
 /** Paths recorded in a run are `/`-separated on every OS, so a run reads the same wherever it is opened. */
-const relative = (from: string, to: string): string => relativePath(from, to).split(sep).join('/')
+const relative = (from: string, to: string): string => toPosix(relativePath(from, to))
 
 const StateSchema = z.object({ schemaVersion: z.literal(AGENT_RUN_SCHEMA_VERSION), runId: z.string().min(1), issue: z.string().min(1), sequence: z.number().int(), io: z.array(z.unknown()), evidence: z.array(z.unknown()), handoffs: z.array(z.unknown()), pending: z.array(z.unknown()) }).loose()
 

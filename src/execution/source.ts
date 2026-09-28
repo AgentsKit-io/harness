@@ -5,6 +5,7 @@ import { promisify } from 'node:util'
 import { hashJson, sha256 } from '../kernel/hash.js'
 import { fail } from '../kernel/errors.js'
 import type { SourceSnapshot } from '../kernel/types.js'
+import { toPosix } from '@agentskit/cross-platform'
 
 const execFileAsync = promisify(execFile)
 // A failed git call (or output past execFile's 1 MiB default maxBuffer) used to read as '' and hash as
@@ -21,7 +22,7 @@ const git = async (root: string, args: readonly string[]): Promise<string> => {
  * the harness's own config file look like a dirty worktree and refused every plan.
  */
 export const statusLineIsPath = (line: string, relativePath: string): boolean => {
-  const wanted = relativePath.replaceAll('\\', '/')
+  const wanted = toPosix(relativePath)
   if (!wanted) return false
   return line.endsWith(` ${wanted}`) || line.endsWith(` "${wanted}"`)
 }
@@ -29,7 +30,7 @@ export const statusLineIsPath = (line: string, relativePath: string): boolean =>
 export const sourceSnapshot = async (root: string, stateDir: string): Promise<SourceSnapshot> => {
   const revision = await git(root, ['rev-parse', 'HEAD']).catch(() => '')
   if (!revision) fail('Current-source evidence requires a Git repository with a committed HEAD.', 'GIT_REQUIRED')
-  const stateRelative = relative(root, stateDir).replaceAll('\\', '/')
+  const stateRelative = toPosix(relative(root, stateDir))
   const pathspec = ['--', '.']
   if (stateRelative && stateRelative !== '..' && !stateRelative.startsWith('../')) pathspec.push(`:(exclude)${stateRelative}`)
   const status = await git(root, ['status', '--porcelain=v1', '--untracked-files=all', ...pathspec])
