@@ -1,0 +1,187 @@
+{
+  "version": 1,
+  "include": [
+    "src",
+    "scripts",
+    "test",
+    "apps"
+  ],
+  "exclude": [],
+  "entries": {
+    "scripts/build-docs-artifacts.mjs": {
+      "manual-slash-normalize": 1
+    },
+    "scripts/gen-docs-reference.mjs": {
+      "child-process-import": 1,
+      "split-newline": 1
+    },
+    "scripts/smoke-pi-minimax.mjs": {
+      "child-process-import": 1
+    },
+    "scripts/verify-artifact-cli.mjs": {
+      "child-process-import": 1
+    },
+    "scripts/verify-dependency-directions.mjs": {
+      "manual-slash-normalize": 2
+    },
+    "scripts/verify-harness-benchmark-record.mjs": {
+      "child-process-import": 1
+    },
+    "scripts/verify-harness-benchmark.mjs": {
+      "child-process-import": 1
+    },
+    "scripts/verify-harness-cli-flow.mjs": {
+      "child-process-import": 1
+    },
+    "scripts/verify-harness-consumer.mjs": {
+      "child-process-import": 1
+    },
+    "scripts/verify-harness-context-cli.mjs": {
+      "child-process-import": 1
+    },
+    "scripts/verify-harness-examples.mjs": {
+      "child-process-import": 1
+    },
+    "scripts/verify-json-boundaries.mjs": {
+      "split-newline": 1
+    },
+    "scripts/verify-loop-watch-sigint.mjs": {
+      "child-process-import": 1
+    },
+    "scripts/verify-site-shell-ui.mjs": {
+      "split-newline": 1
+    },
+    "src/adapters/code-review.ts": {
+      "split-newline": 1
+    },
+    "src/cli.ts": {
+      "split-newline": 1
+    },
+    "src/execution/metrics.ts": {
+      "hardcoded-tmp": 1
+    },
+    "src/execution/runtime.ts": {
+      "child-process-import": 1
+    },
+    "src/execution/source.ts": {
+      "child-process-import": 1
+    },
+    "src/execution/verification.ts": {
+      "child-process-import": 1,
+      "platform-shell": 1
+    },
+    "src/kernel/process-tree.ts": {
+      "platform-shell": 1
+    },
+    "src/loop/agent-improvement.ts": {
+      "split-newline": 1
+    },
+    "src/loop/contract.ts": {
+      "split-newline": 1
+    },
+    "src/loop/deliver.ts": {
+      "split-newline": 9
+    },
+    "src/loop/local-config.ts": {
+      "split-newline": 1
+    },
+    "src/loop/observe-stage.ts": {
+      "split-newline": 1
+    },
+    "src/loop/plan-stage.ts": {
+      "split-newline": 1
+    },
+    "src/loop/plan-vote.ts": {
+      "split-newline": 1
+    },
+    "src/loop/process.ts": {
+      "platform-shell": 1
+    },
+    "src/loop/slots.ts": {
+      "child-process-import": 1
+    },
+    "src/loop/tick.ts": {
+      "split-newline": 2
+    },
+    "src/ui/api/config-view.ts": {
+      "split-newline": 1
+    },
+    "src/ui/api/routes-core.ts": {
+      "split-newline": 1
+    },
+    "src/ui/app/src/pages/Settings.tsx": {
+      "split-newline": 1
+    },
+    "test/adapters-code-review.test.ts": {
+      "hardcoded-tmp": 3,
+      "split-newline": 1
+    },
+    "test/cli-exit-codes.test.ts": {
+      "child-process-import": 1,
+      "split-newline": 1
+    },
+    "test/execution-bundle.test.ts": {
+      "hardcoded-tmp": 1
+    },
+    "test/execution-metrics-windows.test.ts": {
+      "hardcoded-tmp": 1
+    },
+    "test/execution-runtime-windows.test.ts": {
+      "child-process-import": 1
+    },
+    "test/execution-runtime.test.ts": {
+      "child-process-import": 1,
+      "hardcoded-tmp": 1
+    },
+    "test/extensibility.test.ts": {
+      "split-newline": 1
+    },
+    "test/git.ts": {
+      "child-process-import": 1
+    },
+    "test/harness.test.ts": {
+      "child-process-import": 1,
+      "split-newline": 1
+    },
+    "test/helpers/evidence-command.ts": {
+      "platform-shell": 1
+    },
+    "test/loop-artifacts-exclude.test.ts": {
+      "child-process-import": 1,
+      "split-newline": 2
+    },
+    "test/loop-automations.test.ts": {
+      "manual-slash-normalize": 1
+    },
+    "test/loop-connectors.test.ts": {
+      "hardcoded-tmp": 2,
+      "manual-slash-normalize": 1
+    },
+    "test/loop-contract-gaps.test.ts": {
+      "hardcoded-tmp": 10
+    },
+    "test/loop-deliver.test.ts": {
+      "hardcoded-tmp": 2,
+      "split-newline": 16
+    },
+    "test/loop-documents.test.ts": {
+      "child-process-import": 1
+    },
+    "test/loop-local-config-gaps.test.ts": {
+      "hardcoded-tmp": 1
+    },
+    "test/loop-process.test.ts": {
+      "child-process-import": 1,
+      "platform-shell": 1
+    },
+    "test/loop-tick.test.ts": {
+      "split-newline": 6
+    },
+    "test/runtime.test.ts": {
+      "child-process-import": 1
+    },
+    "test/source.test.ts": {
+      "child-process-import": 1
+    }
+  }
+}

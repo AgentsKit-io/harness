@@ -1,6 +1,6 @@
 import { createPrivateKey, createPublicKey, sign, verify } from 'node:crypto'
 import { existsSync, readFileSync, writeFileSync } from 'node:fs'
-import { join, relative, resolve, sep } from 'node:path'
+import { join, relative, resolve } from 'node:path'
 import { fail } from '../kernel/errors.js'
 import { fileContents, loadLatestRun, pathInside, readJson } from './files.js'
 import { sha256 } from '../kernel/hash.js'
@@ -9,6 +9,7 @@ import { FileEventStore } from '../kernel/events.js'
 import type { EventLogVerification } from '../kernel/events.js'
 import { loadConfig } from './config.js'
 import type { VerificationRun } from '../kernel/types.js'
+import { toPosix } from '@agentskit/cross-platform'
 
 export const EVIDENCE_BUNDLE_SCHEMA_VERSION = 1 as const
 
@@ -68,7 +69,7 @@ const bundleFile = (stateDir: string, path: string): EvidenceBundleFile => {
   const absolute = resolve(stateDir, path)
   if (!pathInside(stateDir, absolute)) fail(`Evidence path escapes state directory: ${path}`, 'HARNESS_ERROR')
   const content = readFileSync(absolute)
-  return { path: relative(stateDir, absolute).split(sep).join('/'), sha256: sha256(content), contentBase64: content.toString('base64') }
+  return { path: toPosix(relative(stateDir, absolute)), sha256: sha256(content), contentBase64: content.toString('base64') }
 }
 
 export const exportEvidenceBundle = async ({ configPath, runId, outputPath, privateKeyPath, keyId }: { readonly configPath: string; readonly runId?: string; readonly outputPath: string; readonly privateKeyPath: string; readonly keyId: string }): Promise<EvidenceBundle> => {

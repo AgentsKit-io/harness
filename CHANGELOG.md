@@ -2,6 +2,11 @@
 
 ## [Unreleased]
 
+- **Portability via `@agentskit/cross-platform`.** Process spawning (`.cmd` shim resolution), process-tree kill and
+  path/line helpers now come from the shared package instead of hand-rolled copies; `cross-spawn` is no longer a
+  direct dependency. `pnpm typecheck` runs `agentskit-cross-platform check` against `.cross-platform-baseline.json`,
+  so a new Windows-hostile pattern fails CI.
+
 ## [0.22.3] — 2026-09-27
 
 - **Lost-track restart.** A run whose worker terminal is gone, or that stays idle after a check-in, before any PR is

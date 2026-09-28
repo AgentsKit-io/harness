@@ -1,15 +1,16 @@
-import spawn from 'cross-spawn'
+import { spawnNodeChild } from '@agentskit/cross-platform'
 import type { CommandResult, CommandRunner, CommandRunOptions } from '../adapters/command.js'
 import { KILL_GRACE_MS, detachedForTreeKill, killProcessTree } from '../kernel/process-tree.js'
 
 /**
  * Real, shell-free command runner for the loop composition layer. Output is capped.
  *
- * Uses `cross-spawn` instead of `node:child_process`'s `spawn` directly. On Windows, npm's global install of any
+ * Uses `spawnNodeChild` (`@agentskit/cross-platform`, cross-spawn's resolution underneath) instead of
+ * `node:child_process`'s `spawn` directly. On Windows, npm's global install of any
  * Node CLI (`claude`, `agentskit-review`, ...) produces a `.cmd` shim; Windows' CreateProcess cannot execute a
  * `.cmd`/`.bat` file without a shell interpreter, so a plain `spawn(command, args, { shell: false })` fails with
  * ENOENT or EINVAL for every such binary, regardless of the path given (verified: bare name -> ENOENT, absolute
- * `.cmd` path -> EINVAL). `cross-spawn` detects this case and re-execs through `cmd.exe /d /s /c` with the same
+ * `.cmd` path -> EINVAL). cross-spawn detects this case and re-execs through `cmd.exe /d /s /c` with the same
  * argument escaping Node's own internals use for `shell: true`, so callers keep `shell: false` semantics (no
  * metacharacter interpretation of argv beyond what is needed to survive that one hop) on every platform.
  *
@@ -73,7 +74,7 @@ export const createProcessRunner = (defaults: { readonly timeoutMs?: number; rea
       if (grace) clearTimeout(grace)
       resolve({ code, stdout, stderr: error ? `${stderr}${stderr ? '\n' : ''}${error}` : stderr, timedOut, durationMs: Date.now() - started })
     }
-    const child = spawn(command, args, { cwd: options.cwd, env: options.env ?? defaults.env ?? process.env, shell: false, stdio: [stdin === null ? 'ignore' : 'pipe', 'pipe', 'pipe'], windowsHide: true, detached: detachedForTreeKill() })
+    const child = spawnNodeChild(command, args, { cwd: options.cwd, env: options.env ?? defaults.env ?? process.env, stdio: [stdin === null ? 'ignore' : 'pipe', 'pipe', 'pipe'], windowsHide: true, detached: detachedForTreeKill() })
     if (stdin !== null) {
       // A child that exits (bad flags, fast failure) or is killed by the timeout path below before it has
       // finished reading stdin turns this write into an EPIPE/EOF — unhandled on the stream itself (distinct
@@ -88,8 +89,6 @@ export const createProcessRunner = (defaults: { readonly timeoutMs?: number; rea
       killProcessTree(child)
       grace = setTimeout(() => finish(null, `timed out after ${timeoutMs}ms and did not exit when killed`), KILL_GRACE_MS)
     }, timeoutMs)
-    // stdio: ['ignore', 'pipe', 'pipe'] guarantees these are real streams; @types/cross-spawn's return type is
-    // not narrowed the way node:child_process's own spawn overloads are.
     child.stdout?.on('data', (chunk: Buffer) => { if (Buffer.byteLength(stdout) < maxOutputBytes) stdout += chunk.toString() })
     child.stderr?.on('data', (chunk: Buffer) => { if (Buffer.byteLength(stderr) < maxOutputBytes) stderr += chunk.toString() })
     child.on('error', (error) => finish(null, error.message))

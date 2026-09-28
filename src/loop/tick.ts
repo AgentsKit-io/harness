@@ -38,6 +38,7 @@ import { createIssueQueue, type IssueRun } from './queue.js'
 import { createLifecycleStore } from './lifecycle.js'
 import { createHitlStore } from './hitl.js'
 import { activeTrackerCooldown, guardTracker, isTrackerRateLimit, TrackerCooldownError, type TrackerCooldown } from './tracker-cooldown.js'
+import { splitLines } from '@agentskit/cross-platform'
 
 export type TickOutcome = 'dispatched' | 'dry-run' | 'skipped' | 'escalated' | 'failed'
 
@@ -195,7 +196,7 @@ export const launchWorkerTerminal = async (input: { readonly runner: CommandRunn
   // both: an opencode TUI reported idle while still on its splash screen and never showed the brief; another showed
   // it, then dropped it and sat on an empty prompt for minutes. Either way the prompt is sent again, up to twice.
   if (receipt.observation === 'unsupported') {
-    const probe = prompt.split('\n').find((line) => line.trim())?.trim().slice(0, 40) ?? ''
+    const probe = splitLines(prompt).find((line) => line.trim())?.trim().slice(0, 40) ?? ''
     const delayMs = input.screenCheckDelayMs ?? 4_000
     const onScreen = async (): Promise<boolean> => {
       await new Promise((resolve) => { setTimeout(resolve, delayMs) })

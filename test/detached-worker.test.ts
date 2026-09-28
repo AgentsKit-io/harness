@@ -11,13 +11,13 @@ const fakeSpawn = vi.hoisted(() => vi.fn((command: string, args: readonly string
   calls.push({ command, args, options })
   return Object.assign(new EventEmitter(), { pid: state.pid, unref: () => { state.unrefed = true } })
 }))
-vi.mock('cross-spawn', () => ({ default: fakeSpawn }))
+vi.mock('@agentskit/cross-platform', async (importOriginal) => ({ ...await importOriginal<typeof import('@agentskit/cross-platform')>(), spawnNodeChild: fakeSpawn }))
 
 const cleanups: string[] = []
 afterEach(() => { calls.length = 0; state.unrefed = false; state.pid = 4242; for (const dir of cleanups.splice(0)) rmSync(dir, { recursive: true, force: true }) })
 
 describe('spawnDetachedWorker', () => {
-  it('spawns detached and unref\'d, with stdio redirected to the log file and shell disabled', () => {
+  it('spawns detached and unref\'d, with stdio redirected to the log file', () => {
     const dir = mkdtempSync(join(tmpdir(), 'agentskit-detached-worker-')); cleanups.push(dir)
     const logPath = join(dir, 'nested', 'tick-worker.log')
     const result = spawnDetachedWorker({ command: 'ak-harness', args: ['loop', 'tick-worker', '-f', 'loop.config.yaml'], cwd: dir, logPath })
@@ -25,7 +25,7 @@ describe('spawnDetachedWorker', () => {
     const call = calls[0]!
     expect(call.command).toBe('ak-harness')
     expect(call.args).toEqual(['loop', 'tick-worker', '-f', 'loop.config.yaml'])
-    expect(call.options).toMatchObject({ cwd: dir, shell: false, detached: true, windowsHide: true })
+    expect(call.options).toMatchObject({ cwd: dir, detached: true, windowsHide: true })
     // stdio must not be 'ignore'/'pipe' for stdout/stderr — a real fd, so the child's own output survives this
     // process exiting instead of being silently dropped or filling an undrained pipe buffer.
     const stdio = call.options['stdio'] as readonly unknown[]
