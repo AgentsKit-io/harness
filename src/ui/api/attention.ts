@@ -112,6 +112,9 @@ export const classifyIssue = (record: IssueRecord, stop: StopSignal | undefined,
   // Resumed since (the pause file is cleared without an event): the pause no longer explains anything.
   if (stop?.type === 'issue.paused') return null
   if (record.phase === 'needs-decision') return { kind: 'blocked', reason: 'The pull request was closed without merging; close the issue or reopen it.', detail, since, ids: ['open'] }
+  // A run that failed before its worker started (Orca timed out creating the terminal) leaves the issue `available`,
+  // but an explicit queue never picks a failed run up again: Retry is the only way on (vivva #40/#67, unseen for 1.5h).
+  if (record.phase === 'available' && record.run?.status === 'failed') return { kind: 'blocked', reason: 'The run failed before its worker started; retry it once the cause is fixed.', detail, since, ids: runIds }
   if (record.phase !== 'blocked') return null
   let kind: AttentionKind = 'blocked'
   if (stop?.breaker) kind = stop.breaker
