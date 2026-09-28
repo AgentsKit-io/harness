@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
-  "contentHash": "3805f79082d1c8bc674dc70832d4cb8fa293f0b227b4c12719ed9502353bfe21",
+  "contentHash": "226c388e38a2b935f756d526a32299c378f160d05ddd85ad2767ca5a451dafab",
   "contentHashAlgo": "sha256-normalized-v1",
-  "generatedAt": "2026-09-27T22:43:59.940Z",
+  "generatedAt": "2026-09-28T01:00:14.505Z",
   "project": {
     "name": "AgentsKit Harness",
     "root": "."
@@ -298,12 +298,12 @@
       "type": "document",
       "title": "Changelog",
       "path": "CHANGELOG.md",
-      "description": "Lost-track restart. A run whose worker terminal is gone, or that stays idle after a check-in, before any PR is aborted and re-dispatched from scratch (bounded, worker.lost-tracking/worker.restarted) (#147).",
+      "description": "Portability via @agentskit/cross-platform. Process spawning (.cmd shim resolution), process-tree kill and path/line helpers now come from the shared package instead of hand-rolled copies; cross-spawn is no longer a direct dependency. pnpm typecheck runs agentskit-cross-platform check against .cross-platform-baseline.json, so a new Windows-hostile pattern fails CI.",
       "tags": [
         "document",
         "project"
       ],
-      "contentHash": "90cbd7b1f0832f5bd095d71723e6e8d6c53b30d96be597562949c31706ce3042"
+      "contentHash": "196283b6b5f46d9c605d408cc64766111d126e80429c44fd2c55917b970b294c"
     },
     {
       "id": "document:CLAUDE.md",
@@ -1697,7 +1697,7 @@
         "mjs",
         "scripts"
       ],
-      "contentHash": "2e502ffa3b244887b84dffa8b3d83cf0957c0e7b84d2f0a73b2925383e4f740a"
+      "contentHash": "bd2d3503ccebde80d0fc9968b455d84987758b731426d7acc8dd0b2471af3934"
     },
     {
       "id": "module:scripts/verify-harness-examples.mjs",
@@ -2182,7 +2182,7 @@
         "ts",
         "src"
       ],
-      "contentHash": "38dafd70017fdc198c4942465f6e6527caab984ed63197300a270adf42004698"
+      "contentHash": "ec200d4c12d5ee272d084eda59ba3a60702891d0b61d3317c94e3229a10a7c35"
     },
     {
       "id": "module:src/context/index.ts",
@@ -2303,7 +2303,7 @@
         "ts",
         "execution"
       ],
-      "contentHash": "c7e9b00e95b0296b07605f0fa4b9d970cb4363ce9ed3ce985aec18dd3ebcc8ae"
+      "contentHash": "5316f8ecc6a28532d6e423d151ee9a274e96d61900db745acca55f1f6745dd44"
     },
     {
       "id": "module:src/execution/config.ts",
@@ -2479,7 +2479,7 @@
         "ts",
         "execution"
       ],
-      "contentHash": "a5e6af5d313d80a6aa58568d8c8a9971ba7b2d32649f5cc983287740cdbb460e"
+      "contentHash": "5f3f7d15c6fe3d092e8ebcd98ad6f3047e8bc6872fd33c47d47538dbf58702db"
     },
     {
       "id": "module:src/execution/source.ts",
@@ -2495,7 +2495,7 @@
         "ts",
         "execution"
       ],
-      "contentHash": "4917025d2cd90bd194ab490920756b87de00fec9965a53c67f799a28a92e4b14"
+      "contentHash": "df4ef1ca6a9d3e440fa0be5f612ade01fa84459df6b9473568a2d2e976e5255d"
     },
     {
       "id": "module:src/execution/verification.ts",
@@ -2518,7 +2518,7 @@
         "ts",
         "execution"
       ],
-      "contentHash": "547e64a3dc3f7b7053805ba781e6cf5958bae3ae15c1fc45ce1b13f4d3eb7246"
+      "contentHash": "91822206a70a54ee883916d43a028de7202fc5ea1cfcffdad6ad0249813302da"
     },
     {
       "id": "module:src/index.ts",
@@ -3375,7 +3375,7 @@
         "ts",
         "kernel"
       ],
-      "contentHash": "db1cb71c5e6384b0f1336a1533c939ec247b03534d8e91654516272ebc950842"
+      "contentHash": "6aea2c6086dff3143759b79bc042c79fd00a083eb02700cbfc489597f0464381"
     },
     {
       "id": "module:src/kernel/process-tree.ts",
@@ -3392,7 +3392,7 @@
         "ts",
         "kernel"
       ],
-      "contentHash": "f2abd1ac5a033cef62c1742ca94e1a18fbff384b95d6ee74c1767e9481563298"
+      "contentHash": "d25a355941d5a7ce578b14e4a3345e4e3101ba534f5fdeb0a169bd71c889da28"
     },
     {
       "id": "module:src/kernel/quality.ts",
@@ -3647,7 +3647,7 @@
         "ts",
         "loop"
       ],
-      "contentHash": "da958972f4c77ede76494a8d0e6335103170778cde617d9e9f34ae1beea9a11f"
+      "contentHash": "8ecbabc701bdc1ed9944cb3b777d1739ce653b1d77017807903d88916d587853"
     },
     {
       "id": "module:src/loop/artifacts.ts",
@@ -3708,7 +3708,7 @@
         "ts",
         "loop"
       ],
-      "contentHash": "761fa2bbb8d84c81b77cd51c563c4da8b52ef497cce352881724a1215442eaf0"
+      "contentHash": "94e22d949c3c9b8342ab6a8777c42ffc2402449a1341966791b55510c4eccc58"
     },
     {
       "id": "module:src/loop/base-view.ts",
@@ -3948,7 +3948,7 @@
         "ts",
         "loop"
       ],
-      "contentHash": "ffe7aa52db97eac041cda9931171924ded2d57617677fbfb3971f03d39bb9e99"
+      "contentHash": "987a879f6e58fe1a7a88a2542e385ec363449f9c2da480ea9e4a4b83038efe9c"
     },
     {
       "id": "module:src/loop/detached-worker.ts",
@@ -3964,7 +3964,7 @@
         "ts",
         "loop"
       ],
-      "contentHash": "df495c982280fae2ae89361a1fd3eccab90a833c1f077a39aae2e70d6ed60305"
+      "contentHash": "112bfee66437b37bca049adb5e55751a9acfa643ff27eb8e16842da31a28ac25"
     },
     {
       "id": "module:src/loop/doctor.ts",
@@ -4921,7 +4921,7 @@
         "ts",
         "loop"
       ],
-      "contentHash": "e359fcc4ee6b33d1ea137894139be7056f8f20a41177a14eb77bf95ca76fb81a"
+      "contentHash": "336df8b8923d8dba22c4067d4e6aff686909b557c179ab5f34a80e0210899480"
     },
     {
       "id": "module:src/loop/progress.ts",
@@ -5192,7 +5192,7 @@
         "ts",
         "loop"
       ],
-      "contentHash": "0cb5d2f8bc94ef877869cdcc62146dfa41fe608a956e294a48c07b680f07c6d7"
+      "contentHash": "b83fc93e98f1cd800f545efbeaa167358622b7f008b39bb556272e68da12abad"
     },
     {
       "id": "module:src/loop/stage-lock.ts",
@@ -5243,7 +5243,7 @@
         "ts",
         "loop"
       ],
-      "contentHash": "b6bd4147622007987e93fecb1cf8e033a74b0d64f985032e83babd3fa4eff42a"
+      "contentHash": "78085152f24e2582e16ddfa47e54fdb174f5c41fe1a5573e89529a7e9301d38a"
     },
     {
       "id": "module:src/loop/tracker-cooldown.ts",
@@ -7003,7 +7003,7 @@
         "ts",
         "test"
       ],
-      "contentHash": "205fa40b5ee0e00374f4228e5dd07af6ea920a9ee5b66b08821da858e7239a3f"
+      "contentHash": "70d88c133d439afb837da28375a3e4fb9835b4cd39a47d5b95fdeef0c1e93086"
     },
     {
       "id": "module:test/discovery.test.ts",
@@ -7135,7 +7135,7 @@
         "ts",
         "test"
       ],
-      "contentHash": "e7ff422e5507c8c6b84a197405dd5664a581708f83df7fbc872b73306bc5cd47"
+      "contentHash": "256da5dd46aeae8e0cdb50b5ecd08a4576a28112137812c6e9a7763d30814de5"
     },
     {
       "id": "module:test/execution-runtime.test.ts",
@@ -8957,7 +8957,7 @@
     }
   },
   "inputs": {
-    "hash": "987107e75f75447427c479610a7c380173dde0ac0407a2a02846b995d4b32b52",
+    "hash": "ea3fa991166f2e1cfb8783f6ad0fb6bd62658f642e46996f7f3435d49885a15a",
     "fileCount": 541,
     "projectionVersion": 2
   },
@@ -8980,9 +8980,9 @@
   "projection": {
     "type": "retrieval-index",
     "schemaVersion": 1,
-    "contentHash": "7dc7da0d003a5b416d4ae48a9cb31960d84780f7ccf6dbb8ba4766b2f77f79bc",
+    "contentHash": "a1a8f10fcccafc0d24d44b128e6f9f61c366f634741e7c4981b5f2059999b5d2",
     "contentHashAlgo": "sha256-normalized-v1",
-    "snapshotHash": "a6a6c134115b71271411513c9866a8fbc3747e3707c0e579a8ad6dfe4ce722a8",
+    "snapshotHash": "167e8fb76fd9dcaef62d8bbd3dc98abf2dfdbe4467ccb3b9115e8a0c28b25c5b",
     "overlayHash": "f99666ff9119084dd25c2974ae64eb6935ec2aa785ff5ad478fb9d541f7a5e94",
     "configurationHash": "816afaf6a7dc09767f7594d8fd80024612ca0f33becf0e44dde0107fcf2782df",
     "lexiconVersion": 1,
@@ -9014,10 +9014,10 @@
       ],
       "averageFieldLength": {
         "aliases": 2.9254545454545453,
-        "body": 44.158181818181816,
+        "body": 44.17636363636364,
         "headings": 3.8636363636363638,
         "path": 6.114545454545454,
-        "summary": 2.6545454545454548,
+        "summary": 2.7054545454545456,
         "symbols": 14.3,
         "title": 3.949090909090909
       }
@@ -11327,7 +11327,7 @@
         "kind": "document",
         "path": "CHANGELOG.md",
         "title": "Changelog",
-        "summary": "Lost-track restart. A run whose worker terminal is gone, or that stays idle after a check-in, before any PR is aborted and re-dispatched from scratch (bounded, worker.lost-tracking/worker.restarted) (#147).",
+        "summary": "Portability via @agentskit/cross-platform. Process spawning (.cmd shim resolution), process-tree kill and path/line helpers now come from the shared package instead of hand-rolled copies; cross-spawn is no longer a direct dependency. pnpm typecheck runs agentskit-cross-platform check against .cross-platform-baseline.json, so a new Windows-hostile pattern fails CI.",
         "audience": "human",
         "aliases": [],
         "tags": [
@@ -11339,8 +11339,8 @@
           "headings": "Changelog [Unreleased] [0.22.3] — 2026-09-27 [0.22.2] — 2026-09-27 [0.22.1] — 2026-09-27 [0.22.0] — 2026-09-27 [0.21.0] — 2026-09-26 [0.20.0] — 2026-09-25 [0.19.0] — 2026-09-23 [0.18.0] - 2026-09-22 Release Hygiene Boundaries Token and time economy Breaking Gates [0.17.0] - 2026-09-22 Worker guard Release can no longer publish past a red gate [0.16.0] - 2026-09-22 Verification and token waste Observability: every deterministic phase, timestamped and attributed Event bus, unified House conventions [0.15.0] - 2026-09-20 The phases of an issue leave evidence behind layers: and documents: — where the work belongs, and where the decisions live Per-role settings, and which phases run at all The four cost levers, finished release.waiting, once per head The event vocabulary, and the compiler that guards it The installed agent is code, not a markdown file to append to Documentation Windows stops being a second-class platform The licence, and a surface for the numbers The harness has a folder of its own The documentation site The twelve steps of the roadmap, in the order they landed loop install reconciles instead of rewriting loop stage observe — the health scan comes into the repository Configuration in four layers, and the loop learns to call a human The roles become installed agents, and the retro can improve them Presets and a grilled loop init intake, maintain, and release notes — the cycle closes Cost: a routing policy, two ceilings, and two of the four levers Connectors: the engine stops naming vendors release — promotion and deploy, with a human in front loop plan — a vague objective becomes issues A plan, voted on, before any worker starts The Definition of Done becomes two lists, both proven on the PR The retro starts improving the loop, within declared limits [0.14.0] - 2026-09-19 The queue stops being \"my issues\" Review strictness that matches the risk Telling the worker the truth about the base branch Memory: recurrence instead of guesswork One human approval covers the goal's own effects Fixes that had never shipped [0.13.0] - 2026-09-14 [0.12.0] - 2026-09-13 [0.11.0] - 2026-09-13 [0.10.0] - 2026-09-12 [0.9.0] - 2026-09-12 [0.8.0] - 2026-09-12",
           "path": "CHANGELOG.md",
           "symbols": "",
-          "summary": "Lost-track restart. A run whose worker terminal is gone, or that stays idle after a check-in, before any PR is aborted and re-dispatched from scratch (bounded, worker.lost-tracking/worker.restarted) (#147).",
-          "body": "Changelog [Unreleased] [0.22.3] — 2026-09-27 - Lost-track restart. A run whose worker terminal is gone, or that stays idle after a check-in, before any PR is aborted and re-dispatched from scratch (bounded, worker.lost-tracking / worker.restarted ) ( 147). It never destroys work: it needs the evidence on two consecutive passes, escalates stuck and keeps the worktree when there are unpushed commits or uncommitted edits (the check fails closed), removes a clean worktree without --force , captures the worker screen into the run first, waits while the tracker is cooling down, and does nothing destructive until its tracker writes succeed. A human Retry resets the restart budget ( 151). - A worker that declares itself blocked ( BLOCKED: worktree comment) is escalated to a person — also when it exited afterwards — instead of being nudged, handed off or restarted ( 150, 151). - Never type into a bare shell. A nudge into a terminal that is only a shell prompt relaunches the agent (the old terminal is closed first; an idle agent from a CLI that does not register with Orca is never mistaken for a shell); no-PR worker events keep the issue running in the UI ( 144, 151). - Close-or-reopen decisions on an abandoned delivery stick and release the issue's lease ( 145, 151). - UI. Worker slots are counted the way the tick counts them ( 148); the projection rebuilds itself when the reducer changes ( 149). [0.22.2] — 2026-09-27 - Review floor decides. A reviewer that exits 1 (or reports blocking ) on findings all below delivery.review.minSeverity is clean, not \"findings\" with nothing to fix — delivery no longer waits forever for a push nobody needs. A reviewer claiming blocking with no finding at all is incomplete , never a merge ( 133). - Answered contract questions regenerate the contract instead of returning the same blocked one ( 138). - An open contract question is not re-asked every tick. Contract regeneration is skipped while a contract-stage question is open (no more repeated escalations and orchestrator calls); an explicit-queue run is left needs-input , never stuck in dispatching ; superseded contract questions are marked stale ( 131). - Retry resumes a blocked delivery on its open PR (fix-round cap, stuck, failed), resetting its error budget and tracker state; a cancelled run still gets a fresh attempt. Holds that need a person are not bypassed ( 142). - doctor accepts automations pinned by the UI; GitHub preflight reports missing lifecycle labels as a warning instead of failing the queue read ( 143). [0.22.1] — 2026-09-27 Failures that were invisible, made visible or closed. Every fix ships with a regression test that fails on 0.22.0. - The UI no longer keeps the tracker rate-limited. A failing board was re-read every second and every closed issue off the board was re-fetched every 10 minutes forever (~6 tracker calls/hour per historical issue, with or without viewers). Failures now back off, a rate limit pauses lookups, closed issues are never re-asked, and the snapshot pipeline idles when nobody is watching ( 139, 140). - Tracker cooldown. A Linear/GitHub rate limit records tracker.cooldown (15 min doubling, 2 h cap): tick returns blocked without counting toward the stage auto-pause, deliver skips tracker writes but keeps reviewing and merging, and the review state is set once per PR instead of every pass ( 140). - Gates fail closed. ak-verify run / verify / status exit 1 on a blocked, stale or cancelled run; git failures and 1 MB diffs no longer hash as empty (a stale run could be approved); a review with no parseable result is incomplete , never clean; deliver's verify runs in the PR worktree; plugins that fail to load fail the stage run and a throwing before hook blocks ( 140). - Delivery recovers. One transient gh/Orca error waits and retries ( delivery.error ) instead of finishing the issue as failed forever; failed resumes on a new head; an Orca outage is waiting , not a dead worker; a run where every result failed reports fa",
+          "summary": "Portability via @agentskit/cross-platform. Process spawning (.cmd shim resolution), process-tree kill and path/line helpers now come from the shared package instead of hand-rolled copies; cross-spawn is no longer a direct dependency. pnpm typecheck runs agentskit-cross-platform check against .cross-platform-baseline.json, so a new Windows-hostile pattern fails CI.",
+          "body": "Changelog [Unreleased] - Portability via @agentskit/cross-platform . Process spawning ( .cmd shim resolution), process-tree kill and path/line helpers now come from the shared package instead of hand-rolled copies; cross-spawn is no longer a direct dependency. pnpm typecheck runs agentskit-cross-platform check against .cross-platform-baseline.json , so a new Windows-hostile pattern fails CI. [0.22.3] — 2026-09-27 - Lost-track restart. A run whose worker terminal is gone, or that stays idle after a check-in, before any PR is aborted and re-dispatched from scratch (bounded, worker.lost-tracking / worker.restarted ) ( 147). It never destroys work: it needs the evidence on two consecutive passes, escalates stuck and keeps the worktree when there are unpushed commits or uncommitted edits (the check fails closed), removes a clean worktree without --force , captures the worker screen into the run first, waits while the tracker is cooling down, and does nothing destructive until its tracker writes succeed. A human Retry resets the restart budget ( 151). - A worker that declares itself blocked ( BLOCKED: worktree comment) is escalated to a person — also when it exited afterwards — instead of being nudged, handed off or restarted ( 150, 151). - Never type into a bare shell. A nudge into a terminal that is only a shell prompt relaunches the agent (the old terminal is closed first; an idle agent from a CLI that does not register with Orca is never mistaken for a shell); no-PR worker events keep the issue running in the UI ( 144, 151). - Close-or-reopen decisions on an abandoned delivery stick and release the issue's lease ( 145, 151). - UI. Worker slots are counted the way the tick counts them ( 148); the projection rebuilds itself when the reducer changes ( 149). [0.22.2] — 2026-09-27 - Review floor decides. A reviewer that exits 1 (or reports blocking ) on findings all below delivery.review.minSeverity is clean, not \"findings\" with nothing to fix — delivery no longer waits forever for a push nobody needs. A reviewer claiming blocking with no finding at all is incomplete , never a merge ( 133). - Answered contract questions regenerate the contract instead of returning the same blocked one ( 138). - An open contract question is not re-asked every tick. Contract regeneration is skipped while a contract-stage question is open (no more repeated escalations and orchestrator calls); an explicit-queue run is left needs-input , never stuck in dispatching ; superseded contract questions are marked stale ( 131). - Retry resumes a blocked delivery on its open PR (fix-round cap, stuck, failed), resetting its error budget and tracker state; a cancelled run still gets a fresh attempt. Holds that need a person are not bypassed ( 142). - doctor accepts automations pinned by the UI; GitHub preflight reports missing lifecycle labels as a warning instead of failing the queue read ( 143). [0.22.1] — 2026-09-27 Failures that were invisible, made visible or closed. Every fix ships with a regression test that fails on 0.22.0. - The UI no longer keeps the tracker rate-limited. A failing board was re-read every second and every closed issue off the board was re-fetched every 10 minutes forever (~6 tracker calls/hour per historical issue, with or without viewers). Failures now back off, a rate limit pauses lookups, closed issues are never re-asked, and the snapshot pipeline idles when nobody is watching ( 139, 140). - Tracker cooldown. A Linear/GitHub rate limit records tracker.cooldown (15 min doubling, 2 h cap): tick returns blocked without counting toward the stage auto-pause, deliver skips tracker writes but keeps reviewing and merging, and the review state is set once per PR instead of every pass ( 140). - Gates fail closed. ak-verify run / verify / status exit 1 on a blocked, stale or cancelled run; git failures and 1 MB diffs no longer hash as empty (a stale run could be approved); a review with no parseable result is incomplete , never clean; deliver's ve",
           "aliases": "document project"
         },
         "graph": {
@@ -11616,7 +11616,7 @@
             }
           ]
         },
-        "contentHash": "90cbd7b1f0832f5bd095d71723e6e8d6c53b30d96be597562949c31706ce3042",
+        "contentHash": "196283b6b5f46d9c605d408cc64766111d126e80429c44fd2c55917b970b294c",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -16864,7 +16864,7 @@
           "inbound": [],
           "outbound": []
         },
-        "contentHash": "2e502ffa3b244887b84dffa8b3d83cf0957c0e7b84d2f0a73b2925383e4f740a",
+        "contentHash": "bd2d3503ccebde80d0fc9968b455d84987758b731426d7acc8dd0b2471af3934",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -18875,7 +18875,7 @@
             }
           ]
         },
-        "contentHash": "38dafd70017fdc198c4942465f6e6527caab984ed63197300a270adf42004698",
+        "contentHash": "ec200d4c12d5ee272d084eda59ba3a60702891d0b61d3317c94e3229a10a7c35",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -19382,7 +19382,7 @@
             }
           ]
         },
-        "contentHash": "c7e9b00e95b0296b07605f0fa4b9d970cb4363ce9ed3ce985aec18dd3ebcc8ae",
+        "contentHash": "5316f8ecc6a28532d6e423d151ee9a274e96d61900db745acca55f1f6745dd44",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -20165,7 +20165,7 @@
             }
           ]
         },
-        "contentHash": "a5e6af5d313d80a6aa58568d8c8a9971ba7b2d32649f5cc983287740cdbb460e",
+        "contentHash": "5f3f7d15c6fe3d092e8ebcd98ad6f3047e8bc6872fd33c47d47538dbf58702db",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -20237,7 +20237,7 @@
             }
           ]
         },
-        "contentHash": "4917025d2cd90bd194ab490920756b87de00fec9965a53c67f799a28a92e4b14",
+        "contentHash": "df4ef1ca6a9d3e440fa0be5f612ade01fa84459df6b9473568a2d2e976e5255d",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -20384,7 +20384,7 @@
             }
           ]
         },
-        "contentHash": "547e64a3dc3f7b7053805ba781e6cf5958bae3ae15c1fc45ce1b13f4d3eb7246",
+        "contentHash": "91822206a70a54ee883916d43a028de7202fc5ea1cfcffdad6ad0249813302da",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -23931,7 +23931,7 @@
             }
           ]
         },
-        "contentHash": "db1cb71c5e6384b0f1336a1533c939ec247b03534d8e91654516272ebc950842",
+        "contentHash": "6aea2c6086dff3143759b79bc042c79fd00a083eb02700cbfc489597f0464381",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -23981,7 +23981,7 @@
           ],
           "outbound": []
         },
-        "contentHash": "f2abd1ac5a033cef62c1742ca94e1a18fbff384b95d6ee74c1767e9481563298",
+        "contentHash": "d25a355941d5a7ce578b14e4a3345e4e3101ba534f5fdeb0a169bd71c889da28",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -24896,7 +24896,7 @@
             }
           ]
         },
-        "contentHash": "da958972f4c77ede76494a8d0e6335103170778cde617d9e9f34ae1beea9a11f",
+        "contentHash": "8ecbabc701bdc1ed9944cb3b777d1739ce653b1d77017807903d88916d587853",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -25127,7 +25127,7 @@
             }
           ]
         },
-        "contentHash": "761fa2bbb8d84c81b77cd51c563c4da8b52ef497cce352881724a1215442eaf0",
+        "contentHash": "94e22d949c3c9b8342ab6a8777c42ffc2402449a1341966791b55510c4eccc58",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -26906,7 +26906,7 @@
             }
           ]
         },
-        "contentHash": "ffe7aa52db97eac041cda9931171924ded2d57617677fbfb3971f03d39bb9e99",
+        "contentHash": "987a879f6e58fe1a7a88a2542e385ec363449f9c2da480ea9e4a4b83038efe9c",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -26962,7 +26962,7 @@
           ],
           "outbound": []
         },
-        "contentHash": "df495c982280fae2ae89361a1fd3eccab90a833c1f077a39aae2e70d6ed60305",
+        "contentHash": "112bfee66437b37bca049adb5e55751a9acfa643ff27eb8e16842da31a28ac25",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -30526,7 +30526,7 @@
             }
           ]
         },
-        "contentHash": "e359fcc4ee6b33d1ea137894139be7056f8f20a41177a14eb77bf95ca76fb81a",
+        "contentHash": "336df8b8923d8dba22c4067d4e6aff686909b557c179ab5f34a80e0210899480",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -31889,7 +31889,7 @@
             }
           ]
         },
-        "contentHash": "0cb5d2f8bc94ef877869cdcc62146dfa41fe608a956e294a48c07b680f07c6d7",
+        "contentHash": "b83fc93e98f1cd800f545efbeaa167358622b7f008b39bb556272e68da12abad",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -32365,7 +32365,7 @@
             }
           ]
         },
-        "contentHash": "b6bd4147622007987e93fecb1cf8e033a74b0d64f985032e83babd3fa4eff42a",
+        "contentHash": "78085152f24e2582e16ddfa47e54fdb174f5c41fe1a5573e89529a7e9301d38a",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -38807,7 +38807,7 @@
             }
           ]
         },
-        "contentHash": "205fa40b5ee0e00374f4228e5dd07af6ea920a9ee5b66b08821da858e7239a3f",
+        "contentHash": "70d88c133d439afb837da28375a3e4fb9835b4cd39a47d5b95fdeef0c1e93086",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -39280,7 +39280,7 @@
             }
           ]
         },
-        "contentHash": "e7ff422e5507c8c6b84a197405dd5664a581708f83df7fbc872b73306bc5cd47",
+        "contentHash": "256da5dd46aeae8e0cdb50b5ecd08a4576a28112137812c6e9a7763d30814de5",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -45703,7 +45703,7 @@
           ],
           "outbound": []
         },
-        "contentHash": "db2fbdf5414ff8bbbe53c9d98068917ac826cc8f8a239e5778895488d6310cc5",
+        "contentHash": "c6d9938159d77f8fcc1cbee792f269309b595696041102d38165f24c9c8cd010",
         "provenance": "observed",
         "confidence": "observed"
       },
