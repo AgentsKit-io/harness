@@ -1,6 +1,7 @@
 import { existsSync, realpathSync } from 'node:fs'
 import type { OrcaAutomation, OrcaAutomationSpec } from '../adapters/orca-cli.js'
 import type { LoadedLoopConfig, LoopConfig } from './config.js'
+import { toPosix } from '@agentskit/cross-platform'
 
 /** Every stage the harness can own a scheduled automation for. `tick`/`deliver` are always declared; `retro`/`observe` only when the config asks. */
 export type LoopStage = 'tick' | 'deliver' | 'retro' | 'observe'
@@ -158,13 +159,11 @@ export const automationFields = (automation: OrcaAutomation): AutomationFields =
  * desired `path:` selector) is built with `node:path`'s native separator. Compare on forward slashes so a Windows
  * checkout doesn't see permanent drift against its own just-reconciled automation.
  */
-const normalizeSlashes = (value: string): string => value.replace(/\\/g, '/')
-
 const workspaceMatches = (desired: string | undefined, actual: string | null): boolean => {
   if (!desired || !actual) return true
   if (!desired.startsWith('path:')) return true
-  const path = normalizeSlashes(desired.slice('path:'.length))
-  const actualPath = normalizeSlashes(actual)
+  const path = toPosix(desired.slice('path:'.length))
+  const actualPath = toPosix(actual)
   return actualPath === path || actualPath.endsWith(`::${path}`)
 }
 

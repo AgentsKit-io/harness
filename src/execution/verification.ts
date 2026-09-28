@@ -15,6 +15,7 @@ import type { ContextSnapshot } from '../context/index.js'
 import type { CheckResult, LoadedConfig, VerificationCheck, VerificationRun } from '../kernel/types.js'
 import { FileEventStore } from '../kernel/events.js'
 import { adaptiveConcurrency, createMachineMonitor } from './machine.js'
+import { splitLines } from '@agentskit/cross-platform'
 
 const now = (): string => new Date().toISOString()
 const requireRun = (run: VerificationRun | null): VerificationRun => run ?? fail('No verification run exists.', 'NO_RUN')
@@ -81,7 +82,7 @@ export const planRun = async ({ configPath, decision, actor = 'human', allowDirt
   const validatedContextSnapshots = validateContextSnapshots(contextSnapshots)
   const baseline = await sourceSnapshot(loaded.root, loaded.stateDir)
   const configRelative = relative(loaded.root, loaded.absolute)
-  const meaningful = baseline.status.split('\n').filter(Boolean).filter((line) => !statusLineIsPath(line, configRelative))
+  const meaningful = splitLines(baseline.status).filter(Boolean).filter((line) => !statusLineIsPath(line, configRelative))
   if (meaningful.length && !allowDirty) fail(`Worktree is dirty before planning:\n${meaningful.join('\n')}\nUse --allow-dirty only with explicit human authorization.`, 'WORKTREE_DIRTY')
   let previous = loadLatestRun(loaded.stateDir)
   // A finished run whose source or contract moved on is stale whether or not anyone ran `status` since; refusing a

@@ -8,12 +8,12 @@ importers:
 
   .:
     dependencies:
+      '@agentskit/cross-platform':
+        specifier: ^0.1.0
+        version: 0.1.0
       commander:
         specifier: ^14.0.3
         version: 14.0.3
-      cross-spawn:
-        specifier: ^7.0.6
-        version: 7.0.6
       ink:
         specifier: 7.1.1
         version: 7.1.1(@types/react@19.3.0)(react@19.3.0)
@@ -29,7 +29,7 @@ importers:
     devDependencies:
       '@agentskit/doc-bridge':
         specifier: ^1.12.0
-        version: 1.12.0(@types/react@19.3.0)(graphology-types@0.24.8)(react@19.3.0)
+        version: 1.12.0(@agentskit/core@1.12.10)(@types/react@19.3.0)(graphology-types@0.24.8)(react@19.3.0)
       '@radix-ui/react-radio-group':
         specifier: ^1.4.7
         version: 1.4.7(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
@@ -39,9 +39,6 @@ importers:
       '@tailwindcss/vite':
         specifier: ^4.3.3
         version: 4.3.3(vite@8.3.1(@types/node@22.20.4)(esbuild@0.27.7)(jiti@2.7.0)(yaml@2.9.1))
-      '@types/cross-spawn':
-        specifier: ^6.0.6
-        version: 6.0.6
       '@types/node':
         specifier: ^22.20.3
         version: 22.20.4
@@ -144,6 +141,14 @@ importers:
         version: 6.0.3
 
 packages:
+
+  '@agentskit/core@1.12.10':
+    resolution: {integrity: sha512-dKffCjASPBPvV2xq810dS7X1+/bNfxAJYdI3mPaK1Sj/Scbh8xR37lxo2AWBK+JNL40ffDe/pIJf72S+MUA+bw==}
+
+  '@agentskit/cross-platform@0.1.0':
+    resolution: {integrity: sha512-yl0VHjvs6pjtTYSYOxm3ADTnjC1m3ZAuHh11oDKwmSxEE9u09NLhsGcRFA3tJkWwNHH62a+pV3T0NwLvr0NtPw==}
+    engines: {node: '>=20.19'}
+    hasBin: true
 
   '@agentskit/doc-bridge@1.12.0':
     resolution: {integrity: sha512-Hft7ekdi1cCjn0HDWjYkD1FPLugQXrS+rgxarNAAIGU8sp32I+Q6Dp9dRIQRYkvvckjJI43ckCPy/NdjkbGuTg==}
@@ -1561,9 +1566,6 @@ packages:
 
   '@types/chai@5.2.3':
     resolution: {integrity: sha512-Mw558oeA9fFbv65/y4mHtXDs9bPnFMZAL/jxdPFUpOHHIXX91mcgEHbS5Lahr+pwZFR8A7GQleRWeI6cGFC2UA==}
-
-  '@types/cross-spawn@6.0.6':
-    resolution: {integrity: sha512-fXRhhUkG4H3TQk5dBhQ7m/JDdSNHKwR2BBia62lhwEIq9xGiQKLxd6LymNhn47SjXhsUEPmxi+PKw2OkW4LLjA==}
 
   '@types/d3-array@3.2.2':
     resolution: {integrity: sha512-hOLWVbm7uRza0BYXpIIW5pxfrKe0W+D5lrFiAEYR+pb6w3N2SwSMaJbXdUfSEv+dT4MfHBLtn5js0LAWaO6otw==}
@@ -3806,7 +3808,18 @@ packages:
 
 snapshots:
 
-  '@agentskit/doc-bridge@1.12.0(@types/react@19.3.0)(graphology-types@0.24.8)(react@19.3.0)':
+  '@agentskit/core@1.12.10': {}
+
+  '@agentskit/cross-platform@0.1.0':
+    dependencies:
+      '@agentskit/core': 1.12.10
+      cross-spawn: 7.0.6
+      graceful-fs: 4.2.11
+      pathe: 2.0.3
+      tree-kill: 1.2.2
+      which: 2.0.2
+
+  '@agentskit/doc-bridge@1.12.0(@agentskit/core@1.12.10)(@types/react@19.3.0)(graphology-types@0.24.8)(react@19.3.0)':
     dependencies:
       '@agentskit/harness': 0.11.0(@types/react@19.3.0)
       github-slugger: 2.0.0
@@ -3829,6 +3842,7 @@ snapshots:
       yaml: 2.9.1
       zod: 4.6.5
     optionalDependencies:
+      '@agentskit/core': 1.12.10
       react: 19.3.0
     transitivePeerDependencies:
       - '@types/react'
@@ -5010,10 +5024,6 @@ snapshots:
     dependencies:
       '@types/deep-eql': 4.0.2
       assertion-error: 2.0.1
-
-  '@types/cross-spawn@6.0.6':
-    dependencies:
-      '@types/node': 22.20.4
 
   '@types/d3-array@3.2.2': {}
 

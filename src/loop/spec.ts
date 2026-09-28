@@ -5,6 +5,7 @@ import { sha256 } from '../kernel/hash.js'
 import type { LoopConfig } from './config.js'
 import type { StoredContract } from './contract.js'
 import type { StoredPlan } from './plan-vote.js'
+import { toPosix } from '@agentskit/cross-platform'
 
 /**
  * Spec-driven development without a spec writer (ADR-0041): `specs/<issue>/` in the Spec Kit / Kiro layout, rendered
@@ -94,7 +95,7 @@ export const specDigest = (spec: RenderedSpec): string => sha256(SPEC_FILES.map(
 
 /** `specs/<issue>` relative to the worktree root. */
 // Repository paths, not filesystem paths: `/` on every OS (git pathspecs, PR text, the brief).
-export const specDirFor = (config: LoopConfig, issue: string): string => posix.join(config.spec.dir.replace(/\\/g, '/'), issue)
+export const specDirFor = (config: LoopConfig, issue: string): string => posix.join(toPosix(config.spec.dir), issue)
 
 export const writeSpec = (worktreePath: string, config: LoopConfig, issue: string, spec: RenderedSpec): readonly string[] =>
   SPEC_FILES.map((file) => {
