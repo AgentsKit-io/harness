@@ -46,6 +46,8 @@ interface Scenario {
   readonly worktreeStatus?: string
   /** `orca worktree ps` comment on the worker worktree (a worker sets `BLOCKED: <reason>` when it stops itself). */
   readonly worktreeComment?: string
+  /** `orca terminal wait --for tui-idle`; a bare shell never satisfies it. Default true. */
+  readonly tuiIdle?: boolean
   readonly orcaWorktreeMissing?: boolean
   readonly pluginSource?: string
   readonly initialRemainingPercent?: number | null
@@ -154,7 +156,7 @@ const setup = (initial: Scenario = {}) => {
       if (key.startsWith('orca terminal create')) return okResult({ handle: 'term_handoff', terminal: { handle: 'term_handoff' } })
       if (key.startsWith('orca terminal close') && scenario.terminalCloseError) return { code: 1, stdout: '', stderr: scenario.terminalCloseError, timedOut: false, durationMs: 1 }
       if (key.startsWith('orca terminal close')) return okResult({ closed: true })
-      if (key.startsWith('orca terminal wait')) return okResult({ satisfied: true })
+      if (key.startsWith('orca terminal wait')) return okResult({ satisfied: scenario.tuiIdle ?? true })
       if (key.startsWith('orca terminal send')) {
         if ((scenario.sendRejects ?? 0) > 0) { scenario.sendRejects = (scenario.sendRejects ?? 1) - 1; return okResult({ accepted: false, requestId: 'r' }) }
         return okResult({ accepted: true, requestId: 'r' })
@@ -594,6 +596,18 @@ describe('deliver', () => {
     expect(linearWrites).toEqual([])
     const closedEvents = readFileSync(join(env.loaded.stateDir, 'events.ndjson'), 'utf8').split('\n').filter(Boolean).map((line) => JSON.parse(line) as Record<string, unknown>).filter((event) => event['type'] === 'pr.closed')
     expect(closedEvents).toHaveLength(1)
+  })
+
+  it('treats a worker whose CLI exited back to the shell prompt as idle, not "worker active"', async () => {
+    // Live (law-os AGE-1725): pi exited after ~1h48 with nothing committed; the bare cmd prompt never read as an idle
+    // TUI, so deliver reported "worker active" for hours and never nudged or relaunched.
+    const env = setup({ pr: null, dispatchedAt: '2026-09-11T09:00:00.000Z', tuiIdle: false, terminals: [{ handle: 'term_w', connected: true, orphaned: false, command: 'pi', lastOutputAt: Date.parse('2026-09-11T10:00:00.000Z'), preview: '── Working ──\nC:\\Users\\me\\w\\eng-10-demo>', worktreeId: 'repo-1::/w/eng-10-demo' }] })
+    const report = await deliver(env, { now: () => new Date('2026-09-11T13:00:00.000Z') })
+    expect(report.results[0]?.reason).not.toBe('worker active')
+    expect(report.results[0]?.outcome).not.toBe('waiting')
+    // A TUI whose own output shows a `$ cd …` line is still a live worker.
+    const live = setup({ pr: null, dispatchedAt: '2026-09-11T09:00:00.000Z', tuiIdle: false, terminals: [{ handle: 'term_w', connected: true, orphaned: false, command: 'pi', lastOutputAt: Date.parse('2026-09-11T10:00:00.000Z'), preview: ' $ cd /c/w && ls\n── Working ──', worktreeId: 'repo-1::/w/eng-10-demo' }] })
+    expect((await deliver(live, { now: () => new Date('2026-09-11T13:00:00.000Z') })).results[0]).toMatchObject({ outcome: 'waiting', reason: 'worker active' })
   })
 
   it('relaunches the agent instead of typing the brief into a bare shell when no agent is attached', async () => {
