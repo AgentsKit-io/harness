@@ -69,6 +69,9 @@ describe('the attention list', () => {
     expect(classifyIssue(blocked('D'), stops['D'], { fixRounds: 3, maxFixRounds: 3, heldFor: null })?.kind).toBe('fix-round-cap')
     expect(classifyIssue(blocked('D'), stops['D'], { fixRounds: 1, maxFixRounds: 3, heldFor: null })?.kind).toBe('blocked')
     expect(classifyIssue(blocked('X', { reviewState: 'ci-failed' }), undefined, undefined)?.kind).toBe('ci-failed')
+    // Dispatch failed (vivva #40/#67): the issue is `available` again, but its explicit-queue run is failed — offer Retry.
+    expect(classifyIssue(record('F', { phase: 'available', run: run({ status: 'failed' }), error: 'orca terminal create failed' }), undefined, undefined)).toMatchObject({ kind: 'blocked', ids: ['retry', 'cancel', 'open'] })
+    expect(classifyIssue(record('G', { phase: 'available', run: run({ status: 'queued' }) }), undefined, undefined)).toBeNull()
     expect(classifyIssue(record('E', { phase: 'review', run: run({ status: 'running' }) }), stops['E'], undefined)).toMatchObject({ kind: 'permission-wait', ids: ['open', 'cancel'] })
     expect(classifyIssue(blocked('F'), stops['F'], undefined, true)).toMatchObject({ ids: ['resume', 'open'], reason: expect.stringMatching(/paused/) })
     expect(classifyIssue(blocked('F'), stops['F'], undefined, false)).toBeNull()
