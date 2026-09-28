@@ -339,6 +339,10 @@ export const workerAtUsageLimit = async (ctx: Pick<Context, 'runner' | 'config'>
 /** A shell prompt, not an agent TUI: zsh/oh-my-zsh, bash (`$ `), PowerShell (`PS C:\…>`) and cmd (`C:\…>`). */
 const SHELL_PROMPT = /git:\(|➜\s|\$\s|(?:^|\n)PS [A-Za-z]:\\[^\n]*>\s*$|(?:^|\n)[A-Za-z]:\\[^\n]*>\s*$/
 
+/** The worker's terminal ends at a shell prompt: its CLI exited. Anchored to the last line — a TUI's own tool output
+ * (`$ cd …`) must not count, which is why this is not SHELL_PROMPT. */
+const EXITED_TO_SHELL = /(?:^|\n)(?:PS )?[A-Za-z]:\\[^\n]*>\s*$/
+
 const sendToWorker = async (ctx: Context, record: DispatchRecordFile, text: string, actions: string[]): Promise<boolean> => {
   if (!record.terminal) { actions.push('no terminal handle recorded; cannot nudge'); return false }
   const permission = ctx.dryRun ? null : await workerAwaitingPermission(ctx, record)
@@ -692,11 +696,13 @@ const handleNoPullRequest = async (ctx: Context, record: DispatchRecordFile, lea
   const now = ctx.now()
   let terminalAlive = false
   let lastOutputAt: number | null = null
+  let exitedToShell = false
   try {
     const terminals = await orcaTerminalList(ctx.runner, { worktree: `id:${record.worktreeId}` }, orcaOptions(ctx.config))
     const own = terminals.find((terminal) => terminal.handle === record.terminal) ?? terminals[0]
     terminalAlive = Boolean(own && own.status !== 'orphaned' && own.status !== 'disconnected')
     lastOutputAt = own?.lastOutputAt ?? null
+    exitedToShell = EXITED_TO_SHELL.test(own?.preview ?? '')
   } catch (error) {
     // An Orca outage says nothing about the worker: treating it as "terminal gone" escalated live workers as stuck,
     // or handed a second agent into the same worktree.
@@ -779,6 +785,10 @@ const handleNoPullRequest = async (ctx: Context, record: DispatchRecordFile, lea
   if (ctx.assumeIdle === undefined && record.terminal) {
     try { idle = (await orcaTerminalWait(ctx.runner, { terminal: record.terminal, for: 'tui-idle', timeoutMs: 1_500 }, orcaOptions(ctx.config))).satisfied } catch { idle = false }
   }
+  // A worker CLI that exited leaves a bare shell prompt, which never reads as an idle TUI: the run sat "worker active"
+  // for hours with no agent (law-os AGE-1725, pi gone after ~1h48, nothing committed). Idle it is — the nudge path
+  // below then sees the stale shell and relaunches the worker.
+  idle = idle || exitedToShell
   // The terminal never confirmed the brief and sits idle: it most likely never received it (observed, a prompt typed
   // while the shell was still starting the agent). Waiting out the idle timeout would burn it doing nothing — send
   // the pointer once, now.
