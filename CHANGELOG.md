@@ -2,6 +2,7 @@
 
 ## [Unreleased]
 
+- **Canonical shared hashes.** New artifacts, event-chain entries, manifests, verification digests and cache keys use `@agentskit/core/hash`; readers still accept existing persisted hashes, and stable IDs keep their legacy format.
 - **Portability via `@agentskit/cross-platform`.** Process spawning (`.cmd` shim resolution), process-tree kill and
   path/line helpers now come from the shared package instead of hand-rolled copies; `cross-spawn` is no longer a
   direct dependency. `pnpm typecheck` runs `agentskit-cross-platform check` against `.cross-platform-baseline.json`,
