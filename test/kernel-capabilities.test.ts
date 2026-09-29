@@ -2,6 +2,7 @@ import { createHash } from 'node:crypto'
 import { describe, expect, it } from 'vitest'
 import { createCapabilityManifest, validateCapabilityManifest } from '../src/index.js'
 import type { CapabilityDescriptor, CapabilityManifestInput } from '../src/index.js'
+import { hashJson } from '../src/kernel/hash.js'
 
 const digest = (value: string): string => createHash('sha256').update(value).digest('hex')
 const capability = (overrides: Partial<CapabilityDescriptor> = {}): CapabilityDescriptor => ({ id: 'kernel', version: '1.0.0', kind: 'kernel', entryPoint: 'src/index.ts', exports: ['assessDiscovery'], ...overrides })
@@ -51,6 +52,13 @@ describe('createCapabilityManifest', () => {
 })
 
 describe('validateCapabilityManifest', () => {
+  it('accepts a persisted digest from the previous JSON serializer', () => {
+    const manifest = createCapabilityManifest(input())
+    const { digest: _digest, ...body } = manifest
+    const legacy = { ...manifest, digest: hashJson(body) }
+    expect(validateCapabilityManifest(legacy)).toEqual(legacy)
+  })
+
   it('rejects a non-object value', () => {
     expect(() => validateCapabilityManifest(null)).toThrow(/must be an object/)
     expect(() => validateCapabilityManifest([])).toThrow(/must be an object/)

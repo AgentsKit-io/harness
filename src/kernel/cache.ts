@@ -1,4 +1,4 @@
-import { hashJson } from './hash.js'
+import { hashCanonicalJson } from './hash.js'
 import { fail } from './errors.js'
 import type { AdapterTelemetry, AssuranceLevel } from './adapter-contract.js'
 
@@ -28,7 +28,7 @@ export const validateCacheableOperation = (operation: unknown): 'context' | 'rea
 
 export const createLlmCacheKey = (input: LlmCacheKeyInput): string => {
   validateCacheableOperation(input.operation)
-  return hashJson(input)
+  return hashCanonicalJson(input)
 }
 
 export interface LlmCache<T> {

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { COMPATIBILITY_COMPONENTS, assessCompatibility, createCompatibilityManifest, validateCompatibilityManifest } from '../src/index.js'
 import type { CompatibilityComponent, CompatibilityManifest } from '../src/index.js'
+import { hashJson } from '../src/kernel/hash.js'
 
 const revision = 'a'.repeat(40)
 const componentFor = (id: (typeof COMPATIBILITY_COMPONENTS)[number], overrides: Partial<CompatibilityComponent> = {}): CompatibilityComponent => ({ id, package: `@agentskit/${id}`, version: '1.0.0', revision, repository: 'https://github.com/AgentsKit-io/agentskit', adapterBoundary: 'real-adapter' as const, testCommand: `test:${id}`, evalCommand: `eval:${id}`, previousVersion: `@agentskit/${id}@0.9.0`, noHarnessBaseline: 'baseline.json', migrationEvidence: 'migration.md', rollbackEvidence: 'rollback.md', ...overrides })
@@ -48,6 +49,12 @@ describe('createCompatibilityManifest', () => {
 
 describe('validateCompatibilityManifest', () => {
   const manifest = createCompatibilityManifest(manifestInput())
+
+  it('accepts a persisted digest from the previous JSON serializer', () => {
+    const { digest: _digest, ...body } = manifest
+    const legacy = { ...manifest, digest: hashJson(body) }
+    expect(validateCompatibilityManifest(legacy)).toEqual(legacy)
+  })
 
   it('rejects a non-object value', () => {
     expect(() => validateCompatibilityManifest(null)).toThrow(/must be an object/)

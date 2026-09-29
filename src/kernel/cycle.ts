@@ -1,5 +1,5 @@
-import { createHash } from 'node:crypto'
 import { fail } from './errors.js'
+import { hashJson } from './hash.js'
 
 export const IMPROVEMENT_CYCLE_STEPS = ['adversarial-review', 'g2-preflight', 'baseline-record', 'pilot-execution', 'comparison'] as const
 export type ImprovementCycleStep = typeof IMPROVEMENT_CYCLE_STEPS[number]
@@ -105,6 +105,6 @@ export const assessImprovementCycle = (input: ImprovementCycleInput): Improvemen
   const reasons = complete ? ['All five cycle steps passed.'] : iterations.length >= input.maxIterations ? ['Maximum cycle iterations reached; human adjustment is required.'] : latest.adjustment ? ['A failed or blocked step remains; repeat with the recorded adjustment.'] : ['A failed or blocked step remains; an explicit adjustment is required before repeating.']
   const decision: ImprovementCycleAssessment['decision'] = complete ? 'complete' : iterations.length >= input.maxIterations || !latest.adjustment ? 'blocked' : 'repeat'
   const result = { type: 'agentskit-harness-improvement-cycle' as const, cycleId, decision, ...(decision === 'repeat' ? { nextIteration: latest.iteration + 1 } : {}), reasons, matrix }
-  const digest = createHash('sha256').update(JSON.stringify(result)).digest('hex')
+  const digest = hashJson(result)
   return { ...result, digest }
 }

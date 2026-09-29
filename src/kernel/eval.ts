@@ -1,5 +1,5 @@
 import { fail } from './errors.js'
-import { hashJson } from './hash.js'
+import { hashCanonicalJson, hashJsonMatches } from './hash.js'
 
 export type EvalExpectation = string | ((output: string) => boolean)
 
@@ -158,7 +158,7 @@ const manifestBody = (value: Record<string, unknown>): Omit<EvalManifest, 'diges
 
 export const createEvalManifest = (input: Omit<EvalManifest, 'type' | 'schemaVersion' | 'digest'>): EvalManifest => {
   const body = manifestBody(input as unknown as Record<string, unknown>)
-  return { ...body, digest: hashJson(body) }
+  return { ...body, digest: hashCanonicalJson(body) }
 }
 
 export const validateEvalManifest = (value: unknown): EvalManifest => {
@@ -167,7 +167,7 @@ export const validateEvalManifest = (value: unknown): EvalManifest => {
   const body = manifestBody(candidate)
   if (candidate['type'] !== body.type || candidate['schemaVersion'] !== body.schemaVersion) fail('Eval manifest type or schemaVersion is invalid.', 'INVALID_INPUT')
   const manifestDigest = digest(candidate['digest'], 'digest')
-  if (manifestDigest !== hashJson(body)) fail('Eval manifest digest is invalid.', 'INVALID_INPUT')
+  if (!hashJsonMatches(body, manifestDigest)) fail('Eval manifest digest is invalid.', 'INVALID_INPUT')
   return { ...body, digest: manifestDigest }
 }
 

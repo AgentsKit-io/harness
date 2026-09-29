@@ -1,7 +1,7 @@
 import { appendFileSync, closeSync, existsSync, mkdirSync, openSync, readFileSync, unlinkSync, writeSync } from 'node:fs'
 import { join } from 'node:path'
 import { fail } from './errors.js'
-import { hashJson, sha256 } from './hash.js'
+import { hashCanonicalJson, hashJson, hashJsonMatches } from './hash.js'
 import type { ContextQuery } from '../context/index.js'
 import type { RunState } from './types.js'
 import type { DockerRuntimeEvidence } from '../execution/runtime.js'
@@ -197,7 +197,7 @@ const eventBody = (event: HarnessEvent): Omit<HarnessEvent, 'eventHash'> => {
   const { eventHash: _eventHash, ...body } = event
   return body
 }
-const eventDigest = (event: HarnessEvent): string => sha256(JSON.stringify(eventBody(event)))
+const eventDigest = (event: HarnessEvent): string => hashCanonicalJson(eventBody(event))
 
 const parseEvent = (value: unknown, expectedSequence: number): HarnessEvent => {
   if (typeof value !== 'object' || value === null || Array.isArray(value)) fail('Event log contains a non-object record.', 'HARNESS_ERROR')
@@ -218,7 +218,7 @@ const validateChain = (events: readonly HarnessEvent[]): EventLogVerification =>
   let previous: string = EVENT_LOG_GENESIS
   for (const event of events) {
     const eventHash = event.eventHash ?? fail('Event log hash chain is invalid.', 'HARNESS_ERROR')
-    if (event.previousHash !== previous || eventHash !== eventDigest(event)) fail('Event log hash chain is invalid.', 'HARNESS_ERROR')
+    if (event.previousHash !== previous || !hashJsonMatches(eventBody(event), eventHash)) fail('Event log hash chain is invalid.', 'HARNESS_ERROR')
     previous = eventHash
   }
   return { status: 'verified', eventCount: events.length, ...(events.length ? { headHash: previous } : {}) }
