@@ -1,7 +1,7 @@
-import { createHash } from 'node:crypto'
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs'
 import { join } from 'node:path'
 import type { CommandRunner } from '../adapters/command.js'
+import { hashJson } from '../kernel/hash.js'
 import { loadLoopConfig, type LoadedLoopConfig } from './config.js'
 import { writeJsonAtomic } from './fs-atomic.js'
 import { loopStatus, type AutomationStatus } from './install.js'
@@ -91,7 +91,7 @@ export const assessObserveStage = (input: ObserveAssessmentInput): ObserveAssess
   for (const lock of input.staleLocks) problems.push({ id: `stale-lock:${lock}`, detail: `${lock} is older than the stale-lock threshold; the stage that owned it is gone` })
 
   const ordered = [...problems].sort((left, right) => left.id.localeCompare(right.id))
-  const signature = createHash('sha256').update(JSON.stringify(ordered.map((problem) => problem.id))).digest('hex').slice(0, 16)
+  const signature = hashJson(ordered.map((problem) => problem.id)).slice(0, 16)
   const at = input.now.toISOString()
   if (!ordered.length) {
     return { report: { status: 'healthy', notify: false, generatedAt: at, signature, problems: [], firstSeenAt: null, reason: 'healthy' }, state: { signature: null, firstSeenAt: null, lastNotifiedAt: null } }

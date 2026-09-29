@@ -3,7 +3,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { expect, it } from 'vitest'
 import { FileArtifactStore, FileEventStore, artifactDigest, artifactIsFresh, createArtifactEnvelope, createPhaseArtifact, executePhaseProfile, readArtifactFile, renderArtifactMarkdown, resumeStateFromArtifacts, validateArtifactEnvelope } from '../src/index.js'
-import { sha256 } from '../src/kernel/hash.js'
+import { hashJson, sha256 } from '../src/kernel/hash.js'
 
 const digest = (value: string): string => sha256(value)
 const base = { artifactVersion: 1, runId: 'run-1', issueRef: 'github:AgentsKit-io/harness#12', sourceRevision: 'revision-1', contractHash: digest('contract'), configHash: digest('config'), contextHash: digest('context'), phase: 'discover' }
@@ -17,6 +17,29 @@ it('creates a versioned provenance envelope and deterministic identity', () => {
   expect(() => validateArtifactEnvelope({ ...first, payload: { steps: ['tampered'] } })).toThrow(/payloadHash/)
   expect(artifactIsFresh(first, base)).toBe(true)
   expect(artifactIsFresh(first, { ...base, sourceRevision: 'revision-2' })).toBe(false)
+})
+
+it('reads an artifact envelope fingerprinted by the previous JSON serializer', () => {
+  const artifact = createArtifactEnvelope({ ...base, artifactType: 'plan', payload: { z: 1, a: 2 } })
+  const payloadHash = hashJson(artifact.payload)
+  const oldBody = {
+    type: artifact.type,
+    schemaVersion: artifact.schemaVersion,
+    artifactId: artifact.artifactId,
+    artifactType: artifact.artifactType,
+    artifactVersion: artifact.artifactVersion,
+    runId: artifact.runId,
+    issueRef: artifact.issueRef,
+    sourceRevision: artifact.sourceRevision,
+    contractHash: artifact.contractHash,
+    configHash: artifact.configHash,
+    contextHash: artifact.contextHash,
+    phase: artifact.phase,
+    payload: artifact.payload,
+    payloadHash,
+  }
+  const oldArtifact = { ...artifact, payloadHash, artifactHash: hashJson(oldBody) }
+  expect(validateArtifactEnvelope(oldArtifact)).toEqual(oldArtifact)
 })
 
 it('persists JSON and Markdown once and records one idempotent event', () => {
@@ -47,7 +70,7 @@ it('renders readable Markdown and computes a stable digest', () => {
   const markdown = renderArtifactMarkdown(artifact)
   expect(markdown).toContain(`# finding artifact ${artifact.artifactId}`)
   expect(markdown).toContain(artifact.runId)
-  expect(artifactDigest(artifact)).toBe(sha256(JSON.stringify(artifact)))
+  expect(artifactDigest(artifact)).toBe(hashJson(artifact))
 })
 
 it('reads and validates an artifact envelope from a file path', () => {

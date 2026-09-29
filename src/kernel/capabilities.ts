@@ -1,5 +1,5 @@
 import { fail } from './errors.js'
-import { hashJson } from './hash.js'
+import { hashCanonicalJson, hashJsonMatches } from './hash.js'
 
 export const CAPABILITY_MANIFEST_SCHEMA_VERSION = 1 as const
 export const CAPABILITY_KINDS = ['kernel', 'execution', 'adapter', 'composition'] as const
@@ -85,7 +85,7 @@ export const createCapabilityManifest = (input: CapabilityManifestInput): Capabi
   const body = manifestBody(input)
   if (!body.capabilities.length) fail('capabilities must be non-empty.', 'INVALID_INPUT')
   if (new Set(body.capabilities.map((item) => item.id)).size !== body.capabilities.length) fail('capability ids must be unique.', 'INVALID_INPUT')
-  return { ...body, digest: hashJson(body) }
+  return { ...body, digest: hashCanonicalJson(body) }
 }
 
 export const validateCapabilityManifest = (value: unknown): CapabilityManifest => {
@@ -96,6 +96,6 @@ export const validateCapabilityManifest = (value: unknown): CapabilityManifest =
   if (new Set(body.capabilities.map((item) => item.id)).size !== body.capabilities.length) fail('capability ids must be unique.', 'INVALID_INPUT')
   if (candidate['type'] !== body.type || candidate['schemaVersion'] !== body.schemaVersion) fail('Capability manifest type or schemaVersion is invalid.', 'INVALID_INPUT')
   const manifestDigest = digest(candidate['digest'], 'digest')
-  if (manifestDigest !== hashJson(body)) fail('Capability manifest digest is invalid.', 'INVALID_INPUT')
+  if (!hashJsonMatches(body, manifestDigest)) fail('Capability manifest digest is invalid.', 'INVALID_INPUT')
   return { ...body, digest: manifestDigest }
 }

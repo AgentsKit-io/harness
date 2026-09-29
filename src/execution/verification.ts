@@ -10,7 +10,7 @@ import { sourceSnapshot, statusLineIsPath } from './source.js'
 import { KILL_GRACE_MS, detachedForTreeKill, killProcessTree } from '../kernel/process-tree.js'
 import { cleanConfiguredArtifacts, loadLatestRun, readRun } from './files.js'
 import { validateContextSnapshots } from '../context/index.js'
-import { hashJson } from '../kernel/hash.js'
+import { hashCanonicalJson, hashJsonMatches } from '../kernel/hash.js'
 import type { ContextSnapshot } from '../context/index.js'
 import type { CheckResult, LoadedConfig, VerificationCheck, VerificationRun } from '../kernel/types.js'
 import { FileEventStore } from '../kernel/events.js'
@@ -20,7 +20,7 @@ import { splitLines } from '@agentskit/cross-platform'
 const now = (): string => new Date().toISOString()
 const requireRun = (run: VerificationRun | null): VerificationRun => run ?? fail('No verification run exists.', 'NO_RUN')
 const verificationProjection = (run: Pick<VerificationRun, 'checks' | 'outcomes' | 'metrics'>): { readonly checks: VerificationRun['checks']; readonly outcomes: VerificationRun['outcomes']; readonly metrics: VerificationRun['metrics'] } => ({ checks: run.checks, outcomes: run.outcomes, metrics: run.metrics })
-const verificationDigest = (run: Pick<VerificationRun, 'checks' | 'outcomes' | 'metrics'>): string => hashJson(verificationProjection(run))
+const verificationDigest = (run: Pick<VerificationRun, 'checks' | 'outcomes' | 'metrics'>): string => hashCanonicalJson(verificationProjection(run))
 
 interface CommandResult { readonly exitCode: number; readonly timedOut: boolean; readonly stdout: string; readonly stderr: string; readonly durationMs: number }
 interface ExecutedCheck { readonly check: CheckResult; readonly stdout: string; readonly stderr: string; readonly durationMs: number }
@@ -188,8 +188,8 @@ const assertFresh = async (loaded: LoadedConfig, run: VerificationRun): Promise<
 }
 
 const assertVerificationAttestation = (loaded: LoadedConfig, run: VerificationRun): void => {
-  const expected = verificationDigest(run)
-  if (run.verificationDigest !== expected) fail('Verification projection attestation does not match run.json.', 'HARNESS_ERROR')
+  const expected = run.verificationDigest ?? fail('Verification projection attestation is missing from run.json.', 'HARNESS_ERROR')
+  if (!hashJsonMatches(verificationProjection(run), expected)) fail('Verification projection attestation does not match run.json.', 'HARNESS_ERROR')
   const event = new FileEventStore(loaded.stateDir).read(run.runId).filter((item) => item.type === 'verification.completed').at(-1)
   if (!event || event.payload.verificationDigest !== expected || event.sourceRevision !== run.sourceRevision || event.configHash !== run.configHash) fail('Verification projection attestation is missing from the event log.', 'HARNESS_ERROR')
 }

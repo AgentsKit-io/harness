@@ -1,10 +1,10 @@
 #!/usr/bin/env node
-import { createHash } from 'node:crypto'
 import { readFileSync } from 'node:fs'
 import { Command } from 'commander'
 import { approveRun, ARTIFACT_SCHEMA_VERSION, assessAcceptance, assessBlock, assessDiscovery, assessImprovementCycle, assessIntegration, assessPilot, assessPreflight, assessProduction, assessWip, assessWorktreeCleanup, authorizeRun, benchmarkRuns, cancelRun, cleanTaskArtifacts, composePullRequest, createDispatchLedger, createDocBridgeContextProvider, createStatusSnapshot, exportEvidenceBundle, FileArtifactStore, loadBenchmarkManifest, loadConfig, loadLatestRun, parseRetro, planFilePreflight, planRun, readArtifactFile, readContextSnapshots, readEvidenceTrustStore, reconcileRun, recordBenchmarkObservation, renderArtifactMarkdown, retryRun, selectRuntime, startRun, validateBlockManifest, validateStatusSnapshot, verifyEvidenceBundle, verifyRun } from './index.js'
 import type { BenchmarkObservationEvidence } from './execution/metrics.js'
 import { fail } from './kernel/errors.js'
+import { sha256 } from './kernel/hash.js'
 import { appendLoopEvent, approveHeldDelivery, ensureBaseView, attachNotifier, buildDebriefReport, buildRetroReport, createLoopEventBus, createProcessRunner, createRichIO, formatWatchEvent, generateContract, installLoopAutomations, loadLoopConfig, loadLoopPlugins, openLoopMemory, promoteLearningsToMemory, requireWritableTracker, resolveConnectors, runGuidedInstall, runLoopInit, loopStatus, renderDebriefMarkdown, renderObservabilityMarkdown, renderRetroMarkdown, retroLearnings, runRetroStage, precheckDeliver, precheckTick, rankModels, promoteLearnings, writePrdDocument, writeDesignDocument, documentRoot, readCheckoutState, readLearningsLedger, startPlan, interviewRound, answerRound, approvePlan, architectRound, approveDesign, decomposeRound, createPlannedIssues, designApproved, listPlans, prdGaps, readPlanState, writePlanState, renderPlanMarkdown, readStoredContract, writeLearningsLedger, runDeliver, runLoopDoctor, runIntakeStage, runMaintainStage, readReleaseBatch, readReleaseState, approveRelease, renderReleaseMarkdown, runReleaseStage, runObservability, runObserveStage, runTick, uninstallLoopAutomations, watchDeliveries, writeStoredContract, isStagePaused, recordStageRunResult, resumeIssue, resumeStage, readIssueFailures, stageEntry, listPausedIssues, readLastConfigHash, writeLastConfigHash, buildIssueTimeline, renderIssueTimelineMarkdown, listAgentRuns, readAgentRunReport, renderAgentRunMarkdown, runWorkerGuard, type LoopStageName } from './index.js'
 import { FileEventStore, inspectEventLogLock, recoverEventLogLock } from './kernel/events.js'
 import { acquireStageLock, lastStageLockOwner, peekStageLock } from './loop/stage-lock.js'
@@ -24,7 +24,7 @@ const readBenchmarkEvidence = (path: string): { readonly evidence: readonly Benc
     const content = readFileSync(path, 'utf8')
     const raw = JSON.parse(content) as unknown
     const evidence = Array.isArray(raw) ? raw : typeof raw === 'object' && raw !== null ? (raw as { readonly evidence?: unknown }).evidence : undefined
-    if (Array.isArray(evidence)) return { evidence: evidence as BenchmarkObservationEvidence[], digest: createHash('sha256').update(content).digest('hex') }
+    if (Array.isArray(evidence)) return { evidence: evidence as BenchmarkObservationEvidence[], digest: sha256(content) }
   } catch (error) {
     fail(`Invalid benchmark evidence JSON: ${error instanceof Error ? error.message : String(error)}`, 'INVALID_INPUT')
   }

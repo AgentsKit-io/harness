@@ -9,6 +9,7 @@ import {
   recoverEventLogLock,
   validateHarnessEventEnvelope,
 } from '../src/index.js'
+import { hashJson } from '../src/kernel/hash.js'
 
 const hash = 'a'.repeat(64)
 const envelopeInput = {
@@ -97,6 +98,15 @@ describe('FileEventStore', () => {
     expect(second.previousHash).toBe(first.eventHash)
     expect(store.read('run-1')).toHaveLength(2)
     expect(store.verify('run-1')).toMatchObject({ status: 'verified', eventCount: 2, headHash: second.eventHash })
+  })
+
+  it('verifies an event chain written with the previous JSON serializer', () => {
+    const stateDir = dir()
+    const store = new FileEventStore(stateDir)
+    const event = store.append({ ...base, type: 'run.created', payload: { project: 'harness', baselineRevision: 'rev-1', baselineStatusHash: hash } })
+    const { eventHash: _eventHash, ...body } = event
+    writeFileSync(join(stateDir, 'runs', event.runId, 'events.ndjson'), `${JSON.stringify({ ...body, eventHash: hashJson(body) })}\n`, 'utf8')
+    expect(store.verify(event.runId)).toMatchObject({ status: 'verified', eventCount: 1 })
   })
 
   it('requires sessionId for session-scoped event types and rejects a blank one', () => {

@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
-  "contentHash": "2af159c12ee467628dd544ab3c4a613a01ed41d9728cf4c5b0332cf0866f88b7",
+  "contentHash": "483de7ce0602ff603c0399bee6c827a6f8aed55cd532ac36c0e0017792b9912b",
   "contentHashAlgo": "sha256-normalized-v1",
-  "generatedAt": "2026-09-28T22:09:17.248Z",
+  "generatedAt": "2026-09-29T19:31:37.558Z",
   "project": {
     "name": "AgentsKit Harness",
     "root": "."
@@ -298,12 +298,12 @@
       "type": "document",
       "title": "Changelog",
       "path": "CHANGELOG.md",
-      "description": "Portability via @agentskit/cross-platform. Process spawning (.cmd shim resolution), process-tree kill and path/line helpers now come from the shared package instead of hand-rolled copies; cross-spawn is no longer a direct dependency. pnpm typecheck runs agentskit-cross-platform check against .cross-platform-baseline.json, so a new Windows-hostile pattern fails CI.",
+      "description": "Canonical shared hashes. New artifacts, event-chain entries, manifests, verification digests and cache keys use @agentskit/core/hash; readers still accept existing persisted hashes, and stable IDs keep their legacy format.",
       "tags": [
         "document",
         "project"
       ],
-      "contentHash": "196283b6b5f46d9c605d408cc64766111d126e80429c44fd2c55917b970b294c"
+      "contentHash": "e15c82846f19a105e50041745e69e6a69fb28fb0371ea0508b7de35f8e95165b"
     },
     {
       "id": "document:CLAUDE.md",
@@ -880,6 +880,18 @@
         "human"
       ],
       "contentHash": "96c1192d37304224b10fe41555e43bbaf8b4c385ffa9630349e1d0da34058e54"
+    },
+    {
+      "id": "document:docs/ADR-0042-shared-canonical-hashing.md",
+      "type": "document",
+      "title": "ADR-0042: Shared canonical hashing",
+      "path": "docs/ADR-0042-shared-canonical-hashing.md",
+      "description": "Status: Accepted",
+      "tags": [
+        "document",
+        "human"
+      ],
+      "contentHash": "3316f4f604c4a790c8921496235e134e4cc9013a3525390916c038f3d19ff773"
     },
     {
       "id": "document:docs/GETTING-STARTED.md",
@@ -2016,7 +2028,7 @@
         "ts",
         "adapters"
       ],
-      "contentHash": "644ac8329890e5a3308b1abb3285df643313b205718e986356d0a1cfab25819c"
+      "contentHash": "ba652cc5a280f2e1b92df7d188a7ce7713ea5673930e53983fd9bf015feff22e"
     },
     {
       "id": "module:src/adapters/orca-cli.ts",
@@ -2182,7 +2194,7 @@
         "ts",
         "src"
       ],
-      "contentHash": "ec200d4c12d5ee272d084eda59ba3a60702891d0b61d3317c94e3229a10a7c35"
+      "contentHash": "efe2b323b66629d43927d9f21da88ef1db3ef979c353b94fe23c46747b4dd806"
     },
     {
       "id": "module:src/context/index.ts",
@@ -2303,7 +2315,7 @@
         "ts",
         "execution"
       ],
-      "contentHash": "5316f8ecc6a28532d6e423d151ee9a274e96d61900db745acca55f1f6745dd44"
+      "contentHash": "9e4f802014fd857f5ef78c44b835a04ce48f96c8995c5fdabd360adcc93f3381"
     },
     {
       "id": "module:src/execution/config.ts",
@@ -2518,7 +2530,7 @@
         "ts",
         "execution"
       ],
-      "contentHash": "91822206a70a54ee883916d43a028de7202fc5ea1cfcffdad6ad0249813302da"
+      "contentHash": "344dcb728fe74d7966f80a940856e444e8ad3b186a2fa64d2778bf3e8af3b960"
     },
     {
       "id": "module:src/index.ts",
@@ -2839,7 +2851,7 @@
         "ts",
         "kernel"
       ],
-      "contentHash": "a584b798eabb732ae2955b241df0dcb7902151a544751ddadb50374348a48d95"
+      "contentHash": "952f1b0f13503da676a354a8eb1cbe9a531e8f3b37945cba1452bd14a91e08d3"
     },
     {
       "id": "module:src/kernel/block.ts",
@@ -2879,7 +2891,7 @@
         "ts",
         "kernel"
       ],
-      "contentHash": "d893fc22d3dab79325e69c61fdf11d956ab8336a7a731c82e60ddb19196b0e86"
+      "contentHash": "c860ecf9c9ae09b1a3709b2f1caf81dd447d54200b7e8da23e117cfc391c1e7a"
     },
     {
       "id": "module:src/kernel/capabilities.ts",
@@ -2901,7 +2913,7 @@
         "ts",
         "kernel"
       ],
-      "contentHash": "06a779e2c645c0635272f476ee6281e69281cb866195bbf908f4787af4063f1d"
+      "contentHash": "8e27fd30eeaad48af08649dc04e59e81d343e9cabb523402b9b2c4a689efae62"
     },
     {
       "id": "module:src/kernel/compatibility.ts",
@@ -2926,7 +2938,7 @@
         "ts",
         "kernel"
       ],
-      "contentHash": "02c2ccc7386b49b97527e088539e1cc41f01b5de09be334a4d462778ad3fa6a3"
+      "contentHash": "51e611959b9fb89d9c06b1450ac0e7b351b6439e1881d1483b2cf7086ab37dde"
     },
     {
       "id": "module:src/kernel/constants.ts",
@@ -2968,7 +2980,7 @@
         "ts",
         "kernel"
       ],
-      "contentHash": "cab4310bdc4a86479f75b3e3a7b0e9305cfb08a25d13ea388616e6bacf84c7cd"
+      "contentHash": "cda5da26f7bd0fa2bdfea84ff10bf33337b2fd9e1d8ead68243798ec415ab1cd"
     },
     {
       "id": "module:src/kernel/discovery.ts",
@@ -3064,7 +3076,7 @@
         "ts",
         "kernel"
       ],
-      "contentHash": "51ccf437512608dfce577790f5f5b995d20e7e00c6ba43c791e1de3a41818a94"
+      "contentHash": "fc9d88644184ebdd79a33a2b459f589d9044580dcc5ea06e954088b70b2f13cf"
     },
     {
       "id": "module:src/kernel/events.ts",
@@ -3101,7 +3113,7 @@
         "ts",
         "kernel"
       ],
-      "contentHash": "a1b46cba26bd90d6b77f208d6bae043c55b08210c320d18059d5d10a5b4dda26"
+      "contentHash": "15b3d10a2aa99add062d9d94381a92096360883cad135eda43eb569a6750ba61"
     },
     {
       "id": "module:src/kernel/experiment.ts",
@@ -3126,7 +3138,9 @@
       "title": "hash.ts",
       "path": "src/kernel/hash.ts",
       "symbols": [
+        "hashCanonicalJson",
         "hashJson",
+        "hashJsonMatches",
         "sha256"
       ],
       "tags": [
@@ -3134,7 +3148,7 @@
         "ts",
         "kernel"
       ],
-      "contentHash": "325c608ff643a961d32ac7846dfb792218c8e6624706094aa4cf6fb3952cd19f"
+      "contentHash": "1667444af578f74d3b6e336b285e75acced61bfcbf8100b098d93d06eafa4840"
     },
     {
       "id": "module:src/kernel/json-file.ts",
@@ -3170,7 +3184,7 @@
         "ts",
         "kernel"
       ],
-      "contentHash": "72e73905db26c769304f81e27762e6538ea89d18c6ce4f6b6ceceff090d79c32"
+      "contentHash": "afc8ff6a6a2737ded77db3a7e4be4d3ff15f7bfc848c2e4b8a8a88b173ac88be"
     },
     {
       "id": "module:src/kernel/memory.ts",
@@ -3477,7 +3491,7 @@
         "ts",
         "kernel"
       ],
-      "contentHash": "5fcdd02fc887965c2fd0b9c74eef68869e73a0ff129c2cc7df66c2632c4eefc6"
+      "contentHash": "d36f4a328da36384a7db48f299c1c36ef0eafe8e48079664408bee1e899bcbe7"
     },
     {
       "id": "module:src/kernel/types.ts",
@@ -3939,6 +3953,7 @@
         "readDeliveryState",
         "readRestarts",
         "runDeliver",
+        "usageLimitOnScreen",
         "workerAtUsageLimit",
         "workerAwaitingPermission",
         "workerDeclaredBlocked"
@@ -3948,7 +3963,7 @@
         "ts",
         "loop"
       ],
-      "contentHash": "c29a51918f2af62447f9e7e8ebe7d80f63109eba1b5ce9d1e548187e8bf33caa"
+      "contentHash": "ed9ccae105a970c4d17a18a4b617022eb2c68e7522b71a7da196ceca41a55adc"
     },
     {
       "id": "module:src/loop/detached-worker.ts",
@@ -4770,7 +4785,7 @@
         "ts",
         "loop"
       ],
-      "contentHash": "55910f93f80b2a6c74d8cd8e5189747e93b0e0fa9ca7cd00082f259011ab0965"
+      "contentHash": "474630e4b275480fc983f1c4ce18c88c4538e3f9369166ca3015e3e08604e830"
     },
     {
       "id": "module:src/loop/output-block.ts",
@@ -5146,7 +5161,7 @@
         "ts",
         "loop"
       ],
-      "contentHash": "ba8769e23d261af845b14c309ec7a1b3f725fccbb5238b3168e192faaf83f1ba"
+      "contentHash": "7ee2399be76d1d2aea1810fffe1ac424e72b33de90ce03e75a3e1795c281ab0c"
     },
     {
       "id": "module:src/loop/slots.ts",
@@ -5448,7 +5463,7 @@
         "ts",
         "api"
       ],
-      "contentHash": "7bd1e2c9a8865877702d4c73424f79e0a9873ed6d93f51893b9adf6653606fd6"
+      "contentHash": "7efcf7c58ea16fbf425501ab2a95f9160d2be772a6f9f995821166bb782f81c6"
     },
     {
       "id": "module:src/ui/api/alerts.ts",
@@ -6847,7 +6862,7 @@
         "ts",
         "test"
       ],
-      "contentHash": "3aa835d4b0b4d7f12570d75ba8913a8e5f3e995b5c1811f9856272bf970e7cc0"
+      "contentHash": "370b596790cf19e8a46090179c169ea99b32ac77d35091a4fd44f8e6928660a3"
     },
     {
       "id": "module:test/block-learning-status.test.ts",
@@ -7039,7 +7054,7 @@
         "ts",
         "test"
       ],
-      "contentHash": "30ec041e00e3ac6f139ffaf7caffaa971192d0eaa7171f7e841b27afd7b37491"
+      "contentHash": "c377d24a9793c3013ceeb1a928fd471ef8baf06231387dc339cecf1f6a60a4b1"
     },
     {
       "id": "module:test/execution-agent.test.ts",
@@ -7249,6 +7264,18 @@
       "contentHash": "37d459796069d6a0e3a2383a89cf60425085785aa00288c20909fabdba14d2e1"
     },
     {
+      "id": "module:test/hash.test.ts",
+      "type": "module",
+      "title": "hash.test.ts",
+      "path": "test/hash.test.ts",
+      "tags": [
+        "module",
+        "ts",
+        "test"
+      ],
+      "contentHash": "abce065b5f9bb8c85c0201445c37362e25147ea0caf729c093a0c958e4455562"
+    },
+    {
       "id": "module:test/helpers/evidence-command.ts",
       "type": "module",
       "title": "evidence-command.ts",
@@ -7321,7 +7348,7 @@
         "ts",
         "test"
       ],
-      "contentHash": "cd19e5954b08914ae4f278042044923cce3431a7352c852438cee47725acecc5"
+      "contentHash": "85df758047a8862c5619d9aeaaa4097e85c5a6f8c91b048c531b62d23141c7b5"
     },
     {
       "id": "module:test/kernel-compatibility.test.ts",
@@ -7333,7 +7360,7 @@
         "ts",
         "test"
       ],
-      "contentHash": "fb96b9239fa7009163ab01ef8dfd8ae36eab7a08c936ce89c9a4c8488b7b81ad"
+      "contentHash": "8f26b0cd95cab4bb0cfad29bd83329132ac7f305f342d6d9ef2457359e65156f"
     },
     {
       "id": "module:test/kernel-cycle.test.ts",
@@ -7381,7 +7408,7 @@
         "ts",
         "test"
       ],
-      "contentHash": "94c5b977442fd1d28ab2c6e15aa71b0d08dfc15fa506afda285c6893f40eb92d"
+      "contentHash": "32d66a698e648b1c31ed869e97fe9d268ef1cb93ac636eea18b42b937ed42b03"
     },
     {
       "id": "module:test/kernel-learning-memory-gaps.test.ts",
@@ -7501,7 +7528,7 @@
         "ts",
         "test"
       ],
-      "contentHash": "e3fa5826e242204eccee3cd33e6fdcb23bf0bfc6f8e0f2c942494c12f79d8a1c"
+      "contentHash": "71419c56de340f19178f2f3fa551e86937875c356b9e068685f25b8b54114c64"
     },
     {
       "id": "module:test/kernel-wip-gaps.test.ts",
@@ -7789,7 +7816,7 @@
         "ts",
         "test"
       ],
-      "contentHash": "adb191bd80a013442524018602f88034a6d37ed976a398c08834e1ec264a78df"
+      "contentHash": "7e67009340e222c05e9d7ed0e42d6aaec8f18a898919683142b2314d1ffe1626"
     },
     {
       "id": "module:test/loop-doctor-gaps.test.ts",
@@ -8641,7 +8668,7 @@
         "ts",
         "test"
       ],
-      "contentHash": "a78881ea142d3b655204b8278f604ba907ddf4c316dc7b955d4602f9211cada2"
+      "contentHash": "65e132feda88b257c1b06b5b7685b466d07a173b6173ee8a23744fdb2e20511c"
     },
     {
       "id": "module:test/ui-api-jobs.test.ts",
@@ -8957,8 +8984,8 @@
     }
   },
   "inputs": {
-    "hash": "3e228ba7b073d9e14809ff7d6091cebd85d3cc2ff5d44e8de2dade4bb1417480",
-    "fileCount": 541,
+    "hash": "c3dad51d06bfb85e3213e42c80223ea74c2045ab4ed0c73b6d63841e60fe2655",
+    "fileCount": 543,
     "projectionVersion": 2
   },
   "retrieval": {
@@ -8980,9 +9007,9 @@
   "projection": {
     "type": "retrieval-index",
     "schemaVersion": 1,
-    "contentHash": "e7bfd75d86527d37fd5f734d067baccf15b4e905fa92e39df59e432c92a6c17b",
+    "contentHash": "b27502643dce2ccd63c14c50158bb64139bc5d03102e618af4ea2a3f052cd19a",
     "contentHashAlgo": "sha256-normalized-v1",
-    "snapshotHash": "5fd1fec859ee0822ea7d1b359ba9d9392a695475b6d46f459bb036444a21e7ac",
+    "snapshotHash": "24d918db0360e51a6892d5d0bde9031c21e7e37c4c03beb73462f66719292df9",
     "overlayHash": "f99666ff9119084dd25c2974ae64eb6935ec2aa785ff5ad478fb9d541f7a5e94",
     "configurationHash": "816afaf6a7dc09767f7594d8fd80024612ca0f33becf0e44dde0107fcf2782df",
     "lexiconVersion": 1,
@@ -9002,7 +9029,7 @@
     },
     "lexical": {
       "version": 1,
-      "documentCount": 550,
+      "documentCount": 552,
       "fieldNames": [
         "aliases",
         "body",
@@ -9013,13 +9040,13 @@
         "title"
       ],
       "averageFieldLength": {
-        "aliases": 2.9254545454545453,
-        "body": 44.17636363636364,
-        "headings": 3.8636363636363638,
-        "path": 6.114545454545454,
-        "summary": 2.7054545454545456,
-        "symbols": 14.3,
-        "title": 3.949090909090909
+        "aliases": 2.9239130434782608,
+        "body": 44.24094202898551,
+        "headings": 3.8659420289855073,
+        "path": 6.115942028985507,
+        "summary": 2.6557971014492754,
+        "symbols": 14.269927536231885,
+        "title": 3.9510869565217392
       }
     },
     "entries": [
@@ -9659,7 +9686,7 @@
           ],
           "outbound": []
         },
-        "contentHash": "84c3cea16bd5de4d831af6cb406a79a93e05a7b66c15a97c6c42287fce2fadf0",
+        "contentHash": "a035920a4d6146057cc9bd04a0a5586d5e37ba2aeb3b9329a57efa2fee57683a",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -11327,7 +11354,7 @@
         "kind": "document",
         "path": "CHANGELOG.md",
         "title": "Changelog",
-        "summary": "Portability via @agentskit/cross-platform. Process spawning (.cmd shim resolution), process-tree kill and path/line helpers now come from the shared package instead of hand-rolled copies; cross-spawn is no longer a direct dependency. pnpm typecheck runs agentskit-cross-platform check against .cross-platform-baseline.json, so a new Windows-hostile pattern fails CI.",
+        "summary": "Canonical shared hashes. New artifacts, event-chain entries, manifests, verification digests and cache keys use @agentskit/core/hash; readers still accept existing persisted hashes, and stable IDs keep their legacy format.",
         "audience": "human",
         "aliases": [],
         "tags": [
@@ -11339,8 +11366,8 @@
           "headings": "Changelog [Unreleased] [0.22.3] — 2026-09-27 [0.22.2] — 2026-09-27 [0.22.1] — 2026-09-27 [0.22.0] — 2026-09-27 [0.21.0] — 2026-09-26 [0.20.0] — 2026-09-25 [0.19.0] — 2026-09-23 [0.18.0] - 2026-09-22 Release Hygiene Boundaries Token and time economy Breaking Gates [0.17.0] - 2026-09-22 Worker guard Release can no longer publish past a red gate [0.16.0] - 2026-09-22 Verification and token waste Observability: every deterministic phase, timestamped and attributed Event bus, unified House conventions [0.15.0] - 2026-09-20 The phases of an issue leave evidence behind layers: and documents: — where the work belongs, and where the decisions live Per-role settings, and which phases run at all The four cost levers, finished release.waiting, once per head The event vocabulary, and the compiler that guards it The installed agent is code, not a markdown file to append to Documentation Windows stops being a second-class platform The licence, and a surface for the numbers The harness has a folder of its own The documentation site The twelve steps of the roadmap, in the order they landed loop install reconciles instead of rewriting loop stage observe — the health scan comes into the repository Configuration in four layers, and the loop learns to call a human The roles become installed agents, and the retro can improve them Presets and a grilled loop init intake, maintain, and release notes — the cycle closes Cost: a routing policy, two ceilings, and two of the four levers Connectors: the engine stops naming vendors release — promotion and deploy, with a human in front loop plan — a vague objective becomes issues A plan, voted on, before any worker starts The Definition of Done becomes two lists, both proven on the PR The retro starts improving the loop, within declared limits [0.14.0] - 2026-09-19 The queue stops being \"my issues\" Review strictness that matches the risk Telling the worker the truth about the base branch Memory: recurrence instead of guesswork One human approval covers the goal's own effects Fixes that had never shipped [0.13.0] - 2026-09-14 [0.12.0] - 2026-09-13 [0.11.0] - 2026-09-13 [0.10.0] - 2026-09-12 [0.9.0] - 2026-09-12 [0.8.0] - 2026-09-12",
           "path": "CHANGELOG.md",
           "symbols": "",
-          "summary": "Portability via @agentskit/cross-platform. Process spawning (.cmd shim resolution), process-tree kill and path/line helpers now come from the shared package instead of hand-rolled copies; cross-spawn is no longer a direct dependency. pnpm typecheck runs agentskit-cross-platform check against .cross-platform-baseline.json, so a new Windows-hostile pattern fails CI.",
-          "body": "Changelog [Unreleased] - Portability via @agentskit/cross-platform . Process spawning ( .cmd shim resolution), process-tree kill and path/line helpers now come from the shared package instead of hand-rolled copies; cross-spawn is no longer a direct dependency. pnpm typecheck runs agentskit-cross-platform check against .cross-platform-baseline.json , so a new Windows-hostile pattern fails CI. [0.22.3] — 2026-09-27 - Lost-track restart. A run whose worker terminal is gone, or that stays idle after a check-in, before any PR is aborted and re-dispatched from scratch (bounded, worker.lost-tracking / worker.restarted ) ( 147). It never destroys work: it needs the evidence on two consecutive passes, escalates stuck and keeps the worktree when there are unpushed commits or uncommitted edits (the check fails closed), removes a clean worktree without --force , captures the worker screen into the run first, waits while the tracker is cooling down, and does nothing destructive until its tracker writes succeed. A human Retry resets the restart budget ( 151). - A worker that declares itself blocked ( BLOCKED: worktree comment) is escalated to a person — also when it exited afterwards — instead of being nudged, handed off or restarted ( 150, 151). - Never type into a bare shell. A nudge into a terminal that is only a shell prompt relaunches the agent (the old terminal is closed first; an idle agent from a CLI that does not register with Orca is never mistaken for a shell); no-PR worker events keep the issue running in the UI ( 144, 151). - Close-or-reopen decisions on an abandoned delivery stick and release the issue's lease ( 145, 151). - UI. Worker slots are counted the way the tick counts them ( 148); the projection rebuilds itself when the reducer changes ( 149). [0.22.2] — 2026-09-27 - Review floor decides. A reviewer that exits 1 (or reports blocking ) on findings all below delivery.review.minSeverity is clean, not \"findings\" with nothing to fix — delivery no longer waits forever for a push nobody needs. A reviewer claiming blocking with no finding at all is incomplete , never a merge ( 133). - Answered contract questions regenerate the contract instead of returning the same blocked one ( 138). - An open contract question is not re-asked every tick. Contract regeneration is skipped while a contract-stage question is open (no more repeated escalations and orchestrator calls); an explicit-queue run is left needs-input , never stuck in dispatching ; superseded contract questions are marked stale ( 131). - Retry resumes a blocked delivery on its open PR (fix-round cap, stuck, failed), resetting its error budget and tracker state; a cancelled run still gets a fresh attempt. Holds that need a person are not bypassed ( 142). - doctor accepts automations pinned by the UI; GitHub preflight reports missing lifecycle labels as a warning instead of failing the queue read ( 143). [0.22.1] — 2026-09-27 Failures that were invisible, made visible or closed. Every fix ships with a regression test that fails on 0.22.0. - The UI no longer keeps the tracker rate-limited. A failing board was re-read every second and every closed issue off the board was re-fetched every 10 minutes forever (~6 tracker calls/hour per historical issue, with or without viewers). Failures now back off, a rate limit pauses lookups, closed issues are never re-asked, and the snapshot pipeline idles when nobody is watching ( 139, 140). - Tracker cooldown. A Linear/GitHub rate limit records tracker.cooldown (15 min doubling, 2 h cap): tick returns blocked without counting toward the stage auto-pause, deliver skips tracker writes but keeps reviewing and merging, and the review state is set once per PR instead of every pass ( 140). - Gates fail closed. ak-verify run / verify / status exit 1 on a blocked, stale or cancelled run; git failures and 1 MB diffs no longer hash as empty (a stale run could be approved); a review with no parseable result is incomplete , never clean; deliver's ve",
+          "summary": "Canonical shared hashes. New artifacts, event-chain entries, manifests, verification digests and cache keys use @agentskit/core/hash; readers still accept existing persisted hashes, and stable IDs keep their legacy format.",
+          "body": "Changelog [Unreleased] - Canonical shared hashes. New artifacts, event-chain entries, manifests, verification digests and cache keys use @agentskit/core/hash ; readers still accept existing persisted hashes, and stable IDs keep their legacy format. - Portability via @agentskit/cross-platform . Process spawning ( .cmd shim resolution), process-tree kill and path/line helpers now come from the shared package instead of hand-rolled copies; cross-spawn is no longer a direct dependency. pnpm typecheck runs agentskit-cross-platform check against .cross-platform-baseline.json , so a new Windows-hostile pattern fails CI. [0.22.3] — 2026-09-27 - Lost-track restart. A run whose worker terminal is gone, or that stays idle after a check-in, before any PR is aborted and re-dispatched from scratch (bounded, worker.lost-tracking / worker.restarted ) ( 147). It never destroys work: it needs the evidence on two consecutive passes, escalates stuck and keeps the worktree when there are unpushed commits or uncommitted edits (the check fails closed), removes a clean worktree without --force , captures the worker screen into the run first, waits while the tracker is cooling down, and does nothing destructive until its tracker writes succeed. A human Retry resets the restart budget ( 151). - A worker that declares itself blocked ( BLOCKED: worktree comment) is escalated to a person — also when it exited afterwards — instead of being nudged, handed off or restarted ( 150, 151). - Never type into a bare shell. A nudge into a terminal that is only a shell prompt relaunches the agent (the old terminal is closed first; an idle agent from a CLI that does not register with Orca is never mistaken for a shell); no-PR worker events keep the issue running in the UI ( 144, 151). - Close-or-reopen decisions on an abandoned delivery stick and release the issue's lease ( 145, 151). - UI. Worker slots are counted the way the tick counts them ( 148); the projection rebuilds itself when the reducer changes ( 149). [0.22.2] — 2026-09-27 - Review floor decides. A reviewer that exits 1 (or reports blocking ) on findings all below delivery.review.minSeverity is clean, not \"findings\" with nothing to fix — delivery no longer waits forever for a push nobody needs. A reviewer claiming blocking with no finding at all is incomplete , never a merge ( 133). - Answered contract questions regenerate the contract instead of returning the same blocked one ( 138). - An open contract question is not re-asked every tick. Contract regeneration is skipped while a contract-stage question is open (no more repeated escalations and orchestrator calls); an explicit-queue run is left needs-input , never stuck in dispatching ; superseded contract questions are marked stale ( 131). - Retry resumes a blocked delivery on its open PR (fix-round cap, stuck, failed), resetting its error budget and tracker state; a cancelled run still gets a fresh attempt. Holds that need a person are not bypassed ( 142). - doctor accepts automations pinned by the UI; GitHub preflight reports missing lifecycle labels as a warning instead of failing the queue read ( 143). [0.22.1] — 2026-09-27 Failures that were invisible, made visible or closed. Every fix ships with a regression test that fails on 0.22.0. - The UI no longer keeps the tracker rate-limited. A failing board was re-read every second and every closed issue off the board was re-fetched every 10 minutes forever (~6 tracker calls/hour per historical issue, with or without viewers). Failures now back off, a rate limit pauses lookups, closed issues are never re-asked, and the snapshot pipeline idles when nobody is watching ( 139, 140). - Tracker cooldown. A Linear/GitHub rate limit records tracker.cooldown (15 min doubling, 2 h cap): tick returns blocked without counting toward the stage auto-pause, deliver skips tracker writes but keeps reviewing and merging, and the review state is set once per PR instead of every pass ( 140). - Gates fail closed. ak-verify r",
           "aliases": "document project"
         },
         "graph": {
@@ -11616,7 +11643,7 @@
             }
           ]
         },
-        "contentHash": "196283b6b5f46d9c605d408cc64766111d126e80429c44fd2c55917b970b294c",
+        "contentHash": "e15c82846f19a105e50041745e69e6a69fb28fb0371ea0508b7de35f8e95165b",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -13780,6 +13807,45 @@
           ]
         },
         "contentHash": "96c1192d37304224b10fe41555e43bbaf8b4c385ffa9630349e1d0da34058e54",
+        "provenance": "observed",
+        "confidence": "observed"
+      },
+      {
+        "id": "document:docs/ADR-0042-shared-canonical-hashing.md",
+        "kind": "document",
+        "path": "docs/ADR-0042-shared-canonical-hashing.md",
+        "title": "ADR-0042: Shared canonical hashing",
+        "summary": "Status: Accepted",
+        "audience": "human",
+        "aliases": [],
+        "tags": [
+          "document",
+          "human"
+        ],
+        "fields": {
+          "title": "ADR-0042: Shared canonical hashing",
+          "headings": "ADR-0042: Shared canonical hashing Context Decision Consequences",
+          "path": "docs/ADR-0042-shared-canonical-hashing.md",
+          "symbols": "",
+          "summary": "Status: Accepted",
+          "body": "ADR-0042: Shared canonical hashing Status: Accepted Context The Harness duplicated SHA-256 and JSON hashing. JSON.stringify preserves key insertion order, so equivalent objects could produce different fingerprints. Harness state and signed evidence bundles also contain hashes written by older releases. Decision Use @agentskit/core/hash for SHA-256 and RFC 8785 canonical JSON. Newly written artifact, event, status, manifest, and evidence-bundle fingerprints use canonical JSON. Readers accept both canonical hashes and the previous JSON.stringify hashes. Persisted identity keys and the existing artifactDigest helper keep the old algorithm until their state/API format has a versioned migration. Consequences The Harness adds @agentskit/core as a runtime dependency. Canonical hashes no longer depend on object insertion order. The small legacy hashing path remains to preserve stored IDs and validate existing state; remove it after a versioned state migration.",
+          "aliases": "document human"
+        },
+        "graph": {
+          "pagerank": 0,
+          "inboundLinks": 0,
+          "coveredBy": [],
+          "mentionedBy": [],
+          "inbound": [],
+          "outbound": [
+            {
+              "kind": "mentions-symbol",
+              "id": "module:src/kernel/artifacts.ts",
+              "confidence": "observed"
+            }
+          ]
+        },
+        "contentHash": "3316f4f604c4a790c8921496235e134e4cc9013a3525390916c038f3d19ff773",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -18162,12 +18228,17 @@
             },
             {
               "kind": "imports",
+              "id": "module:src/kernel/hash.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
               "id": "module:src/kernel/policy.ts",
               "confidence": "observed"
             }
           ]
         },
-        "contentHash": "644ac8329890e5a3308b1abb3285df643313b205718e986356d0a1cfab25819c",
+        "contentHash": "ba652cc5a280f2e1b92df7d188a7ce7713ea5673930e53983fd9bf015feff22e",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -18860,6 +18931,11 @@
             },
             {
               "kind": "imports",
+              "id": "module:src/kernel/hash.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
               "id": "module:src/loop/detached-worker.ts",
               "confidence": "observed"
             },
@@ -18875,7 +18951,7 @@
             }
           ]
         },
-        "contentHash": "ec200d4c12d5ee272d084eda59ba3a60702891d0b61d3317c94e3229a10a7c35",
+        "contentHash": "efe2b323b66629d43927d9f21da88ef1db3ef979c353b94fe23c46747b4dd806",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -19382,7 +19458,7 @@
             }
           ]
         },
-        "contentHash": "5316f8ecc6a28532d6e423d151ee9a274e96d61900db745acca55f1f6745dd44",
+        "contentHash": "9e4f802014fd857f5ef78c44b835a04ce48f96c8995c5fdabd360adcc93f3381",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -20384,7 +20460,7 @@
             }
           ]
         },
-        "contentHash": "91822206a70a54ee883916d43a028de7202fc5ea1cfcffdad6ad0249813302da",
+        "contentHash": "344dcb728fe74d7966f80a940856e444e8ad3b186a2fa64d2778bf3e8af3b960",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -21468,10 +21544,11 @@
         },
         "graph": {
           "pagerank": 0,
-          "inboundLinks": 2,
+          "inboundLinks": 3,
           "coveredBy": [],
           "mentionedBy": [
             "document:docs/MODULE-BOUNDARIES.md",
+            "document:docs/ADR-0042-shared-canonical-hashing.md",
             "document:docs/PRD-0.4.0.md"
           ],
           "areaId": "area:src/kernel",
@@ -21480,6 +21557,11 @@
             {
               "kind": "mentions",
               "id": "document:docs/MODULE-BOUNDARIES.md",
+              "confidence": "observed"
+            },
+            {
+              "kind": "mentions-symbol",
+              "id": "document:docs/ADR-0042-shared-canonical-hashing.md",
               "confidence": "observed"
             },
             {
@@ -21516,7 +21598,7 @@
             }
           ]
         },
-        "contentHash": "a584b798eabb732ae2955b241df0dcb7902151a544751ddadb50374348a48d95",
+        "contentHash": "952f1b0f13503da676a354a8eb1cbe9a531e8f3b37945cba1452bd14a91e08d3",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -21658,7 +21740,7 @@
             }
           ]
         },
-        "contentHash": "d893fc22d3dab79325e69c61fdf11d956ab8336a7a731c82e60ddb19196b0e86",
+        "contentHash": "c860ecf9c9ae09b1a3709b2f1caf81dd447d54200b7e8da23e117cfc391c1e7a",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -21719,7 +21801,7 @@
             }
           ]
         },
-        "contentHash": "06a779e2c645c0635272f476ee6281e69281cb866195bbf908f4787af4063f1d",
+        "contentHash": "8e27fd30eeaad48af08649dc04e59e81d343e9cabb523402b9b2c4a689efae62",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -21790,7 +21872,7 @@
             }
           ]
         },
-        "contentHash": "02c2ccc7386b49b97527e088539e1cc41f01b5de09be334a4d462778ad3fa6a3",
+        "contentHash": "51e611959b9fb89d9c06b1450ac0e7b351b6439e1881d1483b2cf7086ab37dde",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -21921,10 +22003,15 @@
               "kind": "imports",
               "id": "module:src/kernel/errors.ts",
               "confidence": "observed"
+            },
+            {
+              "kind": "imports",
+              "id": "module:src/kernel/hash.ts",
+              "confidence": "observed"
             }
           ]
         },
-        "contentHash": "cab4310bdc4a86479f75b3e3a7b0e9305cfb08a25d13ea388616e6bacf84c7cd",
+        "contentHash": "cda5da26f7bd0fa2bdfea84ff10bf33337b2fd9e1d8ead68243798ec415ab1cd",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -22495,7 +22582,7 @@
             }
           ]
         },
-        "contentHash": "51ccf437512608dfce577790f5f5b995d20e7e00c6ba43c791e1de3a41818a94",
+        "contentHash": "fc9d88644184ebdd79a33a2b459f589d9044580dcc5ea06e954088b70b2f13cf",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -22640,7 +22727,7 @@
             }
           ]
         },
-        "contentHash": "a1b46cba26bd90d6b77f208d6bae043c55b08210c320d18059d5d10a5b4dda26",
+        "contentHash": "15b3d10a2aa99add062d9d94381a92096360883cad135eda43eb569a6750ba61",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -22709,7 +22796,9 @@
         "title": "hash.ts",
         "aliases": [],
         "symbols": [
+          "hashCanonicalJson",
           "hashJson",
+          "hashJsonMatches",
           "sha256"
         ],
         "tags": [
@@ -22721,7 +22810,7 @@
           "title": "hash.ts",
           "headings": "",
           "path": "src/kernel/hash.ts",
-          "symbols": "hashJson sha256",
+          "symbols": "hashCanonicalJson hashJson hashJsonMatches sha256",
           "summary": "",
           "body": "",
           "aliases": "module ts kernel"
@@ -22748,12 +22837,22 @@
             },
             {
               "kind": "imports",
+              "id": "module:src/adapters/mcp.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
               "id": "module:src/adapters/orca.ts",
               "confidence": "observed"
             },
             {
               "kind": "imports",
               "id": "module:src/adapters/tracking.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
+              "id": "module:src/cli.ts",
               "confidence": "observed"
             },
             {
@@ -22838,6 +22937,11 @@
             },
             {
               "kind": "imports",
+              "id": "module:src/kernel/cycle.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
               "id": "module:src/kernel/discovery.ts",
               "confidence": "observed"
             },
@@ -22849,6 +22953,11 @@
             {
               "kind": "imports",
               "id": "module:src/kernel/events.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
+              "id": "module:src/kernel/learning.ts",
               "confidence": "observed"
             },
             {
@@ -22913,6 +23022,11 @@
             },
             {
               "kind": "imports",
+              "id": "module:src/loop/observe-stage.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
               "id": "module:src/loop/plan-stage.ts",
               "confidence": "observed"
             },
@@ -22924,6 +23038,11 @@
             {
               "kind": "imports",
               "id": "module:src/loop/retro.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
+              "id": "module:src/loop/skills.ts",
               "confidence": "observed"
             },
             {
@@ -22943,12 +23062,42 @@
             },
             {
               "kind": "imports",
+              "id": "module:test/eval-battery.test.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
               "id": "module:test/execution-coordination.test.ts",
               "confidence": "observed"
             },
             {
               "kind": "imports",
               "id": "module:test/execution-evidence.test.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
+              "id": "module:test/hash.test.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
+              "id": "module:test/kernel-capabilities.test.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
+              "id": "module:test/kernel-compatibility.test.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
+              "id": "module:test/kernel-events.test.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
+              "id": "module:test/kernel-status.test.ts",
               "confidence": "observed"
             },
             {
@@ -22959,7 +23108,7 @@
           ],
           "outbound": []
         },
-        "contentHash": "325c608ff643a961d32ac7846dfb792218c8e6624706094aa4cf6fb3952cd19f",
+        "contentHash": "1667444af578f74d3b6e336b285e75acced61bfcbf8100b098d93d06eafa4840",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -23198,10 +23347,15 @@
               "kind": "imports",
               "id": "module:src/kernel/errors.ts",
               "confidence": "observed"
+            },
+            {
+              "kind": "imports",
+              "id": "module:src/kernel/hash.ts",
+              "confidence": "observed"
             }
           ]
         },
-        "contentHash": "72e73905db26c769304f81e27762e6538ea89d18c6ce4f6b6ceceff090d79c32",
+        "contentHash": "afc8ff6a6a2737ded77db3a7e4be4d3ff15f7bfc848c2e4b8a8a88b173ac88be",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -24287,7 +24441,7 @@
             }
           ]
         },
-        "contentHash": "5fcdd02fc887965c2fd0b9c74eef68869e73a0ff129c2cc7df66c2632c4eefc6",
+        "contentHash": "d36f4a328da36384a7db48f299c1c36ef0eafe8e48079664408bee1e899bcbe7",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -26597,6 +26751,7 @@
           "readDeliveryState",
           "readRestarts",
           "runDeliver",
+          "usageLimitOnScreen",
           "workerAtUsageLimit",
           "workerAwaitingPermission",
           "workerDeclaredBlocked"
@@ -26610,7 +26765,7 @@
           "title": "deliver.ts",
           "headings": "",
           "path": "src/loop/deliver.ts",
-          "symbols": "DeliverInput DeliverOutcome DeliverReport DeliverResult DeliveryHandoff DeliveryState MAX_LOST_TRACKING_RESTARTS approveHeldDelivery clearRestarts deliveryStatePath listDispatched markDispatchCancelled precheckDeliver readDeliveryState readRestarts runDeliver workerAtUsageLimit workerAwaitingPermission workerDeclaredBlocked",
+          "symbols": "DeliverInput DeliverOutcome DeliverReport DeliverResult DeliveryHandoff DeliveryState MAX_LOST_TRACKING_RESTARTS approveHeldDelivery clearRestarts deliveryStatePath listDispatched markDispatchCancelled precheckDeliver readDeliveryState readRestarts runDeliver usageLimitOnScreen workerAtUsageLimit workerAwaitingPermission workerDeclaredBlocked",
           "summary": "",
           "body": "",
           "aliases": "module ts loop"
@@ -26675,6 +26830,11 @@
             {
               "kind": "imports",
               "id": "module:src/ui/api/store.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
+              "id": "module:test/loop-deliver.test.ts",
               "confidence": "observed"
             },
             {
@@ -26906,7 +27066,7 @@
             }
           ]
         },
-        "contentHash": "c29a51918f2af62447f9e7e8ebe7d80f63109eba1b5ce9d1e548187e8bf33caa",
+        "contentHash": "ed9ccae105a970c4d17a18a4b617022eb2c68e7522b71a7da196ceca41a55adc",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -29968,6 +30128,11 @@
             },
             {
               "kind": "imports",
+              "id": "module:src/kernel/hash.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
               "id": "module:src/loop/config.ts",
               "confidence": "observed"
             },
@@ -29988,7 +30153,7 @@
             }
           ]
         },
-        "contentHash": "55910f93f80b2a6c74d8cd8e5189747e93b0e0fa9ca7cd00082f259011ab0965",
+        "contentHash": "474630e4b275480fc983f1c4ce18c88c4538e3f9369166ca3015e3e08604e830",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -31694,10 +31859,15 @@
               "kind": "imports",
               "id": "module:src/kernel/errors.ts",
               "confidence": "observed"
+            },
+            {
+              "kind": "imports",
+              "id": "module:src/kernel/hash.ts",
+              "confidence": "observed"
             }
           ]
         },
-        "contentHash": "ba8769e23d261af845b14c309ec7a1b3f725fccbb5238b3168e192faaf83f1ba",
+        "contentHash": "7ee2399be76d1d2aea1810fffe1ac424e72b33de90ce03e75a3e1795c281ab0c",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -33209,7 +33379,7 @@
             }
           ]
         },
-        "contentHash": "7bd1e2c9a8865877702d4c73424f79e0a9873ed6d93f51893b9adf6653606fd6",
+        "contentHash": "7efcf7c58ea16fbf425501ab2a95f9160d2be772a6f9f995821166bb782f81c6",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -38262,7 +38432,7 @@
             }
           ]
         },
-        "contentHash": "3aa835d4b0b4d7f12570d75ba8913a8e5f3e995b5c1811f9856272bf970e7cc0",
+        "contentHash": "370b596790cf19e8a46090179c169ea99b32ac77d35091a4fd44f8e6928660a3",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -38937,10 +39107,15 @@
               "kind": "imports",
               "id": "module:src/index.ts",
               "confidence": "observed"
+            },
+            {
+              "kind": "imports",
+              "id": "module:src/kernel/hash.ts",
+              "confidence": "observed"
             }
           ]
         },
-        "contentHash": "30ec041e00e3ac6f139ffaf7caffaa971192d0eaa7171f7e841b27afd7b37491",
+        "contentHash": "c377d24a9793c3013ceeb1a928fd471ef8baf06231387dc339cecf1f6a60a4b1",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -39698,6 +39873,46 @@
         "confidence": "observed"
       },
       {
+        "id": "module:test/hash.test.ts",
+        "kind": "module",
+        "path": "test/hash.test.ts",
+        "title": "hash.test.ts",
+        "aliases": [],
+        "tags": [
+          "module",
+          "ts",
+          "test"
+        ],
+        "fields": {
+          "title": "hash.test.ts",
+          "headings": "",
+          "path": "test/hash.test.ts",
+          "symbols": "",
+          "summary": "",
+          "body": "",
+          "aliases": "module ts test"
+        },
+        "graph": {
+          "pagerank": 0,
+          "inboundLinks": 0,
+          "coveredBy": [],
+          "mentionedBy": [],
+          "areaId": "area:test",
+          "packageId": "package:@agentskit/harness",
+          "inbound": [],
+          "outbound": [
+            {
+              "kind": "imports",
+              "id": "module:src/kernel/hash.ts",
+              "confidence": "observed"
+            }
+          ]
+        },
+        "contentHash": "abce065b5f9bb8c85c0201445c37362e25147ea0caf729c093a0c958e4455562",
+        "provenance": "observed",
+        "confidence": "observed"
+      },
+      {
         "id": "module:test/helpers/evidence-command.ts",
         "kind": "module",
         "path": "test/helpers/evidence-command.ts",
@@ -39943,10 +40158,15 @@
               "kind": "imports",
               "id": "module:src/index.ts",
               "confidence": "observed"
+            },
+            {
+              "kind": "imports",
+              "id": "module:src/kernel/hash.ts",
+              "confidence": "observed"
             }
           ]
         },
-        "contentHash": "cd19e5954b08914ae4f278042044923cce3431a7352c852438cee47725acecc5",
+        "contentHash": "85df758047a8862c5619d9aeaaa4097e85c5a6f8c91b048c531b62d23141c7b5",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -39983,10 +40203,15 @@
               "kind": "imports",
               "id": "module:src/index.ts",
               "confidence": "observed"
+            },
+            {
+              "kind": "imports",
+              "id": "module:src/kernel/hash.ts",
+              "confidence": "observed"
             }
           ]
         },
-        "contentHash": "fb96b9239fa7009163ab01ef8dfd8ae36eab7a08c936ce89c9a4c8488b7b81ad",
+        "contentHash": "8f26b0cd95cab4bb0cfad29bd83329132ac7f305f342d6d9ef2457359e65156f",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -40143,10 +40368,15 @@
               "kind": "imports",
               "id": "module:src/index.ts",
               "confidence": "observed"
+            },
+            {
+              "kind": "imports",
+              "id": "module:src/kernel/hash.ts",
+              "confidence": "observed"
             }
           ]
         },
-        "contentHash": "94c5b977442fd1d28ab2c6e15aa71b0d08dfc15fa506afda285c6893f40eb92d",
+        "contentHash": "32d66a698e648b1c31ed869e97fe9d268ef1cb93ac636eea18b42b937ed42b03",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -40543,10 +40773,15 @@
               "kind": "imports",
               "id": "module:src/index.ts",
               "confidence": "observed"
+            },
+            {
+              "kind": "imports",
+              "id": "module:src/kernel/hash.ts",
+              "confidence": "observed"
             }
           ]
         },
-        "contentHash": "e3fa5826e242204eccee3cd33e6fdcb23bf0bfc6f8e0f2c942494c12f79d8a1c",
+        "contentHash": "71419c56de340f19178f2f3fa551e86937875c356b9e068685f25b8b54114c64",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -41526,6 +41761,11 @@
             },
             {
               "kind": "imports",
+              "id": "module:src/loop/deliver.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
               "id": "module:src/loop/spec.ts",
               "confidence": "observed"
             },
@@ -41536,7 +41776,7 @@
             }
           ]
         },
-        "contentHash": "adb191bd80a013442524018602f88034a6d37ed976a398c08834e1ec264a78df",
+        "contentHash": "7e67009340e222c05e9d7ed0e42d6aaec8f18a898919683142b2314d1ffe1626",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -44598,7 +44838,7 @@
             }
           ]
         },
-        "contentHash": "a78881ea142d3b655204b8278f604ba907ddf4c316dc7b955d4602f9211cada2",
+        "contentHash": "65e132feda88b257c1b06b5b7685b466d07a173b6173ee8a23744fdb2e20511c",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -45713,7 +45953,7 @@
           ],
           "outbound": []
         },
-        "contentHash": "c6d9938159d77f8fcc1cbee792f269309b595696041102d38165f24c9c8cd010",
+        "contentHash": "5d14a071ab1f64c3b64ad44932748c00c313b51bbc11c390af9baae123785912",
         "provenance": "observed",
         "confidence": "observed"
       },

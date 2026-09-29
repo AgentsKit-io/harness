@@ -1,5 +1,6 @@
 import { expect, it } from 'vitest'
 import { EVAL_COMPONENTS, EVAL_LAYERS, createEvalManifest, runEvalBattery, validateEvalManifest } from '../src/index.js'
+import { hashJson } from '../src/kernel/hash.js'
 
 const hash = 'a'.repeat(64)
 const manifest = createEvalManifest({
@@ -12,6 +13,12 @@ const manifest = createEvalManifest({
 it('validates a versioned manifest with all layers and touched components', () => {
   expect(validateEvalManifest(manifest)).toEqual(manifest)
   expect(manifest.cases).toHaveLength(EVAL_COMPONENTS.length)
+})
+
+it('accepts a persisted manifest digest from the previous JSON serializer', () => {
+  const { digest: _digest, ...body } = manifest
+  const legacy = { ...manifest, digest: hashJson(body) }
+  expect(validateEvalManifest(legacy)).toEqual(legacy)
 })
 
 it('runs deterministic repetitions and reports min/median/max', async () => {

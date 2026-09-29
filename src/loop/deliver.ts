@@ -331,9 +331,20 @@ const USAGE_LIMIT_ON_SCREEN = /usage limit reached|hit your (?:session|weekly|mo
 export const workerAtUsageLimit = async (ctx: Pick<Context, 'runner' | 'config'>, record: Pick<DispatchRecordFile, 'terminal'>): Promise<string | null> => {
   if (!record.terminal) return null
   try {
-    const screen = (await orcaTerminalScreen(ctx.runner, { terminal: record.terminal }, orcaOptions(ctx.config))).split('\n').slice(-12)
-    return screen.find((line) => USAGE_LIMIT_ON_SCREEN.test(line))?.trim() ?? null
+    return usageLimitOnScreen(await orcaTerminalScreen(ctx.runner, { terminal: record.terminal }, orcaOptions(ctx.config)))
   } catch { return null }
+}
+
+/** Codex prints this once usage is back (a reset, or the window rolled over); the limit banner above it stays on screen. */
+const USAGE_RESTORED_ON_SCREEN = /usage is available again/i
+
+/** The usage-limit line still in force on a worker's screen: the last one in the last 12 lines, unless the CLI said
+ * usage came back after it. A stale banner re-marked codex exhausted every pass after a reset (vivva #280). */
+export const usageLimitOnScreen = (screen: string): string | null => {
+  const lines = screen.split('\n').slice(-12)
+  const at = lines.map((line) => USAGE_LIMIT_ON_SCREEN.test(line)).lastIndexOf(true)
+  if (at < 0 || lines.slice(at).some((line) => USAGE_RESTORED_ON_SCREEN.test(line))) return null
+  return lines[at]!.trim()
 }
 
 /** A shell prompt, not an agent TUI: zsh/oh-my-zsh, bash (`$ `), PowerShell (`PS C:\…>`) and cmd (`C:\…>`). */

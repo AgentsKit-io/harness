@@ -8,6 +8,9 @@ importers:
 
   .:
     dependencies:
+      '@agentskit/core':
+        specifier: ^1.13.0
+        version: 1.13.0
       '@agentskit/cross-platform':
         specifier: ^0.1.0
         version: 0.1.0
@@ -29,7 +32,7 @@ importers:
     devDependencies:
       '@agentskit/doc-bridge':
         specifier: ^1.12.0
-        version: 1.12.0(@agentskit/core@1.12.10)(@types/react@19.3.0)(graphology-types@0.24.8)(react@19.3.0)
+        version: 1.12.0(@agentskit/core@1.13.0)(@types/react@19.3.0)(graphology-types@0.24.8)(react@19.3.0)
       '@radix-ui/react-radio-group':
         specifier: ^1.4.7
         version: 1.4.7(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
@@ -144,6 +147,9 @@ packages:
 
   '@agentskit/core@1.12.10':
     resolution: {integrity: sha512-dKffCjASPBPvV2xq810dS7X1+/bNfxAJYdI3mPaK1Sj/Scbh8xR37lxo2AWBK+JNL40ffDe/pIJf72S+MUA+bw==}
+
+  '@agentskit/core@1.13.0':
+    resolution: {integrity: sha512-KgBCpF8232hfGm5ZIzAIEVtjQdLAroGNS2Sd091S0oDr5ouDXvqwk66tVHyVOqezFTulcAyiMKvDVw4Vg89yBA==}
 
   '@agentskit/cross-platform@0.1.0':
     resolution: {integrity: sha512-yl0VHjvs6pjtTYSYOxm3ADTnjC1m3ZAuHh11oDKwmSxEE9u09NLhsGcRFA3tJkWwNHH62a+pV3T0NwLvr0NtPw==}
@@ -3810,6 +3816,8 @@ snapshots:
 
   '@agentskit/core@1.12.10': {}
 
+  '@agentskit/core@1.13.0': {}
+
   '@agentskit/cross-platform@0.1.0':
     dependencies:
       '@agentskit/core': 1.12.10
@@ -3819,7 +3827,7 @@ snapshots:
       tree-kill: 1.2.2
       which: 2.0.2
 
-  '@agentskit/doc-bridge@1.12.0(@agentskit/core@1.12.10)(@types/react@19.3.0)(graphology-types@0.24.8)(react@19.3.0)':
+  '@agentskit/doc-bridge@1.12.0(@agentskit/core@1.13.0)(@types/react@19.3.0)(graphology-types@0.24.8)(react@19.3.0)':
     dependencies:
       '@agentskit/harness': 0.11.0(@types/react@19.3.0)
       github-slugger: 2.0.0
@@ -3842,7 +3850,7 @@ snapshots:
       yaml: 2.9.1
       zod: 4.6.5
     optionalDependencies:
-      '@agentskit/core': 1.12.10
+      '@agentskit/core': 1.13.0
       react: 19.3.0
     transitivePeerDependencies:
       - '@types/react'

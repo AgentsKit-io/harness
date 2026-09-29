@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { createStatusSnapshot, validateStatusSnapshot } from '../src/index.js'
+import { hashJson } from '../src/kernel/hash.js'
 
 const base = { generatedAt: '2026-01-01T00:00:00.000Z', sourceRevision: 'abc', blocks: [{ id: 'B-1', status: 'todo' as const }] }
 
@@ -44,6 +45,13 @@ describe('validateStatusSnapshot', () => {
   it('round-trips a snapshot created by createStatusSnapshot', () => {
     const snapshot = createStatusSnapshot(base)
     expect(validateStatusSnapshot(snapshot)).toEqual(snapshot)
+  })
+
+  it('continues to validate a snapshot fingerprinted with the previous JSON serializer', () => {
+    const snapshot = createStatusSnapshot(base)
+    const { digest: _digest, ...body } = snapshot
+    const legacy = { ...snapshot, digest: hashJson(body) }
+    expect(validateStatusSnapshot(legacy)).toEqual(legacy)
   })
 
   it('rejects a non-object value', () => {

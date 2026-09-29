@@ -1,5 +1,5 @@
-import { createHash } from 'node:crypto'
 import { fail } from './errors.js'
+import { sha256 } from './hash.js'
 
 export const LEARNING_STATUSES = ['proposed', 'promoted', 'rejected'] as const
 export type LearningStatus = typeof LEARNING_STATUSES[number]
@@ -45,7 +45,7 @@ export const parseRetro = (markdown: string, source: string, recordedAt = new Da
     const item = line.match(/^\s*[-*]\s+(?:\[[ xX]\]\s+)?(.+?)\s*$/)
     if (!item?.[1]?.trim()) continue
     const value = item[1].trim()
-    const id = `L-${createHash('sha256').update(`${origin}|${current}|${value}`).digest('hex').slice(0, 12)}`
+    const id = `L-${sha256(`${origin}|${current}|${value}`).slice(0, 12)}`
     if (!records.some((record) => record.id === id)) records.push({ id, source: origin, category: current, text: value, status: 'proposed', recordedAt })
   }
   return records
