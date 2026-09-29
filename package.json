@@ -36,6 +36,7 @@
   },
   "scripts": {
     "build": "tsup && pnpm ui:build && node -e \"console.log(JSON.stringify({status:'passed',criteria:['package']}))\"",
+    "prepack": "node -e \"require('node:fs').writeFileSync('dist/.npmignore', '.tsbuildinfo')\"",
     "typecheck": "pnpm check:cross-platform && tsc -p tsconfig.json --noEmit && tsc -p src/ui/app/tsconfig.json --noEmit",
     "check:cross-platform": "agentskit-cross-platform check",
     "ui:dev": "vite --config src/ui/app/vite.config.ts",
