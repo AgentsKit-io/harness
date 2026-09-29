@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
-  "contentHash": "a6b8c9b04501d81e8405f5f7fad3a7ab4773903e88a4fd73b5fce513c0c7c78b",
+  "contentHash": "483de7ce0602ff603c0399bee6c827a6f8aed55cd532ac36c0e0017792b9912b",
   "contentHashAlgo": "sha256-normalized-v1",
-  "generatedAt": "2026-09-29T13:50:28.333Z",
+  "generatedAt": "2026-09-29T19:31:37.558Z",
   "project": {
     "name": "AgentsKit Harness",
     "root": "."
@@ -3953,6 +3953,7 @@
         "readDeliveryState",
         "readRestarts",
         "runDeliver",
+        "usageLimitOnScreen",
         "workerAtUsageLimit",
         "workerAwaitingPermission",
         "workerDeclaredBlocked"
@@ -3962,7 +3963,7 @@
         "ts",
         "loop"
       ],
-      "contentHash": "c8260570dff50accacfe27b4c7d2cb65bd76ed2c492461904b0b94db4789e019"
+      "contentHash": "ed9ccae105a970c4d17a18a4b617022eb2c68e7522b71a7da196ceca41a55adc"
     },
     {
       "id": "module:src/loop/detached-worker.ts",
@@ -7815,7 +7816,7 @@
         "ts",
         "test"
       ],
-      "contentHash": "9000a0c51c13093439a23cf3373f5fbe6a54e3ff2f16c348d9f897f967f183be"
+      "contentHash": "7e67009340e222c05e9d7ed0e42d6aaec8f18a898919683142b2314d1ffe1626"
     },
     {
       "id": "module:test/loop-doctor-gaps.test.ts",
@@ -8983,7 +8984,7 @@
     }
   },
   "inputs": {
-    "hash": "008f5dd8f46362303902266b95b14dd7095fa351b3170615b6e855c637b88b67",
+    "hash": "c3dad51d06bfb85e3213e42c80223ea74c2045ab4ed0c73b6d63841e60fe2655",
     "fileCount": 543,
     "projectionVersion": 2
   },
@@ -9006,9 +9007,9 @@
   "projection": {
     "type": "retrieval-index",
     "schemaVersion": 1,
-    "contentHash": "0939caa4fb40223c00c88c8d3676ca6e5171cf50c13c952f867e11c0321b2285",
+    "contentHash": "b27502643dce2ccd63c14c50158bb64139bc5d03102e618af4ea2a3f052cd19a",
     "contentHashAlgo": "sha256-normalized-v1",
-    "snapshotHash": "5731b0190a3a21e1df00c470c36e4a217afe683a22c48cdd7230749fca8f19fb",
+    "snapshotHash": "24d918db0360e51a6892d5d0bde9031c21e7e37c4c03beb73462f66719292df9",
     "overlayHash": "f99666ff9119084dd25c2974ae64eb6935ec2aa785ff5ad478fb9d541f7a5e94",
     "configurationHash": "816afaf6a7dc09767f7594d8fd80024612ca0f33becf0e44dde0107fcf2782df",
     "lexiconVersion": 1,
@@ -9044,7 +9045,7 @@
         "headings": 3.8659420289855073,
         "path": 6.115942028985507,
         "summary": 2.6557971014492754,
-        "symbols": 14.26268115942029,
+        "symbols": 14.269927536231885,
         "title": 3.9510869565217392
       }
     },
@@ -26750,6 +26751,7 @@
           "readDeliveryState",
           "readRestarts",
           "runDeliver",
+          "usageLimitOnScreen",
           "workerAtUsageLimit",
           "workerAwaitingPermission",
           "workerDeclaredBlocked"
@@ -26763,7 +26765,7 @@
           "title": "deliver.ts",
           "headings": "",
           "path": "src/loop/deliver.ts",
-          "symbols": "DeliverInput DeliverOutcome DeliverReport DeliverResult DeliveryHandoff DeliveryState MAX_LOST_TRACKING_RESTARTS approveHeldDelivery clearRestarts deliveryStatePath listDispatched markDispatchCancelled precheckDeliver readDeliveryState readRestarts runDeliver workerAtUsageLimit workerAwaitingPermission workerDeclaredBlocked",
+          "symbols": "DeliverInput DeliverOutcome DeliverReport DeliverResult DeliveryHandoff DeliveryState MAX_LOST_TRACKING_RESTARTS approveHeldDelivery clearRestarts deliveryStatePath listDispatched markDispatchCancelled precheckDeliver readDeliveryState readRestarts runDeliver usageLimitOnScreen workerAtUsageLimit workerAwaitingPermission workerDeclaredBlocked",
           "summary": "",
           "body": "",
           "aliases": "module ts loop"
@@ -26828,6 +26830,11 @@
             {
               "kind": "imports",
               "id": "module:src/ui/api/store.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
+              "id": "module:test/loop-deliver.test.ts",
               "confidence": "observed"
             },
             {
@@ -27059,7 +27066,7 @@
             }
           ]
         },
-        "contentHash": "c8260570dff50accacfe27b4c7d2cb65bd76ed2c492461904b0b94db4789e019",
+        "contentHash": "ed9ccae105a970c4d17a18a4b617022eb2c68e7522b71a7da196ceca41a55adc",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -41754,6 +41761,11 @@
             },
             {
               "kind": "imports",
+              "id": "module:src/loop/deliver.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
               "id": "module:src/loop/spec.ts",
               "confidence": "observed"
             },
@@ -41764,7 +41776,7 @@
             }
           ]
         },
-        "contentHash": "9000a0c51c13093439a23cf3373f5fbe6a54e3ff2f16c348d9f897f967f183be",
+        "contentHash": "7e67009340e222c05e9d7ed0e42d6aaec8f18a898919683142b2314d1ffe1626",
         "provenance": "observed",
         "confidence": "observed"
       },
