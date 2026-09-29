@@ -1,5 +1,5 @@
 import type { CommandRunner } from '../../adapters/command.js'
-import { orcaTerminalClose, orcaWorktreeRemove } from '../../adapters/orca-cli.js'
+import { orcaTerminalClose, orcaWorktreeRemove, orcaWorktreeSet } from '../../adapters/orca-cli.js'
 import { githubPullRequestsForBranch } from '../../adapters/github-cli.js'
 import { createDispatchLedger, readActiveClaims } from '../../execution/coordination.js'
 import { ensureBaseView } from '../../loop/base-view.js'
@@ -228,7 +228,11 @@ export const retryRun = async (context: ActionContext, issue: string, runId: str
     const reviews = Object.fromEntries(Object.entries(delivery.reviews).filter(([, review]) => review.status !== 'incomplete'))
     // The cost-guard baseline starts over too, or a delivery the guard stopped re-trips on the usage it already counted.
     const dispatch = readDispatchRecord(loaded.stateDir, issue)
-    if (dispatch) writeDispatchRecord(loaded.stateDir, { ...dispatch, initialRemainingPercent: null })
+    if (dispatch) {
+      writeDispatchRecord(loaded.stateDir, { ...dispatch, initialRemainingPercent: null })
+      // The stop wrote `LOOP BLOCKED: …` on the Orca card; left there, Orca keeps saying blocked after the resume.
+      try { await orcaWorktreeSet(context.runner, { worktree: `id:${dispatch.worktreeId}`, comment: `loop · ${issue} · ${dispatch.provider}/${dispatch.model}` }, { bin: loaded.config.orca.bin, timeoutMs: 60_000 }) } catch { /* best effort: the card is cosmetic, delivery state is not */ }
+    }
     writeJsonAtomic(deliveryStatePath(loaded.stateDir, issue), { ...delivery, reviews, finishedAt: null, finalOutcome: null, fixRounds: 0, heldFor: null, nudges: [], consecutiveErrors: 0, failedAtHead: null, trackerState: null })
     appendLoopEvent(loaded.stateDir, { at: new Date().toISOString(), type: 'worker.reopened', issue, pr: delivery.prNumber, previousHead: head, head, previousOutcome: delivery.finalOutcome })
     syncProjection(loaded.stateDir)

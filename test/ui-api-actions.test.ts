@@ -247,3 +247,22 @@ describe('contract reuse after HITL answers', () => {
     expect(canReuseContract(false, [{ status: 'answered' }, { status: 'answered' }])).toBe(false)
   })
 })
+
+describe('retry resume and the Orca card', () => {
+  it('replaces the LOOP BLOCKED comment the stop left on the worktree (vivva #272: Orca kept showing blocked)', async () => {
+    const { createIssueQueue } = await import('../src/loop/queue.js')
+    const { deliveryStatePath } = await import('../src/loop/deliver.js')
+    const { writeDispatchRecord } = await import('../src/loop/tick.js')
+    const base = contextFor()
+    const calls: string[][] = []
+    const context = { ...base, runner: { run: async (argv: readonly string[]): Promise<CommandResult> => { calls.push([...argv]); return { code: 0, stdout: '{"ok":true}', stderr: '', timedOut: false, durationMs: 1 } } } }
+    const issue = 'ENG-272'
+    const { runId } = enqueueRun(context, { issue, configHash: 'hash', flow: null, builder: { provider: 'codex', model: 'gpt' }, contractDigest: 'd', maxFixRounds: 2, perIssueTokens: 0 })
+    createIssueQueue({ stateDir: context.loaded.stateDir }).update(runId, { status: 'completed', projection: { stage: 'pr-open', pullRequest: 9 } })
+    writeJsonAtomic(deliveryStatePath(context.loaded.stateDir, issue), { issue, prNumber: 9, reviews: {}, fixRounds: 2, nudges: [], handoffs: [], heldFor: null, finishedAt: '2026-09-29T23:23:49.987Z', finalOutcome: 'blocked', cancelledAt: null })
+    writeDispatchRecord(context.loaded.stateDir, { issue, worktreeId: 'wt-272', branch: 'b', provider: 'codex', model: 'gpt' } as never)
+    await retryRun(context, issue, runId)
+    const set = calls.find((argv) => argv.includes('worktree') && argv.includes('set'))
+    expect(set).toEqual(expect.arrayContaining(['id:wt-272', 'loop · ENG-272 · codex/gpt']))
+  })
+})
