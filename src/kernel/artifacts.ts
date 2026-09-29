@@ -1,7 +1,7 @@
 import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { fail } from './errors.js'
-import { hashJson, sha256 } from './hash.js'
+import { hashCanonicalJson, hashJson, hashJsonMatches } from './hash.js'
 import { FileEventStore } from './events.js'
 import type { PhaseExecution, PhaseResumeState } from './phase-executor.js'
 
@@ -85,7 +85,7 @@ const artifactBody = (artifact: Omit<ArtifactEnvelope, 'artifactHash'>): Record<
   payloadHash: artifact.payloadHash,
 })
 
-const expectedArtifactHash = (artifact: Omit<ArtifactEnvelope, 'artifactHash'>): string => hashJson(artifactBody(artifact))
+const expectedArtifactHash = (artifact: Omit<ArtifactEnvelope, 'artifactHash'>): string => hashCanonicalJson(artifactBody(artifact))
 
 export const validateArtifactEnvelope = <T = unknown>(value: unknown): ArtifactEnvelope<T> => {
   if (!isRecord(value)) return fail('Artifact envelope must be an object.', 'INVALID_INPUT')
@@ -95,7 +95,7 @@ export const validateArtifactEnvelope = <T = unknown>(value: unknown): ArtifactE
   const createdAt = text(value['createdAt'], 'Artifact createdAt')
   if (!Number.isFinite(Date.parse(createdAt))) fail('Artifact createdAt must be a valid timestamp.', 'INVALID_INPUT')
   const payloadHash = digest(value['payloadHash'], 'Artifact payloadHash')
-  if (hashJson(value['payload']) !== payloadHash) fail('Artifact payloadHash does not match payload.', 'INVALID_INPUT')
+  if (!hashJsonMatches(value['payload'], payloadHash)) fail('Artifact payloadHash does not match payload.', 'INVALID_INPUT')
   const artifact = {
     type: 'agentskit-harness-artifact' as const,
     schemaVersion: ARTIFACT_SCHEMA_VERSION,
@@ -113,14 +113,15 @@ export const validateArtifactEnvelope = <T = unknown>(value: unknown): ArtifactE
     payload: value['payload'] as T,
     payloadHash,
   }
-  if (digest(value['artifactHash'], 'Artifact artifactHash') !== expectedArtifactHash(artifact)) fail('Artifact artifactHash does not match envelope.', 'INVALID_INPUT')
-  return { ...artifact, artifactHash: value['artifactHash'] as string }
+  const artifactHash = digest(value['artifactHash'], 'Artifact artifactHash')
+  if (!hashJsonMatches(artifactBody(artifact), artifactHash)) fail('Artifact artifactHash does not match envelope.', 'INVALID_INPUT')
+  return { ...artifact, artifactHash }
 }
 
 export const createArtifactEnvelope = <T>(input: ArtifactEnvelopeInput<T>): ArtifactEnvelope<T> => {
   if (!ARTIFACT_TYPES.includes(input.artifactType)) fail('Artifact artifactType is invalid.', 'INVALID_INPUT')
-  const payloadHash = input.payloadHash ?? hashJson(input.payload)
-  if (payloadHash !== hashJson(input.payload)) fail('Artifact payloadHash does not match payload.', 'INVALID_INPUT')
+  const payloadHash = input.payloadHash ?? hashCanonicalJson(input.payload)
+  if (!hashJsonMatches(input.payload, payloadHash)) fail('Artifact payloadHash does not match payload.', 'INVALID_INPUT')
   const identity = {
     type: 'agentskit-harness-artifact' as const,
     schemaVersion: ARTIFACT_SCHEMA_VERSION,
@@ -224,4 +225,5 @@ export const createPhaseArtifact = (base: Omit<ArtifactEnvelopeInput, 'artifactT
 
 export const readArtifactFile = (path: string): ArtifactEnvelope => validateArtifactEnvelope(JSON.parse(readFileSync(path, 'utf8')) as unknown)
 
-export const artifactDigest = (artifact: ArtifactEnvelope): string => sha256(JSON.stringify(artifact))
+/** Return the historical insertion-order SHA-256 digest of the full artifact envelope. */
+export const artifactDigest = (artifact: ArtifactEnvelope): string => hashJson(artifact)

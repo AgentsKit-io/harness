@@ -1,5 +1,5 @@
 import { fail } from './errors.js'
-import { hashJson } from './hash.js'
+import { hashCanonicalJson, hashJsonMatches } from './hash.js'
 import type { BlockStatus } from './block.js'
 import type { MachineMetrics } from './types.js'
 
@@ -41,13 +41,14 @@ export const createStatusSnapshot = (input: Omit<StatusSnapshot, 'schemaVersion'
   }).sort((left, right) => left.id.localeCompare(right.id))
   if (input.metrics !== undefined && Object.entries(input.metrics).some(([key, value]) => !key.trim() || typeof value !== 'number' || !Number.isFinite(value) || value < 0)) fail('metrics must contain finite non-negative numbers.', 'INVALID_INPUT')
   const body = { schemaVersion: 1 as const, generatedAt: input.generatedAt, sourceRevision, blocks, ...(input.machine ? { machine: input.machine } : {}), ...(input.metrics ? { metrics: input.metrics } : {}), ...(input.next ? { next: required(input.next, 'next') } : {}) }
-  return { ...body, digest: hashJson(body) }
+  return { ...body, digest: hashCanonicalJson(body) }
 }
 
 export const validateStatusSnapshot = (value: unknown): StatusSnapshot => {
   if (typeof value !== 'object' || value === null || Array.isArray(value)) fail('status snapshot must be an object.', 'INVALID_INPUT')
   const raw = value as StatusSnapshot
   const snapshot = createStatusSnapshot({ generatedAt: required(raw.generatedAt, 'generatedAt'), sourceRevision: required(raw.sourceRevision, 'sourceRevision'), blocks: raw.blocks, ...(raw.machine ? { machine: raw.machine } : {}), ...(raw.metrics ? { metrics: raw.metrics } : {}), ...(raw.next ? { next: raw.next } : {}) })
-  if (raw.schemaVersion !== 1 || raw.digest !== snapshot.digest) fail('status snapshot digest or schemaVersion is invalid.', 'HARNESS_ERROR')
-  return snapshot
+  const { digest: _digest, ...body } = snapshot
+  if (raw.schemaVersion !== 1 || !hashJsonMatches(body, raw.digest)) fail('status snapshot digest or schemaVersion is invalid.', 'HARNESS_ERROR')
+  return { ...snapshot, digest: raw.digest }
 }

@@ -1,5 +1,5 @@
-import { createHash } from 'node:crypto'
 import { fail } from '../kernel/errors.js'
+import { hashJson } from '../kernel/hash.js'
 import type { PolicyDecision, PolicyGate, PolicyRequest } from '../kernel/policy.js'
 
 export type McpPolicy = PolicyGate | { readonly evaluate: (request: PolicyRequest) => PolicyDecision }
@@ -31,7 +31,7 @@ const required = (value: string, label: string): string => {
   return value.trim()
 }
 
-export const hashMcpArgs = (args: unknown): string => createHash('sha256').update(JSON.stringify(args ?? null)).digest('hex')
+export const hashMcpArgs = (args: unknown): string => hashJson(args ?? null)
 
 /**
  * Adapter-only MCP tool bridge: default-deny allowlist + policy gate before any call.

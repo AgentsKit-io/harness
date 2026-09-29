@@ -1,7 +1,7 @@
-import { createHash } from 'node:crypto'
 import { existsSync, readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { fail } from '../kernel/errors.js'
+import { sha256 } from '../kernel/hash.js'
 
 export interface PinnedSkill {
   /** As configured in `brief.skills` — a path relative to the project root. */
@@ -14,7 +14,7 @@ export interface PinnedSkill {
 
 export interface PinnedSkillRef { readonly path: string; readonly digest: string }
 
-export const skillDigest = (content: string): string => createHash('sha256').update(content).digest('hex')
+export const skillDigest = (content: string): string => sha256(content)
 
 /**
  * Read every configured skill file relative to `root`, hash and truncate each (with a visible note) to `maxChars`

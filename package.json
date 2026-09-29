@@ -36,6 +36,7 @@
   },
   "scripts": {
     "build": "tsup && pnpm ui:build && node -e \"console.log(JSON.stringify({status:'passed',criteria:['package']}))\"",
+    "prepack": "node -e \"require('node:fs').writeFileSync('dist/.npmignore', '.tsbuildinfo')\"",
     "typecheck": "pnpm check:cross-platform && tsc -p tsconfig.json --noEmit && tsc -p src/ui/app/tsconfig.json --noEmit",
     "check:cross-platform": "agentskit-cross-platform check",
     "ui:dev": "vite --config src/ui/app/vite.config.ts",
@@ -102,6 +103,7 @@
     "docs:bridge:conformance": "ak-docs conformance run documentation-standard-v1 --text"
   },
   "dependencies": {
+    "@agentskit/core": "^1.13.0",
     "@agentskit/cross-platform": "^0.1.0",
     "commander": "^14.0.3",
     "ink": "7.1.1",

@@ -1,5 +1,5 @@
 import { fail } from './errors.js'
-import { hashJson } from './hash.js'
+import { hashCanonicalJson, hashJsonMatches } from './hash.js'
 
 export const COMPATIBILITY_SCHEMA_VERSION = 1 as const
 export const COMPATIBILITY_COMPONENTS = ['core', 'memory', 'eval', 'doc-bridge', 'code-review', 'adapter-boundary', 'runtime'] as const
@@ -92,7 +92,7 @@ const body = (value: Record<string, unknown>): Omit<CompatibilityManifest, 'dige
 
 export const createCompatibilityManifest = (input: Omit<CompatibilityManifest, 'type' | 'schemaVersion' | 'digest'>): CompatibilityManifest => {
   const value = body(input as unknown as Record<string, unknown>)
-  return { ...value, digest: hashJson(value) }
+  return { ...value, digest: hashCanonicalJson(value) }
 }
 
 export const validateCompatibilityManifest = (value: unknown): CompatibilityManifest => {
@@ -101,7 +101,7 @@ export const validateCompatibilityManifest = (value: unknown): CompatibilityMani
   const valueBody = body(candidate)
   if (candidate['type'] !== valueBody.type || candidate['schemaVersion'] !== valueBody.schemaVersion) fail('Compatibility manifest type or schemaVersion is invalid.', 'INVALID_INPUT')
   const digest = text(candidate['digest'], 'digest')
-  if (digest !== hashJson(valueBody)) fail('Compatibility manifest digest is invalid.', 'INVALID_INPUT')
+  if (!hashJsonMatches(valueBody, digest)) fail('Compatibility manifest digest is invalid.', 'INVALID_INPUT')
   return { ...valueBody, digest }
 }
 

@@ -3,7 +3,7 @@ import { existsSync, readFileSync, writeFileSync } from 'node:fs'
 import { join, relative, resolve } from 'node:path'
 import { fail } from '../kernel/errors.js'
 import { fileContents, loadLatestRun, pathInside, readJson } from './files.js'
-import { sha256 } from '../kernel/hash.js'
+import { hashCanonicalJson, hashJsonMatches, sha256 } from '../kernel/hash.js'
 import { reconcileRun } from './verification.js'
 import { FileEventStore } from '../kernel/events.js'
 import type { EventLogVerification } from '../kernel/events.js'
@@ -90,7 +90,7 @@ export const exportEvidenceBundle = async ({ configPath, runId, outputPath, priv
   })
   const privateKey = createPrivateKey(readFileSync(privateKeyPath))
   const unsigned = { type: 'agentskit-harness-evidence-bundle' as const, schemaVersion: EVIDENCE_BUNDLE_SCHEMA_VERSION, runId: run.runId, signerKeyId: keyId, sourceRevision: run.sourceRevision, configHash: run.configHash, contractHash: run.contractHash, verificationDigest: digest, eventLog: eventVerification, files }
-  const payloadHash = sha256(JSON.stringify(unsigned))
+  const payloadHash = hashCanonicalJson(unsigned)
   const publicKeyPem = createPublicKey(privateKey).export({ type: 'spki', format: 'pem' }).toString()
   const bundle = { ...unsigned, payloadHash, signature: { algorithm: 'ed25519' as const, keyId, publicKeyPem, signatureBase64: sign(null, Buffer.from(payloadHash), privateKey).toString('base64') } }
   writeFileSync(outputPath, `${JSON.stringify(bundle, null, 2)}\n`, 'utf8')
@@ -125,7 +125,7 @@ export const verifyEvidenceBundle = (path: string, { trustedKeys = [], maxFileBy
     if (sha256(content) !== file.sha256) fail(`Evidence bundle file hash mismatch: ${file.path}`, 'HARNESS_ERROR')
   }
   if (!paths.has(`runs/${bundle.runId}/run.json`) || !paths.has(`runs/${bundle.runId}/events.ndjson`)) fail('Evidence bundle is missing the run projection or event log.', 'HARNESS_ERROR')
-  if (sha256(JSON.stringify(body(bundle))) !== bundle.payloadHash) fail('Evidence bundle payload hash mismatch.', 'HARNESS_ERROR')
+  if (!hashJsonMatches(body(bundle), bundle.payloadHash)) fail('Evidence bundle payload hash mismatch.', 'HARNESS_ERROR')
   let valid = false
   try { valid = verify(null, Buffer.from(bundle.payloadHash), createPublicKey(bundle.signature.publicKeyPem), Buffer.from(bundle.signature.signatureBase64, 'base64')) } catch { valid = false }
   if (!valid) fail('Evidence bundle signature is invalid.', 'HARNESS_ERROR')
