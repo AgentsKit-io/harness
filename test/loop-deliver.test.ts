@@ -7,6 +7,7 @@ import type { CommandResult, CommandRunner, DispatchRecordFile, StoredContract }
 import { renderSpec, writeSpec } from '../src/loop/spec.js'
 import { readAgentRunReport } from '../src/loop/agent-runs.js'
 import { activeTrackerCooldown, isTrackerRateLimit, markTrackerRateLimited } from '../src/loop/tracker-cooldown.js'
+import { usageLimitOnScreen } from '../src/loop/deliver.js'
 
 const fixture = (name: string): unknown => JSON.parse(readFileSync(join(process.cwd(), 'test/fixtures/loop', `${name}.json`), 'utf8')) as unknown
 const exampleYaml = readFileSync(join(process.cwd(), 'loop.config.example.yaml'), 'utf8').replace('person: my-linear-display-name', 'person: person')
@@ -1471,5 +1472,18 @@ describe('lost tracking: abort and restart from scratch', () => {
     expect((await deliver(env)).results[0]).toMatchObject({ outcome: 'restarted' })
     expect(queue.get(run.id)?.status).toBe('needs-input')
     expect(queue.list().filter((item) => item.issue === 'ENG-10')).toHaveLength(1)
+  })
+})
+
+describe('usageLimitOnScreen', () => {
+  const banner = '■ You’ve hit your usage limit. Upgrade to Pro or try again at Oct 3rd, 2026 8:02 PM.'
+  it('reports a usage-limit banner on the worker screen', () => {
+    expect(usageLimitOnScreen(`working…\n${banner}\n› Ask Codex to do anything`)).toBe(banner)
+  })
+  it('ignores a banner the CLI followed with usage being available again (a reset, vivva #280)', () => {
+    expect(usageLimitOnScreen(`${banner}\n• Automatically switched back to gpt-6-luna xhigh because ordinary usage is available again.\n› Ask Codex to do anything`)).toBeNull()
+  })
+  it('still reports a new limit hit after an earlier recovery', () => {
+    expect(usageLimitOnScreen(`${banner}\n• usage is available again.\n• Ran pnpm test\n${banner}`)).toBe(banner)
   })
 })
