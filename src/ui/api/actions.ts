@@ -13,7 +13,7 @@ import { createIssueQueue } from '../../loop/queue.js'
 import { resumeIssue as clearPause } from '../../loop/resilience-state.js'
 import { rankModels } from '../../loop/routing.js'
 import { writeJsonAtomic } from '../../loop/fs-atomic.js'
-import { appendLoopEvent } from '../../loop/tick.js'
+import { appendLoopEvent, readDispatchRecord, writeDispatchRecord } from '../../loop/tick.js'
 import type { Drift } from './contract.js'
 import { weakenedGates } from './config-view.js'
 import { syncProjection } from './store.js'
@@ -226,6 +226,9 @@ export const retryRun = async (context: ActionContext, issue: string, runId: str
     // it set start over, or the first transient error after a Retry re-finishes it and the tracker is never moved back.
     // Incomplete review attempts go too: a delivery blocked after two incomplete reviews would re-block at once.
     const reviews = Object.fromEntries(Object.entries(delivery.reviews).filter(([, review]) => review.status !== 'incomplete'))
+    // The cost-guard baseline starts over too, or a delivery the guard stopped re-trips on the usage it already counted.
+    const dispatch = readDispatchRecord(loaded.stateDir, issue)
+    if (dispatch) writeDispatchRecord(loaded.stateDir, { ...dispatch, initialRemainingPercent: null })
     writeJsonAtomic(deliveryStatePath(loaded.stateDir, issue), { ...delivery, reviews, finishedAt: null, finalOutcome: null, fixRounds: 0, heldFor: null, nudges: [], consecutiveErrors: 0, failedAtHead: null, trackerState: null })
     appendLoopEvent(loaded.stateDir, { at: new Date().toISOString(), type: 'worker.reopened', issue, pr: delivery.prNumber, previousHead: head, head, previousOutcome: delivery.finalOutcome })
     syncProjection(loaded.stateDir)
