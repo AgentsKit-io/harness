@@ -1,3 +1,4 @@
+import { isRecord } from '../record.js'
 import { fail } from './errors.js'
 import { HARNESS_EVENT_TYPES } from './events.js'
 import type { HarnessEvent, HarnessEventListener, HarnessEventType } from './events.js'
@@ -44,7 +45,6 @@ const validId = (value: unknown, label: string): string => {
   return result
 }
 
-const isRecord = (value: unknown): value is Record<string, unknown> => typeof value === 'object' && value !== null && !Array.isArray(value)
 const validEventType = (value: unknown): HarnessEventType => {
   if (typeof value !== 'string' || !(HARNESS_EVENT_TYPES as readonly string[]).includes(value)) fail('Plugin event type is invalid.', 'INVALID_INPUT')
   return value as HarnessEventType

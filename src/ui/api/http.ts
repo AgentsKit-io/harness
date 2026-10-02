@@ -1,4 +1,5 @@
 import type { IncomingMessage, ServerResponse } from 'node:http'
+import { isRecord } from '../../record.js'
 
 /** Small HTTP helpers shared by `server.ts` and the route modules under `routes-*.ts`. */
 
@@ -23,5 +24,5 @@ export const readRequestBody = (request: IncomingMessage, maxBytes = 64 * 1024):
   request.on('error', reject)
 })
 
-export const recordOf = (value: unknown): Record<string, unknown> => typeof value === 'object' && value !== null && !Array.isArray(value) ? value as Record<string, unknown> : {}
+export const recordOf = (value: unknown): Record<string, unknown> => isRecord(value) ? value : {}
 export const stringOf = (value: unknown): string | null => typeof value === 'string' && value.trim() ? value.trim() : null

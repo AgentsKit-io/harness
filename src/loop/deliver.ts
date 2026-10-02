@@ -13,6 +13,7 @@ import { orcaAccountList, orcaAgentHooks, orcaTerminalClose, orcaTerminalList, o
 import { detectProviders, remainingUsagePercent, type ProviderAvailability } from '../adapters/providers.js'
 import { createDispatchLedger, type DispatchLease } from '../execution/coordination.js'
 import { HarnessError, fail } from '../kernel/errors.js'
+import { isRecord } from '../record.js'
 import { renderHandoffBrief } from './brief.js'
 import { renderSkillsForHandoff } from './skills.js'
 import { writeJsonAtomic } from './fs-atomic.js'
@@ -998,7 +999,7 @@ const materializeWorkerHitl = (ctx: Context, record: DispatchRecordFile): { read
   for (const file of readdirSync(root).filter((name) => name.endsWith('.json'))) {
     try {
       const raw = parseJsonFileText(join(root, file)) as Record<string, unknown>
-      const options = Array.isArray(raw['options']) ? raw['options'].filter((option): option is Record<string, unknown> => typeof option === 'object' && option !== null && !Array.isArray(option)).map((option) => ({ id: String(option['id'] ?? ''), title: String(option['title'] ?? ''), description: String(option['description'] ?? '') })) : []
+      const options = Array.isArray(raw['options']) ? raw['options'].filter(isRecord).map((option) => ({ id: String(option['id'] ?? ''), title: String(option['title'] ?? ''), description: String(option['description'] ?? '') })) : []
       const request = store.create({ requestId: typeof raw['requestId'] === 'string' ? raw['requestId'] : `worker:${record.issue}:${file}`, batchId: typeof raw['batchId'] === 'string' ? raw['batchId'] : `worker:${record.issue}:${record.queueRunId ?? record.issue}`, issue: record.issue, role: 'builder', stage: 'worker', question: String(raw['question'] ?? ''), context: String(raw['context'] ?? ''), options, recommendedOptionId: String(raw['recommendedOptionId'] ?? ''), digest: typeof raw['digest'] === 'string' ? raw['digest'] : `${record.contractDigest ?? record.issue}:${file}`, metadata: { runId: record.queueRunId ?? null, worktreePath: record.worktreePath, terminal: record.terminal ?? null, stage: 'worker' } })
       if (request.status === 'open') open = true
       if (request.status === 'answered' && request.answer) {

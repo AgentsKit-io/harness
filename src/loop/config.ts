@@ -1,3 +1,4 @@
+import { isRecord } from '../record.js'
 import { existsSync, readFileSync } from 'node:fs'
 import { homedir } from 'node:os'
 import { dirname, resolve } from 'node:path'
@@ -1052,8 +1053,8 @@ export const validateLoopConfig = (value: unknown): LoopConfig => {
   const result = LoopConfigSchema.safeParse(value)
   if (!result.success) return fail(`Invalid ${LOOP_CONFIG_FILE}: ${formatIssues(result.error.issues)}`, 'INVALID_CONFIG')
   const parsed = result.data
-  const rawLinear = isPlainObject(value) ? value['linear'] : undefined
-  if (parsed.connectors.tracker === 'linear' && !isPlainObject(rawLinear)) fail('linear is required when connectors.tracker is "linear".', 'INVALID_CONFIG')
+  const rawLinear = isRecord(value) ? value['linear'] : undefined
+  if (parsed.connectors.tracker === 'linear' && !isRecord(rawLinear)) fail('linear is required when connectors.tracker is "linear".', 'INVALID_CONFIG')
   // ponytail: existing loop modules still read config.linear; the GitHub adapter maps this compatibility state model to labels.
   const config = (parsed.linear ? parsed : {
     ...parsed,
@@ -1093,7 +1094,6 @@ export const validateLoopConfig = (value: unknown): LoopConfig => {
   return config
 }
 
-const isPlainObject = (value: unknown): value is Record<string, unknown> => typeof value === 'object' && value !== null && !Array.isArray(value)
 
 /**
  * Key paths present in the YAML a project wrote but absent from the validated config: fields zod stripped
@@ -1104,7 +1104,7 @@ const isPlainObject = (value: unknown): value is Record<string, unknown> => type
  * does not know, and failing that closed would make every upgrade a flag day. Silence was the bug, not leniency.
  */
 export const unknownConfigKeys = (raw: unknown, parsed: unknown, prefix = ''): readonly string[] => {
-  if (!isPlainObject(raw) || !isPlainObject(parsed)) return []
+  if (!isRecord(raw) || !isRecord(parsed)) return []
   const dropped: string[] = []
   for (const [key, value] of Object.entries(raw)) {
     const path = prefix ? `${prefix}.${key}` : key
@@ -1136,12 +1136,12 @@ const mergeGateList = (base: unknown, overlay: readonly unknown[]): unknown[] =>
  */
 export const mergeLoopConfig = (base: unknown, overlay: unknown, path = ''): unknown => {
   if (Array.isArray(overlay) && GATE_LISTS.includes(path)) return mergeGateList(base, overlay)
-  if (!isPlainObject(base) || !isPlainObject(overlay)) return overlay === undefined ? base : overlay
+  if (!isRecord(base) || !isRecord(overlay)) return overlay === undefined ? base : overlay
   const result: Record<string, unknown> = { ...base }
   for (const [key, value] of Object.entries(overlay)) {
     const child = path ? `${path}.${key}` : key
     // A section the base never declared still goes through the merge, so a gate list nested in it is normalised too.
-    result[key] = key in base ? mergeLoopConfig(base[key], value, child) : isPlainObject(value) || Array.isArray(value) ? mergeLoopConfig(isPlainObject(value) ? {} : undefined, value, child) : value
+    result[key] = key in base ? mergeLoopConfig(base[key], value, child) : isRecord(value) || Array.isArray(value) ? mergeLoopConfig(isRecord(value) ? {} : undefined, value, child) : value
   }
   return result
 }
@@ -1150,7 +1150,7 @@ const parseYamlMapping = (text: string, label: string): Record<string, unknown> 
   let raw: unknown
   try { raw = parseYaml(text) } catch (error) { return fail(`Invalid ${label}: ${error instanceof Error ? error.message : String(error)}`, 'INVALID_CONFIG') }
   if (raw === null || raw === undefined) return {}
-  if (!isPlainObject(raw)) return fail(`Invalid ${label}: top level must be a mapping.`, 'INVALID_CONFIG')
+  if (!isRecord(raw)) return fail(`Invalid ${label}: top level must be a mapping.`, 'INVALID_CONFIG')
   return raw
 }
 
@@ -1172,9 +1172,9 @@ export interface LoopConfigLayers {
 export const resolveTeamKey = (merged: unknown, env: NodeJS.ProcessEnv = process.env): string | null => {
   const fromEnv = env['AK_LOOP_TEAM']?.trim()
   if (fromEnv) return fromEnv
-  if (!isPlainObject(merged)) return null
+  if (!isRecord(merged)) return null
   const project = merged['project']
-  if (!isPlainObject(project)) return null
+  if (!isRecord(project)) return null
   const team = project['team']
   return typeof team === 'string' && team.trim() ? team.trim() : null
 }

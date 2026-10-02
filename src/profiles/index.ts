@@ -1,8 +1,8 @@
+import { isRecord } from '../record.js'
 import { fail } from '../kernel/errors.js'
 
 type RawRecord = Record<string, unknown>
 
-const isRecord = (value: unknown): value is RawRecord => typeof value === 'object' && value !== null && !Array.isArray(value)
 const record = (value: unknown, label: string): RawRecord => {
   if (!isRecord(value)) fail(`${label} must be an object.`, 'INVALID_CONFIG')
   return value as RawRecord

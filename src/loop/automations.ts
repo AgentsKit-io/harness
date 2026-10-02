@@ -1,3 +1,4 @@
+import { isRecord } from '../record.js'
 import { existsSync, realpathSync } from 'node:fs'
 import type { OrcaAutomation, OrcaAutomationSpec } from '../adapters/orca-cli.js'
 import type { LoadedLoopConfig, LoopConfig } from './config.js'
@@ -121,7 +122,6 @@ export const automationSpecs = (loaded: LoadedLoopConfig, provider: string): rea
   }))
 }
 
-const isRecord = (value: unknown): value is Record<string, unknown> => typeof value === 'object' && value !== null && !Array.isArray(value)
 const text = (value: unknown): string | null => typeof value === 'string' && value ? value : null
 
 /** The fields of a live Orca automation this harness owns, read out of the raw payload `orca automations list` returns. */

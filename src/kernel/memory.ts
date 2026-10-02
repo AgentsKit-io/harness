@@ -98,6 +98,7 @@ export const createKvMemoryAdapter = (store: AgentMemoryKvStore, options: { read
     if (allRecordsCache) return allRecordsCache
     const ids = await store.get(indexKey)
     const records = Array.isArray(ids) ? await Promise.all(ids.filter((id): id is string => typeof id === 'string').map((id) => store.get(`agentskit-harness:memory:${id}`))) : []
+    // Specialized: only stored items explicitly approved for recall enter this cache.
     allRecordsCache = records.filter((record): record is AgentMemoryRecord => Boolean(record && typeof record === 'object' && (record as AgentMemoryRecord).approved === true))
     return allRecordsCache
   }

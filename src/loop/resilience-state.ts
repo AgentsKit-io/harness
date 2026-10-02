@@ -2,6 +2,7 @@ import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 
 import { z } from 'zod'
 import { dirname, join } from 'node:path'
 import { readJsonFile } from '../kernel/json-file.js'
+import { isRecord } from '../record.js'
 
 /** One recorded failure for an issue, kept for diagnostics (`loop retro`, `loop status`). */
 export interface IssueFailureRecord {
@@ -136,7 +137,7 @@ export const readStagePause = (stateDir: string): StagePauseState => {
   if (!existsSync(path)) return {}
   try {
     const parsed = JSON.parse(readFileSync(path, 'utf8')) as unknown
-    return typeof parsed === 'object' && parsed !== null && !Array.isArray(parsed) ? parsed as StagePauseState : {}
+    return isRecord(parsed) ? parsed as StagePauseState : {}
   } catch { return {} }
 }
 

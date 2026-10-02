@@ -1,3 +1,4 @@
+import { isRecord } from '../record.js'
 import { fail } from '../kernel/errors.js'
 import { hashJson } from '../kernel/hash.js'
 import { orcaJson, type OrcaCliOptions } from './orca-cli.js'
@@ -61,7 +62,6 @@ export interface LinearListInput {
   readonly limit: number
 }
 
-const isRecord = (value: unknown): value is Record<string, unknown> => typeof value === 'object' && value !== null && !Array.isArray(value)
 const str = (value: unknown, fallback = ''): string => typeof value === 'string' ? value : fallback
 const name = (value: unknown): string | null => isRecord(value) && typeof value['name'] === 'string' ? value['name'] : null
 

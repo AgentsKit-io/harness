@@ -1,5 +1,6 @@
 import { appendFileSync, closeSync, existsSync, mkdirSync, openSync, readFileSync, unlinkSync, writeSync } from 'node:fs'
 import { join } from 'node:path'
+import { isRecord } from '../record.js'
 import { fail } from './errors.js'
 import { hashCanonicalJson, hashJson, hashJsonMatches } from './hash.js'
 import type { ContextQuery } from '../context/index.js'
@@ -200,10 +201,11 @@ const eventBody = (event: HarnessEvent): Omit<HarnessEvent, 'eventHash'> => {
 const eventDigest = (event: HarnessEvent): string => hashCanonicalJson(eventBody(event))
 
 const parseEvent = (value: unknown, expectedSequence: number): HarnessEvent => {
-  if (typeof value !== 'object' || value === null || Array.isArray(value)) fail('Event log contains a non-object record.', 'HARNESS_ERROR')
+  if (!isRecord(value)) fail('Event log contains a non-object record.', 'HARNESS_ERROR')
   const record = value as Record<string, unknown>
     const context = record['correlation']
-    const validContext = context === undefined || (typeof context === 'object' && context !== null && !Array.isArray(context) && Object.entries(context as Record<string, unknown>).every(([key, value]) => ['operationId', 'runId', 'sessionId', 'turnId', 'actionId', 'traceId'].includes(key) && typeof value === 'string' && /^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/.test(value)) && typeof (context as Record<string, unknown>)['operationId'] === 'string')
+    // Specialized: correlation context also restricts keys, values, and requires operationId.
+    const validContext = context === undefined || (isRecord(context) && Object.entries(context).every(([key, value]) => ['operationId', 'runId', 'sessionId', 'turnId', 'actionId', 'traceId'].includes(key) && typeof value === 'string' && /^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/.test(value)) && typeof context['operationId'] === 'string')
     if (record['schemaVersion'] !== HARNESS_EVENT_SCHEMA_VERSION || typeof record['runId'] !== 'string' || typeof record['sequence'] !== 'number' || record['sequence'] !== expectedSequence || typeof record['at'] !== 'string' || typeof record['sourceRevision'] !== 'string' || typeof record['configHash'] !== 'string' || !isEventType(record['type']) || typeof record['payload'] !== 'object' || record['payload'] === null || (record['sessionId'] !== undefined && (typeof record['sessionId'] !== 'string' || !record['sessionId'].trim())) || (SESSION_EVENT_TYPES.has(record['type']) && typeof record['sessionId'] !== 'string') || !validContext) fail('Event log is invalid or out of order.', 'HARNESS_ERROR')
   const hasPreviousHash = record['previousHash'] !== undefined
   const hasEventHash = record['eventHash'] !== undefined

@@ -1,6 +1,7 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { cooldownUntil } from '../adapters/providers.js'
+import { isRecord } from '../record.js'
 
 export interface CooldownEntry { readonly attempts: number; readonly until: string; readonly reason: string; readonly markedAt: string }
 export type CooldownState = Readonly<Record<string, CooldownEntry>>
@@ -12,7 +13,7 @@ export const readCooldowns = (stateDir: string): CooldownState => {
   if (!existsSync(path)) return {}
   try {
     const parsed = JSON.parse(readFileSync(path, 'utf8')) as unknown
-    return typeof parsed === 'object' && parsed !== null && !Array.isArray(parsed) ? parsed as CooldownState : {}
+    return isRecord(parsed) ? parsed as CooldownState : {}
   } catch { return {} }
 }
 

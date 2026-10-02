@@ -1,6 +1,7 @@
 import { classifyFailure, type FailureClassification } from '../kernel/resilience.js'
 import { fail } from '../kernel/errors.js'
 import type { AdapterMetadata, AssuranceLevel } from '../kernel/adapter-contract.js'
+import { isRecord } from '../record.js'
 
 export interface CodingAgentRequest {
   readonly issueRef: string
@@ -76,7 +77,7 @@ export const createCodingAgentAdapter = ({ id, version, assurance = 'contract-te
         const operation = Promise.resolve(execute({ issueRef, prompt, sourceRevision, ...(request.contextHash ? { contextHash: request.contextHash } : {}), signal: controller.signal }))
         const timeout = new Promise<never>((_, reject) => { timer = setTimeout(() => { timedOut = true; controller.abort(); reject(new Error('agent execution timed out')) }, timeoutMs) })
         const result = await Promise.race([operation, timeout])
-        if (!result || typeof result !== 'object' || Array.isArray(result) || typeof result.output !== 'object' || result.output === null || Array.isArray(result.output) || typeof result.diff !== 'string') return fail('Agent result must contain structured output and diff.', 'INVALID_INPUT')
+        if (!isRecord(result) || !isRecord(result['output']) || typeof result['diff'] !== 'string') return fail('Agent result must contain structured output and diff.', 'INVALID_INPUT')
         const measuredUsage = usage(result.usage)
         const durationMs = duration(Date.now() - started)
         return { status: 'completed', output: result.output, diff: result.diff, usage: measuredUsage, durationMs, metadata: { assurance, telemetry: { status: measuredUsage.status, durationMs, ...(measuredUsage.inputTokens === undefined ? {} : { inputTokens: measuredUsage.inputTokens }), ...(measuredUsage.outputTokens === undefined ? {} : { outputTokens: measuredUsage.outputTokens }), ...(measuredUsage.totalTokens === undefined ? {} : { totalTokens: measuredUsage.totalTokens }) } } }

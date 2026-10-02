@@ -1,3 +1,4 @@
+import { isRecord } from '../../record.js'
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { githubOpenIssues, type GitHubIssueSnapshot } from '../../adapters/github-cli.js'
@@ -43,7 +44,6 @@ export interface IssueBoardReader {
 }
 
 const CACHE_SCHEMA_VERSION = 1 as const
-const isRecord = (value: unknown): value is Record<string, unknown> => typeof value === 'object' && value !== null && !Array.isArray(value)
 const stringValue = (value: unknown): string => typeof value === 'string' ? value : ''
 
 const boardIssue = (value: unknown): BoardIssue | null => {

@@ -1,6 +1,7 @@
 import { existsSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { sha256 } from '../kernel/hash.js'
+import { isRecord } from '../record.js'
 import { pathInside } from './files.js'
 import type { EvidenceArtifact, StructuredEvidence, VerificationCheck } from '../kernel/types.js'
 
@@ -8,13 +9,12 @@ export const parseStructuredEvidence = (stdout: string): StructuredEvidence | nu
   for (const line of stdout.split(/\r?\n/).map((item) => item.trim()).filter(Boolean).reverse()) {
     try {
       const value: unknown = JSON.parse(line)
-      if (typeof value === 'object' && value !== null && !Array.isArray(value) && typeof (value as Record<string, unknown>)['status'] === 'string') return value as StructuredEvidence
+      if (isRecord(value) && typeof value['status'] === 'string') return value as StructuredEvidence
     } catch {}
   }
   return null
 }
 
-const isRecord = (value: unknown): value is Record<string, unknown> => typeof value === 'object' && value !== null && !Array.isArray(value)
 const viewportValid = (viewport: unknown): boolean => typeof viewport === 'string' || (isRecord(viewport) && typeof viewport['width'] === 'number' && viewport['width'] > 0 && typeof viewport['height'] === 'number' && viewport['height'] > 0)
 
 export const validateEvidence = (root: string, check: VerificationCheck, evidence: StructuredEvidence | null, outcomeIds: readonly string[]): string[] => {

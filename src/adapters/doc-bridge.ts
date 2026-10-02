@@ -3,6 +3,7 @@ import { resolve } from 'node:path'
 import { fail } from '../kernel/errors.js'
 import { hashJson } from '../kernel/hash.js'
 import { hashContextSnapshot } from '../context/index.js'
+import { isRecord } from '../record.js'
 import type { AdapterTelemetry } from '../kernel/adapter-contract.js'
 import type { ContextProvider, ContextQuery, ContextReference } from '../context/index.js'
 
@@ -91,7 +92,7 @@ export const createDocBridgeContextProvider = ({ root, indexPath = '.doc-bridge/
     const document = index(root, indexPath)
     const contentHash = sourceHash(document)
     const knowledge = Array.isArray(document.knowledge)
-      ? document.knowledge.filter((value): value is IndexEntry => typeof value === 'object' && value !== null && !Array.isArray(value))
+      ? document.knowledge.filter((value): value is IndexEntry => isRecord(value))
       : []
     const ranked = [...knowledge, ...ownershipEntries(document)]
       .map((entry) => ({ entry, score: matches(entry, query) }))

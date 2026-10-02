@@ -1,3 +1,4 @@
+import { isRecord } from '../record.js'
 import { findExecutable, type CommandRunner } from './command.js'
 
 export type UsageWindowKind = 'session' | 'weekly' | 'monthly' | string
@@ -56,7 +57,6 @@ export interface DetectProvidersInput {
   readonly probeTimeoutMs?: number
 }
 
-const isRecord = (value: unknown): value is Record<string, unknown> => typeof value === 'object' && value !== null && !Array.isArray(value)
 const iso = (value: unknown): string | null => typeof value === 'number' && Number.isFinite(value) ? new Date(value).toISOString() : typeof value === 'string' && !Number.isNaN(Date.parse(value)) ? new Date(value).toISOString() : null
 
 export const parseUsageWindows = (entry: unknown): readonly UsageWindow[] => {

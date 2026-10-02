@@ -1,6 +1,7 @@
 import { existsSync, mkdirSync, readFileSync, realpathSync, writeFileSync } from 'node:fs'
 import { dirname, isAbsolute, join, relative } from 'node:path'
 import { touchesProtectedPaths } from '../adapters/github-cli.js'
+import { isRecord } from '../record.js'
 import { shellQuote } from './automations.js'
 import type { LoopConfig } from './config.js'
 
@@ -95,7 +96,7 @@ const readJsonObject = (path: string): Record<string, unknown> | null => {
   if (!existsSync(path)) return {}
   try {
     const parsed = JSON.parse(readFileSync(path, 'utf8')) as unknown
-    return typeof parsed === 'object' && parsed !== null && !Array.isArray(parsed) ? parsed as Record<string, unknown> : null
+    return isRecord(parsed) ? parsed : null
   } catch { return null }
 }
 
