@@ -98,6 +98,20 @@ it('plans a new run over a completed one whose contract has since changed, witho
   expect(next.supersedes).toBe(completed.runId)
 })
 
+it('creates unique run IDs with a chronological timestamp prefix', async () => {
+  const fixture = project([{ id: 'logic', category: 'logic', command: evidenceCommand({ status: 'passed', criteria: ['outcome-0'] }), evidence: 'structured' }], [], { required: false, reason: 'fixture only' }, 'yolo')
+  const first = await runToVerify(fixture)
+  writeFileSync(fixture.configPath, `${JSON.stringify({ ...fixture.config, contract: { ...fixture.config.contract, intent: 'Next run.' } }, null, 2)}\n`)
+  const second = await planRun({ configPath: fixture.configPath, decision: 'approved' })
+  const pattern = /^(\d{13})-(\d+)-([0-9a-f]{6})$/
+  const firstMatch = pattern.exec(first.runId)
+  const secondMatch = pattern.exec(second.runId)
+  expect(first.runId).not.toBe(second.runId)
+  expect(firstMatch).not.toBeNull()
+  expect(secondMatch).not.toBeNull()
+  expect(Number(firstMatch?.[1])).toBeLessThanOrEqual(Number(secondMatch?.[1]))
+})
+
 it('invalidates approval when the frozen contract changes', async () => {
   const fixture = project([{ id: 'logic', category: 'logic', command: evidenceCommand({ status: 'passed', criteria: ['outcome-0'] }), evidence: 'structured' }])
   await runToVerify(fixture)
