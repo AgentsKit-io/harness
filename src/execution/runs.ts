@@ -1,3 +1,4 @@
+import { randomBytes } from 'node:crypto'
 import { hashJson } from '../kernel/hash.js'
 import { saveRun as persistRun, setLatest } from './files.js'
 import { FileEventStore } from '../kernel/events.js'
@@ -6,7 +7,7 @@ import type { ContextSnapshot } from '../context/index.js'
 import type { LoadedConfig, SourceSnapshot, VerificationRun } from '../kernel/types.js'
 
 const now = (): string => new Date().toISOString()
-const newRunId = (): string => `${Date.now()}-${process.pid}-${Math.random().toString(36).slice(2, 8)}`
+const newRunId = (): string => `${Date.now()}-${process.pid}-${randomBytes(4).toString('hex').slice(0, 6)}`
 
 export const saveRun = (stateDir: string, run: VerificationRun): void => {
   persistRun(stateDir, run)
