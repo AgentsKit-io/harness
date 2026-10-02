@@ -41,6 +41,16 @@ full verification contract). Running an agent session through
 [rtk](https://github.com/rtk-ai/rtk) (`rtk init -g`) compresses that output before
 it reaches your context — same commands, a fraction of the tokens.
 
+## Coverage floor
+
+`pnpm test:coverage` enforces a source floor of 89% statements, 79%
+branches, 88% functions, and 93% lines for `src/**`, excluding `src/ui/app/**`.
+The UI app is built and typechecked separately; `apps/**` is the documentation
+site package, while `scripts/**` and `test/**` are tooling and tests rather than
+the harness runtime. To raise the floor, run `pnpm test:coverage`, then increase
+the corresponding threshold in `vitest.config.ts` to a whole number at or below
+the measured percentage. Plain `pnpm test` remains unchanged.
+
 ## Angular Conventional Commits
 
 Commit messages follow the Angular Conventional Commits format:

@@ -19,5 +19,15 @@ export default defineConfig({
     // repo's own loop tooling creates when dogfooding itself — its `base-view` can carry its own nested
     // `test/*.test.ts` files from whatever commit it snapshotted, unrelated to the current source tree.
     exclude: ['tests/e2e/**', 'packages/playbook/test/**', 'node_modules/**', '**/node_modules/**', 'apps/**', 'scripts/**', '.next/**', '.ak-loop/**'],
+    coverage: {
+      include: ['src/**/*.{ts,tsx}'],
+      exclude: ['src/ui/app/**', 'apps/**', 'scripts/**', 'test/**'],
+      thresholds: {
+        statements: 89,
+        branches: 79,
+        functions: 88,
+        lines: 93,
+      },
+    },
   },
 })

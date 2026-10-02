@@ -2,6 +2,7 @@
 
 ## [Unreleased]
 
+- **Coverage floor.** `pnpm test:coverage` now enforces ratcheted source coverage in CI.
 - **Shared record guard.** Harness internals now reuse one non-null, non-array object check while preserving caller-specific errors and fallbacks.
 - **Cryptographic run IDs.** Verification runs retain their timestamp and PID prefix while using a cryptographic random suffix.
 - **Bounded model catalog refresh.** Artificial Analysis refreshes use `@agentskit/net` deadlines and a 2 MiB JSON body cap; a failed refresh keeps the existing catalog cache.
