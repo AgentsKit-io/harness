@@ -1,3 +1,4 @@
+import { isRecord } from '../record.js'
 import { fail } from '../kernel/errors.js'
 import { hashContextSnapshot } from '../context/index.js'
 import type { AdapterTelemetry } from '../kernel/adapter-contract.js'
@@ -22,7 +23,6 @@ export interface ArgvRagContextProviderOptions {
   readonly cwd?: string
 }
 
-const isRecord = (value: unknown): value is Record<string, unknown> => typeof value === 'object' && value !== null && !Array.isArray(value)
 
 const requiredString = (value: unknown, label: string): string => {
   if (typeof value !== 'string' || !value.trim()) return fail(`${label} must be a non-empty string.`, 'INVALID_INPUT')

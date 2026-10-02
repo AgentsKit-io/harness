@@ -1,3 +1,4 @@
+import { isRecord } from '../record.js'
 import { existsSync } from 'node:fs'
 import { dirname, join, resolve } from 'node:path'
 import { REAL_CATEGORIES } from '../kernel/constants.js'
@@ -19,7 +20,6 @@ interface RawVerification extends RawRecord { readonly maxConcurrency?: unknown 
 interface RawCleanup extends RawRecord { readonly roots?: unknown }
 interface RawBenchmark extends RawRecord { readonly suiteId?: unknown; readonly taskId?: unknown; readonly mode?: unknown }
 
-const isRecord = (value: unknown): value is RawRecord => typeof value === 'object' && value !== null && !Array.isArray(value)
 const stringValue = (value: unknown, label: string): string => {
   if (typeof value !== 'string') return fail(`${label} is required.`, 'INVALID_CONFIG')
   const result = value.trim()
@@ -32,6 +32,7 @@ const stringArray = (value: unknown, label: string): string[] => {
   if (!items.every((item: unknown): item is string => typeof item === 'string' && Boolean(item.trim()))) fail(`${label} must be an array of non-empty strings.`, 'INVALID_CONFIG')
   return items.map((item: unknown) => stringValue(item, label))
 }
+// Specialized: keeps the caller label in the validation error.
 const asRecord = (value: unknown, label: string): RawRecord => {
   if (!isRecord(value)) fail(`${label} must be an object.`, 'INVALID_CONFIG')
   return value as RawRecord

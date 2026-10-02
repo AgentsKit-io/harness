@@ -1,3 +1,4 @@
+import { isRecord } from '../../record.js'
 import { existsSync, readFileSync } from 'node:fs'
 import { basename } from 'node:path'
 import { parse as parseYaml } from 'yaml'
@@ -31,7 +32,6 @@ const compose = (texts: LayerTexts): LoopConfig => composeLoopConfig({
 /** Everything but this machine's overlay: the baseline a personal gate value is judged against. */
 const withoutLocal = ({ local: _local, ...rest }: LayerTexts): LayerTexts => rest
 
-const isRecord = (value: unknown): value is Record<string, unknown> => typeof value === 'object' && value !== null && !Array.isArray(value)
 const segments = (path: string): readonly string[] => path.split('.')
 const readIn = (value: unknown, path: string): unknown => segments(path).reduce<unknown>((node, key) => isRecord(node) ? node[key] : undefined, value)
 

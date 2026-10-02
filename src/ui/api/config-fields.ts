@@ -79,6 +79,7 @@ export const fieldMeta = (path: string): FieldMeta => {
   return { section, editable: 'personal', ...entry }
 }
 
+// Specialized: id-bearing values use stable identity for config-list comparison.
 const itemKey = (item: unknown): string => typeof item === 'object' && item !== null && 'id' in item ? String((item as { id: unknown }).id) : JSON.stringify(item)
 
 const list = (value: unknown): readonly unknown[] => Array.isArray(value) ? value : []

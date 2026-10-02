@@ -2,6 +2,7 @@ import { existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from '
 import { dirname, join } from 'node:path'
 import { AgentsKitError } from '@agentskit/core'
 import { readJson as readResponseJson, withTimeout } from '@agentskit/net'
+import { isRecord } from '../../record.js'
 import type { CommandRunner } from '../../adapters/command.js'
 import type { LoopConfig, ModelReference } from '../config.js'
 import type { ModelRole } from '../../kernel/model-policy.js'
@@ -113,17 +114,13 @@ export interface ArtificialAnalysisModel {
 }
 
 export const parseArtificialAnalysisPayload = (payload: unknown): readonly ArtificialAnalysisModel[] => {
-  const root = payload && typeof payload === 'object' && !Array.isArray(payload) ? payload as Record<string, unknown> : {}
+  const root = isRecord(payload) ? payload : {}
   const data = Array.isArray(root['data']) ? root['data'] : Array.isArray(payload) ? payload : []
   return data.flatMap((item) => {
-    if (!item || typeof item !== 'object' || Array.isArray(item)) return []
-    const row = item as Record<string, unknown>
-    const creator = row['model_creator'] && typeof row['model_creator'] === 'object' && !Array.isArray(row['model_creator'])
-      ? row['model_creator'] as Record<string, unknown>
-      : {}
-    const evaluations = row['evaluations'] && typeof row['evaluations'] === 'object' && !Array.isArray(row['evaluations'])
-      ? row['evaluations'] as Record<string, unknown>
-      : {}
+    if (!isRecord(item)) return []
+    const row = item
+    const creator = isRecord(row['model_creator']) ? row['model_creator'] : {}
+    const evaluations = isRecord(row['evaluations']) ? row['evaluations'] : {}
     const slug = typeof row['slug'] === 'string' ? row['slug'] : typeof row['id'] === 'string' ? row['id'] : null
     if (!slug) return []
     return [{

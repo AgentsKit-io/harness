@@ -1,3 +1,4 @@
+import { isRecord } from '../record.js'
 import { existsSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { z } from 'zod'
@@ -24,7 +25,6 @@ export const CONTRACT_CLOSE = 'LOOP_CONTRACT>>>'
 
 const nonEmpty = z.string().trim().min(1)
 
-const isRecord = (value: unknown): value is Record<string, unknown> => typeof value === 'object' && value !== null && !Array.isArray(value)
 
 /**
  * JSON Schema mirror of `TaskContractSchema`, handed to a provider's `structuredOutputFlag` (e.g. Claude Code's

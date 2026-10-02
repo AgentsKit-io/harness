@@ -8,6 +8,7 @@ import { readLoopEvents, type LoopEvent } from '../../loop/retro.js'
 import { readDispatchRecord } from '../../loop/tick.js'
 import type { MetricsWindow, SearchHit, SearchResult, SearchType } from './contract.js'
 import { METRICS_WINDOWS } from './metrics.js'
+import { isRecord } from '../../record.js'
 
 /**
  * `GET /api/v1/search` read model: case-insensitive substring match over the events of the window, the frozen
@@ -99,7 +100,7 @@ const issueDocs = (stateDir: string, issue: string, sinceMs: number, config: Loo
     out.push(...cached(path, () => {
       let parsed: unknown
       try { parsed = JSON.parse(readFileSync(path, 'utf8')) } catch { return [] }
-      const body = typeof parsed === 'object' && parsed !== null && !Array.isArray(parsed) ? parsed as Record<string, unknown> : { value: parsed }
+      const body = isRecord(parsed) ? parsed : { value: parsed }
       const head = name.slice('review-'.length, -'.json'.length)
       return [doc({ type: 'review', issue, title: `Review ${head}`, at: new Date(statSync(path).mtimeMs).toISOString(), source: rel(path), body }, JSON.stringify(body))]
     }))

@@ -1,3 +1,4 @@
+import { isRecord } from '../record.js'
 import { fail } from '../kernel/errors.js'
 import type { CommandRunner } from './command.js'
 
@@ -38,7 +39,6 @@ export interface ChecksAssessment {
 
 export const PR_FIELDS = ['number', 'url', 'title', 'state', 'isDraft', 'author', 'headRefName', 'headRefOid', 'baseRefName', 'mergeable', 'mergeStateStatus', 'reviewDecision', 'labels', 'files', 'statusCheckRollup', 'updatedAt'] as const
 
-const isRecord = (value: unknown): value is Record<string, unknown> => typeof value === 'object' && value !== null && !Array.isArray(value)
 const str = (value: unknown, fallback = ''): string => typeof value === 'string' ? value : fallback
 
 const outcomeOf = (item: Record<string, unknown>): CheckOutcome => {

@@ -43,6 +43,7 @@ export const readDodEvidence = (worktreePath: string | null | undefined, config:
   if (!existsSync(path)) return empty
   try {
     const parsed = (readJsonFile(path, z.object({}).loose()) ?? {}) as Partial<DodEvidenceFile>
+    // Specialized: DoD proof entries also require an id and an accepted result status.
     const proofs = (value: unknown): readonly DodProof[] => Array.isArray(value)
       ? value.filter((entry): entry is DodProof => typeof entry === 'object' && entry !== null && typeof (entry as DodProof).id === 'string' && ((entry as DodProof).status === 'passed' || (entry as DodProof).status === 'failed'))
         .map((entry) => ({ id: entry.id, status: entry.status, evidence: typeof entry.evidence === 'string' ? entry.evidence : '', ...(typeof entry.at === 'string' ? { at: entry.at } : {}) }))

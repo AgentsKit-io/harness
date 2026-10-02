@@ -11,6 +11,7 @@ import { acquireStageLock, lastStageLockOwner, peekStageLock } from './loop/stag
 import { spawnDetachedWorker } from './loop/detached-worker.js'
 import { join } from 'node:path'
 import { startUiServer } from './ui/api/server.js'
+import { isRecord } from './record.js'
 
 interface CliOptions { readonly config: string; readonly json: boolean }
 const packageJson = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8')) as { readonly version: string }
@@ -23,7 +24,7 @@ const readBenchmarkEvidence = (path: string): { readonly evidence: readonly Benc
   try {
     const content = readFileSync(path, 'utf8')
     const raw = JSON.parse(content) as unknown
-    const evidence = Array.isArray(raw) ? raw : typeof raw === 'object' && raw !== null ? (raw as { readonly evidence?: unknown }).evidence : undefined
+    const evidence = Array.isArray(raw) ? raw : isRecord(raw) ? raw['evidence'] : undefined
     if (Array.isArray(evidence)) return { evidence: evidence as BenchmarkObservationEvidence[], digest: sha256(content) }
   } catch (error) {
     fail(`Invalid benchmark evidence JSON: ${error instanceof Error ? error.message : String(error)}`, 'INVALID_INPUT')

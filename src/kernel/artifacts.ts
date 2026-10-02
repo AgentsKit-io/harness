@@ -1,3 +1,4 @@
+import { isRecord } from '../record.js'
 import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { fail } from './errors.js'
@@ -66,7 +67,6 @@ const artifactId = (value: unknown): string => {
   if (!/^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$/.test(result)) fail('Artifact artifactId is invalid.', 'INVALID_INPUT')
   return result
 }
-const isRecord = (value: unknown): value is Record<string, unknown> => typeof value === 'object' && value !== null && !Array.isArray(value)
 
 const artifactBody = (artifact: Omit<ArtifactEnvelope, 'artifactHash'>): Record<string, unknown> => ({
   type: artifact.type,

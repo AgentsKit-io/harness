@@ -1,3 +1,4 @@
+import { isRecord } from '../record.js'
 import { existsSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { isMap, parseDocument, stringify as toYaml } from 'yaml'
@@ -7,7 +8,6 @@ import { LOOP_LOCAL_CONFIG_FILE, loadLoopConfig, type LoadedLoopConfig } from '.
 
 export interface TeamMember { readonly id: string; readonly displayName: string }
 
-const isRecord = (value: unknown): value is Record<string, unknown> => typeof value === 'object' && value !== null && !Array.isArray(value)
 
 export const parseTeamMembers = (result: unknown): readonly TeamMember[] => {
   const list = isRecord(result) ? (Array.isArray(result['members']) ? result['members'] : Array.isArray(result['users']) ? result['users'] : []) : Array.isArray(result) ? result : []

@@ -1,3 +1,4 @@
+import { isRecord } from '../record.js'
 import { fail } from '../kernel/errors.js'
 import { parseJsonEnvelope, type CommandRunner } from './command.js'
 
@@ -58,7 +59,6 @@ export interface OrcaLinkedPullRequest { readonly number: number; readonly state
 
 export type OrcaAgentHookState = 'installed' | 'not_installed' | 'unknown'
 
-const isRecord = (value: unknown): value is Record<string, unknown> => typeof value === 'object' && value !== null && !Array.isArray(value)
 const str = (value: unknown, fallback = ''): string => typeof value === 'string' ? value : fallback
 const num = (value: unknown): number | null => typeof value === 'number' && Number.isFinite(value) ? value : null
 

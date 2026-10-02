@@ -1,3 +1,4 @@
+import { isRecord } from '../record.js'
 import { randomUUID } from 'node:crypto'
 import { existsSync, readFileSync, unlinkSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
@@ -88,7 +89,6 @@ export interface CodeReviewInput {
   readonly env?: NodeJS.ProcessEnv
 }
 
-const isRecord = (value: unknown): value is Record<string, unknown> => typeof value === 'object' && value !== null && !Array.isArray(value)
 const str = (value: unknown, fallback = ''): string => typeof value === 'string' ? value : fallback
 
 export const severityRank = (severity: string): number => Math.max(0, (REVIEW_SEVERITIES as readonly string[]).indexOf(severity))

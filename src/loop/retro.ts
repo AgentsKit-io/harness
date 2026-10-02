@@ -1,3 +1,4 @@
+import { isRecord } from '../record.js'
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs'
 import { join } from 'node:path'
 import type { CommandRunner } from '../adapters/command.js'
@@ -72,7 +73,6 @@ export interface RetroReport {
   readonly digest: string
 }
 
-const isRecord = (value: unknown): value is Record<string, unknown> => typeof value === 'object' && value !== null && !Array.isArray(value)
 
 const parseEventsFile = (path: string): LoopEvent[] => {
   if (!existsSync(path)) return []

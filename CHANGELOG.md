@@ -2,6 +2,7 @@
 
 ## [Unreleased]
 
+- **Shared record guard.** Harness internals now reuse one non-null, non-array object check while preserving caller-specific errors and fallbacks.
 - **Cryptographic run IDs.** Verification runs retain their timestamp and PID prefix while using a cryptographic random suffix.
 - **Bounded model catalog refresh.** Artificial Analysis refreshes use `@agentskit/net` deadlines and a 2 MiB JSON body cap; a failed refresh keeps the existing catalog cache.
 - **Canonical shared hashes.** New artifacts, event-chain entries, manifests, verification digests and cache keys use `@agentskit/core/hash`; readers still accept existing persisted hashes, and stable IDs keep their legacy format.
