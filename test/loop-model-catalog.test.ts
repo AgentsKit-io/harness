@@ -1,6 +1,8 @@
 import { mkdtempSync, rmSync, writeFileSync } from 'node:fs'
+import { createServer } from 'node:http'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
+import { AgentsKitError } from '@agentskit/core'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { LoopConfigSchema } from '../src/loop/config.js'
 import {
@@ -93,23 +95,79 @@ describe('model catalog: Artificial Analysis cache', () => {
 })
 
 describe('model catalog: fetchArtificialAnalysisModels', () => {
-  it('parses a successful response', async () => {
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, json: async () => ({ data: [{ slug: 'm1', model_creator: {}, evaluations: {} }] }) }))
-    const models = await fetchArtificialAnalysisModels({ endpoint: 'https://example.test/models', apiKey: 'k' })
-    expect(models).toHaveLength(1)
-    expect(fetch).toHaveBeenCalledWith('https://example.test/models', expect.objectContaining({ headers: { 'x-api-key': 'k', accept: 'application/json' } }))
-  })
+  it('bounds real HTTP bodies, times out stalled bodies, cancels sockets, and recovers with cached models', async () => {
+    const requestPaths: string[] = []
+    const closedPaths = new Set<string>()
+    const server = createServer((request, response) => {
+      const path = request.url ?? '/'
+      requestPaths.push(path)
+      request.socket.once('close', () => closedPaths.add(path))
+      if (path === '/success') {
+        response.end(JSON.stringify({ data: [{ slug: 'm1', model_creator: {}, evaluations: {} }] }))
+      } else if (path === '/failure') {
+        response.writeHead(503).end('unavailable')
+      } else if (path === '/malformed') {
+        response.end('{')
+      } else if (path === '/large') {
+        response.writeHead(200, { 'content-type': 'application/json' })
+        let sent = 0
+        const writeChunk = (): void => {
+          while (sent < 2 * 1024 * 1024 + 1) {
+            const size = Math.min(64 * 1024, 2 * 1024 * 1024 + 1 - sent)
+            sent += size
+            if (!response.write(Buffer.alloc(size, 97))) {
+              response.once('drain', writeChunk)
+              return
+            }
+          }
+        }
+        writeChunk()
+      } else if (path === '/stall') {
+        response.writeHead(200, { 'content-type': 'application/json' }).flushHeaders()
+      } else {
+        response.writeHead(404).end()
+      }
+    })
+    await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve))
+    const address = server.address()
+    expect(address).not.toBeNull()
+    if (!address || typeof address === 'string') return
+    const endpoint = `http://127.0.0.1:${address.port}`
+    const stateDir = tempStateDir()
+    try {
+      expect(await fetchArtificialAnalysisModels({ endpoint: `${endpoint}/success`, apiKey: 'fake-api-key' })).toEqual([
+        { slug: 'm1', name: 'm1', creatorSlug: 'unknown', codingIndex: null, intelligenceIndex: null },
+      ])
+      await expect(fetchArtificialAnalysisModels({ endpoint: `${endpoint}/failure`, apiKey: 'fake-api-key' }))
+        .rejects.toMatchObject({ message: 'Artificial Analysis HTTP 503' })
+      await expect(fetchArtificialAnalysisModels({ endpoint: `${endpoint}/failure`, apiKey: 'fake-api-key' }))
+        .rejects.toBeInstanceOf(AgentsKitError)
+      await expect(fetchArtificialAnalysisModels({ endpoint: `${endpoint}/malformed`, apiKey: 'fake-api-key' })).rejects.toBeInstanceOf(SyntaxError)
 
-  it('throws when the HTTP response is not ok', async () => {
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: false, status: 503, json: async () => ({}) }))
-    await expect(fetchArtificialAnalysisModels({ endpoint: 'https://example.test/models', apiKey: 'k' })).rejects.toThrow('Artificial Analysis HTTP 503')
-  })
+      await expect(fetchArtificialAnalysisModels({ endpoint: `${endpoint}/large`, apiKey: 'fake-api-key' }))
+        .rejects.toMatchObject({ code: 'AK_NET_BODY_TOO_LARGE' })
+      await vi.waitFor(() => expect(closedPaths.has('/large')).toBe(true), { timeout: 2_000 })
 
-  it('aborts the request once timeoutMs elapses', async () => {
-    vi.stubGlobal('fetch', vi.fn((_url: string, init: { signal: AbortSignal }) => new Promise((_resolve, reject) => {
-      init.signal.addEventListener('abort', () => reject(new Error('aborted')))
-    })))
-    await expect(fetchArtificialAnalysisModels({ endpoint: 'https://example.test/models', apiKey: 'k', timeoutMs: 5 })).rejects.toThrow('aborted')
+      await expect(fetchArtificialAnalysisModels({ endpoint: `${endpoint}/stall`, apiKey: 'fake-api-key', timeoutMs: 100 }))
+        .rejects.toMatchObject({ code: 'AK_NET_TIMEOUT' })
+      await vi.waitFor(() => expect(closedPaths.has('/stall')).toBe(true), { timeout: 2_000 })
+
+      expect(await fetchArtificialAnalysisModels({ endpoint: `${endpoint}/success`, apiKey: 'fake-api-key' })).toHaveLength(1)
+      writeAaCache(stateDir, [{ slug: 'cached-model', name: 'Cached', creatorSlug: 'xai', codingIndex: 85, intelligenceIndex: null }])
+      const config = base({
+        mode: 'catalog',
+        catalog: { sources: ['artificial-analysis'], artificialAnalysis: { enabled: true, apiKeyEnv: 'AA_TEST_KEY', cacheHours: 1, endpoint: `${endpoint}/failure` } },
+      })
+      const refs = await resolveCatalogCandidates({
+        config, role: 'builder', availableProviderIds: ['grok'], stateDir, env: { AA_TEST_KEY: 'fake-api-key' }, now: () => new Date(Date.now() + 3_600_001),
+      })
+      expect(refs.some((ref) => ref.model === 'cached-model')).toBe(true)
+      expect(readAaCache(stateDir)?.models[0]?.slug).toBe('cached-model')
+      expect(requestPaths).toEqual(['/success', '/failure', '/failure', '/malformed', '/large', '/stall', '/success', '/failure'])
+    } finally {
+      server.closeAllConnections()
+      await new Promise<void>((resolve) => server.close(() => resolve()))
+    }
   })
 })
 
@@ -128,16 +186,15 @@ describe('model catalog: resolveCatalogCandidates quality/creator filtering', ()
   })
 
   it('merges Artificial Analysis candidates into the catalog when the source is enabled and the API key is present', async () => {
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
-      ok: true,
-      json: async () => ({ data: [{ slug: 'grok-9-experimental', model_creator: { slug: 'xai' }, evaluations: { artificial_analysis_coding_index: 92 } }] }),
-    }))
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(JSON.stringify({
+      data: [{ slug: 'grok-9-experimental', model_creator: { slug: 'xai' }, evaluations: { artificial_analysis_coding_index: 92 } }],
+    }))))
     const stateDir = tempStateDir()
     const config = base({
       mode: 'catalog',
       catalog: { sources: ['artificial-analysis'], artificialAnalysis: { enabled: true, apiKeyEnv: 'AA_TEST_KEY', cacheHours: 24, endpoint: 'https://example.test/models' } },
     })
-    const refs = await resolveCatalogCandidates({ config, role: 'builder', availableProviderIds: ['grok'], stateDir, env: { AA_TEST_KEY: 'secret' } })
+    const refs = await resolveCatalogCandidates({ config, role: 'builder', availableProviderIds: ['grok'], stateDir, env: { AA_TEST_KEY: 'fake-api-key' } })
     expect(refs.some((ref) => ref.model === 'grok-9-experimental')).toBe(true)
     expect(readAaCache(stateDir)?.models.some((model) => model.slug === 'grok-9-experimental')).toBe(true)
   })

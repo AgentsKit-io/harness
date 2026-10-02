@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
-  "contentHash": "c0f5538005eee3c3928649f0dd67680813906ae24c049f2b8c39564cc00de891",
+  "contentHash": "eb17d24648ea5185dff73f08ecbcc07a0a85a223148d26abc7e2cf6ab0231677",
   "contentHashAlgo": "sha256-normalized-v1",
-  "generatedAt": "2026-10-02T02:11:41.575Z",
+  "generatedAt": "2026-10-02T16:14:28.975Z",
   "project": {
     "name": "AgentsKit Harness",
     "root": "."
@@ -298,12 +298,12 @@
       "type": "document",
       "title": "Changelog",
       "path": "CHANGELOG.md",
-      "description": "Canonical shared hashes. New artifacts, event-chain entries, manifests, verification digests and cache keys use @agentskit/core/hash; readers still accept existing persisted hashes, and stable IDs keep their legacy format.",
+      "description": "Bounded model catalog refresh. Artificial Analysis refreshes use @agentskit/net deadlines and a 2 MiB JSON body cap; a failed refresh keeps the existing catalog cache.",
       "tags": [
         "document",
         "project"
       ],
-      "contentHash": "e15c82846f19a105e50041745e69e6a69fb28fb0371ea0508b7de35f8e95165b"
+      "contentHash": "596e83d0532b4ccfd376592bfc331539cf57a670de773ccaebb6c6aff4641fda"
     },
     {
       "id": "document:CLAUDE.md",
@@ -4727,7 +4727,7 @@
         "ts",
         "model-catalog"
       ],
-      "contentHash": "0b8963bee76eb1bbb4f53c2f5c079dc08235489a0716b014cc59359a7e91f3d0"
+      "contentHash": "9ffb3528a8082161c7222c644779ea81de21ffa28f8413d4e38ad677438df482"
     },
     {
       "id": "module:src/loop/notify.ts",
@@ -8116,7 +8116,7 @@
         "ts",
         "test"
       ],
-      "contentHash": "c2d285c840c30b5d3a92a3acb5ab2f02351bda01fc2fb997c57b0fa58bdfb393"
+      "contentHash": "010067f5600fde28b988295ae9a488c630091987fd99166f30f68f424cef2db1"
     },
     {
       "id": "module:test/loop-notify.test.ts",
@@ -8996,7 +8996,7 @@
     }
   },
   "inputs": {
-    "hash": "91ebbfa2ed84969380012be82a3189aa7ae6908bb657e55a25fa58d6e50463c3",
+    "hash": "3594081a2d97c2bebe65616dead8928e52e00273066d461facd0d384f458caa1",
     "fileCount": 544,
     "projectionVersion": 2
   },
@@ -9019,9 +9019,9 @@
   "projection": {
     "type": "retrieval-index",
     "schemaVersion": 1,
-    "contentHash": "9ae1ff562c6cd35af71ef6bc3511f8f3c8fd19bca638f339cec60a25a8b4c28e",
+    "contentHash": "39ca00b790089f8f845ec243a00764d932d0926308a03abbb25aa9d6894c8df9",
     "contentHashAlgo": "sha256-normalized-v1",
-    "snapshotHash": "44d5eabb1199d1ab39287ff508ec37b231a11df959d20b821c4f09319906e1d0",
+    "snapshotHash": "08c3d4b62633909aec53e38fcda4ec9dcda39991b1f646c644b6a41c2ea22900",
     "overlayHash": "f99666ff9119084dd25c2974ae64eb6935ec2aa785ff5ad478fb9d541f7a5e94",
     "configurationHash": "816afaf6a7dc09767f7594d8fd80024612ca0f33becf0e44dde0107fcf2782df",
     "lexiconVersion": 1,
@@ -9053,10 +9053,10 @@
       ],
       "averageFieldLength": {
         "aliases": 2.9240506329113924,
-        "body": 44.160940325497286,
+        "body": 44.162748643761304,
         "headings": 3.8589511754068715,
         "path": 6.113924050632911,
-        "summary": 2.6509945750452077,
+        "summary": 2.636528028933092,
         "symbols": 14.244122965641953,
         "title": 3.9511754068716094
       }
@@ -11366,7 +11366,7 @@
         "kind": "document",
         "path": "CHANGELOG.md",
         "title": "Changelog",
-        "summary": "Canonical shared hashes. New artifacts, event-chain entries, manifests, verification digests and cache keys use @agentskit/core/hash; readers still accept existing persisted hashes, and stable IDs keep their legacy format.",
+        "summary": "Bounded model catalog refresh. Artificial Analysis refreshes use @agentskit/net deadlines and a 2 MiB JSON body cap; a failed refresh keeps the existing catalog cache.",
         "audience": "human",
         "aliases": [],
         "tags": [
@@ -11378,8 +11378,8 @@
           "headings": "Changelog [Unreleased] [0.22.3] — 2026-09-27 [0.22.2] — 2026-09-27 [0.22.1] — 2026-09-27 [0.22.0] — 2026-09-27 [0.21.0] — 2026-09-26 [0.20.0] — 2026-09-25 [0.19.0] — 2026-09-23 [0.18.0] - 2026-09-22 Release Hygiene Boundaries Token and time economy Breaking Gates [0.17.0] - 2026-09-22 Worker guard Release can no longer publish past a red gate [0.16.0] - 2026-09-22 Verification and token waste Observability: every deterministic phase, timestamped and attributed Event bus, unified House conventions [0.15.0] - 2026-09-20 The phases of an issue leave evidence behind layers: and documents: — where the work belongs, and where the decisions live Per-role settings, and which phases run at all The four cost levers, finished release.waiting, once per head The event vocabulary, and the compiler that guards it The installed agent is code, not a markdown file to append to Documentation Windows stops being a second-class platform The licence, and a surface for the numbers The harness has a folder of its own The documentation site The twelve steps of the roadmap, in the order they landed loop install reconciles instead of rewriting loop stage observe — the health scan comes into the repository Configuration in four layers, and the loop learns to call a human The roles become installed agents, and the retro can improve them Presets and a grilled loop init intake, maintain, and release notes — the cycle closes Cost: a routing policy, two ceilings, and two of the four levers Connectors: the engine stops naming vendors release — promotion and deploy, with a human in front loop plan — a vague objective becomes issues A plan, voted on, before any worker starts The Definition of Done becomes two lists, both proven on the PR The retro starts improving the loop, within declared limits [0.14.0] - 2026-09-19 The queue stops being \"my issues\" Review strictness that matches the risk Telling the worker the truth about the base branch Memory: recurrence instead of guesswork One human approval covers the goal's own effects Fixes that had never shipped [0.13.0] - 2026-09-14 [0.12.0] - 2026-09-13 [0.11.0] - 2026-09-13 [0.10.0] - 2026-09-12 [0.9.0] - 2026-09-12 [0.8.0] - 2026-09-12",
           "path": "CHANGELOG.md",
           "symbols": "",
-          "summary": "Canonical shared hashes. New artifacts, event-chain entries, manifests, verification digests and cache keys use @agentskit/core/hash; readers still accept existing persisted hashes, and stable IDs keep their legacy format.",
-          "body": "Changelog [Unreleased] - Canonical shared hashes. New artifacts, event-chain entries, manifests, verification digests and cache keys use @agentskit/core/hash ; readers still accept existing persisted hashes, and stable IDs keep their legacy format. - Portability via @agentskit/cross-platform . Process spawning ( .cmd shim resolution), process-tree kill and path/line helpers now come from the shared package instead of hand-rolled copies; cross-spawn is no longer a direct dependency. pnpm typecheck runs agentskit-cross-platform check against .cross-platform-baseline.json , so a new Windows-hostile pattern fails CI. [0.22.3] — 2026-09-27 - Lost-track restart. A run whose worker terminal is gone, or that stays idle after a check-in, before any PR is aborted and re-dispatched from scratch (bounded, worker.lost-tracking / worker.restarted ) ( 147). It never destroys work: it needs the evidence on two consecutive passes, escalates stuck and keeps the worktree when there are unpushed commits or uncommitted edits (the check fails closed), removes a clean worktree without --force , captures the worker screen into the run first, waits while the tracker is cooling down, and does nothing destructive until its tracker writes succeed. A human Retry resets the restart budget ( 151). - A worker that declares itself blocked ( BLOCKED: worktree comment) is escalated to a person — also when it exited afterwards — instead of being nudged, handed off or restarted ( 150, 151). - Never type into a bare shell. A nudge into a terminal that is only a shell prompt relaunches the agent (the old terminal is closed first; an idle agent from a CLI that does not register with Orca is never mistaken for a shell); no-PR worker events keep the issue running in the UI ( 144, 151). - Close-or-reopen decisions on an abandoned delivery stick and release the issue's lease ( 145, 151). - UI. Worker slots are counted the way the tick counts them ( 148); the projection rebuilds itself when the reducer changes ( 149). [0.22.2] — 2026-09-27 - Review floor decides. A reviewer that exits 1 (or reports blocking ) on findings all below delivery.review.minSeverity is clean, not \"findings\" with nothing to fix — delivery no longer waits forever for a push nobody needs. A reviewer claiming blocking with no finding at all is incomplete , never a merge ( 133). - Answered contract questions regenerate the contract instead of returning the same blocked one ( 138). - An open contract question is not re-asked every tick. Contract regeneration is skipped while a contract-stage question is open (no more repeated escalations and orchestrator calls); an explicit-queue run is left needs-input , never stuck in dispatching ; superseded contract questions are marked stale ( 131). - Retry resumes a blocked delivery on its open PR (fix-round cap, stuck, failed), resetting its error budget and tracker state; a cancelled run still gets a fresh attempt. Holds that need a person are not bypassed ( 142). - doctor accepts automations pinned by the UI; GitHub preflight reports missing lifecycle labels as a warning instead of failing the queue read ( 143). [0.22.1] — 2026-09-27 Failures that were invisible, made visible or closed. Every fix ships with a regression test that fails on 0.22.0. - The UI no longer keeps the tracker rate-limited. A failing board was re-read every second and every closed issue off the board was re-fetched every 10 minutes forever (~6 tracker calls/hour per historical issue, with or without viewers). Failures now back off, a rate limit pauses lookups, closed issues are never re-asked, and the snapshot pipeline idles when nobody is watching ( 139, 140). - Tracker cooldown. A Linear/GitHub rate limit records tracker.cooldown (15 min doubling, 2 h cap): tick returns blocked without counting toward the stage auto-pause, deliver skips tracker writes but keeps reviewing and merging, and the review state is set once per PR instead of every pass ( 140). - Gates fail closed. ak-verify r",
+          "summary": "Bounded model catalog refresh. Artificial Analysis refreshes use @agentskit/net deadlines and a 2 MiB JSON body cap; a failed refresh keeps the existing catalog cache.",
+          "body": "Changelog [Unreleased] - Bounded model catalog refresh. Artificial Analysis refreshes use @agentskit/net deadlines and a 2 MiB JSON body cap; a failed refresh keeps the existing catalog cache. - Canonical shared hashes. New artifacts, event-chain entries, manifests, verification digests and cache keys use @agentskit/core/hash ; readers still accept existing persisted hashes, and stable IDs keep their legacy format. - Portability via @agentskit/cross-platform . Process spawning ( .cmd shim resolution), process-tree kill and path/line helpers now come from the shared package instead of hand-rolled copies; cross-spawn is no longer a direct dependency. pnpm typecheck runs agentskit-cross-platform check against .cross-platform-baseline.json , so a new Windows-hostile pattern fails CI. [0.22.3] — 2026-09-27 - Lost-track restart. A run whose worker terminal is gone, or that stays idle after a check-in, before any PR is aborted and re-dispatched from scratch (bounded, worker.lost-tracking / worker.restarted ) ( 147). It never destroys work: it needs the evidence on two consecutive passes, escalates stuck and keeps the worktree when there are unpushed commits or uncommitted edits (the check fails closed), removes a clean worktree without --force , captures the worker screen into the run first, waits while the tracker is cooling down, and does nothing destructive until its tracker writes succeed. A human Retry resets the restart budget ( 151). - A worker that declares itself blocked ( BLOCKED: worktree comment) is escalated to a person — also when it exited afterwards — instead of being nudged, handed off or restarted ( 150, 151). - Never type into a bare shell. A nudge into a terminal that is only a shell prompt relaunches the agent (the old terminal is closed first; an idle agent from a CLI that does not register with Orca is never mistaken for a shell); no-PR worker events keep the issue running in the UI ( 144, 151). - Close-or-reopen decisions on an abandoned delivery stick and release the issue's lease ( 145, 151). - UI. Worker slots are counted the way the tick counts them ( 148); the projection rebuilds itself when the reducer changes ( 149). [0.22.2] — 2026-09-27 - Review floor decides. A reviewer that exits 1 (or reports blocking ) on findings all below delivery.review.minSeverity is clean, not \"findings\" with nothing to fix — delivery no longer waits forever for a push nobody needs. A reviewer claiming blocking with no finding at all is incomplete , never a merge ( 133). - Answered contract questions regenerate the contract instead of returning the same blocked one ( 138). - An open contract question is not re-asked every tick. Contract regeneration is skipped while a contract-stage question is open (no more repeated escalations and orchestrator calls); an explicit-queue run is left needs-input , never stuck in dispatching ; superseded contract questions are marked stale ( 131). - Retry resumes a blocked delivery on its open PR (fix-round cap, stuck, failed), resetting its error budget and tracker state; a cancelled run still gets a fresh attempt. Holds that need a person are not bypassed ( 142). - doctor accepts automations pinned by the UI; GitHub preflight reports missing lifecycle labels as a warning instead of failing the queue read ( 143). [0.22.1] — 2026-09-27 Failures that were invisible, made visible or closed. Every fix ships with a regression test that fails on 0.22.0. - The UI no longer keeps the tracker rate-limited. A failing board was re-read every second and every closed issue off the board was re-fetched every 10 minutes forever (~6 tracker calls/hour per historical issue, with or without viewers). Failures now back off, a rate limit pauses lookups, closed issues are never re-asked, and the snapshot pipeline idles when nobody is watching ( 139, 140). - Tracker cooldown. A Linear/GitHub rate limit records tracker.cooldown (15 min doubling, 2 h cap): tick returns blocked without counting toward the stage auto-p",
           "aliases": "document project"
         },
         "graph": {
@@ -11655,7 +11655,7 @@
             }
           ]
         },
-        "contentHash": "e15c82846f19a105e50041745e69e6a69fb28fb0371ea0508b7de35f8e95165b",
+        "contentHash": "596e83d0532b4ccfd376592bfc331539cf57a670de773ccaebb6c6aff4641fda",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -29869,7 +29869,7 @@
             }
           ]
         },
-        "contentHash": "0b8963bee76eb1bbb4f53c2f5c079dc08235489a0716b014cc59359a7e91f3d0",
+        "contentHash": "9ffb3528a8082161c7222c644779ea81de21ffa28f8413d4e38ad677438df482",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -42827,7 +42827,7 @@
             }
           ]
         },
-        "contentHash": "c2d285c840c30b5d3a92a3acb5ab2f02351bda01fc2fb997c57b0fa58bdfb393",
+        "contentHash": "010067f5600fde28b988295ae9a488c630091987fd99166f30f68f424cef2db1",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -45999,7 +45999,7 @@
           ],
           "outbound": []
         },
-        "contentHash": "2d648b0456b00cffb89f36dab0b89632e663567ee0a7d4716a24cf2624de6042",
+        "contentHash": "569d2465ad47c1809ba629215b717e5075887664e5e143449d4138cb985bb5dd",
         "provenance": "observed",
         "confidence": "observed"
       },
