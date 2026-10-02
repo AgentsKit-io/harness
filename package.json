@@ -100,7 +100,9 @@
     "docs:bridge:config:check": "node scripts/generate-doc-bridge-config.mjs --check",
     "docs:bridge:index": "ak-docs index",
     "docs:bridge:gate": "ak-docs gate run",
-    "docs:bridge:conformance": "ak-docs conformance run documentation-standard-v1 --text"
+    "docs:bridge:conformance": "ak-docs conformance run documentation-standard-v1 --text",
+    "cf:headers": "node scripts/cloudflare-headers.mjs",
+    "cf:deploy": "pnpm docs:build && pnpm cf:headers && npx -y wrangler@4 deploy"
   },
   "dependencies": {
     "@agentskit/core": "^1.13.0",

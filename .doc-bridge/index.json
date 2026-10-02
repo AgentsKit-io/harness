@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
-  "contentHash": "ec4ad63eefcb90be6fce74825c398373832d38e2a0f6705d2e10e23b134d6860",
+  "contentHash": "c0f5538005eee3c3928649f0dd67680813906ae24c049f2b8c39564cc00de891",
   "contentHashAlgo": "sha256-normalized-v1",
-  "generatedAt": "2026-09-29T22:15:46.007Z",
+  "generatedAt": "2026-10-02T02:11:41.575Z",
   "project": {
     "name": "AgentsKit Harness",
     "root": "."
@@ -1434,6 +1434,18 @@
         "scripts"
       ],
       "contentHash": "847697d098d5eb4ce0f63b76feb4d41eaa7d309751cc47db52df8c1a22bb0917"
+    },
+    {
+      "id": "module:scripts/cloudflare-headers.mjs",
+      "type": "module",
+      "title": "cloudflare-headers.mjs",
+      "path": "scripts/cloudflare-headers.mjs",
+      "tags": [
+        "module",
+        "mjs",
+        "scripts"
+      ],
+      "contentHash": "3d0bf277343d0d7cc2a4bc17c7eab398a4135e2f35d980af81ce4a4af8d97a9d"
     },
     {
       "id": "module:scripts/docs-artifacts-contract.test.mjs",
@@ -8984,8 +8996,8 @@
     }
   },
   "inputs": {
-    "hash": "e1d9599e3ad9b6af5537f8c802d9d22738d973f6e8ff080c17f15b5e30399cc5",
-    "fileCount": 543,
+    "hash": "91ebbfa2ed84969380012be82a3189aa7ae6908bb657e55a25fa58d6e50463c3",
+    "fileCount": 544,
     "projectionVersion": 2
   },
   "retrieval": {
@@ -9007,9 +9019,9 @@
   "projection": {
     "type": "retrieval-index",
     "schemaVersion": 1,
-    "contentHash": "a03f1c689eebdfcdd1acd3f7b32582661c76e54d255dd2bc8285b38e59df2e39",
+    "contentHash": "9ae1ff562c6cd35af71ef6bc3511f8f3c8fd19bca638f339cec60a25a8b4c28e",
     "contentHashAlgo": "sha256-normalized-v1",
-    "snapshotHash": "1f88590a3fc8981c4ee46e276afba5cb96f4af2af905b1475adf3ad1727d0fc3",
+    "snapshotHash": "44d5eabb1199d1ab39287ff508ec37b231a11df959d20b821c4f09319906e1d0",
     "overlayHash": "f99666ff9119084dd25c2974ae64eb6935ec2aa785ff5ad478fb9d541f7a5e94",
     "configurationHash": "816afaf6a7dc09767f7594d8fd80024612ca0f33becf0e44dde0107fcf2782df",
     "lexiconVersion": 1,
@@ -9029,7 +9041,7 @@
     },
     "lexical": {
       "version": 1,
-      "documentCount": 552,
+      "documentCount": 553,
       "fieldNames": [
         "aliases",
         "body",
@@ -9040,13 +9052,13 @@
         "title"
       ],
       "averageFieldLength": {
-        "aliases": 2.9239130434782608,
-        "body": 44.24094202898551,
-        "headings": 3.8659420289855073,
-        "path": 6.115942028985507,
-        "summary": 2.6557971014492754,
-        "symbols": 14.269927536231885,
-        "title": 3.9510869565217392
+        "aliases": 2.9240506329113924,
+        "body": 44.160940325497286,
+        "headings": 3.8589511754068715,
+        "path": 6.113924050632911,
+        "summary": 2.6509945750452077,
+        "symbols": 14.244122965641953,
+        "title": 3.9511754068716094
       }
     },
     "entries": [
@@ -9359,7 +9371,7 @@
           ],
           "outbound": []
         },
-        "contentHash": "de4ebfb9169974715397914e22d6fb1099d9020a6a4cbcf236232032d1f4bf29",
+        "contentHash": "848d39da223933c926b6535de073ec72a32ab5cf4f4ef787222397eb9fc46f97",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -16136,6 +16148,40 @@
           ]
         },
         "contentHash": "847697d098d5eb4ce0f63b76feb4d41eaa7d309751cc47db52df8c1a22bb0917",
+        "provenance": "observed",
+        "confidence": "observed"
+      },
+      {
+        "id": "module:scripts/cloudflare-headers.mjs",
+        "kind": "module",
+        "path": "scripts/cloudflare-headers.mjs",
+        "title": "cloudflare-headers.mjs",
+        "aliases": [],
+        "tags": [
+          "module",
+          "mjs",
+          "scripts"
+        ],
+        "fields": {
+          "title": "cloudflare-headers.mjs",
+          "headings": "",
+          "path": "scripts/cloudflare-headers.mjs",
+          "symbols": "",
+          "summary": "",
+          "body": "",
+          "aliases": "module mjs scripts"
+        },
+        "graph": {
+          "pagerank": 0,
+          "inboundLinks": 0,
+          "coveredBy": [],
+          "mentionedBy": [],
+          "areaId": "area:scripts",
+          "packageId": "package:@agentskit/harness",
+          "inbound": [],
+          "outbound": []
+        },
+        "contentHash": "3d0bf277343d0d7cc2a4bc17c7eab398a4135e2f35d980af81ce4a4af8d97a9d",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -45953,7 +45999,7 @@
           ],
           "outbound": []
         },
-        "contentHash": "5d14a071ab1f64c3b64ad44932748c00c313b51bbc11c390af9baae123785912",
+        "contentHash": "2d648b0456b00cffb89f36dab0b89632e663567ee0a7d4716a24cf2624de6042",
         "provenance": "observed",
         "confidence": "observed"
       },
