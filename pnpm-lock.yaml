@@ -14,6 +14,9 @@ importers:
       '@agentskit/cross-platform':
         specifier: ^0.1.0
         version: 0.1.0
+      '@agentskit/net':
+        specifier: ^0.2.0
+        version: 0.2.0
       commander:
         specifier: ^14.0.3
         version: 14.0.3
@@ -185,6 +188,10 @@ packages:
     resolution: {integrity: sha512-nzdx+mAJZUtAodk+ZArjxbIyHSJTnbCud+uet6nupr0mjLZEWKWfVWwEFYCuzObxHLL0IqPCJmsuEK8TBJBsWQ==}
     engines: {node: '>=22'}
     hasBin: true
+
+  '@agentskit/net@0.2.0':
+    resolution: {integrity: sha512-GKagBMg+fUY5QEKTy7wmXVqVjV1xn1J1iuEzDoaU6cJwzupZDHbXdZhFq8YXuuknofPwLyNounPfJ4YNy+4Eug==}
+    engines: {node: '>=20.19'}
 
   '@alcalzone/ansi-tokenize@0.3.0':
     resolution: {integrity: sha512-p+CMKJ93HFmLkjXKlXiVGlMQEuRb6H0MokBSwUsX+S6BRX8eV5naFZpQJFfJHjRZY0Hmnqy1/r6UWl3x+19zYA==}
@@ -2307,6 +2314,10 @@ packages:
     resolution: {integrity: sha512-mQw+2fkQbALzQ7V0MY0IqdnXNOeTtP4r0lN9z7AAawCXgqea7bDii20AYrIBrFd/Hx0M2Ocz6S111CaFkUcb0Q==}
     engines: {node: '>=0.8.x'}
 
+  eventsource-parser@4.1.1:
+    resolution: {integrity: sha512-zaWNqeSLeyzEAAt2Q6aDBRDRk/VnPmsKqvToyGvv6aahvLv71A4Jw7jG93Hckf11zXurbqgsffvpSgKPoeU1Qw==}
+    engines: {node: '>=22.12'}
+
   expect-type@1.4.0:
     resolution: {integrity: sha512-KfYbmpRm0VbLjEvVa9yGwCi9GI34xvi7A/HXYWQO65CSD2u3MczUJSuwXKFIxlGsgBQizV9q5J9NHj4VG0n+pA==}
     engines: {node: '>=12.0.0'}
@@ -2620,6 +2631,10 @@ packages:
   internmap@2.0.3:
     resolution: {integrity: sha512-5Hh7Y1wQbvY5ooGgPbDaL5iYLAPzMTUrjMulskHLH6wnv/A+1q5rgEaiuqEjB+oxGXIVZs1FF+R/KPN3ZSQYYg==}
     engines: {node: '>=12'}
+
+  ipaddr.js@2.5.0:
+    resolution: {integrity: sha512-aq+t5NAc+cS6rZQQVWC2x98CPqGtKKTMDd4Gaodv0wShnItdKg/51djkGJ1hqH+Oy0ivDftCbSLCQob8zso01w==}
+    engines: {node: '>= 10'}
 
   is-alphabetical@2.0.1:
     resolution: {integrity: sha512-FWyyY60MeTNyeSRpkM2Iry0G9hpr7/9kD40mD/cGQEuilcZYS4okz8SN2Q6rLCJ8gbCt6fN+rC+6tMGS99LaxQ==}
@@ -3872,6 +3887,12 @@ snapshots:
       - bufferutil
       - react-devtools-core
       - utf-8-validate
+
+  '@agentskit/net@0.2.0':
+    dependencies:
+      '@agentskit/core': 1.13.0
+      eventsource-parser: 4.1.1
+      ipaddr.js: 2.5.0
 
   '@alcalzone/ansi-tokenize@0.3.0':
     dependencies:
@@ -5792,6 +5813,8 @@ snapshots:
 
   events@3.3.0: {}
 
+  eventsource-parser@4.1.1: {}
+
   expect-type@1.4.0: {}
 
   extend@3.0.2: {}
@@ -6166,6 +6189,8 @@ snapshots:
   internmap@1.0.1: {}
 
   internmap@2.0.3: {}
+
+  ipaddr.js@2.5.0: {}
 
   is-alphabetical@2.0.1: {}
 

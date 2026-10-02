@@ -2,6 +2,7 @@
 
 ## [Unreleased]
 
+- **Bounded model catalog refresh.** Artificial Analysis refreshes use `@agentskit/net` deadlines and a 2 MiB JSON body cap; a failed refresh keeps the existing catalog cache.
 - **Canonical shared hashes.** New artifacts, event-chain entries, manifests, verification digests and cache keys use `@agentskit/core/hash`; readers still accept existing persisted hashes, and stable IDs keep their legacy format.
 - **Portability via `@agentskit/cross-platform`.** Process spawning (`.cmd` shim resolution), process-tree kill and
   path/line helpers now come from the shared package instead of hand-rolled copies; `cross-spawn` is no longer a

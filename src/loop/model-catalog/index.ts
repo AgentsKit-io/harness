@@ -1,5 +1,7 @@
 import { existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
+import { AgentsKitError } from '@agentskit/core'
+import { readJson as readResponseJson, withTimeout } from '@agentskit/net'
 import type { CommandRunner } from '../../adapters/command.js'
 import type { LoopConfig, ModelReference } from '../config.js'
 import type { ModelRole } from '../../kernel/model-policy.js'
@@ -151,23 +153,23 @@ export const writeAaCache = (stateDir: string, models: readonly ArtificialAnalys
   renameSync(tmp, path)
 }
 
+/**
+ * Fetch and parse Artificial Analysis models within one deadline. Response JSON is capped at 2 MiB;
+ * timeout failures retain the upstream `AK_NET_TIMEOUT` code.
+ */
 export const fetchArtificialAnalysisModels = async (input: {
   readonly endpoint: string
   readonly apiKey: string
   readonly timeoutMs?: number
 }): Promise<readonly ArtificialAnalysisModel[]> => {
-  const controller = new AbortController()
-  const timer = setTimeout(() => controller.abort(), input.timeoutMs ?? 20_000)
-  try {
+  return withTimeout(async (signal) => {
     const response = await fetch(input.endpoint, {
       headers: { 'x-api-key': input.apiKey, accept: 'application/json' },
-      signal: controller.signal,
+      signal,
     })
-    if (!response.ok) throw new Error(`Artificial Analysis HTTP ${response.status}`)
-    return parseArtificialAnalysisPayload(await response.json())
-  } finally {
-    clearTimeout(timer)
-  }
+    if (!response.ok) throw new AgentsKitError({ code: 'AK_AA_HTTP_ERROR', message: `Artificial Analysis HTTP ${response.status}` })
+    return parseArtificialAnalysisPayload(await readResponseJson(response, { maxBytes: 2 * 1024 * 1024 }))
+  }, input.timeoutMs ?? 20_000)
 }
 
 const creatorForProvider: Readonly<Record<string, string>> = {
