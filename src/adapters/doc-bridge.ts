@@ -4,6 +4,7 @@ import { fail } from '../kernel/errors.js'
 import { hashJson } from '../kernel/hash.js'
 import { hashContextSnapshot } from '../context/index.js'
 import { isRecord } from '../record.js'
+import { estimateContextTokens } from '../kernel/tokens.js'
 import type { AdapterTelemetry } from '../kernel/adapter-contract.js'
 import type { ContextProvider, ContextQuery, ContextReference } from '../context/index.js'
 
@@ -108,7 +109,7 @@ export const createDocBridgeContextProvider = ({ root, indexPath = '.doc-bridge/
       .slice(0, 8)
     const maxScore = entries[0]?.score ?? 1
     const references: ContextReference[] = entries.flatMap(({ entry, score: entryScore }) => typeof entry.id === 'string' && typeof entry.path === 'string' ? [{ id: entry.id, uri: `doc-bridge://${entry.path}`, ...(typeof entry.title === 'string' ? { title: entry.title } : {}), contentHash: typeof entry.contentHash === 'string' ? entry.contentHash : contentHash, relevance: entryScore / maxScore }] : [])
-    const telemetry: AdapterTelemetry = { status: 'measured', durationMs: Date.now() - started, contextReferences: references.length, contextCostTokens: Math.max(1, Math.ceil(JSON.stringify(references).length / 4)) }
+    const telemetry: AdapterTelemetry = { status: 'measured', durationMs: Date.now() - started, contextReferences: references.length, contextCostTokens: estimateContextTokens(JSON.stringify(references)) }
     return { providerId: 'doc-bridge', query, references, sourceHash: contentHash, snapshotHash: hashContextSnapshot({ providerId: 'doc-bridge', query, references, sourceHash: contentHash }), resolvedAt: new Date().toISOString(), assurance: 'contract-tested', telemetry }
   },
 })

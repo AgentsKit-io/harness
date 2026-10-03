@@ -1,5 +1,6 @@
 import { isRecord } from '../record.js'
 import { fail } from '../kernel/errors.js'
+import { estimateContextTokens } from '../kernel/tokens.js'
 import { hashContextSnapshot } from '../context/index.js'
 import type { AdapterTelemetry } from '../kernel/adapter-contract.js'
 import type { ContextProvider, ContextQuery, ContextReference, ContextSnapshot } from '../context/index.js'
@@ -62,7 +63,7 @@ const toSnapshot = (query: ContextQuery, result: RagQueryResult, started: number
     status: 'measured',
     durationMs: Date.now() - started,
     contextReferences: result.references.length,
-    contextCostTokens: Math.max(1, Math.ceil(JSON.stringify(result.references).length / 4)),
+    contextCostTokens: estimateContextTokens(JSON.stringify(result.references)),
   }
   return {
     providerId: 'rag',
