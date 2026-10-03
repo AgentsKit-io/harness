@@ -34,7 +34,6 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm typecheck
-      - run: pnpm test
       - run: pnpm test:coverage
       - run: pnpm build
       - run: pnpm pack --pack-destination /tmp/agentskit-harness-pack
