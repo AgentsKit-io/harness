@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
-  "contentHash": "e9d6e966352e13d0e5a6a74555fff9c2ec146b5bbd6c65df3acbea723157f125",
+  "contentHash": "df78e37cea742fad4b5af627b57891294aa5ffa53955b642c08fb33919e035a9",
   "contentHashAlgo": "sha256-normalized-v1",
-  "generatedAt": "2026-10-03T01:11:05.095Z",
+  "generatedAt": "2026-10-03T01:20:18.651Z",
   "project": {
     "name": "AgentsKit Harness",
     "root": "."
@@ -303,7 +303,7 @@
         "document",
         "project"
       ],
-      "contentHash": "1b90b203fae5056e8337045cbabd9186c3094889d9f8ef0f409f03afe3bc1c8d"
+      "contentHash": "7bbc40151b0717d68d3cff7519572300ca8b5f678c4cd6989ce7e707cc52fbc7"
     },
     {
       "id": "document:CLAUDE.md",
@@ -1433,7 +1433,7 @@
         "mjs",
         "scripts"
       ],
-      "contentHash": "847697d098d5eb4ce0f63b76feb4d41eaa7d309751cc47db52df8c1a22bb0917"
+      "contentHash": "afc175685831a39a4439965587b6968ee395de31ecdaa8a674b246e35539f459"
     },
     {
       "id": "module:scripts/cloudflare-headers.mjs",
@@ -1459,6 +1459,19 @@
         "scripts"
       ],
       "contentHash": "4c6f5420f41f0de2214ef5c38dd11ebdf80d222e2f76cd5af82bb925269004e3"
+    },
+    {
+      "id": "module:scripts/frontmatter.test.mjs",
+      "type": "module",
+      "title": "frontmatter.test.mjs",
+      "path": "scripts/frontmatter.test.mjs",
+      "tags": [
+        "module",
+        "mjs",
+        "test",
+        "scripts"
+      ],
+      "contentHash": "81ba60822a087b772ba906d94e984825edf68b07cd8c1374b62d40fc3962d594"
     },
     {
       "id": "module:scripts/gen-cli-reference.mjs",
@@ -1531,6 +1544,21 @@
         "scripts"
       ],
       "contentHash": "55b65b6525ad43390936e08df6916fca2efe0167940cd297fa9e0cec5cfd7300"
+    },
+    {
+      "id": "module:scripts/lib/frontmatter.mjs",
+      "type": "module",
+      "title": "frontmatter.mjs",
+      "path": "scripts/lib/frontmatter.mjs",
+      "symbols": [
+        "parseDocument"
+      ],
+      "tags": [
+        "module",
+        "mjs",
+        "lib"
+      ],
+      "contentHash": "18f34687b151dc4ba1d5bfda7db724e936d146993185ca2311acfd8207a1e506"
     },
     {
       "id": "module:scripts/lib/jsdoc-paths.mjs",
@@ -9023,8 +9051,8 @@
     }
   },
   "inputs": {
-    "hash": "d72598a6ab70eef3c20f4a21176240289d96086c83140027e27dd76899cfbcbe",
-    "fileCount": 546,
+    "hash": "d68366a64d4027afad862e85035ad4101d23b85934b0798ba2b8321c0e18bbb9",
+    "fileCount": 548,
     "projectionVersion": 2
   },
   "retrieval": {
@@ -9046,9 +9074,9 @@
   "projection": {
     "type": "retrieval-index",
     "schemaVersion": 1,
-    "contentHash": "485240b8edfbe735ed2ed0a5f57d18cba3cd161504dc206a97c293e5595c9310",
+    "contentHash": "2dbc9ab29c0726053e48666ba0937001dbb0831a22b92f25668c0f79232ba85b",
     "contentHashAlgo": "sha256-normalized-v1",
-    "snapshotHash": "3b3051817f5b1cf49b11c94202e4233b10977534fa6ccc658970be48741d78ce",
+    "snapshotHash": "ff3c145c3d4e03d1dc8f219b43032bb77467d4d0eed577e63dfaf2619773a8e7",
     "overlayHash": "f99666ff9119084dd25c2974ae64eb6935ec2aa785ff5ad478fb9d541f7a5e94",
     "configurationHash": "816afaf6a7dc09767f7594d8fd80024612ca0f33becf0e44dde0107fcf2782df",
     "lexiconVersion": 1,
@@ -9068,7 +9096,7 @@
     },
     "lexical": {
       "version": 1,
-      "documentCount": 555,
+      "documentCount": 557,
       "fieldNames": [
         "aliases",
         "body",
@@ -9079,13 +9107,13 @@
         "title"
       ],
       "averageFieldLength": {
-        "aliases": 2.924324324324324,
-        "body": 44.108108108108105,
-        "headings": 3.848648648648649,
-        "path": 6.108108108108108,
-        "summary": 2.6234234234234233,
-        "symbols": 14.196396396396397,
-        "title": 3.945945945945946
+        "aliases": 2.926391382405745,
+        "body": 43.94793536804309,
+        "headings": 3.834829443447038,
+        "path": 6.1041292639138245,
+        "summary": 2.614003590664273,
+        "symbols": 14.1508078994614,
+        "title": 3.940754039497307
       }
     },
     "entries": [
@@ -9398,7 +9426,7 @@
           ],
           "outbound": []
         },
-        "contentHash": "848d39da223933c926b6535de073ec72a32ab5cf4f4ef787222397eb9fc46f97",
+        "contentHash": "18403ec2cde572ac3010de0c9beeab9372625ff8fcd31dacc6c54d999fdbfaf2",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -11406,7 +11434,7 @@
           "path": "CHANGELOG.md",
           "symbols": "",
           "summary": "Single test run in CI. pnpm test:coverage now includes typecheck and the package criterion output, so the verify job runs the test suite once while retaining coverage thresholds.",
-          "body": "Changelog [Unreleased] - Single test run in CI. pnpm test:coverage now includes typecheck and the package criterion output, so the verify job runs the test suite once while retaining coverage thresholds. - Coverage floor. pnpm test:coverage now enforces ratcheted source coverage in CI. - Shared record guard. Harness internals now reuse one non-null, non-array object check while preserving caller-specific errors and fallbacks. - Cryptographic run IDs. Verification runs retain their timestamp and PID prefix while using a cryptographic random suffix. - Bounded model catalog refresh. Artificial Analysis refreshes use @agentskit/net deadlines and a 2 MiB JSON body cap; a failed refresh keeps the existing catalog cache. - Canonical shared hashes. New artifacts, event-chain entries, manifests, verification digests and cache keys use @agentskit/core/hash ; readers still accept existing persisted hashes, and stable IDs keep their legacy format. - Portability via @agentskit/cross-platform . Process spawning ( .cmd shim resolution), process-tree kill and path/line helpers now come from the shared package instead of hand-rolled copies; cross-spawn is no longer a direct dependency. pnpm typecheck runs agentskit-cross-platform check against .cross-platform-baseline.json , so a new Windows-hostile pattern fails CI. [0.22.3] — 2026-09-27 - Lost-track restart. A run whose worker terminal is gone, or that stays idle after a check-in, before any PR is aborted and re-dispatched from scratch (bounded, worker.lost-tracking / worker.restarted ) ( 147). It never destroys work: it needs the evidence on two consecutive passes, escalates stuck and keeps the worktree when there are unpushed commits or uncommitted edits (the check fails closed), removes a clean worktree without --force , captures the worker screen into the run first, waits while the tracker is cooling down, and does nothing destructive until its tracker writes succeed. A human Retry resets the restart budget ( 151). - A worker that declares itself blocked ( BLOCKED: worktree comment) is escalated to a person — also when it exited afterwards — instead of being nudged, handed off or restarted ( 150, 151). - Never type into a bare shell. A nudge into a terminal that is only a shell prompt relaunches the agent (the old terminal is closed first; an idle agent from a CLI that does not register with Orca is never mistaken for a shell); no-PR worker events keep the issue running in the UI ( 144, 151). - Close-or-reopen decisions on an abandoned delivery stick and release the issue's lease ( 145, 151). - UI. Worker slots are counted the way the tick counts them ( 148); the projection rebuilds itself when the reducer changes ( 149). [0.22.2] — 2026-09-27 - Review floor decides. A reviewer that exits 1 (or reports blocking ) on findings all below delivery.review.minSeverity is clean, not \"findings\" with nothing to fix — delivery no longer waits forever for a push nobody needs. A reviewer claiming blocking with no finding at all is incomplete , never a merge ( 133). - Answered contract questions regenerate the contract instead of returning the same blocked one ( 138). - An open contract question is not re-asked every tick. Contract regeneration is skipped while a contract-stage question is open (no more repeated escalations and orchestrator calls); an explicit-queue run is left needs-input , never stuck in dispatching ; superseded contract questions are marked stale ( 131). - Retry resumes a blocked delivery on its open PR (fix-round cap, stuck, failed), resetting its error budget and tracker state; a cancelled run still gets a fresh attempt. Holds that need a person are not bypassed ( 142). - doctor accepts automations pinned by the UI; GitHub preflight reports missing lifecycle labels as a warning instead of failing the queue read ( 143). [0.22.1] — 2026-09-27 Failures that were invisible, made visible or closed. Every fix ships with a regression test that fails on 0.22.0. - The UI no longer keeps ",
+          "body": "Changelog [Unreleased] - Single test run in CI. pnpm test:coverage now includes typecheck and the package criterion output, so the verify job runs the test suite once while retaining coverage thresholds. - Docs artifact frontmatter. Documentation metadata now uses shared frontmatter splitting and YAML parsing, including folded scalars, block lists, BOM and CRLF input. - Coverage floor. pnpm test:coverage now enforces ratcheted source coverage in CI. - Shared record guard. Harness internals now reuse one non-null, non-array object check while preserving caller-specific errors and fallbacks. - Cryptographic run IDs. Verification runs retain their timestamp and PID prefix while using a cryptographic random suffix. - Bounded model catalog refresh. Artificial Analysis refreshes use @agentskit/net deadlines and a 2 MiB JSON body cap; a failed refresh keeps the existing catalog cache. - Canonical shared hashes. New artifacts, event-chain entries, manifests, verification digests and cache keys use @agentskit/core/hash ; readers still accept existing persisted hashes, and stable IDs keep their legacy format. - Portability via @agentskit/cross-platform . Process spawning ( .cmd shim resolution), process-tree kill and path/line helpers now come from the shared package instead of hand-rolled copies; cross-spawn is no longer a direct dependency. pnpm typecheck runs agentskit-cross-platform check against .cross-platform-baseline.json , so a new Windows-hostile pattern fails CI. [0.22.3] — 2026-09-27 - Lost-track restart. A run whose worker terminal is gone, or that stays idle after a check-in, before any PR is aborted and re-dispatched from scratch (bounded, worker.lost-tracking / worker.restarted ) ( 147). It never destroys work: it needs the evidence on two consecutive passes, escalates stuck and keeps the worktree when there are unpushed commits or uncommitted edits (the check fails closed), removes a clean worktree without --force , captures the worker screen into the run first, waits while the tracker is cooling down, and does nothing destructive until its tracker writes succeed. A human Retry resets the restart budget ( 151). - A worker that declares itself blocked ( BLOCKED: worktree comment) is escalated to a person — also when it exited afterwards — instead of being nudged, handed off or restarted ( 150, 151). - Never type into a bare shell. A nudge into a terminal that is only a shell prompt relaunches the agent (the old terminal is closed first; an idle agent from a CLI that does not register with Orca is never mistaken for a shell); no-PR worker events keep the issue running in the UI ( 144, 151). - Close-or-reopen decisions on an abandoned delivery stick and release the issue's lease ( 145, 151). - UI. Worker slots are counted the way the tick counts them ( 148); the projection rebuilds itself when the reducer changes ( 149). [0.22.2] — 2026-09-27 - Review floor decides. A reviewer that exits 1 (or reports blocking ) on findings all below delivery.review.minSeverity is clean, not \"findings\" with nothing to fix — delivery no longer waits forever for a push nobody needs. A reviewer claiming blocking with no finding at all is incomplete , never a merge ( 133). - Answered contract questions regenerate the contract instead of returning the same blocked one ( 138). - An open contract question is not re-asked every tick. Contract regeneration is skipped while a contract-stage question is open (no more repeated escalations and orchestrator calls); an explicit-queue run is left needs-input , never stuck in dispatching ; superseded contract questions are marked stale ( 131). - Retry resumes a blocked delivery on its open PR (fix-round cap, stuck, failed), resetting its error budget and tracker state; a cancelled run still gets a fresh attempt. Holds that need a person are not bypassed ( 142). - doctor accepts automations pinned by the UI; GitHub preflight reports missing lifecycle labels as a warning instead of failing the queue read ( 1",
           "aliases": "document project"
         },
         "graph": {
@@ -11682,7 +11710,7 @@
             }
           ]
         },
-        "contentHash": "1b90b203fae5056e8337045cbabd9186c3094889d9f8ef0f409f03afe3bc1c8d",
+        "contentHash": "7bbc40151b0717d68d3cff7519572300ca8b5f678c4cd6989ce7e707cc52fbc7",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -16174,12 +16202,17 @@
           "outbound": [
             {
               "kind": "imports",
+              "id": "module:scripts/lib/frontmatter.mjs",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
               "id": "module:scripts/lib/stats.mjs",
               "confidence": "observed"
             }
           ]
         },
-        "contentHash": "847697d098d5eb4ce0f63b76feb4d41eaa7d309751cc47db52df8c1a22bb0917",
+        "contentHash": "afc175685831a39a4439965587b6968ee395de31ecdaa8a674b246e35539f459",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -16249,6 +16282,47 @@
           "outbound": []
         },
         "contentHash": "4c6f5420f41f0de2214ef5c38dd11ebdf80d222e2f76cd5af82bb925269004e3",
+        "provenance": "observed",
+        "confidence": "observed"
+      },
+      {
+        "id": "module:scripts/frontmatter.test.mjs",
+        "kind": "module",
+        "path": "scripts/frontmatter.test.mjs",
+        "title": "frontmatter.test.mjs",
+        "aliases": [],
+        "tags": [
+          "module",
+          "mjs",
+          "test",
+          "scripts"
+        ],
+        "fields": {
+          "title": "frontmatter.test.mjs",
+          "headings": "",
+          "path": "scripts/frontmatter.test.mjs",
+          "symbols": "",
+          "summary": "",
+          "body": "",
+          "aliases": "module mjs test scripts"
+        },
+        "graph": {
+          "pagerank": 0,
+          "inboundLinks": 0,
+          "coveredBy": [],
+          "mentionedBy": [],
+          "areaId": "area:scripts",
+          "packageId": "package:@agentskit/harness",
+          "inbound": [],
+          "outbound": [
+            {
+              "kind": "imports",
+              "id": "module:scripts/lib/frontmatter.mjs",
+              "confidence": "observed"
+            }
+          ]
+        },
+        "contentHash": "81ba60822a087b772ba906d94e984825edf68b07cd8c1374b62d40fc3962d594",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -16465,6 +16539,54 @@
           "outbound": []
         },
         "contentHash": "55b65b6525ad43390936e08df6916fca2efe0167940cd297fa9e0cec5cfd7300",
+        "provenance": "observed",
+        "confidence": "observed"
+      },
+      {
+        "id": "module:scripts/lib/frontmatter.mjs",
+        "kind": "module",
+        "path": "scripts/lib/frontmatter.mjs",
+        "title": "frontmatter.mjs",
+        "aliases": [],
+        "symbols": [
+          "parseDocument"
+        ],
+        "tags": [
+          "module",
+          "mjs",
+          "lib"
+        ],
+        "fields": {
+          "title": "frontmatter.mjs",
+          "headings": "",
+          "path": "scripts/lib/frontmatter.mjs",
+          "symbols": "parseDocument",
+          "summary": "",
+          "body": "",
+          "aliases": "module mjs lib"
+        },
+        "graph": {
+          "pagerank": 0,
+          "inboundLinks": 0,
+          "coveredBy": [],
+          "mentionedBy": [],
+          "areaId": "area:scripts",
+          "packageId": "package:@agentskit/harness",
+          "inbound": [
+            {
+              "kind": "imports",
+              "id": "module:scripts/build-docs-artifacts.mjs",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
+              "id": "module:scripts/frontmatter.test.mjs",
+              "confidence": "observed"
+            }
+          ],
+          "outbound": []
+        },
+        "contentHash": "18f34687b151dc4ba1d5bfda7db724e936d146993185ca2311acfd8207a1e506",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -46412,7 +46534,7 @@
           ],
           "outbound": []
         },
-        "contentHash": "71192ec559b63a27da2ab605f117970f3351db69b467ed02ff863e25bc76c0cf",
+        "contentHash": "5eb548a42e48afdea37d6adda00a2bbac941a17657b276a983385e74518d91be",
         "provenance": "observed",
         "confidence": "observed"
       },
