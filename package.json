@@ -43,6 +43,8 @@
     "ui:build": "vite build --config src/ui/app/vite.config.ts",
     "docs:dev": "pnpm --filter @agentskit/harness-docs dev",
     "docs:generate": "node scripts/gen-docs-reference.mjs",
+    "check:public-api": "node scripts/check-public-api.mjs",
+    "check:public-api:update": "node scripts/check-public-api.mjs --update",
     "docs:artifacts": "node scripts/build-docs-artifacts.mjs",
     "docs:build": "pnpm build && pnpm docs:artifacts && pnpm --filter @agentskit/harness-docs build",
     "test:docs-artifacts": "node --test scripts/docs-artifacts-contract.test.mjs scripts/frontmatter.test.mjs",

@@ -36,6 +36,7 @@ jobs:
       - run: pnpm typecheck
       - run: pnpm test:coverage
       - run: pnpm build
+      - run: pnpm check:public-api
       - run: pnpm pack --pack-destination /tmp/agentskit-harness-pack
       # `--by human` on a machine. This is the repository's own contract being exercised as a fixture — the
       # approval a human actually made is the one in `.ak-harness/verification.json`, in the tree, reviewed. CI
