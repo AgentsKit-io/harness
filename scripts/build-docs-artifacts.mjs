@@ -15,6 +15,7 @@ import { existsSync } from 'node:fs'
 import { dirname, extname, join, relative, resolve, sep } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
+import { parseDocument } from './lib/frontmatter.mjs'
 import { computeStats } from './lib/stats.mjs'
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..')
@@ -35,16 +36,18 @@ const walk = async (directory) => {
 
 const unix = (path) => path.split(sep).join('/')
 
-const frontmatterOf = (markdown) => markdown.match(/^---\r?\n([\s\S]*?)\r?\n---\r?\n/u)?.[1] ?? ''
-const fieldOf = (frontmatter, name) => frontmatter.match(new RegExp(`^${name}:\\s*(.+)$`, 'mu'))?.[1]?.trim().replace(/^['"]|['"]$/g, '')
-const bodyOf = (markdown) => markdown.replace(/^---\r?\n[\s\S]*?\r?\n---\r?\n/u, '')
+const fieldOf = (fields, name) => fields[name] == null ? undefined : String(fields[name]).replace(/\s+/g, ' ').trim()
 
-const titleOf = (markdown, fallback) => fieldOf(frontmatterOf(markdown), 'title') ?? bodyOf(markdown).match(/^#\s+(.+)$/m)?.[1]?.trim() ?? fallback
+const titleOf = (markdown, fallback) => {
+  const { fields, body } = parseDocument(markdown)
+  return fieldOf(fields, 'title') ?? body.match(/^#\s+(.+)$/m)?.[1]?.trim() ?? fallback
+}
 
 const descriptionOf = (markdown) => {
-  const declared = fieldOf(frontmatterOf(markdown), 'description')
+  const { fields, body } = parseDocument(markdown)
+  const declared = fieldOf(fields, 'description')
   if (declared) return declared.slice(0, 240)
-  return bodyOf(markdown).split(/\n\s*\n/)
+  return body.split(/\n\s*\n/)
     .map((block) => block.replace(/^#+\s+.*$/gm, '').trim())
     .find((block) => block && !block.startsWith('```') && !block.startsWith('>') && !block.startsWith('<'))
     ?.replace(/\s+/g, ' ').slice(0, 240)
