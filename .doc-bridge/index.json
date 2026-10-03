@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
-  "contentHash": "aa3677bbf162b90418a628161148bf95aa8223bd57e221b68a5a315f83e5cae1",
+  "contentHash": "514d9c421f55315720cf50802771fffe827fe2ef4b220855040bb7e27fdeb180",
   "contentHashAlgo": "sha256-normalized-v1",
-  "generatedAt": "2026-10-03T01:52:01.417Z",
+  "generatedAt": "2026-10-03T12:25:42.854Z",
   "project": {
     "name": "AgentsKit Harness",
     "root": "."
@@ -1955,7 +1955,7 @@
         "ts",
         "adapters"
       ],
-      "contentHash": "9bac8a2a371d3356510d1c21b3ee92934188636ab684bd167158d2d9e87482d5"
+      "contentHash": "d0e12673871557140a74921214567afd42fb1cf6bf9917c2744815012df170c2"
     },
     {
       "id": "module:src/adapters/github-cli.ts",
@@ -2213,7 +2213,7 @@
         "ts",
         "adapters"
       ],
-      "contentHash": "d2d4db0d909d0e2fb99d97aa94dfe67b7a5f288b52bd7ee7a6ed50ce1ecd3415"
+      "contentHash": "7d15edcf2915c66902567ad7df6eca76e38571f9c60c0b1a1f6a7bc10e36e4d3"
     },
     {
       "id": "module:src/adapters/tracking.ts",
@@ -3544,6 +3544,21 @@
         "kernel"
       ],
       "contentHash": "d36f4a328da36384a7db48f299c1c36ef0eafe8e48079664408bee1e899bcbe7"
+    },
+    {
+      "id": "module:src/kernel/tokens.ts",
+      "type": "module",
+      "title": "tokens.ts",
+      "path": "src/kernel/tokens.ts",
+      "symbols": [
+        "estimateContextTokens"
+      ],
+      "tags": [
+        "module",
+        "ts",
+        "kernel"
+      ],
+      "contentHash": "461e2356aed68f13794f423584886411e3e11a9f956699ce5b2faf2ffe5f9a00"
     },
     {
       "id": "module:src/kernel/types.ts",
@@ -8726,6 +8741,18 @@
       "contentHash": "0f7d74c5cbc632fc8b3ceeb0359171eb65997fe510e963cbd79cee43b5b5463f"
     },
     {
+      "id": "module:test/token-estimate.test.ts",
+      "type": "module",
+      "title": "token-estimate.test.ts",
+      "path": "test/token-estimate.test.ts",
+      "tags": [
+        "module",
+        "ts",
+        "test"
+      ],
+      "contentHash": "3e05097dbc5355bd56f582ae3b52519713f6abf398ebc78c42bf26343aac1919"
+    },
+    {
       "id": "module:test/ui-actions.test.ts",
       "type": "module",
       "title": "ui-actions.test.ts",
@@ -9063,8 +9090,8 @@
     }
   },
   "inputs": {
-    "hash": "3797bf8f93d3f5f78e436c0385419d5a30578f69935dad0497d0c757c4768b40",
-    "fileCount": 549,
+    "hash": "5733ba957631f0fb44984631dafb17e1a24e9054ab8b28dfd27b234c354c8fce",
+    "fileCount": 551,
     "projectionVersion": 2
   },
   "retrieval": {
@@ -9086,9 +9113,9 @@
   "projection": {
     "type": "retrieval-index",
     "schemaVersion": 1,
-    "contentHash": "44c0e5e5fa0b74ac14842515573b320bcf62bd762cfad8e2734b42e1b4e853ca",
+    "contentHash": "e51d7c1ab7047fa47c5ce35a1538703f7bca1839b0eec429b0f4352f87ccf2d1",
     "contentHashAlgo": "sha256-normalized-v1",
-    "snapshotHash": "5ef3ffd67a27582eefc8be3cfd49a34e96e5be87ac55e1d6d1a6fad6c5167033",
+    "snapshotHash": "81610f3a80eced33cb44ff1d1fd1295ce963374faf5769871a462bc58340a039",
     "overlayHash": "f99666ff9119084dd25c2974ae64eb6935ec2aa785ff5ad478fb9d541f7a5e94",
     "configurationHash": "816afaf6a7dc09767f7594d8fd80024612ca0f33becf0e44dde0107fcf2782df",
     "lexiconVersion": 1,
@@ -9108,7 +9135,7 @@
     },
     "lexical": {
       "version": 1,
-      "documentCount": 558,
+      "documentCount": 560,
       "fieldNames": [
         "aliases",
         "body",
@@ -9119,13 +9146,13 @@
         "title"
       ],
       "averageFieldLength": {
-        "aliases": 2.9265232974910393,
-        "body": 43.95519713261649,
-        "headings": 3.8333333333333335,
-        "path": 6.103942652329749,
-        "summary": 2.609318996415771,
-        "symbols": 14.125448028673835,
-        "title": 3.942652329749104
+        "aliases": 2.9267857142857143,
+        "body": 43.79821428571429,
+        "headings": 3.819642857142857,
+        "path": 6.101785714285715,
+        "summary": 2.6,
+        "symbols": 14.082142857142857,
+        "title": 3.9410714285714286
       }
     },
     "entries": [
@@ -9593,7 +9620,7 @@
           "inbound": [],
           "outbound": []
         },
-        "contentHash": "53d557a536decb7033c5ead3fc8b04f62d623ee4edd128b35e0d5d5b7c95f2b3",
+        "contentHash": "0138875e48471eda438113d7e95540d6b2f3fac3e03a359184c969f4cceaa59f",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -9765,7 +9792,7 @@
           ],
           "outbound": []
         },
-        "contentHash": "7f87012578090164e2c1bb05b51c1d4291075fac7aa5737578fb8026754564ea",
+        "contentHash": "f5e26eeb0aaf8b8ad330a1049fd86fb1b815e07c71ae4862aa062893a9ee140c",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -18090,12 +18117,17 @@
             },
             {
               "kind": "imports",
+              "id": "module:src/kernel/tokens.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
               "id": "module:src/record.ts",
               "confidence": "observed"
             }
           ]
         },
-        "contentHash": "9bac8a2a371d3356510d1c21b3ee92934188636ab684bd167158d2d9e87482d5",
+        "contentHash": "d0e12673871557140a74921214567afd42fb1cf6bf9917c2744815012df170c2",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -19027,12 +19059,17 @@
             },
             {
               "kind": "imports",
+              "id": "module:src/kernel/tokens.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
               "id": "module:src/record.ts",
               "confidence": "observed"
             }
           ]
         },
-        "contentHash": "d2d4db0d909d0e2fb99d97aa94dfe67b7a5f288b52bd7ee7a6ed50ce1ecd3415",
+        "contentHash": "7d15edcf2915c66902567ad7df6eca76e38571f9c60c0b1a1f6a7bc10e36e4d3",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -24758,6 +24795,59 @@
           ]
         },
         "contentHash": "d36f4a328da36384a7db48f299c1c36ef0eafe8e48079664408bee1e899bcbe7",
+        "provenance": "observed",
+        "confidence": "observed"
+      },
+      {
+        "id": "module:src/kernel/tokens.ts",
+        "kind": "module",
+        "path": "src/kernel/tokens.ts",
+        "title": "tokens.ts",
+        "aliases": [],
+        "symbols": [
+          "estimateContextTokens"
+        ],
+        "tags": [
+          "module",
+          "ts",
+          "kernel"
+        ],
+        "fields": {
+          "title": "tokens.ts",
+          "headings": "",
+          "path": "src/kernel/tokens.ts",
+          "symbols": "estimateContextTokens",
+          "summary": "",
+          "body": "",
+          "aliases": "module ts kernel"
+        },
+        "graph": {
+          "pagerank": 0,
+          "inboundLinks": 0,
+          "coveredBy": [],
+          "mentionedBy": [],
+          "areaId": "area:src/kernel",
+          "packageId": "package:@agentskit/harness",
+          "inbound": [
+            {
+              "kind": "imports",
+              "id": "module:src/adapters/doc-bridge.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
+              "id": "module:src/adapters/rag-context.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
+              "id": "module:test/token-estimate.test.ts",
+              "confidence": "observed"
+            }
+          ],
+          "outbound": []
+        },
+        "contentHash": "461e2356aed68f13794f423584886411e3e11a9f956699ce5b2faf2ffe5f9a00",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -45253,6 +45343,46 @@
           ]
         },
         "contentHash": "0f7d74c5cbc632fc8b3ceeb0359171eb65997fe510e963cbd79cee43b5b5463f",
+        "provenance": "observed",
+        "confidence": "observed"
+      },
+      {
+        "id": "module:test/token-estimate.test.ts",
+        "kind": "module",
+        "path": "test/token-estimate.test.ts",
+        "title": "token-estimate.test.ts",
+        "aliases": [],
+        "tags": [
+          "module",
+          "ts",
+          "test"
+        ],
+        "fields": {
+          "title": "token-estimate.test.ts",
+          "headings": "",
+          "path": "test/token-estimate.test.ts",
+          "symbols": "",
+          "summary": "",
+          "body": "",
+          "aliases": "module ts test"
+        },
+        "graph": {
+          "pagerank": 0,
+          "inboundLinks": 0,
+          "coveredBy": [],
+          "mentionedBy": [],
+          "areaId": "area:test",
+          "packageId": "package:@agentskit/harness",
+          "inbound": [],
+          "outbound": [
+            {
+              "kind": "imports",
+              "id": "module:src/kernel/tokens.ts",
+              "confidence": "observed"
+            }
+          ]
+        },
+        "contentHash": "3e05097dbc5355bd56f582ae3b52519713f6abf398ebc78c42bf26343aac1919",
         "provenance": "observed",
         "confidence": "observed"
       },
