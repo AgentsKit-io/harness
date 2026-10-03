@@ -2,6 +2,7 @@
 
 ## [Unreleased]
 
+- **Docs artifact frontmatter.** Documentation metadata now uses shared frontmatter splitting and YAML parsing, including folded scalars, block lists, BOM and CRLF input.
 - **Coverage floor.** `pnpm test:coverage` now enforces ratcheted source coverage in CI.
 - **Shared record guard.** Harness internals now reuse one non-null, non-array object check while preserving caller-specific errors and fallbacks.
 - **Cryptographic run IDs.** Verification runs retain their timestamp and PID prefix while using a cryptographic random suffix.
