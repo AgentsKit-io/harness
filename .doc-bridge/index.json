@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
-  "contentHash": "514d9c421f55315720cf50802771fffe827fe2ef4b220855040bb7e27fdeb180",
+  "contentHash": "a9e57b6016f89fa03ad80875796618e4e3a97839778f82ed77b8f814b7ed935b",
   "contentHashAlgo": "sha256-normalized-v1",
-  "generatedAt": "2026-10-03T12:25:42.854Z",
+  "generatedAt": "2026-10-03T12:53:03.399Z",
   "project": {
     "name": "AgentsKit Harness",
     "root": "."
@@ -274,12 +274,12 @@
       "type": "document",
       "title": "pull_request_template.md",
       "path": ".github/pull_request_template.md",
-      "description": "Issue/task:",
+      "description": "What changed?",
       "tags": [
         "document",
         "unclassified"
       ],
-      "contentHash": "6678bf3d861362bd11054136da73f09ac6bd36a925a6447e96756c53c9283a93"
+      "contentHash": "85b1a37fcbe900755881cdbe987dd7c737a7e1a450c9cfc60962e03771ca9b12"
     },
     {
       "id": "document:AGENTS.md",
@@ -9090,7 +9090,7 @@
     }
   },
   "inputs": {
-    "hash": "5733ba957631f0fb44984631dafb17e1a24e9054ab8b28dfd27b234c354c8fce",
+    "hash": "d6f89e6f1d1059ab39b99589d580bace3530ff552f7c1debe8a8f20d827b443c",
     "fileCount": 551,
     "projectionVersion": 2
   },
@@ -9113,9 +9113,9 @@
   "projection": {
     "type": "retrieval-index",
     "schemaVersion": 1,
-    "contentHash": "e51d7c1ab7047fa47c5ce35a1538703f7bca1839b0eec429b0f4352f87ccf2d1",
+    "contentHash": "8492931135327993018039181711c71b6a9ee77428fd0f23f0c8965605a141d0",
     "contentHashAlgo": "sha256-normalized-v1",
-    "snapshotHash": "81610f3a80eced33cb44ff1d1fd1295ce963374faf5769871a462bc58340a039",
+    "snapshotHash": "dc0190d152dcdb026882a8426adae553ab0814c856c24c7e1128731bdaeebaa2",
     "overlayHash": "f99666ff9119084dd25c2974ae64eb6935ec2aa785ff5ad478fb9d541f7a5e94",
     "configurationHash": "816afaf6a7dc09767f7594d8fd80024612ca0f33becf0e44dde0107fcf2782df",
     "lexiconVersion": 1,
@@ -9147,10 +9147,10 @@
       ],
       "averageFieldLength": {
         "aliases": 2.9267857142857143,
-        "body": 43.79821428571429,
-        "headings": 3.819642857142857,
+        "body": 43.93571428571428,
+        "headings": 3.8214285714285716,
         "path": 6.101785714285715,
-        "summary": 2.6,
+        "summary": 2.5964285714285715,
         "symbols": 14.082142857142857,
         "title": 3.9410714285714286
       }
@@ -9834,7 +9834,7 @@
         "kind": "document",
         "path": ".github/pull_request_template.md",
         "title": "pull_request_template.md",
-        "summary": "Issue/task:",
+        "summary": "What changed?",
         "aliases": [],
         "tags": [
           "document",
@@ -9842,11 +9842,11 @@
         ],
         "fields": {
           "title": "pull_request_template.md",
-          "headings": "Contract Evidence Reuse Risk and compatibility Review focus",
+          "headings": "What Why How Contract Validation Definition of Done Reuse Risk and compatibility Review focus",
           "path": ".github/pull_request_template.md",
           "symbols": "",
-          "summary": "Issue/task:",
-          "body": "Contract - Issue/task: - Intended change: - In scope: - Out of scope: Evidence - [ ] pnpm typecheck - [ ] pnpm test - [ ] pnpm build - [ ] pnpm pack --pack-destination /tmp/agentskit-harness-pack - [ ] Narrow test: script for each touched criterion (see AGENTS.md scope: ) - [ ] Closing PR only: ak-verify run --config .ak-harness/verification.json --json Verification run ID (closing PR only): Reuse - Existing ecosystem package or module checked: - Established library or service considered: - Why new code or a new dependency is needed (or \"none added\"): Risk and compatibility - Public API or CLI changed: yes/no - State-machine or enforcement behavior changed: yes/no - Breaking change: yes/no - Documentation/ADR updated when needed: yes/no Review focus Call out the exact gate, invariant, or recovery path that reviewers should challenge. Do not mark a PR complete when evidence is missing or stale.",
+          "summary": "What changed?",
+          "body": "What What changed? Why What problem does this solve? How How does it work? Note relevant design choices. Contract - Issue/task: - Intended change: - In scope: - Out of scope: Validation - Acceptance criteria and their contract or edge-case tests: - The repository's documented gates run on this commit: - Generated artifacts regenerated with the official tools, if applicable: - [ ] pnpm typecheck - [ ] pnpm test - [ ] pnpm build - [ ] pnpm pack --pack-destination /tmp/agentskit-harness-pack - [ ] Narrow test: script for each touched criterion (see AGENTS.md scope: ) - [ ] Closing PR only: ak-verify run --config .ak-harness/verification.json --json Verification run ID (closing PR only): Definition of Done - [ ] One package, or one isolated cross-cutting gate change, per PR. - [ ] Each acceptance criterion has contract or edge-case test evidence. - [ ] The documented gates pass on this commit. - [ ] Measure size when a bundle or export changes; add or update JSDoc when a public API changes. - [ ] Required changeset and documentation updates are included. - [ ] No tests were disabled to pass checks. - [ ] Generated artifacts were regenerated with official tools, when applicable. Reuse - Existing ecosystem package or module checked: - Established library or service considered: - Why new code or a new dependency is needed (or \"none added\"): Risk and compatibility - Public API or CLI changed: yes/no - State-machine or enforcement behavior changed: yes/no - Breaking change: yes/no - Documentation/ADR updated when needed: yes/no Review focus Call out the exact gate, invariant, or recovery path that reviewers should challenge. Do not mark a PR complete when evidence is missing or stale.",
           "aliases": "document unclassified"
         },
         "graph": {
@@ -9857,7 +9857,7 @@
           "inbound": [],
           "outbound": []
         },
-        "contentHash": "6678bf3d861362bd11054136da73f09ac6bd36a925a6447e96756c53c9283a93",
+        "contentHash": "85b1a37fcbe900755881cdbe987dd7c737a7e1a450c9cfc60962e03771ca9b12",
         "provenance": "observed",
         "confidence": "observed"
       },
