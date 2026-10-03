@@ -1,0 +1,7466 @@
+{
+  "schemaVersion": 1,
+  "package": "@agentskit/harness",
+  "subpaths": {
+    ".": {
+      "symbols": [
+        {
+          "name": "AGENT_REGISTRY_SCHEMA_VERSION",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "ARTIFACT_DIR",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "ARTIFACT_SCHEMA_VERSION",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "ARTIFACT_TYPES",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "ASSURANCE_LEVELS",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "ActionContext",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "AdapterMetadata",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "AdapterTelemetry",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "AdversarialReviewResult",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "AgentAdapter",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "AgentEvalCase",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "AgentEvalReport",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "AgentEvalSuite",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "AgentMemoryAdapter",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "AgentMemoryHit",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "AgentMemoryKvStore",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "AgentMemoryRecord",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "AgentProposal",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "AgentRegistry",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "AgentRegistryEntry",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "AgentRegistryEntrySchema",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "AgentRegistrySchema",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "AgentRunEvidence",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "AgentRunIoEntry",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "AgentRunReport",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "AgentRunStage",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "AgentRunState",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "AgentRunStatus",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "AgentSessionOptions",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "AgentUsage",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "Alert",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "AlertSchema",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "AnswerDecisionInput",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "AnswerDecisionResult",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "ApprovedAssumption",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "ArgvRagContextProviderOptions",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "ArtifactBinding",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "ArtifactEnvelope",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "ArtifactEnvelopeInput",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "ArtifactType",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "ArtificialAnalysisModel",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "AssuranceLevel",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "AutomationDriftRow",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "AutomationFields",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "AutomationSpec",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "AutomationStatus",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "AutonomyMode",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "BENCHMARK_SCHEMA_VERSION",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "BLOCK_STATUSES",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "BRIEF_POINTER_PROMPT",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "BaseView",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "BenchmarkBinding",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "BenchmarkComparison",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "BenchmarkImprovementDirection",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "BenchmarkManifest",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "BenchmarkObservation",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "BenchmarkObservationEvidence",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "BenchmarkObservationInput",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "BenchmarkObservationStatus",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "BenchmarkReport",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "BenchmarkRun",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "BenchmarkSummary",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "BenchmarkTask",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "BlockAssessment",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "BlockManifest",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "BlockStatus",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "BoardIssue",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "BoardLane",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "BoardProvider",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "BoardReadResult",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "BoardSnapshot",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "BoardStatus",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "BoundaryVerdict",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "BudgetVerdict",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "CAPABILITY_KINDS",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "CAPABILITY_MANIFEST_SCHEMA_VERSION",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "CHECK_CATEGORIES",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "COMPATIBILITY_COMPONENTS",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "COMPATIBILITY_SCHEMA_VERSION",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "CONTEXT_PROVIDER_SLOT",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "CONTRACT_CLOSE",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "CONTRACT_JSON_SCHEMA",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "CONTRACT_OPEN",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "CONTRACT_SCHEMA_VERSION",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "CRITICAL_ROLES",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "CacheUsage",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "CapabilityDescriptor",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "CapabilityKind",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "CapabilityManifest",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "CapabilityManifestInput",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "CastVote",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "CatalogModel",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "ChangedFile",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "CheckCategory",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "CheckOutcome",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "CheckResult",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "CheckoutState",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "ChecksAssessment",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "ClaimResult",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "CodeReviewInput",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "CodeReviewOutcome",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "CodingAgentAdapter",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "CodingAgentHandlerResult",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "CodingAgentRequest",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "CodingAgentResult",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "CommandResult",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "CommandRunOptions",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "CommandRunner",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "CompatibilityComponent",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "CompatibilityComponentId",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "CompatibilityManifest",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "CompatibilityObservation",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "CompatibilityReport",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "CompatibilityStatus",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "ConnectorInput",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "ContextProvider",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "ContextQuery",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "ContextReference",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "ContextSnapshot",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "ContractAssessment",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "ContractOutcome",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "ContractOutcomeSchema",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "ContractResult",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "ContractScope",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "CooldownEntry",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "CooldownState",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "CoordinationIdentity",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "CriterionStatus",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "CycleIterationMetrics",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "CycleMatrixRow",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "CycleStepResult",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "CycleStepStatus",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "DEFAULT_CONFIG_PATH",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "DESIGN_CLOSE",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "DESIGN_OPEN",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "DebriefInput",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "DebriefIssueRow",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "DebriefReport",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "Decision",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "DecisionOption",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "DecisionPacket",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "DeliverInput",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "DeliverOutcome",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "DeliverReport",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "DeliverResult",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "DeliveryState",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "Design",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "DesignSchema",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "DetectProvidersInput",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "DiffStat",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "DiscoveryAmbiguity",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "DiscoveryCurrentInput",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "DiscoveryCurrentResult",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "DiscoveryDecisionLogEntry",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "DiscoveryInput",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "DiscoveryOption",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "DiscoveryResult",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "DispatchLease",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "DispatchLedger",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "DispatchRecord",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "DispatchRecordFile",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "DispatchRef",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "Disposer",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "DocBridgeIndexInspection",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "DockerMount",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "DockerRuntimeEvidence",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "DockerToolDefinition",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "DoctorCheck",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "DoctorCheckStatus",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "DodAssessment",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "DodEvidenceFile",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "DodItem",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "DodLine",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "DodProof",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "EVAL_COMPONENTS",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "EVAL_LAYERS",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "EVAL_MANIFEST_SCHEMA_VERSION",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "EVENT_LOG_GENESIS",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "EVIDENCE_BUNDLE_SCHEMA_VERSION",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "EVIDENCE_MAX_FILE_BYTES",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "EVIDENCE_MAX_TOTAL_BYTES",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "EffectiveFlowSettings",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "EffectiveReviewSettings",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "EffortLevel",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "EnqueueIssueRunInput",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "EnqueueRunInput",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "EvalBatteryReport",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "EvalCaseDefinition",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "EvalCaseReport",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "EvalComponent",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "EvalExpectation",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "EvalGate",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "EvalLayer",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "EvalManifest",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "EvalObservation",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "EvalObservationStatus",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "EventLogLock",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "EventLogLockRecovery",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "EventLogLockStatus",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "EventLogVerification",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "EventStore",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "EvidenceArtifact",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "EvidenceBundle",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "EvidenceBundleFile",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "EvidenceBundleSignature",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "EvidenceBundleVerification",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "EvidenceReference",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "ExecutePhaseProfileOptions",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "FailureClass",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "FailureClassification",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "FetchQueueInput",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "FileArtifactStore",
+          "kinds": [
+            "type",
+            "value"
+          ]
+        },
+        {
+          "name": "FileEventStore",
+          "kinds": [
+            "type",
+            "value"
+          ]
+        },
+        {
+          "name": "FilePreflightPlan",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "FiledRecord",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "FlowIssue",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "FlowProfile",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "FlowSource",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "GLOBAL_CONFIG_FILE",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "GateAssessment",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "GateBinding",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "GateCriterion",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "GenerateContractInput",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "GitHubCliOptions",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "GitHubIssueComment",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "GitHubIssueDetail",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "GitHubIssueSnapshot",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "GuidedInstallIO",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "GuidedInstallInput",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "GuidedInstallReport",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "HARNESS_ERROR_CATALOG",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "HARNESS_ERROR_CODES",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "HARNESS_EVENT_ENVELOPE_SCHEMA_VERSION",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "HARNESS_EVENT_SCHEMA_VERSION",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "HARNESS_EVENT_TYPES",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "HARNESS_PLUGIN_API_VERSION",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "HARNESS_REPO_URL",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "HITL_ANCHOR_ID",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "HITL_ANCHOR_TITLE",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "HITL_FREE_TEXT_MAX",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "HITL_SCHEMA_VERSION",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "HandoffBriefInput",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "HarnessError",
+          "kinds": [
+            "type",
+            "value"
+          ]
+        },
+        {
+          "name": "HarnessErrorClassification",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "HarnessErrorDisposition",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "HarnessEvent",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "HarnessEventContext",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "HarnessEventEnvelope",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "HarnessEventEnvelopeInput",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "HarnessEventInput",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "HarnessEventListener",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "HarnessEventPayloads",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "HarnessEventProvenance",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "HarnessEventType",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "HarnessPlugin",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "HarnessPluginContext",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "HitlAnswer",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "HitlOption",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "HitlRequest",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "HitlRequestInput",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "HitlRole",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "HitlStatus",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "HitlStore",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "IMPROVEMENT_CYCLE_STEPS",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "ISSUES_CLOSE",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "ISSUES_OPEN",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "ISSUE_DETAIL_FIELDS",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "ISSUE_FIELDS",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "ISSUE_LIFECYCLE_SCHEMA_VERSION",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "ISSUE_QUEUE_SCHEMA_VERSION",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "ImprovementCycleAssessment",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "ImprovementCycleInput",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "ImprovementCycleIteration",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "ImprovementCycleStep",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "ImprovementOutcome",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "ImprovementRecord",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "ImprovementState",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "InitAnswers",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "InitInput",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "InitQuestion",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "InitResult",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "InstallAction",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "InstallInput",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "InstallReport",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "IntakeRecord",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "IntakeReport",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "IntakeResult",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "IntakeState",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "InterviewQuestion",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "IssueBoardCache",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "IssueBoardCacheOptions",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "IssueBoardReader",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "IssueDecision",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "IssueFailureRecord",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "IssueFailureState",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "IssueLifecycle",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "IssuePhase",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "IssueQueue",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "IssueQueueOptions",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "IssueQueueProjection",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "IssueRecord",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "IssueRun",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "IssueRunConfigSnapshot",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "IssueRunContractSnapshot",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "IssueRunPatch",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "IssueRunPreflightSnapshot",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "IssueRunProjection",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "IssueRunStatus",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "IssueSpend",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "IssueTimelineProblem",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "IssueTimelineReport",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "LEARNING_STATUSES",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "LEGACY_CONFIG_PATH",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "LEGAL_TRANSITIONS",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "LOOP_AUTO_ACTOR",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "LOOP_CONFIG_FILE",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "LOOP_CONFIG_SCHEMA_VERSION",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "LOOP_EVENT_TYPES",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "LOOP_LOCAL_CONFIG_FILE",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "LOOP_PRESETS",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "LOOP_ROLES",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "LOOP_STAGES",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "Layer",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "LearningRecord",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "LearningStatus",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "LearningsLedger",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "LifecycleEvent",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "LifecyclePhase",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "LifecyclePullRequest",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "LifecycleReconcileInput",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "LifecycleStore",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "LinearIssueDetail",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "LinearListInput",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "LinearQueueFilter",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "LinearWriteOptions",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "LlmCache",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "LlmCacheKeyInput",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "LlmCacheStats",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "LoadedConfig",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "LoadedLoopConfig",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "LocalConfigAnswers",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "LocalConfigPrompter",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "LoopConfig",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "LoopConfigInput",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "LoopConfigSchema",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "LoopDoctorInput",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "LoopDoctorReport",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "LoopEvent",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "LoopEventBus",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "LoopEventListener",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "LoopEventPayload",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "LoopEventType",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "LoopHookListener",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "LoopHookName",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "LoopHookPayload",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "LoopHookResult",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "LoopIssue",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "LoopPluginModule",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "LoopProviderConfig",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "LoopRole",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "LoopStage",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "LoopStageName",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "LoopState",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "LoopStatusReport",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "MANAGED_STAGES",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "MEMORY_SCOPES",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "MODEL_ROLES",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "MachineMetrics",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "MachineSample",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "MachineThresholds",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "MaintainReport",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "MaintainResult",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "McpPolicy",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "McpToolBridge",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "McpToolBridgeOptions",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "McpToolCallInput",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "McpToolCallResult",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "MemoryContextPlan",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "MemoryPromptSelection",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "MemoryScope",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "MemoryUsage",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "MetricReading",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "MetricStatus",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "ModelBinding",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "ModelPolicy",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "ModelQuality",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "ModelReference",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "ModelRole",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "NormalizedPhaseProfile",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "Notification",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "NotifyInput",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "NotifyOutcome",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "ObservabilityAnomaly",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "ObservabilityMetrics",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "ObservabilityReport",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "ObservabilitySeverity",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "ObservabilitySnapshot",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "ObservabilityTerminal",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "ObserveAssessment",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "ObserveAssessmentInput",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "ObserveProblem",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "ObserveStageReport",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "ObserverState",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "OptimizationComparison",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "OptimizationObservation",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "OrcaAgentHookState",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "OrcaAutomation",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "OrcaAutomationSpec",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "OrcaCliOptions",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "OrcaCreatedWorktree",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "OrcaDispatchInput",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "OrcaDispatchPlan",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "OrcaLeaseState",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "OrcaLifecycleInput",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "OrcaLifecycleProjection",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "OrcaMemorySample",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "OrcaRuntimeStatus",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "OrcaSendReceipt",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "OrcaTerminal",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "OrcaWorktree",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "OutcomeProgress",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "OutcomeProgressStatus",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "PHASE_DECISIONS",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "PHASE_EFFECTS",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "PHASE_EFFECT_ACTIONS",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "PHASE_MODES",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "PLAN_CLOSE",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "PLAN_OPEN",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "PLAN_SCHEMA_VERSION",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "PLAN_STAGE_SCHEMA_VERSION",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "PRD_CLOSE",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "PRD_OPEN",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "PRESET_NAMES",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "PR_FIELDS",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "ParallelismUsage",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "PhaseAmbiguity",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "PhaseArtifact",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "PhaseArtifactName",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "PhaseContext",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "PhaseDecision",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "PhaseDecisionPacket",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "PhaseDefinition",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "PhaseEffect",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "PhaseEffectAction",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "PhaseEffectPolicy",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "PhaseExecution",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "PhaseExecutionReport",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "PhaseGateEvaluator",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "PhaseGateResult",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "PhaseHandler",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "PhaseHandlerResult",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "PhaseMachineMetrics",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "PhaseMode",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "PhasePreflight",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "PhasePreflightResult",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "PhaseProfile",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "PhaseResumeState",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "PhaseRetryPolicy",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "PhaseRoutePlan",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "PhaseTelemetry",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "PhaseTokenMetrics",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "PiiKind",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "PiiMatch",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "PiiScanResult",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "PilotAssessment",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "PilotEntry",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "PilotManifest",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "PinnedSkill",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "PinnedSkillRef",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "PlanPhase",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "PlanRound",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "PlanStageDeps",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "PlanStageState",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "PlanVote",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "PlanVoteSchema",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "PlanWithVotesInput",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "PlannedIssue",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "PlannedIssueSchema",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "PluginContribution",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "PluginRegistry",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "PluginSlot",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "PolicyDecision",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "PolicyGate",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "PolicyRequest",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "PolicyRule",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "Prd",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "PrdSchema",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "PresetName",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "ProcessToolDefinition",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "ProductionEvidence",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "ProjectionReviewSubstatus",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "ProjectionState",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "ProviderAuthStatus",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "ProviderAvailability",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "ProviderCatalog",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "ProviderFailure",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "ProviderSpec",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "ProviderUsage",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "PullRequestApproval",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "PullRequestCheck",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "PullRequestDraft",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "PullRequestRef",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "PullRequestSnapshot",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "QUALITY_DIMENSIONS",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "QUESTION_CLOSE",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "QUESTION_OPEN",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "QaTransitionAssessment",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "QualityDimension",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "QualityDimensionScore",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "QualityMatrix",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "QuestionSchema",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "REQUIRED_PRD_FIELDS",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "REVIEW_SEVERITIES",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "RUNS_DIR",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "RUN_STATES",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "RagContextProviderOptions",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "RagQueryResult",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "RankedModel",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "RecoveryObservation",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "RecoveryPolicy",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "RecoveryResult",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "ReleaseApproval",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "ReleaseBatch",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "ReleaseCommit",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "ReleaseReport",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "ReleaseState",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "RepositoryProfile",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "ResolvedAgent",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "ResolvedFlow",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "RetroInput",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "RetroIssueRow",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "RetroReport",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "RetroStageReport",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "RetroSuggestion",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "RetroTarget",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "RetroWindow",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "ReviewFinding",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "ReviewLens",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "ReviewSeverity",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "ReviewSubstatus",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "ReviewUsage",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "ReviewVerdict",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "RichIO",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "RoleSettings",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "RoleSignal",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "RoutingDecision",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "RoutingSkip",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "RunOutcome",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "RunReconciliation",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "RunRecord",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "RunState",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "RunStatus",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "RunnerConnector",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "RunnerInput",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "RunnerWorkspace",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "RuntimeConfig",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "RuntimeExperimentCandidate",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "RuntimeExperimentResult",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "STATES",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "SURFACE_NAMES",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "ScheduledJob",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "ScmConnector",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "SessionRecorder",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "SkillHandoffBlock",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "SlotAssessment",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "SlotInput",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "SourceSnapshot",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "StagePauseEntry",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "StagePauseState",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "StateTransition",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "StatusBlock",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "StatusSnapshot",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "StoredContract",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "StoredPlan",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "StructuredEvidence",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "StructuredReviewHitl",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "SurfaceName",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "SurfaceRequirement",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "TaskContract",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "TaskContractSchema",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "TaskPlan",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "TaskPlanSchema",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "TeamMember",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "TickCandidateResult",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "TickInput",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "TickOutcome",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "TickReport",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "TimelineStep",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "TokenUsage",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "ToolDefinition",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "ToolExecutionRequest",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "ToolExecutionResult",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "ToolRuntime",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "TrackerComment",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "TrackerConnector",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "TrackerIssue",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "TrackerIssueDetail",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "TrackingAdapter",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "TrackingConfig",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "TrackingTransition",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "TrustedEvidenceKey",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "TuningDecision",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "TuningKnob",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "TuningMetric",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "TuningRecord",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "TuningResult",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "TuningState",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "UiJobConflictError",
+          "kinds": [
+            "type",
+            "value"
+          ]
+        },
+        {
+          "name": "UiJobEvent",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "UiJobManager",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "UiJobManagerOptions",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "UiJobRecord",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "UiJobRunContext",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "UiJobStatus",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "UiJobSubmitInput",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "UiServerHandle",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "UiServerOptions",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "UiSnapshot",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "UiWizardDraft",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "UiWizardDraftPatch",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "UiWizardStep",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "UiWizardStore",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "UsageMetric",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "UsageWindow",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "VOTE_CLOSE",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "VOTE_OPEN",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "VerificationCheck",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "VerificationConfig",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "VerificationRun",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "VerifyArtifact",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "VerifyArtifactSchema",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "WIP_STATES",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "WORKER_ROLES",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "WatchEvent",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "WatchEventKind",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "WatchInput",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "WatchReport",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "WatchTargetSnapshot",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "WatchdogBlocker",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "WatchdogBudget",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "WatchdogResult",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "WipAssessment",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "WipAssessmentInput",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "WipEntry",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "WipState",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "WorkerBriefInput",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "WorkerGuardInstallOutcome",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "WorkerGuardVerdict",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "WorkerRole",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "WorkflowNode",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "WorkflowResult",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "WrittenDocument",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "activeCooldowns",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "adaptiveConcurrency",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "advanceQueueOwner",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "allHitlOptions",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "alreadyFiled",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "answerDecision",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "answerRound",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "appendLoopEvent",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "applyBoardMetadata",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "applyRoleSettings",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "applyRoutingPolicy",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "applyToYaml",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "applyTuning",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "approveDesign",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "approveHeldDelivery",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "approvePlan",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "approveRelease",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "approveRun",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "approvedDecision",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "architectRound",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "archiveIssueRun",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "archiveRun",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "artifactDigest",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "artifactFilePath",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "artifactIsFresh",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "artifactMarkdownPath",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "artifactPath",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "assertHuman",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "assessAcceptance",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "assessAgentEval",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "assessBlock",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "assessBoundary",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "assessChecks",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "assessCompatibility",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "assessContract",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "assessDiscovery",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "assessDod",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "assessImprovementCycle",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "assessIntegration",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "assessObservability",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "assessObserveStage",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "assessPilot",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "assessPreflight",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "assessProduction",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "assessQaTransition",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "assessSlots",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "assessWip",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "assessWorkerGuard",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "assessWorktreeCleanup",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "atLeast",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "attachNotifier",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "authStatusFor",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "authorizeRun",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "automationDrift",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "automationFields",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "automationName",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "automationPrompt",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "automationSpecs",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "availableMemoryBytes",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "baseViewPath",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "benchmarkRuns",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "branchFor",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "briefPath",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "buildDebriefReport",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "buildIssueTimeline",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "buildListIssuesArgv",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "buildNotification",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "buildRetroReport",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "buildReviewArgv",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "buildSuggestions",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "busyIssues",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "cancelRun",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "cancelUiRun",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "classifyFailure",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "classifyHarnessError",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "classifyProviderFailure",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "classifyRunEvent",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "classifyWatchEvent",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "classifyWatchPhase",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "cleanTaskArtifacts",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "cleanupRun",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "clearIssueFailures",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "clearProviderCooldown",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "compareOptimization",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "compareVersions",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "composeLoopConfig",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "composePullRequest",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "contractIsFresh",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "contractPath",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "cooldownPath",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "cooldownUntil",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "countRotationBlockingLeases",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "countRunningWorkers",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "createArgvRagContextProvider",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "createArtifactEnvelope",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "createCapabilityManifest",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "createCodingAgentAdapter",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "createCompatibilityManifest",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "createConfiguredToolRuntime",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "createDispatchLedger",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "createDocBridgeContextProvider",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "createDockerToolRuntime",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "createEvalManifest",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "createFileMemoryAdapter",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "createFileMemoryKvStore",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "createGitHubScm",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "createGitHubTracker",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "createHarnessEventEnvelope",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "createHitlStore",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "createInMemoryMemoryAdapter",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "createIssueBoardCache",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "createIssueBoardReader",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "createIssueQueue",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "createKvMemoryAdapter",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "createLifecycleStore",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "createLinearTracker",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "createLinearTrackingAdapter",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "createLlmCache",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "createLlmCacheKey",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "createLocalRunner",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "createLoopEventBus",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "createMachineMonitor",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "createMcpToolBridge",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "createModelPolicy",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "createOrcaDispatchPlan",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "createOrcaLifecycleProjection",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "createOrcaRunner",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "createPhaseArtifact",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "createPhaseProfile",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "createPlannedIssues",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "createPluginRegistry",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "createPluginSlot",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "createPolicyGate",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "createProcessRunner",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "createProcessToolRuntime",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "createPullRequestApproval",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "createQualityMatrix",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "createRagContextProvider",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "createRichIO",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "createRunnerConnector",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "createSessionRecorder",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "createStatusSnapshot",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "createToolRuntime",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "createTrackingAdapter",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "createTrackingTransition",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "createUiJobManager",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "createUiWizardStore",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "decideIssue",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "declaredStages",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "decomposeRound",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "deliveryStatePath",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "describePreset",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "designApproved",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "designExcerptFor",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "designPathFor",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "detectProviders",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "discoverIntake",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "dispatchRecordPath",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "documentRoot",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "dodEvidencePath",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "emptyProjection",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "enqueueRun",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "ensureBaseView",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "evaluateWatchdog",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "excludeArtifactsFromGit",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "executePhaseProfile",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "exportEvidenceBundle",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "extractOutputBlock",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "extractResetsAt",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "fetchArtificialAnalysisModels",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "fetchLinearIssue",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "fetchLinearQueue",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "fetchTeamMembers",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "filterAndOrderQueue",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "findExecutable",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "fingerprintOf",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "flowLabelFor",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "formatWatchEvent",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "gatherLoopState",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "generateContract",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "generateOrReuseContract",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "githubComment",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "githubCommentArgv",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "githubCommentExists",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "githubCompare",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "githubCurrentUser",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "githubIssue",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "githubIssueClose",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "githubIssueComment",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "githubIssueCommentArgv",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "githubIssueCommentExists",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "githubIssueCreate",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "githubIssueEdit",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "githubIssueEditArgv",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "githubIssueNumber",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "githubIssueReopen",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "githubLabelRemove",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "githubMerge",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "githubMergeArgv",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "githubOpenIssues",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "githubOpenPullRequests",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "githubPreflight",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "githubPullRequest",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "githubPullRequestsForBranch",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "githubPullRequestsForIssue",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "githubUpsertComment",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "globalConfigPath",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "globalLayerDisabled",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "hasLocalConfig",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "hashContextSnapshot",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "hashContextSnapshots",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "hashMcpArgs",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "hitlRequestPath",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "hostAbsolutePath",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "improveAgent",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "improvementStatePath",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "initQuestions",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "inspectDocBridgeIndex",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "inspectEventLogLock",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "installLoopAutomations",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "installPreflight",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "installWorkerGuard",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "intakeIssueId",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "intakePath",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "intakeStatePath",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "interviewRound",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "isDiscoveryCurrent",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "isIssuePaused",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "isLoopEventType",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "isPresetName",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "isStagePaused",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "isWsl",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "issueBudget",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "issueFailurePath",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "issueQueuePath",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "issueSpend",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "launchWorkerTerminal",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "layerById",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "layerFor",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "learningToMemoryRecord",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "learningsPath",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "learningsReadyToPromote",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "lifecyclePath",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "linearAssigneeClear",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "linearAssigneeClearArgv",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "linearAssigneeSet",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "linearAssigneeSetArgv",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "linearAttach",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "linearAttachArgv",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "linearCommentAdd",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "linearCommentAddArgv",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "linearLabelAdd",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "linearLabelArgv",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "linearLabelRemove",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "linearStatusSet",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "linearStatusSetArgv",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "listAgentRuns",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "listCliModels",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "listCliModelsCached",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "listDispatched",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "listIntake",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "listPausedIssues",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "listPlans",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "loadAgentRegistry",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "loadAliases",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "loadBenchmarkManifest",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "loadBuiltinCatalog",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "loadConfig",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "loadLatestRun",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "loadLoopConfig",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "loadLoopPlugins",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "loadPinnedSkills",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "localConfigPath",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "loopStatus",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "markDispatchCancelled",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "markPauseLabelApplied",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "markProviderExhausted",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "measureCpuBusyPercent",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "memoryDigestOf",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "mergeLoopConfig",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "missingArtifacts",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "modelFor",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "modelForChange",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "nextValue",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "normalizeReason",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "notificationSummary",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "notificationsConfigured",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "notifyHuman",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "observerStatePath",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "openDesignObjections",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "openLoopMemory",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "orcaAccountList",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "orcaAgentHooks",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "orcaAutomationCreateArgv",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "orcaAutomationEditArgv",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "orcaAutomationRemove",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "orcaAutomationRun",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "orcaAutomationRuns",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "orcaAutomationsList",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "orcaDiagnosticsMemory",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "orcaJson",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "orcaRetryRequestId",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "orcaStatus",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "orcaTerminalClose",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "orcaTerminalCreate",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "orcaTerminalEnter",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "orcaTerminalList",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "orcaTerminalScreen",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "orcaTerminalSend",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "orcaTerminalWait",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "orcaTurnStarted",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "orcaVersion",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "orcaWorktreeCreate",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "orcaWorktreeRemove",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "orcaWorktreeSet",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "orcaWorktreeSetArgv",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "orcaWorktrees",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "overlayLiveState",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "parseAgentRegistryText",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "parseAlerts",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "parseArtificialAnalysisPayload",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "parseAutomationRuns",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "parseContractOutput",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "parseDesignOutput",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "parseGitHubIssue",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "parseGitHubIssueDetail",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "parseGrokModelsOutput",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "parseIssuesOutput",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "parseJsonEnvelope",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "parseLinearIssueDetail",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "parseLinearIssues",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "parseLoopConfigText",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "parseMemInfo",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "parseModelRef",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "parseOrcaAgentHooks",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "parseOrcaAutomations",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "parseOrcaSendReceipt",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "parseOrcaStatus",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "parseOrcaTerminals",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "parseOrcaVersion",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "parseOrcaWorktreeCreate",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "parseOrcaWorktrees",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "parsePlanOutput",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "parseProviderUsage",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "parsePullRequest",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "parseQuestionOutput",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "parseRagQueryOutput",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "parseRetro",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "parseReviewEvidence",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "parseReviewHitl",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "parseReviewResult",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "parseSince",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "parseStructuredContractOutput",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "parseTeamMembers",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "parseUiWizardDraftPatch",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "parseUsageWindows",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "parseVmStat",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "parseVoteOutput",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "pauseIssue",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "planFilePreflight",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "planId",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "planMemoryContext",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "planPath",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "planPhaseProfile",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "planRun",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "planStateDir",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "planStatePath",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "planTuning",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "plannedIssueLabels",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "prdGaps",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "prdPathFor",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "precheckCommand",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "precheckDeliver",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "precheckTick",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "preferMemoryOverDocBridge",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "presetFor",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "projectLifecycle",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "promoteLearnings",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "promoteLearningsToMemory",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "promptLocalConfig",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "proposeAgentChange",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "providerIdentity",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "providerSpecs",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "pruneAgentRuns",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "queueAssigneeFilter",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "queueOwner",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "rankModels",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "readAaCache",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "readAgentRunReport",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "readArtifactFile",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "readCheckoutState",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "readCliModelsCache",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "readContextSnapshots",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "readCooldowns",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "readCurrentProjection",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "readDeliveryState",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "readDispatchRecord",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "readDodEvidence",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "readEvidenceTrustStore",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "readImprovementState",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "readIntake",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "readIntakeState",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "readIssueFailures",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "readLastConfigHash",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "readLearningsLedger",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "readLoopEvents",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "readMetrics",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "readObserverState",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "readOutcomeProgress",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "readPhaseArtifacts",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "readPlanArtifact",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "readPlanState",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "readReleaseBatch",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "readReleaseState",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "readStagePause",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "readStoredContract",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "readStoredPlan",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "readTuningState",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "readVerifyArtifact",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "reconcileAutomations",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "reconcileLifecycle",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "reconcileRun",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "recordBenchmarkObservation",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "recordIssueFailure",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "recordStageRunResult",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "recoverEventLogLock",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "recoveryDelayMs",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "reduce",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "releaseStatePath",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "remainingUsagePercent",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "renderAgentRunMarkdown",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "renderAlertIssue",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "renderArchitectPrompt",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "renderArtifactMarkdown",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "renderArtifactsForBrief",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "renderContractPrompt",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "renderDebriefMarkdown",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "renderDecomposePrompt",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "renderDesignMarkdown",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "renderDesignVotePrompt",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "renderDodForBrief",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "renderDodMarkdown",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "renderFindingsForWorker",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "renderGlobalConfig",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "renderHandoffBrief",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "renderHeadlessArgv",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "renderInitConfig",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "renderInterviewPrompt",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "renderIssueTimelineMarkdown",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "renderLayersForPrompt",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "renderLocalConfig",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "renderObservabilityMarkdown",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "renderObserveMarkdown",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "renderPinnedSkills",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "renderPlanForBrief",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "renderPlanMarkdown",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "renderPlanPrompt",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "renderPrdMarkdown",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "renderReleaseMarkdown",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "renderReleaseNotes",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "renderRetroMarkdown",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "renderRunSummaryMarkdown",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "renderSkillsForHandoff",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "renderTuiCommand",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "renderTuningMarkdown",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "renderVotePrompt",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "renderWorkerBrief",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "requireWritableTracker",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "resolveAgentForRole",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "resolveAlias",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "resolveCatalogCandidates",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "resolveConfigPath",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "resolveConnectors",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "resolveDocContext",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "resolveFlow",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "resolveFlowSettings",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "resolveReviewSettings",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "resolveRoleSettings",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "resolveTeamKey",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "restoreIssueRun",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "restoreRun",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "resumeIssue",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "resumePausedIssue",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "resumeStage",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "resumeStateFromArtifacts",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "retroLearnings",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "retryIssueRun",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "retryRun",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "retryUiRun",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "roleSignals",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "rotationStatePath",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "routeAllRoles",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "runAdversarialReview",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "runAgentEval",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "runCodeReview",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "runDeliver",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "runDirFor",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "runEvalBattery",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "runEvalGate",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "runGuidedInstall",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "runIntakeStage",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "runLoopDoctor",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "runLoopInit",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "runMaintainStage",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "runObservability",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "runObserveStage",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "runPlanWithVotes",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "runReleaseStage",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "runRetroStage",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "runSummaryMarker",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "runTick",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "runWithRecovery",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "runWorkerGuard",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "runWorkflow",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "sampleMachine",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "sanitizeAutomationSuffix",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "scanForPii",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "scheduledJobs",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "selectMemoryForPrompt",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "selectModel",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "selectRuntime",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "severityRank",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "shellQuote",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "skillDigest",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "skillRefs",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "snapshotWatchTargets",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "spawnEnvironment",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "stageEntry",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "stagePausePath",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "staleStageLocks",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "startPlan",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "startRun",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "startUiServer",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "summarizeMachine",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "syncProjection",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "tallyVotes",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "teamConfigFile",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "tiersFor",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "touchesProtectedPaths",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "transition",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "tuningStatePath",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "uiWizardPath",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "undeclaredOrcaProviders",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "uninstallLoopAutomations",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "unknownFlowReferences",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "unknownTelemetry",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "untrusted",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "upsertProposedLearnings",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "upsertProposedLearningsDryRun",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "usageRankTuple",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "validateAdapterMetadata",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "validateArtifactEnvelope",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "validateBenchmarkManifest",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "validateBlockManifest",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "validateCacheableOperation",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "validateCapabilityManifest",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "validateCompatibilityManifest",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "validateConfig",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "validateContextSnapshot",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "validateContextSnapshots",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "validateEvalManifest",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "validateHarnessErrorClassification",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "validateHarnessEventEnvelope",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "validateLoopConfig",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "validateMemoryRecord",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "validateOptimizationObservation",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "validatePhaseTelemetry",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "validateSafeCommand",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "validateStatusSnapshot",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "verifyCommandFor",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "verifyEvidenceBundle",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "verifyProofs",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "verifyPullRequestApproval",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "verifyRun",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "watchDeliveries",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "withinProviderBudget",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "workerPhaseEnabled",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "worktreeNameFor",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "writeAaCache",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "writeCliModelsCache",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "writeDesignDocument",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "writeDispatchRecord",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "writeIdFor",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "writeLastConfigHash",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "writeLearningsLedger",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "writeLocalConfig",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "writePlanState",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "writePrdDocument",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "writeStoredContract",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "writeStoredPlan",
+          "kinds": [
+            "value"
+          ]
+        }
+      ]
+    }
+  }
+}

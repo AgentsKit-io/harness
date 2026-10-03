@@ -41,6 +41,14 @@ full verification contract). Running an agent session through
 [rtk](https://github.com/rtk-ai/rtk) (`rtk init -g`) compresses that output before
 it reaches your context — same commands, a fraction of the tokens.
 
+## Public API snapshot
+
+Exported names and TypeScript symbol kinds are recorded for each package export
+subpath in `docs/stability/public-api-v1.json`. `pnpm check:public-api` detects
+additions, removals, and kind changes. For an intentional API change, run
+`pnpm check:public-api:update`, review the snapshot diff, and commit the updated
+snapshot with the change.
+
 ## Coverage floor
 
 `pnpm test:coverage` enforces a source floor of 89% statements, 79%

@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
-  "contentHash": "df78e37cea742fad4b5af627b57891294aa5ffa53955b642c08fb33919e035a9",
+  "contentHash": "aa3677bbf162b90418a628161148bf95aa8223bd57e221b68a5a315f83e5cae1",
   "contentHashAlgo": "sha256-normalized-v1",
-  "generatedAt": "2026-10-03T01:20:18.651Z",
+  "generatedAt": "2026-10-03T01:52:01.417Z",
   "project": {
     "name": "AgentsKit Harness",
     "root": "."
@@ -375,7 +375,7 @@
         "document",
         "project"
       ],
-      "contentHash": "9305005e48a90e6fec86ce77289f20b0183afd954a5b61659590ba1050cba609"
+      "contentHash": "599c127adc5415af5d059b8445f7f9d9898c8741839e5e92e64f24b05a259878"
     },
     {
       "id": "document:design.md",
@@ -1434,6 +1434,18 @@
         "scripts"
       ],
       "contentHash": "afc175685831a39a4439965587b6968ee395de31ecdaa8a674b246e35539f459"
+    },
+    {
+      "id": "module:scripts/check-public-api.mjs",
+      "type": "module",
+      "title": "check-public-api.mjs",
+      "path": "scripts/check-public-api.mjs",
+      "tags": [
+        "module",
+        "mjs",
+        "scripts"
+      ],
+      "contentHash": "32ab05cceb913a33ef8c26eba6ceed0a49b48d14b0124394060152403b5f0a38"
     },
     {
       "id": "module:scripts/cloudflare-headers.mjs",
@@ -9051,8 +9063,8 @@
     }
   },
   "inputs": {
-    "hash": "d68366a64d4027afad862e85035ad4101d23b85934b0798ba2b8321c0e18bbb9",
-    "fileCount": 548,
+    "hash": "3797bf8f93d3f5f78e436c0385419d5a30578f69935dad0497d0c757c4768b40",
+    "fileCount": 549,
     "projectionVersion": 2
   },
   "retrieval": {
@@ -9074,9 +9086,9 @@
   "projection": {
     "type": "retrieval-index",
     "schemaVersion": 1,
-    "contentHash": "2dbc9ab29c0726053e48666ba0937001dbb0831a22b92f25668c0f79232ba85b",
+    "contentHash": "44c0e5e5fa0b74ac14842515573b320bcf62bd762cfad8e2734b42e1b4e853ca",
     "contentHashAlgo": "sha256-normalized-v1",
-    "snapshotHash": "ff3c145c3d4e03d1dc8f219b43032bb77467d4d0eed577e63dfaf2619773a8e7",
+    "snapshotHash": "5ef3ffd67a27582eefc8be3cfd49a34e96e5be87ac55e1d6d1a6fad6c5167033",
     "overlayHash": "f99666ff9119084dd25c2974ae64eb6935ec2aa785ff5ad478fb9d541f7a5e94",
     "configurationHash": "816afaf6a7dc09767f7594d8fd80024612ca0f33becf0e44dde0107fcf2782df",
     "lexiconVersion": 1,
@@ -9096,7 +9108,7 @@
     },
     "lexical": {
       "version": 1,
-      "documentCount": 557,
+      "documentCount": 558,
       "fieldNames": [
         "aliases",
         "body",
@@ -9107,13 +9119,13 @@
         "title"
       ],
       "averageFieldLength": {
-        "aliases": 2.926391382405745,
-        "body": 43.94793536804309,
-        "headings": 3.834829443447038,
-        "path": 6.1041292639138245,
-        "summary": 2.614003590664273,
-        "symbols": 14.1508078994614,
-        "title": 3.940754039497307
+        "aliases": 2.9265232974910393,
+        "body": 43.95519713261649,
+        "headings": 3.8333333333333335,
+        "path": 6.103942652329749,
+        "summary": 2.609318996415771,
+        "symbols": 14.125448028673835,
+        "title": 3.942652329749104
       }
     },
     "entries": [
@@ -9426,7 +9438,7 @@
           ],
           "outbound": []
         },
-        "contentHash": "18403ec2cde572ac3010de0c9beeab9372625ff8fcd31dacc6c54d999fdbfaf2",
+        "contentHash": "49cd693897fe50ad538a54e6f46c63542fa6c04d20c8b9ca9c956021fd7dafc9",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -11962,11 +11974,11 @@
         ],
         "fields": {
           "title": "Contributing to @agentskit/harness",
-          "headings": "Contributing to @agentskit/harness Repository layout Change workflow Coverage floor Angular Conventional Commits Pull requests Releases License",
+          "headings": "Contributing to @agentskit/harness Repository layout Change workflow Public API snapshot Coverage floor Angular Conventional Commits Pull requests Releases License",
           "path": "CONTRIBUTING.md",
           "symbols": "",
           "summary": "The Harness is an enforcement engine, not a suggestion library. Changes must preserve fail-closed behavior and produce criterion-level evidence.",
-          "body": "Contributing to @agentskit/harness The Harness is an enforcement engine, not a suggestion library. Changes must preserve fail-closed behavior and produce criterion-level evidence. Repository layout - src/ : capability-oriented TypeScript modules and the public index.ts . - src/adapters/ : optional provider integrations. - test/ : deterministic unit and contract tests. - scripts/ : real CLI and packaging checks. - docs/ : ADRs and protocol decisions. - .github/ : CI and release automation. See for the complete boundary and naming rules. Change workflow 1. Start from an issue or explicit task contract. 2. Identify the outcome and executable validation it requires. 3. Keep the public API change in src/index.ts intentional. 4. Add or update criterion-level tests for behavior changes. 5. Update README, changelog, ADRs, or the verification contract when the protocol changes. 6. Run the complete local gate: Do not report completion while a required gate is unavailable, blocked, stale, or awaiting approval. The local gate above is verbose by design (typecheck, full suite, build, pack, full verification contract). Running an agent session through ( rtk init -g ) compresses that output before it reaches your context — same commands, a fraction of the tokens. Coverage floor pnpm test:coverage enforces a source floor of 89% statements, 79% branches, 88% functions, and 93% lines for src/ , excluding src/ui/app/ . The UI app is built and typechecked separately; apps/ is the documentation site package, while scripts/ and test/ are tooling and tests rather than the harness runtime. To raise the floor, run pnpm test:coverage , then increase the corresponding threshold in vitest.config.ts to a whole number at or below the measured percentage. Plain pnpm test remains unchanged. Angular Conventional Commits Commit messages follow the Angular Conventional Commits format: Allowed types are feat , fix , docs , refactor , test , build , ci , perf , chore , and revert . Use a breaking-change footer when needed: Keep commits focused. Never commit secrets, generated dist/ , verification state, or residue from another task. Keep the subject and body terse and technical — see ( caveman-commit ) for the style this project follows. Pull requests PRs must state the contract change, affected states, evidence produced, exact commands executed, and any unresolved blockers. A maintainer review is required for public API, CLI, state-machine, security, or release changes. Releases Version changes merge to main through a PR. The release workflow runs tests, build, and pack, then publishes through npm Trusted Publishing (GitHub OIDC); no NPM TOKEN is used. Configure the npm trusted publisher for AgentsKit-io/harness once before the first release. License Contributions are accepted under the repository's MIT license.",
+          "body": "Contributing to @agentskit/harness The Harness is an enforcement engine, not a suggestion library. Changes must preserve fail-closed behavior and produce criterion-level evidence. Repository layout - src/ : capability-oriented TypeScript modules and the public index.ts . - src/adapters/ : optional provider integrations. - test/ : deterministic unit and contract tests. - scripts/ : real CLI and packaging checks. - docs/ : ADRs and protocol decisions. - .github/ : CI and release automation. See for the complete boundary and naming rules. Change workflow 1. Start from an issue or explicit task contract. 2. Identify the outcome and executable validation it requires. 3. Keep the public API change in src/index.ts intentional. 4. Add or update criterion-level tests for behavior changes. 5. Update README, changelog, ADRs, or the verification contract when the protocol changes. 6. Run the complete local gate: Do not report completion while a required gate is unavailable, blocked, stale, or awaiting approval. The local gate above is verbose by design (typecheck, full suite, build, pack, full verification contract). Running an agent session through ( rtk init -g ) compresses that output before it reaches your context — same commands, a fraction of the tokens. Public API snapshot Exported names and TypeScript symbol kinds are recorded for each package export subpath in docs/stability/public-api-v1.json . pnpm check:public-api detects additions, removals, and kind changes. For an intentional API change, run pnpm check:public-api:update , review the snapshot diff, and commit the updated snapshot with the change. Coverage floor pnpm test:coverage enforces a source floor of 89% statements, 79% branches, 88% functions, and 93% lines for src/ , excluding src/ui/app/ . The UI app is built and typechecked separately; apps/ is the documentation site package, while scripts/ and test/ are tooling and tests rather than the harness runtime. To raise the floor, run pnpm test:coverage , then increase the corresponding threshold in vitest.config.ts to a whole number at or below the measured percentage. Plain pnpm test remains unchanged. Angular Conventional Commits Commit messages follow the Angular Conventional Commits format: Allowed types are feat , fix , docs , refactor , test , build , ci , perf , chore , and revert . Use a breaking-change footer when needed: Keep commits focused. Never commit secrets, generated dist/ , verification state, or residue from another task. Keep the subject and body terse and technical — see ( caveman-commit ) for the style this project follows. Pull requests PRs must state the contract change, affected states, evidence produced, exact commands executed, and any unresolved blockers. A maintainer review is required for public API, CLI, state-machine, security, or release changes. Releases Version changes merge to main through a PR. The release workflow runs tests, build, and pack, then publishes through npm Trusted Publishing (GitHub OIDC); no NPM TOKEN is used. Configure the npm trusted publisher for AgentsKit-io/harness once before the first release. License Contributions are accepted under the repository's MIT license.",
           "aliases": "document project"
         },
         "graph": {
@@ -12042,7 +12054,7 @@
             }
           ]
         },
-        "contentHash": "9305005e48a90e6fec86ce77289f20b0183afd954a5b61659590ba1050cba609",
+        "contentHash": "599c127adc5415af5d059b8445f7f9d9898c8741839e5e92e64f24b05a259878",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -16213,6 +16225,40 @@
           ]
         },
         "contentHash": "afc175685831a39a4439965587b6968ee395de31ecdaa8a674b246e35539f459",
+        "provenance": "observed",
+        "confidence": "observed"
+      },
+      {
+        "id": "module:scripts/check-public-api.mjs",
+        "kind": "module",
+        "path": "scripts/check-public-api.mjs",
+        "title": "check-public-api.mjs",
+        "aliases": [],
+        "tags": [
+          "module",
+          "mjs",
+          "scripts"
+        ],
+        "fields": {
+          "title": "check-public-api.mjs",
+          "headings": "",
+          "path": "scripts/check-public-api.mjs",
+          "symbols": "",
+          "summary": "",
+          "body": "",
+          "aliases": "module mjs scripts"
+        },
+        "graph": {
+          "pagerank": 0,
+          "inboundLinks": 0,
+          "coveredBy": [],
+          "mentionedBy": [],
+          "areaId": "area:scripts",
+          "packageId": "package:@agentskit/harness",
+          "inbound": [],
+          "outbound": []
+        },
+        "contentHash": "32ab05cceb913a33ef8c26eba6ceed0a49b48d14b0124394060152403b5f0a38",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -46534,7 +46580,7 @@
           ],
           "outbound": []
         },
-        "contentHash": "5eb548a42e48afdea37d6adda00a2bbac941a17657b276a983385e74518d91be",
+        "contentHash": "844f7d2b9ff1d2181cb2bf7b91f29d0f4297f62de3fe180487bb74b0cb89030f",
         "provenance": "observed",
         "confidence": "observed"
       },
