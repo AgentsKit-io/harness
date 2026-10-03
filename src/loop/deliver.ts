@@ -407,7 +407,6 @@ const finish = (ctx: Context, record: DispatchRecordFile, lease: DispatchLease |
   event(ctx, { type: `worker.${outcome}`, issue: record.issue, reason, worktreeId: record.worktreeId })
 }
 
-/** How many times the loop may abort-and-restart an issue that lost track before escalating it to a person. */
 /**
  * The run lost track of its worker before any PR existed (terminal gone, or idle with nothing to show after a
  * check-in): the dispatch records, the queue and Orca no longer describe one live worker, and nudging or waiting

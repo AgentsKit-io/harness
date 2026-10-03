@@ -110,6 +110,7 @@ export const listDispatched = (stateDir: string): readonly DispatchRecordFile[] 
   }).filter((record): record is DispatchRecordFile => record !== null && existsSync(dispatchRecordPath(stateDir, record.issue)))
 }
 
+/** How many times the loop may abort-and-restart an issue that lost track before escalating it to a person. */
 export const MAX_LOST_TRACKING_RESTARTS = 2
 export const restartsPath = (stateDir: string, issue: string): string => join(stateDir, 'issues', issue, 'restarts.json')
 
