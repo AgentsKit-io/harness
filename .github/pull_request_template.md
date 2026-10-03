@@ -1,3 +1,15 @@
+## What
+
+What changed?
+
+## Why
+
+What problem does this solve?
+
+## How
+
+How does it work? Note relevant design choices.
+
 ## Contract
 
 - Issue/task:
@@ -5,7 +17,11 @@
 - In scope:
 - Out of scope:
 
-## Evidence
+## Validation
+
+- Acceptance criteria and their contract or edge-case tests:
+- The repository's documented gates run on this commit:
+- Generated artifacts regenerated with the official tools, if applicable:
 
 - [ ] `pnpm typecheck`
 - [ ] `pnpm test`
@@ -15,6 +31,16 @@
 - [ ] Closing PR only: `ak-verify run --config .ak-harness/verification.json --json`
 
 Verification run ID (closing PR only):
+
+## Definition of Done
+
+- [ ] One package, or one isolated cross-cutting gate change, per PR.
+- [ ] Each acceptance criterion has contract or edge-case test evidence.
+- [ ] The documented gates pass on this commit.
+- [ ] Measure size when a bundle or export changes; add or update JSDoc when a public API changes.
+- [ ] Required changeset and documentation updates are included.
+- [ ] No tests were disabled to pass checks.
+- [ ] Generated artifacts were regenerated with official tools, when applicable.
 
 ## Reuse
 
