@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
-  "contentHash": "a9e57b6016f89fa03ad80875796618e4e3a97839778f82ed77b8f814b7ed935b",
+  "contentHash": "08ba8054902239458018d02c13d86938e8007d4106917f411cc823834a35656e",
   "contentHashAlgo": "sha256-normalized-v1",
-  "generatedAt": "2026-10-03T12:53:03.399Z",
+  "generatedAt": "2026-10-03T18:57:44.406Z",
   "project": {
     "name": "AgentsKit Harness",
     "root": "."
@@ -892,6 +892,18 @@
         "human"
       ],
       "contentHash": "3316f4f604c4a790c8921496235e134e4cc9013a3525390916c038f3d19ff773"
+    },
+    {
+      "id": "document:docs/ADR-0043-delivery-state-module-boundary.md",
+      "type": "document",
+      "title": "ADR-0043: Delivery state module boundary",
+      "path": "docs/ADR-0043-delivery-state-module-boundary.md",
+      "description": "Status: Accepted",
+      "tags": [
+        "document",
+        "human"
+      ],
+      "contentHash": "115cc095326558fc4e3d27bc13b9cb6df1d03cf5318b4341be2dae5bf12d7515"
     },
     {
       "id": "document:docs/GETTING-STARTED.md",
@@ -3999,6 +4011,32 @@
       "contentHash": "690fb3ada69d66a629877ce352483c5508805e532ce0cbce3d6c396a8844d0a5"
     },
     {
+      "id": "module:src/loop/deliver-state.ts",
+      "type": "module",
+      "title": "deliver-state.ts",
+      "path": "src/loop/deliver-state.ts",
+      "symbols": [
+        "DeliverOutcome",
+        "DeliveryHandoff",
+        "DeliveryState",
+        "MAX_LOST_TRACKING_RESTARTS",
+        "approveHeldDelivery",
+        "clearRestarts",
+        "deliveryStatePath",
+        "listDispatched",
+        "markDispatchCancelled",
+        "readDeliveryState",
+        "readRestarts",
+        "restartsPath"
+      ],
+      "tags": [
+        "module",
+        "ts",
+        "loop"
+      ],
+      "contentHash": "c788ef33f550b857c86f6d1a149270d80d205b83bbd2c4b6b8664563c0ed192a"
+    },
+    {
       "id": "module:src/loop/deliver.ts",
       "type": "module",
       "title": "deliver.ts",
@@ -4030,7 +4068,7 @@
         "ts",
         "loop"
       ],
-      "contentHash": "a60b7d114d950cf0045bdca09d8a94337156f45de171149f670f0af266e5bcd5"
+      "contentHash": "0844e437c2b517b416e94950e3d4469017f4777f92cc4f7896104593d29af480"
     },
     {
       "id": "module:src/loop/detached-worker.ts",
@@ -9090,8 +9128,8 @@
     }
   },
   "inputs": {
-    "hash": "d6f89e6f1d1059ab39b99589d580bace3530ff552f7c1debe8a8f20d827b443c",
-    "fileCount": 551,
+    "hash": "6559d3403e5137b0292d2f52eee54dd230ff98497f7c0644d00443f7f767d02d",
+    "fileCount": 553,
     "projectionVersion": 2
   },
   "retrieval": {
@@ -9113,9 +9151,9 @@
   "projection": {
     "type": "retrieval-index",
     "schemaVersion": 1,
-    "contentHash": "8492931135327993018039181711c71b6a9ee77428fd0f23f0c8965605a141d0",
+    "contentHash": "db9f5ac0bedd9b5a4553834ef104f764b5ecabb82b08e1b109a48d6fa4aa861c",
     "contentHashAlgo": "sha256-normalized-v1",
-    "snapshotHash": "dc0190d152dcdb026882a8426adae553ab0814c856c24c7e1128731bdaeebaa2",
+    "snapshotHash": "ba00aabade3f366f345d5c0fd2724dee02cdd69c6e8327abd4831a131ca04037",
     "overlayHash": "f99666ff9119084dd25c2974ae64eb6935ec2aa785ff5ad478fb9d541f7a5e94",
     "configurationHash": "816afaf6a7dc09767f7594d8fd80024612ca0f33becf0e44dde0107fcf2782df",
     "lexiconVersion": 1,
@@ -9135,7 +9173,7 @@
     },
     "lexical": {
       "version": 1,
-      "documentCount": 560,
+      "documentCount": 562,
       "fieldNames": [
         "aliases",
         "body",
@@ -9146,13 +9184,13 @@
         "title"
       ],
       "averageFieldLength": {
-        "aliases": 2.9267857142857143,
-        "body": 43.93571428571428,
-        "headings": 3.8214285714285716,
-        "path": 6.101785714285715,
-        "summary": 2.5964285714285715,
-        "symbols": 14.082142857142857,
-        "title": 3.9410714285714286
+        "aliases": 2.925266903914591,
+        "body": 43.96085409252669,
+        "headings": 3.8256227758007118,
+        "path": 6.106761565836299,
+        "summary": 2.590747330960854,
+        "symbols": 14.1067615658363,
+        "title": 3.9466192170818504
       }
     },
     "entries": [
@@ -9677,7 +9715,7 @@
           ],
           "outbound": []
         },
-        "contentHash": "4549c955cbbcb7c12207702e8b1cc896a0dd7e7deba7b08854ccaa7e3fda257a",
+        "contentHash": "da7432cf399f0c8cedbd3fc3d3a2a326f1eb6a34e7944d8c3b842286d208426e",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -11690,11 +11728,6 @@
             {
               "kind": "mentions-symbol",
               "id": "module:src/loop/contract.ts",
-              "confidence": "observed"
-            },
-            {
-              "kind": "mentions-symbol",
-              "id": "module:src/loop/deliver.ts",
               "confidence": "observed"
             },
             {
@@ -13957,6 +13990,50 @@
           ]
         },
         "contentHash": "3316f4f604c4a790c8921496235e134e4cc9013a3525390916c038f3d19ff773",
+        "provenance": "observed",
+        "confidence": "observed"
+      },
+      {
+        "id": "document:docs/ADR-0043-delivery-state-module-boundary.md",
+        "kind": "document",
+        "path": "docs/ADR-0043-delivery-state-module-boundary.md",
+        "title": "ADR-0043: Delivery state module boundary",
+        "summary": "Status: Accepted",
+        "audience": "human",
+        "aliases": [],
+        "tags": [
+          "document",
+          "human"
+        ],
+        "fields": {
+          "title": "ADR-0043: Delivery state module boundary",
+          "headings": "ADR-0043: Delivery state module boundary Context Decision Consequences",
+          "path": "docs/ADR-0043-delivery-state-module-boundary.md",
+          "symbols": "",
+          "summary": "Status: Accepted",
+          "body": "ADR-0043: Delivery state module boundary Status: Accepted Context src/loop/deliver.ts combines the delivery state machine with persisted delivery state and dispatch inventory helpers used across the loop and UI. The state helpers form a cohesive file-backed API with higher fan-in than the state machine itself. Decision Move delivery state types, state read/write helpers, dispatch inventory, and restart bookkeeping into src/loop/deliver-state.ts . Keep the existing exports from src/loop/deliver.ts as re-exports so callers and the public API stay stable. Consequences Persistent state operations can be reviewed and tested independently from delivery orchestration. The move does not change serialized formats or runtime behavior; future changes to either module still need the loop and package checks.",
+          "aliases": "document human"
+        },
+        "graph": {
+          "pagerank": 0,
+          "inboundLinks": 0,
+          "coveredBy": [],
+          "mentionedBy": [],
+          "inbound": [],
+          "outbound": [
+            {
+              "kind": "mentions",
+              "id": "module:src/loop/deliver-state.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "mentions",
+              "id": "module:src/loop/deliver.ts",
+              "confidence": "observed"
+            }
+          ]
+        },
+        "contentHash": "115cc095326558fc4e3d27bc13b9cb6df1d03cf5318b4341be2dae5bf12d7515",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -17663,6 +17740,11 @@
           "areaId": "area:src/adapters",
           "packageId": "package:@agentskit/harness",
           "inbound": [
+            {
+              "kind": "imports",
+              "id": "module:src/loop/deliver-state.ts",
+              "confidence": "observed"
+            },
             {
               "kind": "imports",
               "id": "module:src/loop/deliver.ts",
@@ -22798,6 +22880,11 @@
             },
             {
               "kind": "imports",
+              "id": "module:src/loop/deliver-state.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
               "id": "module:src/loop/deliver.ts",
               "confidence": "observed"
             },
@@ -22829,11 +22916,6 @@
             {
               "kind": "imports",
               "id": "module:src/loop/plan-vote.ts",
-              "confidence": "observed"
-            },
-            {
-              "kind": "imports",
-              "id": "module:src/loop/queue.ts",
               "confidence": "observed"
             }
           ],
@@ -23510,6 +23592,11 @@
             {
               "kind": "imports",
               "id": "module:src/loop/contract.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
+              "id": "module:src/loop/deliver-state.ts",
               "confidence": "observed"
             },
             {
@@ -26084,11 +26171,9 @@
         },
         "graph": {
           "pagerank": 0,
-          "inboundLinks": 1,
+          "inboundLinks": 0,
           "coveredBy": [],
-          "mentionedBy": [
-            "document:apps/docs/content/docs/reference/configuration.mdx"
-          ],
+          "mentionedBy": [],
           "areaId": "area:src/loop",
           "packageId": "package:@agentskit/harness",
           "inbound": [
@@ -26135,6 +26220,11 @@
             {
               "kind": "imports",
               "id": "module:src/loop/debrief.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
+              "id": "module:src/loop/deliver-state.ts",
               "confidence": "observed"
             },
             {
@@ -26405,11 +26495,6 @@
             {
               "kind": "imports",
               "id": "module:test/ui-system.test.ts",
-              "confidence": "observed"
-            },
-            {
-              "kind": "mentions",
-              "id": "document:apps/docs/content/docs/reference/configuration.mdx",
               "confidence": "observed"
             }
           ],
@@ -27155,6 +27240,98 @@
         "confidence": "observed"
       },
       {
+        "id": "module:src/loop/deliver-state.ts",
+        "kind": "module",
+        "path": "src/loop/deliver-state.ts",
+        "title": "deliver-state.ts",
+        "aliases": [],
+        "symbols": [
+          "DeliverOutcome",
+          "DeliveryHandoff",
+          "DeliveryState",
+          "MAX_LOST_TRACKING_RESTARTS",
+          "approveHeldDelivery",
+          "clearRestarts",
+          "deliveryStatePath",
+          "listDispatched",
+          "markDispatchCancelled",
+          "readDeliveryState",
+          "readRestarts",
+          "restartsPath"
+        ],
+        "tags": [
+          "module",
+          "ts",
+          "loop"
+        ],
+        "fields": {
+          "title": "deliver-state.ts",
+          "headings": "",
+          "path": "src/loop/deliver-state.ts",
+          "symbols": "DeliverOutcome DeliveryHandoff DeliveryState MAX_LOST_TRACKING_RESTARTS approveHeldDelivery clearRestarts deliveryStatePath listDispatched markDispatchCancelled readDeliveryState readRestarts restartsPath",
+          "summary": "",
+          "body": "",
+          "aliases": "module ts loop"
+        },
+        "graph": {
+          "pagerank": 0,
+          "inboundLinks": 1,
+          "coveredBy": [],
+          "mentionedBy": [
+            "document:docs/ADR-0043-delivery-state-module-boundary.md"
+          ],
+          "areaId": "area:src/loop",
+          "packageId": "package:@agentskit/harness",
+          "inbound": [
+            {
+              "kind": "imports",
+              "id": "module:src/loop/deliver.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "mentions",
+              "id": "document:docs/ADR-0043-delivery-state-module-boundary.md",
+              "confidence": "observed"
+            }
+          ],
+          "outbound": [
+            {
+              "kind": "imports",
+              "id": "module:src/adapters/code-review.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
+              "id": "module:src/kernel/errors.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
+              "id": "module:src/kernel/json-file.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
+              "id": "module:src/loop/config.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
+              "id": "module:src/loop/fs-atomic.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
+              "id": "module:src/loop/tick.ts",
+              "confidence": "observed"
+            }
+          ]
+        },
+        "contentHash": "c788ef33f550b857c86f6d1a149270d80d205b83bbd2c4b6b8664563c0ed192a",
+        "provenance": "observed",
+        "confidence": "observed"
+      },
+      {
         "id": "module:src/loop/deliver.ts",
         "kind": "module",
         "path": "src/loop/deliver.ts",
@@ -27202,7 +27379,7 @@
           "coveredBy": [],
           "mentionedBy": [
             "document:AGENTS.md",
-            "document:CHANGELOG.md",
+            "document:docs/ADR-0043-delivery-state-module-boundary.md",
             "document:docs/ADR-0040-control-plane-v2.md"
           ],
           "areaId": "area:src/loop",
@@ -27289,8 +27466,8 @@
               "confidence": "observed"
             },
             {
-              "kind": "mentions-symbol",
-              "id": "document:CHANGELOG.md",
+              "kind": "mentions",
+              "id": "document:docs/ADR-0043-delivery-state-module-boundary.md",
               "confidence": "observed"
             },
             {
@@ -27397,6 +27574,11 @@
             },
             {
               "kind": "imports",
+              "id": "module:src/loop/deliver-state.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
               "id": "module:src/loop/doctor.ts",
               "confidence": "observed"
             },
@@ -27497,7 +27679,7 @@
             }
           ]
         },
-        "contentHash": "a60b7d114d950cf0045bdca09d8a94337156f45de171149f670f0af266e5bcd5",
+        "contentHash": "0844e437c2b517b416e94950e3d4469017f4777f92cc4f7896104593d29af480",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -28361,6 +28543,11 @@
             {
               "kind": "imports",
               "id": "module:src/loop/contract.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
+              "id": "module:src/loop/deliver-state.ts",
               "confidence": "observed"
             },
             {
@@ -32665,6 +32852,11 @@
             {
               "kind": "imports",
               "id": "module:src/loop/debrief.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
+              "id": "module:src/loop/deliver-state.ts",
               "confidence": "observed"
             },
             {
