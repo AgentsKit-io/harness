@@ -48,7 +48,7 @@
     "test:docs-artifacts": "node --test scripts/docs-artifacts-contract.test.mjs scripts/frontmatter.test.mjs",
     "docs:typecheck": "pnpm --filter @agentskit/harness-docs typecheck",
     "test": "pnpm typecheck && vitest run --config vitest.config.ts test && node -e \"console.log(JSON.stringify({status:'passed',criteria:['package']}))\"",
-    "test:coverage": "vitest run --config vitest.config.ts --coverage test",
+    "test:coverage": "pnpm typecheck && vitest run --config vitest.config.ts --coverage test && node -e \"console.log(JSON.stringify({status:'passed',criteria:['package']}))\"",
     "test:contract": "pnpm typecheck && vitest run --config vitest.config.ts test/contract.test.ts && node -e \"console.log(JSON.stringify({status:'passed',criteria:['protocol']}))\"",
     "test:extensibility": "pnpm typecheck && vitest run --config vitest.config.ts test/extensibility.test.ts && node -e \"console.log(JSON.stringify({status:'passed',criteria:['extensibility']}))\"",
     "test:event-log": "pnpm typecheck && vitest run --config vitest.config.ts test/extensibility.test.ts test/harness.test.ts -t \"ordered append-only lifecycle log|complete typed task through human approval|authorization only when tracking|human rejection\" && node -e \"console.log(JSON.stringify({status:'passed',criteria:['event-log','verification-attestation','approval-attestation']}))\"",

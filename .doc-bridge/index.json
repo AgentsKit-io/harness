@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
-  "contentHash": "3689f4c69fce0d1f47ecabf062d44e9565acb86770b8606ef4d697f5888022bb",
+  "contentHash": "df78e37cea742fad4b5af627b57891294aa5ffa53955b642c08fb33919e035a9",
   "contentHashAlgo": "sha256-normalized-v1",
-  "generatedAt": "2026-10-03T01:08:54.883Z",
+  "generatedAt": "2026-10-03T01:20:18.651Z",
   "project": {
     "name": "AgentsKit Harness",
     "root": "."
@@ -298,12 +298,12 @@
       "type": "document",
       "title": "Changelog",
       "path": "CHANGELOG.md",
-      "description": "Docs artifact frontmatter. Documentation metadata now uses shared frontmatter splitting and YAML parsing, including folded scalars, block lists, BOM and CRLF input.",
+      "description": "Single test run in CI. pnpm test:coverage now includes typecheck and the package criterion output, so the verify job runs the test suite once while retaining coverage thresholds.",
       "tags": [
         "document",
         "project"
       ],
-      "contentHash": "90d4bc2c9a0425132dd8c0ca37f362ed116128cc0b25c0a653e3ab115406c67d"
+      "contentHash": "7bbc40151b0717d68d3cff7519572300ca8b5f678c4cd6989ce7e707cc52fbc7"
     },
     {
       "id": "document:CLAUDE.md",
@@ -9051,7 +9051,7 @@
     }
   },
   "inputs": {
-    "hash": "4daebf06c9af5dd33985c2cb5ce45f7d3f7a966b52b3ce20f5e64abc2fd52819",
+    "hash": "d68366a64d4027afad862e85035ad4101d23b85934b0798ba2b8321c0e18bbb9",
     "fileCount": 548,
     "projectionVersion": 2
   },
@@ -9074,9 +9074,9 @@
   "projection": {
     "type": "retrieval-index",
     "schemaVersion": 1,
-    "contentHash": "7a70c79344caf695338b3e9c17ece1ed67a97767a5684d1cfe0f56540f664849",
+    "contentHash": "2dbc9ab29c0726053e48666ba0937001dbb0831a22b92f25668c0f79232ba85b",
     "contentHashAlgo": "sha256-normalized-v1",
-    "snapshotHash": "44b7183ae2e29f50251bf98555b05c3acefa1c003920c2224610a17095db8a76",
+    "snapshotHash": "ff3c145c3d4e03d1dc8f219b43032bb77467d4d0eed577e63dfaf2619773a8e7",
     "overlayHash": "f99666ff9119084dd25c2974ae64eb6935ec2aa785ff5ad478fb9d541f7a5e94",
     "configurationHash": "816afaf6a7dc09767f7594d8fd80024612ca0f33becf0e44dde0107fcf2782df",
     "lexiconVersion": 1,
@@ -9108,10 +9108,10 @@
       ],
       "averageFieldLength": {
         "aliases": 2.926391382405745,
-        "body": 43.951526032315975,
+        "body": 43.94793536804309,
         "headings": 3.834829443447038,
         "path": 6.1041292639138245,
-        "summary": 2.6122082585278275,
+        "summary": 2.614003590664273,
         "symbols": 14.1508078994614,
         "title": 3.940754039497307
       }
@@ -11421,7 +11421,7 @@
         "kind": "document",
         "path": "CHANGELOG.md",
         "title": "Changelog",
-        "summary": "Docs artifact frontmatter. Documentation metadata now uses shared frontmatter splitting and YAML parsing, including folded scalars, block lists, BOM and CRLF input.",
+        "summary": "Single test run in CI. pnpm test:coverage now includes typecheck and the package criterion output, so the verify job runs the test suite once while retaining coverage thresholds.",
         "audience": "human",
         "aliases": [],
         "tags": [
@@ -11433,8 +11433,8 @@
           "headings": "Changelog [Unreleased] [0.22.3] — 2026-09-27 [0.22.2] — 2026-09-27 [0.22.1] — 2026-09-27 [0.22.0] — 2026-09-27 [0.21.0] — 2026-09-26 [0.20.0] — 2026-09-25 [0.19.0] — 2026-09-23 [0.18.0] - 2026-09-22 Release Hygiene Boundaries Token and time economy Breaking Gates [0.17.0] - 2026-09-22 Worker guard Release can no longer publish past a red gate [0.16.0] - 2026-09-22 Verification and token waste Observability: every deterministic phase, timestamped and attributed Event bus, unified House conventions [0.15.0] - 2026-09-20 The phases of an issue leave evidence behind layers: and documents: — where the work belongs, and where the decisions live Per-role settings, and which phases run at all The four cost levers, finished release.waiting, once per head The event vocabulary, and the compiler that guards it The installed agent is code, not a markdown file to append to Documentation Windows stops being a second-class platform The licence, and a surface for the numbers The harness has a folder of its own The documentation site The twelve steps of the roadmap, in the order they landed loop install reconciles instead of rewriting loop stage observe — the health scan comes into the repository Configuration in four layers, and the loop learns to call a human The roles become installed agents, and the retro can improve them Presets and a grilled loop init intake, maintain, and release notes — the cycle closes Cost: a routing policy, two ceilings, and two of the four levers Connectors: the engine stops naming vendors release — promotion and deploy, with a human in front loop plan — a vague objective becomes issues A plan, voted on, before any worker starts The Definition of Done becomes two lists, both proven on the PR The retro starts improving the loop, within declared limits [0.14.0] - 2026-09-19 The queue stops being \"my issues\" Review strictness that matches the risk Telling the worker the truth about the base branch Memory: recurrence instead of guesswork One human approval covers the goal's own effects Fixes that had never shipped [0.13.0] - 2026-09-14 [0.12.0] - 2026-09-13 [0.11.0] - 2026-09-13 [0.10.0] - 2026-09-12 [0.9.0] - 2026-09-12 [0.8.0] - 2026-09-12",
           "path": "CHANGELOG.md",
           "symbols": "",
-          "summary": "Docs artifact frontmatter. Documentation metadata now uses shared frontmatter splitting and YAML parsing, including folded scalars, block lists, BOM and CRLF input.",
-          "body": "Changelog [Unreleased] - Docs artifact frontmatter. Documentation metadata now uses shared frontmatter splitting and YAML parsing, including folded scalars, block lists, BOM and CRLF input. - Coverage floor. pnpm test:coverage now enforces ratcheted source coverage in CI. - Shared record guard. Harness internals now reuse one non-null, non-array object check while preserving caller-specific errors and fallbacks. - Cryptographic run IDs. Verification runs retain their timestamp and PID prefix while using a cryptographic random suffix. - Bounded model catalog refresh. Artificial Analysis refreshes use @agentskit/net deadlines and a 2 MiB JSON body cap; a failed refresh keeps the existing catalog cache. - Canonical shared hashes. New artifacts, event-chain entries, manifests, verification digests and cache keys use @agentskit/core/hash ; readers still accept existing persisted hashes, and stable IDs keep their legacy format. - Portability via @agentskit/cross-platform . Process spawning ( .cmd shim resolution), process-tree kill and path/line helpers now come from the shared package instead of hand-rolled copies; cross-spawn is no longer a direct dependency. pnpm typecheck runs agentskit-cross-platform check against .cross-platform-baseline.json , so a new Windows-hostile pattern fails CI. [0.22.3] — 2026-09-27 - Lost-track restart. A run whose worker terminal is gone, or that stays idle after a check-in, before any PR is aborted and re-dispatched from scratch (bounded, worker.lost-tracking / worker.restarted ) ( 147). It never destroys work: it needs the evidence on two consecutive passes, escalates stuck and keeps the worktree when there are unpushed commits or uncommitted edits (the check fails closed), removes a clean worktree without --force , captures the worker screen into the run first, waits while the tracker is cooling down, and does nothing destructive until its tracker writes succeed. A human Retry resets the restart budget ( 151). - A worker that declares itself blocked ( BLOCKED: worktree comment) is escalated to a person — also when it exited afterwards — instead of being nudged, handed off or restarted ( 150, 151). - Never type into a bare shell. A nudge into a terminal that is only a shell prompt relaunches the agent (the old terminal is closed first; an idle agent from a CLI that does not register with Orca is never mistaken for a shell); no-PR worker events keep the issue running in the UI ( 144, 151). - Close-or-reopen decisions on an abandoned delivery stick and release the issue's lease ( 145, 151). - UI. Worker slots are counted the way the tick counts them ( 148); the projection rebuilds itself when the reducer changes ( 149). [0.22.2] — 2026-09-27 - Review floor decides. A reviewer that exits 1 (or reports blocking ) on findings all below delivery.review.minSeverity is clean, not \"findings\" with nothing to fix — delivery no longer waits forever for a push nobody needs. A reviewer claiming blocking with no finding at all is incomplete , never a merge ( 133). - Answered contract questions regenerate the contract instead of returning the same blocked one ( 138). - An open contract question is not re-asked every tick. Contract regeneration is skipped while a contract-stage question is open (no more repeated escalations and orchestrator calls); an explicit-queue run is left needs-input , never stuck in dispatching ; superseded contract questions are marked stale ( 131). - Retry resumes a blocked delivery on its open PR (fix-round cap, stuck, failed), resetting its error budget and tracker state; a cancelled run still gets a fresh attempt. Holds that need a person are not bypassed ( 142). - doctor accepts automations pinned by the UI; GitHub preflight reports missing lifecycle labels as a warning instead of failing the queue read ( 143). [0.22.1] — 2026-09-27 Failures that were invisible, made visible or closed. Every fix ships with a regression test that fails on 0.22.0. - The UI no longer keeps the tracker ra",
+          "summary": "Single test run in CI. pnpm test:coverage now includes typecheck and the package criterion output, so the verify job runs the test suite once while retaining coverage thresholds.",
+          "body": "Changelog [Unreleased] - Single test run in CI. pnpm test:coverage now includes typecheck and the package criterion output, so the verify job runs the test suite once while retaining coverage thresholds. - Docs artifact frontmatter. Documentation metadata now uses shared frontmatter splitting and YAML parsing, including folded scalars, block lists, BOM and CRLF input. - Coverage floor. pnpm test:coverage now enforces ratcheted source coverage in CI. - Shared record guard. Harness internals now reuse one non-null, non-array object check while preserving caller-specific errors and fallbacks. - Cryptographic run IDs. Verification runs retain their timestamp and PID prefix while using a cryptographic random suffix. - Bounded model catalog refresh. Artificial Analysis refreshes use @agentskit/net deadlines and a 2 MiB JSON body cap; a failed refresh keeps the existing catalog cache. - Canonical shared hashes. New artifacts, event-chain entries, manifests, verification digests and cache keys use @agentskit/core/hash ; readers still accept existing persisted hashes, and stable IDs keep their legacy format. - Portability via @agentskit/cross-platform . Process spawning ( .cmd shim resolution), process-tree kill and path/line helpers now come from the shared package instead of hand-rolled copies; cross-spawn is no longer a direct dependency. pnpm typecheck runs agentskit-cross-platform check against .cross-platform-baseline.json , so a new Windows-hostile pattern fails CI. [0.22.3] — 2026-09-27 - Lost-track restart. A run whose worker terminal is gone, or that stays idle after a check-in, before any PR is aborted and re-dispatched from scratch (bounded, worker.lost-tracking / worker.restarted ) ( 147). It never destroys work: it needs the evidence on two consecutive passes, escalates stuck and keeps the worktree when there are unpushed commits or uncommitted edits (the check fails closed), removes a clean worktree without --force , captures the worker screen into the run first, waits while the tracker is cooling down, and does nothing destructive until its tracker writes succeed. A human Retry resets the restart budget ( 151). - A worker that declares itself blocked ( BLOCKED: worktree comment) is escalated to a person — also when it exited afterwards — instead of being nudged, handed off or restarted ( 150, 151). - Never type into a bare shell. A nudge into a terminal that is only a shell prompt relaunches the agent (the old terminal is closed first; an idle agent from a CLI that does not register with Orca is never mistaken for a shell); no-PR worker events keep the issue running in the UI ( 144, 151). - Close-or-reopen decisions on an abandoned delivery stick and release the issue's lease ( 145, 151). - UI. Worker slots are counted the way the tick counts them ( 148); the projection rebuilds itself when the reducer changes ( 149). [0.22.2] — 2026-09-27 - Review floor decides. A reviewer that exits 1 (or reports blocking ) on findings all below delivery.review.minSeverity is clean, not \"findings\" with nothing to fix — delivery no longer waits forever for a push nobody needs. A reviewer claiming blocking with no finding at all is incomplete , never a merge ( 133). - Answered contract questions regenerate the contract instead of returning the same blocked one ( 138). - An open contract question is not re-asked every tick. Contract regeneration is skipped while a contract-stage question is open (no more repeated escalations and orchestrator calls); an explicit-queue run is left needs-input , never stuck in dispatching ; superseded contract questions are marked stale ( 131). - Retry resumes a blocked delivery on its open PR (fix-round cap, stuck, failed), resetting its error budget and tracker state; a cancelled run still gets a fresh attempt. Holds that need a person are not bypassed ( 142). - doctor accepts automations pinned by the UI; GitHub preflight reports missing lifecycle labels as a warning instead of failing the queue read ( 1",
           "aliases": "document project"
         },
         "graph": {
@@ -11710,7 +11710,7 @@
             }
           ]
         },
-        "contentHash": "90d4bc2c9a0425132dd8c0ca37f362ed116128cc0b25c0a653e3ab115406c67d",
+        "contentHash": "7bbc40151b0717d68d3cff7519572300ca8b5f678c4cd6989ce7e707cc52fbc7",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -46534,7 +46534,7 @@
           ],
           "outbound": []
         },
-        "contentHash": "9ba94dff768a3bbea793f87dc2d7f2701ca074bbaaa7e58456236eae665dcf41",
+        "contentHash": "5eb548a42e48afdea37d6adda00a2bbac941a17657b276a983385e74518d91be",
         "provenance": "observed",
         "confidence": "observed"
       },
