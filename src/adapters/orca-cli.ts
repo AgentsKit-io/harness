@@ -320,7 +320,12 @@ export const orcaTerminalEnter = async (runner: CommandRunner, input: { readonly
 
 export const orcaTerminalSend = async (runner: CommandRunner, input: { readonly terminal: string; readonly text: string; readonly enter?: boolean; readonly waitSubmitSeconds?: number; readonly retryRequest?: string }, options: OrcaCliOptions = {}): Promise<OrcaSendReceipt> => {
   const argv = ['terminal', 'send', '--terminal', input.terminal, '--text', input.text, ...(input.enter === false ? [] : ['--enter']), ...(input.retryRequest ? ['--retry-request', input.retryRequest] : [])]
-  const timeoutMs = options.timeoutMs ?? ((input.waitSubmitSeconds ?? 0) * 1000 + 30_000)
+  // A caller-wide options.timeoutMs (e.g. the project's general orca.timeoutMs, often ~20s) must
+  // never cut this call shorter than the --wait-submit window it was asked to honor plus IPC
+  // slack, or Orca kills the request before its own internal wait finishes — observed live as
+  // deterministic "terminal send timed out" dispatch failures with waitSubmitSeconds: 15+ against
+  // a 20_000ms options.timeoutMs. Floor, not override.
+  const timeoutMs = Math.max(options.timeoutMs ?? 0, (input.waitSubmitSeconds ?? 0) * 1000 + 30_000)
   try {
     return parseOrcaSendReceipt(await orcaJson(runner, [...argv, ...(input.waitSubmitSeconds ? ['--wait-submit', String(input.waitSubmitSeconds)] : [])], { ...options, timeoutMs }))
   } catch (error) {
