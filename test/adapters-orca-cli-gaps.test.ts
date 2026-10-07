@@ -311,3 +311,22 @@ describe('orcaTerminalSend retry by request id', () => {
     expect(plain.calls).toHaveLength(1)
   })
 })
+
+describe('orcaTerminalSend timeout floor', () => {
+  it('never lets a short project-wide options.timeoutMs cut the call shorter than waitSubmitSeconds + IPC slack', async () => {
+    const seenTimeouts: (number | undefined)[] = []
+    const runner: CommandRunner = { run: async (_argv, options) => { seenTimeouts.push(options?.timeoutMs); return ok({ send: { accepted: true } }) } }
+    // Regression: a project's loop.config.yaml commonly sets orca.timeoutMs ~20_000ms for quick calls (worktree
+    // list/create). Passed straight through as options.timeoutMs here, it used to win outright via `??`, killing
+    // the request years before Orca's own --wait-submit 15 window (plus IPC overhead) could return — deterministic
+    // "terminal send timed out after 20000ms" dispatch failures even though Orca itself answered in under a second.
+    await orcaTerminalSend(runner, { terminal: 't', text: 'brief', enter: true, waitSubmitSeconds: 15 }, { timeoutMs: 20_000 })
+    expect(seenTimeouts[0]).toBeGreaterThanOrEqual(15_000 + 30_000)
+    // A longer caller-supplied timeout is still respected (it's a floor, not a fixed replacement).
+    await orcaTerminalSend(runner, { terminal: 't', text: 'brief', enter: true, waitSubmitSeconds: 5 }, { timeoutMs: 120_000 })
+    expect(seenTimeouts[1]).toBe(120_000)
+    // No waitSubmitSeconds and no options.timeoutMs: the original 30s default still applies.
+    await orcaTerminalSend(runner, { terminal: 't', text: 'brief', enter: true })
+    expect(seenTimeouts[2]).toBe(30_000)
+  })
+})
