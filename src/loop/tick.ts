@@ -695,6 +695,25 @@ export const runTick = async (input: TickInput): Promise<TickReport> => {
       if (!dryRun) clearIssueFailures(loaded.stateDir, candidate.identifier)
       notes.push(`${candidate.identifier}: resumed (the "${config.resilience.pausedLabel}" label was removed)`)
     }
+    // An issue with an open (unanswered) HITL request already has a standing question for a human — fetching
+    // its full detail from the tracker every tick just to re-ask the identical question wastes a tracker call
+    // for no new information, and at scale (dozens of standing candidates) it is what actually exhausts a
+    // rate-limited tracker API, not the queue listing itself. `candidate.identifier` (from the queue read
+    // already in hand) is enough to check the local HITL store — no tracker call needed until
+    // `store.answer(...)` marks the request no longer 'open'. Reproduced live: AGE-1858 reached its 12th
+    // consecutive identical escalation, and — separately — a workspace with dozens of standing escalations
+    // exhausted its Linear rate limit because every one of them still re-fetched full issue detail every 5 min.
+    // Contract questions only: an open plan or review question belongs to its own stage and must not freeze this one.
+    const openHitl = createHitlStore(loaded.stateDir).list({ status: 'open', issue: candidate.identifier }).filter((request) => request.stage === 'contract')
+    if (openHitl.length) {
+      const request = openHitl[0]!
+      const reason = `awaiting a human answer to a standing question (asked ${request.createdAt}): ${request.question}`
+      // Same bookkeeping as the escalation path below: a queue run left in `dispatching` is never picked up
+      // again (`queue.mode: explicit` reports "no longer queued" every tick, even after the answer).
+      updateQueueRun(queueRun(candidate.identifier), { status: 'needs-input', error: reason, projection: { stage: 'needs-input' } })
+      results.push({ issue: candidate.identifier, outcome: 'escalated', reason })
+      continue
+    }
     let detail: TrackerIssueDetail
     try { detail = await tracker.issue(candidate.identifier) } catch (error) {
       if (!dryRun) appendLoopEvent(loaded.stateDir, { at: now().toISOString(), type: 'tracker.sync-failed', issue: candidate.identifier, operation: 'fetch', error: message(error) }, bus)
@@ -735,25 +754,6 @@ export const runTick = async (input: TickInput): Promise<TickReport> => {
       : builder)
     const issueOrchestrators = applyRoleSettings(orchestratorCandidates, orchestratorSettings)
 
-    // An issue with an open (unanswered) HITL request already has a standing question for a human — regenerating
-    // its contract every tick just to re-ask the identical question wastes a full orchestrator call for no new
-    // information, and self-perpetuates: escalating posts a tracker comment, which bumps the issue's own
-    // updatedAt, which (via contractIsFresh below) invalidates the very cache that would otherwise have skipped
-    // this. Reproduced live: AGE-1858 reached its 12th consecutive identical escalation, and the repeat
-    // evaluations ran long enough that fresh, never-yet-evaluated candidates never got reached in the same tick.
-    // Skip cheaply instead — until `store.answer(...)` marks the request no longer 'open', at which point the
-    // normal path below regenerates with `priorHitlAnswers` folded in.
-    // Contract questions only: an open plan or review question belongs to its own stage and must not freeze this one.
-    const openHitl = createHitlStore(loaded.stateDir).list({ status: 'open', issue: detail.identifier }).filter((request) => request.stage === 'contract')
-    if (openHitl.length) {
-      const request = openHitl[0]!
-      const reason = `awaiting a human answer to a standing question (asked ${request.createdAt}): ${request.question}`
-      // Same bookkeeping as the escalation path: a queue run left in `dispatching` is never picked up again
-      // (`queue.mode: explicit` reports "no longer queued" every tick, even after the answer).
-      updateQueueRun(selectedRun, { status: 'needs-input', error: reason, projection: { stage: 'needs-input' } })
-      results.push({ issue: detail.identifier, outcome: 'escalated', reason })
-      continue
-    }
     let stored = cachedContract
     // Reused below for the worker brief too (memory content cannot change mid-tick) — computing it once instead of
     // twice per dispatch halves this dispatch's memory-recall I/O (file reads + ranking) when memory.enabled.

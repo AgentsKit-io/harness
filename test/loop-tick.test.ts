@@ -687,10 +687,15 @@ describe('tick', () => {
     const orchestratorCallsAfterFirst = env.runner.calls.filter((argv) => argv[0] === 'claude' && argv[1] === '-p').length
     expect(orchestratorCallsAfterFirst).toBeGreaterThan(0)
 
+    env.runner.calls.length = 0
     const second = await runTick({ ...tickOptions(env), maxDispatch: 1, onlyIssue: 'ENG-20' })
     expect(second.results[0]).toMatchObject({ outcome: 'escalated', reason: expect.stringContaining('awaiting a human answer') })
-    const orchestratorCallsAfterSecond = env.runner.calls.filter((argv) => argv[0] === 'claude' && argv[1] === '-p').length
-    expect(orchestratorCallsAfterSecond).toBe(orchestratorCallsAfterFirst)
+    expect(env.runner.calls.filter((argv) => argv[0] === 'claude' && argv[1] === '-p')).toHaveLength(0)
+    // regression: 2026-09-29 — a workspace with dozens of standing escalations exhausted its Linear rate
+    // limit (2500/h) because every one of them still re-fetched full issue detail every tick even though
+    // the contract regeneration above was already skipped. The open-HITL check must run BEFORE the tracker
+    // fetch, not after it, or this candidate keeps costing one tracker call per tick forever.
+    expect(env.runner.calls.some((argv) => argv[1] === 'linear' && argv[2] === 'issue')).toBe(false)
   })
 
   it('in explicit queue mode, the open-HITL skip leaves the run needs-input, never stuck in dispatching', async () => {
