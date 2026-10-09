@@ -626,6 +626,29 @@ declared metric is not auto-adjustable either, because the metric is what revert
 Every side effect is recorded in `<stateDir>/events.ndjson`; `dispatch.json` per issue links the worktree,
 terminal handle, provider/model and lease for the deliver stage.
 
+### Topping up a `person` queue (`linear.refill`) and yielding to another loop (`queue.yieldTo`)
+
+`linear.refill` (`enabled: false` by default; `person` ownership only) runs before step 1: it counts the open issues
+already assigned to `linear.person` in `states` + `projects` (in-flight ones included) and, below `target` (default 4),
+assigns the next `target - held` UNASSIGNED issues — same filter and `order` as the queue, minus `excludeLabels` and
+`refill.skipLabels` — to that person (`linear.people[person]`). The rest of the pool stays unassigned for humans. A dry
+run only reports what it would assign; a failed assignment is a note (`queue.refilled` records the successful ones).
+
+`queue.yieldTo` lists other loops' `loop.config.yaml` files (relative to this one, or absolute). After step 1, if any
+of them has dispatchable work by its own `loop precheck tick`, this tick dispatches nothing new (`status: ok`, a
+`queue.yielded` event); running workers and delivery are unaffected, and this loop's own precheck reports
+`work: false` with the same reason. A sibling that cannot be loaded or prechecked is noted and not yielded to.
+
+```yaml
+# law-os/loop.config.yaml
+linear:
+  queueOwnership: person
+  refill: { enabled: true, target: 4, skipLabels: [QA, needs-info] }
+# design-system/loop.config.yaml
+queue:
+  yieldTo: [../law-os/loop.config.yaml]
+```
+
 Start from [`loop.config.example.yaml`](../loop.config.example.yaml) at the package root.
 
 ## Resilience: auto-pause after repeated failures

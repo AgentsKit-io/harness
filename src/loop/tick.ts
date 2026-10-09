@@ -1,5 +1,5 @@
 import { appendFileSync, existsSync, mkdirSync, readdirSync, readFileSync, renameSync, statSync, unlinkSync, writeFileSync } from 'node:fs'
-import { dirname, join } from 'node:path'
+import { dirname, join, resolve } from 'node:path'
 import { z } from 'zod'
 import type { CommandRunner } from '../adapters/command.js'
 import type { LoopIssue } from '../adapters/linear-orca.js'
@@ -38,6 +38,7 @@ import { createIssueQueue, type IssueRun } from './queue.js'
 import { createLifecycleStore } from './lifecycle.js'
 import { createHitlStore } from './hitl.js'
 import { activeTrackerCooldown, guardTracker, isTrackerRateLimit, TrackerCooldownError, type TrackerCooldown } from './tracker-cooldown.js'
+import { refillApplies, runRefill } from './refill.js'
 import { splitLines } from '@agentskit/cross-platform'
 
 export type TickOutcome = 'dispatched' | 'dry-run' | 'skipped' | 'escalated' | 'failed'
@@ -491,15 +492,68 @@ export const gatherLoopState = async (input: { readonly loaded: LoadedLoopConfig
 }
 
 /** Read-only: exit-0 semantics for Orca `--precheck`. Work exists when a builder is routable and a candidate waits; capacity is telemetry, not an enqueue or dispatch gate. */
-export const precheckTick = async (input: Omit<TickInput, 'dryRun' | 'maxDispatch'>): Promise<{ readonly work: boolean; readonly reason: string; readonly free: number; readonly candidates: number }> => {
+export const precheckTick = async (input: Omit<TickInput, 'dryRun' | 'maxDispatch'> & PrecheckScope): Promise<{ readonly work: boolean; readonly reason: string; readonly free: number; readonly candidates: number; readonly notes?: readonly string[] }> => {
   const loaded = input.loaded ?? loadLoopConfig(input.configPath)
   const now = input.now ?? (() => new Date())
   const cooling = activeTrackerCooldown(loaded.stateDir, now())
   if (cooling) return { work: false, reason: `tracker rate-limited; cooling down until ${cooling.until}`, free: 0, candidates: 0 }
   const state = await gatherLoopState({ loaded, runner: input.runner, ledger: createDispatchLedger(loaded.stateDir), env: input.env, platform: input.platform, now, onlyIssue: input.onlyIssue, machine: input.machine })
   const builder = state.routing['builder']?.selected ?? null
+  // Only an otherwise idle `person` loop asks whether its refill has something to pull in — with `runner: agent`,
+  // a precheck that never says "work" never starts the tick that would do the refilling. Skipped when a sibling is
+  // asking (`includeRefill: false`): a refill is work for this loop's own tick, not a reason for another to yield.
+  if (builder && !state.candidates.length && input.includeRefill !== false && loaded.config.queue.mode === 'backlog' && !input.onlyIssue && refillApplies(loaded.config)) {
+    const tracker = guardTracker(resolveConnectors({ runner: input.runner, config: loaded.config, env: input.env, dryRun: true }).tracker, { stateDir: loaded.stateDir, now, dryRun: true })
+    const refill = await runRefill({ config: loaded.config, tracker, person: state.person, dryRun: true })
+    if (refill?.planned.length) return { work: true, reason: `refill would assign ${refill.planned.length} issue(s) to ${refill.person} (${refill.held}/${refill.target} held)`, free: state.slots.free, candidates: 0 }
+  }
   const reason = !builder ? 'no builder provider available' : !state.candidates.length ? 'queue has no dispatchable candidate' : `${state.candidates.length} dispatch(es) possible; machine capacity is advisory`
-  return { work: Boolean(builder) && state.candidates.length > 0, reason, free: state.slots.free, candidates: state.candidates.length }
+  const work = Boolean(builder) && state.candidates.length > 0
+  // Asked last, and only when this loop would otherwise work: the siblings' own prechecks are the expensive part.
+  if (work && loaded.config.queue.yieldTo.length) {
+    const decision = await evaluateYield({ loaded, runner: input.runner, env: input.env, platform: input.platform, now, machine: input.machine, chain: input.yieldChain })
+    if (decision.to) return { work: false, reason: decision.reason, free: state.slots.free, candidates: state.candidates.length, notes: decision.notes }
+    if (decision.notes.length) return { work, reason, free: state.slots.free, candidates: state.candidates.length, notes: decision.notes }
+  }
+  return { work, reason, free: state.slots.free, candidates: state.candidates.length }
+}
+
+/** How a precheck is being asked: directly (the defaults), or by another loop deciding whether to yield to this one. */
+export interface PrecheckScope {
+  /** Config paths already being evaluated up the `queue.yieldTo` chain — a cycle (A yields to B, B to A) is cut, not followed. */
+  readonly yieldChain?: readonly string[]
+  /** `false` when a sibling asks: this loop's pending refill is not dispatchable work yet. Default true. */
+  readonly includeRefill?: boolean
+}
+
+export interface YieldDecision {
+  /** Project name of the first `queue.yieldTo` loop with dispatchable work, or null when this loop may dispatch. */
+  readonly to: string | null
+  readonly reason: string
+  readonly candidates: number
+  /** Siblings that could not be evaluated (and so were not yielded to). */
+  readonly notes: readonly string[]
+}
+
+/**
+ * Whether this loop must stand aside for a `queue.yieldTo` sibling this tick. Each sibling is judged by its own
+ * read-only `precheckTick` — exactly what `loop precheck tick -f <its config>` would say — so "has work" means the
+ * same thing here as it does to Orca. Fails open: a sibling that cannot be loaded or prechecked is a note, never a
+ * yield, because a broken neighbour must not stall this loop indefinitely.
+ */
+export const evaluateYield = async (input: { readonly loaded: LoadedLoopConfig; readonly runner: CommandRunner; readonly env?: NodeJS.ProcessEnv | undefined; readonly platform?: NodeJS.Platform | undefined; readonly now: () => Date; readonly machine?: TickInput['machine'] | undefined; readonly chain?: readonly string[] | undefined }): Promise<YieldDecision> => {
+  const notes: string[] = []
+  const chain = [...(input.chain ?? []), resolve(input.loaded.path)]
+  for (const entry of input.loaded.config.queue.yieldTo) {
+    const path = resolve(dirname(input.loaded.path), entry)
+    if (chain.includes(path)) { notes.push(`yieldTo ${entry}: already being evaluated up the yield chain (a cycle); ignored`); continue }
+    try {
+      const sibling = loadLoopConfig(path)
+      const result = await precheckTick({ loaded: sibling, runner: input.runner, ...(input.env ? { env: input.env } : {}), ...(input.platform ? { platform: input.platform } : {}), now: input.now, ...(input.machine ? { machine: input.machine } : {}), yieldChain: chain, includeRefill: false })
+      if (result.work) return { to: sibling.config.project.name, reason: `yielding to ${sibling.config.project.name}: ${result.candidates} dispatchable issue(s)`, candidates: result.candidates, notes }
+    } catch (error) { notes.push(`yieldTo ${entry}: could not evaluate (${message(error)}); not yielding to it`) }
+  }
+  return { to: null, reason: '', candidates: 0, notes }
 }
 
 const escalate = async (input: { readonly tracker: TrackerConnector; readonly config: LoopConfig; readonly issue: TrackerIssueDetail; readonly stored: StoredContract; readonly dryRun: boolean }): Promise<void> => {
@@ -553,6 +607,21 @@ export const runTick = async (input: TickInput): Promise<TickReport> => {
   }
   const cooling = activeTrackerCooldown(loaded.stateDir, now())
   if (cooling) return cooledReport(`cooling down until ${cooling.until}`)
+  // `linear.refill`: top the person's queue up from the unassigned pool BEFORE the queue is read, so what it assigns
+  // is dispatchable this very tick. A dry run only reports what it would take. Never throws (see `runRefill`); a rate
+  // limit it hits leaves the guard's cooldown behind, and the queue read below then returns the cooled report.
+  if (refillApplies(config) && config.queue.mode === 'backlog' && !input.onlyIssue) {
+    const refillTracker = guardTracker(resolveConnectors({ runner: input.runner, config, env: input.env, dryRun }).tracker, { stateDir: loaded.stateDir, now, dryRun, onRateLimited: trackerCooldownLogger(loaded.stateDir, now, bus) })
+    const refill = await runRefill({ config, tracker: refillTracker, person: queueOwner(loaded), dryRun })
+    if (refill) {
+      notes.push(...refill.notes)
+      if (refill.planned.length) notes.push(`dry-run: refill would assign ${refill.planned.join(', ')} to ${refill.person} (${refill.held}/${refill.target} held)`)
+      if (refill.assigned.length) {
+        notes.push(`refill: assigned ${refill.assigned.join(', ')} to ${refill.person} (${refill.held}/${refill.target} held before)`)
+        appendLoopEvent(loaded.stateDir, { at: now().toISOString(), type: 'queue.refilled', person: refill.person, issues: refill.assigned, held: refill.held, target: refill.target }, bus)
+      }
+    }
+  }
   let state: LoopState
   try { state = await gatherLoopState({ loaded, runner: input.runner, ledger, env: input.env, platform: input.platform, now, onlyIssue: input.onlyIssue, machine: input.machine, bus }) } catch (error) {
     if (error instanceof TrackerCooldownError || isTrackerRateLimit(error)) return cooledReport(message(error))
@@ -585,6 +654,20 @@ export const runTick = async (input: TickInput): Promise<TickReport> => {
     else notes.push('queue has no dispatchable candidate')
     await flushNotifications()
     return { ...base, status: 'idle', results, notes }
+  }
+  // `queue.yieldTo`: a higher-priority sibling loop with dispatchable work gets this machine's next slot, so this
+  // tick admits nothing new. Only the admission is skipped — workers already running, delivery and every other stage
+  // are untouched. Asked after the cheap checks above (no builder, no candidate), since each sibling costs a full
+  // precheck. A targeted tick (`--issue`) is an explicit human request and is not deferred.
+  if (config.queue.yieldTo.length && !input.onlyIssue) {
+    const decision = await evaluateYield({ loaded, runner: input.runner, env: input.env, platform: input.platform, now, machine: input.machine })
+    notes.push(...decision.notes)
+    if (decision.to) {
+      notes.push(`${decision.reason}; nothing new dispatched`)
+      if (!dryRun) appendLoopEvent(loaded.stateDir, { at: now().toISOString(), type: 'queue.yielded', to: decision.to, candidates: decision.candidates, reason: decision.reason }, bus)
+      await flushNotifications()
+      return { ...base, status: 'ok', results, notes }
+    }
   }
 
   const budget = Math.min(state.candidates.length, input.maxDispatch ?? state.candidates.length)

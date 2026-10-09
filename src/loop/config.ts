@@ -199,6 +199,27 @@ export const LoopConfigSchema = z.object({
      * whatever state they are moved to: a worker given one opens a PR here that does not do the work, or none.
      */
     outsideLabel: nonEmpty.default('outside-loop'),
+    /**
+     * Keep `person`'s plate topped up from the UNASSIGNED pool, a few issues at a time. Only under
+     * `queueOwnership: person` — `unassigned` already drains the whole pool.
+     *
+     * Why not just switch to `unassigned`: a `person` loop must keep seeing the bugs its owner self-assigns,
+     * and `unassigned` would drain the entire pool at once. Observed 2026-10-09: the team filed ~30 unassigned
+     * Law OS issues while the loop, on `person`, saw none of them — and switching would have claimed all 30,
+     * leaving the human devs on the same board nothing to pick. A refill takes `target - held` per tick, so the
+     * pool drains at the loop's own pace and the rest stays visibly up for grabs.
+     */
+    refill: z.object({
+      enabled: z.boolean().default(false),
+      /** Open issues assigned to `person` in `states` + `projects` (busy/in-flight ones included) the refill keeps. */
+      target: z.number().int().min(1).default(4),
+      /**
+       * Never auto-assigned, on top of `excludeLabels` (which also applies): labels that mark an unassigned issue as
+       * a human's to pick — e.g. `QA`, `needs-info` — without hiding it from a self-assigned queue the way
+       * `excludeLabels` would.
+       */
+      skipLabels: z.array(nonEmpty).default([]),
+    }).prefault({}),
   }).optional(),
   /**
    * Source of dispatchable work. `backlog` preserves the historical tracker drain; `explicit` consumes only
@@ -207,6 +228,19 @@ export const LoopConfigSchema = z.object({
   queue: z.object({
     mode: z.enum(['backlog', 'explicit']).default('backlog'),
     order: z.literal('fifo').default('fifo'),
+    /**
+     * Other loops' `loop.config.yaml` files (relative to THIS file's directory, or absolute) that outrank this one:
+     * while any of them has dispatchable work by its own `loop precheck tick`, this loop's tick dispatches nothing
+     * new. In-flight workers, delivery and every other stage carry on — only the next admission waits.
+     *
+     * Here and not under `schedule`: it decides which work this loop may take, not when the loop runs — the same
+     * question `mode` answers. Why it exists: several loops on one machine (law-os, design-system) share one CPU/RAM
+     * budget and one owner; the design-system loop should only spend a slot when law-os has nothing to put in it.
+     *
+     * Fails open: a sibling whose config is missing, invalid or whose precheck throws is noted and NOT yielded to —
+     * a broken sibling must not stall this loop forever.
+     */
+    yieldTo: z.array(nonEmpty).default([]),
   }).prefault({}),
   /**
    * Suites already red on the base branch, declared so a worker is not asked to pass a verification that
@@ -1065,6 +1099,7 @@ export const validateLoopConfig = (value: unknown): LoopConfig => {
       anyLabels: [], projects: [], order: ['priority', 'updatedAt'], maxQueue: 50,
       inProgressState: 'In Progress', reviewState: 'In Review', doneState: 'Done', blockedLabel: 'blocked',
       needsInfoLabel: 'needs-info', outsideLabel: 'outside-loop',
+      refill: { enabled: false, target: 4, skipLabels: [] },
     },
   }) as LoopConfig
   const githubLifecycleLabels = Object.values(config.github.issues.labels)

@@ -159,6 +159,10 @@ export const LOOP_EVENT_TYPES = {
   'provider.cooldown': ['provider', 'kind', 'until', 'source'],
   /** The tracker refused the claim that reserves an issue for this loop. */
   'queue.claim-failed': ['issue', 'assignee', 'error'],
+  /** `linear.refill` assigned unassigned issues to the person so their queue holds `target` again. */
+  'queue.refilled': ['person', 'issues', 'held', 'target'],
+  /** A `queue.yieldTo` sibling loop had dispatchable work, so this tick admitted nothing new. */
+  'queue.yielded': ['to', 'candidates', 'reason'],
   /** Text that looks like PII was found before it reached a model. */
   'security.pii-detected': ['issue', 'source', 'kinds', 'count'],
   /** An issue was paused after consecutive failures; it needs a human before it is tried again. */
