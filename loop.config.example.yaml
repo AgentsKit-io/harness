@@ -35,6 +35,8 @@ project:
 queue:
   mode: backlog
   order: fifo
+  yieldTo: []                        # other loops' loop.config.yaml (relative to this file) that outrank this one:
+                                     # while any has dispatchable work, this tick admits nothing new. Fails open.
 
 orca:
   bin: orca                          # on Linux outside Orca terminals use orca-ide (bare `orca` is the GNOME screen reader)
@@ -93,6 +95,10 @@ linear:
   doneState: Done
   blockedLabel: blocked
   needsInfoLabel: needs-info
+  refill:                            # person ownership only: keep `target` open issues assigned to `person` by
+    enabled: false                   # assigning the next unassigned ones (queue filter + order) each tick
+    target: 4
+    skipLabels: []                   # never auto-assigned, on top of excludeLabels (e.g. [QA, needs-info])
 
 models:
   # routing.mode: tiers (default) | hybrid | dynamic | catalog
