@@ -236,6 +236,13 @@ describe('orcaTerminalWait / orcaTerminalScreen', () => {
     expect((await orcaTerminalWait(flat, { terminal: 't', for: 'tui-idle', timeoutMs: 1000 })).satisfied).toBe(false)
   })
 
+  it('surfaces a blockedReason, and omits it when Orca reports none', async () => {
+    const blocked = recorder(() => ok({ wait: { satisfied: false, blockedReason: 'agent-trust-workspace' } }))
+    expect(await orcaTerminalWait(blocked, { terminal: 't', for: 'tui-idle', timeoutMs: 1000 })).toMatchObject({ satisfied: false, blockedReason: 'agent-trust-workspace' })
+    const idle = recorder(() => ok({ wait: { satisfied: true } }))
+    expect(await orcaTerminalWait(idle, { terminal: 't', for: 'tui-idle', timeoutMs: 1000 })).not.toHaveProperty('blockedReason')
+  })
+
   it('joins screen lines from objects or strings, unwraps a nested terminal object, and returns "" when absent', async () => {
     const objectLines = recorder(() => ok({ terminal: { tail: [{ text: 'a' }, { line: 'b' }, 'c'] } }))
     expect(await orcaTerminalScreen(objectLines, { terminal: 't' })).toBe('a\nb\nc')

@@ -352,11 +352,14 @@ export const orcaTerminalSend = async (runner: CommandRunner, input: { readonly 
 const RETRY_REQUEST_ATTEMPTS = 3
 const delay = (ms: number): Promise<void> => new Promise((resolve) => { setTimeout(resolve, ms) })
 
-export const orcaTerminalWait = async (runner: CommandRunner, input: { readonly terminal: string; readonly for: 'exit' | 'tui-idle'; readonly timeoutMs: number }, options: OrcaCliOptions = {}): Promise<{ readonly satisfied: boolean; readonly raw: unknown }> => {
+export const orcaTerminalWait = async (runner: CommandRunner, input: { readonly terminal: string; readonly for: 'exit' | 'tui-idle'; readonly timeoutMs: number }, options: OrcaCliOptions = {}): Promise<{ readonly satisfied: boolean; readonly blockedReason?: string; readonly raw: unknown }> => {
   const result = await orcaJson(runner, ['terminal', 'wait', '--terminal', input.terminal, '--for', input.for, '--timeout-ms', String(input.timeoutMs)], { ...options, timeoutMs: input.timeoutMs + 15_000 })
   const record = isRecord(result) ? result : {}
   const wait = isRecord(record['wait']) ? record['wait'] : record
-  return { satisfied: wait['satisfied'] === true, raw: result }
+  // A `blockedReason` (e.g. `agent-trust-workspace`) comes back at once, not after the timeout: the TUI is parked on
+  // a question only a keypress answers, so waiting longer never helps.
+  const blockedReason = str(wait['blockedReason'])
+  return { satisfied: wait['satisfied'] === true, ...(blockedReason ? { blockedReason } : {}), raw: result }
 }
 
 export const orcaTerminalScreen = async (runner: CommandRunner, input: { readonly terminal: string }, options: OrcaCliOptions = {}): Promise<string> => {
