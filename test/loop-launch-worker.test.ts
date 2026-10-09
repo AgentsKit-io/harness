@@ -41,6 +41,44 @@ describe('launchWorkerTerminal', () => {
     expect(sends(runner)).toBe(1)
   })
 
+  /** An Orca whose fresh TUI sits on the workspace-trust question until a highlighted "Yes" row is confirmed. */
+  const trustPrompt = (options: readonly string[], highlighted: number) => {
+    const calls: string[][] = []
+    let row = highlighted
+    let trusted = false
+    const runner = { calls, run: async (argv: readonly string[]) => {
+      calls.push([...argv])
+      if (argv.includes('create')) return ok({ terminal: { handle: 'term-1' } })
+      if (argv.includes('wait')) return ok({ wait: trusted ? { satisfied: true } : { satisfied: false, blockedReason: 'agent-trust-workspace' } })
+      if (argv.includes('read')) return ok({ terminal: { tail: ['Quick safety check: Is this a project you trust?', ...options.map((option, index) => `${index === row ? ' ❯ ' : '   '}${option}`), ' Enter to confirm'] } })
+      if (argv.includes('send') && argv[argv.indexOf('--text') + 1] === '\u001b[B') { row = Math.min(row + 1, options.length - 1); return ok({ send: { accepted: true } }) }
+      if (argv.includes('send') && !argv.includes('--text') && !trusted) { trusted = /yes/i.test(options[row] ?? ''); return ok({ send: { accepted: true } }) }
+      return ok({ send: { accepted: true } })
+    } }
+    return { runner, trusted: () => trusted }
+  }
+  const briefSent = (calls: readonly string[][]) => calls.some((argv) => argv[argv.indexOf('--text') + 1] === 'do it')
+
+  it('answers the workspace-trust question of a fresh worktree with "yes", then sends the brief', async () => {
+    const claude = trustPrompt(['No, exit', 'Yes, I trust this folder'], 0)
+    const launched = await launchWorkerTerminal({ runner: claude.runner, config: config(), worktreeId: 'repo::/wt', command: 'claude', title: 't', brief: 'do it', screenCheckDelayMs: 0 })
+    expect(launched).toMatchObject({ idle: true, accepted: true })
+    expect(claude.trusted()).toBe(true)
+    expect(briefSent(claude.runner.calls)).toBe(true)
+    // Codex highlights "Yes" already: Enter alone, no arrow key.
+    const codex = trustPrompt(['1. Yes, continue', '2. No, quit'], 0)
+    await launchWorkerTerminal({ runner: codex.runner, config: config(), worktreeId: 'repo::/wt', command: 'codex', title: 't', brief: 'do it', screenCheckDelayMs: 0 })
+    expect(codex.trusted()).toBe(true)
+    expect(codex.runner.calls.some((argv) => argv.includes('\u001b[B'))).toBe(false)
+  })
+
+  it('never confirms a trust question it cannot find a "yes" in — the dispatch fails instead', async () => {
+    const prompt = trustPrompt(['No, exit', 'Cancel'], 0)
+    await expect(launchWorkerTerminal({ runner: prompt.runner, config: config(), worktreeId: 'repo::/wt', command: 'claude', title: 't', brief: 'do it', idleTimeoutMs: 1000, screenCheckDelayMs: 0 })).rejects.toThrow(/did not become tui-idle/)
+    expect(prompt.runner.calls.some((argv) => argv.includes('send') && !argv.includes('--text'))).toBe(false)
+    expect(briefSent(prompt.runner.calls)).toBe(false)
+  })
+
   it('never types into a pane that did not become idle — the prompt would be lost', async () => {
     const runner = orca([false, false])
     await expect(launchWorkerTerminal({ runner, config: config(), worktreeId: 'repo::/wt', command: 'opencode', title: 't', brief: 'do it', idleTimeoutMs: 1000 })).rejects.toThrow(/did not become tui-idle/)

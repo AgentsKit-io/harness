@@ -6,7 +6,7 @@ import type { LoopIssue } from '../adapters/linear-orca.js'
 import { requireWritableTracker, resolveConnectors, type TrackerConnector } from './connectors.js'
 import type { TrackerIssueDetail } from './tracker.js'
 import { createOrcaDispatchPlan } from '../adapters/orca.js'
-import { orcaTerminalScreen, orcaTerminalEnter, orcaTurnStarted, orcaAccountList, orcaAgentHooks, orcaDiagnosticsMemory, orcaTerminalCreate, orcaTerminalSend, orcaTerminalWait, orcaWorktreeCreate, orcaWorktreeRemove, orcaWorktrees, type OrcaWorktree } from '../adapters/orca-cli.js'
+import { orcaTerminalScreen, orcaTerminalEnter, orcaTurnStarted, orcaAccountList, orcaAgentHooks, orcaDiagnosticsMemory, orcaTerminalCreate, orcaTerminalSend, orcaTerminalWait, orcaWorktreeCreate, orcaWorktreeRemove, orcaWorktrees, type OrcaCliOptions, type OrcaWorktree } from '../adapters/orca-cli.js'
 import { detectProviders, type ProviderAvailability } from '../adapters/providers.js'
 import { createDispatchLedger, type DispatchLedger, type DispatchLease } from '../execution/coordination.js'
 import { HarnessError } from '../kernel/errors.js'
@@ -159,6 +159,29 @@ export interface TickInput {
 /** What the terminal receives when the brief travels as a file: short, plain, and the same for every task. */
 export const BRIEF_POINTER_PROMPT = `Your full task brief is in ${ARTIFACT_DIR}/brief.md at the root of this worktree. Read the whole file first, then follow it exactly.`
 
+const ARROW_DOWN = '\u001b[B'
+/** The highlighted row of a TUI select list: Claude Code marks it with `❯`, Codex with `›`. */
+const selectedOption = (screen: string): string | undefined => splitLines(screen).find((line) => /^\s*[❯›]\s/.test(line))
+
+/**
+ * Answer an agent CLI's workspace-trust question with "yes". Reads the screen before every Enter and presses it only
+ * on a highlighted "Yes" row — Claude Code highlights "No, exit" first, Codex "Yes, continue" — so a layout this does
+ * not recognise confirms nothing, and the caller's idle wait fails as before.
+ */
+const acceptWorkspaceTrust = async (runner: CommandRunner, terminal: string, orca: OrcaCliOptions, settleMs: number): Promise<boolean> => {
+  for (let step = 0; step < 4; step += 1) {
+    const selected = selectedOption(await orcaTerminalScreen(runner, { terminal }, orca))
+    if (!selected) return false
+    if (/\byes\b/i.test(selected)) {
+      await orcaTerminalEnter(runner, { terminal }, orca)
+      return true
+    }
+    await orcaTerminalSend(runner, { terminal, text: ARROW_DOWN, enter: false }, orca)
+    await new Promise((resolve) => { setTimeout(resolve, settleMs) })
+  }
+  return false
+}
+
 /**
  * Open the worker's terminal and hand it the brief.
  *
@@ -178,13 +201,24 @@ export const launchWorkerTerminal = async (input: { readonly runner: CommandRunn
   const orca = { bin: input.config.orca.bin, timeoutMs: input.config.orca.timeoutMs }
   const created = await orcaTerminalCreate(input.runner, { worktree: `id:${input.worktreeId}`, command: input.command, title: input.title }, orca)
   const initialIdleTimeoutMs = input.idleTimeoutMs ?? 90_000
-  let idle = false
-  try { idle = (await orcaTerminalWait(input.runner, { terminal: created.handle, for: 'tui-idle', timeoutMs: initialIdleTimeoutMs }, orca)).satisfied } catch { idle = false }
+  let trustAnswered = false
+  const waitIdle = async (timeoutMs: number): Promise<boolean> => {
+    try {
+      const wait = await orcaTerminalWait(input.runner, { terminal: created.handle, for: 'tui-idle', timeoutMs }, orca)
+      // A fresh worktree is a folder the agent CLI has never seen, so it opens on its "do you trust this folder?"
+      // question and Orca reports `agent-trust-workspace` at once — both windows used to burn out in seconds. The
+      // loop created this worktree from the project's own repo: answer once, then wait again.
+      if (!wait.satisfied && wait.blockedReason === 'agent-trust-workspace' && !trustAnswered) {
+        trustAnswered = true
+        if (await acceptWorkspaceTrust(input.runner, created.handle, orca, input.screenCheckDelayMs ?? 1_000)) return (await orcaTerminalWait(input.runner, { terminal: created.handle, for: 'tui-idle', timeoutMs }, orca)).satisfied
+      }
+      return wait.satisfied
+    } catch { return false }
+  }
+  let idle = await waitIdle(initialIdleTimeoutMs)
   // Orca can finish creating a TUI after the first readiness window. Never send into a
   // non-ready pane: that loses the prompt and produces `agent_prompt_blocked`.
-  if (!idle) {
-    try { idle = (await orcaTerminalWait(input.runner, { terminal: created.handle, for: 'tui-idle', timeoutMs: Math.min(initialIdleTimeoutMs * 2, 180_000) }, orca)).satisfied } catch { idle = false }
-  }
+  if (!idle) idle = await waitIdle(Math.min(initialIdleTimeoutMs * 2, 180_000))
   if (!idle) throw new Error(`terminal ${created.handle} did not become tui-idle before the worker prompt deadline`)
   let receipt = await orcaTerminalSend(input.runner, { terminal: created.handle, text: prompt, enter: true, waitSubmitSeconds: 15 }, orca)
   // `input_accepted` is "typed", not "submitted": observed, a pointer prompt sat in the input box for 21 minutes and
