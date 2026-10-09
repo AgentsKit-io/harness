@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
-  "contentHash": "08ba8054902239458018d02c13d86938e8007d4106917f411cc823834a35656e",
+  "contentHash": "297f6086f8355b9678c52c047728f0e7ef2c04cf7ed2ce3604192fdf2aa8e061",
   "contentHashAlgo": "sha256-normalized-v1",
-  "generatedAt": "2026-10-03T18:57:44.406Z",
+  "generatedAt": "2026-10-09T18:36:25.783Z",
   "project": {
     "name": "AgentsKit Harness",
     "root": "."
@@ -927,7 +927,7 @@
         "document",
         "human"
       ],
-      "contentHash": "4c66e10f66838427dbbf06aaaa8ac46f9ffd5dca98c0ffb6db74491cc3b05407"
+      "contentHash": "ece1c2e1989d513b7460540a9fa5ced955393438a7e3fc4d99c9d1333f1735de"
     },
     {
       "id": "document:docs/MODULE-BOUNDARIES.md",
@@ -2153,7 +2153,7 @@
         "ts",
         "adapters"
       ],
-      "contentHash": "709c9d304fcf29d5498ee43860354c9ba9b7a7b01f24cd79227b31e8e32ae7af"
+      "contentHash": "3125f7a21d452a3dd2e8d90c69fdb7a3bebdb7b5015568910d000ed16b7b529e"
     },
     {
       "id": "module:src/adapters/orca.ts",
@@ -3906,7 +3906,7 @@
         "ts",
         "loop"
       ],
-      "contentHash": "61b6cfbf4b4e7ec1dadaa0ab6f5b875071d5e22c9b4fc95a9c6973c3f90e048c"
+      "contentHash": "512b4bee78421f9c74d4067b3be6a219223a79f3189d8998647e52d2e964398a"
     },
     {
       "id": "module:src/loop/connectors.ts",
@@ -3928,7 +3928,7 @@
         "ts",
         "loop"
       ],
-      "contentHash": "5c2311662e4e06c0cbb496b18be90a6877a4c9f8aa91980fe10b7caeb49577b1"
+      "contentHash": "6e0488f98ce47fedf7c56e307c1c7f6fe7e73bfd8ba12c082b43ed4b2f008be1"
     },
     {
       "id": "module:src/loop/contract.ts",
@@ -4195,7 +4195,7 @@
         "ts",
         "loop"
       ],
-      "contentHash": "f4d38c42727102bdf935e1ee53a282edb926a123000d3ab4c4459512ab4907e8"
+      "contentHash": "547e84678c82d9116d652d33752edbffaeb8ff6654438885e27b64fd539dd3d9"
     },
     {
       "id": "module:src/loop/flows.ts",
@@ -5092,6 +5092,23 @@
       "contentHash": "3736e11c7fc77ae6270a4613198ada92027c72894b44a18a182d843363c277df"
     },
     {
+      "id": "module:src/loop/refill.ts",
+      "type": "module",
+      "title": "refill.ts",
+      "path": "src/loop/refill.ts",
+      "symbols": [
+        "RefillOutcome",
+        "refillApplies",
+        "runRefill"
+      ],
+      "tags": [
+        "module",
+        "ts",
+        "loop"
+      ],
+      "contentHash": "48b67f896ec44e0005921bec0aa6cb11b169c17393cae9ea9f9a8b1371e0cf05"
+    },
+    {
       "id": "module:src/loop/release.ts",
       "type": "module",
       "title": "release.ts",
@@ -5341,15 +5358,18 @@
         "BRIEF_POINTER_PROMPT",
         "DispatchRecordFile",
         "LoopState",
+        "PrecheckScope",
         "TickCandidateResult",
         "TickInput",
         "TickOutcome",
         "TickReport",
+        "YieldDecision",
         "appendLoopEvent",
         "branchFor",
         "briefPath",
         "busyIssues",
         "dispatchRecordPath",
+        "evaluateYield",
         "gatherLoopState",
         "launchWorkerTerminal",
         "precheckTick",
@@ -5363,7 +5383,7 @@
         "ts",
         "loop"
       ],
-      "contentHash": "78085152f24e2582e16ddfa47e54fdb174f5c41fe1a5573e89529a7e9301d38a"
+      "contentHash": "50aa39f13a026beb2ff29e3de2a3a03de79f7a1d4616b19edcfec02befda2b4f"
     },
     {
       "id": "module:src/loop/tracker-cooldown.ts",
@@ -6910,7 +6930,7 @@
         "ts",
         "test"
       ],
-      "contentHash": "9b920255c8d71f2fa081788aa9adc0eb32f3bff9552c6001d0a7ab33042aae8a"
+      "contentHash": "952c605c77ea851de9590c1478bad51795d9b1f1e0569a8f661b69e9bc958b07"
     },
     {
       "id": "module:test/adapters-orca.test.ts",
@@ -8164,7 +8184,7 @@
         "ts",
         "test"
       ],
-      "contentHash": "0217753d02a51388dac65f189aa878c8d2a665ba67e32c7218c40c9d8635d063"
+      "contentHash": "7a28a0ac235f444dee3769d37dc2c182c43caf0042914726be28b9e7f60dd0f0"
     },
     {
       "id": "module:test/loop-layers.test.ts",
@@ -8347,6 +8367,18 @@
       "contentHash": "807d91dcf70e7496cd57e988db746a1650360bd9833051816de9ab750400f875"
     },
     {
+      "id": "module:test/loop-refill-yield.test.ts",
+      "type": "module",
+      "title": "loop-refill-yield.test.ts",
+      "path": "test/loop-refill-yield.test.ts",
+      "tags": [
+        "module",
+        "ts",
+        "test"
+      ],
+      "contentHash": "51883081827471a7467a7279c77eb0e2b30f561f7b8c5021fbb6e5968c078749"
+    },
+    {
       "id": "module:test/loop-release.test.ts",
       "type": "module",
       "title": "loop-release.test.ts",
@@ -8464,7 +8496,7 @@
         "ts",
         "test"
       ],
-      "contentHash": "d2d8c010bffce26c4a0361d9fe687c13881b7ac8697a678590dc69bfe283a81a"
+      "contentHash": "97f3062fda055b944b0bd78037fba06c148a1d364fd609226b8ff76bf6d8a21d"
     },
     {
       "id": "module:test/loop-tuning.test.ts",
@@ -9128,8 +9160,8 @@
     }
   },
   "inputs": {
-    "hash": "6559d3403e5137b0292d2f52eee54dd230ff98497f7c0644d00443f7f767d02d",
-    "fileCount": 553,
+    "hash": "75c0a6f27ce1a999158e79968eb89f942c4eda61a66b01e083c989b7a69054c4",
+    "fileCount": 555,
     "projectionVersion": 2
   },
   "retrieval": {
@@ -9151,9 +9183,9 @@
   "projection": {
     "type": "retrieval-index",
     "schemaVersion": 1,
-    "contentHash": "db9f5ac0bedd9b5a4553834ef104f764b5ecabb82b08e1b109a48d6fa4aa861c",
+    "contentHash": "c748cfb9577f18e780db5aaf091999e85e9a37a8828329eb5c0e622dfd83bb93",
     "contentHashAlgo": "sha256-normalized-v1",
-    "snapshotHash": "ba00aabade3f366f345d5c0fd2724dee02cdd69c6e8327abd4831a131ca04037",
+    "snapshotHash": "e6cca627df6a8e8cebcb2a2eea37859a71ddf47db46cd96b06a3e6b316d80177",
     "overlayHash": "f99666ff9119084dd25c2974ae64eb6935ec2aa785ff5ad478fb9d541f7a5e94",
     "configurationHash": "816afaf6a7dc09767f7594d8fd80024612ca0f33becf0e44dde0107fcf2782df",
     "lexiconVersion": 1,
@@ -9173,7 +9205,7 @@
     },
     "lexical": {
       "version": 1,
-      "documentCount": 562,
+      "documentCount": 558,
       "fieldNames": [
         "aliases",
         "body",
@@ -9184,13 +9216,13 @@
         "title"
       ],
       "averageFieldLength": {
-        "aliases": 2.925266903914591,
-        "body": 43.96085409252669,
-        "headings": 3.8256227758007118,
-        "path": 6.106761565836299,
-        "summary": 2.590747330960854,
-        "symbols": 14.1067615658363,
-        "title": 3.9466192170818504
+        "aliases": 2.946236559139785,
+        "body": 44.27598566308244,
+        "headings": 3.8727598566308243,
+        "path": 6.123655913978495,
+        "summary": 2.609318996415771,
+        "symbols": 14.240143369175627,
+        "title": 3.9767025089605736
       }
     },
     "entries": [
@@ -9224,7 +9256,7 @@
           "mentionedBy": [
             "document:CHANGELOG.md"
           ],
-          "packageId": "package:@agentskit/harness-docs",
+          "packageId": "package:@agentskit/harness",
           "inbound": [
             {
               "kind": "mentions",
@@ -9234,202 +9266,10 @@
           ],
           "outbound": []
         },
-        "contentHash": "a01ec06bc2caed884d4f536ec8c1c393dcfbe20200ff629c54ef0296490c684c",
+        "contentHash": "3e31631ee3f05011673a8678798eac3058d1eedf0733d1bf9fa5a90ac174405c",
         "provenance": "observed",
         "confidence": "observed",
         "ownershipId": "harness-site"
-      },
-      {
-        "id": "area:apps/docs/app/(home)",
-        "kind": "area",
-        "path": "apps/docs/app/(home)",
-        "title": "(home)",
-        "aliases": [],
-        "tags": [
-          "area"
-        ],
-        "fields": {
-          "title": "(home)",
-          "headings": "",
-          "path": "apps/docs/app/(home)",
-          "symbols": "",
-          "summary": "",
-          "body": "",
-          "aliases": "area"
-        },
-        "graph": {
-          "pagerank": 0,
-          "inboundLinks": 0,
-          "coveredBy": [],
-          "mentionedBy": [],
-          "areaId": "area:apps/docs",
-          "packageId": "package:@agentskit/harness-docs",
-          "inbound": [],
-          "outbound": []
-        },
-        "contentHash": "cdee0fa5ff80a6e82b7aa5091af718f0fd5e0f977370cfce629bbcd3c94986cc",
-        "provenance": "observed",
-        "confidence": "observed"
-      },
-      {
-        "id": "area:apps/docs/app/api",
-        "kind": "area",
-        "path": "apps/docs/app/api",
-        "title": "api",
-        "aliases": [],
-        "tags": [
-          "area"
-        ],
-        "fields": {
-          "title": "api",
-          "headings": "",
-          "path": "apps/docs/app/api",
-          "symbols": "",
-          "summary": "",
-          "body": "",
-          "aliases": "area"
-        },
-        "graph": {
-          "pagerank": 0,
-          "inboundLinks": 0,
-          "coveredBy": [],
-          "mentionedBy": [],
-          "areaId": "area:apps/docs",
-          "packageId": "package:@agentskit/harness-docs",
-          "inbound": [],
-          "outbound": []
-        },
-        "contentHash": "985d753a6334c9f42aa46124309c21a5ea524e2c6798f90778a0c1dac31ecb13",
-        "provenance": "observed",
-        "confidence": "observed"
-      },
-      {
-        "id": "area:apps/docs/app/docs",
-        "kind": "area",
-        "path": "apps/docs/app/docs",
-        "title": "docs",
-        "aliases": [],
-        "tags": [
-          "area"
-        ],
-        "fields": {
-          "title": "docs",
-          "headings": "",
-          "path": "apps/docs/app/docs",
-          "symbols": "",
-          "summary": "",
-          "body": "",
-          "aliases": "area"
-        },
-        "graph": {
-          "pagerank": 0,
-          "inboundLinks": 0,
-          "coveredBy": [],
-          "mentionedBy": [],
-          "areaId": "area:apps/docs",
-          "packageId": "package:@agentskit/harness-docs",
-          "inbound": [],
-          "outbound": []
-        },
-        "contentHash": "078df9c25e10f3bff010afdb84ecafe50b2ad09377a11f0c38fb5a70274814bf",
-        "provenance": "observed",
-        "confidence": "observed"
-      },
-      {
-        "id": "area:apps/docs/app/for-agents",
-        "kind": "area",
-        "path": "apps/docs/app/for-agents",
-        "title": "for-agents",
-        "aliases": [],
-        "tags": [
-          "area"
-        ],
-        "fields": {
-          "title": "for-agents",
-          "headings": "",
-          "path": "apps/docs/app/for-agents",
-          "symbols": "",
-          "summary": "",
-          "body": "",
-          "aliases": "area"
-        },
-        "graph": {
-          "pagerank": 0,
-          "inboundLinks": 0,
-          "coveredBy": [],
-          "mentionedBy": [],
-          "areaId": "area:apps/docs",
-          "packageId": "package:@agentskit/harness-docs",
-          "inbound": [],
-          "outbound": []
-        },
-        "contentHash": "33fd99f48899a1785c2ec0d672b7692de5ff3fbed9a819d7526d0f9fa2540fdb",
-        "provenance": "observed",
-        "confidence": "observed"
-      },
-      {
-        "id": "area:apps/docs/components",
-        "kind": "area",
-        "path": "apps/docs/components",
-        "title": "components",
-        "aliases": [],
-        "tags": [
-          "area"
-        ],
-        "fields": {
-          "title": "components",
-          "headings": "",
-          "path": "apps/docs/components",
-          "symbols": "",
-          "summary": "",
-          "body": "",
-          "aliases": "area"
-        },
-        "graph": {
-          "pagerank": 0,
-          "inboundLinks": 0,
-          "coveredBy": [],
-          "mentionedBy": [],
-          "areaId": "area:apps/docs",
-          "packageId": "package:@agentskit/harness-docs",
-          "inbound": [],
-          "outbound": []
-        },
-        "contentHash": "a995c30b1f5f6185e4bafc8069bb1c6a2d19aac65d1497750b93381b96a72a93",
-        "provenance": "observed",
-        "confidence": "observed"
-      },
-      {
-        "id": "area:apps/docs/types",
-        "kind": "area",
-        "path": "apps/docs/types",
-        "title": "types",
-        "aliases": [],
-        "tags": [
-          "area"
-        ],
-        "fields": {
-          "title": "types",
-          "headings": "",
-          "path": "apps/docs/types",
-          "symbols": "",
-          "summary": "",
-          "body": "",
-          "aliases": "area"
-        },
-        "graph": {
-          "pagerank": 0,
-          "inboundLinks": 0,
-          "coveredBy": [],
-          "mentionedBy": [],
-          "areaId": "area:apps/docs",
-          "packageId": "package:@agentskit/harness-docs",
-          "inbound": [],
-          "outbound": []
-        },
-        "contentHash": "a9222c597da887fdf351994ec2d2b6cafacbf0ff695261b6cf4f4dcb855bf724",
-        "provenance": "observed",
-        "confidence": "observed"
       },
       {
         "id": "area:examples",
@@ -9715,7 +9555,7 @@
           ],
           "outbound": []
         },
-        "contentHash": "da7432cf399f0c8cedbd3fc3d3a2a326f1eb6a34e7944d8c3b842286d208426e",
+        "contentHash": "7a02126673c2f08fe16df37607c59c661911bb5040e05fa0e27be45cfdfb7a7b",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -9830,7 +9670,7 @@
           ],
           "outbound": []
         },
-        "contentHash": "f5e26eeb0aaf8b8ad330a1049fd86fb1b815e07c71ae4862aa062893a9ee140c",
+        "contentHash": "c5e48902bc0e2ca350124f57d0d3a92be75976b631c387d32e25704d24a8e3b2",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -14124,7 +13964,7 @@
         ],
         "fields": {
           "title": "Keep-pushing loop (ak-harness loop)",
-          "headings": "Keep-pushing loop (ak-harness loop) Commands Debrief and watch The observe stage — the scan that knows what it already said Running 24/7 with Orca Worker handoff Deliver GitHub label intake: reviewing PRs the loop never dispatched Event bus and orchestration hooks Calling a human: notifications Presets and loop init What the orchestrator reads Configuration in four layers Flow profiles: one motor, several kinds of demand loop plan — a vague objective becomes issues The plan and its votes (worker.plan) intake and maintain — where work comes from when nobody typed it Cost: policy, ceilings, and the levers that are real Connectors: the engine names no vendor release — promotion and deploy, with a human in front Definition of Done: two lists, both proven Runs: how an issue was built (ADR-0041) Rendered specs (spec.enabled) The roles are agents, and they can be improved The loop improving itself, within limits One tick Resilience: auto-pause after repeated failures PII/secret scanning Cost/time circuit breakers Dynamic outcome progress Skills pinned into the worker brief Worktree setup command What the doctor checks Dynamic model routing Model routing Reasoning effort per role Machine slots Integrations used by the loop Doc Bridge (context for the orchestrator) Code Review (agentskit-review) Eval battery (package quality, not the live loop) AgentsKit ecosystem map (what the harness has vs what the loop uses) What can be added to help the SDLC Boundaries Security notes Continuous improvement: loop retro",
+          "headings": "Keep-pushing loop (ak-harness loop) Commands Debrief and watch The observe stage — the scan that knows what it already said Running 24/7 with Orca Worker handoff Deliver GitHub label intake: reviewing PRs the loop never dispatched Event bus and orchestration hooks Calling a human: notifications Presets and loop init What the orchestrator reads Configuration in four layers Flow profiles: one motor, several kinds of demand loop plan — a vague objective becomes issues The plan and its votes (worker.plan) intake and maintain — where work comes from when nobody typed it Cost: policy, ceilings, and the levers that are real Connectors: the engine names no vendor release — promotion and deploy, with a human in front Definition of Done: two lists, both proven Runs: how an issue was built (ADR-0041) Rendered specs (spec.enabled) The roles are agents, and they can be improved The loop improving itself, within limits One tick Topping up a person queue (linear.refill) and yielding to another loop (queue.yieldTo) Resilience: auto-pause after repeated failures PII/secret scanning Cost/time circuit breakers Dynamic outcome progress Skills pinned into the worker brief Worktree setup command What the doctor checks Dynamic model routing Model routing Reasoning effort per role Machine slots Integrations used by the loop Doc Bridge (context for the orchestrator) Code Review (agentskit-review) Eval battery (package quality, not the live loop) AgentsKit ecosystem map (what the harness has vs what the loop uses) What can be added to help the SDLC Boundaries Security notes Continuous improvement: loop retro",
           "path": "docs/LOOP.md",
           "symbols": "",
           "summary": "The loop drains one person's Linear queue through Orca worktrees, 24/7, with role-based model routing and usage-aware fallback. The harness supplies the deterministic parts (claims, machine pressure, gates, evidence); Orca supplies scheduling, worktrees, terminals, Linear access and visibility.",
@@ -14373,7 +14213,7 @@
             }
           ]
         },
-        "contentHash": "4c66e10f66838427dbbf06aaaa8ac46f9ffd5dca98c0ffb6db74491cc3b05407",
+        "contentHash": "ece1c2e1989d513b7460540a9fa5ced955393438a7e3fc4d99c9d1333f1735de",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -15300,8 +15140,8 @@
           "inboundLinks": 0,
           "coveredBy": [],
           "mentionedBy": [],
-          "areaId": "area:apps/docs/app/(home)",
-          "packageId": "package:@agentskit/harness-docs",
+          "areaId": "area:apps/docs",
+          "packageId": "package:@agentskit/harness",
           "inbound": [],
           "outbound": []
         },
@@ -15343,8 +15183,8 @@
             "document:CHANGELOG.md",
             "document:docs/LOOP.md"
           ],
-          "areaId": "area:apps/docs/app/api",
-          "packageId": "package:@agentskit/harness-docs",
+          "areaId": "area:apps/docs",
+          "packageId": "package:@agentskit/harness",
           "inbound": [
             {
               "kind": "mentions-symbol",
@@ -15403,8 +15243,8 @@
           "inboundLinks": 0,
           "coveredBy": [],
           "mentionedBy": [],
-          "areaId": "area:apps/docs/app/docs",
-          "packageId": "package:@agentskit/harness-docs",
+          "areaId": "area:apps/docs",
+          "packageId": "package:@agentskit/harness",
           "inbound": [],
           "outbound": []
         },
@@ -15440,8 +15280,8 @@
           "inboundLinks": 0,
           "coveredBy": [],
           "mentionedBy": [],
-          "areaId": "area:apps/docs/app/docs",
-          "packageId": "package:@agentskit/harness-docs",
+          "areaId": "area:apps/docs",
+          "packageId": "package:@agentskit/harness",
           "inbound": [],
           "outbound": []
         },
@@ -15478,8 +15318,8 @@
           "inboundLinks": 0,
           "coveredBy": [],
           "mentionedBy": [],
-          "areaId": "area:apps/docs/app/for-agents",
-          "packageId": "package:@agentskit/harness-docs",
+          "areaId": "area:apps/docs",
+          "packageId": "package:@agentskit/harness",
           "inbound": [],
           "outbound": []
         },
@@ -15518,7 +15358,7 @@
           "coveredBy": [],
           "mentionedBy": [],
           "areaId": "area:apps/docs",
-          "packageId": "package:@agentskit/harness-docs",
+          "packageId": "package:@agentskit/harness",
           "inbound": [],
           "outbound": []
         },
@@ -15558,8 +15398,8 @@
           "inboundLinks": 0,
           "coveredBy": [],
           "mentionedBy": [],
-          "areaId": "area:apps/docs/components",
-          "packageId": "package:@agentskit/harness-docs",
+          "areaId": "area:apps/docs",
+          "packageId": "package:@agentskit/harness",
           "inbound": [],
           "outbound": []
         },
@@ -15596,8 +15436,8 @@
           "inboundLinks": 0,
           "coveredBy": [],
           "mentionedBy": [],
-          "areaId": "area:apps/docs/components",
-          "packageId": "package:@agentskit/harness-docs",
+          "areaId": "area:apps/docs",
+          "packageId": "package:@agentskit/harness",
           "inbound": [],
           "outbound": []
         },
@@ -15633,8 +15473,8 @@
           "inboundLinks": 0,
           "coveredBy": [],
           "mentionedBy": [],
-          "areaId": "area:apps/docs/components",
-          "packageId": "package:@agentskit/harness-docs",
+          "areaId": "area:apps/docs",
+          "packageId": "package:@agentskit/harness",
           "inbound": [
             {
               "kind": "imports",
@@ -15676,8 +15516,8 @@
           "inboundLinks": 0,
           "coveredBy": [],
           "mentionedBy": [],
-          "areaId": "area:apps/docs/components",
-          "packageId": "package:@agentskit/harness-docs",
+          "areaId": "area:apps/docs",
+          "packageId": "package:@agentskit/harness",
           "inbound": [],
           "outbound": [
             {
@@ -15719,8 +15559,8 @@
           "inboundLinks": 0,
           "coveredBy": [],
           "mentionedBy": [],
-          "areaId": "area:apps/docs/components",
-          "packageId": "package:@agentskit/harness-docs",
+          "areaId": "area:apps/docs",
+          "packageId": "package:@agentskit/harness",
           "inbound": [],
           "outbound": []
         },
@@ -15756,8 +15596,8 @@
           "inboundLinks": 0,
           "coveredBy": [],
           "mentionedBy": [],
-          "areaId": "area:apps/docs/components",
-          "packageId": "package:@agentskit/harness-docs",
+          "areaId": "area:apps/docs",
+          "packageId": "package:@agentskit/harness",
           "inbound": [],
           "outbound": []
         },
@@ -15793,8 +15633,8 @@
           "inboundLinks": 0,
           "coveredBy": [],
           "mentionedBy": [],
-          "areaId": "area:apps/docs/components",
-          "packageId": "package:@agentskit/harness-docs",
+          "areaId": "area:apps/docs",
+          "packageId": "package:@agentskit/harness",
           "inbound": [],
           "outbound": []
         },
@@ -15830,8 +15670,8 @@
           "inboundLinks": 0,
           "coveredBy": [],
           "mentionedBy": [],
-          "areaId": "area:apps/docs/components",
-          "packageId": "package:@agentskit/harness-docs",
+          "areaId": "area:apps/docs",
+          "packageId": "package:@agentskit/harness",
           "inbound": [],
           "outbound": []
         },
@@ -15865,7 +15705,7 @@
           "coveredBy": [],
           "mentionedBy": [],
           "areaId": "area:apps/docs",
-          "packageId": "package:@agentskit/harness-docs",
+          "packageId": "package:@agentskit/harness",
           "inbound": [],
           "outbound": []
         },
@@ -15906,7 +15746,7 @@
           "coveredBy": [],
           "mentionedBy": [],
           "areaId": "area:apps/docs",
-          "packageId": "package:@agentskit/harness-docs",
+          "packageId": "package:@agentskit/harness",
           "inbound": [],
           "outbound": []
         },
@@ -15944,7 +15784,7 @@
           "coveredBy": [],
           "mentionedBy": [],
           "areaId": "area:apps/docs",
-          "packageId": "package:@agentskit/harness-docs",
+          "packageId": "package:@agentskit/harness",
           "inbound": [],
           "outbound": []
         },
@@ -15984,7 +15824,7 @@
             "document:docs/MODULE-BOUNDARIES.md"
           ],
           "areaId": "area:apps/docs",
-          "packageId": "package:@agentskit/harness-docs",
+          "packageId": "package:@agentskit/harness",
           "inbound": [
             {
               "kind": "mentions-symbol",
@@ -16034,7 +15874,7 @@
           "coveredBy": [],
           "mentionedBy": [],
           "areaId": "area:apps/docs",
-          "packageId": "package:@agentskit/harness-docs",
+          "packageId": "package:@agentskit/harness",
           "inbound": [],
           "outbound": []
         },
@@ -16071,7 +15911,7 @@
           "coveredBy": [],
           "mentionedBy": [],
           "areaId": "area:apps/docs",
-          "packageId": "package:@agentskit/harness-docs",
+          "packageId": "package:@agentskit/harness",
           "inbound": [],
           "outbound": []
         },
@@ -16108,7 +15948,7 @@
           "coveredBy": [],
           "mentionedBy": [],
           "areaId": "area:apps/docs",
-          "packageId": "package:@agentskit/harness-docs",
+          "packageId": "package:@agentskit/harness",
           "inbound": [],
           "outbound": []
         },
@@ -16145,7 +15985,7 @@
           "coveredBy": [],
           "mentionedBy": [],
           "areaId": "area:apps/docs",
-          "packageId": "package:@agentskit/harness-docs",
+          "packageId": "package:@agentskit/harness",
           "inbound": [],
           "outbound": []
         },
@@ -16187,7 +16027,7 @@
             "document:docs/PRD-0.4.0.md"
           ],
           "areaId": "area:apps/docs",
-          "packageId": "package:@agentskit/harness-docs",
+          "packageId": "package:@agentskit/harness",
           "inbound": [
             {
               "kind": "mentions-symbol",
@@ -16236,8 +16076,8 @@
           "inboundLinks": 0,
           "coveredBy": [],
           "mentionedBy": [],
-          "areaId": "area:apps/docs/types",
-          "packageId": "package:@agentskit/harness-docs",
+          "areaId": "area:apps/docs",
+          "packageId": "package:@agentskit/harness",
           "inbound": [],
           "outbound": []
         },
@@ -18822,7 +18662,7 @@
             }
           ]
         },
-        "contentHash": "709c9d304fcf29d5498ee43860354c9ba9b7a7b01f24cd79227b31e8e32ae7af",
+        "contentHash": "3125f7a21d452a3dd2e8d90c69fdb7a3bebdb7b5015568910d000ed16b7b529e",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -26324,6 +26164,11 @@
             },
             {
               "kind": "imports",
+              "id": "module:src/loop/refill.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
               "id": "module:src/loop/release.ts",
               "confidence": "observed"
             },
@@ -26491,11 +26336,6 @@
               "kind": "imports",
               "id": "module:test/ui-sse.test.ts",
               "confidence": "observed"
-            },
-            {
-              "kind": "imports",
-              "id": "module:test/ui-system.test.ts",
-              "confidence": "observed"
             }
           ],
           "outbound": [
@@ -26526,7 +26366,7 @@
             }
           ]
         },
-        "contentHash": "61b6cfbf4b4e7ec1dadaa0ab6f5b875071d5e22c9b4fc95a9c6973c3f90e048c",
+        "contentHash": "512b4bee78421f9c74d4067b3be6a219223a79f3189d8998647e52d2e964398a",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -26595,6 +26435,11 @@
             {
               "kind": "imports",
               "id": "module:src/loop/plan-stage.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
+              "id": "module:src/loop/refill.ts",
               "confidence": "observed"
             },
             {
@@ -26716,7 +26561,7 @@
             }
           ]
         },
-        "contentHash": "5c2311662e4e06c0cbb496b18be90a6877a4c9f8aa91980fe10b7caeb49577b1",
+        "contentHash": "6e0488f98ce47fedf7c56e307c1c7f6fe7e73bfd8ba12c082b43ed4b2f008be1",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -28405,7 +28250,7 @@
           ],
           "outbound": []
         },
-        "contentHash": "f4d38c42727102bdf935e1ee53a282edb926a123000d3ab4c4459512ab4907e8",
+        "contentHash": "547e84678c82d9116d652d33752edbffaeb8ff6654438885e27b64fd539dd3d9",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -31518,6 +31363,72 @@
         "confidence": "observed"
       },
       {
+        "id": "module:src/loop/refill.ts",
+        "kind": "module",
+        "path": "src/loop/refill.ts",
+        "title": "refill.ts",
+        "aliases": [],
+        "symbols": [
+          "RefillOutcome",
+          "refillApplies",
+          "runRefill"
+        ],
+        "tags": [
+          "module",
+          "ts",
+          "loop"
+        ],
+        "fields": {
+          "title": "refill.ts",
+          "headings": "",
+          "path": "src/loop/refill.ts",
+          "symbols": "RefillOutcome refillApplies runRefill",
+          "summary": "",
+          "body": "",
+          "aliases": "module ts loop"
+        },
+        "graph": {
+          "pagerank": 0,
+          "inboundLinks": 0,
+          "coveredBy": [],
+          "mentionedBy": [],
+          "areaId": "area:src/loop",
+          "packageId": "package:@agentskit/harness",
+          "inbound": [
+            {
+              "kind": "imports",
+              "id": "module:src/loop/tick.ts",
+              "confidence": "observed"
+            }
+          ],
+          "outbound": [
+            {
+              "kind": "imports",
+              "id": "module:src/kernel/errors.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
+              "id": "module:src/loop/config.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
+              "id": "module:src/loop/connectors.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
+              "id": "module:src/loop/tracker-cooldown.ts",
+              "confidence": "observed"
+            }
+          ]
+        },
+        "contentHash": "48b67f896ec44e0005921bec0aa6cb11b169c17393cae9ea9f9a8b1371e0cf05",
+        "provenance": "observed",
+        "confidence": "observed"
+      },
+      {
         "id": "module:src/loop/release.ts",
         "kind": "module",
         "path": "src/loop/release.ts",
@@ -32796,15 +32707,18 @@
           "BRIEF_POINTER_PROMPT",
           "DispatchRecordFile",
           "LoopState",
+          "PrecheckScope",
           "TickCandidateResult",
           "TickInput",
           "TickOutcome",
           "TickReport",
+          "YieldDecision",
           "appendLoopEvent",
           "branchFor",
           "briefPath",
           "busyIssues",
           "dispatchRecordPath",
+          "evaluateYield",
           "gatherLoopState",
           "launchWorkerTerminal",
           "precheckTick",
@@ -32822,7 +32736,7 @@
           "title": "tick.ts",
           "headings": "",
           "path": "src/loop/tick.ts",
-          "symbols": "BRIEF_POINTER_PROMPT DispatchRecordFile LoopState TickCandidateResult TickInput TickOutcome TickReport appendLoopEvent branchFor briefPath busyIssues dispatchRecordPath gatherLoopState launchWorkerTerminal precheckTick readDispatchRecord runTick worktreeNameFor writeDispatchRecord",
+          "symbols": "BRIEF_POINTER_PROMPT DispatchRecordFile LoopState PrecheckScope TickCandidateResult TickInput TickOutcome TickReport YieldDecision appendLoopEvent branchFor briefPath busyIssues dispatchRecordPath evaluateYield gatherLoopState launchWorkerTerminal precheckTick readDispatchRecord runTick worktreeNameFor writeDispatchRecord",
           "summary": "",
           "body": "",
           "aliases": "module ts loop"
@@ -33138,6 +33052,11 @@
             },
             {
               "kind": "imports",
+              "id": "module:src/loop/refill.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
               "id": "module:src/loop/resilience-state.ts",
               "confidence": "observed"
             },
@@ -33183,7 +33102,7 @@
             }
           ]
         },
-        "contentHash": "78085152f24e2582e16ddfa47e54fdb174f5c41fe1a5573e89529a7e9301d38a",
+        "contentHash": "50aa39f13a026beb2ff29e3de2a3a03de79f7a1d4616b19edcfec02befda2b4f",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -33228,6 +33147,11 @@
             {
               "kind": "imports",
               "id": "module:src/loop/deliver.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
+              "id": "module:src/loop/refill.ts",
               "confidence": "observed"
             },
             {
@@ -39038,7 +38962,7 @@
             }
           ]
         },
-        "contentHash": "9b920255c8d71f2fa081788aa9adc0eb32f3bff9552c6001d0a7ab33042aae8a",
+        "contentHash": "952c605c77ea851de9590c1478bad51795d9b1f1e0569a8f661b69e9bc958b07",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -43402,7 +43326,7 @@
             }
           ]
         },
-        "contentHash": "0217753d02a51388dac65f189aa878c8d2a665ba67e32c7218c40c9d8635d063",
+        "contentHash": "7a28a0ac235f444dee3769d37dc2c182c43caf0042914726be28b9e7f60dd0f0",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -44047,6 +43971,46 @@
         "confidence": "observed"
       },
       {
+        "id": "module:test/loop-refill-yield.test.ts",
+        "kind": "module",
+        "path": "test/loop-refill-yield.test.ts",
+        "title": "loop-refill-yield.test.ts",
+        "aliases": [],
+        "tags": [
+          "module",
+          "ts",
+          "test"
+        ],
+        "fields": {
+          "title": "loop-refill-yield.test.ts",
+          "headings": "",
+          "path": "test/loop-refill-yield.test.ts",
+          "symbols": "",
+          "summary": "",
+          "body": "",
+          "aliases": "module ts test"
+        },
+        "graph": {
+          "pagerank": 0,
+          "inboundLinks": 0,
+          "coveredBy": [],
+          "mentionedBy": [],
+          "areaId": "area:test",
+          "packageId": "package:@agentskit/harness",
+          "inbound": [],
+          "outbound": [
+            {
+              "kind": "imports",
+              "id": "module:src/index.ts",
+              "confidence": "observed"
+            }
+          ]
+        },
+        "contentHash": "51883081827471a7467a7279c77eb0e2b30f561f7b8c5021fbb6e5968c078749",
+        "provenance": "observed",
+        "confidence": "observed"
+      },
+      {
         "id": "module:test/loop-release.test.ts",
         "kind": "module",
         "path": "test/loop-release.test.ts",
@@ -44461,7 +44425,7 @@
             }
           ]
         },
-        "contentHash": "d2d8c010bffce26c4a0361d9fe687c13881b7ac8697a678590dc69bfe283a81a",
+        "contentHash": "97f3062fda055b944b0bd78037fba06c148a1d364fd609226b8ff76bf6d8a21d",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -46902,7 +46866,7 @@
           ],
           "outbound": []
         },
-        "contentHash": "844f7d2b9ff1d2181cb2bf7b91f29d0f4297f62de3fe180487bb74b0cb89030f",
+        "contentHash": "00499faae05e1f628391815cdaec6656d28b6a9b2117c36ec4544e6353d704d3",
         "provenance": "observed",
         "confidence": "observed"
       },
