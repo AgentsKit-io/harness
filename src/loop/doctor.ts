@@ -160,7 +160,7 @@ export const runLoopDoctor = async (input: LoopDoctorInput): Promise<LoopDoctorR
     // Say WHICH queue was read. Under `unassigned` ownership the old wording ("for <person>") described
     // the opposite of what was listed, and a diagnostic that misnames its own subject is how the empty
     // queue went unnoticed in the first place.
-    const whose = config.linear.queueOwnership === 'unassigned' ? 'unassigned' : `assigned to ${person}`
+    const whose = ({ unassigned: 'unassigned', both: `unassigned or assigned to ${person}`, person: `assigned to ${person}` })[config.linear.queueOwnership]
     push(`${tracker.id}.queue`, 'passed', `${queue.length} dispatchable issue(s) ${whose} in ${config.linear.states.join('/')}`)
   } catch (error) { queueError = message(error); push(`${config.connectors.tracker}.queue`, 'failed', queueError) }
 

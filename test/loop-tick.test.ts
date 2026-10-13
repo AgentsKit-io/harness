@@ -20,7 +20,7 @@ interface Env { readonly dir: string; readonly bin: string; readonly runner: Com
 const cleanups: string[] = []
 afterEach(() => { for (const dir of cleanups.splice(0)) rmSync(dir, { recursive: true, force: true }) })
 
-const makeEnv = (options: { readonly contract?: TaskContract | 'garbage'; readonly worktrees?: unknown; readonly failCreate?: boolean; readonly failCreateTransientTimes?: number; readonly claudeAuthFails?: boolean; readonly claudeSessionLimit?: boolean; readonly failAllContracts?: boolean; readonly accountList?: unknown; readonly briefSkills?: readonly string[]; readonly setup?: { readonly exitCode?: number; readonly timedOut?: boolean }; readonly setupRequired?: boolean; readonly pluginSource?: string; readonly issueDescription?: string; readonly securityPii?: { readonly action?: 'redact' | 'warn' | 'block' }; readonly catalogMode?: boolean; readonly queueOwnership?: 'person' | 'unassigned'; readonly queueMode?: 'backlog' | 'explicit'; readonly tracker?: 'linear' | 'github'; readonly hideIssuesFromQueue?: boolean; readonly knownFailures?: readonly { readonly path: string; readonly issue: string; readonly reason: string }[]; /** Which Linear read answers with a rate limit / a plain failure (mutable via `env.tracker`). */ readonly trackerRateLimit?: 'queue' | 'issue'; readonly issueFetchFails?: boolean; /** Issue fetches after this many fail with a rate limit. */ readonly rateLimitAfterIssueFetches?: number; readonly excludeLabels?: readonly string[] } = {}): Env => {
+const makeEnv = (options: { readonly contract?: TaskContract | 'garbage'; readonly worktrees?: unknown; readonly failCreate?: boolean; readonly failCreateTransientTimes?: number; readonly claudeAuthFails?: boolean; readonly claudeSessionLimit?: boolean; readonly failAllContracts?: boolean; readonly accountList?: unknown; readonly briefSkills?: readonly string[]; readonly setup?: { readonly exitCode?: number; readonly timedOut?: boolean }; readonly setupRequired?: boolean; readonly pluginSource?: string; readonly issueDescription?: string; readonly securityPii?: { readonly action?: 'redact' | 'warn' | 'block' }; readonly catalogMode?: boolean; readonly queueOwnership?: 'person' | 'unassigned' | 'both'; readonly queueMode?: 'backlog' | 'explicit'; readonly tracker?: 'linear' | 'github'; readonly hideIssuesFromQueue?: boolean; readonly knownFailures?: readonly { readonly path: string; readonly issue: string; readonly reason: string }[]; /** Which Linear read answers with a rate limit / a plain failure (mutable via `env.tracker`). */ readonly trackerRateLimit?: 'queue' | 'issue'; readonly issueFetchFails?: boolean; /** Issue fetches after this many fail with a rate limit. */ readonly rateLimitAfterIssueFetches?: number; readonly excludeLabels?: readonly string[] } = {}): Env => {
   const dir = mkdtempSync(join(tmpdir(), 'agentskit-loop-tick-')); cleanups.push(dir)
   const bin = join(dir, 'bin'); rmSync(bin, { recursive: true, force: true })
   let yaml = options.briefSkills?.length ? exampleYaml.replace('skills: []', `skills: [${options.briefSkills.join(', ')}]`) : exampleYaml
@@ -417,6 +417,14 @@ describe('tick', () => {
     expect(claimAt).toBeGreaterThan(terminalAt)
     // The status move must still happen: it is what actually takes the issue out of the queue.
     expect(env.runner.calls.some((argv) => argv[1] === 'linear' && argv[2] === 'status')).toBe(true)
+  })
+
+  // Under `both` only an issue nobody held is claimed; the fixture issues already carry an assignee, so no write.
+  it('does not re-assign an issue that already has an assignee under both ownership', async () => {
+    const env = makeEnv({ queueOwnership: 'both' })
+    const report = await runTick({ ...tickOptions(env), maxDispatch: 1 })
+    expect(report.results[0]?.outcome).toBe('dispatched')
+    expect(env.runner.calls.some((argv) => argv[1] === 'linear' && argv[2] === 'assignee' && argv[3] === 'set')).toBe(false)
   })
 
   it('never writes an assignee under person ownership — there the assignee is the filter', async () => {

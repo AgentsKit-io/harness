@@ -290,6 +290,19 @@ describe('orca and linear parsers', () => {
     for (const argv of listed) expect(argv[argv.indexOf('--assignee') + 1]).toBe('null')
   })
 
+  it('accepts queueOwnership both and lists every state for the person AND for null, deduped', async () => {
+    expect(parseLoopConfigText(exampleYaml.replace('queueOwnership: person ', 'queueOwnership: both   ')).linear.queueOwnership).toBe('both')
+    expect(() => parseLoopConfigText(exampleYaml.replace('queueOwnership: person ', 'queueOwnership: nobody '))).toThrow()
+    const config = baseConfig()
+    const single = await fetchLinearQueue(fakeRunner(), { workspaceId: 'ws-1', teamKey: 'ENG', assignee: 'person', filter: config.linear })
+    const runner = fakeRunner()
+    const both = await fetchLinearQueue(runner, { workspaceId: 'ws-1', teamKey: 'ENG', assignee: 'person', filter: { ...config.linear, queueOwnership: 'both' } })
+    const listed = runner.calls.filter((argv) => argv.includes('list-issues')).map((argv) => `${argv[argv.indexOf('--state') + 1]}:${argv[argv.indexOf('--assignee') + 1]}`)
+    expect(listed.sort()).toEqual(['Ready:null', 'Ready:person', 'Todo:null', 'Todo:person'])
+    // The fake answers both assignees with the same page: the merge must not duplicate an identifier.
+    expect(both.map((issue) => issue.identifier)).toEqual(single.map((issue) => issue.identifier))
+  })
+
   it('fetches one page per configured state and merges them', async () => {
     const runner = fakeRunner()
     const config = baseConfig()

@@ -56,7 +56,7 @@ interface Scenario {
   /** Fake `orca terminal read --screen` output for the dispatched worker's terminal (`term_w`), used to test escalation capture. */
   readonly terminalScreen?: string
   /** `linear.queueOwnership`; `unassigned` makes the assignee a claim the escalation has to release. */
-  readonly queueOwnership?: 'person' | 'unassigned'
+  readonly queueOwnership?: 'person' | 'unassigned' | 'both'
   /** Give the dispatch record a real worktree holding these `.ak-loop/` files, so the phase-artifact gate has something to read. */
   readonly worktreeFiles?: Readonly<Record<string, string>>
   /** Exit code the fake `delivery.verify.argv` command (`agentskit-verify-fixture`) returns; 0 by default. */
@@ -724,6 +724,16 @@ describe('deliver', () => {
     const stuck = await deliver(env, { assumeIdle: true, now: () => new Date('2026-09-11T13:05:00.000Z') })
     expect(stuck.results[0]).toMatchObject({ outcome: 'stuck' })
     expect(env.runner.calls.some((argv) => argv[1] === 'linear' && argv[2] === 'assignee' && argv[3] === 'clear')).toBe(true)
+  })
+
+  it('does not release the assignee under both ownership — the issue stays assigned and the queue still sees it', async () => {
+    const env = setup({ pr: null, dispatchedAt: '2026-09-11T09:00:00.000Z', queueOwnership: 'both' })
+    writeFileSync(join(env.loaded.stateDir, 'issues', 'ENG-10', 'restarts.json'), JSON.stringify({ at: ['2026-09-10T00:00:00.000Z', '2026-09-10T01:00:00.000Z'] }))
+    await deliver(env, { assumeIdle: true })
+    await deliver(env, { assumeIdle: true, now: () => new Date('2026-09-11T13:00:00.000Z') })
+    const stuck = await deliver(env, { assumeIdle: true, now: () => new Date('2026-09-11T13:05:00.000Z') })
+    expect(stuck.results[0]).toMatchObject({ outcome: 'stuck' })
+    expect(env.runner.calls.some((argv) => argv[1] === 'linear' && argv[2] === 'assignee')).toBe(false)
   })
 
   it('leaves the assignee alone under person ownership — there it is ownership, not a claim', async () => {
