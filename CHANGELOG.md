@@ -11,6 +11,14 @@
   merges outside the loop, and a brief version is appended to blocked-after-fix-rounds escalations. Trackers declare
   their comment format and size through `TrackerConnector.comments`; ADR-0044 sketches a Jira connector against it.
 
+- **Resolution verdict and bug fix proof in the evidence comment.** The tracker comment opens with `RESOLVED` /
+  `PARTIAL` / `NOT PROVEN`, computed only from recorded evidence (a merge alone is never RESOLVED), followed by the
+  PR, merge sha, files changed and the issue's checklist state, and an acceptance-criteria table mapping each contract
+  outcome id to its text, status (unproven ones listed) and evidence. Issues with a `delivery.evidence.bugLabels`
+  label (default `Bug`, `type:bug`, `type:fix`) also get a "Bug fix proof" block: reproduction steps from the issue and
+  the regression tests in the PR, stating that failing-before-the-fix was not demonstrated. One extra tracker read per
+  merge; nothing is posted on the GitHub PR.
+
 - **Single test run in CI.** `pnpm test:coverage` now includes typecheck and the package criterion output, so the verify job runs the test suite once while retaining coverage thresholds.
 - **Docs artifact frontmatter.** Documentation metadata now uses shared frontmatter splitting and YAML parsing, including folded scalars, block lists, BOM and CRLF input.
 - **Coverage floor.** `pnpm test:coverage` now enforces ratcheted source coverage in CI.

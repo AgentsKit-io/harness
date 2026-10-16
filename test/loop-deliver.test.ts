@@ -79,6 +79,10 @@ interface Scenario {
   readonly terminalCloseError?: string
   /** Unresolved review threads the GraphQL lookup reports; omitted = the lookup answers with an unexpected shape. */
   readonly reviewThreads?: number
+  /** What `orca linear issue` returns for the issue (labels, description); omitted = the generic ok payload (no issue details). */
+  readonly linearIssue?: Record<string, unknown>
+  /** A frozen contract written into the issue's state dir. */
+  readonly storedContract?: StoredContract['contract']
 }
 
 const basePr = (over: Record<string, unknown> = {}): Record<string, unknown> => ({ ...(fixture('gh-pr-view') as Record<string, unknown>), headRefName: 'person/eng-10-demo', files: [{ path: 'packages/demo/src/index.ts' }], statusCheckRollup: [{ __typename: 'CheckRun', name: 'ci', conclusion: 'SUCCESS', status: 'COMPLETED' }], mergeable: 'MERGEABLE', mergeStateStatus: 'CLEAN', state: 'OPEN', number: 42, url: 'https://github.com/o/r/pull/42', ...over })
@@ -111,6 +115,7 @@ const setup = (initial: Scenario = {}) => {
   const record: DispatchRecordFile = { issue: 'ENG-10', worktreeId: 'repo-1::/w/eng-10-demo', worktree: 'eng-10-demo', branch: 'person/eng-10-demo', terminal: 'term_w', provider: 'claude', model: 'sonnet', contractDigest: 'abc', leaseKey: claim.lease.key, leaseId: claim.lease.leaseId, dispatchedAt: scenario.dispatchedAt ?? '2026-09-11T10:00:00.000Z', url: 'https://linear.app/x/issue/ENG-10', initialRemainingPercent: scenario.initialRemainingPercent ?? null, ...(worktreePath ? { worktreePath } : {}) } as DispatchRecordFile
   mkdirSync(join(loaded.stateDir, 'issues', 'ENG-10'), { recursive: true })
   writeFileSync(dispatchRecordPath(loaded.stateDir, 'ENG-10'), JSON.stringify(record))
+  if (scenario.storedContract) writeFileSync(join(loaded.stateDir, 'issues', 'ENG-10', 'contract.json'), JSON.stringify({ schemaVersion: 1, issue: 'ENG-10', issueUpdatedAt: '2026-09-10T00:00:00.000Z', generatedAt: '2026-09-10T00:00:00.000Z', provider: 'claude', model: 'opus', source: 'llm', digest: 'abc', assessment: { dispatchable: true, reasons: [] }, contract: scenario.storedContract }))
   if (scenario.mergedEvent) writeFileSync(join(loaded.stateDir, 'events.ndjson'), `${JSON.stringify({ at: NOW.toISOString(), type: 'pr.merged', issue: 'ENG-10', ...scenario.mergedEvent })}\n`)
   const account = JSON.parse(JSON.stringify((fixture('account-list') as { result: unknown }).result)) as { rateLimits: Record<string, { weekly?: { usedPercent: number }; session?: { usedPercent: number }; status?: string }> }
   if (account.rateLimits['codex']?.weekly) account.rateLimits['codex'].weekly.usedPercent = scenario.reviewerAvailable === false ? 100 : 10
@@ -166,6 +171,7 @@ const setup = (initial: Scenario = {}) => {
       }
       if (scenario.orcaWorktreeMissing && (key.startsWith('orca worktree set') || key.startsWith('orca worktree rm'))) return { code: 1, stdout: '', stderr: 'selector_not_found', timedOut: false, durationMs: 1 }
       if (key.startsWith('orca linear') && scenario.linearRateLimited) return { code: 1, stdout: '', stderr: 'Linear API: HTTP 429 Too Many Requests', timedOut: false, durationMs: 1 }
+      if (key.startsWith('orca linear issue ') && scenario.linearIssue) return okResult({ issue: { identifier: 'ENG-10', title: 'Export is empty', url: 'https://linear.app/x/issue/ENG-10', state: { name: 'In Progress', type: 'started' }, updatedAt: '2026-09-10T00:00:00.000Z', createdAt: '2026-09-09T00:00:00.000Z', ...scenario.linearIssue } })
       if (key.startsWith('orca linear') || key.startsWith('orca worktree set') || key.startsWith('orca worktree rm')) return okResult({ ok: true })
       if (argv[0] === 'agentskit-review' && (scenario.reviewThrows ?? 0) > 0) { scenario.reviewThrows = (scenario.reviewThrows ?? 1) - 1; throw new Error('spawn agentskit-review EAGAIN') }
       if (argv[0] === 'agentskit-review') {
@@ -607,7 +613,30 @@ describe('deliver', () => {
     expect(body).toContain('Unresolved review threads: unavailable')
     expect(body).toContain('CI: no checks reported — not run or unavailable')
     expect(body).toContain('Worker verify (verify.json): no evidence recorded')
-    expect(body).toContain('Unavailable or not recorded: code review, review threads, CI checks, verify.json, definition of done.')
+    expect(body).toContain('Unavailable or not recorded: issue details (labels, checklist), code review, review threads, CI checks, verify.json, definition of done.')
+  })
+
+  it('proves a bug fix on the issue: criterion text from the frozen contract, repro from the issue, the regression test from the PR files', async () => {
+    const contract: StoredContract['contract'] = { intent: 'Fix empty export', scope: { inScope: ['export'], outOfScope: [] }, outcomes: [{ id: 'o1', description: 'Export of a non-empty order list is not empty', check: { kind: 'command', command: 'pnpm test' } }, { id: 'o2', description: 'Export keeps the header row', check: { kind: 'test', command: 'pnpm test' } }], ambiguities: [], hitl: [], touchpoints: [], risks: [] }
+    const env = setup({
+      review: { code: 0 },
+      storedContract: contract,
+      pr: basePr({ files: [{ path: 'packages/demo/src/export.ts' }, { path: 'packages/demo/test/export.test.ts' }] }),
+      linearIssue: { labels: [{ name: 'Bug' }], description: '## Steps to reproduce\n1. Open /orders\n2. Click Export\n\n## Checklist\n- [x] fix\n- [ ] changelog' },
+      worktreeFiles: { 'verify.json': JSON.stringify({ command: 'pnpm test', exitCode: 0, outcomes: [{ id: 'o1', status: 'passed', evidence: ' ✓ exports a non-empty file 3ms' }] }), 'dod.json': JSON.stringify({ project: [], outcomes: [{ id: 'o1', status: 'passed', evidence: 'exports a non-empty file' }, { id: 'o2', status: 'passed', evidence: 'header asserted in export.test.ts' }] }) },
+    })
+    expect((await deliver(env)).results[0]).toMatchObject({ outcome: 'merged' })
+    const body = env.runner.calls.find((argv) => argv[1] === 'linear' && argv[2] === 'comment' && argv.join(' ').includes('Loop: merged'))![env.runner.calls.find((argv) => argv[1] === 'linear' && argv[2] === 'comment' && argv.join(' ').includes('Loop: merged'))!.indexOf('--body') + 1]!
+    expect(body).toContain('RESOLVED — 2 of 2 acceptance criteria proven by recorded evidence. Bug fix: see "Bug fix proof"')
+    expect(body).toContain('| PASSED | o1 | Export of a non-empty order list is not empty | exports a non-empty file [verify `pnpm test` → exit 0] |')
+    expect(body).toContain('| PASSED | o2 | Export keeps the header row | header asserted in export.test.ts |')
+    expect(body).toContain('Files changed: 2')
+    expect(body).toContain('Issue checklist (as fetched at completion): 1/2 item(s) checked')
+    expect(body).toContain('Reproduction (from the issue): 1. Open /orders 2. Click Export')
+    expect(body).toContain('Regression test(s) in this PR: `packages/demo/test/export.test.ts`; passing tests named in the worker\'s verify output: exports a non-empty file')
+    expect(body).toContain('not demonstrated: regression test not verified to fail before the fix')
+    // A GitHub PR gets no extra comment: the evidence goes through the tracker only.
+    expect(env.runner.calls.some((argv) => argv[0] === 'gh' && argv[1] === 'pr' && argv[2] === 'comment' && argv.join(' ').includes('Resolution'))).toBe(false)
   })
 
   it('does not double-emit `pr.merged` on a reconciliation pass over an already-merged delivery', async () => {

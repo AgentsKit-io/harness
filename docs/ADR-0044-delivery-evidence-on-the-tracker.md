@@ -30,6 +30,26 @@ renders within the ceiling: detail is dropped first (output tails, then tables),
 cut, and the idempotency marker always survives. Markdown hides the marker in an HTML comment; formats that cannot
 hide it omit it and rely on `dedupeKey`.
 
+**Was it resolved? The comment answers that first.** A `Resolution` section opens the comment with a verdict computed
+only from recorded evidence: `RESOLVED` (at least one acceptance criterion and every one proven), `PARTIAL` (some
+proven, the rest listed with their status) or `NOT PROVEN` (none proven, or none recorded). A merge alone never
+yields RESOLVED; a merge with missing evidence says so. The criteria are the frozen contract's outcomes (the list
+`assessDod` already judges): each row keeps the id and the criterion text, its status (a criterion with no proof is
+UNPROVEN, never omitted) and the worker's evidence, with the verify command and exit code when `verify.json` covers
+it. Project DoD items stay in their own table. The links (PR, merge sha, files changed, the issue's own checkbox
+state) sit under the verdict.
+
+**Bug fix proof.** An issue carrying one of `delivery.evidence.bugLabels` (case-insensitive; default `Bug`,
+`type:bug`, `type:fix`) gets a block with the reproduction steps copied from the issue (the section under a
+"Steps to reproduce"-style heading, one line, truncated, PII-redacted), the regression tests the PR added or changed
+(test files in the PR's file list; test names only when the worker's verify output lists them as passing) or "no
+regression test in this PR". The harness does not run the test on the base, so the block always states "not
+demonstrated: regression test not verified to fail before the fix". ponytail: a base-vs-head run needs a second
+checkout and a per-project test command; it is not built, so the comment never claims it.
+
+**Cost.** One extra tracker read (the issue: labels, description) on the merged comment only; escalations skip it. If
+the read fails the comment names the issue details as unavailable and omits the bug block.
+
 **Same idempotency as before.** `complete()` posts with the existing `dedupeKey` (`merged:<issue>:<pr>`) and marker
 (`loop:merged:<pr>`), on every path — merged by the loop, reconciled after branch deletion, merged outside the loop.
 A blocked-after-fix-rounds escalation appends a brief version (review findings, DoD gaps).

@@ -33,7 +33,7 @@ import { splitLines } from '@agentskit/cross-platform'
 import { artifactPath, missingArtifacts, readPhaseArtifacts, readVerifyArtifact, VerifyArtifactSchema, verifyProofs, type PhaseArtifactName } from './artifacts.js'
 import { sha256 } from '../kernel/hash.js'
 import { latestIssueRun, markRunSummaryPosted, readAgentRunReport, recordRunEvidence, recordRunIo, renderRunSummaryMarkdown, runDirFor, runSummaryMarker } from './agent-runs.js'
-import { buildEvidenceDocument, type DeliveryEvidence, type EvidenceOptions, type EvidenceProof, type EvidenceStatus } from './evidence.js'
+import { buildEvidenceDocument, checklistState, extractReproduction, isBugIssue, type DeliveryEvidence, type EvidenceOptions, type EvidenceProof, type EvidenceStatus } from './evidence.js'
 import { DEFAULT_COMMENT_OPTIONS, fitComment, type CommentDocument } from './comment-format.js'
 import { readLoopEvents } from './retro.js'
 import { scanForPii } from '../kernel/pii.js'
@@ -374,7 +374,7 @@ const rawProofs = (value: unknown): readonly EvidenceProof[] => Array.isArray(va
  * Everything the loop already holds about this delivery, for the evidence comment (`evidence.ts`). Every read is
  * best-effort: a file or call that fails becomes a section marked unavailable, never a failed completion.
  */
-const gatherEvidence = async (ctx: Context, record: DispatchRecordFile, state: DeliveryState, pr: PullRequestSnapshot, merge: DeliveryEvidence['merge']): Promise<DeliveryEvidence> => {
+const gatherEvidence = async (ctx: Context, record: DispatchRecordFile, state: DeliveryState, pr: PullRequestSnapshot, merge: DeliveryEvidence['merge'], fetchIssue: boolean): Promise<DeliveryEvidence> => {
   const { stateDir } = ctx.loaded
   const { config } = ctx
   const flow = flowFor(ctx, record)
@@ -401,19 +401,28 @@ const gatherEvidence = async (ctx: Context, record: DispatchRecordFile, state: D
   const rawDod = readWorkerArtifact(ctx, record, config.dod.evidenceFile.replace(/^\.ak-loop[\\/]/, ''), 'dod')
   const raw = isRecord(rawDod) ? rawDod : null
   let dod: readonly EvidenceProof[] | null = null
-  if (dodPhase && (raw || verify)) {
+  const stored = readStoredContract(stateDir, record.issue)
+  if (dodPhase && (raw || verify || stored?.contract.outcomes.length)) {
     const decided = (proofs: readonly EvidenceProof[]) => proofs.filter((proof) => proof.status === 'passed' || proof.status === 'failed').map((proof) => ({ id: proof.id, status: proof.status as 'passed' | 'failed', evidence: proof.evidence }))
     const project = rawProofs(raw?.['project'])
     const outcomes = rawProofs(raw?.['outcomes'])
     const fromVerify = verifyProofs(verifyParsed.success ? verifyParsed.data : null).filter((proof) => !outcomes.some((recorded) => recorded.id === proof.id))
-    const stored = readStoredContract(stateDir, record.issue)
     const assessed = assessDod({ config, contract: stored?.contract ?? null, evidence: { project: decided(project), outcomes: [...decided(outcomes), ...fromVerify] }, prFiles: pr.files })
     const declared = new Map([...project, ...outcomes].map((proof) => [proof.id, proof]))
     dod = assessed.lines.map((line) => {
       const own = declared.get(line.id)
       const status: EvidenceStatus = line.status === 'proven' ? 'passed' : line.status === 'failed' ? 'failed' : own && own.status !== 'missing' ? own.status : 'missing'
-      return { id: line.id, list: line.list, status, evidence: own && line.status === 'missing' ? own.evidence : line.evidence }
+      return { id: line.id, list: line.list, description: line.description, status, evidence: own && line.status === 'missing' ? own.evidence : line.evidence }
     })
+  }
+
+  // One tracker read, only for the merged comment (an escalation skips it): labels decide the bug block, the body gives the repro steps and checklist.
+  let issueInfo: DeliveryEvidence['issueInfo'] = null
+  if (fetchIssue) {
+    try {
+      const detail = await ctx.tracker.issue(record.issue)
+      issueInfo = { bug: isBugIssue(detail.labels, config.delivery.evidence.bugLabels), reproduction: extractReproduction(detail.description), checklist: checklistState(detail.description) }
+    } catch { /* unavailable: named as such in the comment */ }
   }
 
   const events = readLoopEvents(stateDir, Date.parse(record.dispatchedAt) || undefined).filter((item) => item['issue'] === record.issue)
@@ -454,6 +463,8 @@ const gatherEvidence = async (ctx: Context, record: DispatchRecordFile, state: D
     elapsedMs: Number.isFinite(dispatched) ? Math.max(0, ctx.now().getTime() - dispatched) : null,
     spend: { totalTokens: spend.totalTokens, calls: spend.calls, ceiling: ceiling > 0 ? ceiling : null, usageDeltaPercent: typeof usage?.['deltaPercent'] === 'number' ? usage['deltaPercent'] : null },
     runId: latestIssueRun(stateDir, record.issue)?.runId ?? null,
+    issueInfo,
+    changedFiles: pr.files,
   }
 }
 
@@ -461,7 +472,7 @@ const gatherEvidence = async (ctx: Context, record: DispatchRecordFile, state: D
 const renderEvidence = async (ctx: Context, record: DispatchRecordFile, state: DeliveryState, pr: PullRequestSnapshot, merge: DeliveryEvidence['merge'], options: EvidenceOptions, maxChars?: number): Promise<string> => {
   const comments = ctx.tracker.comments ?? DEFAULT_COMMENT_OPTIONS
   let document: CommentDocument
-  try { document = buildEvidenceDocument(await gatherEvidence(ctx, record, state, pr, merge), options) } catch (error) {
+  try { document = buildEvidenceDocument(await gatherEvidence(ctx, record, state, pr, merge, !options.brief), options) } catch (error) {
     document = { blocks: [{ kind: 'heading', text: options.title }, { kind: 'paragraph', text: options.summary }, { kind: 'paragraph', text: `No evidence recorded: gathering it failed (${scanForPii(message(error)).redacted.slice(0, 200)}). Absent evidence is not a pass.` }], ...(options.marker ? { marker: options.marker } : {}) }
   }
   return fitComment(document, { ...comments, maxChars: maxChars ?? comments.maxChars })
