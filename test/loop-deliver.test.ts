@@ -1520,6 +1520,8 @@ describe('deliver closes worker terminals (2026-10-16: 48 idle sessions stalled 
     expect(report.results[0]).toMatchObject({ outcome: 'blocked' })
     expect(closes(env)).toEqual(['term_w'])
     expect(report.notes.some((note) => note.includes('closing worker terminal') && note.includes('failed'))).toBe(false)
+    expect(report.notes.some((note) => note.includes('terminal_handle_stale'))).toBe(false)
+    expect(createDispatchLedger(env.loaded.stateDir).active()).toEqual([])
   })
 
   it('dry run reports the terminal it would close and closes nothing', async () => {
