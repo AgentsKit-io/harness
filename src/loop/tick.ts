@@ -611,6 +611,7 @@ export const runTick = async (input: TickInput): Promise<TickReport> => {
   // Every tracker write in this stage goes through the connector; the engine never names Linear.
   const tracker = guardTracker(resolveConnectors({ runner: input.runner, config, dryRun }).tracker, { stateDir: loaded.stateDir, now, dryRun, onRateLimited: trackerCooldownLogger(loaded.stateDir, now, bus) })
   let trackerCooling = false
+  let capacityBlocked = false
   // UI-confirmed runs need status projection even for legacy backlog projects; only explicit mode changes which
   // tracker issues are eligible when a tick is not targeted at one selected request.
   const issueQueue = config.queue.mode === 'explicit' || input.onlyIssue ? createIssueQueue({ stateDir: loaded.stateDir }) : null
@@ -1078,8 +1079,9 @@ export const runTick = async (input: TickInput): Promise<TickReport> => {
       if (isTerminalCapacityError(error)) {
         const until = markTerminalCapacity(loaded.stateDir, message(error), now())
         appendLoopEvent(loaded.stateDir, { at: now().toISOString(), type: 'worker.dispatch-capacity', issue: detail.identifier, error: message(error), until }, bus)
-        updateQueueRun(selectedRun, { status: 'queued', error: `capacity: ${message(error)}`, projection: { stage: 'queued', branch, worktree } })
-        results.push({ issue: detail.identifier, outcome: 'skipped', reason: `capacity: ${message(error)}; dispatch waits until ${until}`, branch, worktree })
+        updateQueueRun(selectedRun, { status: 'queued', error: `capacity: ${message(error)}`, projection: { stage: 'queued' } })
+        results.push({ issue: detail.identifier, outcome: 'skipped', reason: `capacity: ${message(error)}; dispatch waits until ${until}` })
+        capacityBlocked = true
         break
       }
       appendLoopEvent(loaded.stateDir, { at: now().toISOString(), type: 'worker.dispatch-failed', issue: detail.identifier, error: message(error) }, bus)
@@ -1093,5 +1095,5 @@ export const runTick = async (input: TickInput): Promise<TickReport> => {
   // Every candidate failing is a failed run, not an idle one — the stage's failure count has to see it. A tracker
   // cooldown stays `blocked`: waiting out a rate limit is not a failure.
   const allFailed = results.length > 0 && results.every((result) => result.outcome === 'failed')
-  return { ...base, status: dispatched > 0 || results.some((result) => result.outcome === 'escalated') ? 'ok' : trackerCooling ? 'blocked' : allFailed ? 'failed' : 'idle', results, notes }
+  return { ...base, status: dispatched > 0 || results.some((result) => result.outcome === 'escalated') ? 'ok' : trackerCooling || capacityBlocked ? 'blocked' : allFailed ? 'failed' : 'idle', results, notes }
 }

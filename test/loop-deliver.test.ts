@@ -1500,7 +1500,7 @@ describe('usageLimitOnScreen', () => {
 describe('deliver closes worker terminals (2026-10-16: 48 idle sessions stalled the line)', () => {
   const redCi = { statusCheckRollup: [{ __typename: 'CheckRun', name: 'lint', conclusion: 'FAILURE', status: 'COMPLETED' }] }
   const events = (env: ReturnType<typeof setup>): Record<string, unknown>[] => splitLines(readFileSync(join(env.loaded.stateDir, 'events.ndjson'), 'utf8')).filter(Boolean).map((line) => JSON.parse(line) as Record<string, unknown>)
-  const closes = (env: ReturnType<typeof setup>): string[] => env.runner.calls.filter((argv) => argv[1] === 'terminal' && argv[2] === 'close').map((argv) => argv[argv.indexOf('--terminal') + 1] as string)
+  const closes = (env: ReturnType<typeof setup>): (string | undefined)[] => env.runner.calls.filter((argv) => argv[1] === 'terminal' && argv[2] === 'close').map((argv) => { const at = argv.indexOf('--terminal'); return at < 0 ? undefined : argv[at + 1] })
 
   it('closes the worker terminal when delivery finishes the issue (blocked), keeps the worktree, and records it', async () => {
     const env = setup({ pr: basePr(redCi) })
@@ -1518,6 +1518,7 @@ describe('deliver closes worker terminals (2026-10-16: 48 idle sessions stalled 
     writeFileSync(join(env.loaded.stateDir, 'issues', 'ENG-10', 'delivery.json'), JSON.stringify({ ...readDeliveryState(env.loaded.stateDir, 'ENG-10'), fixRounds: 2 }))
     const report = await deliver(env)
     expect(report.results[0]).toMatchObject({ outcome: 'blocked' })
+    expect(closes(env)).toEqual(['term_w'])
     expect(report.notes.some((note) => note.includes('closing worker terminal') && note.includes('failed'))).toBe(false)
   })
 
@@ -1527,6 +1528,8 @@ describe('deliver closes worker terminals (2026-10-16: 48 idle sessions stalled 
     const report = await deliver(env, { dryRun: true })
     expect(report.notes).toEqual(expect.arrayContaining([expect.stringContaining('would close worker terminal term_w (finished: blocked)')]))
     expect(closes(env)).toEqual([])
+    const eventsFile = join(env.loaded.stateDir, 'events.ndjson')
+    if (existsSync(eventsFile)) expect(events(env).some((event) => event['type'] === 'worker.terminal-closed')).toBe(false)
   })
 
   it('an idle worker closed while its PR waits is relaunched in the same worktree for the next fix round — never restarted or wiped', async () => {

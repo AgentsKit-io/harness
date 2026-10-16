@@ -7,6 +7,7 @@ import {
   BRIEF_POINTER_PROMPT, CONTRACT_CLOSE, CONTRACT_OPEN, assessContract, busyIssues, contractIsFresh, createDispatchLedger, createIssueQueue, deliveryStatePath, dispatchRecordPath, isIssuePaused, linearLabelRemove, loadLoopConfig, parseContractOutput, parseLinearIssueDetail, parseModelRef, precheckTick, readCliModelsCache, readDispatchRecord, readDeliveryState, readIssueFailures, readStoredContract, recordIssueFailure, renderContractPrompt, renderWorkerBrief, resumeIssue, runTick, untrusted, worktreeNameFor, writeStoredContract,
 } from '../src/index.js'
 import type { CommandResult, CommandRunner, StoredContract, TaskContract } from '../src/index.js'
+import { CAPACITY_COOLDOWN_MIN } from '../src/loop/terminal-reaper.js'
 
 const fixture = (name: string): unknown => JSON.parse(readFileSync(join(process.cwd(), 'test/fixtures/loop', `${name}.json`), 'utf8')) as unknown
 const exampleYaml = readFileSync(join(process.cwd(), 'loop.config.example.yaml'), 'utf8').replace(/\r\n/g, '\n').replace('person: my-linear-display-name', 'person: person').replace('my-linear-display-name: <linear-user-id>', 'person: user-id-1')
@@ -926,6 +927,14 @@ describe('tick terminal capacity (2026-10-16: terminal create timeouts tripped t
       expect(next).toMatchObject({ status: 'blocked', results: [] })
       expect(next.notes.some((note) => note.includes('terminal capacity'))).toBe(true)
       expect(env.runner.calls.some((argv) => argv.join(' ').startsWith('orca terminal create'))).toBe(false)
+      // The tick that hit capacity reports it as blocked too, and the queued run no longer points at a removed worktree.
+      expect(report.status).toBe('blocked')
+      expect(report.results[0]).not.toHaveProperty('worktree')
+      // Once the cooldown has passed the issue is tried again.
+      env.runner.calls.length = 0
+      const later = await runTick({ ...tickOptions(env), now: () => new Date(Date.parse('2026-09-11T12:00:00Z') + (CAPACITY_COOLDOWN_MIN + 1) * 60_000) })
+      expect(later.notes.some((note) => note.includes('terminal capacity'))).toBe(false)
+      expect(env.runner.calls.some((argv) => argv.join(' ').startsWith('orca terminal create'))).toBe(true)
     }
   })
 
@@ -955,7 +964,7 @@ describe('tick terminal capacity (2026-10-16: terminal create timeouts tripped t
     expect(full.runner.calls.some((argv) => argv.join(' ').startsWith('orca worktree create'))).toBe(false)
 
     const room = withRecords(11)
-    const report = await runTick({ ...tickOptions(room) })
+    const report = await runTick({ ...tickOptions(room), maxDispatch: 3 })
     expect(report.results.filter((result) => result.outcome === 'dispatched')).toHaveLength(1)
   })
 })

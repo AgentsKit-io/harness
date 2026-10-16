@@ -61,7 +61,12 @@ export interface ReapReport {
   readonly notes: readonly string[]
 }
 
-const minutesSince = (now: Date, at: number | string | null | undefined): number => at === null || at === undefined ? Number.POSITIVE_INFINITY : (now.getTime() - (typeof at === 'number' ? at : Date.parse(at))) / 60_000
+// An unparseable timestamp counts as 0 (just active): every caller guards with `<`, which NaN would pass.
+const minutesSince = (now: Date, at: number | string | null | undefined): number => {
+  if (at === null || at === undefined) return Number.POSITIVE_INFINITY
+  const ms = typeof at === 'number' ? at : Date.parse(at)
+  return Number.isFinite(ms) ? (now.getTime() - ms) / 60_000 : 0
+}
 
 /**
  * One cheap pass at the end of `deliver`: close what `finish()` ended this pass, then list Orca's terminals once and
@@ -92,13 +97,6 @@ export const reapWorkerTerminals = async (input: ReapInput): Promise<ReapReport>
   }
 
   const byIssue = new Map(input.records.map((record) => [record.issue, record]))
-  if (config.delivery.closeTerminalOnFinish) {
-    for (const [issue, outcome] of input.finishedThisPass) {
-      const record = byIssue.get(issue)
-      if (record?.terminal) await close(record, record.terminal, `finished: ${outcome}`, 'orphaned')
-    }
-  }
-
   const idleAfter = config.delivery.reapIdleTerminalsMinutes
   if (!config.delivery.closeTerminalOnFinish && idleAfter === 0) return { closed, failed, notes }
   let terminals: readonly OrcaTerminal[]
@@ -107,6 +105,20 @@ export const reapWorkerTerminals = async (input: ReapInput): Promise<ReapReport>
     return { closed, failed, notes }
   }
   const byWorktree = new Map(input.records.map((record) => [record.worktreeId, record]))
+  // What finish() ended this pass: close its recorded terminal (no grace) through the same root / main-worktree /
+  // ownership guards as the list pass, using the listed terminal rather than the bare record handle.
+  const safe = (terminal: OrcaTerminal, record: DispatchRecordFile): boolean => {
+    if (terminal.worktreeId !== record.worktreeId) return false
+    const path = normalizePath(terminalPath(terminal))
+    return Boolean(path) && path !== root && terminal.raw['isMainWorktree'] !== true
+  }
+  if (config.delivery.closeTerminalOnFinish) {
+    for (const [issue, outcome] of input.finishedThisPass) {
+      const record = byIssue.get(issue)
+      const listed = record?.terminal ? terminals.find((item) => item.handle === record.terminal) : undefined
+      if (record && listed && safe(listed, record)) await close(record, listed.handle, `finished: ${outcome}`, 'orphaned')
+    }
+  }
   const resultOf = new Map(input.results.map((result) => [result.issue, result]))
   for (const terminal of terminals) {
     if (handled.has(terminal.handle)) continue

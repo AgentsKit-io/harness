@@ -54,7 +54,7 @@ const waiting = (issue: string, outcome: DeliverOutcome = 'waiting', pr: number 
 describe('worker terminal reaper', () => {
   it('closes the terminal of every issue finish() closed out this pass, on any outcome, and records it', async () => {
     const records = [record('ENG-1'), record('ENG-2'), record('ENG-3')]
-    const harness = env({ terminals: [] })
+    const harness = env({ terminals: records.map((item) => terminal(`term_${item.issue}`, item.worktreeId, 1)) })
     const report = await harness.reap({ records, finishedThisPass: new Map([['ENG-1', 'blocked'], ['ENG-2', 'stuck'], ['ENG-3', 'merged']]) })
     expect(harness.closedHandles()).toEqual(['term_ENG-1', 'term_ENG-2', 'term_ENG-3'])
     expect(report.closed.map((item) => item.reason)).toEqual(['finished: blocked', 'finished: stuck', 'finished: merged'])
@@ -65,7 +65,7 @@ describe('worker terminal reaper', () => {
   })
 
   it('tolerates a stale or missing handle as already closed, and never throws on any other close error', async () => {
-    const harness = env({ terminals: [], closeError: (handle) => handle === 'term_ENG-1' ? 'terminal_handle_stale' : handle === 'term_ENG-2' ? 'selector_not_found' : 'runtime exploded' })
+    const harness = env({ terminals: ['ENG-1', 'ENG-2', 'ENG-3'].map((issue) => terminal(`term_${issue}`, record(issue).worktreeId, 1)), closeError: (handle) => handle === 'term_ENG-1' ? 'terminal_handle_stale' : handle === 'term_ENG-2' ? 'selector_not_found' : 'runtime exploded' })
     const report = await harness.reap({ records: [record('ENG-1'), record('ENG-2'), record('ENG-3')], finishedThisPass: new Map([['ENG-1', 'blocked'], ['ENG-2', 'failed'], ['ENG-3', 'stuck']]) })
     expect(report.closed.map((item) => item.terminal)).toEqual(['term_ENG-1', 'term_ENG-2'])
     expect(report.failed).toBe(1)
@@ -114,6 +114,21 @@ describe('worker terminal reaper', () => {
     expect(harness.closedHandles()).toEqual([])
   })
 
+  it('a finished-this-pass record never closes a terminal in the main checkout, however the record reads', async () => {
+    const inMain = { ...record('ENG-2'), worktreeId: `repo-1::${ROOT}` } as DispatchRecordFile
+    const harness = env({ terminals: [terminal('term_ENG-2', `repo-1::${ROOT}`, 1), terminal('term_ENG-3', record('ENG-3').worktreeId, 1, { isMainWorktree: true })] })
+    const report = await harness.reap({ records: [inMain, record('ENG-3')], finishedThisPass: new Map([['ENG-2', 'blocked'], ['ENG-3', 'blocked']]) })
+    expect(report.closed).toEqual([])
+    expect(harness.closedHandles()).toEqual([])
+  })
+
+  it('an unparseable timestamp counts as active, not infinitely quiet', async () => {
+    const own = record('ENG-1')
+    const harness = env({ terminals: [terminal('term_ENG-1', own.worktreeId, 600, { lastOutputAt: 'not-a-date' })] })
+    const report = await harness.reap({ records: [own], results: [waiting('ENG-1')] })
+    expect(report.closed).toEqual([])
+  })
+
   it('closes an idle worker only when its PR is open, the pass only waited, and nothing was sent to it within the window', async () => {
     const records = ['ENG-1', 'ENG-2', 'ENG-3', 'ENG-4', 'ENG-5', 'ENG-6'].map((issue) => record(issue))
     const harness = env({ terminals: [
@@ -126,7 +141,7 @@ describe('worker terminal reaper', () => {
     ] })
     const report = await harness.reap({
       records,
-      results: [waiting('ENG-1'), waiting('ENG-2'), waiting('ENG-3', 'fix-round'), waiting('ENG-4', 'waiting', null), waiting('ENG-5', 'held'), waiting('ENG-6')],
+      results: [waiting('ENG-1'), waiting('ENG-2'), waiting('ENG-3', 'fix-round'), waiting('ENG-4', 'waiting', null), waiting('ENG-5'), waiting('ENG-6')],
       states: { 'ENG-5': emptyState('ENG-5', { prNumber: 42, nudges: [{ kind: 'review', at: new Date(minutesAgo(20)).toISOString(), head: 'h' }] }) },
     })
     expect(harness.closedHandles()).toEqual(['term_ENG-1'])
@@ -143,7 +158,7 @@ describe('worker terminal reaper', () => {
 
   it('dry run only reports what it would close', async () => {
     const own = record('ENG-1')
-    const harness = env({ terminals: [terminal('term_ENG-1', own.worktreeId, 600)] })
+    const harness = env({ terminals: [terminal('term_ENG-1', own.worktreeId, 600), terminal('term_ENG-2', record('ENG-2').worktreeId, 1)] })
     const report = await harness.reap({ records: [own, record('ENG-2')], dryRun: true, finishedThisPass: new Map([['ENG-2', 'blocked']]), results: [waiting('ENG-1')] })
     expect(report.closed.map((item) => item.terminal)).toEqual(['term_ENG-2', 'term_ENG-1'])
     expect(report.notes).toEqual(expect.arrayContaining([expect.stringContaining('would close worker terminal term_ENG-1'), expect.stringContaining('would close 2 worker terminal(s)')]))

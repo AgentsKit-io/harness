@@ -289,7 +289,7 @@ const sendToWorker = async (ctx: Context, record: DispatchRecordFile, text: stri
     // ponytail: a live Orca shell with no recorded agent command cannot make progress; reactivate it once.
     // Gone from Orca's own list (closed when the issue finished or idled with a PR open): typing into it can only
     // fail. Relaunch a worker in the same worktree instead — never the lost-run restart, which needs no PR at all.
-    const gone = !terminal
+    const gone = !terminal && (terminals.length === 0 || noAgent)
     staleShell = gone || (noAgent && shellOnScreen) || Boolean(terminal && !terminal.command && (shellOnScreen || (!terminal.preview.trim() && terminal.lastOutputAt === null)))
     if (staleShell) actions.push(`worker terminal ${record.terminal} is ${gone ? 'gone (closed)' : noAgent ? 'a shell with no agent attached' : 'stale or a shell'}, not an active agent; reactivating`)
   } catch { /* send below remains the fallback when terminal metadata is unavailable */ }
