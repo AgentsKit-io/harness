@@ -8,6 +8,7 @@ import { renderSpec, writeSpec } from '../src/loop/spec.js'
 import { readAgentRunReport } from '../src/loop/agent-runs.js'
 import { activeTrackerCooldown, isTrackerRateLimit, markTrackerRateLimited } from '../src/loop/tracker-cooldown.js'
 import { usageLimitOnScreen } from '../src/loop/deliver.js'
+import { splitLines } from '@agentskit/cross-platform'
 
 const fixture = (name: string): unknown => JSON.parse(readFileSync(join(process.cwd(), 'test/fixtures/loop', `${name}.json`), 'utf8')) as unknown
 const exampleYaml = readFileSync(join(process.cwd(), 'loop.config.example.yaml'), 'utf8').replace('person: my-linear-display-name', 'person: person')
@@ -1493,5 +1494,69 @@ describe('usageLimitOnScreen', () => {
   })
   it('still reports a new limit hit after an earlier recovery', () => {
     expect(usageLimitOnScreen(`${banner}\n• usage is available again.\n• Ran pnpm test\n${banner}`)).toBe(banner)
+  })
+})
+
+describe('deliver closes worker terminals (2026-10-16: 48 idle sessions stalled the line)', () => {
+  const redCi = { statusCheckRollup: [{ __typename: 'CheckRun', name: 'lint', conclusion: 'FAILURE', status: 'COMPLETED' }] }
+  const events = (env: ReturnType<typeof setup>): Record<string, unknown>[] => splitLines(readFileSync(join(env.loaded.stateDir, 'events.ndjson'), 'utf8')).filter(Boolean).map((line) => JSON.parse(line) as Record<string, unknown>)
+  const closes = (env: ReturnType<typeof setup>): string[] => env.runner.calls.filter((argv) => argv[1] === 'terminal' && argv[2] === 'close').map((argv) => argv[argv.indexOf('--terminal') + 1] as string)
+
+  it('closes the worker terminal when delivery finishes the issue (blocked), keeps the worktree, and records it', async () => {
+    const env = setup({ pr: basePr(redCi) })
+    writeFileSync(join(env.loaded.stateDir, 'issues', 'ENG-10', 'delivery.json'), JSON.stringify({ ...readDeliveryState(env.loaded.stateDir, 'ENG-10'), fixRounds: 2 }))
+    const report = await deliver(env)
+    expect(report.results[0]).toMatchObject({ outcome: 'blocked' })
+    expect(closes(env)).toEqual(['term_w'])
+    expect(env.runner.calls.some((argv) => argv[1] === 'worktree' && argv[2] === 'rm')).toBe(false)
+    expect(events(env).find((event) => event['type'] === 'worker.terminal-closed')).toMatchObject({ issue: 'ENG-10', terminal: 'term_w', reason: 'finished: blocked', worktreeId: 'repo-1::/w/eng-10-demo' })
+    expect(createDispatchLedger(env.loaded.stateDir).active()).toEqual([])
+  })
+
+  it('a stale handle on close is the terminal already gone: the outcome stands and nothing throws', async () => {
+    const env = setup({ pr: basePr(redCi), terminalCloseError: '{"ok":false,"error":"terminal_handle_stale"}' })
+    writeFileSync(join(env.loaded.stateDir, 'issues', 'ENG-10', 'delivery.json'), JSON.stringify({ ...readDeliveryState(env.loaded.stateDir, 'ENG-10'), fixRounds: 2 }))
+    const report = await deliver(env)
+    expect(report.results[0]).toMatchObject({ outcome: 'blocked' })
+    expect(report.notes.some((note) => note.includes('closing worker terminal') && note.includes('failed'))).toBe(false)
+  })
+
+  it('dry run reports the terminal it would close and closes nothing', async () => {
+    const env = setup({ pr: basePr(redCi) })
+    writeFileSync(join(env.loaded.stateDir, 'issues', 'ENG-10', 'delivery.json'), JSON.stringify({ ...readDeliveryState(env.loaded.stateDir, 'ENG-10'), fixRounds: 2 }))
+    const report = await deliver(env, { dryRun: true })
+    expect(report.notes).toEqual(expect.arrayContaining([expect.stringContaining('would close worker terminal term_w (finished: blocked)')]))
+    expect(closes(env)).toEqual([])
+  })
+
+  it('an idle worker closed while its PR waits is relaunched in the same worktree for the next fix round — never restarted or wiped', async () => {
+    const pending = { statusCheckRollup: [{ __typename: 'CheckRun', name: 'ci', status: 'IN_PROGRESS' }] }
+    const env = setup({ pr: basePr(pending), terminals: [{ handle: 'term_w', connected: true, orphaned: false, worktreeId: 'repo-1::/w/eng-10-demo', worktreePath: '/w/eng-10-demo', lastOutputAt: Date.parse('2026-09-11T09:00:00.000Z') }] })
+    writeFileSync(join(env.loaded.stateDir, 'issues', 'ENG-10', 'brief.md'), 'Continue the implementation and report LOOP_WORKER_DONE ENG-10.')
+    const waitingPass = await deliver(env)
+    expect(waitingPass.results[0]).toMatchObject({ outcome: 'waiting', pr: 42 })
+    expect(closes(env)).toEqual(['term_w'])
+    expect(waitingPass.notes.some((note) => note.includes('1 idle'))).toBe(true)
+    expect(env.runner.calls.some((argv) => argv[1] === 'terminal' && argv[2] === 'send')).toBe(false)
+
+    // The terminal is gone now; CI goes red and the fix round has to reach a worker.
+    env.scenario.terminals = []
+    env.scenario.pr = basePr(redCi)
+    env.runner.calls.length = 0
+    const fixPass = await deliver(env)
+    expect(fixPass.results[0]).toMatchObject({ outcome: 'fix-round', reason: 'CI red: lint' })
+    expect(fixPass.results[0]?.actions).toEqual(expect.arrayContaining([expect.stringContaining('gone (closed)'), 'sent to reactivated worker terminal term_handoff']))
+    const created = env.runner.calls.find((argv) => argv[1] === 'terminal' && argv[2] === 'create')
+    expect(created?.[created.indexOf('--worktree') + 1]).toBe('id:repo-1::/w/eng-10-demo')
+    expect(JSON.parse(readFileSync(dispatchRecordPath(env.loaded.stateDir, 'ENG-10'), 'utf8')).terminal).toBe('term_handoff')
+    expect(env.runner.calls.some((argv) => argv[1] === 'worktree' && argv[2] === 'rm')).toBe(false)
+    expect(events(env).some((event) => event['type'] === 'worker.restarted' || event['type'] === 'worker.lost-tracking')).toBe(false)
+    expect(readDeliveryState(env.loaded.stateDir, 'ENG-10')).toMatchObject({ finishedAt: null, fixRounds: 1 })
+  })
+
+  it('never idle-closes a worker mid fix round', async () => {
+    const env = setup({ pr: basePr(redCi), terminals: [{ handle: 'term_w', connected: true, orphaned: false, worktreeId: 'repo-1::/w/eng-10-demo', worktreePath: '/w/eng-10-demo', lastOutputAt: Date.parse('2026-09-11T09:00:00.000Z') }] })
+    expect((await deliver(env)).results[0]).toMatchObject({ outcome: 'fix-round' })
+    expect(closes(env)).toEqual([])
   })
 })

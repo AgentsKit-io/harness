@@ -13,7 +13,7 @@ timestamp) and `type` on top of the fields below. A plugin subscribes with
 The vocabulary is enforced by the compiler: `appendLoopEvent` accepts only these names, so an event that is not
 here cannot be emitted — and a name here that nothing emits fails the test suite.
 
-92 loop events.
+95 loop events.
 
 ## `contract.*`
 
@@ -45,6 +45,8 @@ here cannot be emitted — and a name here that nothing emits fails the test sui
 |---|---|---|
 | `worker.dispatched` | `issue`, `worktree`, `worktreeId`, `branch`, `terminal`, `provider`, `model`, `effort`, `contractDigest`, `briefDigest`, `command`, `briefAccepted`, `tuiIdle`, `workerGuardInstalled`, `maxFixRounds` | A worker was launched in its own worktree. Carries the whole dispatch record plus the command that ran. |
 | `worker.dispatch-failed` | `issue`, `error` | The dispatch itself failed — worktree, terminal or brief — before any work started. |
+| `worker.dispatch-capacity` | `issue`, `error`, `until` | `orca terminal create` timed out: the machine is out of room for another agent session. Not counted as a failure; the issue is re-queued and dispatch waits until `until`. |
+| `worker.terminal-closed` | `issue`, `terminal`, `reason`, `worktreeId` | The loop closed a worker terminal it created (finished issue, orphaned, superseded, or idle with a PR open). |
 | `worker.setup` | `issue`, `worktreeId`, `ok` | `project.setup.command` ran in the fresh worktree. |
 | `worker.nudged` | `issue`, `kind`, `reason`, `worktreeId` | An idle worker was nudged in its own terminal — and also the terminal outcome `nudged`, which ends a delivery pass on the same issue. Two emissions, one name: `kind` is present on the first, `reason` on the second. |
 | `worker.permission-wait` | `issue`, `terminal`, `reason` | The worker stopped at a tool-permission prompt: held for a person, never typed into. Once per idle window. |
@@ -67,6 +69,12 @@ here cannot be emitted — and a name here that nothing emits fails the test sui
 | `worker.reviewed` | `issue`, `reason`, `worktreeId` | The review ran and the pass ended there, without merging. |
 | `worker.fix-round` | `issue`, `reason`, `worktreeId` | The pass ended by sending the worker back to work. |
 | `worker.needs-input` | `issue`, `reason`, `worktreeId` | A structured human decision stopped delivery without turning it into a technical failure. |
+
+## `terminals.*`
+
+| Event | Carries | What it means |
+|---|---|---|
+| `terminals.reaped` | `closed`, `orphaned`, `idle`, `superseded`, `failed` | One deliver pass closed worker terminals; counts by reason. |
 
 ## `pr.*`
 

@@ -41,6 +41,7 @@ import { createLifecycleStore, type LifecyclePullRequest } from './lifecycle.js'
 import { activeTrackerCooldown, guardTracker, TrackerCooldownError } from './tracker-cooldown.js'
 import { approveHeldDelivery, clearRestarts, deliveryStatePath, listDispatched, markDispatchCancelled, MAX_LOST_TRACKING_RESTARTS, readDeliveryState, readRestarts, restartsPath } from './deliver-state.js'
 import type { DeliveryHandoff, DeliveryState, DeliverOutcome } from './deliver-state.js'
+import { reapWorkerTerminals } from './terminal-reaper.js'
 
 export { approveHeldDelivery, clearRestarts, deliveryStatePath, listDispatched, markDispatchCancelled, MAX_LOST_TRACKING_RESTARTS, readDeliveryState, readRestarts }
 export type { DeliveryHandoff, DeliveryState, DeliverOutcome }
@@ -149,6 +150,8 @@ interface Context {
   readonly scm: ScmConnector
   /** Catalog-discovered builder candidates (`models.routing.mode: catalog`), already resolved once for the initial `builder` pick — reused by `pickHandoffBuilder` so a stuck-worker handoff considers the same pool instead of only YAML tiers. */
   readonly builderExtras: readonly ModelReference[]
+  /** Issues `finish()` closed out this pass → outcome; their worker terminals are closed once the pass is done. */
+  readonly finished: Map<string, string>
 }
 
 const orcaOptions = (config: LoopConfig) => ({ bin: config.orca.bin, timeoutMs: config.orca.timeoutMs })
@@ -278,13 +281,17 @@ const sendToWorker = async (ctx: Context, record: DispatchRecordFile, text: stri
       const own = items.find((item) => item.id === record.worktreeId)
       return own?.agentCount === 0 && own.activity !== 'working' && own.activity !== 'permission'
     }, () => false)
-    const terminal = (await orcaTerminalList(ctx.runner, { worktree: `id:${record.worktreeId}` }, orcaOptions(ctx.config))).find((item) => item.handle === record.terminal)
+    const terminals = await orcaTerminalList(ctx.runner, { worktree: `id:${record.worktreeId}` }, orcaOptions(ctx.config))
+    const terminal = terminals.find((item) => item.handle === record.terminal)
     // Zero agents alone is also what an idle agent from a CLI that never registers with Orca looks like: only a shell
     // prompt on screen makes it a bare shell, or every nudge would start a second agent in the same worktree.
     const shellOnScreen = Boolean(terminal && SHELL_PROMPT.test(terminal.preview))
     // ponytail: a live Orca shell with no recorded agent command cannot make progress; reactivate it once.
-    staleShell = (noAgent && shellOnScreen) || Boolean(terminal && !terminal.command && (shellOnScreen || (!terminal.preview.trim() && terminal.lastOutputAt === null)))
-    if (staleShell) actions.push(`worker terminal ${record.terminal} is ${noAgent ? 'a shell with no agent attached' : 'stale or a shell'}, not an active agent; reactivating`)
+    // Gone from Orca's own list (closed when the issue finished or idled with a PR open): typing into it can only
+    // fail. Relaunch a worker in the same worktree instead — never the lost-run restart, which needs no PR at all.
+    const gone = !terminal
+    staleShell = gone || (noAgent && shellOnScreen) || Boolean(terminal && !terminal.command && (shellOnScreen || (!terminal.preview.trim() && terminal.lastOutputAt === null)))
+    if (staleShell) actions.push(`worker terminal ${record.terminal} is ${gone ? 'gone (closed)' : noAgent ? 'a shell with no agent attached' : 'stale or a shell'}, not an active agent; reactivating`)
   } catch { /* send below remains the fallback when terminal metadata is unavailable */ }
   if (!staleShell) {
     try {
@@ -401,6 +408,7 @@ const reopenFinishedIssue = async (ctx: Context, record: DispatchRecordFile, sta
 
 /** `dry-run` is not an outcome anything finishes on: this function returns before writing, so the type says so. */
 const finish = (ctx: Context, record: DispatchRecordFile, lease: DispatchLease | undefined, state: DeliveryState, outcome: Exclude<DeliverOutcome, 'dry-run' | 'restarted'>, reason: string): void => {
+  ctx.finished.set(record.issue, outcome)
   if (ctx.dryRun) return
   if (lease) { try { createDispatchLedger(ctx.loaded.stateDir).release(lease, `${outcome}: ${reason}`) } catch (error) { ctx.notes.push(`lease release for ${record.issue} failed: ${message(error)}`) } }
   saveState(ctx, { ...state, finishedAt: ctx.now().toISOString(), finalOutcome: outcome })
@@ -1335,7 +1343,7 @@ export const runDeliver = async (input: DeliverInput): Promise<DeliverReport> =>
   const tracker = guardTracker(connectors.tracker, { stateDir: loaded.stateDir, now, dryRun, onRateLimited: (entry) => appendLoopEvent(loaded.stateDir, { at: now().toISOString(), type: 'tracker.cooldown', until: entry.until, attempts: entry.attempts, reason: entry.reason }, bus) })
   const trackerCooling = activeTrackerCooldown(loaded.stateDir, now())
   if (trackerCooling) notes.push(`${connectors.tracker.id} rate-limited until ${trackerCooling.until}: tracker writes skipped this pass; PR/merge work continues`)
-  const ctx: Context = { loaded, config, runner: input.runner, now, dryRun, reviewer, reviewerCandidates, builder, providers, env, tracker, scm, ...(input.assumeIdle === undefined ? {} : { assumeIdle: input.assumeIdle }), notes, reviewDeadlineMs, bus, builderExtras }
+  const ctx: Context = { loaded, config, runner: input.runner, now, dryRun, reviewer, reviewerCandidates, builder, providers, env, tracker, scm, ...(input.assumeIdle === undefined ? {} : { assumeIdle: input.assumeIdle }), notes, reviewDeadlineMs, bus, builderExtras, finished: new Map() }
   const ledger = createDispatchLedger(loaded.stateDir)
   const leases = new Map(ledger.active().map((lease) => [lease.issue, lease]))
   const results: DeliverResult[] = []
@@ -1462,6 +1470,10 @@ export const runDeliver = async (input: DeliverInput): Promise<DeliverReport> =>
       if (!threw && (state.consecutiveErrors ?? 0) > 0) saveState(ctx, { ...readDeliveryState(loaded.stateDir, record.issue), consecutiveErrors: 0 })
     }
   }
+
+  // Worker terminals of finished, orphaned or idle-waiting issues: re-read, since this pass may have relaunched one.
+  const reaped = await reapWorkerTerminals({ runner: input.runner, config, root: loaded.root, records: listDispatched(loaded.stateDir).filter((record) => !input.onlyIssue || record.issue === input.onlyIssue), stateOf: (issue) => readDeliveryState(loaded.stateDir, issue), leasedIssues: new Set(ledger.active().map((lease) => lease.issue)), finishedThisPass: ctx.finished, results, now: now(), dryRun, emit: (payload) => event(ctx, payload) })
+  notes.push(...reaped.notes)
 
   // The durable queue is the UI/CLI/scheduler seam; delivery only projects its terminal decision into that store.
   if (!dryRun) {
