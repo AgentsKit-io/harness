@@ -236,7 +236,9 @@ See `src/loop/event-bus.ts` for the full API (`createLoopEventBus`, `loadLoopPlu
 
 ## Calling a human: `notifications`
 
-The tracker comment always happens — it is the record. `notifications` is the channel on top of it, and it has
+The tracker comment always happens — it is the record. On a merge it carries the delivery evidence (review verdict,
+checks, verify, DoD, fix rounds, spend — ADR-0044), so the issue alone shows what was verified. `notifications` is
+the channel on top of it, and it has
 exactly two generic shapes, so a new destination is configuration rather than a release:
 
 | Channel | Shape | Covers |

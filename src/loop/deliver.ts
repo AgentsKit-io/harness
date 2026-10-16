@@ -6,7 +6,7 @@ import { atLeast, parseReviewResult, renderFindingsForWorker, runCodeReview, typ
 import { createHitlStore, HITL_ANCHOR_ID, HITL_ANCHOR_TITLE, type HitlRequest } from './hitl.js'
 import { assessChecks, githubComment, githubCommentExists, githubCompare, githubLabelRemove, githubMerge, githubOpenPullRequests, githubPullRequest, githubPullRequestsForBranch, touchesProtectedPaths, type PullRequestSnapshot } from '../adapters/github-cli.js'
 import { requireWritableTracker, resolveConnectors, type ScmConnector, type TrackerConnector } from './connectors.js'
-import { issueBudget, modelForChange } from './budget.js'
+import { issueBudget, issueSpend, modelForChange } from './budget.js'
 import { assessBoundary, verifyCommandFor } from './layers.js'
 import { installWorkerGuard } from './worker-guard.js'
 import { orcaAccountList, orcaAgentHooks, orcaTerminalClose, orcaTerminalList, orcaWorktrees, orcaTerminalScreen, orcaTerminalSend, orcaTerminalWait, orcaWorktreeRemove, orcaWorktreeSet } from '../adapters/orca-cli.js'
@@ -30,9 +30,13 @@ import { attachNotifier } from './notify.js'
 import { applyRoleSettings, resolveFlowSettings, resolveRoleSettings, workerPhaseEnabled, type EffectiveFlowSettings } from './flows.js'
 import { assessDod, readDodEvidence, renderDodMarkdown } from './dod.js'
 import { splitLines } from '@agentskit/cross-platform'
-import { artifactPath, missingArtifacts, readPhaseArtifacts, readVerifyArtifact, verifyProofs, type PhaseArtifactName } from './artifacts.js'
+import { artifactPath, missingArtifacts, readPhaseArtifacts, readVerifyArtifact, VerifyArtifactSchema, verifyProofs, type PhaseArtifactName } from './artifacts.js'
 import { sha256 } from '../kernel/hash.js'
-import { markRunSummaryPosted, readAgentRunReport, recordRunEvidence, recordRunIo, renderRunSummaryMarkdown, runSummaryMarker } from './agent-runs.js'
+import { latestIssueRun, markRunSummaryPosted, readAgentRunReport, recordRunEvidence, recordRunIo, renderRunSummaryMarkdown, runDirFor, runSummaryMarker } from './agent-runs.js'
+import { buildEvidenceDocument, type DeliveryEvidence, type EvidenceOptions, type EvidenceProof, type EvidenceStatus } from './evidence.js'
+import { DEFAULT_COMMENT_OPTIONS, fitComment, type CommentDocument } from './comment-format.js'
+import { readLoopEvents } from './retro.js'
+import { scanForPii } from '../kernel/pii.js'
 import { checkSpec, renderSpec, specDirFor, writeSpec } from './spec.js'
 import { readStoredPlan } from './plan-vote.js'
 import { parseJsonFileText, readJsonFile } from '../kernel/json-file.js'
@@ -351,6 +355,116 @@ const recordWorkerArtifacts = (ctx: Context, record: DispatchRecordFile): void =
     recordRunIo(stateDir, record.issue, { direction: 'output', stage: item.stage, role: 'worker', content, extension: item.extension, maxBytes: ctx.config.runs.maxIoBytes }, ctx.now)
     if (item.evidence) recordRunEvidence(stateDir, record.issue, item.evidence, path, ctx.now)
   }
+}
+
+/** A worker artifact from the worktree, or — the worktree gone — the copy `recordWorkerArtifacts` put in the run. */
+const readWorkerArtifact = (ctx: Context, record: DispatchRecordFile, file: string, stage: 'verify' | 'dod'): unknown => {
+  const parse = (text: string): unknown => { try { return JSON.parse(text.replace(/^﻿/, '')) as unknown } catch { return undefined } }
+  if (record.worktreePath) { try { return parse(readFileSync(artifactPath(record.worktreePath, file), 'utf8')) } catch { /* fall back to the run */ } }
+  const run = latestIssueRun(ctx.loaded.stateDir, record.issue)
+  const entry = run?.io.filter((item) => item.direction === 'output' && item.stage === stage && item.role === 'worker').at(-1)
+  if (!run || !entry) return undefined
+  try { return parse(readFileSync(join(runDirFor(ctx.loaded.stateDir, run.runId), entry.sameAs ?? entry.file), 'utf8')) } catch { return undefined }
+}
+
+const proofStatus = (status: unknown): EvidenceStatus => status === 'passed' || status === 'failed' || status === 'skipped' || status === 'blocked' || status === 'pending' ? status : 'missing'
+const rawProofs = (value: unknown): readonly EvidenceProof[] => Array.isArray(value) ? value.filter(isRecord).filter((entry) => typeof entry['id'] === 'string').map((entry) => ({ id: entry['id'] as string, status: proofStatus(entry['status']), evidence: typeof entry['evidence'] === 'string' ? entry['evidence'] : '' })) : []
+
+/**
+ * Everything the loop already holds about this delivery, for the evidence comment (`evidence.ts`). Every read is
+ * best-effort: a file or call that fails becomes a section marked unavailable, never a failed completion.
+ */
+const gatherEvidence = async (ctx: Context, record: DispatchRecordFile, state: DeliveryState, pr: PullRequestSnapshot, merge: DeliveryEvidence['merge']): Promise<DeliveryEvidence> => {
+  const { stateDir } = ctx.loaded
+  const { config } = ctx
+  const flow = flowFor(ctx, record)
+  const reviews = Object.entries(state.reviews).sort(([, a], [, b]) => Date.parse(b.at) - Date.parse(a.at))
+  const reviewed = state.reviews[pr.headSha] ? [pr.headSha, state.reviews[pr.headSha]!] as const : reviews[0]
+  let review: DeliveryEvidence['review'] = null
+  if (reviewed) {
+    const [head, entry] = reviewed
+    let findings: NonNullable<DeliveryEvidence['review']>['findings'] = null
+    try {
+      const path = join(stateDir, 'issues', record.issue, `review-${head.slice(0, 12)}.json`)
+      if (existsSync(path)) findings = parseReviewResult(JSON.parse(readFileSync(path, 'utf8'))).findings.map(({ severity, file, line, title }) => ({ severity, file, line, title }))
+    } catch { /* counts from the delivery state still stand */ }
+    review = { head, status: entry.status, provider: entry.provider, model: entry.model, attempts: entry.attempts, minSeverity: flow.review.minSeverity, findings, blocking: entry.blocking }
+  }
+  let unresolvedThreads: number | null = null
+  try { unresolvedThreads = (await ctx.scm.unresolvedReviewThreads?.(pr.number)) ?? null } catch { /* unavailable */ }
+
+  const verifyParsed = VerifyArtifactSchema.safeParse(readWorkerArtifact(ctx, record, 'verify.json', 'verify'))
+  const verify = verifyParsed.success ? { command: verifyParsed.data.command, exitCode: verifyParsed.data.exitCode ?? null, ranAt: verifyParsed.data.ranAt ?? null, outcomes: verifyParsed.data.outcomes.map((outcome) => ({ id: outcome.id, status: outcome.status, evidence: outcome.evidence })) } : null
+
+  // The same assessment the merge gate made, plus the statuses it cannot express (skipped, blocked) from the raw file.
+  const dodPhase = workerPhaseEnabled(config, flow.flow, 'dod', true)
+  const rawDod = readWorkerArtifact(ctx, record, config.dod.evidenceFile.replace(/^\.ak-loop[\\/]/, ''), 'dod')
+  const raw = isRecord(rawDod) ? rawDod : null
+  let dod: readonly EvidenceProof[] | null = null
+  if (dodPhase && (raw || verify)) {
+    const decided = (proofs: readonly EvidenceProof[]) => proofs.filter((proof) => proof.status === 'passed' || proof.status === 'failed').map((proof) => ({ id: proof.id, status: proof.status as 'passed' | 'failed', evidence: proof.evidence }))
+    const project = rawProofs(raw?.['project'])
+    const outcomes = rawProofs(raw?.['outcomes'])
+    const fromVerify = verifyProofs(verifyParsed.success ? verifyParsed.data : null).filter((proof) => !outcomes.some((recorded) => recorded.id === proof.id))
+    const stored = readStoredContract(stateDir, record.issue)
+    const assessed = assessDod({ config, contract: stored?.contract ?? null, evidence: { project: decided(project), outcomes: [...decided(outcomes), ...fromVerify] }, prFiles: pr.files })
+    const declared = new Map([...project, ...outcomes].map((proof) => [proof.id, proof]))
+    dod = assessed.lines.map((line) => {
+      const own = declared.get(line.id)
+      const status: EvidenceStatus = line.status === 'proven' ? 'passed' : line.status === 'failed' ? 'failed' : own && own.status !== 'missing' ? own.status : 'missing'
+      return { id: line.id, list: line.list, status, evidence: own && line.status === 'missing' ? own.evidence : line.evidence }
+    })
+  }
+
+  const events = readLoopEvents(stateDir, Date.parse(record.dispatchedAt) || undefined).filter((item) => item['issue'] === record.issue)
+  const verifyArgv = config.delivery.verify.argv
+  const verified = events.filter((item) => item['type'] === 'verify.passed').at(-1)
+  const harnessVerify: DeliveryEvidence['harnessVerify'] = verifyArgv.length
+    ? workerPhaseEnabled(config, flow.flow, 'verify', true)
+      ? { command: verifyArgv.join(' '), status: verified ? 'passed' : 'missing', head: typeof verified?.['head'] === 'string' ? verified['head'] : null }
+      : { command: verifyArgv.join(' '), status: 'skipped', head: null }
+    : null
+  const usage = events.filter((item) => item['type'] === 'provider.usage-observed').at(-1)
+  const spend = issueSpend(stateDir, record.issue)
+  const ceiling = record.frozenPerIssueTokens ?? config.budget.perIssueTokens
+  const checks = pr.checks.filter((check) => !config.delivery.ignoreChecks.includes(check.name)).map((check) => ({ name: check.name, outcome: check.outcome, required: config.delivery.requiredChecks.includes(check.name) }))
+  const byKind: Record<string, number> = {}
+  for (const nudge of state.nudges) if (nudge.kind === 'ci' || nudge.kind === 'review' || nudge.kind === 'conflict') byKind[nudge.kind] = (byKind[nudge.kind] ?? 0) + 1
+  const dispatched = Date.parse(record.dispatchedAt)
+  return {
+    issue: record.issue,
+    pr: { number: pr.number, url: pr.url, title: pr.title },
+    merge,
+    head: pr.headSha || null,
+    worker: { provider: record.provider, model: record.model },
+    review,
+    reviewSkipped: !review && !workerPhaseEnabled(config, flow.flow, 'review', true) ? 'review phase off for this flow' : null,
+    incompleteReasons: [...new Set(reviews.map(([, entry]) => entry.reason).filter((reason): reason is string => Boolean(reason)))],
+    unresolvedThreads,
+    verify,
+    harnessVerify,
+    dod,
+    dodSkipped: dodPhase ? null : 'definition-of-done phase off for this flow',
+    negativeProofs: raw && Array.isArray(raw['negative']) ? rawProofs(raw['negative']) : null,
+    recoveryProofs: raw && Array.isArray(raw['recovery']) ? rawProofs(raw['recovery']) : null,
+    checks: checks.length ? checks : null,
+    checksGating: flow.merge.requireChecks,
+    fixRounds: { counted: state.fixRounds, limit: flow.maxFixRounds, byKind },
+    handoffs: state.handoffs.map((handoff) => `${handoff.fromProvider}/${handoff.fromModel} → ${handoff.toProvider}/${handoff.toModel} (${handoff.reason})`),
+    elapsedMs: Number.isFinite(dispatched) ? Math.max(0, ctx.now().getTime() - dispatched) : null,
+    spend: { totalTokens: spend.totalTokens, calls: spend.calls, ceiling: ceiling > 0 ? ceiling : null, usageDeltaPercent: typeof usage?.['deltaPercent'] === 'number' ? usage['deltaPercent'] : null },
+    runId: latestIssueRun(stateDir, record.issue)?.runId ?? null,
+  }
+}
+
+/** The evidence as this tracker takes comments, within its size ceiling. A gather that throws still posts the outcome. */
+const renderEvidence = async (ctx: Context, record: DispatchRecordFile, state: DeliveryState, pr: PullRequestSnapshot, merge: DeliveryEvidence['merge'], options: EvidenceOptions, maxChars?: number): Promise<string> => {
+  const comments = ctx.tracker.comments ?? DEFAULT_COMMENT_OPTIONS
+  let document: CommentDocument
+  try { document = buildEvidenceDocument(await gatherEvidence(ctx, record, state, pr, merge), options) } catch (error) {
+    document = { blocks: [{ kind: 'heading', text: options.title }, { kind: 'paragraph', text: options.summary }, { kind: 'paragraph', text: `No evidence recorded: gathering it failed (${scanForPii(message(error)).redacted.slice(0, 200)}). Absent evidence is not a pass.` }], ...(options.marker ? { marker: options.marker } : {}) }
+  }
+  return fitComment(document, { ...comments, maxChars: maxChars ?? comments.maxChars })
 }
 
 const escalateTracker = async (ctx: Context, record: DispatchRecordFile, kind: 'stuck' | 'blocked' | 'abandoned', body: string, actions: string[]): Promise<void> => {
@@ -763,7 +877,10 @@ const complete = async (ctx: Context, record: DispatchRecordFile, lease: Dispatc
       await ctx.tracker.attach({ issue: record.issue, url: pr.url, title: `PR #${pr.number}`, dedupeKey: `attach:${record.issue}:${pr.number}` })
       // Say who merged: "after a clean review and green checks" is only true when the loop made the call.
       const how = mergedBy === 'loop' ? 'after a clean review and green checks' : 'by a person, outside the loop — the loop\'s own review and checks did not decide it'
-      await ctx.tracker.comment({ issue: record.issue, body: `**Loop: merged** — ${pr.url}${mergeSha ? ` as \`${mergeSha.slice(0, 12)}\`` : ''} ${how}. Worker: \`${record.provider}/${record.model}\`.\n\n<!-- loop:merged:${pr.number} -->`, dedupeKey: `merged:${record.issue}:${pr.number}` })
+      // The evidence travels with the outcome, so the issue alone answers "what was verified?". Same dedupe key and
+      // marker as before: a rerun after a partial completion still posts it once.
+      const body = await renderEvidence(ctx, record, state, pr, { sha: mergeSha, by: mergedBy }, { title: 'Loop: merged', summary: `${pr.url}${mergeSha ? ` as \`${mergeSha.slice(0, 12)}\`` : ''} ${how}. Worker: \`${record.provider}/${record.model}\`.`, marker: `loop:merged:${pr.number}` })
+      await ctx.tracker.comment({ issue: record.issue, body, dedupeKey: `merged:${record.issue}:${pr.number}` })
       await ctx.tracker.transitions.transition({ tracker: ctx.tracker.id, issue: record.issue, to: ctx.config.linear.doneState, reason: `PR #${pr.number} merged` })
       actions.push(`${ctx.tracker.id}: attached PR, commented, → ${ctx.config.linear.doneState}`)
       // A merged issue is no longer blocked or waiting for information — clear the flags the loop itself set on the way.
@@ -789,7 +906,11 @@ const complete = async (ctx: Context, record: DispatchRecordFile, lease: Dispatc
 }
 
 const blockAfterRounds = async (ctx: Context, record: DispatchRecordFile, lease: DispatchLease | undefined, state: DeliveryState, pr: PullRequestSnapshot, why: string, actions: string[]): Promise<DeliverResult> => {
-  await escalateTracker(ctx, record, 'blocked', `**Loop: blocked after ${state.fixRounds} fix round(s)** — ${why}. PR: ${pr.url}. The worktree and PR stay open for a human; the slot was released.`, actions)
+  // The person taking over sees the last review findings, checks and DoD gaps on the issue, not only "blocked".
+  // ponytail: Markdown-bodied escalations only; a connector with its own renderer gets the plain escalation.
+  const comments = ctx.tracker.comments ?? DEFAULT_COMMENT_OPTIONS
+  const evidence = ctx.dryRun || comments.render ? '' : `\n\n${await renderEvidence(ctx, record, state, pr, null, { title: 'Evidence at the block', summary: `Head \`${pr.headSha.slice(0, 12)}\` of ${pr.url}.`, brief: true }, Math.max(2_000, comments.maxChars - 6_000))}`
+  await escalateTracker(ctx, record, 'blocked', `**Loop: blocked after ${state.fixRounds} fix round(s)** — ${why}. PR: ${pr.url}. The worktree and PR stay open for a human; the slot was released.${evidence}`, actions)
   if (!ctx.dryRun) { try { await githubComment(ctx.runner, { repo: ctx.config.project.repo, number: pr.number, body: `**Loop: blocked** — ${why}. Fix rounds exhausted (${state.fixRounds}/${flowFor(ctx, record).maxFixRounds}); a human needs to take over.\n\n<!-- loop:blocked:${pr.headSha} -->` }) } catch (error) { actions.push(`PR comment failed: ${message(error)}`) } }
   finish(ctx, record, lease, { ...state, prNumber: pr.number }, 'blocked', why)
   return { issue: record.issue, outcome: ctx.dryRun ? 'dry-run' : 'blocked', reason: why, pr: pr.number, head: pr.headSha, actions }

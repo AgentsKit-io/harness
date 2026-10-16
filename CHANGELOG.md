@@ -2,6 +2,15 @@
 
 ## [Unreleased]
 
+- **Delivery evidence on the tracker issue.** The merge comment now carries the audit trail: PR, merge commit and who
+  merged (loop or outside), the reviewed head and verdict (APPROVE/COMMENT/REQUEST CHANGES/INCOMPLETE) with findings
+  by severity and INCOMPLETE reasons, unresolved review threads, CI checks, the harness verify, the worker's
+  `verify.json`, DoD lines (plus negative/recovery proofs when recorded), fix rounds, elapsed time and loop-side
+  tokens. Absent parts are named, skipped/blocked items are never shown as passed, free text is PII-redacted, and the
+  body fits the tracker's ceiling with a note of what was cut. Same dedupe key and marker as before; also posted for
+  merges outside the loop, and a brief version is appended to blocked-after-fix-rounds escalations. Trackers declare
+  their comment format and size through `TrackerConnector.comments`; ADR-0044 sketches a Jira connector against it.
+
 - **Single test run in CI.** `pnpm test:coverage` now includes typecheck and the package criterion output, so the verify job runs the test suite once while retaining coverage thresholds.
 - **Docs artifact frontmatter.** Documentation metadata now uses shared frontmatter splitting and YAML parsing, including folded scalars, block lists, BOM and CRLF input.
 - **Coverage floor.** `pnpm test:coverage` now enforces ratcheted source coverage in CI.
