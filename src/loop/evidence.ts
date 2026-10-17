@@ -120,7 +120,7 @@ const proofTable = (proofs: readonly EvidenceProof[], drop: CommentBlock['drop']
   const header = withList ? ['status', 'list', 'id', 'evidence'] : ['status', 'id', 'evidence']
   return {
     kind: 'table', header, ...(drop ? { drop } : {}),
-    rows: [...rows.map((proof) => [label(proof.status), ...(withList ? [proof.list ?? ''] : []), oneLine(proof.id, 80), oneLine(proof.evidence || (proof.status === 'missing' ? 'no proof recorded' : '—'))]), ...moreRow(more, header.length)],
+    rows: [...rows.map((proof) => [label(proof.status), ...(withList ? [oneLine(proof.list ?? '', 80)] : []), oneLine(proof.id, 80), oneLine(proof.evidence || (proof.status === 'missing' ? 'no proof recorded' : '—'))]), ...moreRow(more, header.length)],
   }
 }
 
@@ -244,8 +244,8 @@ export const buildEvidenceDocument = (evidence: DeliveryEvidence, options: Evide
   const overview: string[] = []
   overview.push(`Head: ${evidence.head ? `\`${short(evidence.head)}\`` : 'unknown'}`)
   if (evidence.review) {
-    const sameHead = evidence.head ? evidence.review.head === evidence.head : true
-    overview.push(`Code review: ${reviewVerdict(evidence.review)} at \`${short(evidence.review.head)}\`${sameHead ? '' : ' — NOT the final head; the final head was not reviewed by the loop'} (${evidence.review.provider}${evidence.review.model ? `/${evidence.review.model}` : ''}, ${evidence.review.attempts} attempt(s))`)
+    const headNote = evidence.head === null ? ' — final head unknown, cannot confirm it was reviewed' : evidence.review.head === evidence.head ? '' : ' — NOT the final head; the final head was not reviewed by the loop'
+    overview.push(`Code review: ${reviewVerdict(evidence.review)} at \`${short(evidence.review.head)}\`${headNote} (${evidence.review.provider}${evidence.review.model ? `/${evidence.review.model}` : ''}, ${evidence.review.attempts} attempt(s))`)
   } else if (evidence.reviewSkipped) overview.push(`Code review: SKIPPED — ${oneLine(evidence.reviewSkipped)}`)
   else { overview.push('Code review: no review recorded'); unavailable.push('code review') }
   overview.push(`Unresolved review threads: ${evidence.unresolvedThreads === null ? 'unavailable' : evidence.unresolvedThreads}`)

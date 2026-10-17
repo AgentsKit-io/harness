@@ -434,7 +434,8 @@ const gatherEvidence = async (ctx: Context, record: DispatchRecordFile, state: D
 
   const events = readLoopEvents(stateDir, Date.parse(record.dispatchedAt) || undefined).filter((item) => item['issue'] === record.issue)
   const verifyArgv = config.delivery.verify.argv
-  const verified = events.filter((item) => item['type'] === 'verify.passed').at(-1)
+  // Only a pass at the PR's current head counts: a pass at an earlier head says nothing about the code that merged.
+  const verified = events.filter((item) => item['type'] === 'verify.passed').at(-1)?.['head'] === pr.headSha ? events.filter((item) => item['type'] === 'verify.passed').at(-1) : undefined
   const harnessVerify: DeliveryEvidence['harnessVerify'] = verifyArgv.length
     ? workerPhaseEnabled(config, flow.flow, 'verify', true)
       ? { command: verifyArgv.join(' '), status: verified ? 'passed' : 'missing', head: typeof verified?.['head'] === 'string' ? verified['head'] : null }
@@ -928,7 +929,7 @@ const blockAfterRounds = async (ctx: Context, record: DispatchRecordFile, lease:
   // The person taking over sees the last review findings, checks and DoD gaps on the issue, not only "blocked".
   // ponytail: Markdown-bodied escalations only; a connector with its own renderer gets the plain escalation.
   const comments = ctx.tracker.comments ?? DEFAULT_COMMENT_OPTIONS
-  const evidence = ctx.dryRun || comments.render ? '' : `\n\n${await renderEvidence(ctx, record, state, pr, null, { title: 'Evidence at the block', summary: `Head \`${pr.headSha.slice(0, 12)}\` of ${pr.url}.`, brief: true }, Math.max(2_000, comments.maxChars - 6_000))}`
+  const evidence = ctx.dryRun || comments.render ? '' : `\n\n${await renderEvidence(ctx, record, state, pr, null, { title: 'Evidence at the block', summary: `Head \`${pr.headSha.slice(0, 12)}\` of ${pr.url}.`, brief: true }, Math.min(Math.max(2_000, comments.maxChars - 6_000), Math.floor(comments.maxChars * 0.4)))}`
   await escalateTracker(ctx, record, 'blocked', `**Loop: blocked after ${state.fixRounds} fix round(s)** — ${why}. PR: ${pr.url}. The worktree and PR stay open for a human; the slot was released.${evidence}`, actions)
   if (!ctx.dryRun) { try { await githubComment(ctx.runner, { repo: ctx.config.project.repo, number: pr.number, body: `**Loop: blocked** — ${why}. Fix rounds exhausted (${state.fixRounds}/${flowFor(ctx, record).maxFixRounds}); a human needs to take over.\n\n<!-- loop:blocked:${pr.headSha} -->` }) } catch (error) { actions.push(`PR comment failed: ${message(error)}`) } }
   finish(ctx, record, lease, { ...state, prNumber: pr.number }, 'blocked', why)

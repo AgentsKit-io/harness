@@ -107,12 +107,14 @@ describe('delivery evidence comment', () => {
   it('redacts tokens and emails, including inside URLs, in every free-text field', () => {
     const body = md(full({
       verify: { command: 'curl https://x-access-token:ghp_abcdefghijklmnopqrstuvwxyz0123@github.com/o/r', exitCode: 1, ranAt: null, outcomes: [{ id: 'O1', status: 'failed', evidence: 'mailto https://example.com/u/jane.doe@corp.example.com/profile\nsk-proj-abcdefghijklmnopqrstuvwxyz' }] },
+      review: { ...full().review!, status: 'incomplete' },
       incompleteReasons: ['auth failed for ops@corp.example.com'],
     }))
     expect(body).not.toContain('ghp_abcdefghijklmnopqrstuvwxyz0123')
     expect(body).not.toContain('jane.doe@corp.example.com')
     expect(body).not.toContain('sk-proj-abcdefghijklmnopqrstuvwxyz')
     expect(body).not.toContain('ops@corp.example.com')
+    expect(body).toContain('auth failed for [REDACTED:email]')
     expect(body).toContain('[REDACTED:api-key]')
     expect(body).toContain('[REDACTED:email]')
   })
@@ -155,6 +157,8 @@ describe('delivery evidence comment', () => {
     expect(body).toContain('| UNPROVEN | O1 | Orders can be exported as CSV |')
     expect(body).not.toContain('| PASSED | project | tests |')
     expect(body).not.toContain('**CI checks**')
+    expect(body).not.toContain('| ci | SUCCESS |')
+    expect(body).not.toContain('# O2 (FAILED)')
     expect(body).not.toContain('**Worker verify (verify.json)**')
   })
 
