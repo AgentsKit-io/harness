@@ -173,12 +173,12 @@ describe('linear.refill', () => {
     expect(report.queue.candidates).toEqual(['ENG-11'])
   })
 
-  it('leaves alone an issue a human assigned after the pool was read', async () => {
+  it('leaves alone an issue a human assigned after the pool was read, and takes the next one instead', async () => {
     const board = makeBoard([issue('ENG-10', 1), issue('ENG-11', 2)], { takenMeanwhile: ['ENG-10'] })
     const configPath = writeLoop()
     setRefill(configPath, { target: 1 })
     const report = await runTick({ ...options(board.runner, configPath, binDir()), maxDispatch: 0 })
-    expect(assigned(board.runner)).toEqual([])
+    expect(assigned(board.runner)).toEqual(['ENG-11'])
     expect(board.issues.find((item) => item.identifier === 'ENG-10')?.assignee).toBe('sib')
     expect(report.notes.some((note) => note.includes('refill: ENG-10 was assigned to sib since the pool was read'))).toBe(true)
   })
@@ -257,5 +257,15 @@ describe('queue.yieldTo', () => {
     expect((await precheckTick(options(board.runner, mainPath, binDir()))).work).toBe(true)
     // From law-os's side, design-system does not stall it either.
     expect((await precheckTick(options(board.runner, siblingPath, binDir()))).work).toBe(true)
+  })
+
+  it('a three-loop yield cycle is cut at every member: the loop running its tick keeps going', async () => {
+    const root = mkdtempSync(join(tmpdir(), 'agentskit-yield3-')); cleanups.push(root)
+    const board = makeBoard([issue('ENG-1', 2, { assignee: 'person' }), issue('ENG-20', 1, { assignee: 'sib' })])
+    const a = writeLoop({ dir: join(root, 'a'), name: 'loop-a', person: 'sib', yieldTo: ['../b/loop.config.yaml'] })
+    const b = writeLoop({ dir: join(root, 'b'), name: 'loop-b', person: 'sib', yieldTo: ['../x/loop.config.yaml'] })
+    const x = writeLoop({ dir: join(root, 'x'), name: 'loop-x', yieldTo: ['../a/loop.config.yaml'] })
+    // x -> a -> b -> x: every loop has work and every one yields to the next, so without the cut nobody dispatches.
+    for (const path of [x, a, b]) expect((await precheckTick(options(board.runner, path, binDir()))).work).toBe(true)
   })
 })

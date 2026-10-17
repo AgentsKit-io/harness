@@ -494,7 +494,7 @@ export const gatherLoopState = async (input: { readonly loaded: LoadedLoopConfig
 }
 
 /** Read-only: exit-0 semantics for Orca `--precheck`. Work exists when a builder is routable and a candidate waits; capacity is telemetry, not an enqueue or dispatch gate. */
-export const precheckTick = async (input: Omit<TickInput, 'dryRun' | 'maxDispatch'> & PrecheckScope): Promise<{ readonly work: boolean; readonly reason: string; readonly free: number; readonly candidates: number; readonly notes?: readonly string[] }> => {
+export const precheckTick = async (input: Omit<TickInput, 'dryRun' | 'maxDispatch'> & PrecheckScope): Promise<{ readonly work: boolean; readonly reason: string; readonly free: number; readonly candidates: number; readonly notes?: readonly string[]; readonly cycle?: boolean }> => {
   const loaded = input.loaded ?? loadLoopConfig(input.configPath)
   const now = input.now ?? (() => new Date())
   const cooling = activeTrackerCooldown(loaded.stateDir, now())
@@ -518,7 +518,8 @@ export const precheckTick = async (input: Omit<TickInput, 'dryRun' | 'maxDispatc
     // Asked by a sibling that sits in this loop's own yield chain (A -> B -> A): reporting work would make the asker
     // yield here while this loop yields back to it on its own tick, so neither ever dispatches. A cyclic yieldTo has no
     // priority to honour, so the cycle is fail-open: this side says "no work" to the asker and both loops keep going.
-    if (decision.cycle && input.yieldChain?.length) return { work: false, reason: 'yieldTo cycle with the asking loop; not claiming priority', free: state.slots.free, candidates: state.candidates.length, notes: decision.notes }
+    // `cycle` travels up the chain (see `evaluateYield`), so a 3+ loop cycle is cut at every member, not only at the one that closes it.
+    if (decision.cycle && input.yieldChain?.length) return { work: false, reason: 'yieldTo cycle with the asking loop; not claiming priority', free: state.slots.free, candidates: state.candidates.length, notes: decision.notes, cycle: true }
     if (decision.notes.length) return { work, reason, free: state.slots.free, candidates: state.candidates.length, notes: decision.notes }
   }
   return { work, reason, free: state.slots.free, candidates: state.candidates.length }
@@ -559,6 +560,7 @@ export const evaluateYield = async (input: { readonly loaded: LoadedLoopConfig; 
     try {
       const sibling = loadLoopConfig(path)
       const result = await precheckTick({ loaded: sibling, runner: input.runner, ...(input.env ? { env: input.env } : {}), ...(input.platform ? { platform: input.platform } : {}), now: input.now, ...(input.machine ? { machine: input.machine } : {}), yieldChain: chain, includeRefill: false })
+      if (result.cycle) { cycle = true; notes.push(`yieldTo ${entry}: part of a yield cycle; not yielding to it`); continue }
       if (result.work) return { to: sibling.config.project.name, reason: `yielding to ${sibling.config.project.name}: ${result.candidates} dispatchable issue(s)`, candidates: result.candidates, notes, cycle }
     } catch (error) { notes.push(`yieldTo ${entry}: could not evaluate (${message(error)}); not yielding to it`) }
   }

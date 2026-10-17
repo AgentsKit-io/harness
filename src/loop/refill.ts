@@ -50,10 +50,14 @@ export const runRefill = async (input: { readonly config: LoopConfig; readonly t
     notes.push(`refill skipped: tracker read failed: ${message(error)}`)
     return outcome(0, [], [], isCooling(error))
   }
-  const picks = pool.slice(0, target - held).map((issue) => issue.identifier)
+  const need = target - held
+  const picks = pool.slice(0, need).map((issue) => issue.identifier)
   if (dryRun) return outcome(held, [], picks)
   const assigned: string[] = []
-  for (const issue of picks) {
+  // The pool in order: an issue a human took meanwhile is replaced by the next one; a failed assignment still uses up its slot.
+  let slots = need
+  for (const { identifier: issue } of pool) {
+    if (assigned.length >= slots) break
     try {
       // The pool was read a moment ago: re-read right before writing, so an issue a human assigned in between is theirs.
       const current = await tracker.issue(issue)
@@ -61,6 +65,7 @@ export const runRefill = async (input: { readonly config: LoopConfig; readonly t
       await tracker.claim(issue, person); assigned.push(issue)
     } catch (error) {
       notes.push(`refill: assigning ${issue} to ${person} failed: ${message(error)}`)
+      slots -= 1
       // Every further write would hit the same limit; the guard already recorded the cooldown.
       if (isCooling(error)) return outcome(held, assigned, [], true)
     }
