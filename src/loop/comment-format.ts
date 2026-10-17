@@ -100,7 +100,7 @@ export const fitComment = (document: CommentDocument, options: TrackerCommentOpt
     const withHead = (count: number): CommentBlock => {
       let text = points.slice(0, count).join('')
       if ((text.match(/`/g) ?? []).length % 2 === 1) text = text.slice(0, text.lastIndexOf('`'))
-      return { ...first!, text: text ? `${text}…` : '' }
+      return { ...first!, text: `${text}…` }
     }
     // Longest headline prefix that fits (binary search: rendering is monotonic in length).
     let low = 0
