@@ -168,8 +168,12 @@ export const LoopConfigSchema = z.object({
      * Note when switching to `unassigned`: clearing the assignees is then REQUIRED, not cosmetic. With
      * `person` and an emptied backlog the queue comes back empty and the loop looks healthy while doing
      * nothing.
+     *
+     * `both` drains the union of the two: issues with no assignee AND issues assigned to `linear.person`.
+     * Unassigned ones are claimed for `person` on dispatch; nothing is released on return (the issue stays the
+     * person's, which this queue still sees).
      */
-    queueOwnership: z.enum(['person', 'unassigned']).default('person'),
+    queueOwnership: z.enum(['person', 'unassigned', 'both']).default('person'),
     states: z.array(nonEmpty).min(1).default(['Todo', 'Ready']),
     /**
      * Where `loop plan decompose --create` puts new issues. It must NOT be one of `states`: those are the queue, and

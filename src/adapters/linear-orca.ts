@@ -44,14 +44,21 @@ export interface LinearQueueFilter {
    * item comes back. That is what lets several machines drain one queue without two of them picking the
    * same issue, and it is why an unowned issue is the normal state rather than a lost one.
    *
+   * `both` drains the union: the issues with no assignee AND the ones assigned to `person`. The assignee
+   * is not a claim there (nothing is released on return), so an issue already held by `person` stays theirs.
+   *
    * Absent reads as `person`, so a caller that builds the filter by hand keeps the historical behaviour.
    */
-  readonly queueOwnership?: 'person' | 'unassigned'
+  readonly queueOwnership?: 'person' | 'unassigned' | 'both'
 }
 
 /** The `--assignee` value the queue is listed with. `null` is Orca's literal for "unassigned". */
 export const queueAssigneeFilter = (filter: Pick<LinearQueueFilter, 'queueOwnership'>, person: string): string =>
   filter.queueOwnership === 'unassigned' ? 'null' : person
+
+/** Every `--assignee` the queue is listed with: both the person and Orca's `null` under `queueOwnership: 'both'`. */
+export const queueAssigneeFilters = (filter: Pick<LinearQueueFilter, 'queueOwnership'>, person: string): readonly string[] =>
+  filter.queueOwnership === 'both' ? [person, 'null'] : [queueAssigneeFilter(filter, person)]
 
 export interface LinearListInput {
   readonly bin?: string
@@ -133,9 +140,10 @@ export interface FetchQueueInput extends Omit<LinearListInput, 'state' | 'limit'
 export const fetchLinearQueue = async (runner: CommandRunner, input: FetchQueueInput): Promise<readonly LoopIssue[]> => {
   // The queue's `--assignee` is NOT always the person: under `queueOwnership: 'unassigned'` it is
   // Orca's literal `null`, because there the assignee is a claim the loop writes, not the filter.
-  const assignee = queueAssigneeFilter(input.filter, input.assignee)
-  const pages = await Promise.all(input.filter.states.map(async (state) => parseLinearIssues(await orcaJson(runner, buildListIssuesArgv({ workspaceId: input.workspaceId, teamKey: input.teamKey, assignee, state, limit: input.pageLimit ?? 200 }).slice(1), { ...input.orca, ...(input.bin ? { bin: input.bin } : {}) }))))
-  return filterAndOrderQueue(pages.flat(), input.filter)
+  // Under `both` it is two listings per state (the person and `null`); an issue can only match one, but dedupe anyway.
+  const assignees = queueAssigneeFilters(input.filter, input.assignee)
+  const pages = await Promise.all(input.filter.states.flatMap((state) => assignees.map(async (assignee) => parseLinearIssues(await orcaJson(runner, buildListIssuesArgv({ workspaceId: input.workspaceId, teamKey: input.teamKey, assignee, state, limit: input.pageLimit ?? 200 }).slice(1), { ...input.orca, ...(input.bin ? { bin: input.bin } : {}) })))))
+  return filterAndOrderQueue([...new Map(pages.flat().map((issue) => [issue.identifier, issue])).values()], input.filter)
 }
 
 // ---- issue detail and writes ------------------------------------------------------------------

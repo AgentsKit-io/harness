@@ -71,6 +71,13 @@ describe('runLoopDoctor probe failures', () => {
     expect(report.workers).toMatchObject({ running: 0, worktrees: [], error: expect.stringContaining('worktrees unreachable') })
   })
 
+  it('describes the queue as unassigned or assigned to the person under queueOwnership both', async () => {
+    const bin = fakeBinDir(['claude', 'codex', 'opencode', 'grok'])
+    const dir = configDir(exampleYaml.replace('queueOwnership: person ', 'queueOwnership: both   '))
+    const report = await runLoopDoctor({ configPath: join(dir, 'loop.config.yaml'), runner: fakeRunner(), env: { PATH: bin, XAI_API_KEY: 'k' }, platform: 'darwin', now: () => new Date('2026-09-11T12:00:00.000Z'), probe: false })
+    expect(report.checks.find((check) => check.id === 'linear.queue')?.detail).toContain('unassigned or assigned to person')
+  })
+
   it('fails the linear.queue check when fetching the queue throws', async () => {
     const bin = fakeBinDir(['claude', 'codex', 'opencode', 'grok'])
     const dir = configDir(exampleYaml)

@@ -200,7 +200,8 @@ export const createGitHubTracker = (input: ConnectorInput): TrackerConnector => 
         assigneeId: null, labels: issue.labels, priority: 0, priorityLabel: 'none', project: null, branchName: null,
         createdAt: issue.createdAt, updatedAt: issue.updatedAt,
       }))
-      const owned = config.linear.queueOwnership === 'unassigned' ? normalized.filter((issue) => issue.assignee === null) : normalized.filter((issue) => issue.assignee === target)
+      const ownership = config.linear.queueOwnership
+      const owned = normalized.filter((issue) => (ownership !== 'person' && issue.assignee === null) || (ownership !== 'unassigned' && issue.assignee === target))
       return filterAndOrderQueue(owned, config.linear)
     },
     issue: readDetail,

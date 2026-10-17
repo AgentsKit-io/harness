@@ -1056,7 +1056,8 @@ export const runTick = async (input: TickInput): Promise<TickReport> => {
       // state), so a failed claim must not cost the status move and the dispatch comment. It is still
       // recorded as an event, because an unclaimed in-flight issue is exactly what a second machine would
       // pick up if the states were ever widened.
-      if (config.linear.queueOwnership === 'unassigned') {
+      // Under `both` only an issue nobody held is claimed; one already assigned to the person stays as is.
+      if (config.linear.queueOwnership === 'unassigned' || (config.linear.queueOwnership === 'both' && !detail.assignee)) {
         try {
           await tracker.claim(detail.identifier, state.person)
         } catch (error) {

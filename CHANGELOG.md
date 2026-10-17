@@ -26,6 +26,7 @@
   `machine.maxLiveTerminals` (12) live loop terminals, and an `orca terminal create` timeout is capacity (re-queued,
   10-minute cooldown, no failure counted) instead of tripping the pause. New events `worker.terminal-closed`,
   `terminals.reaped`, `worker.dispatch-capacity`.
+- **`linear.queueOwnership: both`.** The queue can now drain unassigned issues AND the ones assigned to `linear.person` (Linear: both listings per state, merged and deduped; GitHub: assignee empty or the person). A dispatched unassigned issue is assigned to the person; escalation/restart never release the assignee under `both`.
 - **Single test run in CI.** `pnpm test:coverage` now includes typecheck and the package criterion output, so the verify job runs the test suite once while retaining coverage thresholds.
 - **Docs artifact frontmatter.** Documentation metadata now uses shared frontmatter splitting and YAML parsing, including folded scalars, block lists, BOM and CRLF input.
 - **Coverage floor.** `pnpm test:coverage` now enforces ratcheted source coverage in CI.
