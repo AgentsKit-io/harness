@@ -494,7 +494,7 @@ export const gatherLoopState = async (input: { readonly loaded: LoadedLoopConfig
 }
 
 /** Read-only: exit-0 semantics for Orca `--precheck`. Work exists when a builder is routable and a candidate waits; capacity is telemetry, not an enqueue or dispatch gate. */
-export const precheckTick = async (input: Omit<TickInput, 'dryRun' | 'maxDispatch'> & PrecheckScope): Promise<{ readonly work: boolean; readonly reason: string; readonly free: number; readonly candidates: number; readonly notes?: readonly string[]; readonly cycle?: boolean }> => {
+export const precheckTick = async (input: Omit<TickInput, 'dryRun' | 'maxDispatch'> & PrecheckScope): Promise<{ readonly work: boolean; readonly reason: string; readonly free: number; readonly candidates: number; readonly notes?: readonly string[]; readonly cycleTo?: readonly string[] }> => {
   const loaded = input.loaded ?? loadLoopConfig(input.configPath)
   const now = input.now ?? (() => new Date())
   const cooling = activeTrackerCooldown(loaded.stateDir, now())
@@ -518,8 +518,8 @@ export const precheckTick = async (input: Omit<TickInput, 'dryRun' | 'maxDispatc
     // Asked by a sibling that sits in this loop's own yield chain (A -> B -> A): reporting work would make the asker
     // yield here while this loop yields back to it on its own tick, so neither ever dispatches. A cyclic yieldTo has no
     // priority to honour, so the cycle is fail-open: this side says "no work" to the asker and both loops keep going.
-    // `cycle` travels up the chain (see `evaluateYield`), so a 3+ loop cycle is cut at every member, not only at the one that closes it.
-    if (decision.cycle && input.yieldChain?.length) return { work: false, reason: 'yieldTo cycle with the asking loop; not claiming priority', free: state.slots.free, candidates: state.candidates.length, notes: decision.notes, cycle: true }
+    // `cycleTo` (the loops a cycle closes on) travels up the chain (see `evaluateYield`), so a 3+ loop cycle is cut at every member, and stops at the loop it closes on.
+    if (decision.cycleTo.length && input.yieldChain?.length) return { work: false, reason: 'yieldTo cycle with the asking loop; not claiming priority', free: state.slots.free, candidates: state.candidates.length, notes: decision.notes, cycleTo: decision.cycleTo }
     if (decision.notes.length) return { work, reason, free: state.slots.free, candidates: state.candidates.length, notes: decision.notes }
   }
   return { work, reason, free: state.slots.free, candidates: state.candidates.length }
@@ -540,8 +540,8 @@ export interface YieldDecision {
   readonly candidates: number
   /** Siblings that could not be evaluated (and so were not yielded to). */
   readonly notes: readonly string[]
-  /** A `yieldTo` entry pointed back up the chain of loops being evaluated. */
-  readonly cycle: boolean
+  /** Config paths of loops (other than this one) that a `yieldTo` entry closed a cycle on: the loops above this one in the chain. */
+  readonly cycleTo: readonly string[]
 }
 
 /**
@@ -552,19 +552,21 @@ export interface YieldDecision {
  */
 export const evaluateYield = async (input: { readonly loaded: LoadedLoopConfig; readonly runner: CommandRunner; readonly env?: NodeJS.ProcessEnv | undefined; readonly platform?: NodeJS.Platform | undefined; readonly now: () => Date; readonly machine?: TickInput['machine'] | undefined; readonly chain?: readonly string[] | undefined }): Promise<YieldDecision> => {
   const notes: string[] = []
-  let cycle = false
+  const cycleTo = new Set<string>()
   const chain = [...(input.chain ?? []), resolve(input.loaded.path)]
   for (const entry of input.loaded.config.queue.yieldTo) {
     const path = resolve(dirname(input.loaded.path), entry)
-    if (chain.includes(path)) { notes.push(`yieldTo ${entry}: already being evaluated up the yield chain (a cycle); ignored`); cycle = true; continue }
+    if (chain.includes(path)) { notes.push(`yieldTo ${entry}: already being evaluated up the yield chain (a cycle); ignored`); cycleTo.add(path); continue }
     try {
       const sibling = loadLoopConfig(path)
       const result = await precheckTick({ loaded: sibling, runner: input.runner, ...(input.env ? { env: input.env } : {}), ...(input.platform ? { platform: input.platform } : {}), now: input.now, ...(input.machine ? { machine: input.machine } : {}), yieldChain: chain, includeRefill: false })
-      if (result.cycle) { cycle = true; notes.push(`yieldTo ${entry}: part of a yield cycle; not yielding to it`); continue }
-      if (result.work) return { to: sibling.config.project.name, reason: `yielding to ${sibling.config.project.name}: ${result.candidates} dispatchable issue(s)`, candidates: result.candidates, notes, cycle }
+      if (result.cycleTo?.length) { for (const closed of result.cycleTo) cycleTo.add(closed); notes.push(`yieldTo ${entry}: part of a yield cycle; not yielding to it`); continue }
+      if (result.work) return { to: sibling.config.project.name, reason: `yielding to ${sibling.config.project.name}: ${result.candidates} dispatchable issue(s)`, candidates: result.candidates, notes, cycleTo: [] }
     } catch (error) { notes.push(`yieldTo ${entry}: could not evaluate (${message(error)}); not yielding to it`) }
   }
-  return { to: null, reason: '', candidates: 0, notes, cycle }
+  // A cycle that closes on this loop ends here: this loop reports its own work to whoever asked, like any loop outside the cycle.
+  cycleTo.delete(chain[chain.length - 1] as string)
+  return { to: null, reason: '', candidates: 0, notes, cycleTo: [...cycleTo] }
 }
 
 const escalate = async (input: { readonly tracker: TrackerConnector; readonly config: LoopConfig; readonly issue: TrackerIssueDetail; readonly stored: StoredContract; readonly dryRun: boolean }): Promise<void> => {

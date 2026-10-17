@@ -268,4 +268,14 @@ describe('queue.yieldTo', () => {
     // x -> a -> b -> x: every loop has work and every one yields to the next, so without the cut nobody dispatches.
     for (const path of [x, a, b]) expect((await precheckTick(options(board.runner, path, binDir()))).work).toBe(true)
   })
+
+  it('a cycle below a loop does not cancel the yield of a loop above it', async () => {
+    const root = mkdtempSync(join(tmpdir(), 'agentskit-yield-sub-')); cleanups.push(root)
+    const board = makeBoard([issue('ENG-1', 2, { assignee: 'person' }), issue('ENG-20', 1, { assignee: 'sib' })])
+    const a = writeLoop({ dir: join(root, 'a'), name: 'loop-a', yieldTo: ['../b/loop.config.yaml'] })
+    writeLoop({ dir: join(root, 'b'), name: 'loop-b', person: 'sib', yieldTo: ['../c/loop.config.yaml'] })
+    writeLoop({ dir: join(root, 'c'), name: 'loop-c', person: 'sib', yieldTo: ['../b/loop.config.yaml'] })
+    // a -> b -> c -> b: the cycle closes on b, below a. b still has work, so a yields to it.
+    expect(await precheckTick(options(board.runner, a, binDir()))).toMatchObject({ work: false, reason: 'yielding to loop-b: 1 dispatchable issue(s)' })
+  })
 })
