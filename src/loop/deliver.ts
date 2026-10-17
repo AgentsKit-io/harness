@@ -418,7 +418,7 @@ const gatherEvidence = async (ctx: Context, record: DispatchRecordFile, state: D
     const declared = new Map([...project, ...outcomes].map((proof) => [proof.id, proof]))
     dod = assessed.lines.map((line) => {
       const own = declared.get(line.id)
-      const status: EvidenceStatus = line.status === 'proven' ? 'passed' : line.status === 'failed' ? 'failed' : own && own.status !== 'missing' ? own.status : 'missing'
+      const status: EvidenceStatus = line.status === 'proven' ? 'passed' : line.status === 'failed' ? 'failed' : own && (own.status === 'skipped' || own.status === 'blocked' || own.status === 'pending') ? own.status : 'missing'
       return { id: line.id, list: line.list, description: line.description, status, evidence: own && line.status === 'missing' ? own.evidence : line.evidence }
     })
   }

@@ -55,7 +55,7 @@ const plainBlock = (block: CommentBlock): string => {
     case 'heading': return unmark(block.text).toUpperCase()
     case 'paragraph': return unmark(block.text)
     case 'list': return block.items.map((item) => `- ${unmark(item)}`).join('\n')
-    case 'table': return [block.header.join(' | '), ...block.rows.map((row) => row.map((cell) => unmark(cell).replaceAll('\n', ' ')).join(' | '))].join('\n')
+    case 'table': { const cell = (value: string): string => unmark(value).replaceAll('\r', '').replaceAll('\n', ' '); return [block.header.map(cell).join(' | '), ...block.rows.map((row) => row.map(cell).join(' | '))].join('\n') }
     case 'code': return splitLines(block.text).map((line) => `    ${line}`).join('\n')
   }
 }
@@ -76,7 +76,7 @@ export const fitComment = (document: CommentDocument, options: TrackerCommentOpt
   if (full.length <= options.maxChars) return full
   let blocks = [...document.blocks]
   const cut: string[] = []
-  const note = (): CommentBlock => ({ kind: 'paragraph', text: `Truncated to fit this tracker's ${options.maxChars}-character comment limit. Omitted: ${cut.join('; ')}. The full record is on the PR and in the loop's run store.` })
+  const note = (): CommentBlock => ({ kind: 'paragraph', text: `Truncated to fit this tracker's ${options.maxChars}-character comment limit. ${cut.length ? `Omitted: ${cut.join('; ')}. ` : ''}The full record is on the PR and in the loop's run store.` })
   const candidate = (): CommentDocument => ({ ...document, blocks: [...blocks, note()] })
   while (render(candidate()).length > options.maxChars) {
     let index = -1
@@ -91,10 +91,21 @@ export const fitComment = (document: CommentDocument, options: TrackerCommentOpt
     blocks.pop()
     if (!cut.includes('later sections')) cut.push('later sections')
   }
-  const first = blocks[0]
-  if (render(candidate()).length > options.maxChars && first && 'text' in first) {
-    const over = render(candidate()).length - options.maxChars
-    blocks = [{ ...first, text: `${first.text.slice(0, Math.max(0, first.text.length - over - 1))}…` }]
+  // Rendering can lengthen text (escaping, upper-casing), so shorten the headline until the whole body fits. Cut on
+  // code points, never mid-surrogate-pair, and never leave an unmatched backtick before the ellipsis.
+  let first = blocks[0]
+  if (first && 'text' in first && render(candidate()).length > options.maxChars) {
+    if (!cut.includes('end of the headline')) cut.push('end of the headline')
+    let points = Array.from(first.text)
+    while (points.length > 0 && render(candidate()).length > options.maxChars) {
+      const over = render(candidate()).length - options.maxChars
+      points = points.slice(0, Math.max(0, points.length - Math.max(over, 1)))
+      let text = points.join('')
+      if ((text.match(/`/g) ?? []).length % 2 === 1) text = text.slice(0, text.lastIndexOf('`'))
+      first = { ...first, text: text ? `${text}…` : '' }
+      blocks = [first]
+      points = Array.from(text)
+    }
   }
   return render(candidate())
 }

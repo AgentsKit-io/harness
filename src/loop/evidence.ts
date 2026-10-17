@@ -106,7 +106,8 @@ export const formatDuration = (ms: number): string => {
 /** APPROVE / COMMENT / REQUEST CHANGES / INCOMPLETE — the verdict a human reviewer would have given. */
 export const reviewVerdict = (review: NonNullable<DeliveryEvidence['review']>): 'APPROVE' | 'COMMENT' | 'REQUEST CHANGES' | 'INCOMPLETE' => {
   if (review.status === 'incomplete') return 'INCOMPLETE'
-  if (review.status === 'findings' && review.blocking > 0) return 'REQUEST CHANGES'
+  // 'findings' means the review recorded some, even when the result file with their detail is gone.
+  if (review.status === 'findings') return review.blocking > 0 ? 'REQUEST CHANGES' : 'COMMENT'
   return (review.findings?.length ?? 0) > 0 ? 'COMMENT' : 'APPROVE'
 }
 
@@ -250,10 +251,12 @@ export const buildEvidenceDocument = (evidence: DeliveryEvidence, options: Evide
   overview.push(`Unresolved review threads: ${evidence.unresolvedThreads === null ? 'unavailable' : evidence.unresolvedThreads}`)
   if (evidence.unresolvedThreads === null) unavailable.push('review threads')
   if (evidence.checks?.length) {
-    const failing = evidence.checks.filter((check) => check.outcome === 'failure' || check.outcome === 'unknown').length
+    const passed = evidence.checks.filter((check) => check.outcome === 'success').length
     const pending = evidence.checks.filter((check) => check.outcome === 'pending').length
     const skipped = evidence.checks.filter((check) => check.outcome === 'skipped' || check.outcome === 'neutral').length
-    overview.push(`CI: ${evidence.checks.length} check(s) — ${evidence.checks.length - failing - pending - skipped} passed, ${failing} failed, ${pending} pending, ${skipped} skipped/neutral${evidence.checksGating ? '' : ' (not gating for this flow)'}`)
+    // Only `success` is a pass; any other outcome (cancelled, timed_out, action_required, …) that is not pending or skipped counts as failed.
+    const failing = evidence.checks.length - passed - pending - skipped
+    overview.push(`CI: ${evidence.checks.length} check(s) — ${passed} passed, ${failing} failed, ${pending} pending, ${skipped} skipped/neutral${evidence.checksGating ? '' : ' (not gating for this flow)'}`)
   } else { overview.push('CI: no checks reported — not run or unavailable'); unavailable.push('CI checks') }
   if (evidence.harnessVerify) overview.push(`Harness verify \`${oneLine(evidence.harnessVerify.command, 120)}\`: ${label(evidence.harnessVerify.status)}${evidence.harnessVerify.head ? ` at \`${short(evidence.harnessVerify.head)}\`` : ''}`)
   if (evidence.verify) overview.push(`Worker verify: exit ${evidence.verify.exitCode ?? 'not recorded'} — ${tally(evidence.verify.outcomes)}`)
@@ -267,7 +270,7 @@ export const buildEvidenceDocument = (evidence: DeliveryEvidence, options: Evide
   if (evidence.handoffs.length) overview.push(`Handoffs: ${evidence.handoffs.map((handoff) => oneLine(handoff, 120)).join('; ')}`)
   if (evidence.worker) overview.push(`Worker: \`${evidence.worker.provider}/${evidence.worker.model}\``)
   overview.push(`Elapsed: ${evidence.elapsedMs === null ? 'unknown' : formatDuration(evidence.elapsedMs)}`)
-  if (evidence.spend) overview.push(`Tokens (loop-side calls; the worker CLI does not report its own): ${evidence.spend.calls ? `${evidence.spend.totalTokens.toLocaleString('en-US')} over ${evidence.spend.calls} recorded call(s)` : 'none recorded'}${evidence.spend.ceiling ? ` of a ${evidence.spend.ceiling.toLocaleString('en-US')} per-issue ceiling` : ''}${evidence.spend.usageDeltaPercent === null ? '' : `; worker provider usage −${evidence.spend.usageDeltaPercent.toFixed(1)} pts since dispatch`}`)
+  if (evidence.spend) overview.push(`Tokens (loop-side calls; the worker CLI does not report its own): ${evidence.spend.calls ? `${evidence.spend.totalTokens.toLocaleString('en-US')} over ${evidence.spend.calls} recorded call(s)` : 'none recorded'}${evidence.spend.ceiling ? ` of a ${evidence.spend.ceiling.toLocaleString('en-US')} per-issue ceiling` : ''}${evidence.spend.usageDeltaPercent === null ? '' : `; worker provider usage ${evidence.spend.usageDeltaPercent < 0 ? '+' : '−'}${Math.abs(evidence.spend.usageDeltaPercent).toFixed(1)} pts since dispatch`}`)
   else { overview.push('Tokens: not recorded'); unavailable.push('token spend') }
   if (evidence.runId) overview.push(`Run: \`${evidence.runId}\` (\`ak-harness loop run show ${evidence.runId}\`)`)
   blocks.push({ kind: 'list', items: overview })

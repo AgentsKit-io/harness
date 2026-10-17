@@ -85,6 +85,6 @@ Not built here. What it would be, against the interfaces as they now stand:
 
 ## Consequences
 
-The issue alone answers "what was verified, at which head, by whom". The cost is one windowed event-log read and one
+The issue alone answers "what was verified, at which head, by whom". The cost is one windowed event-log read, one tracker issue read (merged comments only) and one
 optional GraphQL call (unresolved review threads) per completion, and comments of up to the tracker's ceiling. On
 Windows both trackers pass the body as one argv element, so the ceiling there is held at 24k characters.

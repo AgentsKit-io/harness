@@ -254,4 +254,17 @@ describe('delivery evidence comment', () => {
       expect(['src/latest.ts', 'src/contest/a.ts', 'docs/testing.md'].some(isTestFile)).toBe(false)
     })
   })
+
+  it('never reports an unlisted CI outcome as passed, and a findings review without its detail as clean', () => {
+    const body = md(full({ checks: [{ name: 'ci', outcome: 'success', required: true }, { name: 'e2e', outcome: 'cancelled', required: false }] }))
+    expect(body).toContain('2 check(s) — 1 passed, 1 failed')
+    expect(reviewVerdict({ ...full().review!, status: 'findings', blocking: 0, findings: null })).toBe('COMMENT')
+  })
+
+  it('shortens an oversized headline until the rendered body fits, on code points', () => {
+    const fitted = fitComment({ blocks: [{ kind: 'heading', text: 'ß🙂'.repeat(400) }], marker: 'loop:merged:1' }, { format: 'markdown', maxChars: 300 })
+    expect(fitted.length).toBeLessThanOrEqual(300)
+    expect(fitted).toContain('<!-- loop:merged:1 -->')
+    expect(fitted).not.toMatch(/[\uD800-\uDBFF](?![\uDC00-\uDFFF])/)
+  })
 })

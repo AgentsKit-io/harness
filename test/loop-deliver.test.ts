@@ -182,7 +182,7 @@ const setup = (initial: Scenario = {}) => {
       }
       if (argv[0] === 'gh' && argv[1] === 'api' && argv.includes('--method')) return scenario.mergeRefused ? { code: 1, stdout: JSON.stringify({ message: 'Head branch was modified.' }), stderr: '', timedOut: false, durationMs: 1 } : ok({ merged: true, sha: 'deadbeef', message: 'merged' })
       if (argv[0] === 'gh' && argv[1] === 'api' && argv.some((arg) => arg.includes('loop:run-summary'))) return { code: 0, stdout: scenario.summaryCommentId ? `${scenario.summaryCommentId}\n` : '', stderr: '', timedOut: false, durationMs: 1 }
-      if (argv[0] === 'gh' && argv[1] === 'api' && argv[2] === 'graphql' && scenario.reviewThreads !== undefined) return ok({ data: { repository: { pullRequest: { reviewThreads: { nodes: [{ isResolved: true }, ...Array.from({ length: scenario.reviewThreads }, () => ({ isResolved: false }))] } } } } })
+      if (argv[0] === 'gh' && argv[1] === 'api' && argv[2] === 'graphql' && scenario.reviewThreads !== undefined) return ok({ data: { repository: { pullRequest: { reviewThreads: { pageInfo: { hasNextPage: false }, nodes: [{ isResolved: true }, ...Array.from({ length: scenario.reviewThreads }, () => ({ isResolved: false }))] } } } } })
       if (argv[0] === 'gh' && argv[1] === 'api') return ok([])
       if (argv[0] === 'gh' && argv[1] === 'pr' && argv[2] === 'comment') return { code: 0, stdout: '', stderr: '', timedOut: false, durationMs: 1 }
       if (argv[0] === 'git' && argv[1] === 'status') return { code: 0, stdout: scenario.gitStatus ?? '', stderr: '', timedOut: false, durationMs: 1 }
