@@ -93,19 +93,25 @@ export const fitComment = (document: CommentDocument, options: TrackerCommentOpt
   }
   // Rendering can lengthen text (escaping, upper-casing), so shorten the headline until the whole body fits. Cut on
   // code points, never mid-surrogate-pair, and never leave an unmatched backtick before the ellipsis.
-  let first = blocks[0]
+  const first = blocks[0]
   if (first && 'text' in first && render(candidate()).length > options.maxChars) {
     if (!cut.includes('end of the headline')) cut.push('end of the headline')
-    let points = Array.from(first.text)
-    while (points.length > 0 && render(candidate()).length > options.maxChars) {
-      const over = render(candidate()).length - options.maxChars
-      points = points.slice(0, Math.max(0, points.length - Math.max(over, 1)))
-      let text = points.join('')
+    const points = Array.from(first.text)
+    const withHead = (count: number): CommentBlock => {
+      let text = points.slice(0, count).join('')
       if ((text.match(/`/g) ?? []).length % 2 === 1) text = text.slice(0, text.lastIndexOf('`'))
-      first = { ...first, text: text ? `${text}…` : '' }
-      blocks = [first]
-      points = Array.from(text)
+      return { ...first!, text: text ? `${text}…` : '' }
     }
+    // Longest headline prefix that fits (binary search: rendering is monotonic in length).
+    let low = 0
+    let high = points.length
+    while (low < high) {
+      const mid = Math.ceil((low + high) / 2)
+      blocks = [withHead(mid)]
+      if (render(candidate()).length <= options.maxChars) low = mid
+      else high = mid - 1
+    }
+    blocks = [withHead(low)]
   }
   return render(candidate())
 }
