@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
-  "contentHash": "fbb377b58be8ae248debe91cda8b4c8c6e88f87ad543e9d0292d0e2f17e2d04d",
+  "contentHash": "6ff57f4cf7d927754a426b06f85bd1777b1d88844524c782e50dbc535adf9e98",
   "contentHashAlgo": "sha256-normalized-v1",
-  "generatedAt": "2026-10-17T08:59:12.452Z",
+  "generatedAt": "2026-10-17T09:09:14.316Z",
   "project": {
     "name": "AgentsKit Harness",
     "root": "."
@@ -298,12 +298,12 @@
       "type": "document",
       "title": "Changelog",
       "path": "CHANGELOG.md",
-      "description": "Worker terminals are closed. Deliver closes the worker terminal on every finished outcome, not only when a merge removes the worktree, and reaps terminals of finished/lease-less issues and idle workers whose PR only waits (delivery.closeTerminalOnFinish, delivery.reapIdleTerminalsMinutes: 90); worktrees are kept. A fix round for a worker whose terminal is gone relaunches it in the same worktree.",
+      "description": "Delivery evidence on the tracker issue. The merge comment now carries the audit trail: PR, merge commit and who merged (loop or outside), the reviewed head and verdict (APPROVE/COMMENT/REQUEST CHANGES/INCOMPLETE) with findings by severity and INCOMPLETE reasons, unresolved review threads, CI checks, the harness verify, the worker's verify.json, DoD lines (plus negative/recovery proofs when",
       "tags": [
         "document",
         "project"
       ],
-      "contentHash": "c77e8ecf5b889c0c21f3a70f6526d773243344bb9d07aaa47cd4ae9fd95adf1a"
+      "contentHash": "67a725444e03c17ad29cda202a7b8159b8744e7b8499392a2eefcf6b2b55a11a"
     },
     {
       "id": "document:CLAUDE.md",
@@ -906,6 +906,18 @@
       "contentHash": "8a58995fbd31999d5f3446c4702e87ee05bcc61708c9439a2ee1024d9a434a65"
     },
     {
+      "id": "document:docs/ADR-0044-delivery-evidence-on-the-tracker.md",
+      "type": "document",
+      "title": "ADR-0044: Delivery evidence on the tracker issue, and the shape of a Jira connector",
+      "path": "docs/ADR-0044-delivery-evidence-on-the-tracker.md",
+      "description": "Accepted (evidence comment). Proposed (Jira connector — not built).",
+      "tags": [
+        "document",
+        "human"
+      ],
+      "contentHash": "cd6552e04fc1f35ab5c5356b134267396f5dd244d4e28a613386dde032555769"
+    },
+    {
       "id": "document:docs/GETTING-STARTED.md",
       "type": "document",
       "title": "Getting started",
@@ -927,7 +939,7 @@
         "document",
         "human"
       ],
-      "contentHash": "4a67ce0bf7f06d943ee870a38a23b80e3b967f4bdd0db0224cd2aabfcd297859"
+      "contentHash": "47d99bd7898ee5901b45af2e1102ecf92b8992c5eb6a8d064a1a4e576c299af5"
     },
     {
       "id": "document:docs/MODULE-BOUNDARIES.md",
@@ -2013,6 +2025,7 @@
         "githubPullRequest",
         "githubPullRequestsForBranch",
         "githubPullRequestsForIssue",
+        "githubUnresolvedReviewThreads",
         "githubUpsertComment",
         "parseGitHubIssue",
         "parseGitHubIssueDetail",
@@ -2024,7 +2037,7 @@
         "ts",
         "adapters"
       ],
-      "contentHash": "da9a47a6f6ea84b7c23c927e1ca14b9b3b5904171e58c2d1bbe04fac3674d1a4"
+      "contentHash": "4351303b7b00d36033b2cda7fea04f345af59af3a093949a681fceb8a96ef1e5"
     },
     {
       "id": "module:src/adapters/linear-orca.ts",
@@ -2691,6 +2704,10 @@
         "CommandResult",
         "CommandRunOptions",
         "CommandRunner",
+        "CommentBlock",
+        "CommentDocument",
+        "CommentDrop",
+        "CommentFormat",
         "CompatibilityComponent",
         "CompatibilityComponentId",
         "CompatibilityManifest",
@@ -2704,6 +2721,7 @@
         "CooldownEntry",
         "CooldownState",
         "CoordinationIdentity",
+        "DEFAULT_COMMENT_OPTIONS",
         "DEFAULT_CONFIG_PATH",
         "DESIGN_CLOSE",
         "DESIGN_OPEN",
@@ -2716,6 +2734,7 @@
         "DeliverOutcome",
         "DeliverReport",
         "DeliverResult",
+        "DeliveryEvidence",
         "DeliveryState",
         "Design",
         "DesignSchema",
@@ -2754,6 +2773,9 @@
         "EvalManifest",
         "EvalObservation",
         "EvalObservationStatus",
+        "EvidenceOptions",
+        "EvidenceProof",
+        "EvidenceStatus",
         "ExecutePhaseProfileOptions",
         "FailureClass",
         "FailureClassification",
@@ -2848,23 +2870,14 @@
         "IssueTimelineReport",
         "LEARNING_STATUSES",
         "LEGACY_CONFIG_PATH",
-        "LEGAL_TRANSITIONS",
-        "LOOP_AUTO_ACTOR",
-        "LOOP_CONFIG_FILE",
-        "LOOP_CONFIG_SCHEMA_VERSION",
-        "LOOP_EVENT_TYPES",
-        "LOOP_LOCAL_CONFIG_FILE",
-        "LOOP_PRESETS",
-        "LOOP_ROLES",
-        "LOOP_STAGES",
-        "Layer"
+        "LEGAL_TRANSITIONS"
       ],
       "tags": [
         "module",
         "ts",
         "src"
       ],
-      "contentHash": "f56fae906a376b6b17835b80bd4118d742829e8d74af5b34f4a6d8ac002b44cd"
+      "contentHash": "b1b50a36baeadb856264c73c9900fae33f52bfc81b18610b028efdadfaebe565"
     },
     {
       "id": "module:src/kernel/adapter-contract.ts",
@@ -3860,6 +3873,28 @@
       "contentHash": "0c93933f366b4026d43a3b496b713d333b5863c849c0eb524f6417d345199330"
     },
     {
+      "id": "module:src/loop/comment-format.ts",
+      "type": "module",
+      "title": "comment-format.ts",
+      "path": "src/loop/comment-format.ts",
+      "symbols": [
+        "CommentBlock",
+        "CommentDocument",
+        "CommentDrop",
+        "CommentFormat",
+        "DEFAULT_COMMENT_OPTIONS",
+        "TrackerCommentOptions",
+        "fitComment",
+        "renderComment"
+      ],
+      "tags": [
+        "module",
+        "ts",
+        "loop"
+      ],
+      "contentHash": "909e0f0bc1e1096e544a959a9c1e5e2ada23d891520dc33cd32b0c68cbad3527"
+    },
+    {
       "id": "module:src/loop/config.ts",
       "type": "module",
       "title": "config.ts",
@@ -3906,7 +3941,7 @@
         "ts",
         "loop"
       ],
-      "contentHash": "c35f7448cfe22c63e7c073004b3b59894d828885ddcbb553dbea6e5a8749e5ad"
+      "contentHash": "0d7caa6f7dcd337bf56b070ac52458d76711ed2948bdc88c909ec9b1d3c44e6c"
     },
     {
       "id": "module:src/loop/connectors.ts",
@@ -3928,7 +3963,7 @@
         "ts",
         "loop"
       ],
-      "contentHash": "77d9729bb77dae8324d31855273af2e46761b7f6c031f81fb5454ad7c595fbe9"
+      "contentHash": "41d8998ea1ca27287997c57b3bb826f8e826ab5b1cab4eefebc4722aef4c2be6"
     },
     {
       "id": "module:src/loop/contract.ts",
@@ -4068,7 +4103,7 @@
         "ts",
         "loop"
       ],
-      "contentHash": "a0e623444bf356671640af0123ced42e2003c8abcaca703238b7a73807e16d8b"
+      "contentHash": "5e21946c93a20ba4c0662ec583d494ae07acdd002d666502868b6dcabb2e3b5f"
     },
     {
       "id": "module:src/loop/detached-worker.ts",
@@ -4196,6 +4231,33 @@
         "loop"
       ],
       "contentHash": "ac8f219eabb64c54bc4a3ad0e7b696f2b69c47a5cedd5e15faecbe2f8542981e"
+    },
+    {
+      "id": "module:src/loop/evidence.ts",
+      "type": "module",
+      "title": "evidence.ts",
+      "path": "src/loop/evidence.ts",
+      "symbols": [
+        "DeliveryEvidence",
+        "EvidenceOptions",
+        "EvidenceProof",
+        "EvidenceStatus",
+        "ResolutionVerdict",
+        "buildEvidenceDocument",
+        "checklistState",
+        "extractReproduction",
+        "formatDuration",
+        "isBugIssue",
+        "isTestFile",
+        "resolutionVerdict",
+        "reviewVerdict"
+      ],
+      "tags": [
+        "module",
+        "ts",
+        "loop"
+      ],
+      "contentHash": "9ac4bb2c5e52019ad98f39bd8d643ec2db7fc65540b973a2c6b63fb4aeb4bc9b"
     },
     {
       "id": "module:src/loop/flows.ts",
@@ -4344,11 +4406,16 @@
         "CastVote",
         "CatalogModel",
         "CheckoutState",
+        "CommentBlock",
+        "CommentDocument",
+        "CommentDrop",
+        "CommentFormat",
         "ConnectorInput",
         "ContractAssessment",
         "ContractOutcomeSchema",
         "CooldownEntry",
         "CooldownState",
+        "DEFAULT_COMMENT_OPTIONS",
         "DESIGN_CLOSE",
         "DESIGN_OPEN",
         "DebriefInput",
@@ -4358,6 +4425,7 @@
         "DeliverOutcome",
         "DeliverReport",
         "DeliverResult",
+        "DeliveryEvidence",
         "DeliveryState",
         "Design",
         "DesignSchema",
@@ -4372,6 +4440,9 @@
         "EffectiveFlowSettings",
         "EffortLevel",
         "EvalGate",
+        "EvidenceOptions",
+        "EvidenceProof",
+        "EvidenceStatus",
         "FiledRecord",
         "FlowIssue",
         "FlowProfile",
@@ -4534,6 +4605,7 @@
         "TickOutcome",
         "TickReport",
         "TimelineStep",
+        "TrackerCommentOptions",
         "TrackerConnector",
         "TuningDecision",
         "TuningKnob",
@@ -4558,24 +4630,14 @@
         "WrittenDocument",
         "activeCooldowns",
         "advanceQueueOwner",
-        "alreadyFiled",
-        "answerRound",
-        "appendLoopEvent",
-        "applyRoleSettings",
-        "applyRoutingPolicy",
-        "applyToYaml",
-        "applyTuning",
-        "approveDesign",
-        "approveHeldDelivery",
-        "approvePlan",
-        "approveRelease"
+        "alreadyFiled"
       ],
       "tags": [
         "module",
         "ts",
         "loop"
       ],
-      "contentHash": "18e1599b0c7b62ff2b0a2a02c0df383a4fc05b3568fe4ccfad3019d57801d9a5"
+      "contentHash": "8acc497fc1e82c53d4c2499d2a9701167f432f4a327639cc46b7d66be5c1bd19"
     },
     {
       "id": "module:src/loop/init.ts",
@@ -7959,7 +8021,7 @@
         "ts",
         "test"
       ],
-      "contentHash": "fee0fb12071c30c653cbaecc1a65f055ec7ac13c213e3b0a61121595f920fd54"
+      "contentHash": "4017607e307dbd79d6484b8e55cea79fa4b5e049dc72b51d46e5bac5ed1c4c67"
     },
     {
       "id": "module:test/loop-doctor-gaps.test.ts",
@@ -8044,6 +8106,18 @@
         "test"
       ],
       "contentHash": "ba6047644fa47f5a036901c08fb3dac1f6202531b1727e9fab5c53ab0cd8bd53"
+    },
+    {
+      "id": "module:test/loop-evidence.test.ts",
+      "type": "module",
+      "title": "loop-evidence.test.ts",
+      "path": "test/loop-evidence.test.ts",
+      "tags": [
+        "module",
+        "ts",
+        "test"
+      ],
+      "contentHash": "2a1850b6c7371aa98d1a5e21db2f07bea7816da07d3012fca916cc048069b4e7"
     },
     {
       "id": "module:test/loop-flows.test.ts",
@@ -8499,7 +8573,7 @@
         "ts",
         "test"
       ],
-      "contentHash": "d5f37aa5035fcc7c90f99a368564820ccc3503d77a6bd9dd78404308e78f6e0e"
+      "contentHash": "ee63f69b3bc11af90721a17debb645d69889fda510487eec0e1d26602a775dc3"
     },
     {
       "id": "module:test/loop-tuning.test.ts",
@@ -9163,8 +9237,8 @@
     }
   },
   "inputs": {
-    "hash": "b9d822761e19b5452d1dda3de50c296be026e4b43bd8fb2208b334ed4fc2efcf",
-    "fileCount": 555,
+    "hash": "72d511aa9290917c31984857ded473a388421559fc8bf30c4d3919dbc7ddfb9f",
+    "fileCount": 559,
     "projectionVersion": 2
   },
   "retrieval": {
@@ -9186,9 +9260,9 @@
   "projection": {
     "type": "retrieval-index",
     "schemaVersion": 1,
-    "contentHash": "69d821e1743455478d65a857ae45a4131782f5be5dd76af5eb7c732f9a210677",
+    "contentHash": "39e8211a911ff01bd25ce8c60c6453aea8c3662bbf0ef5e33b9947fa12501568",
     "contentHashAlgo": "sha256-normalized-v1",
-    "snapshotHash": "c58881bf47c4deda352af3cd97953ab5afff066b562fb1cc2ad3389dd3842acc",
+    "snapshotHash": "f2b5b785071c15f6e119593e5757e833801c10ce678774fdc1bdab40ec815ec3",
     "overlayHash": "f99666ff9119084dd25c2974ae64eb6935ec2aa785ff5ad478fb9d541f7a5e94",
     "configurationHash": "816afaf6a7dc09767f7594d8fd80024612ca0f33becf0e44dde0107fcf2782df",
     "lexiconVersion": 1,
@@ -9208,7 +9282,7 @@
     },
     "lexical": {
       "version": 1,
-      "documentCount": 558,
+      "documentCount": 562,
       "fieldNames": [
         "aliases",
         "body",
@@ -9219,13 +9293,13 @@
         "title"
       ],
       "averageFieldLength": {
-        "aliases": 2.946236559139785,
-        "body": 44.26702508960574,
-        "headings": 3.8584229390681,
-        "path": 6.125448028673835,
-        "summary": 2.6559139784946235,
-        "symbols": 14.270609318996415,
-        "title": 3.9802867383512543
+        "aliases": 2.9448398576512456,
+        "body": 44.79181494661922,
+        "headings": 3.8612099644128115,
+        "path": 6.1263345195729535,
+        "summary": 2.6494661921708187,
+        "symbols": 14.284697508896798,
+        "title": 3.9893238434163703
       }
     },
     "entries": [
@@ -9558,7 +9632,7 @@
           ],
           "outbound": []
         },
-        "contentHash": "7a02126673c2f08fe16df37607c59c661911bb5040e05fa0e27be45cfdfb7a7b",
+        "contentHash": "cb66a492fc1bcba6925d12b9d043d34afcf27fb7fb9db9bcb4ec2be73a367e42",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -9673,7 +9747,7 @@
           ],
           "outbound": []
         },
-        "contentHash": "c5e48902bc0e2ca350124f57d0d3a92be75976b631c387d32e25704d24a8e3b2",
+        "contentHash": "71acee43b4475544f516341d23dbc49c3a51e529dbe642544cc13acf888df85d",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -11219,7 +11293,7 @@
           "path": "apps/docs/content/docs/reference/configuration.mdx",
           "symbols": "",
           "summary": "{/* Generated by `pnpm docs:generate`. Do not edit by hand: edit `src/loop/config.ts` and regenerate. */}",
-          "body": "{/ Generated by pnpm docs:generate . Do not edit by hand: edit src/loop/config.ts and regenerate. /} The four layers that produce this configuration — the machine's global file, the project's, the team's and this machine's overlay — are described in . ak-harness loop validate prints the effective result, which is the only one that decides anything. 223 of 401 paths carry no description yet. schemaVersion Type: number · Default: 1 extends Defaults for this kind of project ( web-app , library , monorepo , data-pipeline , mobile ), merged below every other layer. Anything this file states wins over the preset; the preset only fills silence. Type: string project Path Type Default Description --- --- --- --- project.name string required project.repo string required project.baseBranch string \"main\" project.root string \".\" project.stateDir string \".ak-loop\" Where the loop keeps everything that is NOT the project's configuration: dispatch ledger, delivery state, contracts, events, agent memory, plans. Meant to be gitignored — the configuration lives at the repo root as loop.config.yaml , versioned; this directory is runtime state, per machine. project.team string Selects the loop.config.team.&lt;key&gt;.yaml layer. $AK LOOP TEAM overrides it; a declared team whose file is missing fails loudly. project.orchestratorView base · root \"base\" The tree the orchestrator's headless calls (contract, plan interview, architect, votes, decompose) read. base (default): a harness-owned detached worktree of origin/&lt;baseBranch&gt; , fetched before each use. root : project.root as it is — whatever branch and age the operator's checkout has. project.setup object {} project.setup.command string[] Argv (no shell — one element per arg, e.g. [pnpm, install, --frozen-lockfile] ) run once in a freshly created worktree before the worker terminal opens. Unset/empty = skip. project.setup.timeoutSec integer 600 project.setup.required boolean true When true, a failing/timing-out setup removes the worktree and counts as a dispatch failure instead of handing the worker a broken environment. orca Path Type Default Description --- --- --- --- orca.bin string \"orca\" orca.repoSelector string Orca repo selector for new worktrees: id:&lt;repoId&gt; , name:&lt;name&gt; or path:&lt;abs&gt; ; default path:&lt;project.root&gt; . orca.workspaceSelector string Existing worktree the automations run in; default: the enclosing worktree resolved by Orca. orca.host string orca.minVersion string \"1.4.200\" orca.timeoutMs integer 20000 linear Path Type Default Description --- --- --- --- linear.workspaceId string required linear.teamKey string required linear.person string required Linear display name of the person whose queue this machine drains. linear.people record&lt;string&gt; {} Display name → Linear user id, for assignee set and audit; the queue itself filters by display name. linear.rotation object {} Optional ordered handoff between owners after the current dispatchable queue drains. linear.rotation.enabled boolean false linear.rotation.owners string[] [] linear.rotation.advanceWhenEmpty boolean true linear.queueOwnership person · unassigned \"person\" Whose queue this machine drains. person (default) keeps the historical behaviour: the issues assigned to linear.person . unassigned drains the issues with NO assignee and turns the assignee into a transient claim — written on dispatch, cleared when the item returns — so several machines can share one priority-ordered queue without colliding. Note when switching to unassigned : clearing the assignees is then REQUIRED, not cosmetic. With person and an emptied backlog the queue comes back empty and the loop looks healthy while doing nothing. linear.states string[] [\"Todo\",\"Ready\"] linear.entryState string \"Backlog\" Where loop plan decompose --create puts new issues. It must NOT be one of states : those are the queue, and an issue the planner just wrote is not work anyone approved yet. Moving it into states is the human gate. linea",
+          "body": "{/ Generated by pnpm docs:generate . Do not edit by hand: edit src/loop/config.ts and regenerate. /} The four layers that produce this configuration — the machine's global file, the project's, the team's and this machine's overlay — are described in . ak-harness loop validate prints the effective result, which is the only one that decides anything. 223 of 403 paths carry no description yet. schemaVersion Type: number · Default: 1 extends Defaults for this kind of project ( web-app , library , monorepo , data-pipeline , mobile ), merged below every other layer. Anything this file states wins over the preset; the preset only fills silence. Type: string project Path Type Default Description --- --- --- --- project.name string required project.repo string required project.baseBranch string \"main\" project.root string \".\" project.stateDir string \".ak-loop\" Where the loop keeps everything that is NOT the project's configuration: dispatch ledger, delivery state, contracts, events, agent memory, plans. Meant to be gitignored — the configuration lives at the repo root as loop.config.yaml , versioned; this directory is runtime state, per machine. project.team string Selects the loop.config.team.&lt;key&gt;.yaml layer. $AK LOOP TEAM overrides it; a declared team whose file is missing fails loudly. project.orchestratorView base · root \"base\" The tree the orchestrator's headless calls (contract, plan interview, architect, votes, decompose) read. base (default): a harness-owned detached worktree of origin/&lt;baseBranch&gt; , fetched before each use. root : project.root as it is — whatever branch and age the operator's checkout has. project.setup object {} project.setup.command string[] Argv (no shell — one element per arg, e.g. [pnpm, install, --frozen-lockfile] ) run once in a freshly created worktree before the worker terminal opens. Unset/empty = skip. project.setup.timeoutSec integer 600 project.setup.required boolean true When true, a failing/timing-out setup removes the worktree and counts as a dispatch failure instead of handing the worker a broken environment. orca Path Type Default Description --- --- --- --- orca.bin string \"orca\" orca.repoSelector string Orca repo selector for new worktrees: id:&lt;repoId&gt; , name:&lt;name&gt; or path:&lt;abs&gt; ; default path:&lt;project.root&gt; . orca.workspaceSelector string Existing worktree the automations run in; default: the enclosing worktree resolved by Orca. orca.host string orca.minVersion string \"1.4.200\" orca.timeoutMs integer 20000 linear Path Type Default Description --- --- --- --- linear.workspaceId string required linear.teamKey string required linear.person string required Linear display name of the person whose queue this machine drains. linear.people record&lt;string&gt; {} Display name → Linear user id, for assignee set and audit; the queue itself filters by display name. linear.rotation object {} Optional ordered handoff between owners after the current dispatchable queue drains. linear.rotation.enabled boolean false linear.rotation.owners string[] [] linear.rotation.advanceWhenEmpty boolean true linear.queueOwnership person · unassigned \"person\" Whose queue this machine drains. person (default) keeps the historical behaviour: the issues assigned to linear.person . unassigned drains the issues with NO assignee and turns the assignee into a transient claim — written on dispatch, cleared when the item returns — so several machines can share one priority-ordered queue without colliding. Note when switching to unassigned : clearing the assignees is then REQUIRED, not cosmetic. With person and an emptied backlog the queue comes back empty and the loop looks healthy while doing nothing. linear.states string[] [\"Todo\",\"Ready\"] linear.entryState string \"Backlog\" Where loop plan decompose --create puts new issues. It must NOT be one of states : those are the queue, and an issue the planner just wrote is not work anyone approved yet. Moving it into states is the human gate. linea",
           "aliases": "configuration document human"
         },
         "graph": {
@@ -11271,7 +11345,7 @@
             }
           ]
         },
-        "contentHash": "7d42a38bd789a753cef29f018f0edc2288a49566a24752c963ca4a3b3f37857d",
+        "contentHash": "f1a18c55fe61be79b278f94ab1121430584633027ffa979578eaec4faaffed57",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -11341,7 +11415,7 @@
         "kind": "document",
         "path": "CHANGELOG.md",
         "title": "Changelog",
-        "summary": "Worker terminals are closed. Deliver closes the worker terminal on every finished outcome, not only when a merge removes the worktree, and reaps terminals of finished/lease-less issues and idle workers whose PR only waits (delivery.closeTerminalOnFinish, delivery.reapIdleTerminalsMinutes: 90); worktrees are kept. A fix round for a worker whose terminal is gone relaunches it in the same worktree.",
+        "summary": "Delivery evidence on the tracker issue. The merge comment now carries the audit trail: PR, merge commit and who merged (loop or outside), the reviewed head and verdict (APPROVE/COMMENT/REQUEST CHANGES/INCOMPLETE) with findings by severity and INCOMPLETE reasons, unresolved review threads, CI checks, the harness verify, the worker's verify.json, DoD lines (plus negative/recovery proofs when",
         "audience": "human",
         "aliases": [],
         "tags": [
@@ -11353,8 +11427,8 @@
           "headings": "Changelog [Unreleased] [0.22.3] — 2026-09-27 [0.22.2] — 2026-09-27 [0.22.1] — 2026-09-27 [0.22.0] — 2026-09-27 [0.21.0] — 2026-09-26 [0.20.0] — 2026-09-25 [0.19.0] — 2026-09-23 [0.18.0] - 2026-09-22 Release Hygiene Boundaries Token and time economy Breaking Gates [0.17.0] - 2026-09-22 Worker guard Release can no longer publish past a red gate [0.16.0] - 2026-09-22 Verification and token waste Observability: every deterministic phase, timestamped and attributed Event bus, unified House conventions [0.15.0] - 2026-09-20 The phases of an issue leave evidence behind layers: and documents: — where the work belongs, and where the decisions live Per-role settings, and which phases run at all The four cost levers, finished release.waiting, once per head The event vocabulary, and the compiler that guards it The installed agent is code, not a markdown file to append to Documentation Windows stops being a second-class platform The licence, and a surface for the numbers The harness has a folder of its own The documentation site The twelve steps of the roadmap, in the order they landed loop install reconciles instead of rewriting loop stage observe — the health scan comes into the repository Configuration in four layers, and the loop learns to call a human The roles become installed agents, and the retro can improve them Presets and a grilled loop init intake, maintain, and release notes — the cycle closes Cost: a routing policy, two ceilings, and two of the four levers Connectors: the engine stops naming vendors release — promotion and deploy, with a human in front loop plan — a vague objective becomes issues A plan, voted on, before any worker starts The Definition of Done becomes two lists, both proven on the PR The retro starts improving the loop, within declared limits [0.14.0] - 2026-09-19 The queue stops being \"my issues\" Review strictness that matches the risk Telling the worker the truth about the base branch Memory: recurrence instead of guesswork One human approval covers the goal's own effects Fixes that had never shipped [0.13.0] - 2026-09-14 [0.12.0] - 2026-09-13 [0.11.0] - 2026-09-13 [0.10.0] - 2026-09-12 [0.9.0] - 2026-09-12 [0.8.0] - 2026-09-12",
           "path": "CHANGELOG.md",
           "symbols": "",
-          "summary": "Worker terminals are closed. Deliver closes the worker terminal on every finished outcome, not only when a merge removes the worktree, and reaps terminals of finished/lease-less issues and idle workers whose PR only waits (delivery.closeTerminalOnFinish, delivery.reapIdleTerminalsMinutes: 90); worktrees are kept. A fix round for a worker whose terminal is gone relaunches it in the same worktree.",
-          "body": "Changelog [Unreleased] - Worker terminals are closed. Deliver closes the worker terminal on every finished outcome, not only when a merge removes the worktree, and reaps terminals of finished/lease-less issues and idle workers whose PR only waits ( delivery.closeTerminalOnFinish , delivery.reapIdleTerminalsMinutes: 90 ); worktrees are kept. A fix round for a worker whose terminal is gone relaunches it in the same worktree. tick stops dispatching at machine.maxLiveTerminals (12) live loop terminals, and an orca terminal create timeout is capacity (re-queued, 10-minute cooldown, no failure counted) instead of tripping the pause. New events worker.terminal-closed , terminals.reaped , worker.dispatch-capacity . - Single test run in CI. pnpm test:coverage now includes typecheck and the package criterion output, so the verify job runs the test suite once while retaining coverage thresholds. - Docs artifact frontmatter. Documentation metadata now uses shared frontmatter splitting and YAML parsing, including folded scalars, block lists, BOM and CRLF input. - Coverage floor. pnpm test:coverage now enforces ratcheted source coverage in CI. - Shared record guard. Harness internals now reuse one non-null, non-array object check while preserving caller-specific errors and fallbacks. - Cryptographic run IDs. Verification runs retain their timestamp and PID prefix while using a cryptographic random suffix. - Bounded model catalog refresh. Artificial Analysis refreshes use @agentskit/net deadlines and a 2 MiB JSON body cap; a failed refresh keeps the existing catalog cache. - Canonical shared hashes. New artifacts, event-chain entries, manifests, verification digests and cache keys use @agentskit/core/hash ; readers still accept existing persisted hashes, and stable IDs keep their legacy format. - Portability via @agentskit/cross-platform . Process spawning ( .cmd shim resolution), process-tree kill and path/line helpers now come from the shared package instead of hand-rolled copies; cross-spawn is no longer a direct dependency. pnpm typecheck runs agentskit-cross-platform check against .cross-platform-baseline.json , so a new Windows-hostile pattern fails CI. [0.22.3] — 2026-09-27 - Lost-track restart. A run whose worker terminal is gone, or that stays idle after a check-in, before any PR is aborted and re-dispatched from scratch (bounded, worker.lost-tracking / worker.restarted ) ( 147). It never destroys work: it needs the evidence on two consecutive passes, escalates stuck and keeps the worktree when there are unpushed commits or uncommitted edits (the check fails closed), removes a clean worktree without --force , captures the worker screen into the run first, waits while the tracker is cooling down, and does nothing destructive until its tracker writes succeed. A human Retry resets the restart budget ( 151). - A worker that declares itself blocked ( BLOCKED: worktree comment) is escalated to a person — also when it exited afterwards — instead of being nudged, handed off or restarted ( 150, 151). - Never type into a bare shell. A nudge into a terminal that is only a shell prompt relaunches the agent (the old terminal is closed first; an idle agent from a CLI that does not register with Orca is never mistaken for a shell); no-PR worker events keep the issue running in the UI ( 144, 151). - Close-or-reopen decisions on an abandoned delivery stick and release the issue's lease ( 145, 151). - UI. Worker slots are counted the way the tick counts them ( 148); the projection rebuilds itself when the reducer changes ( 149). [0.22.2] — 2026-09-27 - Review floor decides. A reviewer that exits 1 (or reports blocking ) on findings all below delivery.review.minSeverity is clean, not \"findings\" with nothing to fix — delivery no longer waits forever for a push nobody needs. A reviewer claiming blocking with no finding at all is incomplete , never a merge ( 133). - Answered contract questions regenerate the contract instead of returning the same blocked",
+          "summary": "Delivery evidence on the tracker issue. The merge comment now carries the audit trail: PR, merge commit and who merged (loop or outside), the reviewed head and verdict (APPROVE/COMMENT/REQUEST CHANGES/INCOMPLETE) with findings by severity and INCOMPLETE reasons, unresolved review threads, CI checks, the harness verify, the worker's verify.json, DoD lines (plus negative/recovery proofs when",
+          "body": "Changelog [Unreleased] - Delivery evidence on the tracker issue. The merge comment now carries the audit trail: PR, merge commit and who merged (loop or outside), the reviewed head and verdict (APPROVE/COMMENT/REQUEST CHANGES/INCOMPLETE) with findings by severity and INCOMPLETE reasons, unresolved review threads, CI checks, the harness verify, the worker's verify.json , DoD lines (plus negative/recovery proofs when recorded), fix rounds, elapsed time and loop-side tokens. Absent parts are named, skipped/blocked items are never shown as passed, free text is PII-redacted, and the body fits the tracker's ceiling with a note of what was cut. Same dedupe key and marker as before; also posted for merges outside the loop, and a brief version is appended to blocked-after-fix-rounds escalations. Trackers declare their comment format and size through TrackerConnector.comments ; ADR-0044 sketches a Jira connector against it. - Resolution verdict and bug fix proof in the evidence comment. The tracker comment opens with RESOLVED / PARTIAL / NOT PROVEN , computed only from recorded evidence (a merge alone is never RESOLVED), followed by the PR, merge sha, files changed and the issue's checklist state, and an acceptance-criteria table mapping each contract outcome id to its text, status (unproven ones listed) and evidence. Issues with a delivery.evidence.bugLabels label (default Bug , type:bug , type:fix ) also get a \"Bug fix proof\" block: reproduction steps from the issue and the regression tests in the PR, stating that failing-before-the-fix was not demonstrated. One extra tracker read per merge; nothing is posted on the GitHub PR. - Worker terminals are closed. Deliver closes the worker terminal on every finished outcome, not only when a merge removes the worktree, and reaps terminals of finished/lease-less issues and idle workers whose PR only waits ( delivery.closeTerminalOnFinish , delivery.reapIdleTerminalsMinutes: 90 ); worktrees are kept. A fix round for a worker whose terminal is gone relaunches it in the same worktree. tick stops dispatching at machine.maxLiveTerminals (12) live loop terminals, and an orca terminal create timeout is capacity (re-queued, 10-minute cooldown, no failure counted) instead of tripping the pause. New events worker.terminal-closed , terminals.reaped , worker.dispatch-capacity . - Single test run in CI. pnpm test:coverage now includes typecheck and the package criterion output, so the verify job runs the test suite once while retaining coverage thresholds. - Docs artifact frontmatter. Documentation metadata now uses shared frontmatter splitting and YAML parsing, including folded scalars, block lists, BOM and CRLF input. - Coverage floor. pnpm test:coverage now enforces ratcheted source coverage in CI. - Shared record guard. Harness internals now reuse one non-null, non-array object check while preserving caller-specific errors and fallbacks. - Cryptographic run IDs. Verification runs retain their timestamp and PID prefix while using a cryptographic random suffix. - Bounded model catalog refresh. Artificial Analysis refreshes use @agentskit/net deadlines and a 2 MiB JSON body cap; a failed refresh keeps the existing catalog cache. - Canonical shared hashes. New artifacts, event-chain entries, manifests, verification digests and cache keys use @agentskit/core/hash ; readers still accept existing persisted hashes, and stable IDs keep their legacy format. - Portability via @agentskit/cross-platform . Process spawning ( .cmd shim resolution), process-tree kill and path/line helpers now come from the shared package instead of hand-rolled copies; cross-spawn is no longer a direct dependency. pnpm typecheck runs agentskit-cross-platform check against .cross-platform-baseline.json , so a new Windows-hostile pattern fails CI. [0.22.3] — 2026-09-27 - Lost-track restart. A run whose worker terminal is gone, or that stays idle after a check-in, before any PR is aborted and re-dispatched from scratch (bounded, worker.lo",
           "aliases": "document project"
         },
         "graph": {
@@ -11625,7 +11699,7 @@
             }
           ]
         },
-        "contentHash": "c77e8ecf5b889c0c21f3a70f6526d773243344bb9d07aaa47cd4ae9fd95adf1a",
+        "contentHash": "67a725444e03c17ad29cda202a7b8159b8744e7b8499392a2eefcf6b2b55a11a",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -13881,6 +13955,85 @@
         "confidence": "observed"
       },
       {
+        "id": "document:docs/ADR-0044-delivery-evidence-on-the-tracker.md",
+        "kind": "document",
+        "path": "docs/ADR-0044-delivery-evidence-on-the-tracker.md",
+        "title": "ADR-0044: Delivery evidence on the tracker issue, and the shape of a Jira connector",
+        "summary": "Accepted (evidence comment). Proposed (Jira connector — not built).",
+        "audience": "human",
+        "aliases": [],
+        "tags": [
+          "document",
+          "human"
+        ],
+        "fields": {
+          "title": "ADR-0044: Delivery evidence on the tracker issue, and the shape of a Jira connector",
+          "headings": "ADR-0044: Delivery evidence on the tracker issue, and the shape of a Jira connector Status Context Decision A future Jira connector Consequences",
+          "path": "docs/ADR-0044-delivery-evidence-on-the-tracker.md",
+          "symbols": "",
+          "summary": "Accepted (evidence comment). Proposed (Jira connector — not built).",
+          "body": "ADR-0044: Delivery evidence on the tracker issue, and the shape of a Jira connector Status Accepted (evidence comment). Proposed (Jira connector — not built). Context When the loop finished an issue it left one line on the tracker: Loop: merged — <pr as <sha . What was verified — the review verdict, the worker's verify.json , the Definition of Done, the CI checks, the fix rounds — lived on the PR or in the local run store (ADR-0041). A reader of the issue could not audit the merge without opening the repository, and nothing on the issue distinguished \"verified\" from \"merged by someone outside the loop\". Trackers differ in how a comment is written: Linear and GitHub take Markdown, Jira Cloud takes Atlassian Document Format (ADF, JSON), and each has its own size ceiling. ADR-0034 already says the second implementation of a seam is what proves it; this change is the first to put a structured comment through the tracker seam. Decision The evidence is built once, as structure. src/loop/evidence.ts is pure: buildEvidenceDocument turns a DeliveryEvidence record into a CommentDocument (headings, paragraphs, lists, tables, code). deliver gathers the record from what it already holds — delivery state, the review result file, verify.json and the DoD file (worktree, or the copy in the run), the PR's checks, the windowed event log (ADR-0041 windowed: ), issueSpend . Every gate has an explicit state: absent evidence is written as absent, a skipped or blocked item is never shown as passed, and every free-text field passes scanForPii before it reaches a comment. The tracker decides how it is written. TrackerConnector.comments ( src/loop/comment-format.ts ) declares the format ( markdown plain ), the size ceiling, and optionally the connector's own render(document) . fitComment renders within the ceiling: detail is dropped first (output tails, then tables), one closing line names what was cut, and the idempotency marker always survives. Markdown hides the marker in an HTML comment; formats that cannot hide it omit it and rely on dedupeKey . Was it resolved? The comment answers that first. A Resolution section opens the comment with a verdict computed only from recorded evidence: RESOLVED (at least one acceptance criterion and every one proven), PARTIAL (some proven, the rest listed with their status) or NOT PROVEN (none proven, or none recorded). A merge alone never yields RESOLVED; a merge with missing evidence says so. The criteria are the frozen contract's outcomes (the list assessDod already judges): each row keeps the id and the criterion text, its status (a criterion with no proof is UNPROVEN, never omitted) and the worker's evidence, with the verify command and exit code when verify.json covers it. Project DoD items stay in their own table. The links (PR, merge sha, files changed, the issue's own checkbox state) sit under the verdict. Bug fix proof. An issue carrying one of delivery.evidence.bugLabels (case-insensitive; default Bug , type:bug , type:fix ) gets a block with the reproduction steps copied from the issue (the section under a \"Steps to reproduce\"-style heading, one line, truncated, PII-redacted), the regression tests the PR added or changed (test files in the PR's file list; test names only when the worker's verify output lists them as passing) or \"no regression test in this PR\". The harness does not run the test on the base, so the block always states \"not demonstrated: regression test not verified to fail before the fix\". ponytail: a base-vs-head run needs a second checkout and a per-project test command; it is not built, so the comment never claims it. Cost. One extra tracker read (the issue: labels, description) on the merged comment only; escalations skip it. If the read fails the comment names the issue details as unavailable and omits the bug block. Same idempotency as before. complete() posts with the existing dedupeKey ( merged:<issue :<pr ) and marker ( loop:merged:<pr ), on every path — merged by the loop, reconci",
+          "aliases": "document human"
+        },
+        "graph": {
+          "pagerank": 0,
+          "inboundLinks": 0,
+          "coveredBy": [],
+          "mentionedBy": [],
+          "inbound": [],
+          "outbound": [
+            {
+              "kind": "mentions",
+              "id": "module:src/loop/comment-format.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "mentions",
+              "id": "module:src/loop/evidence.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "mentions-symbol",
+              "id": "module:src/adapters/linear-orca.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "mentions-symbol",
+              "id": "module:src/kernel/pii.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "mentions-symbol",
+              "id": "module:src/loop/budget.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "mentions-symbol",
+              "id": "module:src/loop/comment-format.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "mentions-symbol",
+              "id": "module:src/loop/dod.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "mentions-symbol",
+              "id": "module:src/loop/evidence.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "mentions-symbol",
+              "id": "module:src/loop/tracker-cooldown.ts",
+              "confidence": "observed"
+            }
+          ]
+        },
+        "contentHash": "cd6552e04fc1f35ab5c5356b134267396f5dd244d4e28a613386dde032555769",
+        "provenance": "observed",
+        "confidence": "observed"
+      },
+      {
         "id": "document:docs/GETTING-STARTED.md",
         "kind": "document",
         "path": "docs/GETTING-STARTED.md",
@@ -14216,7 +14369,7 @@
             }
           ]
         },
-        "contentHash": "4a67ce0bf7f06d943ee870a38a23b80e3b967f4bdd0db0224cd2aabfcd297859",
+        "contentHash": "47d99bd7898ee5901b45af2e1102ecf92b8992c5eb6a8d064a1a4e576c299af5",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -17595,6 +17748,11 @@
             },
             {
               "kind": "imports",
+              "id": "module:src/loop/evidence.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
               "id": "module:src/ui/api/routes-core.ts",
               "confidence": "observed"
             },
@@ -18106,6 +18264,7 @@
           "githubPullRequest",
           "githubPullRequestsForBranch",
           "githubPullRequestsForIssue",
+          "githubUnresolvedReviewThreads",
           "githubUpsertComment",
           "parseGitHubIssue",
           "parseGitHubIssueDetail",
@@ -18121,7 +18280,7 @@
           "title": "github-cli.ts",
           "headings": "",
           "path": "src/adapters/github-cli.ts",
-          "symbols": "CheckOutcome ChecksAssessment DiffStat GitHubCliOptions GitHubIssueComment GitHubIssueDetail GitHubIssueSnapshot ISSUE_DETAIL_FIELDS ISSUE_FIELDS PR_FIELDS PullRequestCheck PullRequestSnapshot assessChecks githubComment githubCommentArgv githubCommentExists githubCompare githubCurrentUser githubEnsureLabels githubIssue githubIssueClose githubIssueComment githubIssueCommentArgv githubIssueCommentExists githubIssueCreate githubIssueEdit githubIssueEditArgv githubIssueNumber githubIssueReopen githubLabelRemove githubMerge githubMergeArgv githubOpenIssues githubOpenPullRequests githubPreflight githubPullRequest githubPullRequestsForBranch githubPullRequestsForIssue githubUpsertComment parseGitHubIssue parseGitHubIssueDetail parsePullRequest touchesProtectedPaths",
+          "symbols": "CheckOutcome ChecksAssessment DiffStat GitHubCliOptions GitHubIssueComment GitHubIssueDetail GitHubIssueSnapshot ISSUE_DETAIL_FIELDS ISSUE_FIELDS PR_FIELDS PullRequestCheck PullRequestSnapshot assessChecks githubComment githubCommentArgv githubCommentExists githubCompare githubCurrentUser githubEnsureLabels githubIssue githubIssueClose githubIssueComment githubIssueCommentArgv githubIssueCommentExists githubIssueCreate githubIssueEdit githubIssueEditArgv githubIssueNumber githubIssueReopen githubLabelRemove githubMerge githubMergeArgv githubOpenIssues githubOpenPullRequests githubPreflight githubPullRequest githubPullRequestsForBranch githubPullRequestsForIssue githubUnresolvedReviewThreads githubUpsertComment parseGitHubIssue parseGitHubIssueDetail parsePullRequest touchesProtectedPaths",
           "summary": "",
           "body": "",
           "aliases": "module ts adapters"
@@ -18240,7 +18399,7 @@
             }
           ]
         },
-        "contentHash": "da9a47a6f6ea84b7c23c927e1ca14b9b3b5904171e58c2d1bbe04fac3674d1a4",
+        "contentHash": "4351303b7b00d36033b2cda7fea04f345af59af3a093949a681fceb8a96ef1e5",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -18301,11 +18460,12 @@
         },
         "graph": {
           "pagerank": 0,
-          "inboundLinks": 2,
+          "inboundLinks": 3,
           "coveredBy": [],
           "mentionedBy": [
             "document:docs/MODULE-BOUNDARIES.md",
-            "document:CHANGELOG.md"
+            "document:CHANGELOG.md",
+            "document:docs/ADR-0044-delivery-evidence-on-the-tracker.md"
           ],
           "areaId": "area:src/adapters",
           "packageId": "package:@agentskit/harness",
@@ -18343,6 +18503,11 @@
             {
               "kind": "mentions-symbol",
               "id": "document:CHANGELOG.md",
+              "confidence": "observed"
+            },
+            {
+              "kind": "mentions-symbol",
+              "id": "document:docs/ADR-0044-delivery-evidence-on-the-tracker.md",
               "confidence": "observed"
             },
             {
@@ -20838,6 +21003,10 @@
           "CommandResult",
           "CommandRunOptions",
           "CommandRunner",
+          "CommentBlock",
+          "CommentDocument",
+          "CommentDrop",
+          "CommentFormat",
           "CompatibilityComponent",
           "CompatibilityComponentId",
           "CompatibilityManifest",
@@ -20851,6 +21020,7 @@
           "CooldownEntry",
           "CooldownState",
           "CoordinationIdentity",
+          "DEFAULT_COMMENT_OPTIONS",
           "DEFAULT_CONFIG_PATH",
           "DESIGN_CLOSE",
           "DESIGN_OPEN",
@@ -20863,6 +21033,7 @@
           "DeliverOutcome",
           "DeliverReport",
           "DeliverResult",
+          "DeliveryEvidence",
           "DeliveryState",
           "Design",
           "DesignSchema",
@@ -20901,6 +21072,9 @@
           "EvalManifest",
           "EvalObservation",
           "EvalObservationStatus",
+          "EvidenceOptions",
+          "EvidenceProof",
+          "EvidenceStatus",
           "ExecutePhaseProfileOptions",
           "FailureClass",
           "FailureClassification",
@@ -20995,16 +21169,7 @@
           "IssueTimelineReport",
           "LEARNING_STATUSES",
           "LEGACY_CONFIG_PATH",
-          "LEGAL_TRANSITIONS",
-          "LOOP_AUTO_ACTOR",
-          "LOOP_CONFIG_FILE",
-          "LOOP_CONFIG_SCHEMA_VERSION",
-          "LOOP_EVENT_TYPES",
-          "LOOP_LOCAL_CONFIG_FILE",
-          "LOOP_PRESETS",
-          "LOOP_ROLES",
-          "LOOP_STAGES",
-          "Layer"
+          "LEGAL_TRANSITIONS"
         ],
         "tags": [
           "module",
@@ -21015,7 +21180,7 @@
           "title": "index.ts",
           "headings": "",
           "path": "src/index.ts",
-          "symbols": "AGENT_REGISTRY_SCHEMA_VERSION ARTIFACT_DIR ARTIFACT_SCHEMA_VERSION ARTIFACT_TYPES ASSURANCE_LEVELS ActionContext AdapterMetadata AdapterTelemetry AdversarialReviewResult AgentEvalCase AgentEvalReport AgentEvalSuite AgentMemoryAdapter AgentMemoryHit AgentMemoryKvStore AgentMemoryRecord AgentProposal AgentRegistry AgentRegistryEntry AgentRegistryEntrySchema AgentRegistrySchema AgentRunEvidence AgentRunIoEntry AgentRunReport AgentRunStage AgentRunState AgentRunStatus AgentUsage Alert AlertSchema AnswerDecisionInput AnswerDecisionResult ArgvRagContextProviderOptions ArtifactBinding ArtifactEnvelope ArtifactEnvelopeInput ArtifactType ArtificialAnalysisModel AssuranceLevel AutomationDriftRow AutomationFields AutomationSpec AutomationStatus BENCHMARK_SCHEMA_VERSION BLOCK_STATUSES BRIEF_POINTER_PROMPT BaseView BlockAssessment BlockManifest BlockStatus BoardIssue BoardLane BoardProvider BoardReadResult BoardSnapshot BoardStatus BoundaryVerdict BudgetVerdict CAPABILITY_KINDS CAPABILITY_MANIFEST_SCHEMA_VERSION COMPATIBILITY_COMPONENTS COMPATIBILITY_SCHEMA_VERSION CONTEXT_PROVIDER_SLOT CONTRACT_CLOSE CONTRACT_JSON_SCHEMA CONTRACT_OPEN CONTRACT_SCHEMA_VERSION CRITICAL_ROLES CacheUsage CapabilityDescriptor CapabilityKind CapabilityManifest CapabilityManifestInput CastVote CatalogModel ChangedFile CheckOutcome CheckoutState ChecksAssessment ClaimResult CodeReviewInput CodeReviewOutcome CodingAgentAdapter CodingAgentHandlerResult CodingAgentRequest CodingAgentResult CommandResult CommandRunOptions CommandRunner CompatibilityComponent CompatibilityComponentId CompatibilityManifest CompatibilityObservation CompatibilityReport CompatibilityStatus ConnectorInput ContractAssessment ContractOutcomeSchema ContractResult CooldownEntry CooldownState CoordinationIdentity DEFAULT_CONFIG_PATH DESIGN_CLOSE DESIGN_OPEN DebriefInput DebriefIssueRow DebriefReport Decision DecisionOption DeliverInput DeliverOutcome DeliverReport DeliverResult DeliveryState Design DesignSchema DetectProvidersInput DiffStat DispatchLease DispatchLedger DispatchRecord DispatchRecordFile DispatchRef DocBridgeIndexInspection DoctorCheck DoctorCheckStatus DodAssessment DodEvidenceFile DodItem DodLine DodProof EVAL_COMPONENTS EVAL_LAYERS EVAL_MANIFEST_SCHEMA_VERSION EVENT_LOG_GENESIS EVIDENCE_BUNDLE_SCHEMA_VERSION EffectiveFlowSettings EffectiveReviewSettings EffortLevel EnqueueIssueRunInput EnqueueRunInput EvalBatteryReport EvalCaseDefinition EvalCaseReport EvalComponent EvalExpectation EvalGate EvalLayer EvalManifest EvalObservation EvalObservationStatus ExecutePhaseProfileOptions FailureClass FailureClassification FetchQueueInput FileArtifactStore FileEventStore FilePreflightPlan FiledRecord FlowIssue FlowProfile FlowSource GLOBAL_CONFIG_FILE GateAssessment GateBinding GateCriterion GenerateContractInput GitHubCliOptions GitHubIssueComment GitHubIssueDetail GitHubIssueSnapshot GuidedInstallIO GuidedInstallInput GuidedInstallReport HARNESS_ERROR_CATALOG HARNESS_ERROR_CODES HARNESS_EVENT_ENVELOPE_SCHEMA_VERSION HARNESS_EVENT_SCHEMA_VERSION HARNESS_EVENT_TYPES HARNESS_PLUGIN_API_VERSION HARNESS_REPO_URL HITL_ANCHOR_ID HITL_ANCHOR_TITLE HITL_FREE_TEXT_MAX HITL_SCHEMA_VERSION HandoffBriefInput HarnessError HarnessErrorClassification HarnessErrorDisposition HarnessEventEnvelope HarnessEventEnvelopeInput HarnessEventProvenance HitlAnswer HitlOption HitlRequest HitlRequestInput HitlRole HitlStatus HitlStore IMPROVEMENT_CYCLE_STEPS ISSUES_CLOSE ISSUES_OPEN ISSUE_DETAIL_FIELDS ISSUE_FIELDS ISSUE_LIFECYCLE_SCHEMA_VERSION ISSUE_QUEUE_SCHEMA_VERSION ImprovementOutcome ImprovementRecord ImprovementState InitAnswers InitInput InitQuestion InitResult InstallAction InstallInput InstallReport IntakeRecord IntakeReport IntakeResult IntakeState InterviewQuestion IssueBoardCache IssueBoardCacheOptions IssueBoardReader IssueDecision IssueFailureRecord IssueFailureState IssueLifecycle IssuePhase IssueQueue IssueQueueOptions IssueQueueProjection IssueRecord IssueRun IssueRunConfigSnapshot IssueRunContractSnapshot IssueRunPatch IssueRunPreflightSnapshot IssueRunProjection IssueRunStatus IssueSpend IssueTimelineProblem IssueTimelineReport LEARNING_STATUSES LEGACY_CONFIG_PATH LEGAL_TRANSITIONS LOOP_AUTO_ACTOR LOOP_CONFIG_FILE LOOP_CONFIG_SCHEMA_VERSION LOOP_EVENT_TYPES LOOP_LOCAL_CONFIG_FILE LOOP_PRESETS LOOP_ROLES LOOP_STAGES Layer",
+          "symbols": "AGENT_REGISTRY_SCHEMA_VERSION ARTIFACT_DIR ARTIFACT_SCHEMA_VERSION ARTIFACT_TYPES ASSURANCE_LEVELS ActionContext AdapterMetadata AdapterTelemetry AdversarialReviewResult AgentEvalCase AgentEvalReport AgentEvalSuite AgentMemoryAdapter AgentMemoryHit AgentMemoryKvStore AgentMemoryRecord AgentProposal AgentRegistry AgentRegistryEntry AgentRegistryEntrySchema AgentRegistrySchema AgentRunEvidence AgentRunIoEntry AgentRunReport AgentRunStage AgentRunState AgentRunStatus AgentUsage Alert AlertSchema AnswerDecisionInput AnswerDecisionResult ArgvRagContextProviderOptions ArtifactBinding ArtifactEnvelope ArtifactEnvelopeInput ArtifactType ArtificialAnalysisModel AssuranceLevel AutomationDriftRow AutomationFields AutomationSpec AutomationStatus BENCHMARK_SCHEMA_VERSION BLOCK_STATUSES BRIEF_POINTER_PROMPT BaseView BlockAssessment BlockManifest BlockStatus BoardIssue BoardLane BoardProvider BoardReadResult BoardSnapshot BoardStatus BoundaryVerdict BudgetVerdict CAPABILITY_KINDS CAPABILITY_MANIFEST_SCHEMA_VERSION COMPATIBILITY_COMPONENTS COMPATIBILITY_SCHEMA_VERSION CONTEXT_PROVIDER_SLOT CONTRACT_CLOSE CONTRACT_JSON_SCHEMA CONTRACT_OPEN CONTRACT_SCHEMA_VERSION CRITICAL_ROLES CacheUsage CapabilityDescriptor CapabilityKind CapabilityManifest CapabilityManifestInput CastVote CatalogModel ChangedFile CheckOutcome CheckoutState ChecksAssessment ClaimResult CodeReviewInput CodeReviewOutcome CodingAgentAdapter CodingAgentHandlerResult CodingAgentRequest CodingAgentResult CommandResult CommandRunOptions CommandRunner CommentBlock CommentDocument CommentDrop CommentFormat CompatibilityComponent CompatibilityComponentId CompatibilityManifest CompatibilityObservation CompatibilityReport CompatibilityStatus ConnectorInput ContractAssessment ContractOutcomeSchema ContractResult CooldownEntry CooldownState CoordinationIdentity DEFAULT_COMMENT_OPTIONS DEFAULT_CONFIG_PATH DESIGN_CLOSE DESIGN_OPEN DebriefInput DebriefIssueRow DebriefReport Decision DecisionOption DeliverInput DeliverOutcome DeliverReport DeliverResult DeliveryEvidence DeliveryState Design DesignSchema DetectProvidersInput DiffStat DispatchLease DispatchLedger DispatchRecord DispatchRecordFile DispatchRef DocBridgeIndexInspection DoctorCheck DoctorCheckStatus DodAssessment DodEvidenceFile DodItem DodLine DodProof EVAL_COMPONENTS EVAL_LAYERS EVAL_MANIFEST_SCHEMA_VERSION EVENT_LOG_GENESIS EVIDENCE_BUNDLE_SCHEMA_VERSION EffectiveFlowSettings EffectiveReviewSettings EffortLevel EnqueueIssueRunInput EnqueueRunInput EvalBatteryReport EvalCaseDefinition EvalCaseReport EvalComponent EvalExpectation EvalGate EvalLayer EvalManifest EvalObservation EvalObservationStatus EvidenceOptions EvidenceProof EvidenceStatus ExecutePhaseProfileOptions FailureClass FailureClassification FetchQueueInput FileArtifactStore FileEventStore FilePreflightPlan FiledRecord FlowIssue FlowProfile FlowSource GLOBAL_CONFIG_FILE GateAssessment GateBinding GateCriterion GenerateContractInput GitHubCliOptions GitHubIssueComment GitHubIssueDetail GitHubIssueSnapshot GuidedInstallIO GuidedInstallInput GuidedInstallReport HARNESS_ERROR_CATALOG HARNESS_ERROR_CODES HARNESS_EVENT_ENVELOPE_SCHEMA_VERSION HARNESS_EVENT_SCHEMA_VERSION HARNESS_EVENT_TYPES HARNESS_PLUGIN_API_VERSION HARNESS_REPO_URL HITL_ANCHOR_ID HITL_ANCHOR_TITLE HITL_FREE_TEXT_MAX HITL_SCHEMA_VERSION HandoffBriefInput HarnessError HarnessErrorClassification HarnessErrorDisposition HarnessEventEnvelope HarnessEventEnvelopeInput HarnessEventProvenance HitlAnswer HitlOption HitlRequest HitlRequestInput HitlRole HitlStatus HitlStore IMPROVEMENT_CYCLE_STEPS ISSUES_CLOSE ISSUES_OPEN ISSUE_DETAIL_FIELDS ISSUE_FIELDS ISSUE_LIFECYCLE_SCHEMA_VERSION ISSUE_QUEUE_SCHEMA_VERSION ImprovementOutcome ImprovementRecord ImprovementState InitAnswers InitInput InitQuestion InitResult InstallAction InstallInput InstallReport IntakeRecord IntakeReport IntakeResult IntakeState InterviewQuestion IssueBoardCache IssueBoardCacheOptions IssueBoardReader IssueDecision IssueFailureRecord IssueFailureState IssueLifecycle IssuePhase IssueQueue IssueQueueOptions IssueQueueProjection IssueRecord IssueRun IssueRunConfigSnapshot IssueRunContractSnapshot IssueRunPatch IssueRunPreflightSnapshot IssueRunProjection IssueRunStatus IssueSpend IssueTimelineProblem IssueTimelineReport LEARNING_STATUSES LEGACY_CONFIG_PATH LEGAL_TRANSITIONS",
           "summary": "",
           "body": "",
           "aliases": "module ts src"
@@ -21661,17 +21826,17 @@
             },
             {
               "kind": "re-exports",
-              "id": "module:src/loop/config.ts",
+              "id": "module:src/loop/comment-format.ts",
               "confidence": "observed"
             },
             {
               "kind": "re-exports",
-              "id": "module:src/loop/connectors.ts",
+              "id": "module:src/loop/config.ts",
               "confidence": "observed"
             }
           ]
         },
-        "contentHash": "f56fae906a376b6b17835b80bd4118d742829e8d74af5b34f4a6d8ac002b44cd",
+        "contentHash": "b1b50a36baeadb856264c73c9900fae33f52bfc81b18610b028efdadfaebe565",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -24040,12 +24205,13 @@
         },
         "graph": {
           "pagerank": 0,
-          "inboundLinks": 3,
+          "inboundLinks": 4,
           "coveredBy": [],
           "mentionedBy": [
             "document:docs/LOOP.md",
             "document:docs/MODULE-BOUNDARIES.md",
-            "document:docs/ADR-0041-agent-runs-and-rendered-specs.md"
+            "document:docs/ADR-0041-agent-runs-and-rendered-specs.md",
+            "document:docs/ADR-0044-delivery-evidence-on-the-tracker.md"
           ],
           "areaId": "area:src/kernel",
           "packageId": "package:@agentskit/harness",
@@ -24066,6 +24232,16 @@
               "confidence": "observed"
             },
             {
+              "kind": "imports",
+              "id": "module:src/loop/deliver.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
+              "id": "module:src/loop/evidence.ts",
+              "confidence": "observed"
+            },
+            {
               "kind": "mentions",
               "id": "document:docs/LOOP.md",
               "confidence": "observed"
@@ -24078,6 +24254,11 @@
             {
               "kind": "mentions-symbol",
               "id": "document:docs/ADR-0041-agent-runs-and-rendered-specs.md",
+              "confidence": "observed"
+            },
+            {
+              "kind": "mentions-symbol",
+              "id": "document:docs/ADR-0044-delivery-evidence-on-the-tracker.md",
               "confidence": "observed"
             },
             {
@@ -25893,11 +26074,12 @@
         },
         "graph": {
           "pagerank": 0,
-          "inboundLinks": 2,
+          "inboundLinks": 3,
           "coveredBy": [],
           "mentionedBy": [
             "document:CHANGELOG.md",
-            "document:docs/ADR-0037-cost-policy-ceilings-and-levers.md"
+            "document:docs/ADR-0037-cost-policy-ceilings-and-levers.md",
+            "document:docs/ADR-0044-delivery-evidence-on-the-tracker.md"
           ],
           "areaId": "area:src/loop",
           "packageId": "package:@agentskit/harness",
@@ -25930,6 +26112,11 @@
             {
               "kind": "mentions-symbol",
               "id": "document:docs/ADR-0037-cost-policy-ceilings-and-levers.md",
+              "confidence": "observed"
+            },
+            {
+              "kind": "mentions-symbol",
+              "id": "document:docs/ADR-0044-delivery-evidence-on-the-tracker.md",
               "confidence": "observed"
             },
             {
@@ -25972,6 +26159,94 @@
           ]
         },
         "contentHash": "0c93933f366b4026d43a3b496b713d333b5863c849c0eb524f6417d345199330",
+        "provenance": "observed",
+        "confidence": "observed"
+      },
+      {
+        "id": "module:src/loop/comment-format.ts",
+        "kind": "module",
+        "path": "src/loop/comment-format.ts",
+        "title": "comment-format.ts",
+        "aliases": [],
+        "symbols": [
+          "CommentBlock",
+          "CommentDocument",
+          "CommentDrop",
+          "CommentFormat",
+          "DEFAULT_COMMENT_OPTIONS",
+          "TrackerCommentOptions",
+          "fitComment",
+          "renderComment"
+        ],
+        "tags": [
+          "module",
+          "ts",
+          "loop"
+        ],
+        "fields": {
+          "title": "comment-format.ts",
+          "headings": "",
+          "path": "src/loop/comment-format.ts",
+          "symbols": "CommentBlock CommentDocument CommentDrop CommentFormat DEFAULT_COMMENT_OPTIONS TrackerCommentOptions fitComment renderComment",
+          "summary": "",
+          "body": "",
+          "aliases": "module ts loop"
+        },
+        "graph": {
+          "pagerank": 0,
+          "inboundLinks": 2,
+          "coveredBy": [],
+          "mentionedBy": [
+            "document:docs/ADR-0044-delivery-evidence-on-the-tracker.md",
+            "document:docs/ADR-0044-delivery-evidence-on-the-tracker.md"
+          ],
+          "areaId": "area:src/loop",
+          "packageId": "package:@agentskit/harness",
+          "inbound": [
+            {
+              "kind": "imports",
+              "id": "module:src/loop/connectors.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
+              "id": "module:src/loop/deliver.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
+              "id": "module:src/loop/evidence.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
+              "id": "module:test/loop-evidence.test.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "mentions",
+              "id": "document:docs/ADR-0044-delivery-evidence-on-the-tracker.md",
+              "confidence": "observed"
+            },
+            {
+              "kind": "mentions-symbol",
+              "id": "document:docs/ADR-0044-delivery-evidence-on-the-tracker.md",
+              "confidence": "observed"
+            },
+            {
+              "kind": "re-exports",
+              "id": "module:src/index.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "re-exports",
+              "id": "module:src/loop/index.ts",
+              "confidence": "observed"
+            }
+          ],
+          "outbound": []
+        },
+        "contentHash": "909e0f0bc1e1096e544a959a9c1e5e2ada23d891520dc33cd32b0c68cbad3527",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -26389,7 +26664,7 @@
             }
           ]
         },
-        "contentHash": "c35f7448cfe22c63e7c073004b3b59894d828885ddcbb553dbea6e5a8749e5ad",
+        "contentHash": "0d7caa6f7dcd337bf56b070ac52458d76711ed2948bdc88c909ec9b1d3c44e6c",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -26569,6 +26844,11 @@
             },
             {
               "kind": "imports",
+              "id": "module:src/loop/comment-format.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
               "id": "module:src/loop/config.ts",
               "confidence": "observed"
             },
@@ -26579,7 +26859,7 @@
             }
           ]
         },
-        "contentHash": "77d9729bb77dae8324d31855273af2e46761b7f6c031f81fb5454ad7c595fbe9",
+        "contentHash": "41d8998ea1ca27287997c57b3bb826f8e826ab5b1cab4eefebc4722aef4c2be6",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -27412,6 +27692,11 @@
             },
             {
               "kind": "imports",
+              "id": "module:src/kernel/pii.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
               "id": "module:src/loop/agent-runs.ts",
               "confidence": "observed"
             },
@@ -27428,6 +27713,11 @@
             {
               "kind": "imports",
               "id": "module:src/loop/budget.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
+              "id": "module:src/loop/comment-format.ts",
               "confidence": "observed"
             },
             {
@@ -27468,6 +27758,11 @@
             {
               "kind": "imports",
               "id": "module:src/loop/event-bus.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
+              "id": "module:src/loop/evidence.ts",
               "confidence": "observed"
             },
             {
@@ -27522,6 +27817,11 @@
             },
             {
               "kind": "imports",
+              "id": "module:src/loop/retro.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
               "id": "module:src/loop/routing.ts",
               "confidence": "observed"
             },
@@ -27562,7 +27862,7 @@
             }
           ]
         },
-        "contentHash": "a0e623444bf356671640af0123ced42e2003c8abcaca703238b7a73807e16d8b",
+        "contentHash": "5e21946c93a20ba4c0662ec583d494ae07acdd002d666502868b6dcabb2e3b5f",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -27983,10 +28283,11 @@
         },
         "graph": {
           "pagerank": 0,
-          "inboundLinks": 1,
+          "inboundLinks": 2,
           "coveredBy": [],
           "mentionedBy": [
-            "document:docs/ADR-0035-definition-of-done-two-lists.md"
+            "document:docs/ADR-0035-definition-of-done-two-lists.md",
+            "document:docs/ADR-0044-delivery-evidence-on-the-tracker.md"
           ],
           "areaId": "area:src/loop",
           "packageId": "package:@agentskit/harness",
@@ -28014,6 +28315,11 @@
             {
               "kind": "mentions-symbol",
               "id": "document:docs/ADR-0035-definition-of-done-two-lists.md",
+              "confidence": "observed"
+            },
+            {
+              "kind": "mentions-symbol",
+              "id": "document:docs/ADR-0044-delivery-evidence-on-the-tracker.md",
               "confidence": "observed"
             },
             {
@@ -28294,6 +28600,105 @@
           "outbound": []
         },
         "contentHash": "ac8f219eabb64c54bc4a3ad0e7b696f2b69c47a5cedd5e15faecbe2f8542981e",
+        "provenance": "observed",
+        "confidence": "observed"
+      },
+      {
+        "id": "module:src/loop/evidence.ts",
+        "kind": "module",
+        "path": "src/loop/evidence.ts",
+        "title": "evidence.ts",
+        "aliases": [],
+        "symbols": [
+          "DeliveryEvidence",
+          "EvidenceOptions",
+          "EvidenceProof",
+          "EvidenceStatus",
+          "ResolutionVerdict",
+          "buildEvidenceDocument",
+          "checklistState",
+          "extractReproduction",
+          "formatDuration",
+          "isBugIssue",
+          "isTestFile",
+          "resolutionVerdict",
+          "reviewVerdict"
+        ],
+        "tags": [
+          "module",
+          "ts",
+          "loop"
+        ],
+        "fields": {
+          "title": "evidence.ts",
+          "headings": "",
+          "path": "src/loop/evidence.ts",
+          "symbols": "DeliveryEvidence EvidenceOptions EvidenceProof EvidenceStatus ResolutionVerdict buildEvidenceDocument checklistState extractReproduction formatDuration isBugIssue isTestFile resolutionVerdict reviewVerdict",
+          "summary": "",
+          "body": "",
+          "aliases": "module ts loop"
+        },
+        "graph": {
+          "pagerank": 0,
+          "inboundLinks": 2,
+          "coveredBy": [],
+          "mentionedBy": [
+            "document:docs/ADR-0044-delivery-evidence-on-the-tracker.md",
+            "document:docs/ADR-0044-delivery-evidence-on-the-tracker.md"
+          ],
+          "areaId": "area:src/loop",
+          "packageId": "package:@agentskit/harness",
+          "inbound": [
+            {
+              "kind": "imports",
+              "id": "module:src/loop/deliver.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
+              "id": "module:test/loop-evidence.test.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "mentions",
+              "id": "document:docs/ADR-0044-delivery-evidence-on-the-tracker.md",
+              "confidence": "observed"
+            },
+            {
+              "kind": "mentions-symbol",
+              "id": "document:docs/ADR-0044-delivery-evidence-on-the-tracker.md",
+              "confidence": "observed"
+            },
+            {
+              "kind": "re-exports",
+              "id": "module:src/index.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "re-exports",
+              "id": "module:src/loop/index.ts",
+              "confidence": "observed"
+            }
+          ],
+          "outbound": [
+            {
+              "kind": "imports",
+              "id": "module:src/adapters/code-review.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
+              "id": "module:src/kernel/pii.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
+              "id": "module:src/loop/comment-format.ts",
+              "confidence": "observed"
+            }
+          ]
+        },
+        "contentHash": "9ac4bb2c5e52019ad98f39bd8d643ec2db7fc65540b973a2c6b63fb4aeb4bc9b",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -28904,11 +29309,16 @@
           "CastVote",
           "CatalogModel",
           "CheckoutState",
+          "CommentBlock",
+          "CommentDocument",
+          "CommentDrop",
+          "CommentFormat",
           "ConnectorInput",
           "ContractAssessment",
           "ContractOutcomeSchema",
           "CooldownEntry",
           "CooldownState",
+          "DEFAULT_COMMENT_OPTIONS",
           "DESIGN_CLOSE",
           "DESIGN_OPEN",
           "DebriefInput",
@@ -28918,6 +29328,7 @@
           "DeliverOutcome",
           "DeliverReport",
           "DeliverResult",
+          "DeliveryEvidence",
           "DeliveryState",
           "Design",
           "DesignSchema",
@@ -28932,6 +29343,9 @@
           "EffectiveFlowSettings",
           "EffortLevel",
           "EvalGate",
+          "EvidenceOptions",
+          "EvidenceProof",
+          "EvidenceStatus",
           "FiledRecord",
           "FlowIssue",
           "FlowProfile",
@@ -29094,6 +29508,7 @@
           "TickOutcome",
           "TickReport",
           "TimelineStep",
+          "TrackerCommentOptions",
           "TrackerConnector",
           "TuningDecision",
           "TuningKnob",
@@ -29118,17 +29533,7 @@
           "WrittenDocument",
           "activeCooldowns",
           "advanceQueueOwner",
-          "alreadyFiled",
-          "answerRound",
-          "appendLoopEvent",
-          "applyRoleSettings",
-          "applyRoutingPolicy",
-          "applyToYaml",
-          "applyTuning",
-          "approveDesign",
-          "approveHeldDelivery",
-          "approvePlan",
-          "approveRelease"
+          "alreadyFiled"
         ],
         "tags": [
           "module",
@@ -29139,7 +29544,7 @@
           "title": "index.ts",
           "headings": "",
           "path": "src/loop/index.ts",
-          "symbols": "AGENT_REGISTRY_SCHEMA_VERSION ARTIFACT_DIR AgentProposal AgentRegistry AgentRegistryEntry AgentRegistryEntrySchema AgentRegistrySchema AgentRunEvidence AgentRunIoEntry AgentRunReport AgentRunStage AgentRunState AgentRunStatus Alert AlertSchema ArtificialAnalysisModel AutomationDriftRow AutomationFields AutomationSpec AutomationStatus BRIEF_POINTER_PROMPT BaseView BoundaryVerdict BudgetVerdict CONTRACT_CLOSE CONTRACT_OPEN CONTRACT_SCHEMA_VERSION CRITICAL_ROLES CastVote CatalogModel CheckoutState ConnectorInput ContractAssessment ContractOutcomeSchema CooldownEntry CooldownState DESIGN_CLOSE DESIGN_OPEN DebriefInput DebriefIssueRow DebriefReport DeliverInput DeliverOutcome DeliverReport DeliverResult DeliveryState Design DesignSchema DispatchRecordFile DoctorCheck DoctorCheckStatus DodAssessment DodEvidenceFile DodItem DodLine DodProof EffectiveFlowSettings EffortLevel EvalGate FiledRecord FlowIssue FlowProfile FlowSource GLOBAL_CONFIG_FILE GenerateContractInput GuidedInstallIO GuidedInstallInput GuidedInstallReport HARNESS_REPO_URL HandoffBriefInput ISSUES_CLOSE ISSUES_OPEN ImprovementOutcome ImprovementRecord ImprovementState InitAnswers InitInput InitQuestion InitResult InstallAction InstallInput InstallReport IntakeRecord IntakeReport IntakeResult IntakeState InterviewQuestion IssueFailureRecord IssueFailureState IssueSpend IssueTimelineProblem IssueTimelineReport LOOP_CONFIG_FILE LOOP_CONFIG_SCHEMA_VERSION LOOP_EVENT_TYPES LOOP_LOCAL_CONFIG_FILE LOOP_PRESETS LOOP_ROLES LOOP_STAGES Layer LearningsLedger LoadedLoopConfig LocalConfigAnswers LocalConfigPrompter LoopConfig LoopConfigInput LoopConfigSchema LoopDoctorInput LoopDoctorReport LoopEvent LoopEventBus LoopEventListener LoopEventPayload LoopEventType LoopHookListener LoopHookName LoopHookPayload LoopHookResult LoopPluginModule LoopProviderConfig LoopRole LoopStage LoopStageName LoopState LoopStatusReport MANAGED_STAGES MaintainReport MaintainResult MemoryContextPlan MemoryPromptSelection MetricReading ModelQuality ModelReference Notification NotifyInput NotifyOutcome ObservabilityAnomaly ObservabilityMetrics ObservabilityReport ObservabilitySeverity ObservabilitySnapshot ObservabilityTerminal ObserveAssessment ObserveAssessmentInput ObserveProblem ObserveStageReport ObserverState OutcomeProgress OutcomeProgressStatus PLAN_CLOSE PLAN_OPEN PLAN_SCHEMA_VERSION PLAN_STAGE_SCHEMA_VERSION PRD_CLOSE PRD_OPEN PRESET_NAMES PhaseArtifact PhaseArtifactName PinnedSkill PinnedSkillRef PlanPhase PlanRound PlanStageDeps PlanStageState PlanVote PlanVoteSchema PlanWithVotesInput PlannedIssue PlannedIssueSchema Prd PrdSchema PresetName ProviderCatalog ProviderFailure QUESTION_CLOSE QUESTION_OPEN QuestionSchema REQUIRED_PRD_FIELDS RUNS_DIR RankedModel ReleaseApproval ReleaseBatch ReleaseCommit ReleaseReport ReleaseState ResolvedAgent ResolvedFlow RetroInput RetroIssueRow RetroReport RetroStageReport RetroSuggestion RetroTarget RetroWindow RichIO RoleSettings RoleSignal RoutingDecision RoutingSkip RunnerConnector RunnerInput RunnerWorkspace ScheduledJob ScmConnector SkillHandoffBlock SlotAssessment SlotInput StagePauseEntry StagePauseState StoredContract StoredPlan TaskContract TaskContractSchema TaskPlan TaskPlanSchema TeamMember TickCandidateResult TickInput TickOutcome TickReport TimelineStep TrackerConnector TuningDecision TuningKnob TuningMetric TuningRecord TuningResult TuningState VOTE_CLOSE VOTE_OPEN VerifyArtifact VerifyArtifactSchema WORKER_ROLES WatchEvent WatchEventKind WatchInput WatchReport WatchTargetSnapshot WorkerBriefInput WorkerGuardInstallOutcome WorkerGuardVerdict WorkerRole WrittenDocument activeCooldowns advanceQueueOwner alreadyFiled answerRound appendLoopEvent applyRoleSettings applyRoutingPolicy applyToYaml applyTuning approveDesign approveHeldDelivery approvePlan approveRelease",
+          "symbols": "AGENT_REGISTRY_SCHEMA_VERSION ARTIFACT_DIR AgentProposal AgentRegistry AgentRegistryEntry AgentRegistryEntrySchema AgentRegistrySchema AgentRunEvidence AgentRunIoEntry AgentRunReport AgentRunStage AgentRunState AgentRunStatus Alert AlertSchema ArtificialAnalysisModel AutomationDriftRow AutomationFields AutomationSpec AutomationStatus BRIEF_POINTER_PROMPT BaseView BoundaryVerdict BudgetVerdict CONTRACT_CLOSE CONTRACT_OPEN CONTRACT_SCHEMA_VERSION CRITICAL_ROLES CastVote CatalogModel CheckoutState CommentBlock CommentDocument CommentDrop CommentFormat ConnectorInput ContractAssessment ContractOutcomeSchema CooldownEntry CooldownState DEFAULT_COMMENT_OPTIONS DESIGN_CLOSE DESIGN_OPEN DebriefInput DebriefIssueRow DebriefReport DeliverInput DeliverOutcome DeliverReport DeliverResult DeliveryEvidence DeliveryState Design DesignSchema DispatchRecordFile DoctorCheck DoctorCheckStatus DodAssessment DodEvidenceFile DodItem DodLine DodProof EffectiveFlowSettings EffortLevel EvalGate EvidenceOptions EvidenceProof EvidenceStatus FiledRecord FlowIssue FlowProfile FlowSource GLOBAL_CONFIG_FILE GenerateContractInput GuidedInstallIO GuidedInstallInput GuidedInstallReport HARNESS_REPO_URL HandoffBriefInput ISSUES_CLOSE ISSUES_OPEN ImprovementOutcome ImprovementRecord ImprovementState InitAnswers InitInput InitQuestion InitResult InstallAction InstallInput InstallReport IntakeRecord IntakeReport IntakeResult IntakeState InterviewQuestion IssueFailureRecord IssueFailureState IssueSpend IssueTimelineProblem IssueTimelineReport LOOP_CONFIG_FILE LOOP_CONFIG_SCHEMA_VERSION LOOP_EVENT_TYPES LOOP_LOCAL_CONFIG_FILE LOOP_PRESETS LOOP_ROLES LOOP_STAGES Layer LearningsLedger LoadedLoopConfig LocalConfigAnswers LocalConfigPrompter LoopConfig LoopConfigInput LoopConfigSchema LoopDoctorInput LoopDoctorReport LoopEvent LoopEventBus LoopEventListener LoopEventPayload LoopEventType LoopHookListener LoopHookName LoopHookPayload LoopHookResult LoopPluginModule LoopProviderConfig LoopRole LoopStage LoopStageName LoopState LoopStatusReport MANAGED_STAGES MaintainReport MaintainResult MemoryContextPlan MemoryPromptSelection MetricReading ModelQuality ModelReference Notification NotifyInput NotifyOutcome ObservabilityAnomaly ObservabilityMetrics ObservabilityReport ObservabilitySeverity ObservabilitySnapshot ObservabilityTerminal ObserveAssessment ObserveAssessmentInput ObserveProblem ObserveStageReport ObserverState OutcomeProgress OutcomeProgressStatus PLAN_CLOSE PLAN_OPEN PLAN_SCHEMA_VERSION PLAN_STAGE_SCHEMA_VERSION PRD_CLOSE PRD_OPEN PRESET_NAMES PhaseArtifact PhaseArtifactName PinnedSkill PinnedSkillRef PlanPhase PlanRound PlanStageDeps PlanStageState PlanVote PlanVoteSchema PlanWithVotesInput PlannedIssue PlannedIssueSchema Prd PrdSchema PresetName ProviderCatalog ProviderFailure QUESTION_CLOSE QUESTION_OPEN QuestionSchema REQUIRED_PRD_FIELDS RUNS_DIR RankedModel ReleaseApproval ReleaseBatch ReleaseCommit ReleaseReport ReleaseState ResolvedAgent ResolvedFlow RetroInput RetroIssueRow RetroReport RetroStageReport RetroSuggestion RetroTarget RetroWindow RichIO RoleSettings RoleSignal RoutingDecision RoutingSkip RunnerConnector RunnerInput RunnerWorkspace ScheduledJob ScmConnector SkillHandoffBlock SlotAssessment SlotInput StagePauseEntry StagePauseState StoredContract StoredPlan TaskContract TaskContractSchema TaskPlan TaskPlanSchema TeamMember TickCandidateResult TickInput TickOutcome TickReport TimelineStep TrackerCommentOptions TrackerConnector TuningDecision TuningKnob TuningMetric TuningRecord TuningResult TuningState VOTE_CLOSE VOTE_OPEN VerifyArtifact VerifyArtifactSchema WORKER_ROLES WatchEvent WatchEventKind WatchInput WatchReport WatchTargetSnapshot WorkerBriefInput WorkerGuardInstallOutcome WorkerGuardVerdict WorkerRole WrittenDocument activeCooldowns advanceQueueOwner alreadyFiled",
           "summary": "",
           "body": "",
           "aliases": "module ts loop"
@@ -29195,6 +29600,11 @@
             },
             {
               "kind": "re-exports",
+              "id": "module:src/loop/comment-format.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "re-exports",
               "id": "module:src/loop/config.ts",
               "confidence": "observed"
             },
@@ -29246,6 +29656,11 @@
             {
               "kind": "re-exports",
               "id": "module:src/loop/event-vocabulary.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "re-exports",
+              "id": "module:src/loop/evidence.ts",
               "confidence": "observed"
             },
             {
@@ -29415,7 +29830,7 @@
             }
           ]
         },
-        "contentHash": "18e1599b0c7b62ff2b0a2a02c0df383a4fc05b3568fe4ccfad3019d57801d9a5",
+        "contentHash": "8acc497fc1e82c53d4c2499d2a9701167f432f4a327639cc46b7d66be5c1bd19",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -31717,6 +32132,11 @@
             },
             {
               "kind": "imports",
+              "id": "module:src/loop/deliver.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
               "id": "module:src/loop/issue-timeline.ts",
               "confidence": "observed"
             },
@@ -33239,9 +33659,11 @@
         },
         "graph": {
           "pagerank": 0,
-          "inboundLinks": 0,
+          "inboundLinks": 1,
           "coveredBy": [],
-          "mentionedBy": [],
+          "mentionedBy": [
+            "document:docs/ADR-0044-delivery-evidence-on-the-tracker.md"
+          ],
           "areaId": "area:src/loop",
           "packageId": "package:@agentskit/harness",
           "inbound": [
@@ -33258,6 +33680,11 @@
             {
               "kind": "imports",
               "id": "module:test/loop-deliver.test.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "mentions-symbol",
+              "id": "document:docs/ADR-0044-delivery-evidence-on-the-tracker.md",
               "confidence": "observed"
             }
           ],
@@ -42657,7 +43084,7 @@
             }
           ]
         },
-        "contentHash": "fee0fb12071c30c653cbaecc1a65f055ec7ac13c213e3b0a61121595f920fd54",
+        "contentHash": "4017607e307dbd79d6484b8e55cea79fa4b5e049dc72b51d46e5bac5ed1c4c67",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -42943,6 +43370,51 @@
           ]
         },
         "contentHash": "ba6047644fa47f5a036901c08fb3dac1f6202531b1727e9fab5c53ab0cd8bd53",
+        "provenance": "observed",
+        "confidence": "observed"
+      },
+      {
+        "id": "module:test/loop-evidence.test.ts",
+        "kind": "module",
+        "path": "test/loop-evidence.test.ts",
+        "title": "loop-evidence.test.ts",
+        "aliases": [],
+        "tags": [
+          "module",
+          "ts",
+          "test"
+        ],
+        "fields": {
+          "title": "loop-evidence.test.ts",
+          "headings": "",
+          "path": "test/loop-evidence.test.ts",
+          "symbols": "",
+          "summary": "",
+          "body": "",
+          "aliases": "module ts test"
+        },
+        "graph": {
+          "pagerank": 0,
+          "inboundLinks": 0,
+          "coveredBy": [],
+          "mentionedBy": [],
+          "areaId": "area:test",
+          "packageId": "package:@agentskit/harness",
+          "inbound": [],
+          "outbound": [
+            {
+              "kind": "imports",
+              "id": "module:src/loop/comment-format.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
+              "id": "module:src/loop/evidence.ts",
+              "confidence": "observed"
+            }
+          ]
+        },
+        "contentHash": "2a1850b6c7371aa98d1a5e21db2f07bea7816da07d3012fca916cc048069b4e7",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -44541,7 +45013,7 @@
             }
           ]
         },
-        "contentHash": "d5f37aa5035fcc7c90f99a368564820ccc3503d77a6bd9dd78404308e78f6e0e",
+        "contentHash": "ee63f69b3bc11af90721a17debb645d69889fda510487eec0e1d26602a775dc3",
         "provenance": "observed",
         "confidence": "observed"
       },
