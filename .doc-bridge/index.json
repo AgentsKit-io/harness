@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
-  "contentHash": "2ca8229ce54cf0db1136163fe91d41ab9a35bd1ac25646cc5dedaee7c969adde",
+  "contentHash": "61da34b96d9952f351cd376c01afb148597d32b44ab971306068c450e545f15f",
   "contentHashAlgo": "sha256-normalized-v1",
-  "generatedAt": "2026-10-17T15:09:55.355Z",
+  "generatedAt": "2026-10-17T15:21:31.897Z",
   "project": {
     "name": "AgentsKit Harness",
     "root": "."
@@ -939,7 +939,7 @@
         "document",
         "human"
       ],
-      "contentHash": "ff5ec4a5826c2b50e74903a530c18a41cce082e3415e5617a8830f10d629ffd2"
+      "contentHash": "6672262d5ddcbf599f699a5171bd637f3e103556e911d0fdb7050755fff0d8cd"
     },
     {
       "id": "document:docs/MODULE-BOUNDARIES.md",
@@ -3942,7 +3942,7 @@
         "ts",
         "loop"
       ],
-      "contentHash": "ee9af2ccdc3c8bfbc8c7d480cbc2464d10df5105fbebc19b758f764bb14b11d6"
+      "contentHash": "fc04966acaa367024577f97ef1d90d6f79eb275704d87b1af38dee9c4d72b73d"
     },
     {
       "id": "module:src/loop/connectors.ts",
@@ -3964,7 +3964,7 @@
         "ts",
         "loop"
       ],
-      "contentHash": "4d62bbc9b6c2a9a722ecfba0d968642082bbff0e0ebf26b56d65d490cf0fada7"
+      "contentHash": "27f209794fa141f9a7476e7abd4130bf1e383a35fae647914888ff9b9e6d63b6"
     },
     {
       "id": "module:src/loop/contract.ts",
@@ -4231,7 +4231,7 @@
         "ts",
         "loop"
       ],
-      "contentHash": "6707d015c7edb9f3b475bfb9855455bb8504a36122a3f1157d8addf30a4ded18"
+      "contentHash": "7c55aa75a74053bc7c2a7f15c227892f5576974164b43ae0603b4b3627ac5742"
     },
     {
       "id": "module:src/loop/evidence.ts",
@@ -5155,6 +5155,23 @@
       "contentHash": "3736e11c7fc77ae6270a4613198ada92027c72894b44a18a182d843363c277df"
     },
     {
+      "id": "module:src/loop/refill.ts",
+      "type": "module",
+      "title": "refill.ts",
+      "path": "src/loop/refill.ts",
+      "symbols": [
+        "RefillOutcome",
+        "refillApplies",
+        "runRefill"
+      ],
+      "tags": [
+        "module",
+        "ts",
+        "loop"
+      ],
+      "contentHash": "48b67f896ec44e0005921bec0aa6cb11b169c17393cae9ea9f9a8b1371e0cf05"
+    },
+    {
       "id": "module:src/loop/release.ts",
       "type": "module",
       "title": "release.ts",
@@ -5427,15 +5444,18 @@
         "BRIEF_POINTER_PROMPT",
         "DispatchRecordFile",
         "LoopState",
+        "PrecheckScope",
         "TickCandidateResult",
         "TickInput",
         "TickOutcome",
         "TickReport",
+        "YieldDecision",
         "appendLoopEvent",
         "branchFor",
         "briefPath",
         "busyIssues",
         "dispatchRecordPath",
+        "evaluateYield",
         "gatherLoopState",
         "launchWorkerTerminal",
         "precheckTick",
@@ -5449,7 +5469,7 @@
         "ts",
         "loop"
       ],
-      "contentHash": "7b1542b3125e2162ce3273cae412e38402b919b8687cf3c57304205b671e685f"
+      "contentHash": "47251cc943aff2528dcd54fd3b8d76349e155f8ad423ab70f61dd8803bccf04f"
     },
     {
       "id": "module:src/loop/tracker-cooldown.ts",
@@ -8445,6 +8465,18 @@
       "contentHash": "807d91dcf70e7496cd57e988db746a1650360bd9833051816de9ab750400f875"
     },
     {
+      "id": "module:test/loop-refill-yield.test.ts",
+      "type": "module",
+      "title": "loop-refill-yield.test.ts",
+      "path": "test/loop-refill-yield.test.ts",
+      "tags": [
+        "module",
+        "ts",
+        "test"
+      ],
+      "contentHash": "51883081827471a7467a7279c77eb0e2b30f561f7b8c5021fbb6e5968c078749"
+    },
+    {
       "id": "module:test/loop-release.test.ts",
       "type": "module",
       "title": "loop-release.test.ts",
@@ -9238,8 +9270,8 @@
     }
   },
   "inputs": {
-    "hash": "c37510d7a8abb510f2f25765d7e810263d7baa8932fd0ed2e4b7e371068723ef",
-    "fileCount": 559,
+    "hash": "e623dbef1bd8978e4d5f1fd681a5f72628b459b1ce7377b28c2cf655721fd18c",
+    "fileCount": 561,
     "projectionVersion": 2
   },
   "retrieval": {
@@ -9261,9 +9293,9 @@
   "projection": {
     "type": "retrieval-index",
     "schemaVersion": 1,
-    "contentHash": "fc46dfa350fb09b8b617d07aacfefd9eb276fe4d65467d63e48b1aa2b563bfc3",
+    "contentHash": "cc133e49c566e8be771ebcf1b097bdfb9c99c7678f93fcf1299cab385f3f18a3",
     "contentHashAlgo": "sha256-normalized-v1",
-    "snapshotHash": "dbdbac2c09668ae8ec78f556d856b2ac1bd8dc07d8b0dc3555bf5876041b0124",
+    "snapshotHash": "918c0c3dabd9e11c14bdd5f18d6a54ae84c575d6341acb7e665546584be2797d",
     "overlayHash": "f99666ff9119084dd25c2974ae64eb6935ec2aa785ff5ad478fb9d541f7a5e94",
     "configurationHash": "816afaf6a7dc09767f7594d8fd80024612ca0f33becf0e44dde0107fcf2782df",
     "lexiconVersion": 1,
@@ -9283,7 +9315,7 @@
     },
     "lexical": {
       "version": 1,
-      "documentCount": 562,
+      "documentCount": 564,
       "fieldNames": [
         "aliases",
         "body",
@@ -9294,13 +9326,13 @@
         "title"
       ],
       "averageFieldLength": {
-        "aliases": 2.9448398576512456,
-        "body": 44.761565836298935,
-        "headings": 3.8612099644128115,
-        "path": 6.1263345195729535,
-        "summary": 2.6494661921708187,
-        "symbols": 14.291814946619217,
-        "title": 3.9893238434163703
+        "aliases": 2.9450354609929077,
+        "body": 44.60283687943262,
+        "headings": 3.867021276595745,
+        "path": 6.125886524822695,
+        "summary": 2.6400709219858154,
+        "symbols": 14.27304964539007,
+        "title": 3.9893617021276597
       }
     },
     "entries": [
@@ -9633,7 +9665,7 @@
           ],
           "outbound": []
         },
-        "contentHash": "cb66a492fc1bcba6925d12b9d043d34afcf27fb7fb9db9bcb4ec2be73a367e42",
+        "contentHash": "e5d65a780c3fc59d0d9c202470ab24192c6e74ba11533d7d7c318b061bd5713b",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -9748,7 +9780,7 @@
           ],
           "outbound": []
         },
-        "contentHash": "71acee43b4475544f516341d23dbc49c3a51e529dbe642544cc13acf888df85d",
+        "contentHash": "975d231a357a7fe0162983222800b87bb012738d06e20babfbf608ed49613844",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -11294,7 +11326,7 @@
           "path": "apps/docs/content/docs/reference/configuration.mdx",
           "symbols": "",
           "summary": "{/* Generated by `pnpm docs:generate`. Do not edit by hand: edit `src/loop/config.ts` and regenerate. */}",
-          "body": "{/ Generated by pnpm docs:generate . Do not edit by hand: edit src/loop/config.ts and regenerate. /} The four layers that produce this configuration — the machine's global file, the project's, the team's and this machine's overlay — are described in . ak-harness loop validate prints the effective result, which is the only one that decides anything. 223 of 403 paths carry no description yet. schemaVersion Type: number · Default: 1 extends Defaults for this kind of project ( web-app , library , monorepo , data-pipeline , mobile ), merged below every other layer. Anything this file states wins over the preset; the preset only fills silence. Type: string project Path Type Default Description --- --- --- --- project.name string required project.repo string required project.baseBranch string \"main\" project.root string \".\" project.stateDir string \".ak-loop\" Where the loop keeps everything that is NOT the project's configuration: dispatch ledger, delivery state, contracts, events, agent memory, plans. Meant to be gitignored — the configuration lives at the repo root as loop.config.yaml , versioned; this directory is runtime state, per machine. project.team string Selects the loop.config.team.&lt;key&gt;.yaml layer. $AK LOOP TEAM overrides it; a declared team whose file is missing fails loudly. project.orchestratorView base · root \"base\" The tree the orchestrator's headless calls (contract, plan interview, architect, votes, decompose) read. base (default): a harness-owned detached worktree of origin/&lt;baseBranch&gt; , fetched before each use. root : project.root as it is — whatever branch and age the operator's checkout has. project.setup object {} project.setup.command string[] Argv (no shell — one element per arg, e.g. [pnpm, install, --frozen-lockfile] ) run once in a freshly created worktree before the worker terminal opens. Unset/empty = skip. project.setup.timeoutSec integer 600 project.setup.required boolean true When true, a failing/timing-out setup removes the worktree and counts as a dispatch failure instead of handing the worker a broken environment. orca Path Type Default Description --- --- --- --- orca.bin string \"orca\" orca.repoSelector string Orca repo selector for new worktrees: id:&lt;repoId&gt; , name:&lt;name&gt; or path:&lt;abs&gt; ; default path:&lt;project.root&gt; . orca.workspaceSelector string Existing worktree the automations run in; default: the enclosing worktree resolved by Orca. orca.host string orca.minVersion string \"1.4.200\" orca.timeoutMs integer 20000 linear Path Type Default Description --- --- --- --- linear.workspaceId string required linear.teamKey string required linear.person string required Linear display name of the person whose queue this machine drains. linear.people record&lt;string&gt; {} Display name → Linear user id, for assignee set and audit; the queue itself filters by display name. linear.rotation object {} Optional ordered handoff between owners after the current dispatchable queue drains. linear.rotation.enabled boolean false linear.rotation.owners string[] [] linear.rotation.advanceWhenEmpty boolean true linear.queueOwnership person · unassigned · both \"person\" Whose queue this machine drains. person (default) keeps the historical behaviour: the issues assigned to linear.person . unassigned drains the issues with NO assignee and turns the assignee into a transient claim — written on dispatch, cleared when the item returns — so several machines can share one priority-ordered queue without colliding. Note when switching to unassigned : clearing the assignees is then REQUIRED, not cosmetic. With person and an emptied backlog the queue comes back empty and the loop looks healthy while doing nothing. both drains the union of the two: issues with no assignee AND issues assigned to linear.person . Unassigned ones are claimed for person on dispatch; nothing is released on return (the issue stays the person's, which this queue still sees). linear.states string[] [\"Todo\",\"Ready\"] linear.",
+          "body": "{/ Generated by pnpm docs:generate . Do not edit by hand: edit src/loop/config.ts and regenerate. /} The four layers that produce this configuration — the machine's global file, the project's, the team's and this machine's overlay — are described in . ak-harness loop validate prints the effective result, which is the only one that decides anything. 224 of 408 paths carry no description yet. schemaVersion Type: number · Default: 1 extends Defaults for this kind of project ( web-app , library , monorepo , data-pipeline , mobile ), merged below every other layer. Anything this file states wins over the preset; the preset only fills silence. Type: string project Path Type Default Description --- --- --- --- project.name string required project.repo string required project.baseBranch string \"main\" project.root string \".\" project.stateDir string \".ak-loop\" Where the loop keeps everything that is NOT the project's configuration: dispatch ledger, delivery state, contracts, events, agent memory, plans. Meant to be gitignored — the configuration lives at the repo root as loop.config.yaml , versioned; this directory is runtime state, per machine. project.team string Selects the loop.config.team.&lt;key&gt;.yaml layer. $AK LOOP TEAM overrides it; a declared team whose file is missing fails loudly. project.orchestratorView base · root \"base\" The tree the orchestrator's headless calls (contract, plan interview, architect, votes, decompose) read. base (default): a harness-owned detached worktree of origin/&lt;baseBranch&gt; , fetched before each use. root : project.root as it is — whatever branch and age the operator's checkout has. project.setup object {} project.setup.command string[] Argv (no shell — one element per arg, e.g. [pnpm, install, --frozen-lockfile] ) run once in a freshly created worktree before the worker terminal opens. Unset/empty = skip. project.setup.timeoutSec integer 600 project.setup.required boolean true When true, a failing/timing-out setup removes the worktree and counts as a dispatch failure instead of handing the worker a broken environment. orca Path Type Default Description --- --- --- --- orca.bin string \"orca\" orca.repoSelector string Orca repo selector for new worktrees: id:&lt;repoId&gt; , name:&lt;name&gt; or path:&lt;abs&gt; ; default path:&lt;project.root&gt; . orca.workspaceSelector string Existing worktree the automations run in; default: the enclosing worktree resolved by Orca. orca.host string orca.minVersion string \"1.4.200\" orca.timeoutMs integer 20000 linear Path Type Default Description --- --- --- --- linear.workspaceId string required linear.teamKey string required linear.person string required Linear display name of the person whose queue this machine drains. linear.people record&lt;string&gt; {} Display name → Linear user id, for assignee set and audit; the queue itself filters by display name. linear.rotation object {} Optional ordered handoff between owners after the current dispatchable queue drains. linear.rotation.enabled boolean false linear.rotation.owners string[] [] linear.rotation.advanceWhenEmpty boolean true linear.queueOwnership person · unassigned · both \"person\" Whose queue this machine drains. person (default) keeps the historical behaviour: the issues assigned to linear.person . unassigned drains the issues with NO assignee and turns the assignee into a transient claim — written on dispatch, cleared when the item returns — so several machines can share one priority-ordered queue without colliding. Note when switching to unassigned : clearing the assignees is then REQUIRED, not cosmetic. With person and an emptied backlog the queue comes back empty and the loop looks healthy while doing nothing. both drains the union of the two: issues with no assignee AND issues assigned to linear.person . Unassigned ones are claimed for person on dispatch; nothing is released on return (the issue stays the person's, which this queue still sees). linear.states string[] [\"Todo\",\"Ready\"] linear.",
           "aliases": "configuration document human"
         },
         "graph": {
@@ -11346,7 +11378,7 @@
             }
           ]
         },
-        "contentHash": "2d3ae6793940547b5061cb3186ec7b86d56a6fd05f4cfa6122e7452d550f0e95",
+        "contentHash": "1021fcb328792f6dcbe46e3394c4ebc35f2ae26742d0d396bb91bdb438f4c4ca",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -11370,7 +11402,7 @@
           "path": "apps/docs/content/docs/reference/events.mdx",
           "symbols": "",
           "summary": "{/* Generated by `pnpm docs:generate`. Do not edit by hand: edit `src/loop/event-vocabulary.ts` and regenerate. */}",
-          "body": "{/ Generated by pnpm docs:generate . Do not edit by hand: edit src/loop/event-vocabulary.ts and regenerate. /} Every loop event is appended to <stateDir /events.ndjson and emitted on the plugin bus, with at (ISO timestamp) and type on top of the fields below. A plugin subscribes with bus.on('<type ' ' ', listener) ; a notification channel subscribes by listing types in notifications.events . The vocabulary is enforced by the compiler: appendLoopEvent accepts only these names, so an event that is not here cannot be emitted — and a name here that nothing emits fails the test suite. 95 loop events. contract. Event Carries What it means --- --- --- contract.escalated issue , reasons , digest A contract was frozen but is not dispatchable; a human was asked to settle it. contract.failed issue , error Contract generation failed on every candidate provider. contract.generated issue , provider , model , effort , digest A contract was frozen successfully. provider / model / effort are what actually produced it — the join key for comparing how different LLMs (at what reasoning effort) did on the same kind of issue. human. Event Carries What it means --- --- --- human.hitl-requested issue , requestId , batchId , role , stage , question , context , options , recommendedOptionId , digest A structured human decision was requested by an LLM stage. human.hitl-answered issue , requestId , batchId , role , stage , optionId , freeText , digest , actor A human answered one structured HITL request. human.hitl-batch-ready issue , batchId , requestId All requests in a structured HITL batch have answers and the stage may resume. plan. Event Carries What it means --- --- --- plan.voted issue , cycle , approvals , votes , voters One planning cycle finished: how many agents approved the plan, out of how many voted, and who each one was. plan.failed issue , error Planning failed on every candidate provider. plan.escalated issue , cycles , unresolved The cycles ran out without consensus; the unresolved objections are a human's to settle. worker. Event Carries What it means --- --- --- worker.dispatched issue , worktree , worktreeId , branch , terminal , provider , model , effort , contractDigest , briefDigest , command , briefAccepted , tuiIdle , workerGuardInstalled , maxFixRounds A worker was launched in its own worktree. Carries the whole dispatch record plus the command that ran. worker.dispatch-failed issue , error The dispatch itself failed — worktree, terminal or brief — before any work started. worker.dispatch-capacity issue , error , until orca terminal create timed out: the machine is out of room for another agent session. Not counted as a failure; the issue is re-queued and dispatch waits until until . worker.terminal-closed issue , terminal , reason , worktreeId The loop closed a worker terminal it created (finished issue, orphaned, superseded, or idle with a PR open). worker.setup issue , worktreeId , ok project.setup.command ran in the fresh worktree. worker.nudged issue , kind , reason , worktreeId An idle worker was nudged in its own terminal — and also the terminal outcome nudged , which ends a delivery pass on the same issue. Two emissions, one name: kind is present on the first, reason on the second. worker.permission-wait issue , terminal , reason The worker stopped at a tool-permission prompt: held for a person, never typed into. Once per idle window. worker.reactivated issue , terminal , previousTerminal A stale terminal was relaunched for a worker that was still supposed to be working. worker.hitl-resumed issue , requestIds A human answered a worker HITL request and the decision was sent back to the worker terminal. worker.reopened issue , pr , previousHead , head , previousOutcome A finished issue came back: a new head on a PR the loop had already closed out. worker.handed-off issue , from , to , worktreeId , branch , reason , briefAccepted The task was handed to another provider in the same worktree, on the same branch — and also t",
+          "body": "{/ Generated by pnpm docs:generate . Do not edit by hand: edit src/loop/event-vocabulary.ts and regenerate. /} Every loop event is appended to <stateDir /events.ndjson and emitted on the plugin bus, with at (ISO timestamp) and type on top of the fields below. A plugin subscribes with bus.on('<type ' ' ', listener) ; a notification channel subscribes by listing types in notifications.events . The vocabulary is enforced by the compiler: appendLoopEvent accepts only these names, so an event that is not here cannot be emitted — and a name here that nothing emits fails the test suite. 97 loop events. contract. Event Carries What it means --- --- --- contract.escalated issue , reasons , digest A contract was frozen but is not dispatchable; a human was asked to settle it. contract.failed issue , error Contract generation failed on every candidate provider. contract.generated issue , provider , model , effort , digest A contract was frozen successfully. provider / model / effort are what actually produced it — the join key for comparing how different LLMs (at what reasoning effort) did on the same kind of issue. human. Event Carries What it means --- --- --- human.hitl-requested issue , requestId , batchId , role , stage , question , context , options , recommendedOptionId , digest A structured human decision was requested by an LLM stage. human.hitl-answered issue , requestId , batchId , role , stage , optionId , freeText , digest , actor A human answered one structured HITL request. human.hitl-batch-ready issue , batchId , requestId All requests in a structured HITL batch have answers and the stage may resume. plan. Event Carries What it means --- --- --- plan.voted issue , cycle , approvals , votes , voters One planning cycle finished: how many agents approved the plan, out of how many voted, and who each one was. plan.failed issue , error Planning failed on every candidate provider. plan.escalated issue , cycles , unresolved The cycles ran out without consensus; the unresolved objections are a human's to settle. worker. Event Carries What it means --- --- --- worker.dispatched issue , worktree , worktreeId , branch , terminal , provider , model , effort , contractDigest , briefDigest , command , briefAccepted , tuiIdle , workerGuardInstalled , maxFixRounds A worker was launched in its own worktree. Carries the whole dispatch record plus the command that ran. worker.dispatch-failed issue , error The dispatch itself failed — worktree, terminal or brief — before any work started. worker.dispatch-capacity issue , error , until orca terminal create timed out: the machine is out of room for another agent session. Not counted as a failure; the issue is re-queued and dispatch waits until until . worker.terminal-closed issue , terminal , reason , worktreeId The loop closed a worker terminal it created (finished issue, orphaned, superseded, or idle with a PR open). worker.setup issue , worktreeId , ok project.setup.command ran in the fresh worktree. worker.nudged issue , kind , reason , worktreeId An idle worker was nudged in its own terminal — and also the terminal outcome nudged , which ends a delivery pass on the same issue. Two emissions, one name: kind is present on the first, reason on the second. worker.permission-wait issue , terminal , reason The worker stopped at a tool-permission prompt: held for a person, never typed into. Once per idle window. worker.reactivated issue , terminal , previousTerminal A stale terminal was relaunched for a worker that was still supposed to be working. worker.hitl-resumed issue , requestIds A human answered a worker HITL request and the decision was sent back to the worker terminal. worker.reopened issue , pr , previousHead , head , previousOutcome A finished issue came back: a new head on a PR the loop had already closed out. worker.handed-off issue , from , to , worktreeId , branch , reason , briefAccepted The task was handed to another provider in the same worktree, on the same branch — and also t",
           "aliases": "events document human"
         },
         "graph": {
@@ -11407,7 +11439,7 @@
             }
           ]
         },
-        "contentHash": "d7353ebdbd4ed4dfb66afdb47ba6d9fe3684e2ba99cfb416925cf9047a1e7e00",
+        "contentHash": "484ac2f0bc02ea721fd4c505bc903ee18a5712ca9d3e34ddec975ea639c7df18",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -14121,7 +14153,7 @@
         ],
         "fields": {
           "title": "Keep-pushing loop (ak-harness loop)",
-          "headings": "Keep-pushing loop (ak-harness loop) Commands Debrief and watch The observe stage — the scan that knows what it already said Running 24/7 with Orca Worker handoff Deliver Worker terminals GitHub label intake: reviewing PRs the loop never dispatched Event bus and orchestration hooks Calling a human: notifications Presets and loop init What the orchestrator reads Configuration in four layers Flow profiles: one motor, several kinds of demand loop plan — a vague objective becomes issues The plan and its votes (worker.plan) intake and maintain — where work comes from when nobody typed it Cost: policy, ceilings, and the levers that are real Connectors: the engine names no vendor release — promotion and deploy, with a human in front Definition of Done: two lists, both proven Runs: how an issue was built (ADR-0041) Rendered specs (spec.enabled) The roles are agents, and they can be improved The loop improving itself, within limits One tick Resilience: auto-pause after repeated failures PII/secret scanning Cost/time circuit breakers Dynamic outcome progress Skills pinned into the worker brief Worktree setup command What the doctor checks Dynamic model routing Model routing Reasoning effort per role Machine slots Integrations used by the loop Doc Bridge (context for the orchestrator) Code Review (agentskit-review) Eval battery (package quality, not the live loop) AgentsKit ecosystem map (what the harness has vs what the loop uses) What can be added to help the SDLC Boundaries Security notes Continuous improvement: loop retro",
+          "headings": "Keep-pushing loop (ak-harness loop) Commands Debrief and watch The observe stage — the scan that knows what it already said Running 24/7 with Orca Worker handoff Deliver Worker terminals GitHub label intake: reviewing PRs the loop never dispatched Event bus and orchestration hooks Calling a human: notifications Presets and loop init What the orchestrator reads Configuration in four layers Flow profiles: one motor, several kinds of demand loop plan — a vague objective becomes issues The plan and its votes (worker.plan) intake and maintain — where work comes from when nobody typed it Cost: policy, ceilings, and the levers that are real Connectors: the engine names no vendor release — promotion and deploy, with a human in front Definition of Done: two lists, both proven Runs: how an issue was built (ADR-0041) Rendered specs (spec.enabled) The roles are agents, and they can be improved The loop improving itself, within limits One tick Topping up a person queue (linear.refill) and yielding to another loop (queue.yieldTo) Resilience: auto-pause after repeated failures PII/secret scanning Cost/time circuit breakers Dynamic outcome progress Skills pinned into the worker brief Worktree setup command What the doctor checks Dynamic model routing Model routing Reasoning effort per role Machine slots Integrations used by the loop Doc Bridge (context for the orchestrator) Code Review (agentskit-review) Eval battery (package quality, not the live loop) AgentsKit ecosystem map (what the harness has vs what the loop uses) What can be added to help the SDLC Boundaries Security notes Continuous improvement: loop retro",
           "path": "docs/LOOP.md",
           "symbols": "",
           "summary": "The loop drains one person's Linear queue through Orca worktrees, 24/7, with role-based model routing and usage-aware fallback. The harness supplies the deterministic parts (claims, machine pressure, gates, evidence); Orca supplies scheduling, worktrees, terminals, Linear access and visibility.",
@@ -14370,7 +14402,7 @@
             }
           ]
         },
-        "contentHash": "ff5ec4a5826c2b50e74903a530c18a41cce082e3415e5617a8830f10d629ffd2",
+        "contentHash": "6672262d5ddcbf599f699a5171bd637f3e103556e911d0fdb7050755fff0d8cd",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -26464,6 +26496,11 @@
             },
             {
               "kind": "imports",
+              "id": "module:src/loop/refill.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
               "id": "module:src/loop/release.ts",
               "confidence": "observed"
             },
@@ -26631,11 +26668,6 @@
               "kind": "imports",
               "id": "module:test/ui-insights.test.ts",
               "confidence": "observed"
-            },
-            {
-              "kind": "imports",
-              "id": "module:test/ui-sse.test.ts",
-              "confidence": "observed"
             }
           ],
           "outbound": [
@@ -26666,7 +26698,7 @@
             }
           ]
         },
-        "contentHash": "ee9af2ccdc3c8bfbc8c7d480cbc2464d10df5105fbebc19b758f764bb14b11d6",
+        "contentHash": "fc04966acaa367024577f97ef1d90d6f79eb275704d87b1af38dee9c4d72b73d",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -26735,6 +26767,11 @@
             {
               "kind": "imports",
               "id": "module:src/loop/plan-stage.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
+              "id": "module:src/loop/refill.ts",
               "confidence": "observed"
             },
             {
@@ -26861,7 +26898,7 @@
             }
           ]
         },
-        "contentHash": "4d62bbc9b6c2a9a722ecfba0d968642082bbff0e0ebf26b56d65d490cf0fada7",
+        "contentHash": "27f209794fa141f9a7476e7abd4130bf1e383a35fae647914888ff9b9e6d63b6",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -28601,7 +28638,7 @@
           ],
           "outbound": []
         },
-        "contentHash": "6707d015c7edb9f3b475bfb9855455bb8504a36122a3f1157d8addf30a4ded18",
+        "contentHash": "7c55aa75a74053bc7c2a7f15c227892f5576974164b43ae0603b4b3627ac5742",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -31828,6 +31865,72 @@
         "confidence": "observed"
       },
       {
+        "id": "module:src/loop/refill.ts",
+        "kind": "module",
+        "path": "src/loop/refill.ts",
+        "title": "refill.ts",
+        "aliases": [],
+        "symbols": [
+          "RefillOutcome",
+          "refillApplies",
+          "runRefill"
+        ],
+        "tags": [
+          "module",
+          "ts",
+          "loop"
+        ],
+        "fields": {
+          "title": "refill.ts",
+          "headings": "",
+          "path": "src/loop/refill.ts",
+          "symbols": "RefillOutcome refillApplies runRefill",
+          "summary": "",
+          "body": "",
+          "aliases": "module ts loop"
+        },
+        "graph": {
+          "pagerank": 0,
+          "inboundLinks": 0,
+          "coveredBy": [],
+          "mentionedBy": [],
+          "areaId": "area:src/loop",
+          "packageId": "package:@agentskit/harness",
+          "inbound": [
+            {
+              "kind": "imports",
+              "id": "module:src/loop/tick.ts",
+              "confidence": "observed"
+            }
+          ],
+          "outbound": [
+            {
+              "kind": "imports",
+              "id": "module:src/kernel/errors.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
+              "id": "module:src/loop/config.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
+              "id": "module:src/loop/connectors.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
+              "id": "module:src/loop/tracker-cooldown.ts",
+              "confidence": "observed"
+            }
+          ]
+        },
+        "contentHash": "48b67f896ec44e0005921bec0aa6cb11b169c17393cae9ea9f9a8b1371e0cf05",
+        "provenance": "observed",
+        "confidence": "observed"
+      },
+      {
         "id": "module:src/loop/release.ts",
         "kind": "module",
         "path": "src/loop/release.ts",
@@ -33223,15 +33326,18 @@
           "BRIEF_POINTER_PROMPT",
           "DispatchRecordFile",
           "LoopState",
+          "PrecheckScope",
           "TickCandidateResult",
           "TickInput",
           "TickOutcome",
           "TickReport",
+          "YieldDecision",
           "appendLoopEvent",
           "branchFor",
           "briefPath",
           "busyIssues",
           "dispatchRecordPath",
+          "evaluateYield",
           "gatherLoopState",
           "launchWorkerTerminal",
           "precheckTick",
@@ -33249,7 +33355,7 @@
           "title": "tick.ts",
           "headings": "",
           "path": "src/loop/tick.ts",
-          "symbols": "BRIEF_POINTER_PROMPT DispatchRecordFile LoopState TickCandidateResult TickInput TickOutcome TickReport appendLoopEvent branchFor briefPath busyIssues dispatchRecordPath gatherLoopState launchWorkerTerminal precheckTick readDispatchRecord runTick worktreeNameFor writeDispatchRecord",
+          "symbols": "BRIEF_POINTER_PROMPT DispatchRecordFile LoopState PrecheckScope TickCandidateResult TickInput TickOutcome TickReport YieldDecision appendLoopEvent branchFor briefPath busyIssues dispatchRecordPath evaluateYield gatherLoopState launchWorkerTerminal precheckTick readDispatchRecord runTick worktreeNameFor writeDispatchRecord",
           "summary": "",
           "body": "",
           "aliases": "module ts loop"
@@ -33575,6 +33681,11 @@
             },
             {
               "kind": "imports",
+              "id": "module:src/loop/refill.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
               "id": "module:src/loop/resilience-state.ts",
               "confidence": "observed"
             },
@@ -33625,7 +33736,7 @@
             }
           ]
         },
-        "contentHash": "7b1542b3125e2162ce3273cae412e38402b919b8687cf3c57304205b671e685f",
+        "contentHash": "47251cc943aff2528dcd54fd3b8d76349e155f8ad423ab70f61dd8803bccf04f",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -33672,6 +33783,11 @@
             {
               "kind": "imports",
               "id": "module:src/loop/deliver.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
+              "id": "module:src/loop/refill.ts",
               "confidence": "observed"
             },
             {
@@ -44541,6 +44657,46 @@
         "confidence": "observed"
       },
       {
+        "id": "module:test/loop-refill-yield.test.ts",
+        "kind": "module",
+        "path": "test/loop-refill-yield.test.ts",
+        "title": "loop-refill-yield.test.ts",
+        "aliases": [],
+        "tags": [
+          "module",
+          "ts",
+          "test"
+        ],
+        "fields": {
+          "title": "loop-refill-yield.test.ts",
+          "headings": "",
+          "path": "test/loop-refill-yield.test.ts",
+          "symbols": "",
+          "summary": "",
+          "body": "",
+          "aliases": "module ts test"
+        },
+        "graph": {
+          "pagerank": 0,
+          "inboundLinks": 0,
+          "coveredBy": [],
+          "mentionedBy": [],
+          "areaId": "area:test",
+          "packageId": "package:@agentskit/harness",
+          "inbound": [],
+          "outbound": [
+            {
+              "kind": "imports",
+              "id": "module:src/index.ts",
+              "confidence": "observed"
+            }
+          ]
+        },
+        "contentHash": "51883081827471a7467a7279c77eb0e2b30f561f7b8c5021fbb6e5968c078749",
+        "provenance": "observed",
+        "confidence": "observed"
+      },
+      {
         "id": "module:test/loop-release.test.ts",
         "kind": "module",
         "path": "test/loop-release.test.ts",
@@ -47456,7 +47612,7 @@
           ],
           "outbound": []
         },
-        "contentHash": "844f7d2b9ff1d2181cb2bf7b91f29d0f4297f62de3fe180487bb74b0cb89030f",
+        "contentHash": "00499faae05e1f628391815cdaec6656d28b6a9b2117c36ec4544e6353d704d3",
         "provenance": "observed",
         "confidence": "observed"
       },
