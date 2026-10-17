@@ -267,7 +267,13 @@ describe('queue.yieldTo', () => {
     const b = writeLoop({ dir: join(root, 'b'), name: 'loop-b', person: 'sib', yieldTo: ['../x/loop.config.yaml'] })
     const x = writeLoop({ dir: join(root, 'x'), name: 'loop-x', yieldTo: ['../a/loop.config.yaml'] })
     // x -> a -> b -> x: every loop has work and every one yields to the next, so without the cut nobody dispatches.
-    for (const path of [x, a, b]) expect((await precheckTick(options(board.runner, path, binDir()))).work).toBe(true)
+    for (const path of [x, a, b]) {
+      const precheck = await precheckTick(options(board.runner, path, binDir()))
+      expect(precheck.work).toBe(true)
+      // The cut is what kept it going (not the fail-open path of an unreadable sibling).
+      expect(precheck.notes?.some((note) => note.includes('a cycle); ignored') || note.includes('part of a yield cycle'))).toBe(true)
+      expect(precheck.notes?.some((note) => note.includes('could not evaluate'))).toBe(false)
+    }
   })
 
   it('a cycle below a loop does not cancel the yield of a loop above it', async () => {
