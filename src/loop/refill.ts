@@ -56,13 +56,16 @@ export const runRefill = async (input: { readonly config: LoopConfig; readonly t
   const assigned: string[] = []
   // The pool in order: an issue a human took meanwhile is replaced by the next one; a failed assignment still uses up its slot.
   let slots = need
+  // Bounded: a systemic read failure would otherwise walk (and note) the whole unassigned pool every tick.
+  let readFailures = 0
   for (const { identifier: issue } of pool) {
-    if (assigned.length >= slots) break
+    if (assigned.length >= slots || readFailures >= need) break
     try {
       // The pool was read a moment ago: re-read right before writing, so an issue a human assigned in between is theirs.
       let current: Awaited<ReturnType<typeof tracker.issue>>
       try { current = await tracker.issue(issue) } catch (error) {
         if (isCooling(error)) throw error
+        readFailures += 1
         notes.push(`refill: could not re-read ${issue} (${message(error)}); skipped, next one tried`)
         continue
       }
