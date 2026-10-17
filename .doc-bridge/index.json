@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
-  "contentHash": "9ec281e09da66f9ba9ea34747b232daa22acb435a68f4a46197432319317d318",
+  "contentHash": "1316b64b1187fb34a8f6a672acb0437d98dc7db71fa0637e49d83333770ba311",
   "contentHashAlgo": "sha256-normalized-v1",
-  "generatedAt": "2026-10-17T09:56:47.947Z",
+  "generatedAt": "2026-10-17T14:30:28.637Z",
   "project": {
     "name": "AgentsKit Harness",
     "root": "."
@@ -303,7 +303,7 @@
         "document",
         "project"
       ],
-      "contentHash": "67a725444e03c17ad29cda202a7b8159b8744e7b8499392a2eefcf6b2b55a11a"
+      "contentHash": "cefef47f9679ab176126bd68e555d24413cf2698c8fad39b121fd66cc973a110"
     },
     {
       "id": "document:CLAUDE.md",
@@ -2077,6 +2077,7 @@
         "parseLinearIssueDetail",
         "parseLinearIssues",
         "queueAssigneeFilter",
+        "queueAssigneeFilters",
         "writeIdFor"
       ],
       "tags": [
@@ -2084,7 +2085,7 @@
         "ts",
         "adapters"
       ],
-      "contentHash": "bc9f9a619ecb1f7f4bf76a52b3fbbc5910c9391a55c7ea4e8503671901727703"
+      "contentHash": "19919751ed453754ff7731250123e0c23db8bfef8cbc232359ff03581638c465"
     },
     {
       "id": "module:src/adapters/mcp.ts",
@@ -3892,7 +3893,7 @@
         "ts",
         "loop"
       ],
-      "contentHash": "551e3dcc23d5f72e82bc7aab9e14a558f9ba8bdb285bce1862a720960eb5e251"
+      "contentHash": "cead9d782428cc5cd50defcce262449ef56acf08cb007cdc2ee63e898d49631f"
     },
     {
       "id": "module:src/loop/config.ts",
@@ -3941,7 +3942,7 @@
         "ts",
         "loop"
       ],
-      "contentHash": "0d7caa6f7dcd337bf56b070ac52458d76711ed2948bdc88c909ec9b1d3c44e6c"
+      "contentHash": "e1f63f9dabb4fd3b6d0d1ac03aef333286e3ddcc9fb3737ded47202113a7b345"
     },
     {
       "id": "module:src/loop/connectors.ts",
@@ -3963,7 +3964,7 @@
         "ts",
         "loop"
       ],
-      "contentHash": "41d8998ea1ca27287997c57b3bb826f8e826ab5b1cab4eefebc4722aef4c2be6"
+      "contentHash": "dc134d9295ef26041ec6560f43f1872a8ffa07bd2dcf14ab646f10c195f8fa1b"
     },
     {
       "id": "module:src/loop/contract.ts",
@@ -4103,7 +4104,7 @@
         "ts",
         "loop"
       ],
-      "contentHash": "1b5ab9293cb1b99c5b5cedfc263c546f3498741f54036ad03143b42903228450"
+      "contentHash": "41a7f01fb9e893a8c552c2aa9b4544a508dc6ac11e834a03bf7be552d14fcd48"
     },
     {
       "id": "module:src/loop/detached-worker.ts",
@@ -4140,7 +4141,7 @@
         "ts",
         "loop"
       ],
-      "contentHash": "c0f6f3e478f6509120b38060190d774ece867d5a8562af2eeaa1c2b873d4e26c"
+      "contentHash": "4d3c4cfe364521bbdd45db2b0f6eb9c34029a73d23a35d1586a92beafd914290"
     },
     {
       "id": "module:src/loop/documents.ts",
@@ -4257,7 +4258,7 @@
         "ts",
         "loop"
       ],
-      "contentHash": "d66e29d5928cce137dfd71832f3e9a04ce7e6cff8c56cfe9f0877b2746b2e01e"
+      "contentHash": "1f72d779db829e2f8b85c77ff6c3dd816a3e5de42663b4635a952ae2cbc22e0f"
     },
     {
       "id": "module:src/loop/flows.ts",
@@ -5448,7 +5449,7 @@
         "ts",
         "loop"
       ],
-      "contentHash": "a4728ae3dc52600f5745cecfd11ac151a854ed39f86e81bd2d966ad17086d591"
+      "contentHash": "b80f8cb643aeaa3c5b1ced9309ca7b6fe156a04029378f249f583618798a37b7"
     },
     {
       "id": "module:src/loop/tracker-cooldown.ts",
@@ -7454,7 +7455,7 @@
         "ts",
         "test"
       ],
-      "contentHash": "4553cbb2d2463fc2a4730f27de266b780ae9295c415d83aac84d9e6b7fce85d2"
+      "contentHash": "7589afbc38d43ce5dfd99947c2a2338e199a21da9f7fc2b26b276b023eec0dbf"
     },
     {
       "id": "module:test/harness.test.ts",
@@ -8021,7 +8022,7 @@
         "ts",
         "test"
       ],
-      "contentHash": "e5845f3f7d2d216c7dd14e6b4cfa53ecc853b1c1c5e2b7d3deefb12b2473d96e"
+      "contentHash": "7f08ca1880e0cf1dbd73ff908fc546e09162ff0b61b6f451bc8adf361aa179e3"
     },
     {
       "id": "module:test/loop-doctor-gaps.test.ts",
@@ -8033,7 +8034,7 @@
         "ts",
         "test"
       ],
-      "contentHash": "92921cf20a7976af0186064ad4a30b71e60d3bd8c0e0e2da670385358fb47d3c"
+      "contentHash": "b0a14148c31f9decf426fd5546c97d5c6941af21b50bee3a16e454982c433014"
     },
     {
       "id": "module:test/loop-documents.test.ts",
@@ -8117,7 +8118,7 @@
         "ts",
         "test"
       ],
-      "contentHash": "2d94292d4b115bfe615758c39b592294cb3c2ef8e3166b522400f342bc9d3107"
+      "contentHash": "a8ac8866a9e38c106a19c92986679475e208f8f266b3ebcb11f1deb98684104b"
     },
     {
       "id": "module:test/loop-flows.test.ts",
@@ -8573,7 +8574,7 @@
         "ts",
         "test"
       ],
-      "contentHash": "ee63f69b3bc11af90721a17debb645d69889fda510487eec0e1d26602a775dc3"
+      "contentHash": "5f5e66b284d7a77a23da0a3e29af5089ee110d0884d809400c0e9a9c54d94e35"
     },
     {
       "id": "module:test/loop-tuning.test.ts",
@@ -8645,7 +8646,7 @@
         "ts",
         "test"
       ],
-      "contentHash": "e7545bacb1db013aa36bb79eb449264c0bdff0c4cc4bb499082fa450b54bcfc1"
+      "contentHash": "5114f57d11d105570b4cbfe980251def0128464e087ce7030a55a64ead695109"
     },
     {
       "id": "module:test/machine.test.ts",
@@ -9237,7 +9238,7 @@
     }
   },
   "inputs": {
-    "hash": "382fe17b38893009de71480850f9bfad2c75f0129c31a16464e811502ae23264",
+    "hash": "cef511763ce7ff922bf633f35cf3647c253c70ac94f44eb6d379d2405e55bcb8",
     "fileCount": 559,
     "projectionVersion": 2
   },
@@ -9260,9 +9261,9 @@
   "projection": {
     "type": "retrieval-index",
     "schemaVersion": 1,
-    "contentHash": "ad9b06bfa7ca0c8c4176c3f3899484c6b0d6b871ebf23d6751014d6dfcf1d0c6",
+    "contentHash": "4194e7146fd5f5f1f9db6bbe373bb0409e6fb099985c0127688f33f94bc7b1ac",
     "contentHashAlgo": "sha256-normalized-v1",
-    "snapshotHash": "b29dbaaba4bdc1e7a778718fdd8af5510410f287914dee5358d5d346f16d1329",
+    "snapshotHash": "08767122f74a016ed7e27919a35423eb61586e7bf3b5fdc95d577d1d132d5eaf",
     "overlayHash": "f99666ff9119084dd25c2974ae64eb6935ec2aa785ff5ad478fb9d541f7a5e94",
     "configurationHash": "816afaf6a7dc09767f7594d8fd80024612ca0f33becf0e44dde0107fcf2782df",
     "lexiconVersion": 1,
@@ -9294,11 +9295,11 @@
       ],
       "averageFieldLength": {
         "aliases": 2.9448398576512456,
-        "body": 44.79181494661922,
+        "body": 44.761565836298935,
         "headings": 3.8612099644128115,
         "path": 6.1263345195729535,
         "summary": 2.6494661921708187,
-        "symbols": 14.284697508896798,
+        "symbols": 14.291814946619217,
         "title": 3.9893238434163703
       }
     },
@@ -11293,7 +11294,7 @@
           "path": "apps/docs/content/docs/reference/configuration.mdx",
           "symbols": "",
           "summary": "{/* Generated by `pnpm docs:generate`. Do not edit by hand: edit `src/loop/config.ts` and regenerate. */}",
-          "body": "{/ Generated by pnpm docs:generate . Do not edit by hand: edit src/loop/config.ts and regenerate. /} The four layers that produce this configuration — the machine's global file, the project's, the team's and this machine's overlay — are described in . ak-harness loop validate prints the effective result, which is the only one that decides anything. 223 of 403 paths carry no description yet. schemaVersion Type: number · Default: 1 extends Defaults for this kind of project ( web-app , library , monorepo , data-pipeline , mobile ), merged below every other layer. Anything this file states wins over the preset; the preset only fills silence. Type: string project Path Type Default Description --- --- --- --- project.name string required project.repo string required project.baseBranch string \"main\" project.root string \".\" project.stateDir string \".ak-loop\" Where the loop keeps everything that is NOT the project's configuration: dispatch ledger, delivery state, contracts, events, agent memory, plans. Meant to be gitignored — the configuration lives at the repo root as loop.config.yaml , versioned; this directory is runtime state, per machine. project.team string Selects the loop.config.team.&lt;key&gt;.yaml layer. $AK LOOP TEAM overrides it; a declared team whose file is missing fails loudly. project.orchestratorView base · root \"base\" The tree the orchestrator's headless calls (contract, plan interview, architect, votes, decompose) read. base (default): a harness-owned detached worktree of origin/&lt;baseBranch&gt; , fetched before each use. root : project.root as it is — whatever branch and age the operator's checkout has. project.setup object {} project.setup.command string[] Argv (no shell — one element per arg, e.g. [pnpm, install, --frozen-lockfile] ) run once in a freshly created worktree before the worker terminal opens. Unset/empty = skip. project.setup.timeoutSec integer 600 project.setup.required boolean true When true, a failing/timing-out setup removes the worktree and counts as a dispatch failure instead of handing the worker a broken environment. orca Path Type Default Description --- --- --- --- orca.bin string \"orca\" orca.repoSelector string Orca repo selector for new worktrees: id:&lt;repoId&gt; , name:&lt;name&gt; or path:&lt;abs&gt; ; default path:&lt;project.root&gt; . orca.workspaceSelector string Existing worktree the automations run in; default: the enclosing worktree resolved by Orca. orca.host string orca.minVersion string \"1.4.200\" orca.timeoutMs integer 20000 linear Path Type Default Description --- --- --- --- linear.workspaceId string required linear.teamKey string required linear.person string required Linear display name of the person whose queue this machine drains. linear.people record&lt;string&gt; {} Display name → Linear user id, for assignee set and audit; the queue itself filters by display name. linear.rotation object {} Optional ordered handoff between owners after the current dispatchable queue drains. linear.rotation.enabled boolean false linear.rotation.owners string[] [] linear.rotation.advanceWhenEmpty boolean true linear.queueOwnership person · unassigned \"person\" Whose queue this machine drains. person (default) keeps the historical behaviour: the issues assigned to linear.person . unassigned drains the issues with NO assignee and turns the assignee into a transient claim — written on dispatch, cleared when the item returns — so several machines can share one priority-ordered queue without colliding. Note when switching to unassigned : clearing the assignees is then REQUIRED, not cosmetic. With person and an emptied backlog the queue comes back empty and the loop looks healthy while doing nothing. linear.states string[] [\"Todo\",\"Ready\"] linear.entryState string \"Backlog\" Where loop plan decompose --create puts new issues. It must NOT be one of states : those are the queue, and an issue the planner just wrote is not work anyone approved yet. Moving it into states is the human gate. linea",
+          "body": "{/ Generated by pnpm docs:generate . Do not edit by hand: edit src/loop/config.ts and regenerate. /} The four layers that produce this configuration — the machine's global file, the project's, the team's and this machine's overlay — are described in . ak-harness loop validate prints the effective result, which is the only one that decides anything. 223 of 403 paths carry no description yet. schemaVersion Type: number · Default: 1 extends Defaults for this kind of project ( web-app , library , monorepo , data-pipeline , mobile ), merged below every other layer. Anything this file states wins over the preset; the preset only fills silence. Type: string project Path Type Default Description --- --- --- --- project.name string required project.repo string required project.baseBranch string \"main\" project.root string \".\" project.stateDir string \".ak-loop\" Where the loop keeps everything that is NOT the project's configuration: dispatch ledger, delivery state, contracts, events, agent memory, plans. Meant to be gitignored — the configuration lives at the repo root as loop.config.yaml , versioned; this directory is runtime state, per machine. project.team string Selects the loop.config.team.&lt;key&gt;.yaml layer. $AK LOOP TEAM overrides it; a declared team whose file is missing fails loudly. project.orchestratorView base · root \"base\" The tree the orchestrator's headless calls (contract, plan interview, architect, votes, decompose) read. base (default): a harness-owned detached worktree of origin/&lt;baseBranch&gt; , fetched before each use. root : project.root as it is — whatever branch and age the operator's checkout has. project.setup object {} project.setup.command string[] Argv (no shell — one element per arg, e.g. [pnpm, install, --frozen-lockfile] ) run once in a freshly created worktree before the worker terminal opens. Unset/empty = skip. project.setup.timeoutSec integer 600 project.setup.required boolean true When true, a failing/timing-out setup removes the worktree and counts as a dispatch failure instead of handing the worker a broken environment. orca Path Type Default Description --- --- --- --- orca.bin string \"orca\" orca.repoSelector string Orca repo selector for new worktrees: id:&lt;repoId&gt; , name:&lt;name&gt; or path:&lt;abs&gt; ; default path:&lt;project.root&gt; . orca.workspaceSelector string Existing worktree the automations run in; default: the enclosing worktree resolved by Orca. orca.host string orca.minVersion string \"1.4.200\" orca.timeoutMs integer 20000 linear Path Type Default Description --- --- --- --- linear.workspaceId string required linear.teamKey string required linear.person string required Linear display name of the person whose queue this machine drains. linear.people record&lt;string&gt; {} Display name → Linear user id, for assignee set and audit; the queue itself filters by display name. linear.rotation object {} Optional ordered handoff between owners after the current dispatchable queue drains. linear.rotation.enabled boolean false linear.rotation.owners string[] [] linear.rotation.advanceWhenEmpty boolean true linear.queueOwnership person · unassigned · both \"person\" Whose queue this machine drains. person (default) keeps the historical behaviour: the issues assigned to linear.person . unassigned drains the issues with NO assignee and turns the assignee into a transient claim — written on dispatch, cleared when the item returns — so several machines can share one priority-ordered queue without colliding. Note when switching to unassigned : clearing the assignees is then REQUIRED, not cosmetic. With person and an emptied backlog the queue comes back empty and the loop looks healthy while doing nothing. both drains the union of the two: issues with no assignee AND issues assigned to linear.person . Unassigned ones are claimed for person on dispatch; nothing is released on return (the issue stays the person's, which this queue still sees). linear.states string[] [\"Todo\",\"Ready\"] linear.",
           "aliases": "configuration document human"
         },
         "graph": {
@@ -11345,7 +11346,7 @@
             }
           ]
         },
-        "contentHash": "f1a18c55fe61be79b278f94ab1121430584633027ffa979578eaec4faaffed57",
+        "contentHash": "2d3ae6793940547b5061cb3186ec7b86d56a6fd05f4cfa6122e7452d550f0e95",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -11428,7 +11429,7 @@
           "path": "CHANGELOG.md",
           "symbols": "",
           "summary": "Delivery evidence on the tracker issue. The merge comment now carries the audit trail: PR, merge commit and who merged (loop or outside), the reviewed head and verdict (APPROVE/COMMENT/REQUEST CHANGES/INCOMPLETE) with findings by severity and INCOMPLETE reasons, unresolved review threads, CI checks, the harness verify, the worker's verify.json, DoD lines (plus negative/recovery proofs when",
-          "body": "Changelog [Unreleased] - Delivery evidence on the tracker issue. The merge comment now carries the audit trail: PR, merge commit and who merged (loop or outside), the reviewed head and verdict (APPROVE/COMMENT/REQUEST CHANGES/INCOMPLETE) with findings by severity and INCOMPLETE reasons, unresolved review threads, CI checks, the harness verify, the worker's verify.json , DoD lines (plus negative/recovery proofs when recorded), fix rounds, elapsed time and loop-side tokens. Absent parts are named, skipped/blocked items are never shown as passed, free text is PII-redacted, and the body fits the tracker's ceiling with a note of what was cut. Same dedupe key and marker as before; also posted for merges outside the loop, and a brief version is appended to blocked-after-fix-rounds escalations. Trackers declare their comment format and size through TrackerConnector.comments ; ADR-0044 sketches a Jira connector against it. - Resolution verdict and bug fix proof in the evidence comment. The tracker comment opens with RESOLVED / PARTIAL / NOT PROVEN , computed only from recorded evidence (a merge alone is never RESOLVED), followed by the PR, merge sha, files changed and the issue's checklist state, and an acceptance-criteria table mapping each contract outcome id to its text, status (unproven ones listed) and evidence. Issues with a delivery.evidence.bugLabels label (default Bug , type:bug , type:fix ) also get a \"Bug fix proof\" block: reproduction steps from the issue and the regression tests in the PR, stating that failing-before-the-fix was not demonstrated. One extra tracker read per merge; nothing is posted on the GitHub PR. - Worker terminals are closed. Deliver closes the worker terminal on every finished outcome, not only when a merge removes the worktree, and reaps terminals of finished/lease-less issues and idle workers whose PR only waits ( delivery.closeTerminalOnFinish , delivery.reapIdleTerminalsMinutes: 90 ); worktrees are kept. A fix round for a worker whose terminal is gone relaunches it in the same worktree. tick stops dispatching at machine.maxLiveTerminals (12) live loop terminals, and an orca terminal create timeout is capacity (re-queued, 10-minute cooldown, no failure counted) instead of tripping the pause. New events worker.terminal-closed , terminals.reaped , worker.dispatch-capacity . - Single test run in CI. pnpm test:coverage now includes typecheck and the package criterion output, so the verify job runs the test suite once while retaining coverage thresholds. - Docs artifact frontmatter. Documentation metadata now uses shared frontmatter splitting and YAML parsing, including folded scalars, block lists, BOM and CRLF input. - Coverage floor. pnpm test:coverage now enforces ratcheted source coverage in CI. - Shared record guard. Harness internals now reuse one non-null, non-array object check while preserving caller-specific errors and fallbacks. - Cryptographic run IDs. Verification runs retain their timestamp and PID prefix while using a cryptographic random suffix. - Bounded model catalog refresh. Artificial Analysis refreshes use @agentskit/net deadlines and a 2 MiB JSON body cap; a failed refresh keeps the existing catalog cache. - Canonical shared hashes. New artifacts, event-chain entries, manifests, verification digests and cache keys use @agentskit/core/hash ; readers still accept existing persisted hashes, and stable IDs keep their legacy format. - Portability via @agentskit/cross-platform . Process spawning ( .cmd shim resolution), process-tree kill and path/line helpers now come from the shared package instead of hand-rolled copies; cross-spawn is no longer a direct dependency. pnpm typecheck runs agentskit-cross-platform check against .cross-platform-baseline.json , so a new Windows-hostile pattern fails CI. [0.22.3] — 2026-09-27 - Lost-track restart. A run whose worker terminal is gone, or that stays idle after a check-in, before any PR is aborted and re-dispatched from scratch (bounded, worker.lo",
+          "body": "Changelog [Unreleased] - Delivery evidence on the tracker issue. The merge comment now carries the audit trail: PR, merge commit and who merged (loop or outside), the reviewed head and verdict (APPROVE/COMMENT/REQUEST CHANGES/INCOMPLETE) with findings by severity and INCOMPLETE reasons, unresolved review threads, CI checks, the harness verify, the worker's verify.json , DoD lines (plus negative/recovery proofs when recorded), fix rounds, elapsed time and loop-side tokens. Absent parts are named, skipped/blocked items are never shown as passed, free text is PII-redacted, and the body fits the tracker's ceiling with a note of what was cut. Same dedupe key and marker as before; also posted for merges outside the loop, and a brief version is appended to blocked-after-fix-rounds escalations. Trackers declare their comment format and size through TrackerConnector.comments ; ADR-0044 sketches a Jira connector against it. - Resolution verdict and bug fix proof in the evidence comment. The tracker comment opens with RESOLVED / PARTIAL / NOT PROVEN , computed only from recorded evidence (a merge alone is never RESOLVED), followed by the PR, merge sha, files changed and the issue's checklist state, and an acceptance-criteria table mapping each contract outcome id to its text, status (unproven ones listed) and evidence. Issues with a delivery.evidence.bugLabels label (default Bug , type:bug , type:fix ) also get a \"Bug fix proof\" block: reproduction steps from the issue and the regression tests in the PR, stating that failing-before-the-fix was not demonstrated. One extra tracker read per merge; nothing is posted on the GitHub PR. - Worker terminals are closed. Deliver closes the worker terminal on every finished outcome, not only when a merge removes the worktree, and reaps terminals of finished/lease-less issues and idle workers whose PR only waits ( delivery.closeTerminalOnFinish , delivery.reapIdleTerminalsMinutes: 90 ); worktrees are kept. A fix round for a worker whose terminal is gone relaunches it in the same worktree. tick stops dispatching at machine.maxLiveTerminals (12) live loop terminals, and an orca terminal create timeout is capacity (re-queued, 10-minute cooldown, no failure counted) instead of tripping the pause. New events worker.terminal-closed , terminals.reaped , worker.dispatch-capacity . - linear.queueOwnership: both . The queue can now drain unassigned issues AND the ones assigned to linear.person (Linear: both listings per state, merged and deduped; GitHub: assignee empty or the person). A dispatched unassigned issue is assigned to the person; escalation/restart never release the assignee under both . - Single test run in CI. pnpm test:coverage now includes typecheck and the package criterion output, so the verify job runs the test suite once while retaining coverage thresholds. - Docs artifact frontmatter. Documentation metadata now uses shared frontmatter splitting and YAML parsing, including folded scalars, block lists, BOM and CRLF input. - Coverage floor. pnpm test:coverage now enforces ratcheted source coverage in CI. - Shared record guard. Harness internals now reuse one non-null, non-array object check while preserving caller-specific errors and fallbacks. - Cryptographic run IDs. Verification runs retain their timestamp and PID prefix while using a cryptographic random suffix. - Bounded model catalog refresh. Artificial Analysis refreshes use @agentskit/net deadlines and a 2 MiB JSON body cap; a failed refresh keeps the existing catalog cache. - Canonical shared hashes. New artifacts, event-chain entries, manifests, verification digests and cache keys use @agentskit/core/hash ; readers still accept existing persisted hashes, and stable IDs keep their legacy format. - Portability via @agentskit/cross-platform . Process spawning ( .cmd shim resolution), process-tree kill and path/line helpers now come from the shared package instead of hand-rolled copies; cross-spawn is no longer a direct dependency. pnpm ",
           "aliases": "document project"
         },
         "graph": {
@@ -11699,7 +11700,7 @@
             }
           ]
         },
-        "contentHash": "67a725444e03c17ad29cda202a7b8159b8744e7b8499392a2eefcf6b2b55a11a",
+        "contentHash": "cefef47f9679ab176126bd68e555d24413cf2698c8fad39b121fd66cc973a110",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -18442,6 +18443,7 @@
           "parseLinearIssueDetail",
           "parseLinearIssues",
           "queueAssigneeFilter",
+          "queueAssigneeFilters",
           "writeIdFor"
         ],
         "tags": [
@@ -18453,7 +18455,7 @@
           "title": "linear-orca.ts",
           "headings": "",
           "path": "src/adapters/linear-orca.ts",
-          "symbols": "FetchQueueInput LinearIssueDetail LinearListInput LinearQueueFilter LinearWriteOptions LoopIssue TrackerComment TrackerIssue TrackerIssueDetail buildListIssuesArgv createLinearTrackingAdapter fetchLinearIssue fetchLinearQueue filterAndOrderQueue linearAssigneeClear linearAssigneeClearArgv linearAssigneeSet linearAssigneeSetArgv linearAttach linearAttachArgv linearCommentAdd linearCommentAddArgv linearLabelAdd linearLabelArgv linearLabelRemove linearSaveIssue linearSaveIssueArgv linearStatusSet linearStatusSetArgv parseLinearIssueDetail parseLinearIssues queueAssigneeFilter writeIdFor",
+          "symbols": "FetchQueueInput LinearIssueDetail LinearListInput LinearQueueFilter LinearWriteOptions LoopIssue TrackerComment TrackerIssue TrackerIssueDetail buildListIssuesArgv createLinearTrackingAdapter fetchLinearIssue fetchLinearQueue filterAndOrderQueue linearAssigneeClear linearAssigneeClearArgv linearAssigneeSet linearAssigneeSetArgv linearAttach linearAttachArgv linearCommentAdd linearCommentAddArgv linearLabelAdd linearLabelArgv linearLabelRemove linearSaveIssue linearSaveIssueArgv linearStatusSet linearStatusSetArgv parseLinearIssueDetail parseLinearIssues queueAssigneeFilter queueAssigneeFilters writeIdFor",
           "summary": "",
           "body": "",
           "aliases": "module ts adapters"
@@ -18559,7 +18561,7 @@
             }
           ]
         },
-        "contentHash": "bc9f9a619ecb1f7f4bf76a52b3fbbc5910c9391a55c7ea4e8503671901727703",
+        "contentHash": "19919751ed453754ff7731250123e0c23db8bfef8cbc232359ff03581638c465",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -26246,7 +26248,7 @@
           ],
           "outbound": []
         },
-        "contentHash": "551e3dcc23d5f72e82bc7aab9e14a558f9ba8bdb285bce1862a720960eb5e251",
+        "contentHash": "cead9d782428cc5cd50defcce262449ef56acf08cb007cdc2ee63e898d49631f",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -26664,7 +26666,7 @@
             }
           ]
         },
-        "contentHash": "0d7caa6f7dcd337bf56b070ac52458d76711ed2948bdc88c909ec9b1d3c44e6c",
+        "contentHash": "e1f63f9dabb4fd3b6d0d1ac03aef333286e3ddcc9fb3737ded47202113a7b345",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -26859,7 +26861,7 @@
             }
           ]
         },
-        "contentHash": "41d8998ea1ca27287997c57b3bb826f8e826ab5b1cab4eefebc4722aef4c2be6",
+        "contentHash": "dc134d9295ef26041ec6560f43f1872a8ffa07bd2dcf14ab646f10c195f8fa1b",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -27862,7 +27864,7 @@
             }
           ]
         },
-        "contentHash": "1b5ab9293cb1b99c5b5cedfc263c546f3498741f54036ad03143b42903228450",
+        "contentHash": "41a7f01fb9e893a8c552c2aa9b4544a508dc6ac11e834a03bf7be552d14fcd48",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -28161,7 +28163,7 @@
             }
           ]
         },
-        "contentHash": "c0f6f3e478f6509120b38060190d774ece867d5a8562af2eeaa1c2b873d4e26c",
+        "contentHash": "4d3c4cfe364521bbdd45db2b0f6eb9c34029a73d23a35d1586a92beafd914290",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -28698,7 +28700,7 @@
             }
           ]
         },
-        "contentHash": "d66e29d5928cce137dfd71832f3e9a04ce7e6cff8c56cfe9f0877b2746b2e01e",
+        "contentHash": "1f72d779db829e2f8b85c77ff6c3dd816a3e5de42663b4635a952ae2cbc22e0f",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -33623,7 +33625,7 @@
             }
           ]
         },
-        "contentHash": "a4728ae3dc52600f5745cecfd11ac151a854ed39f86e81bd2d966ad17086d591",
+        "contentHash": "b80f8cb643aeaa3c5b1ced9309ca7b6fe156a04029378f249f583618798a37b7",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -41126,7 +41128,7 @@
             }
           ]
         },
-        "contentHash": "4553cbb2d2463fc2a4730f27de266b780ae9295c415d83aac84d9e6b7fce85d2",
+        "contentHash": "7589afbc38d43ce5dfd99947c2a2338e199a21da9f7fc2b26b276b023eec0dbf",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -43084,7 +43086,7 @@
             }
           ]
         },
-        "contentHash": "e5845f3f7d2d216c7dd14e6b4cfa53ecc853b1c1c5e2b7d3deefb12b2473d96e",
+        "contentHash": "7f08ca1880e0cf1dbd73ff908fc546e09162ff0b61b6f451bc8adf361aa179e3",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -43129,7 +43131,7 @@
             }
           ]
         },
-        "contentHash": "92921cf20a7976af0186064ad4a30b71e60d3bd8c0e0e2da670385358fb47d3c",
+        "contentHash": "b0a14148c31f9decf426fd5546c97d5c6941af21b50bee3a16e454982c433014",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -43414,7 +43416,7 @@
             }
           ]
         },
-        "contentHash": "2d94292d4b115bfe615758c39b592294cb3c2ef8e3166b522400f342bc9d3107",
+        "contentHash": "a8ac8866a9e38c106a19c92986679475e208f8f266b3ebcb11f1deb98684104b",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -45013,7 +45015,7 @@
             }
           ]
         },
-        "contentHash": "ee63f69b3bc11af90721a17debb645d69889fda510487eec0e1d26602a775dc3",
+        "contentHash": "5f5e66b284d7a77a23da0a3e29af5089ee110d0884d809400c0e9a9c54d94e35",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -45263,7 +45265,7 @@
             }
           ]
         },
-        "contentHash": "e7545bacb1db013aa36bb79eb449264c0bdff0c4cc4bb499082fa450b54bcfc1",
+        "contentHash": "5114f57d11d105570b4cbfe980251def0128464e087ce7030a55a64ead695109",
         "provenance": "observed",
         "confidence": "observed"
       },
