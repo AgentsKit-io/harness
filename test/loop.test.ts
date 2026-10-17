@@ -294,19 +294,20 @@ describe('orca and linear parsers', () => {
     expect(parseLoopConfigText(exampleYaml.replace('queueOwnership: person ', 'queueOwnership: both   ')).linear.queueOwnership).toBe('both')
     expect(() => parseLoopConfigText(exampleYaml.replace('queueOwnership: person ', 'queueOwnership: nobody '))).toThrow()
     const config = baseConfig()
-    const single = await fetchLinearQueue(fakeRunner(), { workspaceId: 'ws-1', teamKey: 'ENG', assignee: 'person', filter: config.linear })
+    const single = (await fetchLinearQueue(fakeRunner(), { workspaceId: 'ws-1', teamKey: 'ENG', assignee: 'person', filter: config.linear }))
     const base = fakeRunner()
     const runner: CommandRunner & { readonly calls: string[][] } = { calls: base.calls, run: async (argv) => {
       const result = await base.run(argv)
-      if (!argv.includes('list-issues') || argv[argv.indexOf('--assignee') + 1] !== 'null') return result
+      if (!argv.includes('list-issues')) return result
+      const side = argv[argv.indexOf('--assignee') + 1] === 'null' ? 'NULL' : 'PERSON'
       const payload = JSON.parse(result.stdout) as { result: { issues: { identifier: string }[] } }
-      return { ...result, stdout: JSON.stringify({ ...payload, result: { ...payload.result, issues: [...payload.result.issues, { ...payload.result.issues[0]!, identifier: `NULL-ONLY-${argv[argv.indexOf('--state') + 1]}` }] } }) }
+      return { ...result, stdout: JSON.stringify({ ...payload, result: { ...payload.result, issues: [...payload.result.issues, { ...payload.result.issues[0]!, identifier: `${side}-ONLY-${argv[argv.indexOf('--state') + 1]}` }] } }) }
     } }
     const both = await fetchLinearQueue(runner, { workspaceId: 'ws-1', teamKey: 'ENG', assignee: 'person', filter: { ...config.linear, queueOwnership: 'both' } })
     const listed = runner.calls.filter((argv) => argv.includes('list-issues')).map((argv) => `${argv[argv.indexOf('--state') + 1]}:${argv[argv.indexOf('--assignee') + 1]}`)
     expect(listed.sort()).toEqual(['Ready:null', 'Ready:person', 'Todo:null', 'Todo:person'])
     // The fake answers both assignees with the same page: the merge must not duplicate an identifier.
-    expect(both.map((issue) => issue.identifier).sort()).toEqual([...single.map((issue) => issue.identifier), 'NULL-ONLY-Ready', 'NULL-ONLY-Todo'].sort())
+    expect(both.map((issue) => issue.identifier).sort()).toEqual([...single.map((issue) => issue.identifier), 'NULL-ONLY-Ready', 'NULL-ONLY-Todo', 'PERSON-ONLY-Ready', 'PERSON-ONLY-Todo'].sort())
   })
 
   it('fetches one page per configured state and merges them', async () => {
