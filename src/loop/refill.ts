@@ -64,7 +64,7 @@ export const runRefill = async (input: { readonly config: LoopConfig; readonly t
       // The pool was read a moment ago: re-read right before writing, so an issue a human assigned in between is theirs.
       let current: Awaited<ReturnType<typeof tracker.issue>>
       try { current = await tracker.issue(issue) } catch (error) {
-        if (isCooling(error)) throw error
+        if (isCooling(error)) { notes.push(`refill: re-reading ${issue} hit the tracker rate limit: ${message(error)}`); return outcome(held, assigned, [], true) }
         readFailures += 1
         notes.push(`refill: could not re-read ${issue} (${message(error)}); skipped, next one tried`)
         continue

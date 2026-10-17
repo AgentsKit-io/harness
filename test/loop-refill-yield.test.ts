@@ -254,6 +254,7 @@ describe('queue.yieldTo', () => {
     // law-os does not claim the slot and design-system keeps going; otherwise each loop would yield to the other forever.
     const report = await runTick({ ...options(board.runner, mainPath, binDir()), maxDispatch: 0 })
     expect(report.notes.some((note) => note.startsWith('yielding to'))).toBe(false)
+    expect(report.notes.some((note) => note.includes('part of a yield cycle; not yielding to it'))).toBe(true)
     expect((await precheckTick(options(board.runner, mainPath, binDir()))).work).toBe(true)
     // From law-os's side, design-system does not stall it either.
     expect((await precheckTick(options(board.runner, siblingPath, binDir()))).work).toBe(true)
