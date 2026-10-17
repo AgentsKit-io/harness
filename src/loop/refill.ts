@@ -60,7 +60,12 @@ export const runRefill = async (input: { readonly config: LoopConfig; readonly t
     if (assigned.length >= slots) break
     try {
       // The pool was read a moment ago: re-read right before writing, so an issue a human assigned in between is theirs.
-      const current = await tracker.issue(issue)
+      let current: Awaited<ReturnType<typeof tracker.issue>>
+      try { current = await tracker.issue(issue) } catch (error) {
+        if (isCooling(error)) throw error
+        notes.push(`refill: could not re-read ${issue} (${message(error)}); skipped, next one tried`)
+        continue
+      }
       if (current.assignee) { notes.push(`refill: ${issue} was assigned to ${current.assignee} since the pool was read; left alone`); continue }
       await tracker.claim(issue, person); assigned.push(issue)
     } catch (error) {
