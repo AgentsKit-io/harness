@@ -269,6 +269,7 @@ describe('delivery evidence comment', () => {
     const fitted = fitComment({ blocks: [{ kind: 'heading', text: 'ß🙂'.repeat(400) }], marker: 'loop:merged:1' }, { format: 'markdown', maxChars: 300 })
     expect(fitted.length).toBeLessThanOrEqual(300)
     expect(fitted).toContain('<!-- loop:merged:1 -->')
+    expect(fitted).toContain('ß🙂')
     expect(fitted).not.toMatch(/[\uD800-\uDBFF](?![\uDC00-\uDFFF])/)
   })
 })
