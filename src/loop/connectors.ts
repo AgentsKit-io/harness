@@ -26,8 +26,12 @@ import type { TrackerCommentOptions } from './comment-format.js'
  */
 export interface TrackerConnector {
   readonly id: string
-  /** Dispatchable issues, already filtered and ordered by the tracker. */
-  queue(input: { readonly assignee: string | null }): Promise<readonly LoopIssue[]>
+  /**
+   * Dispatchable issues, already filtered and ordered by the tracker. `ownership` overrides `linear.queueOwnership`
+   * for this one read and `excludeLabels` adds to `linear.excludeLabels` — both exist for `linear.refill`, which
+   * reads the person's queue AND the unassigned pool through the same filter rather than a second, drifting copy.
+   */
+  queue(input: { readonly assignee: string | null; readonly ownership?: 'person' | 'unassigned' | 'both'; readonly excludeLabels?: readonly string[] }): Promise<readonly LoopIssue[]>
   issue(identifier: string): Promise<TrackerIssueDetail>
   comment(input: { readonly issue: string; readonly body: string; readonly dedupeKey?: string }): Promise<void>
   addLabels(issue: string, labels: readonly string[]): Promise<void>
@@ -79,6 +83,9 @@ export interface ConnectorInput {
 export const requireWritableTracker = (config: LoopConfig): void => {
   if (config.connectors.tracker !== 'linear' && config.connectors.tracker !== 'github') fail(`Unsupported tracker "${config.connectors.tracker}".`, 'INVALID_CONFIG')
 }
+
+/** `config.linear` as the queue filter, with `TrackerConnector.queue`'s per-read ownership override and extra excluded labels. */
+const queueFilter = (config: LoopConfig, input: { readonly ownership?: 'person' | 'unassigned' | 'both' | undefined; readonly excludeLabels?: readonly string[] | undefined }): LoopConfig['linear'] => ({ ...config.linear, queueOwnership: input.ownership ?? config.linear.queueOwnership, excludeLabels: [...config.linear.excludeLabels, ...(input.excludeLabels ?? [])] })
 
 // ponytail: both trackers get the body as one argv element and Windows caps a whole command line at 32,767 chars;
 // a body near the vendor limit (~65k) would fail to spawn there, so it is held well under that on win32.
@@ -191,7 +198,7 @@ export const createGitHubTracker = (input: ConnectorInput): TrackerConnector => 
   let tracker: TrackerConnector
   tracker = {
     id: 'github',
-    queue: async () => {
+    queue: async ({ ownership, excludeLabels }) => {
       const target = await defaultAssignee()
       const issues = await githubOpenIssues(runner, { repo, limit: config.github.issues.maxIssues }, options)
       const normalized: LoopIssue[] = issues.map((issue) => ({
@@ -200,9 +207,9 @@ export const createGitHubTracker = (input: ConnectorInput): TrackerConnector => 
         assigneeId: null, labels: issue.labels, priority: 0, priorityLabel: 'none', project: null, branchName: null,
         createdAt: issue.createdAt, updatedAt: issue.updatedAt,
       }))
-      const ownership = config.linear.queueOwnership
-      const owned = normalized.filter((issue) => (ownership !== 'person' && issue.assignee === null) || (ownership !== 'unassigned' && issue.assignee === target))
-      return filterAndOrderQueue(owned, config.linear)
+      const effective = ownership ?? config.linear.queueOwnership
+      const owned = normalized.filter((issue) => (effective !== 'person' && issue.assignee === null) || (effective !== 'unassigned' && issue.assignee === target))
+      return filterAndOrderQueue(owned, queueFilter(config, { ownership, excludeLabels }))
     },
     issue: readDetail,
     comment: async ({ issue, body, dedupeKey }) => {
@@ -243,7 +250,7 @@ export const createLinearTracker = (input: ConnectorInput): TrackerConnector => 
   const write = linearOptions(config)
   return {
     id: 'linear',
-    queue: async ({ assignee }) => fetchLinearQueue(runner, { bin: config.orca.bin, workspaceId: config.linear.workspaceId, teamKey: config.linear.teamKey, assignee: assignee ?? '', filter: config.linear, orca: { bin: config.orca.bin, timeoutMs: config.orca.timeoutMs } }),
+    queue: async ({ assignee, ownership, excludeLabels }) => fetchLinearQueue(runner, { bin: config.orca.bin, workspaceId: config.linear.workspaceId, teamKey: config.linear.teamKey, assignee: assignee ?? '', filter: queueFilter(config, { ownership, excludeLabels }), orca: { bin: config.orca.bin, timeoutMs: config.orca.timeoutMs } }),
     issue: async (identifier) => fetchLinearIssue(runner, identifier, write),
     comment: async ({ issue, body, dedupeKey }) => { await linearCommentAdd(runner, { issue, body, ...(dedupeKey ? { dedupeKey } : {}) }, write) },
     addLabels: async (issue, labels) => { await linearLabelAdd(runner, { issue, labels }, write) },

@@ -13,7 +13,7 @@ timestamp) and `type` on top of the fields below. A plugin subscribes with
 The vocabulary is enforced by the compiler: `appendLoopEvent` accepts only these names, so an event that is not
 here cannot be emitted — and a name here that nothing emits fails the test suite.
 
-95 loop events.
+97 loop events.
 
 ## `contract.*`
 
@@ -155,6 +155,8 @@ here cannot be emitted — and a name here that nothing emits fails the test sui
 | Event | Carries | What it means |
 |---|---|---|
 | `queue.claim-failed` | `issue`, `assignee`, `error` | The tracker refused the claim that reserves an issue for this loop. |
+| `queue.refilled` | `person`, `issues`, `held`, `target` | `linear.refill` assigned unassigned issues to the person so their queue holds `target` again. |
+| `queue.yielded` | `to`, `candidates`, `reason` | A `queue.yieldTo` sibling loop had dispatchable work, so this tick admitted nothing new. |
 
 ## `security.*`
 
