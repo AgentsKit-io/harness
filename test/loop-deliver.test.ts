@@ -818,6 +818,8 @@ describe('deliver', () => {
     const stuck = await deliver(env, { assumeIdle: true, now: () => new Date('2026-09-11T13:05:00.000Z') })
     expect(stuck.results[0]).toMatchObject({ outcome: 'stuck' })
     expect(env.runner.calls.some((argv) => argv[1] === 'linear' && argv[2] === 'assignee')).toBe(false)
+    // ...and the issue went back to the queue state, so it is still drainable under 'both'.
+    expect(env.runner.calls.filter((argv) => argv[1] === 'linear' && argv[2] === 'status').some((argv) => argv.includes('Todo'))).toBe(true)
   })
 
   it('leaves the assignee alone under person ownership — there it is ownership, not a claim', async () => {

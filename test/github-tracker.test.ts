@@ -44,7 +44,7 @@ describe('GitHub tracker adapter', () => {
       const stdout = argv.includes('user') ? JSON.stringify({ login: 'alice' }) : argv.includes('issue') && argv.includes('list') ? JSON.stringify(issues) : ''
       return { code: 0, stdout, stderr: '', timedOut: false, durationMs: 1 }
     } }
-    const queueFor = async (queueOwnership: 'person' | 'unassigned' | 'both') => (await createGitHubTracker({ runner, config: { ...config(), linear: { ...config().linear, queueOwnership } } }).queue({ assignee: 'alice' })).map((entry) => entry.identifier).sort()
+    const queueFor = async (queueOwnership: 'person' | 'unassigned' | 'both') => (await createGitHubTracker({ runner, config: { ...config(), linear: { ...config().linear, queueOwnership } } }).queue({ assignee: 'ignored-by-github-adapter' })).map((entry) => entry.identifier).sort()
     expect(await queueFor('person')).toEqual(['acme/app#2'])
     expect(await queueFor('unassigned')).toEqual(['acme/app#1'])
     expect(await queueFor('both')).toEqual(['acme/app#1', 'acme/app#2'])
