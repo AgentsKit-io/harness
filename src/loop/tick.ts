@@ -39,6 +39,8 @@ import { createLifecycleStore } from './lifecycle.js'
 import { createHitlStore } from './hitl.js'
 import { activeTrackerCooldown, guardTracker, isTrackerRateLimit, TrackerCooldownError, type TrackerCooldown } from './tracker-cooldown.js'
 import { refillApplies, runRefill } from './refill.js'
+import { listDispatched } from './deliver-state.js'
+import { activeTerminalCapacityCooldown, isTerminalCapacityError, liveLoopTerminals, markTerminalCapacity } from './terminal-reaper.js'
 import { splitLines } from '@agentskit/cross-platform'
 
 export type TickOutcome = 'dispatched' | 'dry-run' | 'skipped' | 'escalated' | 'failed'
@@ -58,7 +60,7 @@ export interface TickCandidateResult {
 }
 
 export interface TickReport {
-  /** `blocked`: nothing could run (no builder, or the tracker is cooling down) — not a failure. `failed`: every candidate failed. */
+  /** `blocked`: nothing could run (no builder, the tracker is cooling down, or the machine is out of terminal capacity) — not a failure. `failed`: every candidate failed. */
   readonly status: 'ok' | 'idle' | 'blocked' | 'failed'
   readonly generatedAt: string
   readonly dryRun: boolean
@@ -600,11 +602,12 @@ export const runTick = async (input: TickInput): Promise<TickReport> => {
   const flushNotifications = ownsBus ? attachNotifier(bus, { config, runner: input.runner, ...(input.env === undefined ? {} : { env: input.env }) }) : async () => { /* owner flushes */ }
   // A rate-limited tracker is waited out, not retried every tick: `blocked` is a returned report, so it never counts
   // toward the stage auto-pause the way a thrown tick does.
-  const cooledReport = async (cooldown: string): Promise<TickReport> => {
-    notes.push(`tracker rate-limited; ${cooldown}; nothing fetched or dispatched`)
+  const blockedReport = async (note: string): Promise<TickReport> => {
+    notes.push(note)
     await flushNotifications()
     return { generatedAt: now().toISOString(), dryRun, slots: { maxAgents: 0, running: 0, free: 0, reasons: [] }, routing: { orchestrator: null, builder: null }, queue: { total: 0, busy: [], candidates: [] }, status: 'blocked', results, notes }
   }
+  const cooledReport = async (cooldown: string): Promise<TickReport> => blockedReport(`tracker rate-limited; ${cooldown}; nothing fetched or dispatched`)
   const cooling = activeTrackerCooldown(loaded.stateDir, now())
   if (cooling) return cooledReport(`cooling down until ${cooling.until}`)
   // `linear.refill`: top the person's queue up from the unassigned pool BEFORE the queue is read, so what it assigns
@@ -622,6 +625,10 @@ export const runTick = async (input: TickInput): Promise<TickReport> => {
       }
     }
   }
+  // `orca terminal create` timed out on a recent dispatch: the machine has no room for another agent session. Wait it
+  // out (a skip, like the tracker cooldown) instead of failing every candidate into the stage pause.
+  const capacity = activeTerminalCapacityCooldown(loaded.stateDir, now())
+  if (capacity) return blockedReport(`terminal capacity: a terminal create timed out (${capacity.reason.slice(0, 160)}); nothing dispatched until ${capacity.until}`)
   let state: LoopState
   try { state = await gatherLoopState({ loaded, runner: input.runner, ledger, env: input.env, platform: input.platform, now, onlyIssue: input.onlyIssue, machine: input.machine, bus }) } catch (error) {
     if (error instanceof TrackerCooldownError || isTrackerRateLimit(error)) return cooledReport(message(error))
@@ -670,13 +677,24 @@ export const runTick = async (input: TickInput): Promise<TickReport> => {
     }
   }
 
-  const budget = Math.min(state.candidates.length, input.maxDispatch ?? state.candidates.length)
+  // Hard cap on live agent sessions in the loop's own worktrees: at the cap, skip (deliver closes finished and idle
+  // workers); below it, dispatch at most the room left.
+  const maxLive = config.machine.maxLiveTerminals
+  const liveTerminals = maxLive ? liveLoopTerminals(state.worktrees, new Set(listDispatched(loaded.stateDir).map((record) => record.worktreeId))) : 0
+  if (maxLive && liveTerminals >= maxLive) {
+    const reason = `terminal cap: ${liveTerminals} live terminal(s) in loop worktrees, machine.maxLiveTerminals is ${maxLive}`
+    notes.push(`${reason}; nothing dispatched`)
+    await flushNotifications()
+    return { ...base, status: 'blocked', results: state.candidates.map((candidate) => ({ issue: candidate.identifier, outcome: 'skipped' as const, reason })), notes }
+  }
+  const budget = Math.min(state.candidates.length, input.maxDispatch ?? state.candidates.length, maxLive ? maxLive - liveTerminals : Number.POSITIVE_INFINITY)
   const startedAt = Date.now()
   const timeBudgetMs = input.budgetMs ?? Number.POSITIVE_INFINITY
   const remainingMs = (): number => timeBudgetMs - (Date.now() - startedAt)
   // Every tracker write in this stage goes through the connector; the engine never names Linear.
   const tracker = guardTracker(resolveConnectors({ runner: input.runner, config, dryRun }).tracker, { stateDir: loaded.stateDir, now, dryRun, onRateLimited: trackerCooldownLogger(loaded.stateDir, now, bus) })
   let trackerCooling = false
+  let capacityBlocked = false
   // UI-confirmed runs need status projection even for legacy backlog projects; only explicit mode changes which
   // tracker issues are eligible when a tick is not targeted at one selected request.
   const issueQueue = config.queue.mode === 'explicit' || input.onlyIssue ? createIssueQueue({ stateDir: loaded.stateDir }) : null
@@ -1121,7 +1139,8 @@ export const runTick = async (input: TickInput): Promise<TickReport> => {
       // state), so a failed claim must not cost the status move and the dispatch comment. It is still
       // recorded as an event, because an unclaimed in-flight issue is exactly what a second machine would
       // pick up if the states were ever widened.
-      if (config.linear.queueOwnership === 'unassigned') {
+      // Under `both` only an issue nobody held is claimed; one already assigned to the person stays as is.
+      if (config.linear.queueOwnership === 'unassigned' || (config.linear.queueOwnership === 'both' && !detail.assignee)) {
         try {
           await tracker.claim(detail.identifier, state.person)
         } catch (error) {
@@ -1139,6 +1158,16 @@ export const runTick = async (input: TickInput): Promise<TickReport> => {
     } catch (error) {
       ledger.release(claim.lease, `dispatch failed: ${message(error)}`)
       if (created) { try { await orcaWorktreeRemove(input.runner, { worktree: `id:${created.id}`, force: true }, { bin: config.orca.bin, timeoutMs: 60_000 }); notes.push(`${detail.identifier}: removed half-created worktree ${created.id}`) } catch (cleanup) { notes.push(`${detail.identifier}: worktree ${created.id} left behind (${message(cleanup)})`) } }
+      // The machine had no room for another agent session: not this issue's failure. No failure count toward the
+      // issue or stage pause; the issue goes back to the queue and dispatch waits out a short cooldown.
+      if (isTerminalCapacityError(error)) {
+        const until = markTerminalCapacity(loaded.stateDir, message(error), now())
+        appendLoopEvent(loaded.stateDir, { at: now().toISOString(), type: 'worker.dispatch-capacity', issue: detail.identifier, error: message(error), until }, bus)
+        updateQueueRun(selectedRun, { status: 'queued', error: `capacity: ${message(error)}`, projection: { stage: 'queued' } })
+        results.push({ issue: detail.identifier, outcome: 'skipped', reason: `capacity: ${message(error)}; dispatch waits until ${until}` })
+        capacityBlocked = true
+        break
+      }
       appendLoopEvent(loaded.stateDir, { at: now().toISOString(), type: 'worker.dispatch-failed', issue: detail.identifier, error: message(error) }, bus)
       await recordFailureAndMaybePause(detail.identifier, 'worker.dispatch-failed', `dispatch failed: ${message(error)}`)
       updateQueueRun(selectedRun, { status: 'failed', error: `dispatch failed: ${message(error)}`, projection: { stage: 'failed', branch, worktree } })
@@ -1150,5 +1179,5 @@ export const runTick = async (input: TickInput): Promise<TickReport> => {
   // Every candidate failing is a failed run, not an idle one — the stage's failure count has to see it. A tracker
   // cooldown stays `blocked`: waiting out a rate limit is not a failure.
   const allFailed = results.length > 0 && results.every((result) => result.outcome === 'failed')
-  return { ...base, status: dispatched > 0 || results.some((result) => result.outcome === 'escalated') ? 'ok' : trackerCooling ? 'blocked' : allFailed ? 'failed' : 'idle', results, notes }
+  return { ...base, status: dispatched > 0 || results.some((result) => result.outcome === 'escalated') ? 'ok' : trackerCooling || capacityBlocked ? 'blocked' : allFailed ? 'failed' : 'idle', results, notes }
 }

@@ -34,6 +34,13 @@ export const LOOP_EVENT_TYPES = {
   'worker.dispatched': ['issue', 'worktree', 'worktreeId', 'branch', 'terminal', 'provider', 'model', 'effort', 'contractDigest', 'briefDigest', 'command', 'briefAccepted', 'tuiIdle', 'workerGuardInstalled', 'maxFixRounds'],
   /** The dispatch itself failed — worktree, terminal or brief — before any work started. */
   'worker.dispatch-failed': ['issue', 'error'],
+  /** `orca terminal create` timed out: the machine is out of room for another agent session. Not counted as a
+   * failure; the issue is re-queued and dispatch waits until `until`. */
+  'worker.dispatch-capacity': ['issue', 'error', 'until'],
+  /** The loop closed a worker terminal it created (finished issue, orphaned, superseded, or idle with a PR open). */
+  'worker.terminal-closed': ['issue', 'terminal', 'reason', 'worktreeId'],
+  /** One deliver pass closed worker terminals; counts by reason. */
+  'terminals.reaped': ['closed', 'orphaned', 'idle', 'superseded', 'failed'],
   /** `project.setup.command` ran in the fresh worktree. */
   'worker.setup': ['issue', 'worktreeId', 'ok'],
   /**

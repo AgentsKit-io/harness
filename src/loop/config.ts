@@ -168,8 +168,12 @@ export const LoopConfigSchema = z.object({
      * Note when switching to `unassigned`: clearing the assignees is then REQUIRED, not cosmetic. With
      * `person` and an emptied backlog the queue comes back empty and the loop looks healthy while doing
      * nothing.
+     *
+     * `both` drains the union of the two: issues with no assignee AND issues assigned to `linear.person`.
+     * Unassigned ones are claimed for `person` on dispatch; nothing is released on return (the issue stays the
+     * person's, which this queue still sees).
      */
-    queueOwnership: z.enum(['person', 'unassigned']).default('person'),
+    queueOwnership: z.enum(['person', 'unassigned', 'both']).default('person'),
     states: z.array(nonEmpty).min(1).default(['Todo', 'Ready']),
     /**
      * Where `loop plan decompose --create` puts new issues. It must NOT be one of `states`: those are the queue, and
@@ -379,6 +383,12 @@ export const LoopConfigSchema = z.object({
     /** Per-agent RSS budget when live measurement is unavailable. */
     agentRssMb: z.number().positive().default(1400),
     wslCap: z.number().int().min(1).default(1),
+    /**
+     * Live Orca terminals in the loop's own worktrees (every dispatched worktree, finished or not) at which `tick`
+     * stops dispatching — a skip, not a failure. Each one is a whole agent session holding memory; 48 of them idle
+     * for hours exhausted a machine and made `orca terminal create` time out. 0 disables the cap.
+     */
+    maxLiveTerminals: z.number().int().min(0).default(12),
   }).prefault({}),
   delivery: z.object({
     verifyCommand: nonEmpty,
@@ -501,8 +511,25 @@ export const LoopConfigSchema = z.object({
     requiredChecks: z.array(nonEmpty).default([]),
     /** Remove the Orca worktree after a successful merge. */
     cleanupWorktree: z.boolean().default(true),
+    /**
+     * Close the worker's terminal (its agent session) when delivery finishes the issue on any outcome — blocked,
+     * stuck, failed, cost-guard, merged — and close terminals the loop created for issues already finished. The
+     * worktree is never removed by this: a person may still need it. A later fix round relaunches a worker there.
+     */
+    closeTerminalOnFinish: z.boolean().default(true),
+    /**
+     * Close the worker terminal of an issue with an open PR that has been silent this many minutes while the loop
+     * only waits (CI, review, a human) — not mid fix round. The next fix round relaunches it in the same worktree.
+     * 0 disables it.
+     */
+    reapIdleTerminalsMinutes: z.number().int().min(0).default(90),
     /** Linear state an abandoned (stuck/blocked) issue returns to. */
     returnState: nonEmpty.default('Todo'),
+    /** The evidence comment on the tracker issue. */
+    evidence: z.object({
+      /** Tracker labels (case-insensitive) that mark an issue as a bug: the comment then carries a "Bug fix proof" block. */
+      bugLabels: z.array(nonEmpty).default(['Bug', 'type:bug', 'type:fix']),
+    }).prefault({}),
   }),
   contract: z.object({
     /** Max characters of issue description + comments rendered into the orchestrator prompt. */

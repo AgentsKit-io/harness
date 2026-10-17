@@ -70,6 +70,8 @@ linear:
   queueOwnership: person             # person = the issues assigned to `person`. unassigned = the issues nobody holds,
                                      # with the assignee as a transient claim the loop writes on dispatch and clears on
                                      # return, so several machines share one priority-ordered queue.
+                                     # both = the union: unassigned issues AND the ones assigned to `person`. Unassigned
+                                     # ones get `person` on dispatch; nothing is released on return.
                                      # Switching to unassigned REQUIRES clearing the backlog's assignees: with `person`
                                      # and an unassigned backlog the queue comes back empty and the loop looks healthy
                                      # while doing nothing.
@@ -181,6 +183,7 @@ machine:
   criticalPercent: 90
   agentRssMb: 1400                   # RAM budget per agent when live RSS is unknown
   wslCap: 1                          # host Defender load is invisible from a WSL distro
+  maxLiveTerminals: 12               # live terminals in loop worktrees at which tick stops dispatching (skip, not failure); 0 = off
 
 delivery:
   verifyCommand: "pnpm lint && pnpm test"   # what the worker must pass before opening a PR
@@ -225,7 +228,11 @@ delivery:
   ignoreChecks: []                   # advisory check names that never block
   requiredChecks: []                 # empty = every reported check must be green
   cleanupWorktree: true              # remove the Orca worktree after merge
+  closeTerminalOnFinish: true        # close the worker terminal on every finished outcome (worktree kept)
+  reapIdleTerminalsMinutes: 90       # close a worker silent this long while its open PR only waits; relaunched on the next fix round; 0 = off
   returnState: Todo                  # where a stuck/blocked issue goes back to
+  evidence:
+    bugLabels: [Bug, type:bug, type:fix]   # issues with one of these labels get a "Bug fix proof" block in the merge comment
 
 
 # --- 0.6.0 optional SDLC seams (defaults keep prior behaviour) ---

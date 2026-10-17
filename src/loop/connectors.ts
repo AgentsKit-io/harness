@@ -7,7 +7,7 @@ import {
 import {
   githubComment, githubCommentExists, githubUpsertComment, githubCurrentUser, githubIssue, githubIssueClose, githubIssueComment,
   githubEnsureLabels, githubIssueCommentExists, githubIssueCreate, githubIssueEdit, githubIssueReopen, githubMerge, githubOpenIssues,
-  githubOpenPullRequests, githubPullRequest, githubPullRequestsForBranch, githubPullRequestsForIssue, githubPreflight, githubLabelRemove, type GitHubIssueDetail,
+  githubOpenPullRequests, githubPullRequest, githubPullRequestsForBranch, githubPullRequestsForIssue, githubPreflight, githubLabelRemove, githubUnresolvedReviewThreads, type GitHubIssueDetail,
   type PullRequestSnapshot,
 } from '../adapters/github-cli.js'
 import { createTrackingAdapter, type TrackingAdapter } from '../adapters/tracking.js'
@@ -15,6 +15,7 @@ import { fail } from '../kernel/errors.js'
 import type { LoopConfig } from './config.js'
 import { filterAndOrderQueue, type LoopIssue } from '../adapters/linear-orca.js'
 import type { TrackerIssueDetail } from './tracker.js'
+import type { TrackerCommentOptions } from './comment-format.js'
 
 /**
  * Everything the loop needs from an issue tracker. Linear is the first implementation; Jira, GitHub Issues or
@@ -30,7 +31,7 @@ export interface TrackerConnector {
    * for this one read and `excludeLabels` adds to `linear.excludeLabels` — both exist for `linear.refill`, which
    * reads the person's queue AND the unassigned pool through the same filter rather than a second, drifting copy.
    */
-  queue(input: { readonly assignee: string | null; readonly ownership?: 'person' | 'unassigned'; readonly excludeLabels?: readonly string[] }): Promise<readonly LoopIssue[]>
+  queue(input: { readonly assignee: string | null; readonly ownership?: 'person' | 'unassigned' | 'both'; readonly excludeLabels?: readonly string[] }): Promise<readonly LoopIssue[]>
   issue(identifier: string): Promise<TrackerIssueDetail>
   comment(input: { readonly issue: string; readonly body: string; readonly dedupeKey?: string }): Promise<void>
   addLabels(issue: string, labels: readonly string[]): Promise<void>
@@ -46,6 +47,11 @@ export interface TrackerConnector {
   /** Validate authenticated identity, repository access and write permission before a mutating run. */
   /** `missingLabels`: lifecycle labels absent in the tracker today (created on first use where the tracker can). */
   readonly preflight?: () => Promise<{ readonly login: string; readonly permission: string; readonly missingLabels?: readonly string[] }>
+  /**
+   * How a structured comment (the delivery evidence) is written for this tracker: Markdown or plain text, its size
+   * ceiling, or the connector's own renderer (Jira ADF). Omitted = `DEFAULT_COMMENT_OPTIONS` (Markdown, 60k).
+   */
+  readonly comments?: TrackerCommentOptions
 }
 
 /** Everything the loop needs from the code host: pull requests, their checks, comments and the merge. */
@@ -61,6 +67,8 @@ export interface ScmConnector {
   upsertComment(input: { readonly number: number; readonly body: string; readonly marker: string }): Promise<'created' | 'updated'>
   removeLabel(input: { readonly number: number; readonly label: string }): Promise<void>
   merge(input: { readonly number: number; readonly headSha: string; readonly method: 'squash' | 'merge' | 'rebase'; readonly title?: string }): Promise<{ readonly merged: boolean; readonly sha: string | null; readonly message: string }>
+  /** Review threads nobody resolved; `null` when the host cannot say. Optional: evidence reports it as unavailable. */
+  unresolvedReviewThreads?(number: number): Promise<number | null>
 }
 
 export interface ConnectorInput {
@@ -77,7 +85,11 @@ export const requireWritableTracker = (config: LoopConfig): void => {
 }
 
 /** `config.linear` as the queue filter, with `TrackerConnector.queue`'s per-read ownership override and extra excluded labels. */
-const queueFilter = (config: LoopConfig, input: { readonly ownership?: 'person' | 'unassigned' | undefined; readonly excludeLabels?: readonly string[] | undefined }): LoopConfig['linear'] => ({ ...config.linear, queueOwnership: input.ownership ?? config.linear.queueOwnership, excludeLabels: [...config.linear.excludeLabels, ...(input.excludeLabels ?? [])] })
+const queueFilter = (config: LoopConfig, input: { readonly ownership?: 'person' | 'unassigned' | 'both' | undefined; readonly excludeLabels?: readonly string[] | undefined }): LoopConfig['linear'] => ({ ...config.linear, queueOwnership: input.ownership ?? config.linear.queueOwnership, excludeLabels: [...config.linear.excludeLabels, ...(input.excludeLabels ?? [])] })
+
+// ponytail: both trackers get the body as one argv element and Windows caps a whole command line at 32,767 chars;
+// a body near the vendor limit (~65k) would fail to spawn there, so it is held well under that on win32.
+const argvBodyChars = (vendorMax: number): number => Math.min(vendorMax, process.platform === 'win32' ? 24_000 : vendorMax)
 
 const linearOptions = (config: LoopConfig) => ({ bin: config.orca.bin, workspaceId: config.linear.workspaceId, orca: { timeoutMs: config.orca.timeoutMs } })
 
@@ -195,7 +207,8 @@ export const createGitHubTracker = (input: ConnectorInput): TrackerConnector => 
         assigneeId: null, labels: issue.labels, priority: 0, priorityLabel: 'none', project: null, branchName: null,
         createdAt: issue.createdAt, updatedAt: issue.updatedAt,
       }))
-      const owned = (ownership ?? config.linear.queueOwnership) === 'unassigned' ? normalized.filter((issue) => issue.assignee === null) : normalized.filter((issue) => issue.assignee === target)
+      const effective = ownership ?? config.linear.queueOwnership
+      const owned = normalized.filter((issue) => (effective !== 'person' && issue.assignee === null) || (effective !== 'unassigned' && issue.assignee === target))
       return filterAndOrderQueue(owned, queueFilter(config, { ownership, excludeLabels }))
     },
     issue: readDetail,
@@ -225,6 +238,8 @@ export const createGitHubTracker = (input: ConnectorInput): TrackerConnector => 
     },
     transitions: createTrackingAdapter('github', async (transition) => { await setState({ issue: transition.issue, to: transition.to }) }, { ...(input.dryRun === undefined ? {} : { dryRun: input.dryRun }) }),
     preflight: async () => githubPreflight(runner, { repo, labels: lifecycleLabels }, options),
+    // GitHub caps a comment at 65,536 chars; the connector appends its own dedupe marker.
+    comments: { format: 'markdown', maxChars: argvBodyChars(65_000) },
   }
   return tracker
 }
@@ -255,6 +270,8 @@ export const createLinearTracker = (input: ConnectorInput): TrackerConnector => 
       ...(state ? { state } : {}), ...(labels?.length ? { labels } : {}), ...(priority ? { priority } : {}), ...(project ? { project } : {}), ...(parent ? { parentId: parent } : {}), ...(dedupeKey ? { dedupeKey } : {}),
     }, write),
     transitions: createLinearTrackingAdapter(runner, { ...write, ...(input.dryRun === undefined ? {} : { dryRun: input.dryRun }) }),
+    // Linear comments are Markdown; ~65k is the practical body ceiling.
+    comments: { format: 'markdown', maxChars: argvBodyChars(65_000) },
   }
 }
 
@@ -274,6 +291,7 @@ export const createGitHubScm = (input: ConnectorInput): ScmConnector => {
     upsertComment: async ({ number, body, marker }) => githubUpsertComment(runner, { repo, number, body, marker }, options),
     removeLabel: async ({ number, label }) => { await githubLabelRemove(runner, { repo, number, label }, options) },
     merge: async ({ number, headSha, method, title }) => githubMerge(runner, { repo, number, headSha, method, ...(title ? { title } : {}) }, options),
+    unresolvedReviewThreads: async (number) => githubUnresolvedReviewThreads(runner, { repo, number }, options),
   }
 }
 

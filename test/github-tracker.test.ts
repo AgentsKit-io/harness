@@ -37,6 +37,19 @@ describe('GitHub tracker adapter', () => {
     expect(edit).not.toContain('loop:blocked')
   })
 
+  it('queueOwnership both keeps unassigned and own issues, person only own, unassigned only unassigned', async () => {
+    const issue = (number: number, assignees: { login: string }[]) => ({ ...detail(), number, url: `https://github.com/acme/app/issues/${number}`, assignees })
+    const issues = [issue(1, []), issue(2, [{ login: 'alice' }]), issue(3, [{ login: 'bob' }])]
+    const runner: CommandRunner = { run: async (argv): Promise<CommandResult> => {
+      const stdout = argv.includes('user') ? JSON.stringify({ login: 'alice' }) : argv.includes('issue') && argv.includes('list') ? JSON.stringify(issues) : ''
+      return { code: 0, stdout, stderr: '', timedOut: false, durationMs: 1 }
+    } }
+    const queueFor = async (queueOwnership: 'person' | 'unassigned' | 'both') => (await createGitHubTracker({ runner, config: { ...config(), linear: { ...config().linear, queueOwnership } } }).queue({ assignee: 'ignored-by-github-adapter' })).map((entry) => entry.identifier).sort()
+    expect(await queueFor('person')).toEqual(['acme/app#2'])
+    expect(await queueFor('unassigned')).toEqual(['acme/app#1'])
+    expect(await queueFor('both')).toEqual(['acme/app#1', 'acme/app#2'])
+  })
+
   it('does not fail a state transition because an absent lifecycle label cannot be removed', async () => {
     const calls: string[][] = []
     const runner: CommandRunner = { run: async (argv): Promise<CommandResult> => {
