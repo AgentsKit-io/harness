@@ -515,6 +515,10 @@ export const precheckTick = async (input: Omit<TickInput, 'dryRun' | 'maxDispatc
   if (work && loaded.config.queue.yieldTo.length) {
     const decision = await evaluateYield({ loaded, runner: input.runner, env: input.env, platform: input.platform, now, machine: input.machine, chain: input.yieldChain })
     if (decision.to) return { work: false, reason: decision.reason, free: state.slots.free, candidates: state.candidates.length, notes: decision.notes }
+    // Asked by a sibling that sits in this loop's own yield chain (A -> B -> A): reporting work would make the asker
+    // yield here while this loop yields back to it on its own tick, so neither ever dispatches. A cyclic yieldTo has no
+    // priority to honour, so the cycle is fail-open: this side says "no work" to the asker and both loops keep going.
+    if (decision.cycle && input.yieldChain?.length) return { work: false, reason: 'yieldTo cycle with the asking loop; not claiming priority', free: state.slots.free, candidates: state.candidates.length, notes: decision.notes }
     if (decision.notes.length) return { work, reason, free: state.slots.free, candidates: state.candidates.length, notes: decision.notes }
   }
   return { work, reason, free: state.slots.free, candidates: state.candidates.length }
@@ -535,6 +539,8 @@ export interface YieldDecision {
   readonly candidates: number
   /** Siblings that could not be evaluated (and so were not yielded to). */
   readonly notes: readonly string[]
+  /** A `yieldTo` entry pointed back up the chain of loops being evaluated. */
+  readonly cycle: boolean
 }
 
 /**
@@ -545,17 +551,18 @@ export interface YieldDecision {
  */
 export const evaluateYield = async (input: { readonly loaded: LoadedLoopConfig; readonly runner: CommandRunner; readonly env?: NodeJS.ProcessEnv | undefined; readonly platform?: NodeJS.Platform | undefined; readonly now: () => Date; readonly machine?: TickInput['machine'] | undefined; readonly chain?: readonly string[] | undefined }): Promise<YieldDecision> => {
   const notes: string[] = []
+  let cycle = false
   const chain = [...(input.chain ?? []), resolve(input.loaded.path)]
   for (const entry of input.loaded.config.queue.yieldTo) {
     const path = resolve(dirname(input.loaded.path), entry)
-    if (chain.includes(path)) { notes.push(`yieldTo ${entry}: already being evaluated up the yield chain (a cycle); ignored`); continue }
+    if (chain.includes(path)) { notes.push(`yieldTo ${entry}: already being evaluated up the yield chain (a cycle); ignored`); cycle = true; continue }
     try {
       const sibling = loadLoopConfig(path)
       const result = await precheckTick({ loaded: sibling, runner: input.runner, ...(input.env ? { env: input.env } : {}), ...(input.platform ? { platform: input.platform } : {}), now: input.now, ...(input.machine ? { machine: input.machine } : {}), yieldChain: chain, includeRefill: false })
-      if (result.work) return { to: sibling.config.project.name, reason: `yielding to ${sibling.config.project.name}: ${result.candidates} dispatchable issue(s)`, candidates: result.candidates, notes }
+      if (result.work) return { to: sibling.config.project.name, reason: `yielding to ${sibling.config.project.name}: ${result.candidates} dispatchable issue(s)`, candidates: result.candidates, notes, cycle }
     } catch (error) { notes.push(`yieldTo ${entry}: could not evaluate (${message(error)}); not yielding to it`) }
   }
-  return { to: null, reason: '', candidates: 0, notes }
+  return { to: null, reason: '', candidates: 0, notes, cycle }
 }
 
 const escalate = async (input: { readonly tracker: TrackerConnector; readonly config: LoopConfig; readonly issue: TrackerIssueDetail; readonly stored: StoredContract; readonly dryRun: boolean }): Promise<void> => {

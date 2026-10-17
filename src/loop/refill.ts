@@ -54,7 +54,12 @@ export const runRefill = async (input: { readonly config: LoopConfig; readonly t
   if (dryRun) return outcome(held, [], picks)
   const assigned: string[] = []
   for (const issue of picks) {
-    try { await tracker.claim(issue, person); assigned.push(issue) } catch (error) {
+    try {
+      // The pool was read a moment ago: re-read right before writing, so an issue a human assigned in between is theirs.
+      const current = await tracker.issue(issue)
+      if (current.assignee) { notes.push(`refill: ${issue} was assigned to ${current.assignee} since the pool was read; left alone`); continue }
+      await tracker.claim(issue, person); assigned.push(issue)
+    } catch (error) {
       notes.push(`refill: assigning ${issue} to ${person} failed: ${message(error)}`)
       // Every further write would hit the same limit; the guard already recorded the cooldown.
       if (isCooling(error)) return outcome(held, assigned, [], true)

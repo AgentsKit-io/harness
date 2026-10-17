@@ -28,7 +28,7 @@ const toLinear = (item: BoardIssue) => ({
 const cleanups: string[] = []
 afterEach(() => { for (const dir of cleanups.splice(0)) rmSync(dir, { recursive: true, force: true }) })
 
-const makeBoard = (issues: BoardIssue[], options: { readonly failAssign?: readonly string[]; readonly rateLimitAssign?: boolean } = {}) => {
+const makeBoard = (issues: BoardIssue[], options: { readonly failAssign?: readonly string[]; readonly rateLimitAssign?: boolean; /** A human assigns these (to 'sib') between the pool read and the claim: the first issue read sees it. */ readonly takenMeanwhile?: readonly string[] } = {}) => {
   const calls: string[][] = []
   const runner: CommandRunner & { readonly calls: string[][] } = {
     calls,
@@ -44,6 +44,12 @@ const makeBoard = (issues: BoardIssue[], options: { readonly failAssign?: readon
         const assignee = flag('--assignee')
         const state = flag('--state')
         return ok({ issues: issues.filter((item) => item.state === state && (assignee === 'null' ? item.assignee === null : item.assignee === assignee)).map(toLinear) })
+      }
+      if (key.startsWith('orca linear issue')) {
+        const target = issues.find((item) => item.identifier === argv[3])
+        if (!target) return failed('not found')
+        if (options.takenMeanwhile?.includes(target.identifier)) target.assignee = 'sib'
+        return ok({ issue: { ...toLinear(target), description: 'body' }, comments: [] })
       }
       if (key.startsWith('orca linear assignee set')) {
         const id = argv[4] as string
@@ -85,7 +91,9 @@ const options = (runner: CommandRunner, configPath: string, bin: string) => ({ c
 const setRefill = (configPath: string, fields: { readonly enabled?: boolean; readonly target?: number; readonly skipLabels?: readonly string[] }): void => {
   const text = readFileSync(configPath, 'utf8')
   const start = text.indexOf('  refill:')
-  const end = text.indexOf('\n', text.indexOf('skipLabels:', start))
+  const skip = text.indexOf('skipLabels:', start)
+  if (start < 0 || skip < 0) throw new Error('loop.config.example.yaml: refill block not found')
+  const end = text.indexOf('\n', skip)
   const block = `  refill:\n    enabled: ${fields.enabled ?? true}\n    target: ${fields.target ?? 4}\n    skipLabels: [${(fields.skipLabels ?? []).join(', ')}]`
   writeFileSync(configPath, `${text.slice(0, start)}${block}${text.slice(end)}`)
 }
@@ -165,6 +173,16 @@ describe('linear.refill', () => {
     expect(report.queue.candidates).toEqual(['ENG-11'])
   })
 
+  it('leaves alone an issue a human assigned after the pool was read', async () => {
+    const board = makeBoard([issue('ENG-10', 1), issue('ENG-11', 2)], { takenMeanwhile: ['ENG-10'] })
+    const configPath = writeLoop()
+    setRefill(configPath, { target: 1 })
+    const report = await runTick({ ...options(board.runner, configPath, binDir()), maxDispatch: 0 })
+    expect(assigned(board.runner)).toEqual([])
+    expect(board.issues.find((item) => item.identifier === 'ENG-10')?.assignee).toBe('sib')
+    expect(report.notes.some((note) => note.includes('refill: ENG-10 was assigned to sib since the pool was read'))).toBe(true)
+  })
+
   it('a rate-limited assignment stops the refill and the tick waits out the tracker cooldown', async () => {
     const board = makeBoard([issue('ENG-10', 1), issue('ENG-11', 2)], { rateLimitAssign: true })
     const configPath = writeLoop()
@@ -232,9 +250,12 @@ describe('queue.yieldTo', () => {
   it('a yield cycle is cut instead of followed', async () => {
     const { board, mainPath, siblingPath } = siblings([issue('ENG-20', 1, { assignee: 'sib' })])
     writeFileSync(siblingPath, readFileSync(siblingPath, 'utf8').replace('  yieldTo: []', '  yieldTo: ["../design-system/loop.config.yaml"]'))
-    // law-os would yield back to design-system, which has work — but design-system is the one asking, so law-os's
-    // own answer stands and design-system yields to it.
-    const report = await runTick(options(board.runner, mainPath, binDir()))
-    expect(report.notes).toContain('yielding to law-os: 1 dispatchable issue(s); nothing new dispatched')
+    // law-os yields back to design-system, which is the one asking: a mutual yieldTo has no priority to honour, so
+    // law-os does not claim the slot and design-system keeps going; otherwise each loop would yield to the other forever.
+    const report = await runTick({ ...options(board.runner, mainPath, binDir()), maxDispatch: 0 })
+    expect(report.notes.some((note) => note.startsWith('yielding to'))).toBe(false)
+    expect((await precheckTick(options(board.runner, mainPath, binDir()))).work).toBe(true)
+    // From law-os's side, design-system does not stall it either.
+    expect((await precheckTick(options(board.runner, siblingPath, binDir()))).work).toBe(true)
   })
 })
