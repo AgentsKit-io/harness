@@ -435,6 +435,7 @@ describe('tick', () => {
     const report = await runTick({ ...tickOptions(env), maxDispatch: 1 })
     expect(report.results[0]?.outcome).toBe('dispatched')
     const claim = env.runner.calls.find((argv) => argv[1] === 'linear' && argv[2] === 'assignee' && argv[3] === 'set')
+    expect(claim?.[4]).toBe(report.results[0]?.issue)
     const person = loadLoopConfig(env.configPath).config.linear.person
     expect(claim?.[claim.indexOf('--to-id') + 1]).toBe(loadLoopConfig(env.configPath).config.linear.people[person])
     const claimAt = env.runner.calls.findIndex((argv) => argv[1] === 'linear' && argv[2] === 'assignee')
