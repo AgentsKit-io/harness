@@ -28,7 +28,7 @@ const toLinear = (item: BoardIssue) => ({
 const cleanups: string[] = []
 afterEach(() => { for (const dir of cleanups.splice(0)) rmSync(dir, { recursive: true, force: true }) })
 
-const makeBoard = (issues: BoardIssue[], options: { readonly failAssign?: readonly string[]; readonly rateLimitAssign?: boolean; /** A human assigns these (to 'sib') between the pool read and the claim: the first issue read sees it. */ readonly takenMeanwhile?: readonly string[] } = {}) => {
+const makeBoard = (issues: BoardIssue[], options: { readonly failAssign?: readonly string[]; readonly rateLimitAssign?: boolean; /** A human assigns these (to 'sib') between the pool read and the claim: the first issue read sees it. */ readonly takenMeanwhile?: readonly string[]; /** `orca linear issue` fails for these identifiers; 'rate-limit' answers every issue read with a 429. */ readonly failRead?: readonly string[] | 'rate-limit'; /** These are assigned to 'person' itself between the pool read and the claim. */ readonly takenByPerson?: readonly string[] } = {}) => {
   const calls: string[][] = []
   const runner: CommandRunner & { readonly calls: string[][] } = {
     calls,
@@ -48,7 +48,10 @@ const makeBoard = (issues: BoardIssue[], options: { readonly failAssign?: readon
       if (key.startsWith('orca linear issue')) {
         const target = issues.find((item) => item.identifier === argv[3])
         if (!target) return failed('not found')
+        if (options.failRead === 'rate-limit') return failed('Linear API: HTTP 429 Too Many Requests')
+        if (Array.isArray(options.failRead) && options.failRead.includes(target.identifier)) return failed(`cannot read ${target.identifier}: gone`)
         if (options.takenMeanwhile?.includes(target.identifier)) target.assignee = 'sib'
+        if (options.takenByPerson?.includes(target.identifier)) target.assignee = 'person'
         return ok({ issue: { ...toLinear(target), description: 'body' }, comments: [] })
       }
       if (key.startsWith('orca linear assignee set')) {
@@ -181,6 +184,34 @@ describe('linear.refill', () => {
     expect(assigned(board.runner)).toEqual(['ENG-11'])
     expect(board.issues.find((item) => item.identifier === 'ENG-10')?.assignee).toBe('sib')
     expect(report.notes.some((note) => note.includes('refill: ENG-10 was assigned to sib since the pool was read'))).toBe(true)
+  })
+
+  it('skips a pick it cannot re-read, without using a slot, and takes the next', async () => {
+    const board = makeBoard([issue('ENG-10', 1), issue('ENG-11', 2), issue('ENG-12', 3)], { failRead: ['ENG-10'] })
+    const configPath = writeLoop()
+    setRefill(configPath, { target: 2 })
+    const report = await runTick({ ...options(board.runner, configPath, binDir()), maxDispatch: 0 })
+    expect(assigned(board.runner)).toEqual(['ENG-11', 'ENG-12'])
+    expect(report.notes.some((note) => note.startsWith('refill: could not re-read ENG-10'))).toBe(true)
+  })
+
+  it('a rate-limited re-read assigns nothing and the tick waits out the cooldown', async () => {
+    const board = makeBoard([issue('ENG-10', 1), issue('ENG-11', 2)], { failRead: 'rate-limit' })
+    const configPath = writeLoop()
+    setRefill(configPath, { target: 2 })
+    const report = await runTick({ ...options(board.runner, configPath, binDir()), maxDispatch: 0 })
+    expect(assigned(board.runner)).toEqual([])
+    expect(report.notes.some((note) => note.includes('re-reading ENG-10 hit the tracker rate limit'))).toBe(true)
+    expect(report.status).toBe('blocked')
+  })
+
+  it('counts an issue the person took themselves meanwhile as held, not as a reason to take another', async () => {
+    const board = makeBoard([issue('ENG-10', 1), issue('ENG-11', 2)], { takenByPerson: ['ENG-10'] })
+    const configPath = writeLoop()
+    setRefill(configPath, { target: 1 })
+    const report = await runTick({ ...options(board.runner, configPath, binDir()), maxDispatch: 0 })
+    expect(assigned(board.runner)).toEqual([])
+    expect(report.notes.some((note) => note.includes('ENG-10 is already assigned to person; counted as held'))).toBe(true)
   })
 
   it('a rate-limited assignment stops the refill and the tick waits out the tracker cooldown', async () => {

@@ -69,6 +69,7 @@ export const runRefill = async (input: { readonly config: LoopConfig; readonly t
         notes.push(`refill: could not re-read ${issue} (${message(error)}); skipped, next one tried`)
         continue
       }
+      if (current.assignee === person) { slots -= 1; notes.push(`refill: ${issue} is already assigned to ${person}; counted as held`); continue }
       if (current.assignee) { notes.push(`refill: ${issue} was assigned to ${current.assignee} since the pool was read; left alone`); continue }
       await tracker.claim(issue, person); assigned.push(issue)
     } catch (error) {
