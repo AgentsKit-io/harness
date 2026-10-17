@@ -181,6 +181,25 @@ For every issue the loop dispatched (`<stateDir>/issues/<id>/dispatch.json`) and
 State lives in `<stateDir>/issues/<id>/delivery.json` (reviews per head, fix rounds, nudges) and every decision is
 appended to `<stateDir>/events.ndjson`. `--dry-run` reports the decision for each issue without touching anything.
 
+### Worker terminals
+
+Every worker terminal is a whole agent session holding memory, and closing one is the loop's job, not the merge's.
+At the end of each pass deliver:
+
+- closes the worker terminal of every issue it finished this pass, whatever the outcome (blocked, stuck, failed,
+  cost-guard, merged) — `delivery.closeTerminalOnFinish`, default `true`. The worktree is kept.
+- lists Orca's terminals once and closes the ones the loop opened (the dispatch's recorded handle, or a recorded
+  handoff terminal) in worktrees it dispatched into when the issue is finished, holds no lease, or the terminal was
+  superseded by a later worker.
+- closes the current worker of an issue whose PR is open when the pass only waited (CI, review, a person), nothing
+  was sent to it, and its terminal printed nothing for `delivery.reapIdleTerminalsMinutes` (default 90; 0 = off).
+
+It never touches the project's main checkout, another project's worktrees, or a terminal the loop did not record.
+A closed handle that Orca already forgot counts as closed; any other close error is a note, never a failed pass.
+Each close is a `worker.terminal-closed` event; a pass that closed anything adds a `terminals.reaped` event with
+counts. A dry run only lists what it would close. A later fix round, nudge or HITL answer for an issue whose terminal
+is gone relaunches a worker in the same worktree (`worker.reactivated`); it is never the no-PR lost-track restart.
+
 ## GitHub label intake: reviewing PRs the loop never dispatched
 
 The loop's normal queue is Linear issues; `github.intakeLabel` (default `loop:review`, set to `null` to disable)
@@ -236,7 +255,9 @@ See `src/loop/event-bus.ts` for the full API (`createLoopEventBus`, `loadLoopPlu
 
 ## Calling a human: `notifications`
 
-The tracker comment always happens — it is the record. `notifications` is the channel on top of it, and it has
+The tracker comment always happens — it is the record. On a merge it carries the delivery evidence (review verdict,
+checks, verify, DoD, fix rounds, spend — ADR-0044), so the issue alone shows what was verified. `notifications` is
+the channel on top of it, and it has
 exactly two generic shapes, so a new destination is configuration rather than a release:
 
 | Channel | Shape | Covers |
@@ -800,6 +821,12 @@ run from a fast `@medium` one.
 `cpus / 2`, `ramBound` fits `agentRssMb` agents into free RAM minus `minFreeRamGb`, and the WSL cap applies only
 inside a WSL distro (host Defender load is invisible there). The loop never lowers a running worker; it only
 decides whether to start another.
+
+`machine.maxLiveTerminals` (default 12, 0 = off) is a hard cap on live terminals in the worktrees the loop
+dispatched into: at the cap `tick` dispatches nothing (every candidate `skipped`, status `blocked` — not a failure),
+below it at most the room left. An `orca terminal create` that times out during a dispatch is capacity, not a
+failure: the half-created worktree is removed, the issue goes back to the queue, no failure is counted toward the
+issue or stage pause, and dispatching waits a 10-minute cooldown (`worker.dispatch-capacity`).
 
 ## Integrations used by the loop
 

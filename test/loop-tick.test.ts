@@ -7,6 +7,7 @@ import {
   BRIEF_POINTER_PROMPT, CONTRACT_CLOSE, CONTRACT_OPEN, assessContract, busyIssues, contractIsFresh, createDispatchLedger, createIssueQueue, deliveryStatePath, dispatchRecordPath, isIssuePaused, linearLabelRemove, loadLoopConfig, parseContractOutput, parseLinearIssueDetail, parseModelRef, precheckTick, readCliModelsCache, readDispatchRecord, readDeliveryState, readIssueFailures, readStoredContract, recordIssueFailure, renderContractPrompt, renderWorkerBrief, resumeIssue, runTick, untrusted, worktreeNameFor, writeStoredContract,
 } from '../src/index.js'
 import type { CommandResult, CommandRunner, StoredContract, TaskContract } from '../src/index.js'
+import { CAPACITY_COOLDOWN_MIN } from '../src/loop/terminal-reaper.js'
 
 const fixture = (name: string): unknown => JSON.parse(readFileSync(join(process.cwd(), 'test/fixtures/loop', `${name}.json`), 'utf8')) as unknown
 const exampleYaml = readFileSync(join(process.cwd(), 'loop.config.example.yaml'), 'utf8').replace(/\r\n/g, '\n').replace('person: my-linear-display-name', 'person: person').replace('my-linear-display-name: <linear-user-id>', 'person: user-id-1')
@@ -20,7 +21,7 @@ interface Env { readonly dir: string; readonly bin: string; readonly runner: Com
 const cleanups: string[] = []
 afterEach(() => { for (const dir of cleanups.splice(0)) rmSync(dir, { recursive: true, force: true }) })
 
-const makeEnv = (options: { readonly contract?: TaskContract | 'garbage'; readonly worktrees?: unknown; readonly failCreate?: boolean; readonly failCreateTransientTimes?: number; readonly claudeAuthFails?: boolean; readonly claudeSessionLimit?: boolean; readonly failAllContracts?: boolean; readonly accountList?: unknown; readonly briefSkills?: readonly string[]; readonly setup?: { readonly exitCode?: number; readonly timedOut?: boolean }; readonly setupRequired?: boolean; readonly pluginSource?: string; readonly issueDescription?: string; readonly securityPii?: { readonly action?: 'redact' | 'warn' | 'block' }; readonly catalogMode?: boolean; readonly queueOwnership?: 'person' | 'unassigned' | 'both'; readonly queueMode?: 'backlog' | 'explicit'; readonly tracker?: 'linear' | 'github'; readonly hideIssuesFromQueue?: boolean; readonly knownFailures?: readonly { readonly path: string; readonly issue: string; readonly reason: string }[]; /** Which Linear read answers with a rate limit / a plain failure (mutable via `env.tracker`). */ readonly trackerRateLimit?: 'queue' | 'issue'; readonly issueFetchFails?: boolean; /** Issue fetches after this many fail with a rate limit. */ readonly rateLimitAfterIssueFetches?: number; readonly excludeLabels?: readonly string[] } = {}): Env => {
+const makeEnv = (options: { readonly contract?: TaskContract | 'garbage'; readonly worktrees?: unknown; readonly failCreate?: boolean; readonly failCreateTransientTimes?: number; readonly claudeAuthFails?: boolean; readonly claudeSessionLimit?: boolean; readonly failAllContracts?: boolean; readonly accountList?: unknown; readonly briefSkills?: readonly string[]; readonly setup?: { readonly exitCode?: number; readonly timedOut?: boolean }; readonly setupRequired?: boolean; readonly pluginSource?: string; readonly issueDescription?: string; readonly securityPii?: { readonly action?: 'redact' | 'warn' | 'block' }; readonly catalogMode?: boolean; readonly queueOwnership?: 'person' | 'unassigned' | 'both'; readonly queueMode?: 'backlog' | 'explicit'; readonly tracker?: 'linear' | 'github'; readonly hideIssuesFromQueue?: boolean; readonly knownFailures?: readonly { readonly path: string; readonly issue: string; readonly reason: string }[]; /** Which Linear read answers with a rate limit / a plain failure (mutable via `env.tracker`). */ readonly trackerRateLimit?: 'queue' | 'issue'; readonly issueFetchFails?: boolean; /** Issue fetches after this many fail with a rate limit. */ readonly rateLimitAfterIssueFetches?: number; readonly excludeLabels?: readonly string[]; /** `orca terminal create` answers with this envelope error (or times out when 'timeout'). */ readonly failTerminalCreate?: string } = {}): Env => {
   const dir = mkdtempSync(join(tmpdir(), 'agentskit-loop-tick-')); cleanups.push(dir)
   const bin = join(dir, 'bin'); rmSync(bin, { recursive: true, force: true })
   let yaml = options.briefSkills?.length ? exampleYaml.replace('skills: []', `skills: [${options.briefSkills.join(', ')}]`) : exampleYaml
@@ -102,6 +103,8 @@ const makeEnv = (options: { readonly contract?: TaskContract | 'garbage'; readon
       if (argv[0] === 'claude' && argv[1] === '-p' && options.claudeSessionLimit) return { code: 1, stdout: "You've hit your session limit \u00b7 resets 10:40pm (America/Sao_Paulo)\n", stderr: '', timedOut: false, durationMs: 1 }
       if (((argv[0] === 'claude' && argv[1] === '-p') || (argv[0] === 'codex' && argv[1] === 'exec')) && options.failAllContracts) return { code: 1, stdout: 'exit 1: transient tool error', stderr: '', timedOut: false, durationMs: 1 }
       if ((argv[0] === 'claude' && argv[1] === '-p') || (argv[0] === 'codex' && argv[1] === 'exec')) return contract === 'garbage' ? { code: 0, stdout: 'no contract here', stderr: '', timedOut: false, durationMs: 1 } : { code: 0, stdout: `thinking…\n${CONTRACT_OPEN}\n${JSON.stringify(contract)}\n${CONTRACT_CLOSE}\n`, stderr: '', timedOut: false, durationMs: 1 }
+      if (key.startsWith('orca terminal create') && options.failTerminalCreate === 'timeout') return { code: null, stdout: '', stderr: '', timedOut: true, durationMs: 20_000 }
+      if (key.startsWith('orca terminal create') && options.failTerminalCreate) return { code: 1, stdout: JSON.stringify({ ok: false, error: options.failTerminalCreate }), stderr: '', timedOut: false, durationMs: 1 }
       if (key.startsWith('orca terminal create')) return okResult({ terminal: { handle: 'term_new' } })
       if (key.startsWith('orca terminal wait')) return okResult({ satisfied: true })
       if (key.startsWith('orca terminal send')) return okResult({ accepted: true, requestId: 'r' })
@@ -906,5 +909,70 @@ describe('tick', () => {
     expect(precheck.free).toBe(0)
     const skipped = await runTick({ ...tickOptions(makeEnv()), skipContractGeneration: true, maxDispatch: 1 })
     expect(skipped.results.every((item) => item.outcome === 'skipped')).toBe(true)
+  })
+})
+
+describe('tick terminal capacity (2026-10-16: terminal create timeouts tripped the circuit breaker)', () => {
+  it('a terminal create timeout is capacity: skipped, re-queued, no failure counted, dispatch waits a short cooldown', async () => {
+    for (const failure of ['timeout', 'Timed out waiting for terminal handle after creation']) {
+      const env = makeEnv({ failTerminalCreate: failure })
+      const report = await runTick({ ...tickOptions(env) })
+      expect(report.results).toHaveLength(1)
+      expect(report.results[0]).toMatchObject({ outcome: 'skipped', reason: expect.stringContaining('capacity:') })
+      expect(report.status).not.toBe('failed')
+      const loaded = loadLoopConfig(env.configPath)
+      const issue = report.results[0]!.issue
+      expect(readIssueFailures(loaded.stateDir, issue).consecutive).toBe(0)
+      expect(createDispatchLedger(loaded.stateDir).active()).toEqual([])
+      // The half-created worktree does not linger.
+      expect(env.runner.calls.some((argv) => argv[1] === 'worktree' && argv[2] === 'rm')).toBe(true)
+      const events = readFileSync(join(loaded.stateDir, 'events.ndjson'), 'utf8')
+      expect(events).toContain('"type":"worker.dispatch-capacity"')
+      expect(events).not.toContain('"type":"worker.dispatch-failed"')
+      // The next tick does not even try while the cooldown runs.
+      env.runner.calls.length = 0
+      const next = await runTick({ ...tickOptions(env) })
+      expect(next).toMatchObject({ status: 'blocked', results: [] })
+      expect(next.notes.some((note) => note.includes('terminal capacity'))).toBe(true)
+      expect(env.runner.calls.some((argv) => argv.join(' ').startsWith('orca terminal create'))).toBe(false)
+      // The tick that hit capacity reports it as blocked too, and the queued run no longer points at a removed worktree.
+      expect(report.status).toBe('blocked')
+      expect(report.results[0]).not.toHaveProperty('worktree')
+      // Once the cooldown has passed the issue is tried again.
+      env.runner.calls.length = 0
+      const later = await runTick({ ...tickOptions(env), now: () => new Date(Date.parse('2026-09-11T12:00:00Z') + (CAPACITY_COOLDOWN_MIN + 1) * 60_000) })
+      expect(later.notes.some((note) => note.includes('terminal capacity'))).toBe(false)
+      expect(env.runner.calls.some((argv) => argv.join(' ').startsWith('orca terminal create'))).toBe(true)
+    }
+  })
+
+  it('a real dispatch failure still counts toward the pause', async () => {
+    const env = makeEnv({ failTerminalCreate: 'worktree_not_found' })
+    const report = await runTick({ ...tickOptions(env), maxDispatch: 1 })
+    expect(report.results[0]).toMatchObject({ outcome: 'failed' })
+    expect(readIssueFailures(loadLoopConfig(env.configPath).stateDir, report.results[0]!.issue).consecutive).toBe(1)
+  })
+
+  it('does not dispatch at machine.maxLiveTerminals live loop terminals, and dispatches at most the room left', async () => {
+    const worktree = (id: string, live: number, extra: Record<string, unknown> = {}) => ({ worktreeId: id, repoId: 'repo-1', repo: 'demo', path: id.split('::')[1], branch: `refs/heads/x/${id}`, isArchived: false, isMainWorktree: false, displayName: id, workspaceStatus: 'in-progress', liveTerminalCount: live, agents: [], ...extra })
+    const withRecords = (live: number) => {
+      const env = makeEnv({ worktrees: { worktrees: [worktree('repo-1::/w/a', live), worktree('repo-1::/w/b', 0), worktree('repo-1::/repo', 30, { isMainWorktree: true }), worktree('repo-9::/other/x', 40)] } })
+      const loaded = loadLoopConfig(env.configPath)
+      for (const [issue, id] of [['OLD-1', 'repo-1::/w/a'], ['OLD-2', 'repo-1::/w/b']] as const) {
+        mkdirSync(dirname(dispatchRecordPath(loaded.stateDir, issue)), { recursive: true })
+        writeFileSync(dispatchRecordPath(loaded.stateDir, issue), JSON.stringify({ issue, worktreeId: id, worktree: issue, branch: `x/${issue}`, terminal: `term_${issue}`, provider: 'claude', model: 'sonnet' }))
+      }
+      return env
+    }
+    const full = withRecords(12)
+    const blocked = await runTick({ ...tickOptions(full) })
+    expect(blocked.status).toBe('blocked')
+    expect(blocked.results.length).toBeGreaterThan(0)
+    expect(blocked.results.every((result) => result.outcome === 'skipped' && result.reason.includes('machine.maxLiveTerminals is 12'))).toBe(true)
+    expect(full.runner.calls.some((argv) => argv.join(' ').startsWith('orca worktree create'))).toBe(false)
+
+    const room = withRecords(11)
+    const report = await runTick({ ...tickOptions(room), maxDispatch: 3 })
+    expect(report.results.filter((result) => result.outcome === 'dispatched')).toHaveLength(1)
   })
 })

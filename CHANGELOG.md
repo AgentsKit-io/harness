@@ -2,6 +2,30 @@
 
 ## [Unreleased]
 
+- **Delivery evidence on the tracker issue.** The merge comment now carries the audit trail: PR, merge commit and who
+  merged (loop or outside), the reviewed head and verdict (APPROVE/COMMENT/REQUEST CHANGES/INCOMPLETE) with findings
+  by severity and INCOMPLETE reasons, unresolved review threads, CI checks, the harness verify, the worker's
+  `verify.json`, DoD lines (plus negative/recovery proofs when recorded), fix rounds, elapsed time and loop-side
+  tokens. Absent parts are named, skipped/blocked items are never shown as passed, free text is PII-redacted, and the
+  body fits the tracker's ceiling with a note of what was cut. Same dedupe key and marker as before; also posted for
+  merges outside the loop, and a brief version is appended to blocked-after-fix-rounds escalations. Trackers declare
+  their comment format and size through `TrackerConnector.comments`; ADR-0044 sketches a Jira connector against it.
+
+- **Resolution verdict and bug fix proof in the evidence comment.** The tracker comment opens with `RESOLVED` /
+  `PARTIAL` / `NOT PROVEN`, computed only from recorded evidence (a merge alone is never RESOLVED), followed by the
+  PR, merge sha, files changed and the issue's checklist state, and an acceptance-criteria table mapping each contract
+  outcome id to its text, status (unproven ones listed) and evidence. Issues with a `delivery.evidence.bugLabels`
+  label (default `Bug`, `type:bug`, `type:fix`) also get a "Bug fix proof" block: reproduction steps from the issue and
+  the regression tests in the PR, stating that failing-before-the-fix was not demonstrated. One extra tracker read per
+  merge; nothing is posted on the GitHub PR.
+
+- **Worker terminals are closed.** Deliver closes the worker terminal on every finished outcome, not only when a merge
+  removes the worktree, and reaps terminals of finished/lease-less issues and idle workers whose PR only waits
+  (`delivery.closeTerminalOnFinish`, `delivery.reapIdleTerminalsMinutes: 90`); worktrees are kept. A fix round for a
+  worker whose terminal is gone relaunches it in the same worktree. `tick` stops dispatching at
+  `machine.maxLiveTerminals` (12) live loop terminals, and an `orca terminal create` timeout is capacity (re-queued,
+  10-minute cooldown, no failure counted) instead of tripping the pause. New events `worker.terminal-closed`,
+  `terminals.reaped`, `worker.dispatch-capacity`.
 - **`linear.queueOwnership: both`.** The queue can now drain unassigned issues AND the ones assigned to `linear.person` (Linear: both listings per state, merged and deduped; GitHub: assignee empty or the person). A dispatched unassigned issue is assigned to the person; escalation/restart never release the assignee under `both`.
 - **Single test run in CI.** `pnpm test:coverage` now includes typecheck and the package criterion output, so the verify job runs the test suite once while retaining coverage thresholds.
 - **Docs artifact frontmatter.** Documentation metadata now uses shared frontmatter splitting and YAML parsing, including folded scalars, block lists, BOM and CRLF input.

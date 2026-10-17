@@ -9,7 +9,7 @@ The four layers that produce this configuration — the machine's global file, t
 machine's overlay — are described in [ADR-0033](https://github.com/AgentsKit-io/harness/blob/main/docs/ADR-0033-four-config-layers-and-presets.md).
 `ak-harness loop validate` prints the effective result, which is the only one that decides anything.
 
-223 of 398 paths carry no description yet.
+223 of 403 paths carry no description yet.
 
 ## `schemaVersion`
 
@@ -185,6 +185,7 @@ Stricter review for the slices of the board that deserve it, keyed by label. The
 | `machine.criticalPercent` | number | `90` |  |
 | `machine.agentRssMb` | number | `1400` | Per-agent RSS budget when live measurement is unavailable. |
 | `machine.wslCap` | integer | `1` |  |
+| `machine.maxLiveTerminals` | integer | `12` | Live Orca terminals in the loop's own worktrees (every dispatched worktree, finished or not) at which `tick` stops dispatching — a skip, not a failure. Each one is a whole agent session holding memory; 48 of them idle for hours exhausted a machine and made `orca terminal create` time out. 0 disables the cap. |
 
 ## `delivery`
 
@@ -238,7 +239,11 @@ Stricter review for the slices of the board that deserve it, keyed by label. The
 | `delivery.ignoreChecks` | string[] | `[]` | Check names ignored when deciding CI is green (e.g. advisory bots). |
 | `delivery.requiredChecks` | string[] | `[]` | Check names that must be observed and green; empty = every reported check must pass. |
 | `delivery.cleanupWorktree` | boolean | `true` | Remove the Orca worktree after a successful merge. |
+| `delivery.closeTerminalOnFinish` | boolean | `true` | Close the worker's terminal (its agent session) when delivery finishes the issue on any outcome — blocked, stuck, failed, cost-guard, merged — and close terminals the loop created for issues already finished. The worktree is never removed by this: a person may still need it. A later fix round relaunches a worker there. |
+| `delivery.reapIdleTerminalsMinutes` | integer | `90` | Close the worker terminal of an issue with an open PR that has been silent this many minutes while the loop only waits (CI, review, a human) — not mid fix round. The next fix round relaunches it in the same worktree. 0 disables it. |
 | `delivery.returnState` | string | `"Todo"` | Linear state an abandoned (stuck/blocked) issue returns to. |
+| `delivery.evidence` | object | `{}` | The evidence comment on the tracker issue. |
+| `delivery.evidence.bugLabels` | string[] | `["Bug","type:bug","type:fix"]` | Tracker labels (case-insensitive) that mark an issue as a bug: the comment then carries a "Bug fix proof" block. |
 
 ## `contract`
 
