@@ -19,6 +19,13 @@
   the regression tests in the PR, stating that failing-before-the-fix was not demonstrated. One extra tracker read per
   merge; nothing is posted on the GitHub PR.
 
+- **Worker terminals are closed.** Deliver closes the worker terminal on every finished outcome, not only when a merge
+  removes the worktree, and reaps terminals of finished/lease-less issues and idle workers whose PR only waits
+  (`delivery.closeTerminalOnFinish`, `delivery.reapIdleTerminalsMinutes: 90`); worktrees are kept. A fix round for a
+  worker whose terminal is gone relaunches it in the same worktree. `tick` stops dispatching at
+  `machine.maxLiveTerminals` (12) live loop terminals, and an `orca terminal create` timeout is capacity (re-queued,
+  10-minute cooldown, no failure counted) instead of tripping the pause. New events `worker.terminal-closed`,
+  `terminals.reaped`, `worker.dispatch-capacity`.
 - **Single test run in CI.** `pnpm test:coverage` now includes typecheck and the package criterion output, so the verify job runs the test suite once while retaining coverage thresholds.
 - **Docs artifact frontmatter.** Documentation metadata now uses shared frontmatter splitting and YAML parsing, including folded scalars, block lists, BOM and CRLF input.
 - **Coverage floor.** `pnpm test:coverage` now enforces ratcheted source coverage in CI.
