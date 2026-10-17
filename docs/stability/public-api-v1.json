@@ -653,6 +653,30 @@
           ]
         },
         {
+          "name": "CommentBlock",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "CommentDocument",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "CommentDrop",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "CommentFormat",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
           "name": "CompatibilityComponent",
           "kinds": [
             "type"
@@ -797,6 +821,12 @@
           ]
         },
         {
+          "name": "DEFAULT_COMMENT_OPTIONS",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
           "name": "DEFAULT_CONFIG_PATH",
           "kinds": [
             "value"
@@ -870,6 +900,12 @@
         },
         {
           "name": "DeliverResult",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "DeliveryEvidence",
           "kinds": [
             "type"
           ]
@@ -1241,7 +1277,25 @@
           ]
         },
         {
+          "name": "EvidenceOptions",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "EvidenceProof",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
           "name": "EvidenceReference",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "EvidenceStatus",
           "kinds": [
             "type"
           ]
@@ -3572,6 +3626,12 @@
           ]
         },
         {
+          "name": "TrackerCommentOptions",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
           "name": "TrackerConnector",
           "kinds": [
             "type"
@@ -4305,6 +4365,12 @@
           ]
         },
         {
+          "name": "buildEvidenceDocument",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
           "name": "buildIssueTimeline",
           "kinds": [
             "value"
@@ -4977,7 +5043,19 @@
           ]
         },
         {
+          "name": "fitComment",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
           "name": "flowLabelFor",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "formatDuration",
           "kinds": [
             "value"
           ]
@@ -5146,6 +5224,12 @@
         },
         {
           "name": "githubPullRequestsForIssue",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "githubUnresolvedReviewThreads",
           "kinds": [
             "value"
           ]
@@ -6531,6 +6615,12 @@
           ]
         },
         {
+          "name": "renderComment",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
           "name": "renderContractPrompt",
           "kinds": [
             "value"
@@ -6850,6 +6940,12 @@
         },
         {
           "name": "retryUiRun",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "reviewVerdict",
           "kinds": [
             "value"
           ]

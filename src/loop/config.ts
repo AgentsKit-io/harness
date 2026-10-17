@@ -487,6 +487,11 @@ export const LoopConfigSchema = z.object({
     reapIdleTerminalsMinutes: z.number().int().min(0).default(90),
     /** Linear state an abandoned (stuck/blocked) issue returns to. */
     returnState: nonEmpty.default('Todo'),
+    /** The evidence comment on the tracker issue. */
+    evidence: z.object({
+      /** Tracker labels (case-insensitive) that mark an issue as a bug: the comment then carries a "Bug fix proof" block. */
+      bugLabels: z.array(nonEmpty).default(['Bug', 'type:bug', 'type:fix']),
+    }).prefault({}),
   }),
   contract: z.object({
     /** Max characters of issue description + comments rendered into the orchestrator prompt. */

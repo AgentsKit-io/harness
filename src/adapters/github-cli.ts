@@ -313,6 +313,22 @@ export const githubCompare = async (runner: CommandRunner, input: { readonly rep
   }
 }
 
+/**
+ * Review threads on a PR that nobody resolved. `null` when the answer is not a count (unexpected shape): an unknown
+ * is never reported as zero. ponytail: first 100 threads only; a PR with more is reported as unknown (null), never as a count.
+ */
+export const githubUnresolvedReviewThreads = async (runner: CommandRunner, input: { readonly repo: string; readonly number: number }, options: GitHubCliOptions = {}): Promise<number | null> => {
+  const [owner, name] = input.repo.split('/')
+  const query = 'query($owner:String!,$name:String!,$number:Int!){repository(owner:$owner,name:$name){pullRequest(number:$number){reviewThreads(first:100){pageInfo{hasNextPage} nodes{isResolved}}}}}'
+  const value = await ghJson(runner, ['api', 'graphql', '-f', `query=${query}`, '-f', `owner=${owner ?? ''}`, '-f', `name=${name ?? ''}`, '-F', `number=${input.number}`], options)
+  const at = (record: unknown, key: string): unknown => isRecord(record) ? record[key] : undefined
+  const reviewThreads = at(at(at(at(value, 'data'), 'repository'), 'pullRequest'), 'reviewThreads')
+  // A truncated page is not a count: threads beyond the first 100 are unseen, so the answer is unknown.
+  if (at(at(reviewThreads, 'pageInfo'), 'hasNextPage') !== false) return null
+  const threads = at(reviewThreads, 'nodes')
+  return Array.isArray(threads) ? threads.filter((thread) => isRecord(thread) && thread['isResolved'] === false).length : null
+}
+
 /** Remove a label from a PR (best-effort — `gh` succeeds even if the label was already gone). */
 export const githubLabelRemove = async (runner: CommandRunner, input: { readonly repo: string; readonly number: number; readonly label: string }, options: GitHubCliOptions = {}): Promise<void> => {
   const argv = [options.bin ?? 'gh', 'pr', 'edit', String(input.number), '--repo', input.repo, '--remove-label', input.label]

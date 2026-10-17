@@ -78,6 +78,12 @@ interface Scenario {
   readonly linearRateLimited?: boolean
   /** `orca terminal close` fails with this error. */
   readonly terminalCloseError?: string
+  /** Unresolved review threads the GraphQL lookup reports; omitted = the lookup answers with an unexpected shape. */
+  readonly reviewThreads?: number
+  /** What `orca linear issue` returns for the issue (labels, description); omitted = the generic ok payload (no issue details). */
+  readonly linearIssue?: Record<string, unknown>
+  /** A frozen contract written into the issue's state dir. */
+  readonly storedContract?: StoredContract['contract']
 }
 
 const basePr = (over: Record<string, unknown> = {}): Record<string, unknown> => ({ ...(fixture('gh-pr-view') as Record<string, unknown>), headRefName: 'person/eng-10-demo', files: [{ path: 'packages/demo/src/index.ts' }], statusCheckRollup: [{ __typename: 'CheckRun', name: 'ci', conclusion: 'SUCCESS', status: 'COMPLETED' }], mergeable: 'MERGEABLE', mergeStateStatus: 'CLEAN', state: 'OPEN', number: 42, url: 'https://github.com/o/r/pull/42', ...over })
@@ -110,6 +116,7 @@ const setup = (initial: Scenario = {}) => {
   const record: DispatchRecordFile = { issue: 'ENG-10', worktreeId: 'repo-1::/w/eng-10-demo', worktree: 'eng-10-demo', branch: 'person/eng-10-demo', terminal: 'term_w', provider: 'claude', model: 'sonnet', contractDigest: 'abc', leaseKey: claim.lease.key, leaseId: claim.lease.leaseId, dispatchedAt: scenario.dispatchedAt ?? '2026-09-11T10:00:00.000Z', url: 'https://linear.app/x/issue/ENG-10', initialRemainingPercent: scenario.initialRemainingPercent ?? null, ...(worktreePath ? { worktreePath } : {}) } as DispatchRecordFile
   mkdirSync(join(loaded.stateDir, 'issues', 'ENG-10'), { recursive: true })
   writeFileSync(dispatchRecordPath(loaded.stateDir, 'ENG-10'), JSON.stringify(record))
+  if (scenario.storedContract) writeFileSync(join(loaded.stateDir, 'issues', 'ENG-10', 'contract.json'), JSON.stringify({ schemaVersion: 1, issue: 'ENG-10', issueUpdatedAt: '2026-09-10T00:00:00.000Z', generatedAt: '2026-09-10T00:00:00.000Z', provider: 'claude', model: 'opus', source: 'llm', digest: 'abc', assessment: { dispatchable: true, reasons: [] }, contract: scenario.storedContract }))
   if (scenario.mergedEvent) writeFileSync(join(loaded.stateDir, 'events.ndjson'), `${JSON.stringify({ at: NOW.toISOString(), type: 'pr.merged', issue: 'ENG-10', ...scenario.mergedEvent })}\n`)
   const account = JSON.parse(JSON.stringify((fixture('account-list') as { result: unknown }).result)) as { rateLimits: Record<string, { weekly?: { usedPercent: number }; session?: { usedPercent: number }; status?: string }> }
   if (account.rateLimits['codex']?.weekly) account.rateLimits['codex'].weekly.usedPercent = scenario.reviewerAvailable === false ? 100 : 10
@@ -165,6 +172,7 @@ const setup = (initial: Scenario = {}) => {
       }
       if (scenario.orcaWorktreeMissing && (key.startsWith('orca worktree set') || key.startsWith('orca worktree rm'))) return { code: 1, stdout: '', stderr: 'selector_not_found', timedOut: false, durationMs: 1 }
       if (key.startsWith('orca linear') && scenario.linearRateLimited) return { code: 1, stdout: '', stderr: 'Linear API: HTTP 429 Too Many Requests', timedOut: false, durationMs: 1 }
+      if (key.startsWith('orca linear issue ') && scenario.linearIssue) return okResult({ issue: { identifier: 'ENG-10', title: 'Export is empty', url: 'https://linear.app/x/issue/ENG-10', state: { name: 'In Progress', type: 'started' }, updatedAt: '2026-09-10T00:00:00.000Z', createdAt: '2026-09-09T00:00:00.000Z', ...scenario.linearIssue } })
       if (key.startsWith('orca linear') || key.startsWith('orca worktree set') || key.startsWith('orca worktree rm')) return okResult({ ok: true })
       if (argv[0] === 'agentskit-review' && (scenario.reviewThrows ?? 0) > 0) { scenario.reviewThrows = (scenario.reviewThrows ?? 1) - 1; throw new Error('spawn agentskit-review EAGAIN') }
       if (argv[0] === 'agentskit-review') {
@@ -174,6 +182,7 @@ const setup = (initial: Scenario = {}) => {
       }
       if (argv[0] === 'gh' && argv[1] === 'api' && argv.includes('--method')) return scenario.mergeRefused ? { code: 1, stdout: JSON.stringify({ message: 'Head branch was modified.' }), stderr: '', timedOut: false, durationMs: 1 } : ok({ merged: true, sha: 'deadbeef', message: 'merged' })
       if (argv[0] === 'gh' && argv[1] === 'api' && argv.some((arg) => arg.includes('loop:run-summary'))) return { code: 0, stdout: scenario.summaryCommentId ? `${scenario.summaryCommentId}\n` : '', stderr: '', timedOut: false, durationMs: 1 }
+      if (argv[0] === 'gh' && argv[1] === 'api' && argv[2] === 'graphql' && scenario.reviewThreads !== undefined) return ok({ data: { repository: { pullRequest: { reviewThreads: { pageInfo: { hasNextPage: false }, nodes: [{ isResolved: true }, ...Array.from({ length: scenario.reviewThreads }, () => ({ isResolved: false }))] } } } } })
       if (argv[0] === 'gh' && argv[1] === 'api') return ok([])
       if (argv[0] === 'gh' && argv[1] === 'pr' && argv[2] === 'comment') return { code: 0, stdout: '', stderr: '', timedOut: false, durationMs: 1 }
       if (argv[0] === 'git' && argv[1] === 'status') return { code: 0, stdout: scenario.gitStatus ?? '', stderr: '', timedOut: false, durationMs: 1 }
@@ -338,6 +347,11 @@ describe('deliver', () => {
     expect(env.runner.calls.filter((argv) => argv[1] === 'linear' && argv[2] === 'status').some((argv) => argv.includes('Todo'))).toBe(true)
     expect(env.ledger.active()).toEqual([])
     expect(env.runner.calls.some((argv) => argv[1] === 'worktree' && argv[2] === 'rm')).toBe(false)
+    // The person taking over gets the last review's findings on the issue, not only "blocked".
+    const blockedComment = env.runner.calls.find((argv) => argv[1] === 'linear' && argv[2] === 'comment' && argv.join(' ').includes('Loop: blocked after'))?.join(' ')
+    expect(blockedComment).toContain('**Evidence at the block**')
+    expect(blockedComment).toContain('Code review: REQUEST CHANGES at `222222222222`')
+    expect(blockedComment).toContain('| high | a.ts:2 | Bug |')
   })
 
   it('treats a review that exits with findings but zero items at/above the severity floor as clean, not a stuck fix round', async () => {
@@ -555,6 +569,75 @@ describe('deliver', () => {
     const prMerged = events.filter((event) => event['type'] === 'pr.merged')
     expect(prMerged).toHaveLength(1)
     expect(prMerged[0]).toMatchObject({ issue: 'ENG-10', pr: expect.any(Number) })
+  })
+
+  it('posts the merge evidence on the tracker issue under one stable dedupe key: review, threads, CI, verify, DoD', async () => {
+    const env = setup({
+      review: { code: 0, findings: [{ severity: 'nit', title: 'Name could be clearer', file: 'packages/demo/src/index.ts', line: 1 }] },
+      reviewThreads: 1,
+      worktreeFiles: {
+        'verify.json': JSON.stringify({ ranAt: '2026-09-11T11:50:00.000Z', command: 'pnpm test', exitCode: 0, outcomes: [{ id: 'o1', status: 'passed', evidence: 'Tests 120 passed (120)' }] }),
+        'dod.json': JSON.stringify({ project: [], outcomes: [{ id: 'o1', status: 'passed', evidence: 'Tests 120 passed' }], negative: [{ id: 'rejects-empty', status: 'passed', evidence: 'POST {} -> 400' }], recovery: [{ id: 'retry-after-crash', status: 'skipped', evidence: 'needs staging' }] }),
+      },
+    })
+    expect((await deliver(env)).results[0]).toMatchObject({ outcome: 'merged', pr: 42 })
+    const merged = env.runner.calls.filter((argv) => argv[1] === 'linear' && argv[2] === 'comment' && argv.join(' ').includes('Loop: merged'))
+    expect(merged).toHaveLength(1)
+    const body = merged[0]![merged[0]!.indexOf('--body') + 1]!
+    expect(body).toContain('**Loop: merged**\n\nhttps://github.com/o/r/pull/42 as `deadbeef` after a clean review and green checks.')
+    expect(body).toContain('Merged: `deadbeef` by the loop')
+    expect(body).toContain('Code review: COMMENT at `c74d687ee599`')
+    expect(body).toContain('Findings by severity: blocker 0, high 0, med 0, nit 1')
+    expect(body).toContain('Unresolved review threads: 1')
+    expect(body).toContain('| ci | SUCCESS | no |')
+    expect(body).toContain('Worker verify: exit 0 — 1 passed')
+    expect(body).toContain('| PASSED | rejects-empty | POST {} -> 400 |')
+    expect(body).toContain('| SKIPPED | retry-after-crash | needs staging |')
+    expect(body).toContain('Elapsed: 2h 0m')
+    expect(body.endsWith('<!-- loop:merged:42 -->')).toBe(true)
+    // A completion that crashed before finishing runs again: the comment goes out with the same write id, which
+    // Orca/Linear dedupe on — the issue still carries one evidence comment.
+    const writeId = merged[0]![merged[0]!.indexOf('--write-id') + 1]
+    writeFileSync(join(env.loaded.stateDir, 'issues', 'ENG-10', 'delivery.json'), JSON.stringify({ ...readDeliveryState(env.loaded.stateDir, 'ENG-10'), finishedAt: null, finalOutcome: null }))
+    env.ledger.claim({ tracker: 'linear', repository: 'org/demo', issue: 'ENG-10', worktree: 'eng-10-demo', branch: 'person/eng-10-demo', owner: 'test' })
+    await deliver(env)
+    const again = env.runner.calls.filter((argv) => argv[1] === 'linear' && argv[2] === 'comment' && argv.join(' ').includes('Loop: merged'))
+    expect(again.map((argv) => argv[argv.indexOf('--write-id') + 1])).toEqual([writeId, writeId])
+  })
+
+  it('posts merge evidence for a PR merged outside the loop, naming every part the loop never recorded', async () => {
+    const env = setup({ pr: null, mergedPr: basePr({ state: 'MERGED', statusCheckRollup: [] }) })
+    expect((await deliver(env)).results[0]).toMatchObject({ outcome: 'merged' })
+    const body = env.runner.calls.find((argv) => argv[1] === 'linear' && argv[2] === 'comment' && argv.join(' ').includes('Loop: merged'))!.join(' ')
+    expect(body).toContain('Merged: merge commit not reported by a person outside the loop')
+    expect(body).toContain('Code review: no review recorded')
+    expect(body).toContain('Unresolved review threads: unavailable')
+    expect(body).toContain('CI: no checks reported — not run or unavailable')
+    expect(body).toContain('Worker verify (verify.json): no evidence recorded')
+    expect(body).toContain('Unavailable or not recorded: issue details (labels, checklist), code review, review threads, CI checks, verify.json, definition of done.')
+  })
+
+  it('proves a bug fix on the issue: criterion text from the frozen contract, repro from the issue, the regression test from the PR files', async () => {
+    const contract: StoredContract['contract'] = { intent: 'Fix empty export', scope: { inScope: ['export'], outOfScope: [] }, outcomes: [{ id: 'o1', description: 'Export of a non-empty order list is not empty', check: { kind: 'command', command: 'pnpm test' } }, { id: 'o2', description: 'Export keeps the header row', check: { kind: 'test', command: 'pnpm test' } }], ambiguities: [], hitl: [], touchpoints: [], risks: [] }
+    const env = setup({
+      review: { code: 0 },
+      storedContract: contract,
+      pr: basePr({ files: [{ path: 'packages/demo/src/export.ts' }, { path: 'packages/demo/test/export.test.ts' }] }),
+      linearIssue: { labels: [{ name: 'Bug' }], description: '## Steps to reproduce\n1. Open /orders\n2. Click Export\n\n## Checklist\n- [x] fix\n- [ ] changelog' },
+      worktreeFiles: { 'verify.json': JSON.stringify({ command: 'pnpm test', exitCode: 0, outcomes: [{ id: 'o1', status: 'passed', evidence: ' ✓ exports a non-empty file 3ms' }] }), 'dod.json': JSON.stringify({ project: [], outcomes: [{ id: 'o1', status: 'passed', evidence: 'exports a non-empty file' }, { id: 'o2', status: 'passed', evidence: 'header asserted in export.test.ts' }] }) },
+    })
+    expect((await deliver(env)).results[0]).toMatchObject({ outcome: 'merged' })
+    const body = env.runner.calls.find((argv) => argv[1] === 'linear' && argv[2] === 'comment' && argv.join(' ').includes('Loop: merged'))![env.runner.calls.find((argv) => argv[1] === 'linear' && argv[2] === 'comment' && argv.join(' ').includes('Loop: merged'))!.indexOf('--body') + 1]!
+    expect(body).toContain('RESOLVED — 2 of 2 acceptance criteria proven by recorded evidence. Bug fix: see "Bug fix proof"')
+    expect(body).toContain('| PASSED | o1 | Export of a non-empty order list is not empty | exports a non-empty file [verify `pnpm test` → exit 0] |')
+    expect(body).toContain('| PASSED | o2 | Export keeps the header row | header asserted in export.test.ts |')
+    expect(body).toContain('Files changed: 2')
+    expect(body).toContain('Issue checklist (as fetched at completion): 1/2 item(s) checked')
+    expect(body).toContain('Reproduction (from the issue): 1. Open /orders 2. Click Export')
+    expect(body).toContain('Regression test(s) in this PR: `packages/demo/test/export.test.ts`; passing tests named in the worker\'s verify output: exports a non-empty file')
+    expect(body).toContain('not demonstrated: regression test not verified to fail before the fix')
+    // A GitHub PR gets no extra comment: the evidence goes through the tracker only.
+    expect(env.runner.calls.some((argv) => argv[0] === 'gh' && argv[1] === 'pr' && argv[2] === 'comment' && argv.join(' ').includes('Resolution'))).toBe(false)
   })
 
   it('does not double-emit `pr.merged` on a reconciliation pass over an already-merged delivery', async () => {

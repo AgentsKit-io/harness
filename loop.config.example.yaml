@@ -223,6 +223,8 @@ delivery:
   closeTerminalOnFinish: true        # close the worker terminal on every finished outcome (worktree kept)
   reapIdleTerminalsMinutes: 90       # close a worker silent this long while its open PR only waits; relaunched on the next fix round; 0 = off
   returnState: Todo                  # where a stuck/blocked issue goes back to
+  evidence:
+    bugLabels: [Bug, type:bug, type:fix]   # issues with one of these labels get a "Bug fix proof" block in the merge comment
 
 
 # --- 0.6.0 optional SDLC seams (defaults keep prior behaviour) ---
