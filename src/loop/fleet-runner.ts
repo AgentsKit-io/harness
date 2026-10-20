@@ -29,16 +29,59 @@ const foldState = (raw: unknown): FleetState => {
 
 const text = (value: unknown): string | null => typeof value === 'string' && value.length > 0 ? value : null
 
+interface QueueRow { readonly id: string; readonly state: FleetState; /** The id `fleet collect` takes, when the row carries one distinct from the queue id. */ readonly hostTaskId: string | null }
+
 /** Accepts a bare array or `{ tasks: [...] }`; rows without an id are dropped. */
-const parseQueue = (stdout: string): readonly { readonly id: string; readonly state: FleetState }[] => {
+const parseQueue = (stdout: string): readonly QueueRow[] => {
   let parsed: unknown
   try { parsed = JSON.parse(stdout) } catch { fail('fleet queue --json did not print JSON.', 'HARNESS_ERROR') }
   const rows = Array.isArray(parsed) ? parsed : typeof parsed === 'object' && parsed !== null && Array.isArray((parsed as { tasks?: unknown }).tasks) ? (parsed as { tasks: unknown[] }).tasks : fail('fleet queue --json: expected an array of tasks.', 'HARNESS_ERROR')
-  return rows.flatMap((row): { id: string; state: FleetState }[] => {
+  return rows.flatMap((row): QueueRow[] => {
     const record = typeof row === 'object' && row !== null ? row as Record<string, unknown> : {}
     const id = text(record['id']) ?? text(record['queueId'])
-    return id ? [{ id, state: foldState(record['state']) }] : []
+    const hostTaskId = text(record['hostTaskId']) ?? text(record['host_task_id']) ?? text(record['taskId']) ?? text(record['task_id'])
+    return id ? [{ id, state: foldState(record['state']), hostTaskId }] : []
   })
+}
+
+/** `fleet submit` argv as a dry run reports it: the same shape the real submit uses, with the prompt file named by a placeholder. */
+export const fleetSubmitPreview = (config: RunnerInput['loaded']['config'], base: string): readonly string[] => {
+  const fleet = config.connectors.fleet
+  const project = fleet.project ? fleet.project.startsWith('github:') ? fleet.project : `github:${fleet.project}` : 'github:<origin remote>'
+  return [fleet.bin, 'submit', '--project', project, '--base', base, '--model', fleet.model, ...(fleet.fallbackModels.length > 0 ? ['--fallback-models', fleet.fallbackModels.join(',')] : []), '--priority', String(fleet.priority), '--prompt-file', '<prompt file>']
+}
+
+export interface FleetProbe { readonly id: string; readonly status: 'passed' | 'warning' | 'failed'; readonly detail: string }
+
+/** What `loop doctor` asks of the fleet: `fleet doctor --json` summarised, and `fleet queue --json` reachable. Never throws. */
+export const probeFleet = async (input: RunnerInput): Promise<readonly FleetProbe[]> => {
+  const { bin, timeoutMs } = input.loaded.config.connectors.fleet
+  const call = async (args: readonly string[]) => {
+    try { return await input.runner.run([bin, ...args], { timeoutMs, cwd: input.loaded.root }) } catch (error) { return { code: null, stdout: '', stderr: error instanceof Error ? error.message : String(error), timedOut: false, durationMs: 0 } }
+  }
+  const probes: FleetProbe[] = []
+  const doctor = await call(['doctor', '--json'])
+  if (doctor.timedOut || doctor.code !== 0) probes.push({ id: 'fleet.doctor', status: 'failed', detail: `"${bin} doctor --json" ${doctor.timedOut ? 'timed out' : `exited ${doctor.code ?? 'null'}`}${doctor.stderr.trim() ? `: ${doctor.stderr.trim().slice(0, 200)}` : ''}` })
+  else {
+    let parsed: unknown = null
+    try { parsed = JSON.parse(doctor.stdout) } catch { /* reported below */ }
+    const record = typeof parsed === 'object' && parsed !== null && !Array.isArray(parsed) ? parsed as Record<string, unknown> : null
+    if (!record) probes.push({ id: 'fleet.doctor', status: 'warning', detail: `"${bin} doctor --json" exited 0 but printed no JSON summary` })
+    else {
+      const checks = Array.isArray(record['checks']) ? record['checks'].filter((item): item is Record<string, unknown> => typeof item === 'object' && item !== null) : []
+      const failing = checks.filter((item) => ['failed', 'fail', 'error'].includes(String(item['status']).toLowerCase()) || item['ok'] === false)
+      const overall = typeof record['status'] === 'string' ? record['status'].toLowerCase() : null
+      const bad = record['ok'] === false || (overall !== null && ['failed', 'fail', 'error'].includes(overall)) || failing.length > 0
+      const names = failing.map((item) => text(item['id']) ?? text(item['name']) ?? 'check').slice(0, 5).join(', ')
+      probes.push({ id: 'fleet.doctor', status: bad ? 'failed' : 'passed', detail: `${checks.length ? `${checks.length - failing.length}/${checks.length} checks ok` : (overall ?? 'ok')}${failing.length ? `; failing: ${names}` : ''}` })
+    }
+  }
+  const queue = await call(['queue', '--json'])
+  if (queue.timedOut || queue.code !== 0) probes.push({ id: 'fleet.queue', status: 'failed', detail: `"${bin} queue --json" ${queue.timedOut ? 'timed out' : `exited ${queue.code ?? 'null'}`}${queue.stderr.trim() ? `: ${queue.stderr.trim().slice(0, 200)}` : ''}` })
+  else {
+    try { probes.push({ id: 'fleet.queue', status: 'passed', detail: `reachable · ${parseQueue(queue.stdout).length} task(s)` }) } catch (error) { probes.push({ id: 'fleet.queue', status: 'failed', detail: error instanceof Error ? error.message : String(error) }) }
+  }
+  return probes
 }
 
 /** `github:owner/repo` from an `origin` URL (https or ssh); null when it is not a GitHub remote. */
@@ -115,6 +158,21 @@ export const createFleetRunner = ({ loaded, runner }: RunnerInput): RunnerConnec
       const result = await run(['tail', queueId])
       if (result.code !== 0) return ''
       return lines ? result.stdout.split(/\r?\n/).slice(-lines).join('\n') : result.stdout
+    },
+    // `fleet collect` brings the task's branch into the local clone and never pushes; pushing and opening the PR stay
+    // the harness's job. The branch is the one the output names, else the one the workspace was created with — and it
+    // must exist locally afterwards, or the collect did not deliver what deliver is about to push.
+    collect: async ({ id }) => {
+      const entry = record(id)
+      const queueId = entry.queueId ?? fail(`Fleet workspace "${id}" was never submitted; there is nothing to collect.`, 'HARNESS_ERROR')
+      const row = (await queue()).find((item) => item.id === queueId)
+      const taskId = row?.hostTaskId ?? queueId
+      const result = await run(['collect', taskId])
+      if (result.code !== 0) fail(`fleet collect ${taskId} failed: ${result.stderr.trim() || `exit ${result.code ?? 'null'}`}`, 'HARNESS_ERROR')
+      const branch = /\bbranch[:=\s]+'?([\w./-]+)'?/i.exec(result.stdout)?.[1] ?? entry.branch
+      const present = await runner.run(['git', '-C', loaded.root, 'rev-parse', '--verify', '--quiet', `refs/heads/${branch}`], { timeoutMs: 15_000 })
+      if (present.code !== 0) fail(`fleet collect ${taskId} succeeded but branch "${branch}" is not in the local clone.`, 'HARNESS_ERROR')
+      return { branch, detail: `collected ${taskId} → ${branch}` }
     },
     schedule: async () => ['the fleet coordinator owns scheduling'],
     // ponytail: a pull request is the SCM's to report, so `pullRequest` is always null; only the task state is the fleet's.

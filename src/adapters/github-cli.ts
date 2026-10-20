@@ -229,7 +229,11 @@ const ghRun = async (runner: CommandRunner, argv: readonly string[], options: Gi
   return outcome.stdout.trim()
 }
 
-export const githubIssueEditArgv = (input: { readonly identifier: string; readonly repo: string; readonly addLabels?: readonly string[]; readonly removeLabels?: readonly string[]; readonly addAssignees?: readonly string[]; readonly removeAssignees?: readonly string[] }, bin = 'gh'): readonly string[] => [bin, 'issue', 'edit', String(issueNumber(input.identifier)), '--repo', input.repo, ...(input.addLabels ?? []).flatMap((label) => ['--add-label', label]), ...(input.removeLabels ?? []).flatMap((label) => ['--remove-label', label]), ...(input.addAssignees ?? []).flatMap((assignee) => ['--add-assignee', assignee]), ...(input.removeAssignees ?? []).flatMap((assignee) => ['--remove-assignee', assignee])]
+/** `gh pr create` for a branch already on the remote; returns the PR url `gh` prints. */
+export const githubPullRequestCreate = async (runner: CommandRunner, input: { readonly repo: string; readonly head: string; readonly base: string; readonly title: string; readonly body: string }, options: GitHubCliOptions = {}): Promise<string> =>
+  ghRun(runner, ['pr', 'create', '--repo', input.repo, '--head', input.head, '--base', input.base, '--title', input.title, '--body', input.body], options, 60_000)
+
+export const githubIssueEditArgv =(input: { readonly identifier: string; readonly repo: string; readonly addLabels?: readonly string[]; readonly removeLabels?: readonly string[]; readonly addAssignees?: readonly string[]; readonly removeAssignees?: readonly string[] }, bin = 'gh'): readonly string[] => [bin, 'issue', 'edit', String(issueNumber(input.identifier)), '--repo', input.repo, ...(input.addLabels ?? []).flatMap((label) => ['--add-label', label]), ...(input.removeLabels ?? []).flatMap((label) => ['--remove-label', label]), ...(input.addAssignees ?? []).flatMap((assignee) => ['--add-assignee', assignee]), ...(input.removeAssignees ?? []).flatMap((assignee) => ['--remove-assignee', assignee])]
 
 export const githubIssueEdit = async (runner: CommandRunner, input: Parameters<typeof githubIssueEditArgv>[0], options: GitHubCliOptions = {}): Promise<void> => {
   const args = githubIssueEditArgv(input, options.bin)

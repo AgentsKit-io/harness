@@ -410,9 +410,9 @@ ak-harness loop tick [options]
 
 | Flag | What it does | Default |
 |---|---|---|
-| `--dry-run` | plan only; no worktree, no tracker write, no contract cached |  |
+| `--dry-run` | plan only, offline: no worktree, no tracker write, no model call (no contract is generated or cached) |  |
 | `--max &lt;n&gt;` | max dispatches this tick |  |
-| `--issue &lt;identifier&gt;` | restrict to one issue |  |
+| `--issue &lt;identifier&gt;` | restrict to one issue (GitHub: 1, #1, owner/repo#1 or the issue URL); an error when it matches none |  |
 | `--skip-contract` | do not call the orchestrator when no contract is cached |  |
 
 ### `ak-harness loop contract`

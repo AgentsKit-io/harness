@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
-  "contentHash": "99c9cab47a935be1abcab0444c0a4726dfe8534a163dfb01d60b332b744e5652",
+  "contentHash": "8b2603398f12c93339a32ec4475c2ba7556d7ecaf0ba01790b177dbbebb91631",
   "contentHashAlgo": "sha256-semantic-v1",
-  "generatedAt": "2026-10-20T03:22:01.873Z",
+  "generatedAt": "2026-10-20T13:26:57.596Z",
   "project": {
     "name": "AgentsKit Harness",
     "root": "."
@@ -927,7 +927,7 @@
         "document",
         "human"
       ],
-      "contentHash": "9a055045aaa167dede594edfa490efd6594dfba7beac12417993f4af0468ba6d"
+      "contentHash": "9a05c023ff0b85320e3b9b055fb452f7bd46ca85bc1fae883be4cf8b3183c38c"
     },
     {
       "id": "document:docs/GETTING-STARTED.md",
@@ -951,7 +951,7 @@
         "document",
         "human"
       ],
-      "contentHash": "6672262d5ddcbf599f699a5171bd637f3e103556e911d0fdb7050755fff0d8cd"
+      "contentHash": "8d522ed67f4d9538265b3dcfe15cb9302decbb797b735a505833ad98d9770960"
     },
     {
       "id": "document:docs/MODULE-BOUNDARIES.md",
@@ -2035,6 +2035,7 @@
         "githubOpenPullRequests",
         "githubPreflight",
         "githubPullRequest",
+        "githubPullRequestCreate",
         "githubPullRequestsForBranch",
         "githubPullRequestsForIssue",
         "githubUnresolvedReviewThreads",
@@ -2049,7 +2050,7 @@
         "ts",
         "adapters"
       ],
-      "contentHash": "993d72025b3e001ca25599875434041b60edf8b541e054e0c07e3c117d886b07"
+      "contentHash": "f2b14336f98061bfcf443b8d78915051a07e394373845ba1e48c637449a408d9"
     },
     {
       "id": "module:src/adapters/linear-orca.ts",
@@ -2284,7 +2285,7 @@
         "ts",
         "src"
       ],
-      "contentHash": "357c25121ae5ead1e4c5df6dbee15416f52d940d7d836ab8019fcbad4dfb8d6d"
+      "contentHash": "8798c129595ee84d294c6e7037b2af34185262aad9d4bde0eb892643a4aaac0f"
     },
     {
       "id": "module:src/context/index.ts",
@@ -4116,7 +4117,7 @@
         "ts",
         "loop"
       ],
-      "contentHash": "5a006dabd1215b163645cb0846c53d2f9eeb38c70ce246a3ff15eb5915c448a9"
+      "contentHash": "3eb5e0140e10207156a63301c98e7a9763d294a90f22199aaade4c62ba9aa68c"
     },
     {
       "id": "module:src/loop/detached-worker.ts",
@@ -4153,7 +4154,7 @@
         "ts",
         "loop"
       ],
-      "contentHash": "013ca11a270dd8fe5ee91ce100ffec861894c89a758574ccf5eb68c0c6a004c1"
+      "contentHash": "f0608ec480a5d1955da3873adb9b67d5ca26c2eab9a1e2b4d958c0e8dd0fa03f"
     },
     {
       "id": "module:src/loop/documents.ts",
@@ -4278,14 +4279,17 @@
       "title": "fleet-runner.ts",
       "path": "src/loop/fleet-runner.ts",
       "symbols": [
-        "createFleetRunner"
+        "FleetProbe",
+        "createFleetRunner",
+        "fleetSubmitPreview",
+        "probeFleet"
       ],
       "tags": [
         "module",
         "ts",
         "loop"
       ],
-      "contentHash": "39d0b1e87a4535e43d28b96a4ca308101a1e24617fec3f8054d73c8ad3bd240e"
+      "contentHash": "1b02f4348f9919b93950c358b09769440ad4375701190bedc65e43e7edbea43f"
     },
     {
       "id": "module:src/loop/flows.ts",
@@ -5351,7 +5355,7 @@
         "ts",
         "loop"
       ],
-      "contentHash": "b938da45b64345583891efbe3286d081706299e87a708e0b5682bb6e8486cec6"
+      "contentHash": "fb8c1d4a9820268af425b46fc6a933216717be3d6539b1732b7575eacbd19a66"
     },
     {
       "id": "module:src/loop/skills.ts",
@@ -5487,6 +5491,7 @@
         "launchWorkerTerminal",
         "precheckTick",
         "readDispatchRecord",
+        "resolveIssueRef",
         "runTick",
         "worktreeNameFor",
         "writeDispatchRecord"
@@ -5496,7 +5501,7 @@
         "ts",
         "loop"
       ],
-      "contentHash": "500c712a5909bf7e4f1cc250c53300e74807c4ee615cd2eaab3a08027c52fa76"
+      "contentHash": "85342432e8a6c9c72dbd4b390945abd8ba7c2b39bd5c56ae336f7abd7e5d019b"
     },
     {
       "id": "module:src/loop/tracker-cooldown.ts",
@@ -8168,6 +8173,18 @@
       "contentHash": "2802dabd082eb1321028ce8986e69e1e42e1e905ad66ed50f687c45b1a37fb53"
     },
     {
+      "id": "module:test/loop-fleet-dispatch.test.ts",
+      "type": "module",
+      "title": "loop-fleet-dispatch.test.ts",
+      "path": "test/loop-fleet-dispatch.test.ts",
+      "tags": [
+        "module",
+        "ts",
+        "test"
+      ],
+      "contentHash": "1121627f1528f70f33713b217f538b8017a4381b0417ddd74bc68c5292d618bf"
+    },
+    {
       "id": "module:test/loop-fleet-runner.test.ts",
       "type": "module",
       "title": "loop-fleet-runner.test.ts",
@@ -8177,7 +8194,7 @@
         "ts",
         "test"
       ],
-      "contentHash": "c3642a626fda29298b0f9d905bdca717f6a4250cb0133b8d4d177353e595aff7"
+      "contentHash": "6ee601172a8e2ed4d3a40fd126d5a129a9a246e1b940a5bc90347fcda8cff6c7"
     },
     {
       "id": "module:test/loop-flows.test.ts",
@@ -9309,8 +9326,8 @@
     }
   },
   "inputs": {
-    "hash": "18f0c1dffc548eca5d54a85a997734478ab50ba713710fb90973adf98b201864",
-    "fileCount": 592,
+    "hash": "1501c65f948df95f4ea7aa7069c49a691049679422cce6eaf99b3c33777e738a",
+    "fileCount": 593,
     "projectionVersion": 2
   },
   "retrieval": {
@@ -9332,9 +9349,9 @@
   "projection": {
     "type": "retrieval-index",
     "schemaVersion": 1,
-    "contentHash": "5137534c8e31025291da86aa887107a8ee2149564ad14e5e44a77edeb46ad2f2",
+    "contentHash": "d6423154525a1d45f2b8063a473517c5a2b9a5d8509c200f765e3589af8614c4",
     "contentHashAlgo": "sha256-semantic-v1",
-    "snapshotHash": "0f6f2ca8fa54e30982c4a1e335b00be8d88bae6b02947c00623c60132cb6e61d",
+    "snapshotHash": "3c205335c6c177624959aee7f7d282cf39321dab206ab277797dff2512033946",
     "overlayHash": "f99666ff9119084dd25c2974ae64eb6935ec2aa785ff5ad478fb9d541f7a5e94",
     "configurationHash": "6c17a2415ef3484014ab8350c5c245602bfb85d2baf75666fb83c1c387f3396a",
     "lexiconVersion": 1,
@@ -9354,7 +9371,7 @@
     },
     "lexical": {
       "version": 1,
-      "documentCount": 573,
+      "documentCount": 574,
       "fieldNames": [
         "aliases",
         "body",
@@ -9365,13 +9382,13 @@
         "title"
       ],
       "averageFieldLength": {
-        "aliases": 2.9232111692844676,
-        "body": 44.8760907504363,
-        "headings": 3.832460732984293,
-        "path": 6.111692844677138,
-        "summary": 2.600349040139616,
-        "symbols": 14.055846422338568,
-        "title": 3.9720767888307154
+        "aliases": 2.923344947735192,
+        "body": 44.80313588850174,
+        "headings": 3.8257839721254356,
+        "path": 6.113240418118467,
+        "summary": 2.5958188153310107,
+        "symbols": 14.064459930313589,
+        "title": 3.975609756097561
       }
     },
     "entries": [
@@ -10011,7 +10028,7 @@
           ],
           "outbound": []
         },
-        "contentHash": "c50121980fa8a5aae630972a612d823d7f13ca7ddd32cf6377639ef3eff1faea",
+        "contentHash": "c7f89b946fa0590846d30966402ba94cd0e357d8a6f75715e7eecd1c60ded3d2",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -11533,7 +11550,7 @@
             }
           ]
         },
-        "contentHash": "3694af71a5a76f12a2a4c1c9f05bb939147a5a1af31d28bda0c44d851a103df7",
+        "contentHash": "3d6c4d78125823957af76e007ac702e4536d2773fd3ffd0e4ab3fea9c843b6d3",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -14315,7 +14332,7 @@
           "path": "docs/ADR-0045-fleet-runner.md",
           "symbols": "",
           "summary": "Accepted",
-          "body": "ADR-0045: A fleet runner — dispatch through the fleet coordinator's queue Status Accepted Context The factory design (fleet repository, docs/design/industrial-sdlc.md §8 step 3) puts the harness's RunnerConnector in front of the factory queue. The fleet coordinator is that queue's front door: fleet submit , fleet queue --json , fleet tail , fleet collect , fleet cancel . Behind it the queue may be fleet's own or Hatchet; the harness must not know which, so it speaks only the CLI, through CommandRunner (argv, no shell). A fleet task is not an Orca terminal: it is submitted once, runs unattended, has no local worktree, and cannot be typed into afterwards. The interface has to say so honestly rather than pretend. Decision A third implementation, createFleetRunner ( src/loop/fleet-runner.ts ), selected by connectors.runner: fleet . The engine and the interface are unchanged, except one optional field: WorkspaceObservation.state , the task state, because a queued task has no pull request to report. RunnerConnector Fleet behaviour --- --- createWorkspace Records a pending workspace (harness-side id, branch, base) in <stateDir /fleet-workspaces.json . Contacts nothing. path is '' : there is no local worktree. launchAgent Returns a handle bound to that workspace (the workspace id). command is ignored — a queue does not run an interactive CLI line. send (first) Submits : fleet submit --project <p --base <workspace base --model <m [--fallback-models a,b] --priority <n --prompt-file <tmp ; parses submitted <q-id and stores the id. Prompt = the text. send (later) Refused: delivered:false , detail \"not interactive\". A failed submit is also delivered:false and leaves the workspace unsubmitted, so a retry is possible. readScreen fleet tail <q-id , last lines lines. Empty before submit or when tail fails. observeWorkspaces fleet queue --json ; each submitted workspace maps to { id, pullRequest: null, state } . States fold to queued · running · done · failed · cancelled ; any word we do not know is unknown , never done . The SCM stays the source of PR state. removeWorkspace If the task is not terminal, fleet cancel <q-id ; a failed cancel throws and keeps the record. Then forgets the record. A task already done/failed/cancelled is not cancelled again. schedule Returns the fleet coordinator owns scheduling ; writes nothing. Delivery. When a task ends done , the deliver step collects its branch with fleet collect <host-task-id (which never pushes) and opens the pull request as it does for any runner. The PR is the orchestrator's job, not the queue's. This ADR adds no collect wiring to the engine. Prompt hygiene. The prompt reaches fleet submit only through a 0600 file in a fresh temp directory under the state dir, removed in a finally once the submit returns. It is never in argv, logs or error text. Config ( connectors.fleet , next to connectors.local ): bin (default fleet on PATH), project ( github:<owner /<repo ; default derived from the origin remote of project.root , failing closed if that is not GitHub), model ( haiku sonnet opus , default sonnet ), fallbackModels , priority (int ≥ 0), timeoutMs . Consequences - Same limit as ADR-0039 recorded for local : today tick / deliver / install still call Orca directly, and only createRunnerConnector callers (the UI's workspace observation) go through the interface. connectors.runner: fleet is accepted at load as asked, but dispatch itself does not follow it until the engine is moved onto the interface. That caller change is a separate step, and until it lands doctor should not be read as proof the loop dispatches through fleet. - Records live in a state-dir file, so a later process can observe, tail and cancel what an earlier one submitted. Records of workspaces whose remove never ran are not garbage-collected. - The queue JSON shape is read leniently (bare array or { tasks } , id / queueId , state ); a shape change in the fleet CLI shows up as unknown states or an explicit parse error, not as a fa",
+          "body": "ADR-0045: A fleet runner — dispatch through the fleet coordinator's queue Status Accepted Context The factory design (fleet repository, docs/design/industrial-sdlc.md §8 step 3) puts the harness's RunnerConnector in front of the factory queue. The fleet coordinator is that queue's front door: fleet submit , fleet queue --json , fleet tail , fleet collect , fleet cancel . Behind it the queue may be fleet's own or Hatchet; the harness must not know which, so it speaks only the CLI, through CommandRunner (argv, no shell). A fleet task is not an Orca terminal: it is submitted once, runs unattended, has no local worktree, and cannot be typed into afterwards. The interface has to say so honestly rather than pretend. Decision A third implementation, createFleetRunner ( src/loop/fleet-runner.ts ), selected by connectors.runner: fleet . The engine and the interface are unchanged, except one optional field: WorkspaceObservation.state , the task state, because a queued task has no pull request to report. RunnerConnector Fleet behaviour --- --- createWorkspace Records a pending workspace (harness-side id, branch, base) in <stateDir /fleet-workspaces.json . Contacts nothing. path is '' : there is no local worktree. launchAgent Returns a handle bound to that workspace (the workspace id). command is ignored — a queue does not run an interactive CLI line. send (first) Submits : fleet submit --project <p --base <workspace base --model <m [--fallback-models a,b] --priority <n --prompt-file <tmp ; parses submitted <q-id and stores the id. Prompt = the text. send (later) Refused: delivered:false , detail \"not interactive\". A failed submit is also delivered:false and leaves the workspace unsubmitted, so a retry is possible. readScreen fleet tail <q-id , last lines lines. Empty before submit or when tail fails. observeWorkspaces fleet queue --json ; each submitted workspace maps to { id, pullRequest: null, state } . States fold to queued · running · done · failed · cancelled ; any word we do not know is unknown , never done . The SCM stays the source of PR state. removeWorkspace If the task is not terminal, fleet cancel <q-id ; a failed cancel throws and keeps the record. Then forgets the record. A task already done/failed/cancelled is not cancelled again. schedule Returns the fleet coordinator owns scheduling ; writes nothing. Delivery. When a task ends done , the deliver step collects its branch with fleet collect <host-task-id (which never pushes) and opens the pull request as it does for any runner. The PR is the orchestrator's job, not the queue's. The connector gained an optional collect({ id }) for this: it takes the host task id from the queue row ( hostTaskId / host task id / taskId / task id , else the queue id), runs fleet collect , takes the branch the output names (else the workspace's own), and fails unless that branch exists in the local clone. Deliver then pushes it with git push origin , opens the PR with gh pr create (body carries Loop-Contract: <digest ), and the PR is reviewed and merged like any other. A task that ends failed / cancelled is a stuck worker, escalated to a person. Prompt hygiene. The prompt reaches fleet submit only through a 0600 file in a fresh temp directory under the state dir, removed in a finally once the submit returns. It is never in argv, logs or error text. Config ( connectors.fleet , next to connectors.local ): bin (default fleet on PATH), project ( github:<owner /<repo ; default derived from the origin remote of project.root , failing closed if that is not GitHub), model ( haiku sonnet opus , default sonnet ), fallbackModels , priority (int ≥ 0), timeoutMs . Consequences - tick and deliver follow the selected runner (this superseded the earlier \"accepted at load, but dispatch still runs Orca\" limit, which was found live: runner: fleet still planned orca worktree create ). Under fleet they create the workspace, submit the brief and collect through RunnerConnector , and never call Orca — not for account",
           "aliases": "document human"
         },
         "graph": {
@@ -14347,7 +14364,7 @@
             }
           ]
         },
-        "contentHash": "9a055045aaa167dede594edfa490efd6594dfba7beac12417993f4af0468ba6d",
+        "contentHash": "9a05c023ff0b85320e3b9b055fb452f7bd46ca85bc1fae883be4cf8b3183c38c",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -14687,7 +14704,7 @@
             }
           ]
         },
-        "contentHash": "6672262d5ddcbf599f699a5171bd637f3e103556e911d0fdb7050755fff0d8cd",
+        "contentHash": "8d522ed67f4d9538265b3dcfe15cb9302decbb797b735a505833ad98d9770960",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -18583,6 +18600,7 @@
           "githubOpenPullRequests",
           "githubPreflight",
           "githubPullRequest",
+          "githubPullRequestCreate",
           "githubPullRequestsForBranch",
           "githubPullRequestsForIssue",
           "githubUnresolvedReviewThreads",
@@ -18601,7 +18619,7 @@
           "title": "github-cli.ts",
           "headings": "",
           "path": "src/adapters/github-cli.ts",
-          "symbols": "CheckOutcome ChecksAssessment DiffStat GitHubCliOptions GitHubIssueComment GitHubIssueDetail GitHubIssueSnapshot ISSUE_DETAIL_FIELDS ISSUE_FIELDS PR_FIELDS PullRequestCheck PullRequestSnapshot assessChecks githubComment githubCommentArgv githubCommentExists githubCompare githubCurrentUser githubEnsureLabels githubIssue githubIssueClose githubIssueComment githubIssueCommentArgv githubIssueCommentExists githubIssueCreate githubIssueEdit githubIssueEditArgv githubIssueNumber githubIssueReopen githubLabelRemove githubMerge githubMergeArgv githubOpenIssues githubOpenPullRequests githubPreflight githubPullRequest githubPullRequestsForBranch githubPullRequestsForIssue githubUnresolvedReviewThreads githubUpsertComment parseGitHubIssue parseGitHubIssueDetail parsePullRequest touchesProtectedPaths",
+          "symbols": "CheckOutcome ChecksAssessment DiffStat GitHubCliOptions GitHubIssueComment GitHubIssueDetail GitHubIssueSnapshot ISSUE_DETAIL_FIELDS ISSUE_FIELDS PR_FIELDS PullRequestCheck PullRequestSnapshot assessChecks githubComment githubCommentArgv githubCommentExists githubCompare githubCurrentUser githubEnsureLabels githubIssue githubIssueClose githubIssueComment githubIssueCommentArgv githubIssueCommentExists githubIssueCreate githubIssueEdit githubIssueEditArgv githubIssueNumber githubIssueReopen githubLabelRemove githubMerge githubMergeArgv githubOpenIssues githubOpenPullRequests githubPreflight githubPullRequest githubPullRequestCreate githubPullRequestsForBranch githubPullRequestsForIssue githubUnresolvedReviewThreads githubUpsertComment parseGitHubIssue parseGitHubIssueDetail parsePullRequest touchesProtectedPaths",
           "summary": "",
           "body": "",
           "aliases": "module ts adapters"
@@ -18643,6 +18661,11 @@
             {
               "kind": "imports",
               "id": "module:src/loop/layers.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
+              "id": "module:src/loop/tick.ts",
               "confidence": "observed"
             },
             {
@@ -18719,7 +18742,7 @@
             }
           ]
         },
-        "contentHash": "993d72025b3e001ca25599875434041b60edf8b541e054e0c07e3c117d886b07",
+        "contentHash": "f2b14336f98061bfcf443b8d78915051a07e394373845ba1e48c637449a408d9",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -19704,7 +19727,7 @@
             }
           ]
         },
-        "contentHash": "357c25121ae5ead1e4c5df6dbee15416f52d940d7d836ab8019fcbad4dfb8d6d",
+        "contentHash": "8798c129595ee84d294c6e7037b2af34185262aad9d4bde0eb892643a4aaac0f",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -28154,6 +28177,11 @@
             },
             {
               "kind": "imports",
+              "id": "module:src/loop/runner-connector.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
               "id": "module:src/loop/skills.ts",
               "confidence": "observed"
             },
@@ -28189,7 +28217,7 @@
             }
           ]
         },
-        "contentHash": "5a006dabd1215b163645cb0846c53d2f9eeb38c70ce246a3ff15eb5915c448a9",
+        "contentHash": "3eb5e0140e10207156a63301c98e7a9763d294a90f22199aaade4c62ba9aa68c",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -28458,6 +28486,11 @@
             },
             {
               "kind": "imports",
+              "id": "module:src/loop/fleet-runner.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
               "id": "module:src/loop/flows.ts",
               "confidence": "observed"
             },
@@ -28488,7 +28521,7 @@
             }
           ]
         },
-        "contentHash": "013ca11a270dd8fe5ee91ce100ffec861894c89a758574ccf5eb68c0c6a004c1",
+        "contentHash": "f0608ec480a5d1955da3873adb9b67d5ca26c2eab9a1e2b4d958c0e8dd0fa03f",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -29033,7 +29066,10 @@
         "title": "fleet-runner.ts",
         "aliases": [],
         "symbols": [
-          "createFleetRunner"
+          "FleetProbe",
+          "createFleetRunner",
+          "fleetSubmitPreview",
+          "probeFleet"
         ],
         "tags": [
           "module",
@@ -29044,7 +29080,7 @@
           "title": "fleet-runner.ts",
           "headings": "",
           "path": "src/loop/fleet-runner.ts",
-          "symbols": "createFleetRunner",
+          "symbols": "FleetProbe createFleetRunner fleetSubmitPreview probeFleet",
           "summary": "",
           "body": "",
           "aliases": "module ts loop"
@@ -29061,7 +29097,17 @@
           "inbound": [
             {
               "kind": "imports",
+              "id": "module:src/loop/doctor.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
               "id": "module:src/loop/runner-connector.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
+              "id": "module:src/loop/tick.ts",
               "confidence": "observed"
             },
             {
@@ -29098,7 +29144,7 @@
             }
           ]
         },
-        "contentHash": "39d0b1e87a4535e43d28b96a4ca308101a1e24617fec3f8054d73c8ad3bd240e",
+        "contentHash": "1b02f4348f9919b93950c358b09769440ad4375701190bedc65e43e7edbea43f",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -33101,7 +33147,17 @@
           "inbound": [
             {
               "kind": "imports",
+              "id": "module:src/loop/deliver.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
               "id": "module:src/loop/fleet-runner.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
+              "id": "module:src/loop/tick.ts",
               "confidence": "observed"
             },
             {
@@ -33203,7 +33259,7 @@
             }
           ]
         },
-        "contentHash": "b938da45b64345583891efbe3286d081706299e87a708e0b5682bb6e8486cec6",
+        "contentHash": "fb8c1d4a9820268af425b46fc6a933216717be3d6539b1732b7575eacbd19a66",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -33721,6 +33777,7 @@
           "launchWorkerTerminal",
           "precheckTick",
           "readDispatchRecord",
+          "resolveIssueRef",
           "runTick",
           "worktreeNameFor",
           "writeDispatchRecord"
@@ -33734,7 +33791,7 @@
           "title": "tick.ts",
           "headings": "",
           "path": "src/loop/tick.ts",
-          "symbols": "BRIEF_POINTER_PROMPT DispatchRecordFile LoopState PrecheckScope TickCandidateResult TickInput TickOutcome TickReport YieldDecision appendLoopEvent branchFor briefPath busyIssues dispatchRecordPath evaluateYield gatherLoopState launchWorkerTerminal precheckTick readDispatchRecord runTick worktreeNameFor writeDispatchRecord",
+          "symbols": "BRIEF_POINTER_PROMPT DispatchRecordFile LoopState PrecheckScope TickCandidateResult TickInput TickOutcome TickReport YieldDecision appendLoopEvent branchFor briefPath busyIssues dispatchRecordPath evaluateYield gatherLoopState launchWorkerTerminal precheckTick readDispatchRecord resolveIssueRef runTick worktreeNameFor writeDispatchRecord",
           "summary": "",
           "body": "",
           "aliases": "module ts loop"
@@ -33924,6 +33981,11 @@
             },
             {
               "kind": "imports",
+              "id": "module:src/adapters/github-cli.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
               "id": "module:src/adapters/linear-orca.ts",
               "confidence": "observed"
             },
@@ -34014,6 +34076,11 @@
             },
             {
               "kind": "imports",
+              "id": "module:src/loop/fleet-runner.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
               "id": "module:src/loop/flows.ts",
               "confidence": "observed"
             },
@@ -34079,6 +34146,11 @@
             },
             {
               "kind": "imports",
+              "id": "module:src/loop/runner-connector.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
               "id": "module:src/loop/skills.ts",
               "confidence": "observed"
             },
@@ -34114,7 +34186,7 @@
             }
           ]
         },
-        "contentHash": "500c712a5909bf7e4f1cc250c53300e74807c4ee615cd2eaab3a08027c52fa76",
+        "contentHash": "85342432e8a6c9c72dbd4b390945abd8ba7c2b39bd5c56ae336f7abd7e5d019b",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -43915,6 +43987,46 @@
         "confidence": "observed"
       },
       {
+        "id": "module:test/loop-fleet-dispatch.test.ts",
+        "kind": "module",
+        "path": "test/loop-fleet-dispatch.test.ts",
+        "title": "loop-fleet-dispatch.test.ts",
+        "aliases": [],
+        "tags": [
+          "module",
+          "ts",
+          "test"
+        ],
+        "fields": {
+          "title": "loop-fleet-dispatch.test.ts",
+          "headings": "",
+          "path": "test/loop-fleet-dispatch.test.ts",
+          "symbols": "",
+          "summary": "",
+          "body": "",
+          "aliases": "module ts test"
+        },
+        "graph": {
+          "pagerank": 0,
+          "inboundLinks": 0,
+          "coveredBy": [],
+          "mentionedBy": [],
+          "areaId": "area:test",
+          "packageId": "package:@agentskit/harness",
+          "inbound": [],
+          "outbound": [
+            {
+              "kind": "imports",
+              "id": "module:src/index.ts",
+              "confidence": "observed"
+            }
+          ]
+        },
+        "contentHash": "1121627f1528f70f33713b217f538b8017a4381b0417ddd74bc68c5292d618bf",
+        "provenance": "observed",
+        "confidence": "observed"
+      },
+      {
         "id": "module:test/loop-fleet-runner.test.ts",
         "kind": "module",
         "path": "test/loop-fleet-runner.test.ts",
@@ -43950,7 +44062,7 @@
             }
           ]
         },
-        "contentHash": "c3642a626fda29298b0f9d905bdca717f6a4250cb0133b8d4d177353e595aff7",
+        "contentHash": "6ee601172a8e2ed4d3a40fd126d5a129a9a246e1b940a5bc90347fcda8cff6c7",
         "provenance": "observed",
         "confidence": "observed"
       },

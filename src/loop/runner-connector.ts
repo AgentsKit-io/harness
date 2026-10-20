@@ -39,6 +39,12 @@ export interface RunnerConnector {
   schedule(jobs: readonly ScheduledJob[]): Promise<readonly string[]>
   /** Every workspace the runner knows, with the pull request it detected on its own (none, for a runner that cannot). */
   observeWorkspaces(): Promise<readonly WorkspaceObservation[]>
+  /**
+   * Bring a finished workspace's result into the local clone and name the branch it arrived on. Only a runner whose
+   * work leaves no pull request behind implements it (`fleet`: `fleet collect`, which never pushes); for Orca the
+   * worker pushes and opens its own PR, so there is nothing to collect.
+   */
+  collect?(input: { readonly id: string }): Promise<{ readonly branch: string; readonly detail: string }>
 }
 
 export interface RunnerInput { readonly loaded: LoadedLoopConfig; readonly runner: CommandRunner }
