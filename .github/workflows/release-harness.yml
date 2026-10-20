@@ -11,6 +11,9 @@ on:
   pull_request:
   push:
     branches: [main]
+  # macOS and Windows run only when dispatched by hand (`gh workflow run release-harness.yml`): the hosted minutes are
+  # the scarce budget, and Linux on Depot carries every PR and push.
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -22,7 +25,7 @@ concurrency:
 
 jobs:
   verify:
-    runs-on: ubuntu-latest
+    runs-on: depot-ubuntu-24.04
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -48,7 +51,7 @@ jobs:
 
   docs:
     name: Docs (generated reference + site)
-    runs-on: ubuntu-latest
+    runs-on: depot-ubuntu-24.04
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -86,7 +89,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
+        os: ${{ fromJSON(github.event_name == 'workflow_dispatch' && '["depot-ubuntu-24.04","macos-latest","windows-latest"]' || '["depot-ubuntu-24.04"]') }}
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -110,7 +113,7 @@ jobs:
     name: Publish to npm
     if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' && github.repository == 'AgentsKit-io/harness' }}
     needs: [verify, docs, loop-cross-platform]
-    runs-on: ubuntu-latest
+    runs-on: depot-ubuntu-24.04
     permissions:
       contents: read
       id-token: write
