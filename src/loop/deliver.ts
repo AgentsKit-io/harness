@@ -4,7 +4,7 @@ import { dirname, join } from 'node:path'
 import type { CommandRunner } from '../adapters/command.js'
 import { atLeast, parseReviewResult, renderFindingsForWorker, runCodeReview, type CodeReviewOutcome } from '../adapters/code-review.js'
 import { createHitlStore, HITL_ANCHOR_ID, HITL_ANCHOR_TITLE, type HitlRequest } from './hitl.js'
-import { assessChecks, githubComment, githubCommentExists, githubCompare, githubLabelRemove, githubMerge, githubOpenPullRequests, githubPullRequest, githubPullRequestsForBranch, touchesProtectedPaths, type PullRequestSnapshot } from '../adapters/github-cli.js'
+import { assessChecks, githubComment, githubCommentExists, githubCompare, githubLabelRemove, githubMerge, githubOpenPullRequests, githubPullRequest, githubPullRequestCreate, githubPullRequestsForBranch, touchesProtectedPaths, type PullRequestSnapshot } from '../adapters/github-cli.js'
 import { requireWritableTracker, resolveConnectors, type ScmConnector, type TrackerConnector } from './connectors.js'
 import { issueBudget, issueSpend, modelForChange } from './budget.js'
 import { assessBoundary, verifyCommandFor } from './layers.js'
@@ -23,7 +23,8 @@ import { activeCooldowns, markProviderExhausted, readCooldowns } from './cooldow
 import { providerSpecs } from './doctor.js'
 import { resolveCatalogCandidates } from './model-catalog/index.js'
 import { rankModels, type RankedModel } from './routing.js'
-import { appendLoopEvent, BRIEF_POINTER_PROMPT, briefPath, dispatchRecordPath, launchWorkerTerminal, readDispatchRecord, writeDispatchRecord, type DispatchRecordFile } from './tick.js'
+import { appendLoopEvent, BRIEF_POINTER_PROMPT, briefPath, dispatchRecordPath, launchWorkerTerminal, readDispatchRecord, resolveIssueRef, writeDispatchRecord, type DispatchRecordFile } from './tick.js'
+import { createRunnerConnector } from './runner-connector.js'
 import { intakeIssueId, discoverIntake, listIntake } from './github-intake.js'
 import { createLoopEventBus, loadLoopPlugins, type LoopEventBus, type LoopEventPayload } from './event-bus.js'
 import { attachNotifier } from './notify.js'
@@ -269,6 +270,7 @@ const SHELL_PROMPT = /git:\(|➜\s|\$\s|(?:^|\n)PS [A-Za-z]:\\[^\n]*>\s*$|(?:^|\
 const EXITED_TO_SHELL = /(?:^|\n)(?:PS )?[A-Za-z]:\\[^\n]*>\s*$/
 
 const sendToWorker = async (ctx: Context, record: DispatchRecordFile, text: string, actions: string[]): Promise<boolean> => {
+  if (record.runner === 'fleet') { actions.push('fleet tasks are not interactive; the message cannot reach the worker'); return false }
   if (!record.terminal) { actions.push('no terminal handle recorded; cannot nudge'); return false }
   const permission = ctx.dryRun ? null : await workerAwaitingPermission(ctx, record)
   if (permission) { actions.push(`not typing into ${record.terminal}: ${permission} — the text would answer it`); return false }
@@ -337,9 +339,11 @@ const sendToWorker = async (ctx: Context, record: DispatchRecordFile, text: stri
  * mutation involved, so it works from this headless process. Best-effort: a capture failure must never block the
  * escalation itself.
  */
-const captureWorkerOutput = async (ctx: Context, terminal: string | null): Promise<string | null> => {
+const captureWorkerOutput = async (ctx: Context, terminal: string | null, record?: DispatchRecordFile): Promise<string | null> => {
   if (!terminal) return null
   try {
+    // A fleet task has no terminal: its tail is the same evidence, read through the runner that owns it.
+    if (record?.runner === 'fleet') { const tail = (await createRunnerConnector({ loaded: ctx.loaded, runner: ctx.runner }).readScreen({ terminal, lines: 40 })).trim(); return tail ? tail.slice(-2000) : null }
     const screen = (await orcaTerminalScreen(ctx.runner, { terminal }, orcaOptions(ctx.config))).trim()
     return screen ? screen.slice(-2000) : null
   } catch { return null }
@@ -488,7 +492,7 @@ const renderEvidence = async (ctx: Context, record: DispatchRecordFile, state: D
 
 const escalateTracker = async (ctx: Context, record: DispatchRecordFile, kind: 'stuck' | 'blocked' | 'abandoned', body: string, actions: string[]): Promise<void> => {
   if (ctx.dryRun) { actions.push(`would mark ${kind} in ${ctx.tracker.id} and Orca`); return }
-  const workerOutput = await captureWorkerOutput(ctx, record.terminal)
+  const workerOutput = await captureWorkerOutput(ctx, record.terminal, record)
   const fullBody = workerOutput ? `${body}\n\n<details><summary>Worker's last terminal output</summary>\n\n\`\`\`\n${workerOutput}\n\`\`\`\n\n</details>` : body
   if (workerOutput) { actions.push('captured worker terminal output for the escalation'); recordRunIo(ctx.loaded.stateDir, record.issue, { direction: 'output', stage: 'build', role: 'worker-terminal', content: workerOutput, extension: 'txt', maxBytes: ctx.config.runs.maxIoBytes }, ctx.now) }
   try {
@@ -511,6 +515,7 @@ const escalateTracker = async (ctx: Context, record: DispatchRecordFile, kind: '
     actions.push(`${ctx.tracker.id} escalation failed: ${detail}`)
     event(ctx, { type: 'tracker.sync-failed', issue: record.issue, operation: `escalate:${kind}`, error: detail })
   }
+  if (record.runner === 'fleet') return
   try { await orcaWorktreeSet(ctx.runner, { worktree: `id:${record.worktreeId}`, comment: `LOOP ${kind.toUpperCase()}: ${body.split('\n')[0]?.slice(0, 120)}` }, orcaOptions(ctx.config)); actions.push('Orca worktree comment set') } catch (error) { actions.push(`Orca comment failed: ${message(error)}`) }
 }
 
@@ -736,6 +741,45 @@ const performHandoff = async (
   return { issue: record.issue, outcome: 'handed-off', reason: `handed off to ${next.provider}/${next.model}: ${reason}`, actions }
 }
 
+/**
+ * A worker dispatched through the fleet queue has no terminal to inspect and never opens its own PR: the task state is
+ * what there is to read. While it runs, wait. When it ends `done`, `fleet collect` brings its branch into the local
+ * clone (it never pushes), then the harness pushes that branch and opens the pull request — from there the PR is
+ * handled like any other. A task that failed or was cancelled is a stuck worker for a person.
+ */
+const handleFleetNoPullRequest = async (ctx: Context, record: DispatchRecordFile, lease: DispatchLease | undefined, state: DeliveryState): Promise<DeliverResult> => {
+  const actions: string[] = []
+  const connector = createRunnerConnector({ loaded: ctx.loaded, runner: ctx.runner })
+  const observed = (await connector.observeWorkspaces()).find((item) => item.id === record.worktreeId)
+  const task = observed?.state ?? 'unknown'
+  if (task === 'queued' || task === 'running' || task === 'unknown') return { issue: record.issue, outcome: 'waiting', reason: `fleet task ${task === 'unknown' ? 'not reported by the queue yet' : task}`, actions }
+  if (task !== 'done') {
+    await escalateTracker(ctx, record, 'stuck', `**Loop: worker stuck** — the fleet task for \`${record.worktree}\` ended ${task} without a branch to deliver. The slot was released and the issue returned to ${ctx.config.delivery.returnState}.`, actions)
+    finish(ctx, record, lease, state, 'stuck', `fleet task ${task}`)
+    return { issue: record.issue, outcome: ctx.dryRun ? 'dry-run' : 'stuck', reason: `fleet task ${task} before a PR was opened`, actions }
+  }
+  const collect = connector.collect?.bind(connector) ?? fail(`runner "${connector.id}" cannot collect a finished task.`, 'HARNESS_ERROR')
+  if (ctx.dryRun) {
+    actions.push(`would run fleet collect, push ${record.branch} and open a pull request against ${ctx.config.project.baseBranch}`)
+    return { issue: record.issue, outcome: 'dry-run', reason: 'fleet task done; branch would be collected and a PR opened', actions }
+  }
+  const collected = await collect({ id: record.worktreeId })
+  actions.push(collected.detail)
+  const root = ctx.loaded.root
+  const pushed = await ctx.runner.run(['git', 'push', 'origin', `refs/heads/${collected.branch}:refs/heads/${collected.branch}`], { cwd: root, timeoutMs: 120_000 })
+  if (pushed.timedOut || pushed.code !== 0) fail(`git push of ${collected.branch} failed: ${(pushed.stderr || pushed.stdout).trim().slice(0, 300) || `exit ${pushed.code ?? 'null'}`}`, 'HARNESS_ERROR')
+  actions.push(`pushed ${collected.branch}`)
+  let title = record.issue
+  try { title = `${record.issue}: ${(await ctx.tracker.issue(record.issue)).title}` } catch { /* the identifier alone is a fine title */ }
+  const body = `${record.issue}${record.url ? ` — ${record.url}` : ''}\n\nOpened by the loop from the branch a ${connector.id} task produced (\`${record.provider}/${record.model}\`); the worker could not push or open it itself.\n\nLoop-Contract: ${record.contractDigest}`
+  await githubPullRequestCreate(ctx.runner, { repo: ctx.config.project.repo, head: collected.branch, base: ctx.config.project.baseBranch, title, body }, { cwd: root })
+  const [pr] = await githubPullRequestsForBranch(ctx.runner, { repo: ctx.config.project.repo, head: collected.branch })
+  if (collected.branch !== record.branch) writeJsonAtomic(dispatchRecordPath(ctx.loaded.stateDir, record.issue), { ...record, branch: collected.branch })
+  if (!pr) return { issue: record.issue, outcome: 'waiting', reason: `PR created from ${collected.branch}; not listed yet`, actions }
+  actions.push(`opened PR #${pr.number}`)
+  return { issue: record.issue, outcome: 'waiting', reason: `PR #${pr.number} opened from the collected branch ${collected.branch}; review starts next pass`, pr: pr.number, head: pr.headSha, actions }
+}
+
 const handleNoPullRequest = async (ctx: Context, record: DispatchRecordFile, lease: DispatchLease | undefined, state: DeliveryState): Promise<DeliverResult> => {
   const actions: string[] = []
   const now = ctx.now()
@@ -910,11 +954,14 @@ const complete = async (ctx: Context, record: DispatchRecordFile, lease: Dispatc
       actions.push(`${ctx.tracker.id} completion failed: ${detail}`)
       event(ctx, { type: 'tracker.sync-failed', issue: record.issue, operation: 'completion', error: detail })
     }
-    try { await orcaWorktreeSet(ctx.runner, { worktree: `id:${record.worktreeId}`, comment: `LOOP MERGED: PR #${pr.number}` }, orcaOptions(ctx.config)) } catch (error) {
+    if (record.runner === 'fleet') {
+      // No worktree or Orca comment: only the harness's own record of the workspace is left to forget.
+      try { await createRunnerConnector({ loaded: ctx.loaded, runner: ctx.runner }).removeWorkspace({ id: record.worktreeId }); actions.push('fleet workspace record cleared') } catch (error) { actions.push(`fleet workspace cleanup failed (kept): ${message(error)}`) }
+    } else try { await orcaWorktreeSet(ctx.runner, { worktree: `id:${record.worktreeId}`, comment: `LOOP MERGED: PR #${pr.number}` }, orcaOptions(ctx.config)) } catch (error) {
       if (isMissingOrcaWorktree(error)) actions.push('Orca worktree already absent; comment skipped')
       else actions.push(`Orca comment failed: ${message(error)}`)
     }
-    if (ctx.config.delivery.cleanupWorktree) {
+    if (record.runner !== 'fleet' && ctx.config.delivery.cleanupWorktree) {
       try { await orcaWorktreeRemove(ctx.runner, { worktree: `id:${record.worktreeId}`, force: true }, orcaOptions(ctx.config)); actions.push('worktree removed') } catch (error) {
         if (isMissingOrcaWorktree(error)) actions.push('worktree already absent; cleanup reconciled')
         else actions.push(`worktree removal failed (kept): ${message(error)}`)
@@ -1446,7 +1493,13 @@ export const runDeliver = async (input: DeliverInput): Promise<DeliverReport> =>
   const dryRun = input.dryRun === true
   const notes: string[] = []
   const orca = orcaOptions(config)
-  const [accountList, agentHooks] = await Promise.all([orcaAccountList(input.runner, orca).catch(() => ({})), orcaAgentHooks(input.runner, orca).catch(() => ({}) as Readonly<Record<string, 'installed' | 'not_installed' | 'unknown'>>)])
+  // `--issue` may also name a tracked intake PR, whose identifier is not an issue reference: keep it as typed then.
+  const onlyIssue = (() => { try { return resolveIssueRef(config, input.onlyIssue) } catch { return input.onlyIssue } })()
+  // Orca is asked for accounts and hooks only when it is the runner; under `fleet` it may not be installed at all.
+  const viaOrca = config.connectors.runner === 'orca'
+  const [accountList, agentHooks] = viaOrca
+    ? await Promise.all([orcaAccountList(input.runner, orca).catch(() => ({})), orcaAgentHooks(input.runner, orca).catch(() => ({}) as Readonly<Record<string, 'installed' | 'not_installed' | 'unknown'>>)])
+    : [{}, {} as Readonly<Record<string, 'installed' | 'not_installed' | 'unknown'>>]
   const providers = await detectProviders({ providers: providerSpecs(config), accountList, agentHooks, env: input.env, platform: input.platform, exhaustedPercent: config.models.cooldown.exhaustedPercent, cooldowns: activeCooldowns(readCooldowns(loaded.stateDir), now()), now })
   const availableIds = providers.filter((provider) => provider.available).map((provider) => provider.id)
   const catalogExtras = async (role: 'reviewer' | 'builder') => config.models.routing.mode === 'catalog'
@@ -1481,7 +1534,7 @@ export const runDeliver = async (input: DeliverInput): Promise<DeliverReport> =>
   const leases = new Map(ledger.active().map((lease) => [lease.issue, lease]))
   const results: DeliverResult[] = []
   for (let record of listDispatched(loaded.stateDir)) {
-    if (input.onlyIssue && record.issue !== input.onlyIssue) continue
+    if (onlyIssue && record.issue !== onlyIssue) continue
     let state = readDeliveryState(loaded.stateDir, record.issue)
     // A merged issue is never in `resumableOutcomes` (blocked/stuck/abandoned/held) and can never legitimately
     // come back to life — polling GitHub for it on every future tick, forever, only grows with total historical
@@ -1581,7 +1634,7 @@ export const runDeliver = async (input: DeliverInput): Promise<DeliverReport> =>
         continue
       }
       if (state.finishedAt) continue
-      results.push(await handleNoPullRequest(ctx, record, lease, state))
+      results.push(record.runner === 'fleet' ? await handleFleetNoPullRequest(ctx, record, lease, state) : await handleNoPullRequest(ctx, record, lease, state))
     } catch (error) {
       threw = true
       const reason = message(error)
@@ -1605,7 +1658,8 @@ export const runDeliver = async (input: DeliverInput): Promise<DeliverReport> =>
   }
 
   // Worker terminals of finished, orphaned or idle-waiting issues: re-read, since this pass may have relaunched one.
-  const reaped = await reapWorkerTerminals({ runner: input.runner, config, root: loaded.root, records: listDispatched(loaded.stateDir).filter((record) => !input.onlyIssue || record.issue === input.onlyIssue), stateOf: (issue) => readDeliveryState(loaded.stateDir, issue), leasedIssues: new Set(ledger.active().map((lease) => lease.issue)), finishedThisPass: ctx.finished, results, now: now(), dryRun, emit: (payload) => event(ctx, payload) })
+  // Orca's terminals only: a fleet task has none, and under `fleet` Orca is not asked at all.
+  const reaped = !viaOrca ? { closed: [], failed: 0, notes: [] as readonly string[] } : await reapWorkerTerminals({ runner: input.runner, config, root: loaded.root, records: listDispatched(loaded.stateDir).filter((record) => record.runner !== 'fleet' && (!onlyIssue || record.issue === onlyIssue)), stateOf: (issue) => readDeliveryState(loaded.stateDir, issue), leasedIssues: new Set(ledger.active().map((lease) => lease.issue)), finishedThisPass: ctx.finished, results, now: now(), dryRun, emit: (payload) => event(ctx, payload) })
   notes.push(...reaped.notes)
 
   // The durable queue is the UI/CLI/scheduler seam; delivery only projects its terminal decision into that store.
@@ -1659,7 +1713,7 @@ export const runDeliver = async (input: DeliverInput): Promise<DeliverReport> =>
     }
     for (const tracked of listIntake(loaded.stateDir)) {
       const identifier = intakeIssueId(tracked.pr)
-      if (input.onlyIssue && identifier !== input.onlyIssue) continue
+      if (onlyIssue && identifier !== onlyIssue) continue
       const state = readDeliveryState(loaded.stateDir, identifier)
       if (state.finishedAt) continue
       try {

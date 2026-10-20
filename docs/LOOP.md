@@ -474,7 +474,23 @@ Three interfaces, and the config picks the implementation:
 |---|---|---|
 | `TrackerConnector` | `linear` | queue, issue, comment, labels, state, claim/release, attach, create |
 | `ScmConnector` | `github` | pull requests, checks, comments, labels, merge |
-| `RunnerConnector` | `orca`, **`local`** | workspaces, launching an agent, send/read, scheduled jobs |
+| `RunnerConnector` | `orca`, **`fleet`**, `local` (not selectable yet — see below) | workspaces, launching an agent, send/read, scheduled jobs |
+
+**What each runner really drives.** `connectors.runner: orca` is Orca end to end. `connectors.runner: fleet`
+(docs/ADR-0045) is dispatched through `RunnerConnector` by both stages, and Orca is not contacted at all:
+
+- `tick` records a workspace, then submits the worker brief with `fleet submit` (the brief travels in a `0600` temp
+  file) — there is no local worktree, no terminal, no setup command and no worker guard. `tick --dry-run` reports the
+  `fleet submit` argv it would run.
+- `deliver` watches the task through `fleet queue --json`; while it is queued or running the issue just waits. When
+  it ends `done`, deliver runs `fleet collect <host-task-id>` (the branch arrives in the local clone; collect never
+  pushes), pushes that branch, opens the pull request with `gh pr create`, and from then on handles the PR like any
+  other. A task that ends `failed` or `cancelled` is escalated as a stuck worker.
+- `loop doctor` probes the selected runner: `fleet doctor --json` and `fleet queue --json` for `fleet`; the Orca
+  binary, runtime, accounts, worktrees and automations for `orca`.
+
+A fleet task is not interactive, so nudges, handoffs and fix-round messages cannot reach it. `connectors.runner:
+local` is still rejected at config load (ADR-0039): `tick` and `deliver` do not drive it.
 
 `tick` and `deliver` write to the tracker only through `TrackerConnector`, so Jira, GitHub Issues or Notion are a
 new factory in `resolveConnectors` and a new value in `connectors.tracker` — never a change in the stages. An
