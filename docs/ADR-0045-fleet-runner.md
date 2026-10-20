@@ -45,6 +45,31 @@ the harness's own local branch sits exactly at the collected commit. Deliver the
 `git push -u origin <branch>`, opens the PR with `gh pr create` (body carries `Loop-Contract: <digest>`), and the PR is
 reviewed and merged like any other. A task that ends `failed`/`cancelled` is a stuck worker, escalated to a person.
 
+**Definition of done.** The other runners prove the DoD from the worker's worktree and the handoff files it wrote
+there; a fleet task has neither (found live on factory-sandbox#3: every pass `waiting` on `missing: verify, o1, o2;
+failing: test-for-new-code`). For `fleet`, deliver proves it in `src/loop/fleet-dod.ts`, on a **temporary git
+worktree at the PR head** (`git worktree add --detach <stateDir>/fleet-checkout-… <head>`, removed with
+`worktree remove --force` and pruned in a `finally`, on success and on failure):
+
+- `file-changed` / `pattern-absent` use `baseSha...headSha` — both from `fleet collect --json`, stored on the dispatch
+  record as `collected` (`origin/<baseBranch>` stands in for a missing base) — and the files as committed.
+- `command` items run in that checkout, bounded by `connectors.fleet.verifyTimeoutMs` (default 600000), after the
+  repo's frozen install (`pnpm install --frozen-lockfile`, `npm ci`, `yarn install --frozen-lockfile` or
+  `bun install --frozen-lockfile`, chosen by lockfile) — only when some command item or outcome check needs it. Output
+  is the proof's evidence. A failed install fails the commands rather than skipping them.
+- **The remote agent's claim is never evidence for a command**: a committed `dod.json` that says `verify` passed is
+  ignored; the harness runs it.
+- **Contract outcomes** (`o1`, `o2`, …): Orca proves them from the worker's `verify.json`/`dod.json` in its worktree.
+  For fleet, an outcome whose check carries a command (`command`/`test`) is re-run locally like a `command` item. An
+  outcome with no command (`manual`) is proven by the handoff, and the channel is **the collected commit**: the fleet
+  brief asks the agent to commit (`git add -f`) `.ak-loop/verify.json` and the `dod.evidenceFile`, and the same readers
+  Orca uses (`readDodEvidence`, `readVerifyArtifact`) read them from the checkout. `fleet tail` was rejected: it is a
+  truncated log, not a record. The cost is that those two small files appear in the PR diff.
+- The checkout is made on every pass that reaches the DoD gate; there is no cache yet.
+
+Separately fixed here: the `file-changed` glob `**/*.{test,spec}.*` (the presets' `test-for-new-code`) never matched
+anything, because `{a,b}` was matched literally; the glob matcher now treats it as an alternation.
+
 **Branch name.** The tracker's branch name can hold characters git refuses or people dislike (GitHub issues yield
 `<login>/<owner>/<repo>#<n>`). `createWorkspace` therefore derives a safe ref for fleet (`safeFleetBranch`: anything
 outside `A-Za-z0-9._/-` becomes `-`, so `login/owner/repo#3` → `login/owner/repo-3`); that name is what the dispatch
@@ -56,7 +81,7 @@ the state dir, removed in a `finally` once the submit returns. It is never in ar
 **Config** (`connectors.fleet`, next to `connectors.local`): `bin` (default `fleet` on PATH), `project`
 (`github:<owner>/<repo>`; default derived from the `origin` remote of `project.root`, failing closed if that is
 not GitHub), `model` (`haiku|sonnet|opus`, default `sonnet`), `fallbackModels`, `priority` (int ≥ 0),
-`timeoutMs`.
+`timeoutMs`, `verifyTimeoutMs`.
 
 ## Consequences
 
@@ -68,7 +93,7 @@ not GitHub), `model` (`haiku|sonnet|opus`, default `sonnet`), `fallbackModels`, 
   moving it would risk its behaviour for no gain. `connectors.runner: local` is still rejected at load (ADR-0039);
   `install` still reconciles Orca automations and is not part of this.
 - Under `fleet` there is no worktree, so no worker guard, no `project.setup`, no spec files, and no local
-  `delivery.verify` of the PR's code (the brief tells the worker to commit and stop; the harness pushes and opens
+  `delivery.verify` of the PR's code beyond the definition of done above (the brief tells the worker to commit and stop; the harness pushes and opens
   the PR). Nudges, handoffs and fix-round messages cannot reach a queued task; `sendToWorker` reports that and returns.
   Provider availability still comes from local detection with no Orca account list, so a provider whose auth is an
   Orca account reads unavailable; the model the fleet runs is `connectors.fleet.model`, not the routed builder.

@@ -14,7 +14,7 @@ type FleetRecord = Readonly<z.infer<typeof FleetRecordSchema>>
 /** What `fleet collect <id> --json` prints; extra keys (`base`, …) are ignored. */
 // `fleet collect --json` names the tip `headSha` (and the base `baseSha`); other keys (bundle, review, release) are ignored.
 const Sha = z.string().regex(/^[0-9a-f]{7,64}$/i)
-const FleetCollectSchema = z.object({ ref: z.string().min(1), headSha: Sha, commits: z.number().int().min(0) })
+const FleetCollectSchema = z.object({ ref: z.string().min(1), headSha: Sha, commits: z.number().int().min(0), baseSha: Sha.optional() })
 
 /** A ref name git accepts and a person can read: no `#`, spaces or other ref-hostile characters (`o/r#3` → `o/r-3`). */
 export const safeFleetBranch = (branch: string): string => {
@@ -185,14 +185,14 @@ export const createFleetRunner = ({ loaded, runner }: RunnerInput): RunnerConnec
       try { raw = JSON.parse(result.stdout) } catch { fail(`fleet collect ${taskId} --json did not print JSON.`, 'HARNESS_ERROR') }
       const parsed = FleetCollectSchema.safeParse(raw)
       if (!parsed.success) return fail(`fleet collect ${taskId} --json: unexpected shape (${parsed.error.issues[0]?.message ?? 'invalid'}).`, 'HARNESS_ERROR')
-      const { ref, headSha: head, commits } = parsed.data
+      const { ref, headSha: head, baseSha: base, commits } = parsed.data
       if (commits === 0) return { branch: null, detail: `fleet collect ${taskId}: the task made no commits; there is nothing to deliver.` }
       const git = (args: readonly string[]) => runner.run(['git', '-C', loaded.root, ...args], { timeoutMs: 15_000 })
       const reachable = await git(['merge-base', '--is-ancestor', head, ref])
       if (reachable.code !== 0) fail(`fleet collect ${taskId}: head ${head} is not reachable from ${ref} in the local clone.`, 'HARNESS_ERROR')
       const moved = await git(['branch', '-f', entry.branch, head])
       if (moved.code !== 0) fail(`git branch -f ${entry.branch} ${head} failed: ${moved.stderr.trim() || `exit ${moved.code ?? 'null'}`}`, 'HARNESS_ERROR')
-      return { branch: entry.branch, detail: `collected ${taskId} (${commits} commit${commits === 1 ? '' : 's'}) → ${entry.branch} at ${head.slice(0, 12)}` }
+      return { branch: entry.branch, detail: `collected ${taskId} (${commits} commit${commits === 1 ? '' : 's'}) → ${entry.branch} at ${head.slice(0, 12)}`, head, ...(base ? { base } : {}) }
     },
     schedule: async () => ['the fleet coordinator owns scheduling'],
     // ponytail: a pull request is the SCM's to report, so `pullRequest` is always null; only the task state is the fleet's.

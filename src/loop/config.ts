@@ -769,6 +769,8 @@ export const LoopConfigSchema = z.object({
       fallbackModels: z.array(z.enum(['haiku', 'sonnet', 'opus'])).default([]),
       priority: z.number().int().min(0).default(0),
       timeoutMs: z.number().int().positive().default(30_000),
+      /** Budget for each command run in the local checkout of a collected branch (dependency install, every `command` DoD item and outcome check). */
+      verifyTimeoutMs: z.number().int().positive().default(600_000),
     }).prefault({}),
     local: z.object({
       /** Where `local` puts its worktrees. Relative paths resolve against `project.root`. */

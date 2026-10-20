@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
-  "contentHash": "b3dfa1ffa9fd602b547e998ffb27018ea56ff6bc4731abb7821a156ade69ac7d",
+  "contentHash": "acc5369c16e4a0fe0a5498aa0132a7953ffaefdce82d6a6c0db0d44f6b6c2966",
   "contentHashAlgo": "sha256-semantic-v1",
-  "generatedAt": "2026-10-20T14:43:31.133Z",
+  "generatedAt": "2026-10-20T15:18:11.742Z",
   "project": {
     "name": "AgentsKit Harness",
     "root": "."
@@ -927,7 +927,7 @@
         "document",
         "human"
       ],
-      "contentHash": "e56d6760e668d85c26940a68507eb4f6a897f9a08c49e0c0679b781bd37a61a9"
+      "contentHash": "25b272ccc1b2a21c4c734bdbaf171fdbf56cd1961d3782b79f6c8949b3a9dad2"
     },
     {
       "id": "document:docs/GETTING-STARTED.md",
@@ -2050,7 +2050,7 @@
         "ts",
         "adapters"
       ],
-      "contentHash": "f2b14336f98061bfcf443b8d78915051a07e394373845ba1e48c637449a408d9"
+      "contentHash": "b1d8c2b29b59e4a3f93f30d59ee194956fb0eee99a220ac476b3bcbd71e675d5"
     },
     {
       "id": "module:src/adapters/linear-orca.ts",
@@ -3955,7 +3955,7 @@
         "ts",
         "loop"
       ],
-      "contentHash": "b0839a4d9b0bf53f87bdebc2bc213f9f65dd6b91088c71bdc3c72b1a7f92bd68"
+      "contentHash": "1da0f96e49150ee2dc013f1583dd91f8bc97844eeca924c658cc7531393e01a3"
     },
     {
       "id": "module:src/loop/connectors.ts",
@@ -4117,7 +4117,7 @@
         "ts",
         "loop"
       ],
-      "contentHash": "510028d2d441436ae45384a4d491b3264b48107e75dc8a6dcc49f2f705fcaeb7"
+      "contentHash": "3ab6c59e9f1dcf8b45c9cf4dc1d157d460b9efedfe440faa406f4ca965926ef1"
     },
     {
       "id": "module:src/loop/detached-worker.ts",
@@ -4274,6 +4274,23 @@
       "contentHash": "ff84fe49bef53b8badb1ff49dcba51cc76f9ca5c278e2785bc14cacf4f75f98d"
     },
     {
+      "id": "module:src/loop/fleet-dod.ts",
+      "type": "module",
+      "title": "fleet-dod.ts",
+      "path": "src/loop/fleet-dod.ts",
+      "symbols": [
+        "FleetDodEvidence",
+        "FleetDodInput",
+        "proveFleetDod"
+      ],
+      "tags": [
+        "module",
+        "ts",
+        "loop"
+      ],
+      "contentHash": "49e5aed158ac06d06c44833ea9a0bce09333874fc2d5666f330b25a3171f8c71"
+    },
+    {
       "id": "module:src/loop/fleet-runner.ts",
       "type": "module",
       "title": "fleet-runner.ts",
@@ -4290,7 +4307,7 @@
         "ts",
         "loop"
       ],
-      "contentHash": "139e20800c87a707299b921e68e84bcfe36e6f384c310ae105dbcce5299b5a8d"
+      "contentHash": "412f905d2c038d94eca7fe0a32a914faf0130930d793b286fbe0633f213479df"
     },
     {
       "id": "module:src/loop/flows.ts",
@@ -5356,7 +5373,7 @@
         "ts",
         "loop"
       ],
-      "contentHash": "dffaee0da2f64a56ddcd33c3bc39ee17881c4a1aaa238d85a29e720998b0e16c"
+      "contentHash": "3ff295badd478a9721bffa785562ea80aa42bf9dbbdd6eab673378a7a29979a3"
     },
     {
       "id": "module:src/loop/skills.ts",
@@ -5502,7 +5519,7 @@
         "ts",
         "loop"
       ],
-      "contentHash": "85342432e8a6c9c72dbd4b390945abd8ba7c2b39bd5c56ae336f7abd7e5d019b"
+      "contentHash": "37436a3066a79d9366d002160e2555d005867acbb7cee58a74b19b355816f778"
     },
     {
       "id": "module:src/loop/tracker-cooldown.ts",
@@ -8186,6 +8203,18 @@
       "contentHash": "0d321f0e7682cd9e55b626b9130d2bbc6f9a6863e675b1cffd8d79678f4844e6"
     },
     {
+      "id": "module:test/loop-fleet-dod.test.ts",
+      "type": "module",
+      "title": "loop-fleet-dod.test.ts",
+      "path": "test/loop-fleet-dod.test.ts",
+      "tags": [
+        "module",
+        "ts",
+        "test"
+      ],
+      "contentHash": "fd645215382e31843473b37cb7325e4253d084918bfd9b49e235e73a2525d164"
+    },
+    {
       "id": "module:test/loop-fleet-runner.test.ts",
       "type": "module",
       "title": "loop-fleet-runner.test.ts",
@@ -8195,7 +8224,7 @@
         "ts",
         "test"
       ],
-      "contentHash": "ae42936e6937a208ea1f8c02b64e04a2db18506cab40963f9804a5858e74aa6e"
+      "contentHash": "bd6de7edb5a0a66daa41162b69ff8754a27dca2d9a3a319b0fb6d0501c482560"
     },
     {
       "id": "module:test/loop-flows.test.ts",
@@ -9327,8 +9356,8 @@
     }
   },
   "inputs": {
-    "hash": "4b3f2bec586c6494dc21362e40ca3e559eff28ac1210e06f914ad4f87904af76",
-    "fileCount": 593,
+    "hash": "341daa0399bfd4a8357b7126d913c00b055c32a1f6faba436be72c68b53e768d",
+    "fileCount": 595,
     "projectionVersion": 2
   },
   "retrieval": {
@@ -9350,9 +9379,9 @@
   "projection": {
     "type": "retrieval-index",
     "schemaVersion": 1,
-    "contentHash": "17f04e9f554f208598dfea1b43eb6f2b91a245959a829d04b9bf3f8c231f0ac7",
+    "contentHash": "07e8757efaf1e0d1f58f9bed3d8e71d6c8a71ff9ce5576139bb5aa40565ee9ee",
     "contentHashAlgo": "sha256-semantic-v1",
-    "snapshotHash": "b37d4929c65e81fcb1ba17c5f6c55962bc0074f94313d0d3d6040a9837fe6296",
+    "snapshotHash": "bac71d1b7257510c078be4af241afe171039d1cc3aca7ca9bd98082047779030",
     "overlayHash": "f99666ff9119084dd25c2974ae64eb6935ec2aa785ff5ad478fb9d541f7a5e94",
     "configurationHash": "6c17a2415ef3484014ab8350c5c245602bfb85d2baf75666fb83c1c387f3396a",
     "lexiconVersion": 1,
@@ -9372,7 +9401,7 @@
     },
     "lexical": {
       "version": 1,
-      "documentCount": 574,
+      "documentCount": 576,
       "fieldNames": [
         "aliases",
         "body",
@@ -9383,13 +9412,13 @@
         "title"
       ],
       "averageFieldLength": {
-        "aliases": 2.923344947735192,
-        "body": 44.8397212543554,
-        "headings": 3.8257839721254356,
-        "path": 6.113240418118467,
-        "summary": 2.5958188153310107,
-        "symbols": 14.071428571428571,
-        "title": 3.975609756097561
+        "aliases": 2.923611111111111,
+        "body": 44.670138888888886,
+        "headings": 3.8125,
+        "path": 6.114583333333333,
+        "summary": 2.5868055555555554,
+        "symbols": 14.043402777777779,
+        "title": 3.9791666666666665
       }
     },
     "entries": [
@@ -9914,7 +9943,7 @@
           ],
           "outbound": []
         },
-        "contentHash": "5c40a7387502232a2414227c910aa004b0003b23651d11c9396d5d11c7d83855",
+        "contentHash": "48ee7fb331465962607c2e1113e1b2feb631f8b781ef465961bc5b5920807b83",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -10008,11 +10037,12 @@
         },
         "graph": {
           "pagerank": 0,
-          "inboundLinks": 2,
+          "inboundLinks": 3,
           "coveredBy": [],
           "mentionedBy": [
             "document:AGENTS.md",
-            "document:CONTRIBUTING.md"
+            "document:CONTRIBUTING.md",
+            "document:docs/ADR-0045-fleet-runner.md"
           ],
           "packageId": "package:@agentskit/harness",
           "inbound": [
@@ -10025,11 +10055,16 @@
               "kind": "mentions",
               "id": "document:CONTRIBUTING.md",
               "confidence": "fuzzy"
+            },
+            {
+              "kind": "mentions",
+              "id": "document:docs/ADR-0045-fleet-runner.md",
+              "confidence": "observed"
             }
           ],
           "outbound": []
         },
-        "contentHash": "c7f89b946fa0590846d30966402ba94cd0e357d8a6f75715e7eecd1c60ded3d2",
+        "contentHash": "101b02cc6c232cac2e3127813248d6d0f2caed2d54a021b884cd2c7b3c36e35d",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -11575,7 +11610,7 @@
           "path": "apps/docs/content/docs/reference/configuration.mdx",
           "symbols": "",
           "summary": "{/* Generated by `pnpm docs:generate`. Do not edit by hand: edit `src/loop/config.ts` and regenerate. */}",
-          "body": "{/ Generated by pnpm docs:generate . Do not edit by hand: edit src/loop/config.ts and regenerate. /} The four layers that produce this configuration — the machine's global file, the project's, the team's and this machine's overlay — are described in . ak-harness loop validate prints the effective result, which is the only one that decides anything. 229 of 415 paths carry no description yet. schemaVersion Type: number · Default: 1 extends Defaults for this kind of project ( web-app , library , monorepo , data-pipeline , mobile ), merged below every other layer. Anything this file states wins over the preset; the preset only fills silence. Type: string project Path Type Default Description --- --- --- --- project.name string required project.repo string required project.baseBranch string \"main\" project.root string \".\" project.stateDir string \".ak-loop\" Where the loop keeps everything that is NOT the project's configuration: dispatch ledger, delivery state, contracts, events, agent memory, plans. Meant to be gitignored — the configuration lives at the repo root as loop.config.yaml , versioned; this directory is runtime state, per machine. project.team string Selects the loop.config.team.&lt;key&gt;.yaml layer. $AK LOOP TEAM overrides it; a declared team whose file is missing fails loudly. project.orchestratorView base · root \"base\" The tree the orchestrator's headless calls (contract, plan interview, architect, votes, decompose) read. base (default): a harness-owned detached worktree of origin/&lt;baseBranch&gt; , fetched before each use. root : project.root as it is — whatever branch and age the operator's checkout has. project.setup object {} project.setup.command string[] Argv (no shell — one element per arg, e.g. [pnpm, install, --frozen-lockfile] ) run once in a freshly created worktree before the worker terminal opens. Unset/empty = skip. project.setup.timeoutSec integer 600 project.setup.required boolean true When true, a failing/timing-out setup removes the worktree and counts as a dispatch failure instead of handing the worker a broken environment. orca Path Type Default Description --- --- --- --- orca.bin string \"orca\" orca.repoSelector string Orca repo selector for new worktrees: id:&lt;repoId&gt; , name:&lt;name&gt; or path:&lt;abs&gt; ; default path:&lt;project.root&gt; . orca.workspaceSelector string Existing worktree the automations run in; default: the enclosing worktree resolved by Orca. orca.host string orca.minVersion string \"1.4.200\" orca.timeoutMs integer 20000 linear Path Type Default Description --- --- --- --- linear.workspaceId string required linear.teamKey string required linear.person string required Linear display name of the person whose queue this machine drains. linear.people record&lt;string&gt; {} Display name → Linear user id, for assignee set and audit; the queue itself filters by display name. linear.rotation object {} Optional ordered handoff between owners after the current dispatchable queue drains. linear.rotation.enabled boolean false linear.rotation.owners string[] [] linear.rotation.advanceWhenEmpty boolean true linear.queueOwnership person · unassigned · both \"person\" Whose queue this machine drains. person (default) keeps the historical behaviour: the issues assigned to linear.person . unassigned drains the issues with NO assignee and turns the assignee into a transient claim — written on dispatch, cleared when the item returns — so several machines can share one priority-ordered queue without colliding. Note when switching to unassigned : clearing the assignees is then REQUIRED, not cosmetic. With person and an emptied backlog the queue comes back empty and the loop looks healthy while doing nothing. both drains the union of the two: issues with no assignee AND issues assigned to linear.person . Unassigned ones are claimed for person on dispatch; nothing is released on return (the issue stays the person's, which this queue still sees). linear.states string[] [\"Todo\",\"Ready\"] linear.",
+          "body": "{/ Generated by pnpm docs:generate . Do not edit by hand: edit src/loop/config.ts and regenerate. /} The four layers that produce this configuration — the machine's global file, the project's, the team's and this machine's overlay — are described in . ak-harness loop validate prints the effective result, which is the only one that decides anything. 229 of 416 paths carry no description yet. schemaVersion Type: number · Default: 1 extends Defaults for this kind of project ( web-app , library , monorepo , data-pipeline , mobile ), merged below every other layer. Anything this file states wins over the preset; the preset only fills silence. Type: string project Path Type Default Description --- --- --- --- project.name string required project.repo string required project.baseBranch string \"main\" project.root string \".\" project.stateDir string \".ak-loop\" Where the loop keeps everything that is NOT the project's configuration: dispatch ledger, delivery state, contracts, events, agent memory, plans. Meant to be gitignored — the configuration lives at the repo root as loop.config.yaml , versioned; this directory is runtime state, per machine. project.team string Selects the loop.config.team.&lt;key&gt;.yaml layer. $AK LOOP TEAM overrides it; a declared team whose file is missing fails loudly. project.orchestratorView base · root \"base\" The tree the orchestrator's headless calls (contract, plan interview, architect, votes, decompose) read. base (default): a harness-owned detached worktree of origin/&lt;baseBranch&gt; , fetched before each use. root : project.root as it is — whatever branch and age the operator's checkout has. project.setup object {} project.setup.command string[] Argv (no shell — one element per arg, e.g. [pnpm, install, --frozen-lockfile] ) run once in a freshly created worktree before the worker terminal opens. Unset/empty = skip. project.setup.timeoutSec integer 600 project.setup.required boolean true When true, a failing/timing-out setup removes the worktree and counts as a dispatch failure instead of handing the worker a broken environment. orca Path Type Default Description --- --- --- --- orca.bin string \"orca\" orca.repoSelector string Orca repo selector for new worktrees: id:&lt;repoId&gt; , name:&lt;name&gt; or path:&lt;abs&gt; ; default path:&lt;project.root&gt; . orca.workspaceSelector string Existing worktree the automations run in; default: the enclosing worktree resolved by Orca. orca.host string orca.minVersion string \"1.4.200\" orca.timeoutMs integer 20000 linear Path Type Default Description --- --- --- --- linear.workspaceId string required linear.teamKey string required linear.person string required Linear display name of the person whose queue this machine drains. linear.people record&lt;string&gt; {} Display name → Linear user id, for assignee set and audit; the queue itself filters by display name. linear.rotation object {} Optional ordered handoff between owners after the current dispatchable queue drains. linear.rotation.enabled boolean false linear.rotation.owners string[] [] linear.rotation.advanceWhenEmpty boolean true linear.queueOwnership person · unassigned · both \"person\" Whose queue this machine drains. person (default) keeps the historical behaviour: the issues assigned to linear.person . unassigned drains the issues with NO assignee and turns the assignee into a transient claim — written on dispatch, cleared when the item returns — so several machines can share one priority-ordered queue without colliding. Note when switching to unassigned : clearing the assignees is then REQUIRED, not cosmetic. With person and an emptied backlog the queue comes back empty and the loop looks healthy while doing nothing. both drains the union of the two: issues with no assignee AND issues assigned to linear.person . Unassigned ones are claimed for person on dispatch; nothing is released on return (the issue stays the person's, which this queue still sees). linear.states string[] [\"Todo\",\"Ready\"] linear.",
           "aliases": "configuration document human"
         },
         "graph": {
@@ -11627,7 +11662,7 @@
             }
           ]
         },
-        "contentHash": "38ca6a1311c3f077c4cca07ede44819a0e25729982928fa1484d5e0f3d8085dc",
+        "contentHash": "ad904cac2e41bc8a3b04880fcd123d7bc1794f13f0bd008c9f7a2700d26de933",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -14333,7 +14368,7 @@
           "path": "docs/ADR-0045-fleet-runner.md",
           "symbols": "",
           "summary": "Accepted",
-          "body": "ADR-0045: A fleet runner — dispatch through the fleet coordinator's queue Status Accepted Context The factory design (fleet repository, docs/design/industrial-sdlc.md §8 step 3) puts the harness's RunnerConnector in front of the factory queue. The fleet coordinator is that queue's front door: fleet submit , fleet queue --json , fleet tail , fleet collect , fleet cancel . Behind it the queue may be fleet's own or Hatchet; the harness must not know which, so it speaks only the CLI, through CommandRunner (argv, no shell). A fleet task is not an Orca terminal: it is submitted once, runs unattended, has no local worktree, and cannot be typed into afterwards. The interface has to say so honestly rather than pretend. Decision A third implementation, createFleetRunner ( src/loop/fleet-runner.ts ), selected by connectors.runner: fleet . The engine and the interface are unchanged, except one optional field: WorkspaceObservation.state , the task state, because a queued task has no pull request to report. RunnerConnector Fleet behaviour --- --- createWorkspace Records a pending workspace (harness-side id, branch, base) in <stateDir /fleet-workspaces.json . Contacts nothing. path is '' : there is no local worktree. launchAgent Returns a handle bound to that workspace (the workspace id). command is ignored — a queue does not run an interactive CLI line. send (first) Submits : fleet submit --project <p --base <workspace base --model <m [--fallback-models a,b] --priority <n --prompt-file <tmp ; parses submitted <q-id and stores the id. Prompt = the text. send (later) Refused: delivered:false , detail \"not interactive\". A failed submit is also delivered:false and leaves the workspace unsubmitted, so a retry is possible. readScreen fleet tail <q-id , last lines lines. Empty before submit or when tail fails. observeWorkspaces fleet queue --json ; each submitted workspace maps to { id, pullRequest: null, state } . States fold to queued · running · done · failed · cancelled ; any word we do not know is unknown , never done . The SCM stays the source of PR state. removeWorkspace If the task is not terminal, fleet cancel <q-id ; a failed cancel throws and keeps the record. Then forgets the record. A task already done/failed/cancelled is not cancelled again. schedule Returns the fleet coordinator owns scheduling ; writes nothing. Delivery. When a task ends done , the deliver step collects its commits with fleet collect <host-task-id --json (which never pushes) and opens the pull request as it does for any runner. The PR is the orchestrator's job, not the queue's. The connector gained an optional collect({ id }) for this: it takes the host task id from the queue row ( hostTaskId / host task id / taskId / task id , else the queue id) and runs fleet collect --json . fleet collect creates no branch under the harness's name: it fetches the commits to ref = refs/remotes/fleet/<host /<host-task-id and reports { ref, head, base, commits } . The output is validated with a zod schema ( ref , head as a hex sha, commits as an integer ≥ 0; other keys ignored); non-JSON or a wrong shape is refused. commits: 0 returns no branch, and deliver treats it as a stuck worker (escalated, no push, no PR). Otherwise the connector checks git merge-base --is-ancestor <head <ref and runs git branch -f <branch <head , so the harness's own local branch sits exactly at the collected commit. Deliver then pushes it with git push -u origin <branch , opens the PR with gh pr create (body carries Loop-Contract: <digest ), and the PR is reviewed and merged like any other. A task that ends failed / cancelled is a stuck worker, escalated to a person. Branch name. The tracker's branch name can hold characters git refuses or people dislike (GitHub issues yield <login /<owner /<repo <n ). createWorkspace therefore derives a safe ref for fleet ( safeFleetBranch : anything outside A-Za-z0-9. /- becomes - , so login/owner/repo 3 → login/owner/repo-3 ); that name is what the dispatch record, the ",
+          "body": "ADR-0045: A fleet runner — dispatch through the fleet coordinator's queue Status Accepted Context The factory design (fleet repository, docs/design/industrial-sdlc.md §8 step 3) puts the harness's RunnerConnector in front of the factory queue. The fleet coordinator is that queue's front door: fleet submit , fleet queue --json , fleet tail , fleet collect , fleet cancel . Behind it the queue may be fleet's own or Hatchet; the harness must not know which, so it speaks only the CLI, through CommandRunner (argv, no shell). A fleet task is not an Orca terminal: it is submitted once, runs unattended, has no local worktree, and cannot be typed into afterwards. The interface has to say so honestly rather than pretend. Decision A third implementation, createFleetRunner ( src/loop/fleet-runner.ts ), selected by connectors.runner: fleet . The engine and the interface are unchanged, except one optional field: WorkspaceObservation.state , the task state, because a queued task has no pull request to report. RunnerConnector Fleet behaviour --- --- createWorkspace Records a pending workspace (harness-side id, branch, base) in <stateDir /fleet-workspaces.json . Contacts nothing. path is '' : there is no local worktree. launchAgent Returns a handle bound to that workspace (the workspace id). command is ignored — a queue does not run an interactive CLI line. send (first) Submits : fleet submit --project <p --base <workspace base --model <m [--fallback-models a,b] --priority <n --prompt-file <tmp ; parses submitted <q-id and stores the id. Prompt = the text. send (later) Refused: delivered:false , detail \"not interactive\". A failed submit is also delivered:false and leaves the workspace unsubmitted, so a retry is possible. readScreen fleet tail <q-id , last lines lines. Empty before submit or when tail fails. observeWorkspaces fleet queue --json ; each submitted workspace maps to { id, pullRequest: null, state } . States fold to queued · running · done · failed · cancelled ; any word we do not know is unknown , never done . The SCM stays the source of PR state. removeWorkspace If the task is not terminal, fleet cancel <q-id ; a failed cancel throws and keeps the record. Then forgets the record. A task already done/failed/cancelled is not cancelled again. schedule Returns the fleet coordinator owns scheduling ; writes nothing. Delivery. When a task ends done , the deliver step collects its commits with fleet collect <host-task-id --json (which never pushes) and opens the pull request as it does for any runner. The PR is the orchestrator's job, not the queue's. The connector gained an optional collect({ id }) for this: it takes the host task id from the queue row ( hostTaskId / host task id / taskId / task id , else the queue id) and runs fleet collect --json . fleet collect creates no branch under the harness's name: it fetches the commits to ref = refs/remotes/fleet/<host /<host-task-id and reports { ref, head, base, commits } . The output is validated with a zod schema ( ref , head as a hex sha, commits as an integer ≥ 0; other keys ignored); non-JSON or a wrong shape is refused. commits: 0 returns no branch, and deliver treats it as a stuck worker (escalated, no push, no PR). Otherwise the connector checks git merge-base --is-ancestor <head <ref and runs git branch -f <branch <head , so the harness's own local branch sits exactly at the collected commit. Deliver then pushes it with git push -u origin <branch , opens the PR with gh pr create (body carries Loop-Contract: <digest ), and the PR is reviewed and merged like any other. A task that ends failed / cancelled is a stuck worker, escalated to a person. Definition of done. The other runners prove the DoD from the worker's worktree and the handoff files it wrote there; a fleet task has neither (found live on factory-sandbox 3: every pass waiting on missing: verify, o1, o2; failing: test-for-new-code ). For fleet , deliver proves it in src/loop/fleet-dod.ts , on a temporary git worktree at the ",
           "aliases": "document human"
         },
         "graph": {
@@ -14345,12 +14380,32 @@
           "outbound": [
             {
               "kind": "mentions",
+              "id": "area:test",
+              "confidence": "observed"
+            },
+            {
+              "kind": "mentions",
+              "id": "module:src/loop/fleet-dod.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "mentions",
               "id": "module:src/loop/fleet-runner.ts",
               "confidence": "observed"
             },
             {
               "kind": "mentions-symbol",
               "id": "module:src/adapters/command.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "mentions-symbol",
+              "id": "module:src/loop/artifacts.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "mentions-symbol",
+              "id": "module:src/loop/dod.ts",
               "confidence": "observed"
             },
             {
@@ -14365,7 +14420,7 @@
             }
           ]
         },
-        "contentHash": "e56d6760e668d85c26940a68507eb4f6a897f9a08c49e0c0679b781bd37a61a9",
+        "contentHash": "25b272ccc1b2a21c4c734bdbaf171fdbf56cd1961d3782b79f6c8949b3a9dad2",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -18247,6 +18302,11 @@
             },
             {
               "kind": "imports",
+              "id": "module:src/loop/fleet-dod.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
               "id": "module:src/loop/github-intake.ts",
               "confidence": "observed"
             },
@@ -18743,7 +18803,7 @@
             }
           ]
         },
-        "contentHash": "f2b14336f98061bfcf443b8d78915051a07e394373845ba1e48c637449a408d9",
+        "contentHash": "b1d8c2b29b59e4a3f93f30d59ee194956fb0eee99a220ac476b3bcbd71e675d5",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -25977,10 +26037,11 @@
         },
         "graph": {
           "pagerank": 0,
-          "inboundLinks": 1,
+          "inboundLinks": 2,
           "coveredBy": [],
           "mentionedBy": [
-            "document:docs/ADR-0035-definition-of-done-two-lists.md"
+            "document:docs/ADR-0035-definition-of-done-two-lists.md",
+            "document:docs/ADR-0045-fleet-runner.md"
           ],
           "areaId": "area:src/loop",
           "packageId": "package:@agentskit/harness",
@@ -25997,12 +26058,22 @@
             },
             {
               "kind": "imports",
+              "id": "module:src/loop/fleet-dod.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
               "id": "module:src/loop/tick.ts",
               "confidence": "observed"
             },
             {
               "kind": "mentions",
               "id": "document:docs/ADR-0035-definition-of-done-two-lists.md",
+              "confidence": "observed"
+            },
+            {
+              "kind": "mentions-symbol",
+              "id": "document:docs/ADR-0045-fleet-runner.md",
               "confidence": "observed"
             },
             {
@@ -26735,6 +26806,11 @@
             },
             {
               "kind": "imports",
+              "id": "module:src/loop/fleet-dod.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
               "id": "module:src/loop/flows.ts",
               "confidence": "observed"
             },
@@ -26977,11 +27053,6 @@
               "kind": "imports",
               "id": "module:test/ui-core-server.test.ts",
               "confidence": "observed"
-            },
-            {
-              "kind": "imports",
-              "id": "module:test/ui-insights.test.ts",
-              "confidence": "observed"
             }
           ],
           "outbound": [
@@ -27012,7 +27083,7 @@
             }
           ]
         },
-        "contentHash": "b0839a4d9b0bf53f87bdebc2bc213f9f65dd6b91088c71bdc3c72b1a7f92bd68",
+        "contentHash": "1da0f96e49150ee2dc013f1583dd91f8bc97844eeca924c658cc7531393e01a3",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -27300,6 +27371,11 @@
             {
               "kind": "imports",
               "id": "module:src/loop/dod.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
+              "id": "module:src/loop/fleet-dod.ts",
               "confidence": "observed"
             },
             {
@@ -28118,6 +28194,11 @@
             },
             {
               "kind": "imports",
+              "id": "module:src/loop/fleet-dod.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
               "id": "module:src/loop/flows.ts",
               "confidence": "observed"
             },
@@ -28218,7 +28299,7 @@
             }
           ]
         },
-        "contentHash": "510028d2d441436ae45384a4d491b3264b48107e75dc8a6dcc49f2f705fcaeb7",
+        "contentHash": "3ab6c59e9f1dcf8b45c9cf4dc1d157d460b9efedfe440faa406f4ca965926ef1",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -28644,11 +28725,12 @@
         },
         "graph": {
           "pagerank": 0,
-          "inboundLinks": 2,
+          "inboundLinks": 3,
           "coveredBy": [],
           "mentionedBy": [
             "document:docs/ADR-0035-definition-of-done-two-lists.md",
-            "document:docs/ADR-0044-delivery-evidence-on-the-tracker.md"
+            "document:docs/ADR-0044-delivery-evidence-on-the-tracker.md",
+            "document:docs/ADR-0045-fleet-runner.md"
           ],
           "areaId": "area:src/loop",
           "packageId": "package:@agentskit/harness",
@@ -28661,6 +28743,11 @@
             {
               "kind": "imports",
               "id": "module:src/loop/deliver.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
+              "id": "module:src/loop/fleet-dod.ts",
               "confidence": "observed"
             },
             {
@@ -28681,6 +28768,11 @@
             {
               "kind": "mentions-symbol",
               "id": "document:docs/ADR-0044-delivery-evidence-on-the-tracker.md",
+              "confidence": "observed"
+            },
+            {
+              "kind": "mentions-symbol",
+              "id": "document:docs/ADR-0045-fleet-runner.md",
               "confidence": "observed"
             },
             {
@@ -29061,6 +29153,89 @@
         "confidence": "observed"
       },
       {
+        "id": "module:src/loop/fleet-dod.ts",
+        "kind": "module",
+        "path": "src/loop/fleet-dod.ts",
+        "title": "fleet-dod.ts",
+        "aliases": [],
+        "symbols": [
+          "FleetDodEvidence",
+          "FleetDodInput",
+          "proveFleetDod"
+        ],
+        "tags": [
+          "module",
+          "ts",
+          "loop"
+        ],
+        "fields": {
+          "title": "fleet-dod.ts",
+          "headings": "",
+          "path": "src/loop/fleet-dod.ts",
+          "symbols": "FleetDodEvidence FleetDodInput proveFleetDod",
+          "summary": "",
+          "body": "",
+          "aliases": "module ts loop"
+        },
+        "graph": {
+          "pagerank": 0,
+          "inboundLinks": 1,
+          "coveredBy": [],
+          "mentionedBy": [
+            "document:docs/ADR-0045-fleet-runner.md"
+          ],
+          "areaId": "area:src/loop",
+          "packageId": "package:@agentskit/harness",
+          "inbound": [
+            {
+              "kind": "imports",
+              "id": "module:src/loop/deliver.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
+              "id": "module:test/loop-fleet-dod.test.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "mentions",
+              "id": "document:docs/ADR-0045-fleet-runner.md",
+              "confidence": "observed"
+            }
+          ],
+          "outbound": [
+            {
+              "kind": "imports",
+              "id": "module:src/adapters/command.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
+              "id": "module:src/loop/artifacts.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
+              "id": "module:src/loop/config.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
+              "id": "module:src/loop/contract.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
+              "id": "module:src/loop/dod.ts",
+              "confidence": "observed"
+            }
+          ]
+        },
+        "contentHash": "49e5aed158ac06d06c44833ea9a0bce09333874fc2d5666f330b25a3171f8c71",
+        "provenance": "observed",
+        "confidence": "observed"
+      },
+      {
         "id": "module:src/loop/fleet-runner.ts",
         "kind": "module",
         "path": "src/loop/fleet-runner.ts",
@@ -29151,7 +29326,7 @@
             }
           ]
         },
-        "contentHash": "139e20800c87a707299b921e68e84bcfe36e6f384c310ae105dbcce5299b5a8d",
+        "contentHash": "412f905d2c038d94eca7fe0a32a914faf0130930d793b286fbe0633f213479df",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -32056,6 +32231,11 @@
               "confidence": "observed"
             },
             {
+              "kind": "imports",
+              "id": "module:test/loop-fleet-dod.test.ts",
+              "confidence": "observed"
+            },
+            {
               "kind": "mentions",
               "id": "document:docs/MODULE-BOUNDARIES.md",
               "confidence": "observed"
@@ -33266,7 +33446,7 @@
             }
           ]
         },
-        "contentHash": "dffaee0da2f64a56ddcd33c3bc39ee17881c4a1aaa238d85a29e720998b0e16c",
+        "contentHash": "3ff295badd478a9721bffa785562ea80aa42bf9dbbdd6eab673378a7a29979a3",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -34193,7 +34373,7 @@
             }
           ]
         },
-        "contentHash": "85342432e8a6c9c72dbd4b390945abd8ba7c2b39bd5c56ae336f7abd7e5d019b",
+        "contentHash": "37436a3066a79d9366d002160e2555d005867acbb7cee58a74b19b355816f778",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -41617,6 +41797,11 @@
               "kind": "imports",
               "id": "module:test/harness.test.ts",
               "confidence": "observed"
+            },
+            {
+              "kind": "imports",
+              "id": "module:test/loop-fleet-dod.test.ts",
+              "confidence": "observed"
             }
           ],
           "outbound": []
@@ -44034,6 +44219,61 @@
         "confidence": "observed"
       },
       {
+        "id": "module:test/loop-fleet-dod.test.ts",
+        "kind": "module",
+        "path": "test/loop-fleet-dod.test.ts",
+        "title": "loop-fleet-dod.test.ts",
+        "aliases": [],
+        "tags": [
+          "module",
+          "ts",
+          "test"
+        ],
+        "fields": {
+          "title": "loop-fleet-dod.test.ts",
+          "headings": "",
+          "path": "test/loop-fleet-dod.test.ts",
+          "symbols": "",
+          "summary": "",
+          "body": "",
+          "aliases": "module ts test"
+        },
+        "graph": {
+          "pagerank": 0,
+          "inboundLinks": 0,
+          "coveredBy": [],
+          "mentionedBy": [],
+          "areaId": "area:test",
+          "packageId": "package:@agentskit/harness",
+          "inbound": [],
+          "outbound": [
+            {
+              "kind": "imports",
+              "id": "module:src/index.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
+              "id": "module:src/loop/fleet-dod.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
+              "id": "module:src/loop/process.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
+              "id": "module:test/git.ts",
+              "confidence": "observed"
+            }
+          ]
+        },
+        "contentHash": "fd645215382e31843473b37cb7325e4253d084918bfd9b49e235e73a2525d164",
+        "provenance": "observed",
+        "confidence": "observed"
+      },
+      {
         "id": "module:test/loop-fleet-runner.test.ts",
         "kind": "module",
         "path": "test/loop-fleet-runner.test.ts",
@@ -44074,7 +44314,7 @@
             }
           ]
         },
-        "contentHash": "ae42936e6937a208ea1f8c02b64e04a2db18506cab40963f9804a5858e74aa6e",
+        "contentHash": "bd6de7edb5a0a66daa41162b69ff8754a27dca2d9a3a319b0fb6d0501c482560",
         "provenance": "observed",
         "confidence": "observed"
       },

@@ -101,6 +101,8 @@ export interface DispatchRecordFile {
   readonly briefAccepted?: boolean
   /** The runner that dispatched this worker, when it is not Orca (`fleet`): there `worktreeId` is the runner's workspace id, there is no terminal and no local worktree. Absent means Orca. */
   readonly runner?: 'fleet'
+  /** `fleet`: the tip and base `fleet collect --json` reported; the definition of done is judged on `base...head` in a local checkout of `head`. */
+  readonly collected?: { readonly head: string; readonly base?: string }
   /** Builder provider's remaining Orca usage percent at dispatch time (`resilience.maxUsageDeltaPercent` cost guard); `null` when usage was unknown. */
   readonly initialRemainingPercent: number | null
   /**
@@ -1179,7 +1181,7 @@ export const runTick = async (input: TickInput): Promise<TickReport> => {
       })
       // A queued task has no terminal to ask and cannot push or open a PR itself: say so, or the brief's "open exactly
       // one pull request" sends it off to do what the queue does not allow.
-      const brief = connector ? `${workerBrief}\n\n## Delivery by the queue\n\nThis task runs unattended in the ${connector.id} queue. Commit your work on branch \`${actualBranch}\` and finish; do NOT push and do NOT open a pull request — the harness collects the branch and opens the PR itself. Ignore any instruction above that tells you to run \`gh pr create\`, to push, or to wait for input.\n` : workerBrief
+      const brief = connector ? `${workerBrief}\n\n## Delivery by the queue\n\nThis task runs unattended in the ${connector.id} queue. Commit your work on branch \`${actualBranch}\` and finish; do NOT push and do NOT open a pull request — the harness collects the branch and opens the PR itself. Ignore any instruction above that tells you to run \`gh pr create\`, to push, or to wait for input.\n\nThe harness has no access to this task's worktree, so it re-runs every check command itself on the commit it collects. For any outcome whose check is not a command, **commit** (\`git add -f\`) the handoff files described above — \`.ak-loop/verify.json\` and \`${config.dod.evidenceFile}\` — in your last commit; they are read from the collected commit.\n` : workerBrief
       const briefDigest = skillDigest(brief)
       writeFileSync(briefPath(loaded.stateDir, detail.identifier), brief, 'utf8')
       let launched: { readonly terminal: string; readonly accepted: boolean; readonly idle: boolean }

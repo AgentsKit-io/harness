@@ -94,9 +94,14 @@ export const assessChecks = (checks: readonly PullRequestCheck[], required: read
 
 const globToRegex = (pattern: string): RegExp => {
   let out = '^'
+  let braces = 0
   for (let index = 0; index < pattern.length; index += 1) {
     const char = pattern[index] ?? ''
-    if (char === '*') {
+    // `{a,b}` is an alternation (the presets' `**/*.{test,spec}.*`); an unclosed `{` stays a literal.
+    if (char === '{' && pattern.indexOf('}', index) > index) { braces += 1; out += '(?:' }
+    else if (char === '}' && braces > 0) { braces -= 1; out += ')' }
+    else if (char === ',' && braces > 0) out += '|'
+    else if (char === '*') {
       if (pattern[index + 1] === '*') { if (pattern[index + 2] === '/') { out += '(?:.*/)?'; index += 2 } else { out += '.*'; index += 1 } } else out += '[^/]*'
     } else out += /[.+^${}()|[\]\\?]/.test(char) ? `\\${char}` : char
   }

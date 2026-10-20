@@ -162,7 +162,7 @@ describe('the fleet runner', () => {
     const workspace = await fleet.createWorkspace({ name: 'a', branch: 'person/a', baseBranch: 'main' })
     await expect(fleet.collect?.({ id: workspace.id })).rejects.toThrow(/never submitted/)
     await fleet.send({ terminal: workspace.id, text: 'x' })
-    expect(await fleet.collect?.({ id: workspace.id })).toEqual({ branch: 'person/a', detail: 'collected ht-9 (2 commits) → person/a at a1b2c3d4e5f6' })
+    expect(await fleet.collect?.({ id: workspace.id })).toEqual({ branch: 'person/a', detail: 'collected ht-9 (2 commits) → person/a at a1b2c3d4e5f6', head: 'a1b2c3d4e5f6', base: 'b0b0b0b' })
     expect(calls).toContainEqual(['fleet', 'collect', 'ht-9', '--json'])
     expect(calls.filter((argv) => argv[0] === 'git' && argv[3] !== 'remote').map((argv) => argv.slice(3))).toEqual([['merge-base', '--is-ancestor', 'a1b2c3d4e5f6', 'refs/remotes/fleet/h1/ht-9'], ['branch', '-f', 'person/a', 'a1b2c3d4e5f6']])
 
