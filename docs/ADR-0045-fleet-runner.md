@@ -34,7 +34,11 @@ state, because a queued task has no pull request to report.
 
 **Delivery.** When a task ends `done`, the deliver step collects its branch with `fleet collect <host-task-id>`
 (which never pushes) and opens the pull request as it does for any runner. The PR is the orchestrator's job, not
-the queue's. This ADR adds no collect wiring to the engine.
+the queue's. The connector gained an optional `collect({ id })` for this: it takes the host task id from the queue
+row (`hostTaskId`/`host_task_id`/`taskId`/`task_id`, else the queue id), runs `fleet collect`, takes the branch the
+output names (else the workspace's own), and fails unless that branch exists in the local clone. Deliver then pushes
+it with `git push origin`, opens the PR with `gh pr create` (body carries `Loop-Contract: <digest>`), and the PR is
+reviewed and merged like any other. A task that ends `failed`/`cancelled` is a stuck worker, escalated to a person.
 
 **Prompt hygiene.** The prompt reaches `fleet submit` only through a `0600` file in a fresh temp directory under
 the state dir, removed in a `finally` once the submit returns. It is never in argv, logs or error text.
@@ -46,11 +50,23 @@ not GitHub), `model` (`haiku|sonnet|opus`, default `sonnet`), `fallbackModels`, 
 
 ## Consequences
 
-- Same limit as ADR-0039 recorded for `local`: today `tick`/`deliver`/`install` still call Orca directly, and
-  only `createRunnerConnector` callers (the UI's workspace observation) go through the interface. `connectors.runner:
-  fleet` is accepted at load as asked, but dispatch itself does not follow it until the engine is moved onto the
-  interface. That caller change is a separate step, and until it lands `doctor` should not be read as proof the loop
-  dispatches through fleet.
+- **`tick` and `deliver` follow the selected runner** (this superseded the earlier "accepted at load, but dispatch
+  still runs Orca" limit, which was found live: `runner: fleet` still planned `orca worktree create`). Under `fleet`
+  they create the workspace, submit the brief and collect through `RunnerConnector`, and never call Orca — not for
+  accounts, worktrees, memory, terminals or the terminal reaper. The Orca path is unchanged and still written out in
+  `tick`/`deliver` (trust prompts, submit observation, terminal reaping), not routed through `createOrcaRunner`:
+  moving it would risk its behaviour for no gain. `connectors.runner: local` is still rejected at load (ADR-0039);
+  `install` still reconciles Orca automations and is not part of this.
+- Under `fleet` there is no worktree, so no worker guard, no `project.setup`, no spec files, and no local
+  `delivery.verify` of the PR's code (the brief tells the worker to commit and stop; the harness pushes and opens
+  the PR). Nudges, handoffs and fix-round messages cannot reach a queued task; `sendToWorker` reports that and returns.
+  Provider availability still comes from local detection with no Orca account list, so a provider whose auth is an
+  Orca account reads unavailable; the model the fleet runs is `connectors.fleet.model`, not the routed builder.
+- `loop doctor` probes the selected runner: `fleet doctor --json` (summarised) and `fleet queue --json` for `fleet`,
+  with no Orca checks; Orca checks run only under `orca`.
+- Assumption to confirm against the real CLI: `fleet collect` leaves the branch under the workspace's recorded name
+  (or names it as `branch <name>` in its output). If it uses another name the collect fails loudly ("not in the local
+  clone") instead of pushing the wrong thing.
 - Records live in a state-dir file, so a later process can observe, tail and cancel what an earlier one submitted.
   Records of workspaces whose `remove` never ran are not garbage-collected.
 - The queue JSON shape is read leniently (bare array or `{ tasks }`, `id`/`queueId`, `state`); a shape change in

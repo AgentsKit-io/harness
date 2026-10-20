@@ -21,6 +21,7 @@ import { createLoopEventBus, loadLoopPlugins } from './event-bus.js'
 import { createMcpToolBridge } from '../adapters/mcp.js'
 import { createPolicyGate } from '../kernel/policy.js'
 import { resolveConnectors } from './connectors.js'
+import { probeFleet } from './fleet-runner.js'
 
 export type DoctorCheckStatus = 'passed' | 'warning' | 'failed'
 export interface DoctorCheck { readonly id: string; readonly status: DoctorCheckStatus; readonly detail: string }
@@ -82,15 +83,23 @@ export const runLoopDoctor = async (input: LoopDoctorInput): Promise<LoopDoctorR
   const checks: DoctorCheck[] = []
   const push = (id: string, status: DoctorCheckStatus, detail: string): void => { checks.push({ id, status, detail }) }
 
-  const version = await orcaVersion(input.runner, orcaOptions).catch(() => null)
+  // The runner decides what is probed: Orca's binary, runtime, accounts, worktrees and automations only matter when
+  // Orca is where work runs. Under `fleet` the fleet coordinator is what has to be there, and Orca is not asked at all.
+  const viaOrca = config.connectors.runner === 'orca'
+  const version = viaOrca ? await orcaVersion(input.runner, orcaOptions).catch(() => null) : null
   let status: OrcaStatus | null = null
   let orcaError: string | null = null
-  try { status = await orcaStatus(input.runner, orcaOptions) } catch (error) { orcaError = message(error) }
-  if (!version) push('orca.binary', 'failed', `"${config.orca.bin}" did not answer --version`)
-  else if (compareVersions(version, config.orca.minVersion) < 0) push('orca.version', 'failed', `Orca ${version} is older than required ${config.orca.minVersion}`)
-  else push('orca.version', 'passed', `Orca ${version} ≥ ${config.orca.minVersion}`)
-  if (status) push('orca.runtime', status.runtimeReady ? 'passed' : 'failed', status.runtimeReady ? `runtime ready (app ${status.appRunning ? 'running' : 'not running'})` : `runtime ${status.runtimeState}; start it with "${config.orca.bin} open"`)
-  else push('orca.runtime', 'failed', orcaError ?? 'status unavailable')
+  if (!viaOrca) {
+    push('runner', 'passed', `connectors.runner: ${config.connectors.runner} — Orca is not probed`)
+    if (config.connectors.runner === 'fleet') for (const probe of await probeFleet({ loaded, runner: input.runner })) push(probe.id, probe.status, probe.detail)
+  } else {
+    try { status = await orcaStatus(input.runner, orcaOptions) } catch (error) { orcaError = message(error) }
+    if (!version) push('orca.binary', 'failed', `"${config.orca.bin}" did not answer --version`)
+    else if (compareVersions(version, config.orca.minVersion) < 0) push('orca.version', 'failed', `Orca ${version} is older than required ${config.orca.minVersion}`)
+    else push('orca.version', 'passed', `Orca ${version} ≥ ${config.orca.minVersion}`)
+    if (status) push('orca.runtime', status.runtimeReady ? 'passed' : 'failed', status.runtimeReady ? `runtime ready (app ${status.appRunning ? 'running' : 'not running'})` : `runtime ${status.runtimeState}; start it with "${config.orca.bin} open"`)
+    else push('orca.runtime', 'failed', orcaError ?? 'status unavailable')
+  }
   // schedule.stageTimeoutSec has no schema ceiling and no longer needs one: `tick`'s precheck fires a detached
   // background worker (see `loop stage tick` in cli.ts) rather than doing the real, potentially long-running
   // work inline, so stageTimeoutSec only bounds that worker's own deadline — Orca's precheck ceiling never sees
@@ -99,10 +108,10 @@ export const runLoopDoctor = async (input: LoopDoctorInput): Promise<LoopDoctorR
   // read-only, install is not) rather than only via Orca's own CLI error at install time.
   if (config.schedule.precheckTimeoutSec > 600) push('schedule.precheck-timeout', 'failed', `precheckTimeoutSec (${config.schedule.precheckTimeoutSec}s) exceeds Orca's precheck ceiling of 600s; "loop install" will fail creating/editing every automation. Lower schedule.precheckTimeoutSec to 600 or fewer.`)
 
-  const [accountList, agentHooks] = await Promise.all([
+  const [accountList, agentHooks] = viaOrca ? await Promise.all([
     orcaAccountList(input.runner, orcaOptions).catch((error: unknown) => { push('orca.accounts', 'warning', `account list unavailable: ${message(error)}`); return null }),
     orcaAgentHooks(input.runner, orcaOptions).catch((error: unknown) => { push('orca.agent-hooks', 'warning', `agent hooks unavailable: ${message(error)}`); return {} as Readonly<Record<string, 'installed' | 'not_installed' | 'unknown'>> }),
-  ])
+  ]) : [null, {} as Readonly<Record<string, 'installed' | 'not_installed' | 'unknown'>>]
   const cooldowns = activeCooldowns(readCooldowns(loaded.stateDir), now())
   const providers = await detectProviders({ providers: providerSpecs(config), accountList: accountList ?? {}, agentHooks, env: input.env, platform: input.platform, exhaustedPercent: config.models.cooldown.exhaustedPercent, cooldowns, now, ...(input.probe === false ? {} : { runner: input.runner }) })
   for (const provider of providers) {
@@ -141,9 +150,9 @@ export const runLoopDoctor = async (input: LoopDoctorInput): Promise<LoopDoctorR
 
   let worktrees: readonly OrcaWorktree[] = []
   let workersError: string | null = null
-  try { worktrees = await orcaWorktrees(input.runner, orcaOptions) } catch (error) { workersError = message(error); push('orca.worktrees', 'warning', `worktree ps unavailable: ${workersError}`) }
+  if (viaOrca) { try { worktrees = await orcaWorktrees(input.runner, orcaOptions) } catch (error) { workersError = message(error); push('orca.worktrees', 'warning', `worktree ps unavailable: ${workersError}`) } }
   const running = countRunningWorkers(worktrees)
-  const orcaMemory = await orcaDiagnosticsMemory(input.runner, orcaOptions)
+  const orcaMemory = viaOrca ? await orcaDiagnosticsMemory(input.runner, orcaOptions) : null
   const machine = assessSlots({ machine: config.machine, running, platform: input.platform, orcaMemory })
   push('machine.slots', machine.free > 0 ? 'passed' : 'warning', `${machine.free} free of ${machine.maxAgents} (running ${running}, cpus ${machine.sample.cpus}, load ${machine.sample.loadAvailable === false ? 'n/a' : `${machine.sample.load1PerCpuPercent}%`}, free RAM ${machine.freeRamGb} GB)${machine.reasons.length ? `; ${machine.reasons.join('; ')}` : ''}`)
 
@@ -222,7 +231,7 @@ export const runLoopDoctor = async (input: LoopDoctorInput): Promise<LoopDoctorR
   }
 
   // No `runner.local` probe: `connectors.runner: "local"` is rejected at config load (see config.ts), so a config
-  // reaching doctor is always the Orca runner. Probing for tmux and crontab here only implied otherwise.
+  // reaching doctor is the Orca or the fleet runner, each probed above.
 
   const reviewCli = config.delivery.review.cli
   const reviewBin = findExecutable(reviewCli, input.env ?? process.env, input.platform ?? process.platform)
@@ -279,7 +288,7 @@ export const runLoopDoctor = async (input: LoopDoctorInput): Promise<LoopDoctorR
 
   // Drift between the config and Orca's live automations is invisible to every other check: the loop looks healthy
   // while the scheduler runs a command nobody declares any more. Doctor only reports it; `loop install` fixes it.
-  try {
+  if (viaOrca) try {
     const automations = await orcaAutomationsList(input.runner, orcaOptions)
     // Two installs are legitimate: `loop install` writes the declared command, the UI pins the running binary
     // (withRunningHarness). An automation matching either is in sync; only one matching neither has drifted.

@@ -136,6 +136,28 @@ describe('the fleet runner', () => {
     expect(finished.calls.some((argv) => argv[1] === 'cancel')).toBe(false)
   })
 
+  it('collects a submitted task by its host task id and refuses a branch that did not arrive', async () => {
+    const loaded = setup()
+    const calls: string[][] = []
+    let branchPresent = true
+    const runner: CommandRunner = { run: async (argv) => {
+      calls.push([...argv])
+      if (argv[0] === 'git' && argv[3] === 'rev-parse') return { ...ok(), code: branchPresent ? 0 : 1 }
+      if (argv[0] === 'git') return ok('git@github.com:acme/widgets.git\n')
+      if (argv[1] === 'submit') return ok('submitted q-0001\n')
+      if (argv[1] === 'queue') return ok(JSON.stringify([{ id: 'q-0001', state: 'done', hostTaskId: 'ht-9' }]))
+      return ok('collected\n')
+    } }
+    const fleet = createRunnerConnector({ loaded, runner })
+    const workspace = await fleet.createWorkspace({ name: 'a', branch: 'person/a', baseBranch: 'main' })
+    await expect(fleet.collect?.({ id: workspace.id })).rejects.toThrow(/never submitted/)
+    await fleet.send({ terminal: workspace.id, text: 'x' })
+    expect(await fleet.collect?.({ id: workspace.id })).toEqual({ branch: 'person/a', detail: 'collected ht-9 → person/a' })
+    expect(calls).toContainEqual(['fleet', 'collect', 'ht-9'])
+    branchPresent = false
+    await expect(fleet.collect?.({ id: workspace.id })).rejects.toThrow(/not in the local clone/)
+  })
+
   it('says the coordinator owns scheduling', async () => {
     const fleet = createRunnerConnector({ loaded: setup(), runner: fakeFleet().runner })
     expect(await fleet.schedule([])).toEqual(['the fleet coordinator owns scheduling'])

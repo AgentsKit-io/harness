@@ -9,7 +9,10 @@ import { createOrcaDispatchPlan } from '../adapters/orca.js'
 import { orcaTerminalScreen, orcaTerminalEnter, orcaTurnStarted, orcaAccountList, orcaAgentHooks, orcaDiagnosticsMemory, orcaTerminalCreate, orcaTerminalSend, orcaTerminalWait, orcaWorktreeCreate, orcaWorktreeRemove, orcaWorktrees, type OrcaCliOptions, type OrcaWorktree } from '../adapters/orca-cli.js'
 import { detectProviders, type ProviderAvailability } from '../adapters/providers.js'
 import { createDispatchLedger, type DispatchLedger, type DispatchLease } from '../execution/coordination.js'
-import { HarnessError } from '../kernel/errors.js'
+import { githubIssueNumber } from '../adapters/github-cli.js'
+import { fail, HarnessError } from '../kernel/errors.js'
+import { createRunnerConnector, type RunnerWorkspace } from './runner-connector.js'
+import { fleetSubmitPreview } from './fleet-runner.js'
 import { renderWorkerBrief } from './brief.js'
 import { readStoredPlan, runPlanWithVotes, writeStoredPlan, type StoredPlan } from './plan-vote.js'
 import { acquireFileLock, releaseFileLock, writeJsonAtomic } from './fs-atomic.js'
@@ -96,6 +99,8 @@ export interface DispatchRecordFile {
   readonly effort: EffortLevel
   /** False when the worker's terminal never confirmed the brief; deliver re-sends it instead of waiting out the idle timeout. */
   readonly briefAccepted?: boolean
+  /** The runner that dispatched this worker, when it is not Orca (`fleet`): there `worktreeId` is the runner's workspace id, there is no terminal and no local worktree. Absent means Orca. */
+  readonly runner?: 'fleet'
   /** Builder provider's remaining Orca usage percent at dispatch time (`resilience.maxUsageDeltaPercent` cost guard); `null` when usage was unknown. */
   readonly initialRemainingPercent: number | null
   /**
@@ -441,6 +446,26 @@ const trackerCooldownLogger = (stateDir: string, now: () => Date, bus?: LoopEven
   appendLoopEvent(stateDir, { at: now().toISOString(), type: 'tracker.cooldown', until: entry.until, attempts: entry.attempts, reason: entry.reason }, bus)
 }
 
+/**
+ * What `--issue` means to the configured tracker. GitHub identifiers are `owner/repo#N`, so `1`, `#1`, `owner/repo#1`
+ * and the issue URL all name the same issue and are folded to that form; a reference to another repository is refused
+ * rather than left to match nothing. Other trackers keep the identifier as typed.
+ */
+export const resolveIssueRef = (config: LoopConfig, raw: string | undefined): string | undefined => {
+  const value = raw?.trim()
+  if (!value) return undefined
+  if (config.connectors.tracker !== 'github') return value
+  const number = githubIssueNumber(value)
+  const named = /^(?:https?:\/\/github\.com\/)?([\w.-]+\/[\w.-]+?)(?:#|\/issues\/)\d+$/i.exec(value)?.[1]
+  if (named && named.toLowerCase() !== config.project.repo.toLowerCase()) fail(`--issue "${raw}" is in ${named}, but this loop works on ${config.project.repo}.`, 'INVALID_INPUT')
+  return `${config.project.repo}#${number}`
+}
+
+/** Tasks the runner still holds (queued, running or unknown) — what occupies a slot for a runner with no worktrees to count. */
+const countInFlightWorkspaces = async (runner: CommandRunner, loaded: LoadedLoopConfig): Promise<number> => {
+  try { return (await createRunnerConnector({ loaded, runner }).observeWorkspaces()).filter((item) => item.state === undefined || !['done', 'failed', 'cancelled'].includes(item.state)).length } catch { return 0 }
+}
+
 export const gatherLoopState = async (input: { readonly loaded: LoadedLoopConfig; readonly runner: CommandRunner; readonly ledger: DispatchLedger; readonly env?: NodeJS.ProcessEnv; readonly platform?: NodeJS.Platform; readonly now: () => Date; readonly onlyIssue?: string; readonly machine?: TickInput['machine']; readonly bus?: LoopEventBus }): Promise<LoopState> => {
   const { config } = input.loaded
   requireWritableTracker(config)
@@ -450,13 +475,17 @@ export const gatherLoopState = async (input: { readonly loaded: LoadedLoopConfig
   const explicitRuns = config.queue.mode === 'explicit'
     ? createIssueQueue({ stateDir: input.loaded.stateDir }).list().filter((run) => run.status === 'queued').sort((left, right) => left.sequence - right.sequence)
     : []
+  // Orca is asked about its accounts, worktrees and memory only when it is the runner: under any other runner it may
+  // not even be installed, and what it would report says nothing about where the work runs.
+  const viaOrca = config.connectors.runner === 'orca'
   const [accountList, agentHooks, worktrees, backlogQueue, orcaMemory] = await Promise.all([
-    orcaAccountList(input.runner, orca).catch(() => ({})),
-    orcaAgentHooks(input.runner, orca).catch(() => ({}) as Readonly<Record<string, 'installed' | 'not_installed' | 'unknown'>>),
-    orcaWorktrees(input.runner, orca),
+    viaOrca ? orcaAccountList(input.runner, orca).catch(() => ({})) : Promise.resolve({}),
+    viaOrca ? orcaAgentHooks(input.runner, orca).catch(() => ({}) as Readonly<Record<string, 'installed' | 'not_installed' | 'unknown'>>) : Promise.resolve({} as Readonly<Record<string, 'installed' | 'not_installed' | 'unknown'>>),
+    viaOrca ? orcaWorktrees(input.runner, orca) : Promise.resolve<readonly OrcaWorktree[]>([]),
     config.queue.mode === 'explicit' ? Promise.resolve<readonly LoopIssue[]>([]) : tracker.queue({ assignee: person }),
-    orcaDiagnosticsMemory(input.runner, orca),
+    viaOrca ? orcaDiagnosticsMemory(input.runner, orca) : Promise.resolve(null),
   ])
+  const onlyIssue = resolveIssueRef(config, input.onlyIssue)
   // Explicit mode is driven by a confirmed queue record, not by the backlog view. Fetching each selected issue by
   // identifier avoids making wizard-confirmed work depend on lifecycle labels, assignee filters, or provider state
   // filters that exist only to keep legacy backlog mode tidy.
@@ -477,16 +506,19 @@ export const gatherLoopState = async (input: { readonly loaded: LoadedLoopConfig
     })] as const)))
     : {}
   const routing = routeAllRoles(config, providers, extrasByRole)
-  const running = countRunningWorkers(worktrees)
+  const running = viaOrca ? countRunningWorkers(worktrees) : await countInFlightWorkspaces(input.runner, input.loaded)
   const slots = assessSlots({ machine: config.machine, running, platform: input.platform, orcaMemory, ...input.machine })
   const leases = input.ledger.active()
   const busy = busyIssues(queue, leases, worktrees, person)
-  const targetedRun = input.onlyIssue
-    ? createIssueQueue({ stateDir: input.loaded.stateDir }).list().filter((run) => run.issue === input.onlyIssue).sort((left, right) => right.sequence - left.sequence)[0] ?? null
+  // A targeted tick that matches nothing is a mistake to report, not an idle queue: it used to answer "no
+  // dispatchable candidate" for a typo, or for `--issue 1` against identifiers shaped `owner/repo#1`.
+  if (onlyIssue && !queue.some((issue) => issue.identifier === onlyIssue)) fail(`--issue "${input.onlyIssue}" matches no issue in the queue (${queue.length} read${queue.length ? `, e.g. ${queue.slice(0, 3).map((issue) => issue.identifier).join(', ')}` : ''}).`, 'INVALID_INPUT')
+  const targetedRun = onlyIssue
+    ? createIssueQueue({ stateDir: input.loaded.stateDir }).list().filter((run) => run.issue === onlyIssue).sort((left, right) => right.sequence - left.sequence)[0] ?? null
     : null
   const targetedRunBlocked = targetedRun !== null && targetedRun.status !== 'queued'
   const candidates = queue
-    .filter((issue) => !busy.has(issue.identifier) && !targetedRunBlocked && (!input.onlyIssue || issue.identifier === input.onlyIssue))
+    .filter((issue) => !busy.has(issue.identifier) && !targetedRunBlocked && (!onlyIssue || issue.identifier === onlyIssue))
     .sort((left, right) => config.queue.mode === 'explicit'
       ? (explicitRuns.find((run) => run.issue === left.identifier)?.sequence ?? Number.MAX_SAFE_INTEGER) - (explicitRuns.find((run) => run.issue === right.identifier)?.sequence ?? Number.MAX_SAFE_INTEGER)
       : 0)
@@ -900,6 +932,20 @@ export const runTick = async (input: TickInput): Promise<TickReport> => {
       : builder)
     const issueOrchestrators = applyRoleSettings(orchestratorCandidates, orchestratorSettings)
 
+    // What dispatching this issue would do, settled up front: it needs neither the contract nor the plan, so a dry run
+    // that must not call a model can still report it. Orca keeps its own path further down (its connector's behaviour,
+    // written out with its terminal care: trust prompts, submit observation); every other runner goes through
+    // `RunnerConnector`: workspace, launch, send.
+    const branch = branchFor(detail, state.person)
+    const worktree = worktreeNameFor(detail)
+    const plan = createOrcaDispatchPlan({ repository: config.orca.repoSelector ?? `path:${loaded.root}`, worktree, branch,
+      // The remote base, fetched just before: Orca resolves a bare branch name against the operator's local ref, which
+      // nobody fast-forwards — observed, a worker started 2 merges behind main and measured code that no longer existed.
+      baseBranch: `origin/${config.project.baseBranch}`, launch: 'worktree-only', ...(tracker.id === 'linear' ? { linearIssue: detail.url || detail.identifier } : {}), comment: `loop · ${detail.identifier} · ${worker.provider}/${worker.model}`, noParent: true, orcaBin: config.orca.bin })
+    const connector = config.connectors.runner === 'orca' ? null : createRunnerConnector({ loaded, runner: input.runner })
+    const dispatchArgv = connector ? fleetSubmitPreview(config, config.project.baseBranch) : plan.argv
+    const dryRunReason = connector ? `would submit the brief to the ${connector.id} queue (no Orca, no local worktree) and move issue to In Progress; deliver then collects the branch and opens the PR` : `would create worktree, open terminal "${worker.tui}", send the brief and move issue to In Progress (branch is assigned by Orca: <git user>/${worktree})`
+
     let stored = cachedContract
     // Reused below for the worker brief too (memory content cannot change mid-tick) — computing it once instead of
     // twice per dispatch halves this dispatch's memory-recall I/O (file reads + ranking) when memory.enabled.
@@ -916,6 +962,8 @@ export const runTick = async (input: TickInput): Promise<TickReport> => {
     if (stored && !contractIsFresh(stored, detail, config.contract.reuseHours, now(), memoryPlan?.memoryDigest)) stored = null
     if (!stored) {
       if (input.skipContractGeneration) { results.push({ issue: detail.identifier, outcome: 'skipped', reason: 'no cached contract; generation skipped' }); continue }
+      // A dry run is offline: freezing a contract is a model call, and a call that costs quota is not a plan.
+      if (dryRun) { results.push({ issue: detail.identifier, outcome: 'dry-run', reason: `no cached contract (a dry run calls no model, so none is frozen): ${dryRunReason}`, branch, worktree, provider: worker.provider, model: worker.model, argv: dispatchArgv }); dispatched += 1; continue }
       if (!issueOrchestrators.length) { results.push({ issue: detail.identifier, outcome: 'skipped', reason: 'no orchestrator provider available to freeze a contract' }); continue }
       try {
         const priorHitlAnswers = storedCandidateContract
@@ -996,6 +1044,7 @@ export const runTick = async (input: TickInput): Promise<TickReport> => {
         : []
       approvedPlan = storedPlan && !createHitlStore(loaded.stateDir).list({ issue: detail.identifier }).some((request) => request.status === 'answered' && request.metadata['planDigest'] === storedPlan.digest) ? storedPlan : null
       if (!approvedPlan || approvedPlan.contractDigest !== stored.digest || approvedPlan.status !== 'approved') {
+        if (dryRun) { results.push({ issue: detail.identifier, outcome: 'dry-run', reason: `no approved plan for this contract (a dry run calls no model, so none is made): ${dryRunReason}`, branch, worktree, provider: worker.provider, model: worker.model, argv: dispatchArgv, contractDigest: stored.digest }); dispatched += 1; continue }
         try {
           approvedPlan = await runPlanWithVotes({
             runner: input.runner, config, root: await readRoot(), issue: detail.identifier,
@@ -1040,8 +1089,6 @@ export const runTick = async (input: TickInput): Promise<TickReport> => {
       }
     }
 
-    const branch = branchFor(detail, state.person)
-    const worktree = worktreeNameFor(detail)
     const currentQueueRun = selectedRun ? issueQueue?.get(selectedRun.id) : null
     if (config.queue.mode === 'explicit' && (!currentQueueRun || (currentQueueRun.status !== 'dispatching' && !(dryRun && currentQueueRun.status === 'queued')))) {
       results.push({ issue: detail.identifier, outcome: 'skipped', reason: 'queue request was cancelled before dispatch' })
@@ -1049,14 +1096,10 @@ export const runTick = async (input: TickInput): Promise<TickReport> => {
     }
     const claim = ledger.claim({ tracker: config.connectors.tracker, repository: config.project.repo, issue: detail.identifier, worktree, branch, owner: input.owner ?? `loop:${state.person}` })
     if (claim.decision === 'already-claimed') { results.push({ issue: detail.identifier, outcome: 'skipped', reason: `lease already held by ${claim.lease.owner} since ${claim.lease.claimedAt}` }); continue }
-    const plan = createOrcaDispatchPlan({ repository: config.orca.repoSelector ?? `path:${loaded.root}`, worktree, branch,
-      // The remote base, fetched just before: Orca resolves a bare branch name against the operator's local ref, which
-      // nobody fast-forwards — observed, a worker started 2 merges behind main and measured code that no longer existed.
-      baseBranch: `origin/${config.project.baseBranch}`, launch: 'worktree-only', ...(tracker.id === 'linear' ? { linearIssue: detail.url || detail.identifier } : {}), comment: `loop · ${detail.identifier} · ${worker.provider}/${worker.model}`, noParent: true, orcaBin: config.orca.bin })
     const title = `loop ${detail.identifier} · ${worker.provider}`
     if (dryRun) {
       ledger.release(claim.lease, 'dry-run')
-      results.push({ issue: detail.identifier, outcome: 'dry-run', reason: `would create worktree, open terminal "${worker.tui}", send the brief and move issue to In Progress (branch is assigned by Orca: <git user>/${worktree})`, branch, worktree, provider: worker.provider, model: worker.model, argv: plan.argv, contractDigest: stored.digest })
+      results.push({ issue: detail.identifier, outcome: 'dry-run', reason: dryRunReason, branch, worktree, provider: worker.provider, model: worker.model, argv: dispatchArgv, contractDigest: stored.digest })
       dispatched += 1
       continue
     }
@@ -1068,19 +1111,26 @@ export const runTick = async (input: TickInput): Promise<TickReport> => {
       results.push({ issue: detail.identifier, outcome: 'skipped', reason: `blocked by plugin: ${beforeDispatch.reason}` })
       continue
     }
-    let created: Awaited<ReturnType<typeof orcaWorktreeCreate>> | null = null
+    let created: Pick<Awaited<ReturnType<typeof orcaWorktreeCreate>>, 'id' | 'path' | 'branch'> | null = null
+    let workspace: RunnerWorkspace | null = null
     try {
-      const fetched = await input.runner.run(['git', 'fetch', '--quiet', 'origin', config.project.baseBranch], { cwd: loaded.root, timeoutMs: 120_000 })
-      if (fetched.timedOut || fetched.code !== 0) throw new Error(`git fetch origin ${config.project.baseBranch} failed before creating the worktree; a worker must not start from a stale base: ${`${fetched.stderr}${fetched.stdout}`.trim().slice(0, 200)}`)
-      created = await createWorktreeWithRetry(input.runner, plan.argv, { timeoutMs: Math.max(config.orca.timeoutMs, 120_000) }, input.worktreeCreateRetryDelayMs)
+      if (connector) {
+        // No fetch: the fleet clones the base itself, and there is no local worktree to start stale.
+        workspace = await connector.createWorkspace({ name: worktree, branch, baseBranch: config.project.baseBranch, issue: detail.identifier, comment: `loop · ${detail.identifier} · ${worker.provider}/${worker.model}` })
+        created = { id: workspace.id, path: workspace.path, branch: workspace.branch }
+      } else {
+        const fetched = await input.runner.run(['git', 'fetch', '--quiet', 'origin', config.project.baseBranch], { cwd: loaded.root, timeoutMs: 120_000 })
+        if (fetched.timedOut || fetched.code !== 0) throw new Error(`git fetch origin ${config.project.baseBranch} failed before creating the worktree; a worker must not start from a stale base: ${`${fetched.stderr}${fetched.stdout}`.trim().slice(0, 200)}`)
+        created = await createWorktreeWithRetry(input.runner, plan.argv, { timeoutMs: Math.max(config.orca.timeoutMs, 120_000) }, input.worktreeCreateRetryDelayMs)
+      }
       // Orca names the branch `<git user>/<worktree>`; the Linear branchName is only a hint. Record and brief the real one.
       const actualBranch = created.branch || branch
       // Real-time enforcement, before the worker's own setup command (let alone the worker itself) ever runs —
-      // see ADR-0038 for which providers this covers and why.
-      const workerGuard = installWorkerGuard({ worktreePath: created.path, provider: worker.provider, config })
-      try { if (!(await excludeArtifactsFromGit(input.runner, created.path))) notes.push(`${detail.identifier}: could not exclude .ak-loop/ from git in ${created.path}`) } catch (error) { notes.push(`${detail.identifier}: excluding .ak-loop/ failed: ${message(error)}`) }
+      // see ADR-0038 for which providers this covers and why. A runner with no local worktree has nothing to install into.
+      const workerGuard = connector ? { installed: false } : installWorkerGuard({ worktreePath: created.path, provider: worker.provider, config })
+      if (!connector) { try { if (!(await excludeArtifactsFromGit(input.runner, created.path))) notes.push(`${detail.identifier}: could not exclude .ak-loop/ from git in ${created.path}`) } catch (error) { notes.push(`${detail.identifier}: excluding .ak-loop/ failed: ${message(error)}`) } }
       let setupResult: { readonly command: readonly string[]; readonly exitCode: number | null; readonly durationMs: number; readonly timedOut: boolean } | null = null
-      if (config.project.setup.command?.length) {
+      if (!connector && config.project.setup.command?.length) {
         // Floored at the window the guard above already reserved, not at 1s: if less than that is left, the
         // candidate never reached here, so there is no case where the floor should hand setup a doomed timeout.
         const setupTimeoutMs = Number.isFinite(timeBudgetMs) ? Math.max(setupBudgetMs, Math.min(config.project.setup.timeoutSec * 1000, remainingMs() - 120_000)) : config.project.setup.timeoutSec * 1000
@@ -1095,7 +1145,7 @@ export const runTick = async (input: TickInput): Promise<TickReport> => {
         if (setupFailed) notes.push(`${detail.identifier}: setup command failed but project.setup.required is false — continuing`)
       }
       let specText: string | null = null
-      if (config.spec.enabled) {
+      if (config.spec.enabled && !connector) {
         // ADR-0041: the spec is rendered from what was just frozen and approved — no model writes it.
         const spec = renderSpec({ issue: detail.identifier, url: detail.url, contract: stored, plan: approvedPlan })
         writeSpec(created.path, config, detail.identifier, spec)
@@ -1110,7 +1160,7 @@ export const runTick = async (input: TickInput): Promise<TickReport> => {
       // which of the two it got — a worker told nothing about delegation invents its own answer.
       const delegation = flow.profile?.lead ? (providerIdentity(config, worker.provider).settings.subagents ? 'subagents' as const : 'alone' as const) : null
       if (delegation === 'alone') notes.push(`${detail.identifier}: flow asked for a lead but ${worker.provider} has no subagents declared; the worker was told to work alone`)
-      const brief = renderWorkerBrief({
+      const workerBrief = renderWorkerBrief({
         issue: detail,
         contract: stored,
         config,
@@ -1127,12 +1177,21 @@ export const runTick = async (input: TickInput): Promise<TickReport> => {
           appendLoopEvent(loaded.stateDir, { at: now().toISOString(), type: 'security.pii-detected', issue: detail.identifier, source: 'worker-brief', kinds: [...new Set(matches.map((match) => match.kind))], count: matches.length }, bus)
         },
       })
+      // A queued task has no terminal to ask and cannot push or open a PR itself: say so, or the brief's "open exactly
+      // one pull request" sends it off to do what the queue does not allow.
+      const brief = connector ? `${workerBrief}\n\n## Delivery by the queue\n\nThis task runs unattended in the ${connector.id} queue. Commit your work on branch \`${actualBranch}\` and finish; do NOT push and do NOT open a pull request — the harness collects the branch and opens the PR itself. Ignore any instruction above that tells you to run \`gh pr create\`, to push, or to wait for input.\n` : workerBrief
       const briefDigest = skillDigest(brief)
       writeFileSync(briefPath(loaded.stateDir, detail.identifier), brief, 'utf8')
-      const launched = await launchWorkerTerminal({ runner: input.runner, config, worktreeId: created.id, worktreePath: created.path, command: worker.tui, title, brief })
+      let launched: { readonly terminal: string; readonly accepted: boolean; readonly idle: boolean }
+      if (connector && workspace) {
+        const terminal = await connector.launchAgent({ workspace, command: worker.tui, title })
+        const sent = await connector.send({ terminal, text: brief })
+        if (!sent.delivered) throw new Error(`${connector.id} did not accept the task: ${sent.detail}`)
+        launched = { terminal, accepted: true, idle: true }
+      } else launched = await launchWorkerTerminal({ runner: input.runner, config, worktreeId: created.id, worktreePath: created.path, command: worker.tui, title, brief })
       if (!launched.accepted) notes.push(`${detail.identifier}: terminal ${launched.terminal} did not confirm the brief; deliver will nudge it if it stays idle`)
       ledger.recordDispatch({ lease: claim.lease, idempotencyKey: plan.idempotencyKey, commandDigest: plan.commandDigest })
-      const record: DispatchRecordFile = { issue: detail.identifier, worktreeId: created.id, worktree, branch: actualBranch, terminal: launched.terminal, provider: worker.provider, model: worker.model, contractDigest: stored.digest, leaseKey: claim.lease.key, leaseId: claim.lease.leaseId, dispatchedAt: now().toISOString(), url: detail.url, briefDigest, skills: skillRefs(pinnedSkills), ...(delegation ? { delegation } : {}), setup: setupResult, effort: worker.effort, briefAccepted: launched.accepted, initialRemainingPercent: worker.remainingPercent, worktreePath: created.path, labels: [...detail.labels], project: detail.project, priorityLabel: detail.priorityLabel, workerGuardInstalled: workerGuard.installed, ...(selectedRun ? { queueRunId: selectedRun.id, frozenFlow: selectedRun.config.flow, frozenMaxFixRounds: selectedRun.config.maxFixRounds, frozenPerIssueTokens: selectedRun.config.perIssueTokens } : {}) }
+      const record: DispatchRecordFile = { issue: detail.identifier, worktreeId: created.id, worktree, branch: actualBranch, terminal: launched.terminal, provider: worker.provider, model: worker.model, contractDigest: stored.digest, leaseKey: claim.lease.key, leaseId: claim.lease.leaseId, dispatchedAt: now().toISOString(), url: detail.url, briefDigest, skills: skillRefs(pinnedSkills), ...(delegation ? { delegation } : {}), setup: setupResult, effort: worker.effort, briefAccepted: launched.accepted, initialRemainingPercent: worker.remainingPercent, ...(connector ? { runner: 'fleet' as const } : { worktreePath: created.path }), labels: [...detail.labels], project: detail.project, priorityLabel: detail.priorityLabel, workerGuardInstalled: workerGuard.installed, ...(selectedRun ? { queueRunId: selectedRun.id, frozenFlow: selectedRun.config.flow, frozenMaxFixRounds: selectedRun.config.maxFixRounds, frozenPerIssueTokens: selectedRun.config.perIssueTokens } : {}) }
       resetDeliveryStateForDispatch(loaded.stateDir, detail.identifier)
       writeJsonAtomic(dispatchRecordPath(loaded.stateDir, detail.identifier), record)
       appendLoopEvent(loaded.stateDir, { at: record.dispatchedAt, type: 'worker.dispatched', ...record, command: worker.tui, briefAccepted: launched.accepted, tuiIdle: launched.idle, maxFixRounds: selectedRun?.config.maxFixRounds ?? flow.profile?.maxFixRounds ?? config.delivery.maxFixRounds }, bus)
@@ -1161,14 +1220,15 @@ export const runTick = async (input: TickInput): Promise<TickReport> => {
       }
       try {
         await tracking.transition({ tracker: tracker.id, issue: detail.identifier, from: detail.state, to: config.linear.inProgressState, reason: `loop dispatched ${worker.provider}/${worker.model} in ${created.id}` })
-        await tracker.comment({ issue: detail.identifier, body: `**Loop: dispatched**\n\nWorker \`${worker.provider}/${worker.model}\` started in Orca worktree \`${worktree}\` on branch \`${actualBranch}\` (contract \`${stored.digest.slice(0, 12)}\`). It will open a PR against \`${config.project.baseBranch}\` when the contract's outcomes pass.\n\n<!-- loop:dispatched:${claim.lease.leaseId} -->`, dedupeKey: `dispatched:${detail.identifier}:${claim.lease.leaseId}` })
+        await tracker.comment({ issue: detail.identifier, body: `**Loop: dispatched**\n\nWorker \`${worker.provider}/${worker.model}\` started in ${connector ? `${connector.id} workspace` : 'Orca worktree'} \`${worktree}\` on branch \`${actualBranch}\` (contract \`${stored.digest.slice(0, 12)}\`). It will open a PR against \`${config.project.baseBranch}\` when the contract's outcomes pass.\n\n<!-- loop:dispatched:${claim.lease.leaseId} -->`, dedupeKey: `dispatched:${detail.identifier}:${claim.lease.leaseId}` })
       } catch (error) { notes.push(`Tracker update for ${detail.identifier} failed after dispatch: ${message(error)}`) }
       updateQueueRun(selectedRun, { status: 'running', projection: { stage: 'running', branch: actualBranch, worktree, terminal: launched.terminal } })
-      results.push({ issue: detail.identifier, outcome: 'dispatched', reason: 'worker started', branch: actualBranch, worktree, worktreeId: created.id, terminal: launched.terminal, provider: worker.provider, model: worker.model, argv: plan.argv, contractDigest: stored.digest })
+      results.push({ issue: detail.identifier, outcome: 'dispatched', reason: 'worker started', branch: actualBranch, worktree, worktreeId: created.id, terminal: launched.terminal, provider: worker.provider, model: worker.model, argv: dispatchArgv, contractDigest: stored.digest })
       dispatched += 1
     } catch (error) {
       ledger.release(claim.lease, `dispatch failed: ${message(error)}`)
-      if (created) { try { await orcaWorktreeRemove(input.runner, { worktree: `id:${created.id}`, force: true }, { bin: config.orca.bin, timeoutMs: 60_000 }); notes.push(`${detail.identifier}: removed half-created worktree ${created.id}`) } catch (cleanup) { notes.push(`${detail.identifier}: worktree ${created.id} left behind (${message(cleanup)})`) } }
+      if (created && connector) { try { await connector.removeWorkspace({ id: created.id, force: true }); notes.push(`${detail.identifier}: removed half-created workspace ${created.id}`) } catch (cleanup) { notes.push(`${detail.identifier}: workspace ${created.id} left behind (${message(cleanup)})`) } }
+      else if (created) { try { await orcaWorktreeRemove(input.runner, { worktree: `id:${created.id}`, force: true }, { bin: config.orca.bin, timeoutMs: 60_000 }); notes.push(`${detail.identifier}: removed half-created worktree ${created.id}`) } catch (cleanup) { notes.push(`${detail.identifier}: worktree ${created.id} left behind (${message(cleanup)})`) } }
       // The machine had no room for another agent session: not this issue's failure. No failure count toward the
       // issue or stage pause; the issue goes back to the queue and dispatch waits out a short cooldown.
       if (isTerminalCapacityError(error)) {
@@ -1182,7 +1242,7 @@ export const runTick = async (input: TickInput): Promise<TickReport> => {
       appendLoopEvent(loaded.stateDir, { at: now().toISOString(), type: 'worker.dispatch-failed', issue: detail.identifier, error: message(error) }, bus)
       await recordFailureAndMaybePause(detail.identifier, 'worker.dispatch-failed', `dispatch failed: ${message(error)}`)
       updateQueueRun(selectedRun, { status: 'failed', error: `dispatch failed: ${message(error)}`, projection: { stage: 'failed', branch, worktree } })
-      results.push({ issue: detail.identifier, outcome: 'failed', reason: `dispatch failed: ${message(error)}`, branch, worktree, argv: plan.argv })
+      results.push({ issue: detail.identifier, outcome: 'failed', reason: `dispatch failed: ${message(error)}`, branch, worktree, argv: dispatchArgv })
     }
   }
   if (!dispatched && !results.length) notes.push('no candidate reached dispatch')
