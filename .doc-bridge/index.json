@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
-  "contentHash": "eb1a648ca85bd3ee4749b6c4b8cdf4514cb0be8348aba592d582b5c413130d94",
+  "contentHash": "6cb58b8d5e6d2d735fb29ecf2f44dd670a2ec5a66cb2d110e48015802c31eb3e",
   "contentHashAlgo": "sha256-semantic-v1",
-  "generatedAt": "2026-10-20T01:53:54.441Z",
+  "generatedAt": "2026-10-20T02:02:31.215Z",
   "project": {
     "name": "AgentsKit Harness",
     "root": "."
@@ -4285,7 +4285,7 @@
         "ts",
         "loop"
       ],
-      "contentHash": "6d8b70e2753fa4e298a32a63b86a5a8c00ab10d3ec24cbf8620544d4fa6fc673"
+      "contentHash": "39d0b1e87a4535e43d28b96a4ca308101a1e24617fec3f8054d73c8ad3bd240e"
     },
     {
       "id": "module:src/loop/flows.ts",
@@ -9309,7 +9309,7 @@
     }
   },
   "inputs": {
-    "hash": "1d0dbb74c01381fc633b50437d9e7eadb21aa127b5c8a3b7db3cc0fbe6139152",
+    "hash": "1b4078e61d274feea2124230bd2de380bc3a2d7d64a2a740c3022fb7ea83dd68",
     "fileCount": 592,
     "projectionVersion": 2
   },
@@ -9332,9 +9332,9 @@
   "projection": {
     "type": "retrieval-index",
     "schemaVersion": 1,
-    "contentHash": "f7cdaab0148d1fe98fbc95c84c8bf633070601bfc23e8961e933c04f69c93601",
+    "contentHash": "c2ad4fc53d67d084bdaa6136450a5311394887cd82559b6f3f25f42aa253bbe7",
     "contentHashAlgo": "sha256-semantic-v1",
-    "snapshotHash": "55cf24c19c1b6e4fb353b02b3481eccfc7d55f069d9f99afdb19ea2b656fdfb3",
+    "snapshotHash": "1182cd744200bf827b07645b52c18acd45b2b4f25ee73bef914b4091c16cd280",
     "overlayHash": "f99666ff9119084dd25c2974ae64eb6935ec2aa785ff5ad478fb9d541f7a5e94",
     "configurationHash": "816afaf6a7dc09767f7594d8fd80024612ca0f33becf0e44dde0107fcf2782df",
     "lexiconVersion": 1,
@@ -23954,6 +23954,11 @@
             },
             {
               "kind": "imports",
+              "id": "module:src/loop/fleet-runner.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
               "id": "module:src/loop/github-intake.ts",
               "confidence": "observed"
             },
@@ -29078,6 +29083,11 @@
             },
             {
               "kind": "imports",
+              "id": "module:src/kernel/json-file.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
               "id": "module:src/loop/fs-atomic.ts",
               "confidence": "observed"
             },
@@ -29088,7 +29098,7 @@
             }
           ]
         },
-        "contentHash": "6d8b70e2753fa4e298a32a63b86a5a8c00ab10d3ec24cbf8620544d4fa6fc673",
+        "contentHash": "39d0b1e87a4535e43d28b96a4ca308101a1e24617fec3f8054d73c8ad3bd240e",
         "provenance": "observed",
         "confidence": "observed"
       },

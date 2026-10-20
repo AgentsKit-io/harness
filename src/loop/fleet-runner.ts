@@ -1,12 +1,15 @@
 import { randomUUID } from 'node:crypto'
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
+import { z } from 'zod'
 import { fail } from '../kernel/errors.js'
+import { readJsonFile } from '../kernel/json-file.js'
 import { writeJsonAtomic } from './fs-atomic.js'
 import type { RunnerConnector, RunnerInput, WorkspaceObservation } from './runner-connector.js'
 
 /** A workspace the harness opened but the fleet may not know yet: `queueId` is null until the first `send` submits. */
-interface FleetRecord { readonly id: string; readonly branch: string; readonly base: string; readonly queueId: string | null }
+const FleetRecordSchema = z.object({ id: z.string(), branch: z.string(), base: z.string(), queueId: z.string().nullable() })
+type FleetRecord = Readonly<z.infer<typeof FleetRecordSchema>>
 
 type FleetState = NonNullable<WorkspaceObservation['state']>
 
@@ -54,7 +57,8 @@ export const createFleetRunner = ({ loaded, runner }: RunnerInput): RunnerConnec
   const { config } = loaded
   const fleet = config.connectors.fleet
   const store = join(loaded.stateDir, 'fleet-workspaces.json')
-  const read = (): FleetRecord[] => existsSync(store) ? JSON.parse(readFileSync(store, 'utf8')) as FleetRecord[] : []
+  // A missing or unreadable store reads as empty: the queue itself is the source of truth for what was submitted.
+  const read = (): FleetRecord[] => readJsonFile(store, z.array(FleetRecordSchema)) ?? []
   const write = (records: readonly FleetRecord[]): void => { mkdirSync(loaded.stateDir, { recursive: true }); writeJsonAtomic(store, records) }
   const update = (id: string, patch: Partial<FleetRecord>): void => write(read().map((record) => record.id === id ? { ...record, ...patch } : record))
   const run = (args: readonly string[]) => runner.run([fleet.bin, ...args], { timeoutMs: fleet.timeoutMs, cwd: loaded.root })
