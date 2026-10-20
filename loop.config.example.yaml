@@ -291,6 +291,13 @@ memory:
 #   tracker: linear
 #   scm: github
 #   runner: orca                     # `local` = git worktree + tmux + the system crontab, no Orca at all
+#   fleet:                           # runner: fleet — submit to the fleet coordinator's queue
+#     bin: fleet
+#     project: github:owner/repo     # default: derived from the origin remote
+#     model: sonnet                  # haiku | sonnet | opus
+#     fallbackModels: []
+#     priority: 0
+#     timeoutMs: 30000
 #   local:
 #     worktreeRoot: ../.ak-worktrees
 #     tmuxBin: tmux
