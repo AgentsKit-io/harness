@@ -9,7 +9,7 @@ The stages talk to the outside world through three interfaces, chosen by `connec
 |---|---|---|
 | `TrackerConnector` | The queue, an issue's detail, its states, comments, claims | `linear` |
 | `ScmConnector` | Pull requests, checks, comments, labels, merge | `github` |
-| `RunnerConnector` | Where work runs: a worktree and a terminal | `orca`, `local` |
+| `RunnerConnector` | Where work runs: a worktree and a terminal | `orca`, `local`, `fleet` |
 
 ## The rule, and where it is not met yet
 
@@ -46,6 +46,34 @@ Two details worth knowing, both learned the hard way:
   early, which is exactly what happens when the text and the key are sent together.
 - **`schedule` only reconciles crontab lines carrying `cronMarker`.** Every other line in your crontab is
   somebody else's, and a scheduler that rewrites the whole file once is a scheduler nobody installs twice.
+
+## The fleet runner
+
+```yaml
+connectors:
+  runner: fleet
+  fleet:
+    bin: fleet
+    project: github:owner/repo   # default: derived from the origin remote
+    model: sonnet                # haiku | sonnet | opus
+    fallbackModels: [haiku]
+    priority: 0
+    timeoutMs: 30000
+```
+
+Work goes to the fleet coordinator's queue (its own or Hatchet — the harness does not know which). A fleet task
+is not interactive, so the mapping differs from a terminal:
+
+- **`createWorkspace` and `launchAgent` contact nothing.** The first `send` submits the task (the text is the
+  prompt, handed over through a temp file that is deleted right after). A second `send` is refused with
+  `delivered: false`.
+- **`readScreen` is `fleet tail`; `observeWorkspaces` is `fleet queue --json`.** It reports task state only —
+  never a pull request. The SCM stays the source of PR state.
+- **`removeWorkspace` cancels** a task that has not finished. `schedule` does nothing: the coordinator owns it.
+- **The PR is the orchestrator's job.** When a task is done, its branch is collected with `fleet collect` (which
+  never pushes) and the harness opens the pull request.
+
+Design and caveats: [ADR-0044](https://github.com/AgentsKit-io/harness/blob/main/docs/ADR-0044-fleet-runner.md).
 
 ## Adding one
 
