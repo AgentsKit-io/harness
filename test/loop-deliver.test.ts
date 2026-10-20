@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto'
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
@@ -26,6 +27,10 @@ interface Scenario {
   readonly terminals?: readonly Record<string, unknown>[]
   readonly review?: { readonly code: number; readonly findings?: readonly Record<string, unknown>[]; readonly incomplete?: boolean; readonly failureMessage?: string; /** The CLI exits without writing `--result`. */ readonly noResultFile?: boolean }
   readonly mergeRefused?: boolean
+  /** `gh pr diff` output (what `git patch-id` is computed from); omitted = the diff is unavailable. */
+  readonly prDiff?: string
+  /** What `gh pr view` says after the merge call was accepted: `open` (not confirmed) or merged at `other-head`; merged at the reviewed head by default. */
+  readonly mergeReadback?: 'open' | 'other-head'
   readonly dispatchedAt?: string
   readonly reviewerAvailable?: boolean
   /** Merge event already recorded locally after the GitHub head branch was deleted. */
@@ -132,6 +137,7 @@ const setup = (initial: Scenario = {}) => {
     else account.rateLimits['claude'].session = { usedPercent: 100 }
   }
   const calls: string[][] = []
+  let merges = 0
   const runner: CommandRunner & { calls: string[][]; run: CommandRunner['run'] } = {
     calls,
     run: async (argv, options) => {
@@ -155,8 +161,18 @@ const setup = (initial: Scenario = {}) => {
         const override = scenario.intakeView?.[number]
         if (override) return ok(override)
         if (scenario.mergedEvent?.pr === number && scenario.mergedEventPr) return ok(scenario.mergedEventPr)
+        // The read-back after the merge call: what GitHub says about the PR now (ADR-0046).
+        if (merges > 0 && number === 42) {
+          const pr = scenario.pr ?? basePr()
+          if (scenario.mergeReadback === 'open') return ok({ ...pr, state: 'OPEN' })
+          if (scenario.mergeReadback === 'other-head') return ok({ ...pr, state: 'MERGED', headRefOid: 'f'.repeat(40) })
+          return ok({ ...pr, state: 'MERGED' })
+        }
         return { code: 1, stdout: '', stderr: `no fixture for pr view ${number}`, timedOut: false, durationMs: 1 }
       }
+      if (argv[0] === 'gh' && argv[1] === 'pr' && argv[2] === 'diff') return scenario.prDiff === undefined ? { code: 1, stdout: '', stderr: 'no fixture for pr diff', timedOut: false, durationMs: 1 } : { code: 0, stdout: scenario.prDiff, stderr: '', timedOut: false, durationMs: 1 }
+      // `git patch-id --stable` ignores hunk positions and index lines, which is what a rebase changes.
+      if (argv[0] === 'git' && argv[1] === 'patch-id') return { code: 0, stdout: `${createHash('sha1').update(splitLines(options?.stdin ?? '').filter((line) => !line.startsWith('@@') && !line.startsWith('index ')).join('\n')).digest('hex')} ${'0'.repeat(40)}\n`, stderr: '', timedOut: false, durationMs: 1 }
       if (argv[0] === 'gh' && argv[1] === 'pr' && argv[2] === 'edit') return { code: 0, stdout: '', stderr: '', timedOut: false, durationMs: 1 }
       if (key.startsWith('orca worktree ps') && (scenario.worktreeAgents || scenario.worktreeComment)) return okResult({ worktrees: [{ worktreeId: 'repo-1::/w/eng-10-demo', path: '/w/eng-10-demo', agents: scenario.worktreeAgents ?? [], ...(scenario.worktreeStatus ? { status: scenario.worktreeStatus } : {}), ...(scenario.worktreeComment ? { comment: scenario.worktreeComment } : {}) }] })
       if (key.startsWith('orca terminal list') && scenario.orcaDown) return { code: 1, stdout: '', stderr: 'orca runtime unavailable: connect ECONNREFUSED', timedOut: false, durationMs: 1 }
@@ -180,6 +196,7 @@ const setup = (initial: Scenario = {}) => {
         if (resultFile && scenario.review && !scenario.review.noResultFile) writeFileSync(resultFile, JSON.stringify({ blocking: scenario.review.code === 1, incomplete: scenario.review.incomplete ?? false, findings: scenario.review.findings ?? [] }))
         return { code: scenario.review?.code ?? 0, stdout: scenario.review?.failureMessage ?? '## Code review — done', stderr: '', timedOut: false, durationMs: 1 }
       }
+      if (argv[0] === 'gh' && argv[1] === 'api' && argv.includes('--method') && !scenario.mergeRefused) merges += 1
       if (argv[0] === 'gh' && argv[1] === 'api' && argv.includes('--method')) return scenario.mergeRefused ? { code: 1, stdout: JSON.stringify({ message: 'Head branch was modified.' }), stderr: '', timedOut: false, durationMs: 1 } : ok({ merged: true, sha: 'deadbeef', message: 'merged' })
       if (argv[0] === 'gh' && argv[1] === 'api' && argv.some((arg) => arg.includes('loop:run-summary'))) return { code: 0, stdout: scenario.summaryCommentId ? `${scenario.summaryCommentId}\n` : '', stderr: '', timedOut: false, durationMs: 1 }
       if (argv[0] === 'gh' && argv[1] === 'api' && argv[2] === 'graphql' && scenario.reviewThreads !== undefined) return ok({ data: { repository: { pullRequest: { reviewThreads: { pageInfo: { hasNextPage: false }, nodes: [{ isResolved: true }, ...Array.from({ length: scenario.reviewThreads }, () => ({ isResolved: false }))] } } } } })
@@ -629,8 +646,8 @@ describe('deliver', () => {
     expect((await deliver(env)).results[0]).toMatchObject({ outcome: 'merged' })
     const body = env.runner.calls.find((argv) => argv[1] === 'linear' && argv[2] === 'comment' && argv.join(' ').includes('Loop: merged'))![env.runner.calls.find((argv) => argv[1] === 'linear' && argv[2] === 'comment' && argv.join(' ').includes('Loop: merged'))!.indexOf('--body') + 1]!
     expect(body).toContain('RESOLVED — 2 of 2 acceptance criteria proven by recorded evidence. Bug fix: see "Bug fix proof"')
-    expect(body).toContain('| PASSED | o1 | Export of a non-empty order list is not empty | exports a non-empty file [verify `pnpm test` → exit 0] |')
-    expect(body).toContain('| PASSED | o2 | Export keeps the header row | header asserted in export.test.ts |')
+    expect(body).toContain('| PASSED (unit-verified) | o1 | Export of a non-empty order list is not empty | exports a non-empty file [verify `pnpm test` → exit 0] |')
+    expect(body).toContain('| PASSED (unit-verified) | o2 | Export keeps the header row | header asserted in export.test.ts |')
     expect(body).toContain('Files changed: 2')
     expect(body).toContain('Issue checklist (as fetched at completion): 1/2 item(s) checked')
     expect(body).toContain('Reproduction (from the issue): 1. Open /orders 2. Click Export')
@@ -1189,6 +1206,124 @@ describe('deliver', () => {
     writeFileSync(join(env.dir, 'loop.config.local.yaml'), 'delivery:\n  merge:\n    requireHumanApproval: true\n')
     const report = await deliver(env)
     expect(report.results[0]).toMatchObject({ outcome: 'merged' })
+  })
+
+  describe('verdict levels, patch binding and merge read-back (ADR-0046)', () => {
+    const contract: StoredContract['contract'] = { intent: 'Fix empty export', scope: { inScope: ['export'], outOfScope: [] }, outcomes: [{ id: 'o1', description: 'Export of a non-empty order list is not empty', check: { kind: 'command', command: 'pnpm test' } }], ambiguities: [], hitl: [], touchpoints: [], risks: [] }
+    const verifyJson = JSON.stringify({ command: 'pnpm test', exitCode: 0, outcomes: [] })
+    const dodJson = (verdict: string) => JSON.stringify({ project: [], outcomes: [{ id: 'o1', verdict, evidence: 'ran it' }] })
+    const withVerdict = (verdict: string, extra: Partial<Scenario> = {}, config = '') => {
+      const env = setup({ review: { code: 0 }, storedContract: contract, pr: basePr(), worktreeFiles: { 'verify.json': verifyJson, 'dod.json': dodJson(verdict) }, ...extra })
+      if (config) writeFileSync(join(env.dir, 'loop.config.local.yaml'), config)
+      return env
+    }
+    const minVerdict = (level: string) => `delivery:\n  merge:\n    minVerdict: ${level}\n`
+
+    it('merges an item verified at or above the project minimum and shows its level in the proof', async () => {
+      const env = withVerdict('unit-verified')
+      expect((await deliver(env)).results[0]).toMatchObject({ outcome: 'merged' })
+      const comment = env.runner.calls.find((argv) => argv[0] === 'gh' && argv[1] === 'pr' && argv[2] === 'comment' && argv.join(' ').includes('Definition of Done'))
+      expect(comment?.join(' ')).toContain('| unit-verified |')
+    })
+
+    it('sends an item below delivery.merge.minVerdict back to the worker instead of merging', async () => {
+      const env = withVerdict('type-check-only')
+      const result = (await deliver(env)).results[0]
+      expect(result).toMatchObject({ outcome: 'fix-round', reason: expect.stringContaining('below unit-verified: o1') })
+      expect(env.runner.calls.some((argv) => argv[0] === 'gh' && argv[1] === 'api' && argv.includes('--method'))).toBe(false)
+    })
+
+    it('honours a stricter project minimum, and a looser one', async () => {
+      expect((await deliver(withVerdict('unit-verified', {}, minVerdict('live-verified')))).results[0]).toMatchObject({ outcome: 'fix-round', reason: expect.stringContaining('below live-verified') })
+      expect((await deliver(withVerdict('live-verified', {}, minVerdict('live-verified')))).results[0]).toMatchObject({ outcome: 'merged' })
+      expect((await deliver(withVerdict('type-check-only', {}, minVerdict('type-check-only')))).results[0]).toMatchObject({ outcome: 'merged' })
+    })
+
+    it('reads a legacy `passed` proof as unit-verified', async () => {
+      const env = setup({ review: { code: 0 }, storedContract: contract, pr: basePr(), worktreeFiles: { 'verify.json': verifyJson, 'dod.json': JSON.stringify({ project: [], outcomes: [{ id: 'o1', status: 'passed', evidence: 'ran it' }] }) } })
+      expect((await deliver(env)).results[0]).toMatchObject({ outcome: 'merged' })
+    })
+
+    it('escalates a blocked item to a person instead of another fix round', async () => {
+      const env = withVerdict('blocked')
+      const result = (await deliver(env)).results[0]
+      expect(result).toMatchObject({ outcome: 'blocked', reason: expect.stringContaining('could not be verified (blocked): o1') })
+      expect(env.runner.calls.some((argv) => argv[0] === 'gh' && argv[1] === 'api' && argv.includes('--method'))).toBe(false)
+      expect(readDeliveryState(env.loaded.stateDir, 'ENG-10')).toMatchObject({ finalOutcome: 'blocked' })
+    })
+
+    it('sends a blocked item back to the worker when escalateOnBlocked is off', async () => {
+      const env = withVerdict('blocked', {}, 'delivery:\n  merge:\n    escalateOnBlocked: false\n')
+      expect((await deliver(env)).results[0]).toMatchObject({ outcome: 'fix-round' })
+    })
+
+    it('holds a PR for a person when the project is supervised', async () => {
+      const env = withVerdict('unit-verified', {}, 'delivery:\n  merge:\n    autonomy: supervised\n')
+      expect((await deliver(env)).results[0]).toMatchObject({ outcome: 'held', reason: expect.stringContaining('supervised') })
+      expect(env.runner.calls.some((argv) => argv[0] === 'gh' && argv[1] === 'api' && argv.includes('--method'))).toBe(false)
+    })
+
+    it('records the verdicts with the PR patch-id and the run fingerprint', async () => {
+      const env = withVerdict('unit-verified', { prDiff: 'diff --git a/x b/x\n+one\n' }, 'delivery:\n  merge:\n    autonomy: supervised\n')
+      await deliver(env)
+      const stored = JSON.parse(readFileSync(join(env.loaded.stateDir, 'issues', 'ENG-10', 'verdicts.json'), 'utf8')) as { patchId: string; head: string; fingerprint: Record<string, unknown>; items: Record<string, unknown>[] }
+      expect(stored.patchId).toMatch(/^[0-9a-f]{40}$/)
+      expect(stored.head).toBe('c74d687ee59927dbbe2972649d7b58dbad16bcd0')
+      expect(stored.fingerprint).toMatchObject({ contract: 'abc', model: 'claude/sonnet', baseSha: null })
+      expect(stored.fingerprint['guardPolicy']).toMatch(/^[0-9a-f]{64}$/)
+      expect(stored.items).toEqual([expect.objectContaining({ id: 'o1', list: 'issue', verdict: 'unit-verified' })])
+    })
+
+    it('keeps the verdicts across a rebase (same patch-id) and proves again when the patch changes', async () => {
+      const supervised = 'delivery:\n  merge:\n    autonomy: supervised\n'
+      const env = withVerdict('unit-verified', { prDiff: 'diff --git a/x b/x\n@@ -1,3 +1,3 @@\n-old\n+new\n' }, supervised)
+      await deliver(env)
+      // The worker's proof file is gone and the head moved: only the stored verdict can carry the item.
+      rmSync(join(env.worktreePath!, '.ak-loop', 'dod.json'))
+      env.scenario.pr = basePr({ headRefOid: '2'.repeat(40) })
+      env.scenario.prDiff = 'diff --git a/x b/x\n@@ -40,3 +40,3 @@\n-old\n+new\n'
+      const rebased = (await deliver(env)).results[0]
+      expect(rebased).toMatchObject({ outcome: 'held', reason: expect.stringContaining('supervised') })
+      expect(rebased?.actions.some((action) => action.startsWith('verdicts held: patch-id'))).toBe(true)
+      env.scenario.pr = basePr({ headRefOid: '3'.repeat(40) })
+      env.scenario.prDiff = 'diff --git a/x b/x\n@@ -40,3 +40,3 @@\n-old\n+different\n'
+      const changed = (await deliver(env)).results[0]
+      expect(changed).toMatchObject({ outcome: 'fix-round', reason: expect.stringContaining('missing: o1') })
+    })
+
+    it('never carries a verdict across when the patch-id is unknown', async () => {
+      const env = withVerdict('unit-verified', {}, 'delivery:\n  merge:\n    autonomy: supervised\n')
+      await deliver(env)
+      rmSync(join(env.worktreePath!, '.ak-loop', 'dod.json'))
+      env.scenario.pr = basePr({ headRefOid: '2'.repeat(40) })
+      expect((await deliver(env)).results[0]).toMatchObject({ outcome: 'fix-round' })
+    })
+
+    it('confirms a merge by reading the PR back at the reviewed head', async () => {
+      const env = setup({ review: { code: 0 } })
+      const result = (await deliver(env)).results[0]
+      expect(result).toMatchObject({ outcome: 'merged' })
+      expect(result?.actions.some((action) => action.includes('confirmed on read-back'))).toBe(true)
+      expect(env.runner.calls.some((argv) => argv[0] === 'gh' && argv[1] === 'pr' && argv[2] === 'view' && argv[3] === '42')).toBe(true)
+    })
+
+    it('does not trust an accepted merge the PR does not read back as merged: waits, then escalates', async () => {
+      const env = setup({ review: { code: 0 }, mergeReadback: 'open' })
+      const first = (await deliver(env, { readBackDelayMs: 0 })).results[0]
+      expect(first).toMatchObject({ outcome: 'waiting', reason: expect.stringContaining('not confirmed on read-back') })
+      expect(readDeliveryState(env.loaded.stateDir, 'ENG-10')).toMatchObject({ mergeUnconfirmed: 1, finalOutcome: null })
+      expect(env.runner.calls.filter((argv) => argv[0] === 'gh' && argv[1] === 'pr' && argv[2] === 'view')).toHaveLength(3)
+      expect((await deliver(env, { readBackDelayMs: 0 })).results[0]).toMatchObject({ outcome: 'waiting' })
+      const third = (await deliver(env, { readBackDelayMs: 0 })).results[0]
+      expect(third).toMatchObject({ outcome: 'blocked', reason: expect.stringContaining('reading the PR back shows OPEN') })
+      expect(readDeliveryState(env.loaded.stateDir, 'ENG-10')).toMatchObject({ finalOutcome: 'blocked' })
+      expect(readFileSync(join(env.loaded.stateDir, 'events.ndjson'), 'utf8')).toContain('pr.merge-unconfirmed')
+    })
+
+    it('escalates at once when the PR reads back merged at a different head', async () => {
+      const env = setup({ review: { code: 0 }, mergeReadback: 'other-head' })
+      expect((await deliver(env, { readBackDelayMs: 0 })).results[0]).toMatchObject({ outcome: 'blocked', reason: expect.stringContaining('MERGED at head ffffffffffff') })
+    })
   })
 
   it('refuses to auto-merge a flow that turned every gate off — nothing examined the diff', async () => {

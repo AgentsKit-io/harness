@@ -13,7 +13,7 @@ timestamp) and `type` on top of the fields below. A plugin subscribes with
 The vocabulary is enforced by the compiler: `appendLoopEvent` accepts only these names, so an event that is not
 here cannot be emitted — and a name here that nothing emits fails the test suite.
 
-97 loop events.
+99 loop events.
 
 ## `contract.*`
 
@@ -84,6 +84,7 @@ here cannot be emitted — and a name here that nothing emits fails the test sui
 | `pr.merged` | `issue`, `pr`, `head`, `sha` | The PR was squash-merged by the loop. |
 | `pr.closed` | `issue`, `pr`, `head`, `reason` | A tracked PR closed without merge; the issue waits for a close-or-reopen decision. |
 | `pr.merge-refused` | `issue`, `pr`, `head`, `message` | GitHub refused the merge — branch protection, a required check, a race with another merge. |
+| `pr.merge-unconfirmed` | `issue`, `pr`, `head`, `sha`, `observed`, `count` | GitHub accepted the merge but the PR did not read back as merged at the reviewed head (ADR-0046); `count` is passes in a row. |
 | `pr.human-approved` | `issue`, `head`, `by`, `pr` | A person attested a PR held for protected paths, for exactly this head. |
 | `pr.smoke-failed` | `issue`, `pr`, `head`, `detail` | The optional post-merge smoke failed. |
 
@@ -93,6 +94,12 @@ here cannot be emitted — and a name here that nothing emits fails the test sui
 |---|---|---|
 | `tracker.sync-failed` | `issue`, `operation`, `error` | A remote tracker write failed; local lifecycle remains authoritative until a human retries synchronization. |
 | `tracker.cooldown` | `until`, `attempts`, `reason` | The tracker answered with a rate limit; tick and tracker writes wait until `until` (15 min doubling, 2 h cap). |
+
+## `merge.*`
+
+| Event | Carries | What it means |
+|---|---|---|
+| `merge.escalated` | `issue`, `pr`, `head`, `reason` | The merge policy (or a failed read-back) handed the decision to a person instead of merging or holding (ADR-0046). |
 
 ## `github-intake.*`
 
@@ -222,7 +229,7 @@ here cannot be emitted — and a name here that nothing emits fails the test sui
 
 | Event | Carries | What it means |
 |---|---|---|
-| `dod.assessed` | `issue`, `pr`, `head`, `complete`, `proven`, `missing`, `failed` | The definition of done was judged for a PR: how many of its lines were proven, missing, or failing. |
+| `dod.assessed` | `issue`, `pr`, `head`, `patchId`, `complete`, `level`, `proven`, `missing`, `failed`, `blocked`, `below` | The definition of done was judged for a PR: how many of its lines were proven, missing, or failing. |
 
 ## `verify.*`
 

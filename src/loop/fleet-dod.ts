@@ -93,7 +93,8 @@ export const proveFleetDod = async (input: FleetDodInput): Promise<FleetDodEvide
       const outcome = await runner.run(argv, { cwd: checkout, timeoutMs })
       const status = !outcome.timedOut && outcome.code === 0 ? 'passed' : 'failed'
       const result = outcome.timedOut ? `timed out after ${timeoutMs}ms` : `exit ${outcome.code ?? 'null'}`
-      return { id, status, evidence: `ran \`${label}\` in a local checkout of ${head.slice(0, 12)}: ${result}${tail(`${outcome.stdout}\n${outcome.stderr}`) ? `\n${tail(`${outcome.stdout}\n${outcome.stderr}`)}` : ''}` }
+      // A command the harness re-ran in a checkout is a test result, not a run against the live system.
+      return { id, status, verdict: status === 'passed' ? 'unit-verified' : 'failed', evidence: `ran \`${label}\` in a local checkout of ${head.slice(0, 12)}: ${result}${tail(`${outcome.stdout}\n${outcome.stderr}`) ? `\n${tail(`${outcome.stdout}\n${outcome.stderr}`)}` : ''}` }
     }
     const project: DodProof[] = []
     for (const item of commandItems) project.push(await proof(item.id, item.command ?? [], (item.command ?? []).join(' ')))

@@ -9,6 +9,7 @@ import type { DispatchRecordFile } from './tick.js'
 import { appendLoopEvent, dispatchRecordPath, readDispatchRecord } from './tick.js'
 import { writeJsonAtomic } from './fs-atomic.js'
 import type { LoadedLoopConfig } from './config.js'
+import { reviewLevel, type Verdict } from './verdict.js'
 
 export type DeliverOutcome = 'waiting' | 'reviewed' | 'fix-round' | 'nudged' | 'handed-off' | 'merged' | 'held' | 'needs-input' | 'blocked' | 'stuck' | 'abandoned' | 'failed' | 'restarted' | 'dry-run'
 
@@ -25,7 +26,7 @@ export interface DeliveryHandoff {
 export interface DeliveryState {
   readonly issue: string
   readonly prNumber: number | null
-  readonly reviews: Readonly<Record<string, { readonly status: CodeReviewOutcome['status']; readonly at: string; readonly provider: string; readonly model: string | null; readonly blocking: number; readonly attempts: number; readonly reason?: string }>>
+  readonly reviews: Readonly<Record<string, { readonly status: CodeReviewOutcome['status']; readonly at: string; readonly provider: string; readonly model: string | null; readonly blocking: number; readonly attempts: number; readonly reason?: string; /** ADR-0046 level of this review; filled from `status` when a stored state predates it. */ readonly verdict?: Verdict }>>
   readonly fixRounds: number
   readonly nudges: readonly { readonly kind: 'idle' | 'conflict' | 'ci' | 'review' | 'handoff' | 'permission' | 'brief' | 'hitl'; readonly at: string; readonly head: string | null }[]
   readonly handoffs: readonly DeliveryHandoff[]
@@ -44,6 +45,8 @@ export interface DeliveryState {
   readonly trackerState?: string | null
   /** When a pass first saw lost-track evidence before any PR; a restart needs a second pass to confirm it. */
   readonly lostTrackSince?: string | null
+  /** Passes in a row where a merge GitHub accepted could not be read back as merged at the reviewed head (ADR-0046). */
+  readonly mergeUnconfirmed?: number
 }
 
 export const deliveryStatePath = (stateDir: string, identifier: string): string => join(stateDir, 'issues', identifier, 'delivery.json')
@@ -54,7 +57,9 @@ export const readDeliveryState = (stateDir: string, identifier: string): Deliver
   if (!existsSync(path)) return empty
   const parsed = readJsonFile(path, z.object({}).loose()) as Partial<DeliveryState> | null
   if (!parsed) return empty
-  return { ...empty, ...parsed, handoffs: parsed.handoffs ?? [], nudges: parsed.nudges ?? [] }
+  // Migration: reviews stored before the verdict levels carry only a status.
+  const reviews = Object.fromEntries(Object.entries(parsed.reviews ?? {}).map(([head, review]) => [head, { ...review, verdict: review.verdict ?? reviewLevel(review.status) }]))
+  return { ...empty, ...parsed, reviews, handoffs: parsed.handoffs ?? [], nudges: parsed.nudges ?? [] }
 }
 
 /** Keep a cancelled dispatch visible as historical evidence without letting it consume a worker slot. */

@@ -2,7 +2,9 @@
 
 ## Status
 
-Accepted, partial (see Consequences — `codex` is deliberately not covered yet)
+Accepted, partial (see Consequences — `codex` is deliberately not covered yet). The guard's policy
+(`selfEditPaths`, `secretFilePatterns`) is digested into the run fingerprint stored with each verdict, so a policy
+change invalidates carried verdicts ([ADR-0046](ADR-0046-verdict-levels-and-the-merge-policy.md)).
 
 ## Context
 

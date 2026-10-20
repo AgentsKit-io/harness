@@ -187,7 +187,7 @@ export const classifyRunEvent = (event: Readonly<Record<string, unknown>>): Tran
     case 'verify.passed': return { stage: 'verify' }
     case 'dod.assessed': return { stage: 'dod' }
     case 'pr.reviewed': return { stage: 'review' }
-    case 'pr.merge-refused': case 'pr.smoke-failed': case 'pr.merged': return { stage: 'merge' }
+    case 'pr.merge-refused': case 'pr.merge-unconfirmed': case 'pr.smoke-failed': case 'pr.merged': return { stage: 'merge' }
     case 'worker.held': case 'worker.needs-input': return { status: 'awaiting-human', approval: `${type === 'worker.held' ? 'held' : 'input'}: ${reason}` }
     case 'worker.waiting': case 'worker.reviewed': return { status: 'running' }
     case 'issue.paused': return { status: 'awaiting-human', approval: `paused: ${reason}` }

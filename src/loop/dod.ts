@@ -5,6 +5,7 @@ import { touchesProtectedPaths } from '../adapters/github-cli.js'
 import type { LoopConfig } from './config.js'
 import type { TaskContract } from './contract.js'
 import { readJsonFile } from '../kernel/json-file.js'
+import { isProven, meetsVerdict, migrateVerdict, type Verdict } from './verdict.js'
 
 export type DodItem = LoopConfig['dod']['items'][number]
 
@@ -15,7 +16,13 @@ export interface DodProof {
   /** Command output, file list, or whatever the check produced. Trimmed when it reaches the PR. */
   readonly evidence: string
   readonly at?: string
+  /** How far it was verified. Absent on legacy proofs: `passed` reads as `unit-verified`, `failed` as `failed`. */
+  readonly verdict?: Verdict
 }
+
+/** The level a proof stands for. A `failed` status wins over a proven level written next to it; `blocked` survives it. */
+export const proofVerdict = (proof: Pick<DodProof, 'status' | 'verdict'>): Verdict =>
+  proof.status === 'failed' ? (proof.verdict && !isProven(proof.verdict) ? proof.verdict : 'failed') : proof.verdict ?? 'unit-verified'
 
 export interface DodEvidenceFile {
   readonly project: readonly DodProof[]
@@ -26,12 +33,23 @@ export interface DodLine {
   readonly id: string
   readonly list: 'project' | 'issue'
   readonly description: string
-  readonly status: 'proven' | 'failed' | 'missing'
+  readonly status: 'proven' | 'failed' | 'blocked' | 'missing'
+  /** The level the item was verified at; null when nothing was recorded. */
+  readonly verdict: Verdict | null
   readonly evidence: string
   readonly source: 'worker' | 'harness'
 }
 
-export interface DodAssessment { readonly complete: boolean; readonly lines: readonly DodLine[]; readonly missing: readonly string[]; readonly failed: readonly string[] }
+export interface DodAssessment {
+  readonly complete: boolean
+  readonly lines: readonly DodLine[]
+  readonly missing: readonly string[]
+  readonly failed: readonly string[]
+  /** Items the worker could not verify at all (verdict `blocked`): a person's call, not another fix round. */
+  readonly blocked: readonly string[]
+  /** Items proven, but below `minVerdict`: the worker can raise them by verifying further. */
+  readonly below: readonly string[]
+}
 
 export const dodEvidencePath = (worktreePath: string, config: LoopConfig): string => join(worktreePath, config.dod.evidenceFile)
 
@@ -44,9 +62,16 @@ export const readDodEvidence = (worktreePath: string | null | undefined, config:
   try {
     const parsed = (readJsonFile(path, z.object({}).loose()) ?? {}) as Partial<DodEvidenceFile>
     // Specialized: DoD proof entries also require an id and an accepted result status.
+    // A proof names its result as a legacy `status` (passed | failed) or a `verdict` level; the level sets the status.
     const proofs = (value: unknown): readonly DodProof[] => Array.isArray(value)
-      ? value.filter((entry): entry is DodProof => typeof entry === 'object' && entry !== null && typeof (entry as DodProof).id === 'string' && ((entry as DodProof).status === 'passed' || (entry as DodProof).status === 'failed'))
-        .map((entry) => ({ id: entry.id, status: entry.status, evidence: typeof entry.evidence === 'string' ? entry.evidence : '', ...(typeof entry.at === 'string' ? { at: entry.at } : {}) }))
+      ? value.flatMap((entry: unknown): DodProof[] => {
+        if (typeof entry !== 'object' || entry === null || typeof (entry as DodProof).id !== 'string') return []
+        const raw = entry as { readonly id: string; readonly status?: unknown; readonly verdict?: unknown; readonly evidence?: unknown; readonly at?: unknown }
+        const declared = migrateVerdict(raw.verdict)
+        if (!declared && raw.status !== 'passed' && raw.status !== 'failed') return []
+        const status = raw.status === 'failed' || (declared && !isProven(declared)) ? 'failed' : 'passed'
+        return [{ id: raw.id, status, evidence: typeof raw.evidence === 'string' ? raw.evidence : '', ...(typeof raw.at === 'string' ? { at: raw.at } : {}), ...(declared ? { verdict: declared } : {}) }]
+      })
       : []
     return { project: proofs(parsed.project), outcomes: proofs(parsed.outcomes) }
   } catch { return empty }
@@ -90,42 +115,53 @@ export const assessDod = (input: {
   readonly evidence: DodEvidenceFile
   readonly prFiles?: readonly string[]
   readonly fileContents?: Readonly<Record<string, string>>
+  /** The weakest verdict a proven item may carry. Items below it are listed in `below` and block `complete`. Unset = no floor. */
+  readonly minVerdict?: Verdict
 }): DodAssessment => {
   const lines: DodLine[] = []
   const byId = (proofs: readonly DodProof[], id: string): DodProof | undefined => proofs.find((proof) => proof.id === id)
+  const statusOf = (verdict: Verdict): DodLine['status'] => verdict === 'failed' ? 'failed' : verdict === 'blocked' ? 'blocked' : 'proven'
 
   for (const item of input.config.dod.items) {
-    const verdict = harnessVerdict(item, input.prFiles ?? [], input.fileContents ?? {})
-    if (verdict) { lines.push({ id: item.id, list: 'project', description: item.description, status: verdict.status, evidence: verdict.evidence, source: 'harness' }); continue }
+    const decided = harnessVerdict(item, input.prFiles ?? [], input.fileContents ?? {})
+    // What the harness read off the diff itself is deterministic, so a hit is `unit-verified`: it is not a claim about running code.
+    if (decided) { lines.push({ id: item.id, list: 'project', description: item.description, status: decided.status, verdict: decided.status === 'proven' ? 'unit-verified' : 'failed', evidence: decided.evidence, source: 'harness' }); continue }
     const proof = byId(input.evidence.project, item.id)
+    const verdict = proof ? proofVerdict(proof) : null
     lines.push({
       id: item.id, list: 'project', description: item.description, source: 'worker',
-      status: proof ? (proof.status === 'passed' ? 'proven' : 'failed') : 'missing',
+      status: verdict ? statusOf(verdict) : 'missing', verdict,
       evidence: proof?.evidence ?? (item.kind === 'command' ? `run \`${(item.command ?? []).join(' ')}\` and record its output` : 'no proof recorded'),
     })
   }
 
   for (const outcome of input.contract?.outcomes ?? []) {
     const proof = byId(input.evidence.outcomes, outcome.id)
+    const verdict = proof ? proofVerdict(proof) : null
     lines.push({
       id: outcome.id, list: 'issue', description: outcome.description, source: 'worker',
-      status: proof ? (proof.status === 'passed' ? 'proven' : 'failed') : 'missing',
+      status: verdict ? statusOf(verdict) : 'missing', verdict,
       evidence: proof?.evidence ?? `check: ${outcome.check.kind}${outcome.check.command ? ` → ${outcome.check.command}` : ''}`,
     })
   }
 
-  const missing = lines.filter((line) => line.status === 'missing').map((line) => line.id)
-  const failed = lines.filter((line) => line.status === 'failed').map((line) => line.id)
-  return { complete: !missing.length && !failed.length, lines, missing, failed }
+  const ids = (status: DodLine['status']): readonly string[] => lines.filter((line) => line.status === status).map((line) => line.id)
+  const { minVerdict } = input
+  const below = minVerdict ? lines.filter((line) => line.status === 'proven' && line.verdict && !meetsVerdict(line.verdict, minVerdict)).map((line) => line.id) : []
+  const missing = ids('missing')
+  const failed = ids('failed')
+  const blocked = ids('blocked')
+  return { complete: !missing.length && !failed.length && !blocked.length && !below.length, lines, missing, failed, blocked, below }
 }
 
 const clip = (value: string, max = 400): string => value.length > max ? `${value.slice(0, max)}…` : value
 
-/** The DoD block the loop writes on the PR: one row per item, with the proof next to it. */
+/** The DoD block the loop writes on the PR: one row per item, with the verdict level and the proof next to it. */
 export const renderDodMarkdown = (assessment: DodAssessment): string => {
-  const icon = (status: DodLine['status']): string => status === 'proven' ? '✅' : status === 'failed' ? '❌' : '⬜️'
-  const rows = assessment.lines.map((line) => `| ${icon(line.status)} | ${line.list} | \`${line.id}\` | ${line.description} | ${clip(line.evidence.replaceAll('\n', ' ').replaceAll('|', '\\|'), 200)} |`)
-  return ['## Definition of Done', '', assessment.complete ? '_Both lists proven._' : `_Missing: ${assessment.missing.join(', ') || 'none'} · failing: ${assessment.failed.join(', ') || 'none'}_`, '', '| | list | id | item | evidence |', '|---|---|---|---|---|', ...rows].join('\n')
+  const icon = (status: DodLine['status']): string => status === 'proven' ? '✅' : status === 'failed' ? '❌' : status === 'blocked' ? '⛔' : '⬜️'
+  const rows = assessment.lines.map((line) => `| ${icon(line.status)} | ${line.list} | \`${line.id}\` | ${line.description} | ${line.verdict ?? '—'} | ${clip(line.evidence.replaceAll('\n', ' ').replaceAll('|', '\\|'), 200)} |`)
+  const gaps = `_Missing: ${assessment.missing.join(', ') || 'none'} · failing: ${assessment.failed.join(', ') || 'none'}${assessment.blocked.length ? ` · blocked: ${assessment.blocked.join(', ')}` : ''}${assessment.below.length ? ` · below the required verdict: ${assessment.below.join(', ')}` : ''}_`
+  return ['## Definition of Done', '', assessment.complete ? '_Both lists proven._' : gaps, '', '| | list | id | item | verdict | evidence |', '|---|---|---|---|---|---|', ...rows].join('\n')
 }
 
 /** The instructions the worker gets: what to prove, and exactly where to write the proof. */

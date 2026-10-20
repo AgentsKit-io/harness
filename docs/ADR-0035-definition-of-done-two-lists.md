@@ -2,7 +2,8 @@
 
 ## Status
 
-Accepted
+Accepted. Amended by [ADR-0046](ADR-0046-verdict-levels-and-the-merge-policy.md): a proof carries a verdict
+level (`failed` … `live-verified`) instead of pass/fail, and `delivery.merge.minVerdict` sets the minimum to merge.
 
 ## Context
 
