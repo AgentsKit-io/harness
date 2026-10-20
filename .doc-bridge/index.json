@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
-  "contentHash": "26f7359cf194ec6407ac5c3a03be9e08b95edf08ef88062504bc193979ac01b6",
+  "contentHash": "b3dfa1ffa9fd602b547e998ffb27018ea56ff6bc4731abb7821a156ade69ac7d",
   "contentHashAlgo": "sha256-semantic-v1",
-  "generatedAt": "2026-10-20T14:28:47.814Z",
+  "generatedAt": "2026-10-20T14:43:31.133Z",
   "project": {
     "name": "AgentsKit Harness",
     "root": "."
@@ -8183,7 +8183,7 @@
         "ts",
         "test"
       ],
-      "contentHash": "cffd3d146c46efd79cafa0464c88d2011582fa514fecd8bbcc2fb4b4207594b2"
+      "contentHash": "0d321f0e7682cd9e55b626b9130d2bbc6f9a6863e675b1cffd8d79678f4844e6"
     },
     {
       "id": "module:test/loop-fleet-runner.test.ts",
@@ -9327,7 +9327,7 @@
     }
   },
   "inputs": {
-    "hash": "51afe1cb6ce46df52f8ba5d8e932342cf1facb6f62f0546a2f769add62b0c1af",
+    "hash": "4b3f2bec586c6494dc21362e40ca3e559eff28ac1210e06f914ad4f87904af76",
     "fileCount": 593,
     "projectionVersion": 2
   },
@@ -9350,9 +9350,9 @@
   "projection": {
     "type": "retrieval-index",
     "schemaVersion": 1,
-    "contentHash": "667aab448e397580d62d7b05e9217da135ed59a9e63ccb2628f7c3391c409a72",
+    "contentHash": "17f04e9f554f208598dfea1b43eb6f2b91a245959a829d04b9bf3f8c231f0ac7",
     "contentHashAlgo": "sha256-semantic-v1",
-    "snapshotHash": "43ab8c75b833d152c1ee64d40bb94a908ea6e76e27ec7b711ed4bc86ce484f74",
+    "snapshotHash": "b37d4929c65e81fcb1ba17c5f6c55962bc0074f94313d0d3d6040a9837fe6296",
     "overlayHash": "f99666ff9119084dd25c2974ae64eb6935ec2aa785ff5ad478fb9d541f7a5e94",
     "configurationHash": "6c17a2415ef3484014ab8350c5c245602bfb85d2baf75666fb83c1c387f3396a",
     "lexiconVersion": 1,
@@ -44029,7 +44029,7 @@
             }
           ]
         },
-        "contentHash": "cffd3d146c46efd79cafa0464c88d2011582fa514fecd8bbcc2fb4b4207594b2",
+        "contentHash": "0d321f0e7682cd9e55b626b9130d2bbc6f9a6863e675b1cffd8d79678f4844e6",
         "provenance": "observed",
         "confidence": "observed"
       },
