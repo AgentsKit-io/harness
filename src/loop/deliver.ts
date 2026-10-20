@@ -30,6 +30,7 @@ import { createLoopEventBus, loadLoopPlugins, type LoopEventBus, type LoopEventP
 import { attachNotifier } from './notify.js'
 import { applyRoleSettings, resolveFlowSettings, resolveRoleSettings, workerPhaseEnabled, type EffectiveFlowSettings } from './flows.js'
 import { assessDod, readDodEvidence, renderDodMarkdown } from './dod.js'
+import { proveFleetDod } from './fleet-dod.js'
 import { splitLines } from '@agentskit/cross-platform'
 import { artifactPath, missingArtifacts, readPhaseArtifacts, readVerifyArtifact, VerifyArtifactSchema, verifyProofs, type PhaseArtifactName } from './artifacts.js'
 import { sha256 } from '../kernel/hash.js'
@@ -779,7 +780,8 @@ const handleFleetNoPullRequest = async (ctx: Context, record: DispatchRecordFile
   const body = `${record.issue}${record.url ? ` — ${record.url}` : ''}\n\nOpened by the loop from the branch a ${connector.id} task produced (\`${record.provider}/${record.model}\`); the worker could not push or open it itself.\n\nLoop-Contract: ${record.contractDigest}`
   await githubPullRequestCreate(ctx.runner, { repo: ctx.config.project.repo, head: collected.branch, base: ctx.config.project.baseBranch, title, body }, { cwd: root })
   const [pr] = await githubPullRequestsForBranch(ctx.runner, { repo: ctx.config.project.repo, head: collected.branch })
-  if (collected.branch !== record.branch) writeJsonAtomic(dispatchRecordPath(ctx.loaded.stateDir, record.issue), { ...record, branch: collected.branch })
+  // The collected tip and base are what the definition of done is judged on in later passes.
+  writeJsonAtomic(dispatchRecordPath(ctx.loaded.stateDir, record.issue), { ...record, branch: collected.branch, ...(collected.head ? { collected: { head: collected.head, ...(collected.base ? { base: collected.base } : {}) } } : {}) })
   if (!pr) return { issue: record.issue, outcome: 'waiting', reason: `PR created from ${collected.branch}; not listed yet`, actions }
   actions.push(`opened PR #${pr.number}`)
   return { issue: record.issue, outcome: 'waiting', reason: `PR #${pr.number} opened from the collected branch ${collected.branch}; review starts next pass`, pr: pr.number, head: pr.headSha, actions }
@@ -1318,9 +1320,14 @@ ${marker}` }); actions.push('secret-file hold commented') } catch (error) { acti
     // `verify.json` counts as evidence for an outcome the DoD file left unproven — the worker ran the check once;
     // asking it to transcribe the same result into a second file only invents a way to be inconsistent. The
     // explicit DoD proof still wins where both exist: it is the more specific statement.
-    const evidence = readDodEvidence(record.worktreePath, config)
-    const fromVerify = verifyProofs(readVerifyArtifact(record.worktreePath)).filter((proof) => !evidence.outcomes.some((recorded) => recorded.id === proof.id))
-    const dod = assessDod({ config, contract: stored?.contract ?? null, evidence: { ...evidence, outcomes: [...evidence.outcomes, ...fromVerify] }, prFiles: pr.files })
+    // A fleet task has no worktree: the proofs are made here, on a local checkout of the collected commit (ADR-0045).
+    const fleetProof = record.runner === 'fleet' && !ctx.dryRun
+      ? await proveFleetDod({ runner: ctx.runner, config, root: ctx.loaded.root, stateDir: ctx.loaded.stateDir, head: pr.headSha, ...(record.collected?.base ? { base: record.collected.base } : {}), contract: stored?.contract ?? null })
+      : null
+    if (fleetProof) actions.push(...fleetProof.notes)
+    const evidence = fleetProof ? fleetProof.evidence : readDodEvidence(record.worktreePath, config)
+    const fromVerify = fleetProof ? [] : verifyProofs(readVerifyArtifact(record.worktreePath)).filter((proof) => !evidence.outcomes.some((recorded) => recorded.id === proof.id))
+    const dod = assessDod({ config, contract: stored?.contract ?? null, evidence: { ...evidence, outcomes: [...evidence.outcomes, ...fromVerify] }, prFiles: fleetProof ? fleetProof.changedFiles : pr.files, ...(fleetProof ? { fileContents: fleetProof.fileContents } : {}) })
     if (fromVerify.length) actions.push(`verify.json supplied ${fromVerify.length} outcome proof(s)`)
     if (dod.lines.length) {
       event(ctx, { type: 'dod.assessed', issue: record.issue, pr: pr.number, head: pr.headSha, complete: dod.complete, proven: dod.lines.filter((line) => line.status === 'proven').length, missing: dod.missing.length, failed: dod.failed.length })
