@@ -483,8 +483,8 @@ Three interfaces, and the config picks the implementation:
   file) — there is no local worktree, no terminal, no setup command and no worker guard. `tick --dry-run` reports the
   `fleet submit` argv it would run.
 - `deliver` watches the task through `fleet queue --json`; while it is queued or running the issue just waits. When
-  it ends `done`, deliver runs `fleet collect <host-task-id>` (the branch arrives in the local clone; collect never
-  pushes), pushes that branch, opens the pull request with `gh pr create`, and from then on handles the PR like any
+  it ends `done`, deliver runs `fleet collect <host-task-id> --json` (the commits arrive at `ref`; collect never
+  pushes), points a safe local branch (`login/repo-3`, no `#`) at `head`, pushes it, opens the pull request with `gh pr create`, and from then on handles the PR like any
   other. A task that ends `failed` or `cancelled` is escalated as a stuck worker.
 - `loop doctor` probes the selected runner: `fleet doctor --json` and `fleet queue --json` for `fleet`; the Orca
   binary, runtime, accounts, worktrees and automations for `orca`.

@@ -16,7 +16,7 @@ const REPO = 'my-org/my-project'
 const issueJson = { number: 1, url: `https://github.com/${REPO}/issues/1`, title: 'Demo issue', state: 'OPEN', labels: [], assignees: [], createdAt: '2026-10-20T10:00:00Z', updatedAt: '2026-10-20T10:00:00Z' }
 
 /** GitHub tracker + fleet runner, with a fake `gh`, `fleet` and `git`; any `orca` call is recorded and answers "not installed". */
-const makeFleetEnv = (options: { readonly runner?: 'fleet' | 'orca'; readonly taskState?: () => string; readonly fleetDoctor?: CommandResult; readonly fleetQueue?: CommandResult } = {}) => {
+const makeFleetEnv = (options: { readonly runner?: 'fleet' | 'orca'; readonly taskState?: () => string; readonly fleetDoctor?: CommandResult; readonly fleetQueue?: CommandResult; readonly commits?: number } = {}) => {
   const dir = mkdtempSync(join(tmpdir(), 'agentskit-fleet-dispatch-')); cleanups.push(dir)
   const bin = mkdtempSync(join(tmpdir(), 'agentskit-fleet-dispatch-bin-')); cleanups.push(bin)
   for (const name of ['claude', 'codex', 'opencode', 'grok']) writeFileSync(join(bin, name), '#!/bin/sh\nexit 0\n', { mode: 0o755 })
@@ -37,6 +37,7 @@ const makeFleetEnv = (options: { readonly runner?: 'fleet' | 'orca'; readonly ta
       if (bin0 === 'fleet') {
         if (verb === 'submit') { prompts.push(readFileSync(argv[argv.indexOf('--prompt-file') + 1] ?? '', 'utf8')); queueId = 'q-0001'; return done('submitted q-0001\n') }
         if (verb === 'queue') return options.fleetQueue ?? done(JSON.stringify(queueId ? [{ id: queueId, state: options.taskState?.() ?? 'running', hostTaskId: 'ht-77' }] : []))
+        if (verb === 'collect') return done(JSON.stringify({ ref: 'refs/remotes/fleet/h1/ht-77', head: 'a1b2c3d4e5f6', base: 'basesha', commits: options.commits ?? 1 }))
         if (verb === 'doctor') return options.fleetDoctor ?? done(JSON.stringify({ status: 'ok', checks: [{ id: 'coordinator', ok: true }, { id: 'hosts', ok: true }] }))
         return done()
       }
@@ -110,14 +111,28 @@ describe('runner: fleet dispatches through the fleet', () => {
     const delivered = await runDeliver({ ...env.base })
     const collect = env.calls.find((argv) => argv[0] === 'fleet' && argv[1] === 'collect')
     // `fleet collect` takes the host task id the queue reports, not the harness-side workspace id.
-    expect(collect).toEqual(['fleet', 'collect', 'ht-77'])
+    expect(collect).toEqual(['fleet', 'collect', 'ht-77', '--json'])
+    // The harness's own branch is moved to `head` (a safe ref name, no `#`), then pushed.
+    expect(record?.branch).not.toMatch(/#/)
+    expect(env.calls).toContainEqual(['git', '-C', expect.any(String), 'branch', '-f', record?.branch, 'a1b2c3d4e5f6'])
     const push = env.calls.find((argv) => argv[0] === 'git' && argv.includes('push'))
-    expect(push).toEqual(['git', 'push', 'origin', `refs/heads/${record?.branch}:refs/heads/${record?.branch}`])
+    expect(push).toEqual(['git', 'push', '-u', 'origin', `refs/heads/${record?.branch}:refs/heads/${record?.branch}`])
     const create = env.calls.find((argv) => argv[0] === 'gh' && argv[1] === 'pr' && argv[2] === 'create')
     expect(create).toEqual(expect.arrayContaining(['--repo', REPO, '--head', record?.branch ?? '', '--base', 'main']))
     expect(create?.[create.indexOf('--body') + 1]).toContain(`Loop-Contract: ${record?.contractDigest}`)
     expect(delivered.results[0]).toMatchObject({ outcome: 'waiting', pr: 7 })
     expect(orcaCalls(env.calls)).toEqual([])
+  })
+
+  it('deliver opens no PR for a done task that made no commits', async () => {
+    let task = 'running'
+    const env = makeFleetEnv({ taskState: () => task, commits: 0 })
+    await runTick({ ...env.base, maxDispatch: 1 })
+    task = 'done'
+    const report = await runDeliver({ ...env.base })
+    expect(report.results[0]).toMatchObject({ outcome: 'stuck', reason: expect.stringMatching(/no commits/) })
+    expect(env.calls.some((argv) => argv[0] === 'git' && argv.includes('push'))).toBe(false)
+    expect(env.calls.some((argv) => argv[0] === 'gh' && argv[1] === 'pr' && argv[2] === 'create')).toBe(false)
   })
 
   it('deliver escalates a task that failed instead of collecting', async () => {

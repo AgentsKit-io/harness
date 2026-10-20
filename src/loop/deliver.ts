@@ -765,8 +765,13 @@ const handleFleetNoPullRequest = async (ctx: Context, record: DispatchRecordFile
   }
   const collected = await collect({ id: record.worktreeId })
   actions.push(collected.detail)
+  if (collected.branch === null) {
+    await escalateTracker(ctx, record, 'stuck', `**Loop: worker stuck** — the fleet task for \`${record.worktree}\` finished without making a commit, so there is no branch to open a PR from. The slot was released and the issue returned to ${ctx.config.delivery.returnState}.`, actions)
+    finish(ctx, record, lease, state, 'stuck', 'fleet task made no commits')
+    return { issue: record.issue, outcome: 'stuck', reason: 'fleet task finished with no commits; no PR opened', actions }
+  }
   const root = ctx.loaded.root
-  const pushed = await ctx.runner.run(['git', 'push', 'origin', `refs/heads/${collected.branch}:refs/heads/${collected.branch}`], { cwd: root, timeoutMs: 120_000 })
+  const pushed = await ctx.runner.run(['git', 'push', '-u', 'origin', `refs/heads/${collected.branch}:refs/heads/${collected.branch}`], { cwd: root, timeoutMs: 120_000 })
   if (pushed.timedOut || pushed.code !== 0) fail(`git push of ${collected.branch} failed: ${(pushed.stderr || pushed.stdout).trim().slice(0, 300) || `exit ${pushed.code ?? 'null'}`}`, 'HARNESS_ERROR')
   actions.push(`pushed ${collected.branch}`)
   let title = record.issue

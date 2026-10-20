@@ -44,7 +44,7 @@ export interface RunnerConnector {
    * work leaves no pull request behind implements it (`fleet`: `fleet collect`, which never pushes); for Orca the
    * worker pushes and opens its own PR, so there is nothing to collect.
    */
-  collect?(input: { readonly id: string }): Promise<{ readonly branch: string; readonly detail: string }>
+  collect?(input: { readonly id: string }): Promise<{ /** Null when the task finished with no commits: nothing to push or open. */ readonly branch: string | null; readonly detail: string }>
 }
 
 export interface RunnerInput { readonly loaded: LoadedLoopConfig; readonly runner: CommandRunner }
