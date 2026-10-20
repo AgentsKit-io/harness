@@ -4,7 +4,7 @@ import { join } from 'node:path'
 import type { ContextReference } from '../context/index.js'
 import type { AgentMemoryAdapter, AgentMemoryHit, AgentMemoryKvStore, AgentMemoryRecord, MemoryScope } from '../kernel/memory.js'
 import { createKvMemoryAdapter, validateMemoryRecord } from '../kernel/memory.js'
-import { promoteLearnings, type LearningRecord } from '../kernel/learning.js'
+import { lessonGaps, promoteLearnings, type LearningRecord } from '../kernel/learning.js'
 import { hashJson } from '../kernel/hash.js'
 import type { LoadedLoopConfig, LoopConfig } from './config.js'
 import { readJsonFile } from '../kernel/json-file.js'
@@ -252,6 +252,8 @@ export const learningsReadyToPromote = (
 ): readonly LearningRecord[] =>
   ledger.records
     .filter((record) => record.status === 'proposed')
+    // Only a lesson that can say when it applies and what taught it is offered; promotion refuses the rest (ADR-0047).
+    .filter((record) => lessonGaps(record).length === 0)
     .filter((record) => (record.sightings ?? 1) >= config.memory.recurrence.minSightings)
     .filter((record) => config.memory.categories.includes(record.category))
     .sort((left, right) => (right.sightings ?? 1) - (left.sightings ?? 1))

@@ -160,6 +160,8 @@ describe('loop memory', () => {
       source: 'loop-retro:demo:2026-09-11',
       category: 'adjustment',
       text: 'Raise review floor to high for cloud PRs',
+      cue: 'a PR changes cloud code',
+      evidence: '3 clean reviews missed a cloud regression',
       status: 'proposed',
       recordedAt: '2026-09-11T00:00:00Z',
     }

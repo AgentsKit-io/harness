@@ -9,7 +9,7 @@ The four layers that produce this configuration — the machine's global file, t
 machine's overlay — are described in [ADR-0033](https://github.com/AgentsKit-io/harness/blob/main/docs/ADR-0033-four-config-layers-and-presets.md).
 `ak-harness loop validate` prints the effective result, which is the only one that decides anything.
 
-229 of 419 paths carry no description yet.
+231 of 426 paths carry no description yet.
 
 ## `schemaVersion`
 
@@ -500,6 +500,19 @@ The project's half of the Definition of Done: the same list for every issue, and
 | `dod.items.pattern` | string |  |  |
 | `dod.items.paths` | string[] | `[]` | Restrict `pattern-absent` / `file-changed` to these path globs; empty = every changed file. |
 | `dod.evidenceFile` | string | `".ak-loop/dod.json"` | Where the worker writes its proofs, relative to the worktree root. |
+
+## `verifier`
+
+The independent verifier (ADR-0047). With `enabled`, a PR is "proven" only by a verdict from a **separate run that did not write the code**: deliver submits a verify task through the selected runner, which checks out the PR head, runs the commands and the contract outcomes, and returns a verdict with evidence. The writer's own claims (`dod.json`, `verify.json`) and green CI are never enough on their own. Off by default: it costs a second agent run.
+
+| Path | Type | Default | Description |
+|---|---|---|---|
+| `verifier.enabled` | boolean | `false` |  |
+| `verifier.commands` | string[][] | `[]` | Argv the verifier runs on the PR head. Empty = a starting set generated from the project's stack (package scripts, pytest, cargo, go). |
+| `verifier.liveChecks` | string[] | `[]` | Checks that need the thing running (a URL, a CLI invocation), in words; the verifier performs each and reports evidence. |
+| `verifier.agentCommand` | string |  | Agent CLI line for a runner that launches a terminal (`orca`, `local`); the `fleet` runner ignores it. Required for those runners. |
+| `verifier.budget` | object | `{}` |  |
+| `verifier.budget.timeoutMs` | integer | `1800000` | A verifier that has not answered after this long is a failed verification, not a pending one. |
 
 ## `runs`
 
