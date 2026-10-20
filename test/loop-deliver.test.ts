@@ -1176,6 +1176,14 @@ describe('deliver', () => {
     expect(assessed).toMatchObject({ issue: 'ENG-10', pr: 42, complete: true, proven: 1, missing: 0, failed: 0 })
   })
 
+  it('does not merge a green, review-clean PR on the writer\'s word when verifier.enabled has no way to launch the independent verifier (ADR-0046)', async () => {
+    const env = setup({ review: { code: 0 }, worktreeFiles: { 'verify.json': JSON.stringify({ command: 'pnpm test', exitCode: 0, outcomes: [{ id: 'o1', status: 'passed', evidence: 'green' }] }) } })
+    writeFileSync(join(env.dir, 'loop.config.local.yaml'), 'verifier:\n  enabled: true\n')
+    const report = await deliver(env)
+    expect(report.results[0]).toMatchObject({ outcome: 'held', reason: expect.stringContaining('independent verifier unavailable') })
+    expect(env.runner.calls.some((argv) => argv[0] === 'gh' && argv[1] === 'api' && argv.includes('--method'))).toBe(false)
+  })
+
   it('holds a clean, green-checks PR when delivery.merge.requireHumanApproval is set and no one approved it on GitHub', async () => {
     const env = setup({ review: { code: 0 } })
     writeFileSync(join(env.dir, 'loop.config.local.yaml'), 'delivery:\n  merge:\n    requireHumanApproval: true\n')

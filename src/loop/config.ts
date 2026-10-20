@@ -895,6 +895,25 @@ export const LoopConfigSchema = z.object({
     evidenceFile: nonEmpty.default('.ak-loop/dod.json'),
   }).prefault({}),
   /**
+   * The independent verifier (ADR-0046). With `enabled`, a PR is "proven" only by a verdict from a **separate run that
+   * did not write the code**: deliver submits a verify task through the selected runner, which checks out the PR head,
+   * runs the commands and the contract outcomes, and returns a verdict with evidence. The writer's own claims
+   * (`dod.json`, `verify.json`) and green CI are never enough on their own. Off by default: it costs a second agent run.
+   */
+  verifier: z.object({
+    enabled: z.boolean().default(false),
+    /** Argv the verifier runs on the PR head. Empty = a starting set generated from the project's stack (package scripts, pytest, cargo, go). */
+    commands: z.array(z.array(nonEmpty).min(1)).default([]),
+    /** Checks that need the thing running (a URL, a CLI invocation), in words; the verifier performs each and reports evidence. */
+    liveChecks: z.array(nonEmpty).default([]),
+    /** Agent CLI line for a runner that launches a terminal (`orca`, `local`); the `fleet` runner ignores it. Required for those runners. */
+    agentCommand: nonEmpty.optional(),
+    budget: z.object({
+      /** A verifier that has not answered after this long is a failed verification, not a pending one. */
+      timeoutMs: z.number().int().positive().default(1_800_000),
+    }).prefault({}),
+  }).prefault({}),
+  /**
    * Per-issue run records under `<stateDir>/runs/<issue>-<n>/` (ADR-0041): the projected state, what each step was
    * handed and produced (redacted), the machine-written handoffs and the evidence links. Local, never committed.
    */

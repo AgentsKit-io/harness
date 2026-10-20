@@ -15,7 +15,7 @@ const runner = (): CommandRunner & { readonly calls: string[][] } => {
   return { calls, run: async (argv) => { calls.push([...argv]); return ok({ ok: true, result: { automations: [], comment: { id: 'c1' } } }) } }
 }
 
-const learning = (text: string, sightings: number): LearningRecord => ({ id: `L-${text}`, source: 'retro', category: 'adjustment', text, status: 'proposed', recordedAt: '2026-09-12T00:00:00.000Z', sightings })
+const learning = (text: string, sightings: number): LearningRecord => ({ id: `L-${text}`, source: 'retro', category: 'adjustment', text, cue: `when: ${text}`, evidence: 'seen in the retro window', status: 'proposed', recordedAt: '2026-09-12T00:00:00.000Z', sightings })
 
 const setup = (extra: string) => {
   const dir = mkdtempSync(join(tmpdir(), 'agentskit-loop-autopromote-')); cleanups.push(dir)

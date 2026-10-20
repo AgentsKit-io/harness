@@ -31,6 +31,7 @@ import { attachNotifier } from './notify.js'
 import { applyRoleSettings, resolveFlowSettings, resolveRoleSettings, workerPhaseEnabled, type EffectiveFlowSettings } from './flows.js'
 import { assessDod, readDodEvidence, renderDodMarkdown } from './dod.js'
 import { proveFleetDod } from './fleet-dod.js'
+import { renderVerifierMarkdown, verifyIndependently } from './verifier.js'
 import { splitLines } from '@agentskit/cross-platform'
 import { artifactPath, missingArtifacts, readPhaseArtifacts, readVerifyArtifact, VerifyArtifactSchema, verifyProofs, type PhaseArtifactName } from './artifacts.js'
 import { sha256 } from '../kernel/hash.js'
@@ -1339,6 +1340,21 @@ ${marker}` }); actions.push('secret-file hold commented') } catch (error) { acti
       actions.push(`definition of done proven (${dod.lines.length} item(s))`)
       vouchedBy.push('the definition of done')
     }
+  }
+  // ADR-0046: "proven" comes from a run that did not write the code. The writer's handoff and green CI were read above
+  // as inputs; with the verifier on, none of them is the verdict, and nothing merges without this one.
+  if (config.verifier.enabled) {
+    const verified = await verifyIndependently({ loaded: ctx.loaded, connector: createRunnerConnector({ loaded: ctx.loaded, runner: ctx.runner }), issue: record.issue, pr: pr.number, head: pr.headSha, contract: readStoredContract(ctx.loaded.stateDir, record.issue)?.contract ?? null, now: ctx.now(), dryRun: ctx.dryRun })
+    if (verified.status === 'waiting' || verified.status === 'unavailable') actions.push(`verifier: ${verified.detail}`)
+    if (verified.status === 'proven' || verified.status === 'failed') {
+      event(ctx, { type: 'verifier.verdict', issue: record.issue, pr: pr.number, head: pr.headSha, status: verified.status, detail: verified.detail.slice(0, 300) })
+      if (!ctx.dryRun) { try { const marker = `<!-- loop:verifier:${pr.headSha}:${verified.status} -->`; if (!(await githubCommentExists(ctx.runner, { repo: config.project.repo, number: pr.number, marker }))) await githubComment(ctx.runner, { repo: config.project.repo, number: pr.number, body: `${renderVerifierMarkdown(pr.headSha, verified)}\n\n${marker}` }) } catch (error) { actions.push(`verifier comment failed: ${message(error)}`) } }
+    }
+    if (verified.status === 'waiting') return { issue: record.issue, outcome: 'waiting', reason: `independent verifier: ${verified.detail}`, pr: pr.number, head: pr.headSha, actions }
+    if (verified.status === 'unavailable') return { issue: record.issue, outcome: 'held', reason: `independent verifier unavailable: ${verified.detail}`, pr: pr.number, head: pr.headSha, actions }
+    if (verified.status === 'failed') return fixRound(ctx, record, lease, state, pr, 'review', `Loop: an independent verifier — a separate run that did not write this code — could not prove PR #${pr.number} at ${pr.headSha.slice(0, 7)}: ${verified.detail}. Fix what it found, re-run \`${closes}\`, commit and push; a new head is verified again from scratch.`, `independent verifier did not prove it: ${verified.detail.slice(0, 200)}`, actions)
+    actions.push(`independent verifier proved ${pr.headSha.slice(0, 7)}: ${verified.detail}`)
+    vouchedBy.push('the independent verifier')
   }
   // A layer is a boundary, not a suggestion: crossing it is always reported, and held only where the project said
   // the boundary is real (`layers[].enforce`). Reporting first is what lets a team draw the line before it bites.

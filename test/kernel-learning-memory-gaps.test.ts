@@ -43,7 +43,19 @@ describe('parseRetro', () => {
 })
 
 describe('promoteLearnings', () => {
-  const records = parseRetro('## Problems\n- Tests were too broad', 'B-1')
+  const records = parseRetro('## Problems\n- Tests were too broad\n  - cue: a change touches one module\n  - evidence: CI ran the full suite for a one-file diff', 'B-1')
+
+  it('keeps the nested cue and evidence on the record, not as records of their own', () => {
+    expect(records).toHaveLength(1)
+    expect(records[0]).toMatchObject({ cue: 'a change touches one module', evidence: 'CI ran the full suite for a one-file diff' })
+  })
+
+  it('refuses to promote prose that carries no cue or evidence', () => {
+    const bare = parseRetro('## Problems\n- Just a sentence', 'B-2')
+    expect(() => promoteLearnings(bare, { actor: 'human', ids: [bare[0]!.id] })).toThrow(/carries cue, lesson and evidence.*missing cue, evidence/)
+    // Rejecting needs no structure: saying no to prose is always allowed.
+    expect(promoteLearnings(bare, { actor: 'human', ids: [bare[0]!.id], status: 'rejected' })[0]?.status).toBe('rejected')
+  })
 
   it('accepts the automated promoter as a named actor of its own (ADR-0019 amendment)', () => {
     const promoted = promoteLearnings(records, { actor: 'loop-auto', ids: [records[0]!.id] })
