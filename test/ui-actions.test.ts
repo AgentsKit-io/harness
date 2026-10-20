@@ -129,7 +129,7 @@ describe('action routes', () => {
 
   it('promotes and rejects learnings as a human, refusing empty or unknown ids', async () => {
     const { loaded, post } = await harness()
-    const record = (id: string) => ({ id, source: 'retro', category: 'problem' as const, text: `lesson ${id}`, status: 'proposed' as const, recordedAt: '2026-09-01T00:00:00Z' })
+    const record = (id: string) => ({ id, source: 'retro', category: 'problem' as const, text: `lesson ${id}`, cue: `cue ${id}`, evidence: `evidence ${id}`, status: 'proposed' as const, recordedAt: '2026-09-01T00:00:00Z' })
     writeLearningsLedger(loaded.stateDir, { records: [record('L-a'), record('L-b')] })
     expect((await post('learnings/promote', { ids: [] })).status).toBe(400)
     expect((await post('learnings/promote', { ids: ['L-zzz'] })).status).toBe(400)

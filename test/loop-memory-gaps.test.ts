@@ -155,7 +155,7 @@ describe('planMemoryContext', () => {
 })
 
 describe('promoteLearningsToMemory edge cases', () => {
-  const proposed: LearningRecord = { id: 'L-abc', source: 'loop-retro:demo', category: 'adjustment', text: 'do the thing', status: 'proposed', recordedAt: '2026-09-11T00:00:00Z' }
+  const proposed: LearningRecord = { id: 'L-abc', source: 'loop-retro:demo', category: 'adjustment', text: 'do the thing', cue: 'the thing comes up', evidence: 'it was skipped twice', status: 'proposed', recordedAt: '2026-09-11T00:00:00Z' }
 
   it('skips remembering when there is no adapter, but still promotes the ledger', async () => {
     const stateDir = mkdtempSync(join(tmpdir(), 'loop-learn-gaps-'))

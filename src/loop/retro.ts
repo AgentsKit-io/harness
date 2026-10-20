@@ -12,6 +12,7 @@ import { contractPath, readStoredContract } from './contract.js'
 import { readCooldowns } from './cooldown.js'
 import { deliveryStatePath, readDeliveryState } from './deliver.js'
 import { LOOP_STAGES, automationName } from './install.js'
+import { proposeLessonCheck, renderLessonChecks } from './lesson-checks.js'
 import { learningsReadyToPromote, openLoopMemory, promoteLearningsToMemory, upsertProposedLearnings, upsertProposedLearningsDryRun } from './memory.js'
 import { appendLoopEvent, dispatchRecordPath, readDispatchRecord } from './tick.js'
 import { createLoopEventBus, loadLoopPlugins, type LoopEventBus } from './event-bus.js'
@@ -263,7 +264,7 @@ export const renderRetroMarkdown = (report: RetroReport): string => {
   if (report.escalations.reasons.length) { lines.push('## Problems', '', ...report.escalations.reasons.map((row) => `- ${row.count}× ${row.reason}`), ...report.issues.filter((row) => ['blocked', 'stuck', 'abandoned'].includes(row.outcome)).map((row) => `- ${row.issue} ${row.outcome}${row.pr ? ` (PR #${row.pr})` : ''} after ${row.fixRounds} fix round(s), ${row.nudges} nudge(s)`), '') }
   const worked = report.issues.filter((row) => row.outcome === 'merged')
   if (worked.length) { lines.push('## What worked', '', ...worked.map((row) => `- ${row.issue} merged${row.pr ? ` (PR #${row.pr})` : ''} by ${row.provider}/${row.model} in ${row.leadTimeMin ?? '?'} min, ${row.fixRounds} fix round(s)`), '') }
-  const render = (item: RetroSuggestion): string => `- [${item.severity}] ${item.text}${item.knob ? ` _(knob: ${item.knob})_` : ''}\n  - evidence: ${item.evidence}`
+  const render = (item: RetroSuggestion): string => `- [${item.severity}] ${item.text}${item.knob ? ` _(knob: ${item.knob})_` : ''}\n  - cue: ${item.id}\n  - evidence: ${item.evidence}`
   const project = report.suggestions.filter((item) => item.target === 'project')
   const harness = report.suggestions.filter((item) => item.target === 'harness')
   lines.push('## Adjustments — project', '', `Changes to ${report.project}: \`loop.config.yaml\`, issue hygiene, team process.`, '', ...(project.length ? project.map(render) : ['- none']), '')
@@ -274,7 +275,12 @@ export const renderRetroMarkdown = (report: RetroReport): string => {
 }
 
 /** Learnings the harness can track; a human promotes them with `promoteLearnings`. */
-export const retroLearnings = (report: RetroReport, markdown: string): readonly LearningRecord[] => parseRetro(markdown, `loop-retro:${report.project}:${report.window.since.slice(0, 10)}`, report.generatedAt)
+export const retroLearnings = (report: RetroReport, markdown: string): readonly LearningRecord[] =>
+  // The check is proposed before the lesson is kept as prose: each record carries the concrete check it should become, when one is findable.
+  parseRetro(markdown, `loop-retro:${report.project}:${report.window.since.slice(0, 10)}`, report.generatedAt).map((record) => {
+    const check = proposeLessonCheck(record)
+    return check ? { ...record, check } : record
+  })
 
 export interface RetroStageReport {
   readonly status: 'ok' | 'skipped' | 'failed' | 'dry-run'
@@ -361,7 +367,7 @@ export const runRetroStage = async (input: {
     }
   }
   const agentNote = agentChanges.length ? `\n\n## Agents\n${agentChanges.map((change) => `- ${change}`).join('\n')}` : ''
-  const body = `${markdown}${memoryNote}${renderTuningMarkdown(tuning)}${agentNote}\n\n<!-- loop:retro:${report.digest} -->`
+  const body = `${markdown}${renderLessonChecks(ledger, loaded.config)}${memoryNote}${renderTuningMarkdown(tuning)}${agentNote}\n\n<!-- loop:retro:${report.digest} -->`
   if (input.dryRun) return { status: 'dry-run', issue, digest: report.digest, posted: false, learningsProposed: learnings.length, autoPromoted: [], tuned: [], agentChanges: [], detail: 'would comment on Linear' }
   try {
     await linearCommentAdd(input.runner, {

@@ -220,6 +220,8 @@ export const LOOP_EVENT_TYPES = {
 
   /** The definition of done was judged for a PR: how many of its lines were proven, missing, or failing. */
   'dod.assessed': ['issue', 'pr', 'head', 'patchId', 'complete', 'level', 'proven', 'missing', 'failed', 'blocked', 'below'],
+  /** The independent verifier (a run that did not write the code) returned, or failed to return, a verdict for a PR head. */
+  'verifier.verdict': ['issue', 'pr', 'head', 'status', 'detail'],
   /** The project's own `delivery.verify.argv` passed before a review was even requested. */
   'verify.passed': ['issue', 'pr', 'head'],
 
