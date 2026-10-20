@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
-  "contentHash": "6cb58b8d5e6d2d735fb29ecf2f44dd670a2ec5a66cb2d110e48015802c31eb3e",
+  "contentHash": "99c9cab47a935be1abcab0444c0a4726dfe8534a163dfb01d60b332b744e5652",
   "contentHashAlgo": "sha256-semantic-v1",
-  "generatedAt": "2026-10-20T02:02:31.215Z",
+  "generatedAt": "2026-10-20T03:22:01.873Z",
   "project": {
     "name": "AgentsKit Harness",
     "root": "."
@@ -9309,7 +9309,7 @@
     }
   },
   "inputs": {
-    "hash": "1b4078e61d274feea2124230bd2de380bc3a2d7d64a2a740c3022fb7ea83dd68",
+    "hash": "18f0c1dffc548eca5d54a85a997734478ab50ba713710fb90973adf98b201864",
     "fileCount": 592,
     "projectionVersion": 2
   },
@@ -9332,11 +9332,11 @@
   "projection": {
     "type": "retrieval-index",
     "schemaVersion": 1,
-    "contentHash": "c2ad4fc53d67d084bdaa6136450a5311394887cd82559b6f3f25f42aa253bbe7",
+    "contentHash": "5137534c8e31025291da86aa887107a8ee2149564ad14e5e44a77edeb46ad2f2",
     "contentHashAlgo": "sha256-semantic-v1",
-    "snapshotHash": "1182cd744200bf827b07645b52c18acd45b2b4f25ee73bef914b4091c16cd280",
+    "snapshotHash": "0f6f2ca8fa54e30982c4a1e335b00be8d88bae6b02947c00623c60132cb6e61d",
     "overlayHash": "f99666ff9119084dd25c2974ae64eb6935ec2aa785ff5ad478fb9d541f7a5e94",
-    "configurationHash": "816afaf6a7dc09767f7594d8fd80024612ca0f33becf0e44dde0107fcf2782df",
+    "configurationHash": "6c17a2415ef3484014ab8350c5c245602bfb85d2baf75666fb83c1c387f3396a",
     "lexiconVersion": 1,
     "graphMetricsVersion": "1.0.0",
     "weights": {
@@ -48030,7 +48030,7 @@
           ],
           "outbound": []
         },
-        "contentHash": "fc38821a2ba7dfab146a26c6927132fca33e1c163dc6f71198fcd838fc231d5d",
+        "contentHash": "ae3ec8afcc1911a1c88a47270e9e1fa820448744c24ba6570f68f20cdaa49131",
         "provenance": "observed",
         "confidence": "observed"
       },
