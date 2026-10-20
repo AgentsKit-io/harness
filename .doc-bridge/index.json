@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
-  "contentHash": "f99389736f181824e5284308ee82c609fb00a22b33b5735fc946ec71a3121a76",
+  "contentHash": "af928e84bab0dd823a2cdd646e6029bfd4733b510195b6d4df4ba6fd325d698b",
   "contentHashAlgo": "sha256-semantic-v1",
-  "generatedAt": "2026-10-17T19:38:39.593Z",
+  "generatedAt": "2026-10-20T03:06:04.100Z",
   "project": {
     "name": "AgentsKit Harness",
     "root": "."
@@ -9270,7 +9270,7 @@
     }
   },
   "inputs": {
-    "hash": "60d31ba5b248b0aae68fb4999bb5d57e2d39a32ad856e5cee45a19053e912153",
+    "hash": "b2f22dc6b13f38386dfd95ebf8323c76a4253bc70543a2dc7f7b3a39071bb004",
     "fileCount": 589,
     "projectionVersion": 2
   },
@@ -9293,11 +9293,11 @@
   "projection": {
     "type": "retrieval-index",
     "schemaVersion": 1,
-    "contentHash": "fcd41836dd46b29b8e83701828fe4a3a4befe53520c8e1fa8a01eda400d9bba4",
+    "contentHash": "f79f3bcf14472507fc9ed266a5e286b6cfc795bf94fae9ab2db8fff1887dee1d",
     "contentHashAlgo": "sha256-semantic-v1",
-    "snapshotHash": "313f8f3fd9fcde3326bef868525fce3b7c200f281fff03744d31524f80e1916a",
+    "snapshotHash": "9ef91b81aabbd4baac5fdb50996c8d06e92e003fa038b377b9bb4c7e9b9a24a6",
     "overlayHash": "f99666ff9119084dd25c2974ae64eb6935ec2aa785ff5ad478fb9d541f7a5e94",
-    "configurationHash": "816afaf6a7dc09767f7594d8fd80024612ca0f33becf0e44dde0107fcf2782df",
+    "configurationHash": "6c17a2415ef3484014ab8350c5c245602bfb85d2baf75666fb83c1c387f3396a",
     "lexiconVersion": 1,
     "graphMetricsVersion": "1.0.0",
     "weights": {
@@ -47789,7 +47789,7 @@
           ],
           "outbound": []
         },
-        "contentHash": "fc38821a2ba7dfab146a26c6927132fca33e1c163dc6f71198fcd838fc231d5d",
+        "contentHash": "4aa79e278494a9995f440df140b1bd2719937ef3ecc9e2543fbd48ba0479b0a9",
         "provenance": "observed",
         "confidence": "observed"
       },
