@@ -13,7 +13,7 @@ timestamp) and `type` on top of the fields below. A plugin subscribes with
 The vocabulary is enforced by the compiler: `appendLoopEvent` accepts only these names, so an event that is not
 here cannot be emitted — and a name here that nothing emits fails the test suite.
 
-99 loop events.
+100 loop events.
 
 ## `contract.*`
 
@@ -230,6 +230,12 @@ here cannot be emitted — and a name here that nothing emits fails the test sui
 | Event | Carries | What it means |
 |---|---|---|
 | `dod.assessed` | `issue`, `pr`, `head`, `patchId`, `complete`, `level`, `proven`, `missing`, `failed`, `blocked`, `below` | The definition of done was judged for a PR: how many of its lines were proven, missing, or failing. |
+
+## `verifier.*`
+
+| Event | Carries | What it means |
+|---|---|---|
+| `verifier.verdict` | `issue`, `pr`, `head`, `status`, `detail` | The independent verifier (a run that did not write the code) returned, or failed to return, a verdict for a PR head. |
 
 ## `verify.*`
 
