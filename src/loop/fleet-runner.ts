@@ -45,7 +45,7 @@ const projectFromRemote = (url: string): string | null => {
 }
 
 /**
- * Dispatch through the fleet coordinator's queue (docs/ADR-0044). Fleet tasks are not interactive and have no local
+ * Dispatch through the fleet coordinator's queue (docs/ADR-0045). Fleet tasks are not interactive and have no local
  * worktree: the harness keeps one small record per workspace (`fleet-workspaces.json` in the state dir) so a later
  * process can still observe, tail and cancel what an earlier one submitted. The prompt text only ever travels
  * through a temp file; it is never put in argv or in an error message.
