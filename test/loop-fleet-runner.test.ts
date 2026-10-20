@@ -148,7 +148,7 @@ describe('the fleet runner', () => {
   it('collects by host task id from `fleet collect --json`, moves its own branch to head, and refuses bad output', async () => {
     const loaded = setup()
     const calls: string[][] = []
-    let collectOut = JSON.stringify({ ref: 'refs/remotes/fleet/h1/ht-9', head: 'a1b2c3d4e5f6', base: 'b0b0b0b', commits: 2 })
+    let collectOut = JSON.stringify({ ref: 'refs/remotes/fleet/h1/ht-9', headSha: 'a1b2c3d4e5f6', baseSha: 'b0b0b0b', bundleSha256: 'f'.repeat(64), review: [], cleaned: false, commits: 2 })
     let reachable = true
     const runner: CommandRunner = { run: async (argv) => {
       calls.push([...argv])
@@ -166,7 +166,7 @@ describe('the fleet runner', () => {
     expect(calls).toContainEqual(['fleet', 'collect', 'ht-9', '--json'])
     expect(calls.filter((argv) => argv[0] === 'git' && argv[3] !== 'remote').map((argv) => argv.slice(3))).toEqual([['merge-base', '--is-ancestor', 'a1b2c3d4e5f6', 'refs/remotes/fleet/h1/ht-9'], ['branch', '-f', 'person/a', 'a1b2c3d4e5f6']])
 
-    collectOut = JSON.stringify({ ref: 'refs/remotes/fleet/h1/ht-9', head: 'a1b2c3d4e5f6', base: 'b0b0b0b', commits: 0 })
+    collectOut = JSON.stringify({ ref: 'refs/remotes/fleet/h1/ht-9', headSha: 'a1b2c3d4e5f6', baseSha: 'b0b0b0b', bundleSha256: 'f'.repeat(64), review: [], cleaned: false, commits: 0 })
     expect(await fleet.collect?.({ id: workspace.id })).toMatchObject({ branch: null, detail: expect.stringMatching(/no commits/) })
 
     collectOut = 'not json'
@@ -174,7 +174,7 @@ describe('the fleet runner', () => {
     collectOut = JSON.stringify({ ref: 'refs/remotes/fleet/h1/ht-9', commits: 1 })
     await expect(fleet.collect?.({ id: workspace.id })).rejects.toThrow(/unexpected shape/)
 
-    collectOut = JSON.stringify({ ref: 'refs/remotes/fleet/h1/ht-9', head: 'a1b2c3d4e5f6', base: 'b0b0b0b', commits: 1 })
+    collectOut = JSON.stringify({ ref: 'refs/remotes/fleet/h1/ht-9', headSha: 'a1b2c3d4e5f6', baseSha: 'b0b0b0b', bundleSha256: 'f'.repeat(64), review: [], cleaned: false, commits: 1 })
     reachable = false
     await expect(fleet.collect?.({ id: workspace.id })).rejects.toThrow(/not reachable/)
   })

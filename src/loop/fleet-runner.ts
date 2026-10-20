@@ -12,7 +12,9 @@ const FleetRecordSchema = z.object({ id: z.string(), branch: z.string(), base: z
 type FleetRecord = Readonly<z.infer<typeof FleetRecordSchema>>
 
 /** What `fleet collect <id> --json` prints; extra keys (`base`, …) are ignored. */
-const FleetCollectSchema = z.object({ ref: z.string().min(1), head: z.string().regex(/^[0-9a-f]{7,64}$/i), commits: z.number().int().min(0) })
+// `fleet collect --json` names the tip `headSha` (and the base `baseSha`); other keys (bundle, review, release) are ignored.
+const Sha = z.string().regex(/^[0-9a-f]{7,64}$/i)
+const FleetCollectSchema = z.object({ ref: z.string().min(1), headSha: Sha, commits: z.number().int().min(0) })
 
 /** A ref name git accepts and a person can read: no `#`, spaces or other ref-hostile characters (`o/r#3` → `o/r-3`). */
 export const safeFleetBranch = (branch: string): string => {
@@ -183,7 +185,7 @@ export const createFleetRunner = ({ loaded, runner }: RunnerInput): RunnerConnec
       try { raw = JSON.parse(result.stdout) } catch { fail(`fleet collect ${taskId} --json did not print JSON.`, 'HARNESS_ERROR') }
       const parsed = FleetCollectSchema.safeParse(raw)
       if (!parsed.success) return fail(`fleet collect ${taskId} --json: unexpected shape (${parsed.error.issues[0]?.message ?? 'invalid'}).`, 'HARNESS_ERROR')
-      const { ref, head, commits } = parsed.data
+      const { ref, headSha: head, commits } = parsed.data
       if (commits === 0) return { branch: null, detail: `fleet collect ${taskId}: the task made no commits; there is nothing to deliver.` }
       const git = (args: readonly string[]) => runner.run(['git', '-C', loaded.root, ...args], { timeoutMs: 15_000 })
       const reachable = await git(['merge-base', '--is-ancestor', head, ref])
