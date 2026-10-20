@@ -30,10 +30,12 @@ import { createLoopEventBus, loadLoopPlugins, type LoopEventBus, type LoopEventP
 import { attachNotifier } from './notify.js'
 import { applyRoleSettings, resolveFlowSettings, resolveRoleSettings, workerPhaseEnabled, type EffectiveFlowSettings } from './flows.js'
 import { assessDod, readDodEvidence, renderDodMarkdown } from './dod.js'
+import { decideMerge, weakestVerdict, type MergePolicyInput } from './merge-policy.js'
+import { isProven, migrateVerdict, patchIdOfPullRequest, readVerdictRecord, reviewLevel, verdictsHold, writeVerdictRecord, type RunFingerprint, type Verdict, type VerdictRecord } from './verdict.js'
 import { proveFleetDod } from './fleet-dod.js'
 import { splitLines } from '@agentskit/cross-platform'
 import { artifactPath, missingArtifacts, readPhaseArtifacts, readVerifyArtifact, VerifyArtifactSchema, verifyProofs, type PhaseArtifactName } from './artifacts.js'
-import { sha256 } from '../kernel/hash.js'
+import { hashJson, sha256 } from '../kernel/hash.js'
 import { latestIssueRun, markRunSummaryPosted, readAgentRunReport, recordRunEvidence, recordRunIo, renderRunSummaryMarkdown, runDirFor, runSummaryMarker } from './agent-runs.js'
 import { buildEvidenceDocument, checklistState, extractReproduction, isBugIssue, type DeliveryEvidence, type EvidenceOptions, type EvidenceProof, type EvidenceStatus } from './evidence.js'
 import { DEFAULT_COMMENT_OPTIONS, fitComment, type CommentDocument } from './comment-format.js'
@@ -90,6 +92,8 @@ export interface DeliverInput {
    * did, and the owner is the one who flushes it once the whole invocation is done. Omit to keep this call
    * self-sufficient, as every direct caller (`loop deliver`, tests, library use) needs it to be. */
   readonly bus?: LoopEventBus
+  /** Pause between the read-backs that confirm a merge (ms); GitHub can lag a moment behind its own merge answer. Default 2000. */
+  readonly readBackDelayMs?: number
 }
 
 const message = (error: unknown): string => error instanceof HarnessError ? `${error.code}: ${error.message}` : error instanceof Error ? error.message : String(error)
@@ -148,6 +152,7 @@ interface Context {
   readonly assumeIdle?: boolean
   readonly notes: string[]
   readonly reviewDeadlineMs: number
+  readonly readBackDelayMs: number
   readonly bus: LoopEventBus
   /** The tracker and code host this project selected. The engine never names Linear or GitHub. */
   /** Every reviewer candidate in order, so a small change can be routed to a cheaper one (cost lever 3). */
@@ -380,7 +385,12 @@ const readWorkerArtifact = (ctx: Context, record: DispatchRecordFile, file: stri
 }
 
 const proofStatus = (status: unknown): EvidenceStatus => status === 'passed' || status === 'failed' || status === 'skipped' || status === 'blocked' || status === 'pending' ? status : 'missing'
-const rawProofs = (value: unknown): readonly EvidenceProof[] => Array.isArray(value) ? value.filter(isRecord).filter((entry) => typeof entry['id'] === 'string').map((entry) => ({ id: entry['id'] as string, status: proofStatus(entry['status']), evidence: typeof entry['evidence'] === 'string' ? entry['evidence'] : '' })) : []
+const rawProofs = (value: unknown): readonly EvidenceProof[] => Array.isArray(value) ? value.filter(isRecord).filter((entry) => typeof entry['id'] === 'string').map((entry) => {
+  // A level the worker wrote (or the legacy `passed`/`failed`) decides the status; the raw `status` is only a fallback.
+  const verdict = migrateVerdict(entry['verdict'])
+  const status: EvidenceStatus = verdict ? (verdict === 'failed' ? 'failed' : verdict === 'blocked' ? 'blocked' : 'passed') : proofStatus(entry['status'])
+  return { id: entry['id'] as string, status, evidence: typeof entry['evidence'] === 'string' ? entry['evidence'] : '', ...(verdict ? { verdict } : {}) }
+}) : []
 
 /**
  * Everything the loop already holds about this delivery, for the evidence comment (`evidence.ts`). Every read is
@@ -415,7 +425,7 @@ const gatherEvidence = async (ctx: Context, record: DispatchRecordFile, state: D
   let dod: readonly EvidenceProof[] | null = null
   const stored = readStoredContract(stateDir, record.issue)
   if (dodPhase && (raw || verify || stored?.contract.outcomes.length)) {
-    const decided = (proofs: readonly EvidenceProof[]) => proofs.filter((proof) => proof.status === 'passed' || proof.status === 'failed').map((proof) => ({ id: proof.id, status: proof.status as 'passed' | 'failed', evidence: proof.evidence }))
+    const decided = (proofs: readonly EvidenceProof[]) => proofs.filter((proof) => proof.status === 'passed' || proof.status === 'failed' || proof.status === 'blocked').map((proof) => ({ id: proof.id, status: proof.status === 'passed' ? 'passed' as const : 'failed' as const, evidence: proof.evidence, ...(proof.verdict ? { verdict: proof.verdict } : proof.status === 'blocked' ? { verdict: 'blocked' as const } : {}) }))
     const project = rawProofs(raw?.['project'])
     const outcomes = rawProofs(raw?.['outcomes'])
     const fromVerify = verifyProofs(verifyParsed.success ? verifyParsed.data : null).filter((proof) => !outcomes.some((recorded) => recorded.id === proof.id))
@@ -423,8 +433,8 @@ const gatherEvidence = async (ctx: Context, record: DispatchRecordFile, state: D
     const declared = new Map([...project, ...outcomes].map((proof) => [proof.id, proof]))
     dod = assessed.lines.map((line) => {
       const own = declared.get(line.id)
-      const status: EvidenceStatus = line.status === 'proven' ? 'passed' : line.status === 'failed' ? 'failed' : own && (own.status === 'skipped' || own.status === 'blocked' || own.status === 'pending') ? own.status : 'missing'
-      return { id: line.id, list: line.list, description: line.description, status, evidence: own && line.status === 'missing' ? own.evidence : line.evidence }
+      const status: EvidenceStatus = line.status === 'proven' ? 'passed' : line.status === 'failed' ? 'failed' : line.status === 'blocked' ? 'blocked' : own && (own.status === 'skipped' || own.status === 'blocked' || own.status === 'pending') ? own.status : 'missing'
+      return { id: line.id, list: line.list, description: line.description, status, verdict: line.verdict, evidence: own && line.status === 'missing' ? own.evidence : line.evidence }
     })
   }
 
@@ -1236,7 +1246,7 @@ ${marker}` }); actions.push('secret-file hold commented') } catch (error) { acti
     review = await runCodeReview(ctx.runner, { cli: reviewSettings.cli, repo: config.project.repo, baseBranch: config.project.baseBranch, number: pr.number, provider: reviewProvider, model: chosen.model, mode: reviewSettings.mode, ...(reviewSettings.transport ? { transport: reviewSettings.transport } : {}), profile: reviewSettings.profile, votes: reviewSettings.votes, concurrency: reviewSettings.concurrency, minSeverity: reviewSettings.minSeverity, deadlineMs: Math.min(ctx.reviewDeadlineMs, roleSettings.timeoutMs ?? ctx.reviewDeadlineMs), subprocessTimeoutMs: reviewSettings.subprocessTimeoutMs, analysisMaxTokens: reviewSettings.analysisMaxTokens, analysisGlobalMaxTokens: reviewSettings.analysisGlobalMaxTokens, maxCalls: reviewSettings.maxCalls, post: reviewSettings.post, resultFile, cwd: ctx.loaded.root, env: ctx.env })
     actions.push(`review ${review.status}: ${review.summary}`)
     const attempts = (prior?.attempts ?? 0) + 1
-    state = { ...state, prNumber: pr.number, reviews: { ...state.reviews, [pr.headSha]: { status: review.status, at: ctx.now().toISOString(), provider: review.provider, model: review.model, blocking: review.blocking.length, attempts, ...incompleteReason(review) } } }
+    state = { ...state, prNumber: pr.number, reviews: { ...state.reviews, [pr.headSha]: { status: review.status, at: ctx.now().toISOString(), provider: review.provider, model: review.model, blocking: review.blocking.length, attempts, verdict: reviewLevel(review.status), ...incompleteReason(review) } } }
     saveState(ctx, state)
     // windowed/cost visibility: agentskit-review already tracks provider calls and tokens per invocation
     // (`review.usage`); recording it here is what lets issueBudget/issueSpend see review spend at all.
@@ -1315,26 +1325,70 @@ ${marker}` }); actions.push('secret-file hold commented') } catch (error) { acti
 
   // Both DoD lists, proven, before anything merges: the project's (`dod.items`) and the issue's (the frozen
   // contract's outcomes). The evidence goes on the PR either way, so a human reading it sees proof, not a promise.
+  // ADR-0046: what the merge policy is handed. Filled by the gates below; the policy alone decides what it means.
+  let dodVerdicts: readonly { readonly id: string; readonly verdict: Verdict | null }[] = []
+  let verifiedPatch: string | null = null
+  const policyInput = (boundary: string | null, patchNow: string | null): MergePolicyInput => {
+    return {
+      verdicts: dodVerdicts,
+      minVerdict: config.delivery.merge.minVerdict,
+      patch: { verified: verifiedPatch, current: patchNow },
+      checks: { gating: flow.merge.requireChecks, status: checks.status },
+      review: { required: reviewPhase, status: review?.status ?? prior?.status ?? null, blocking: review ? review.blocking.length : prior?.blocking ?? 0 },
+      heldPaths: { protectedFiles, protectedApproved: approvedHere, secretFiles: secretShapedFiles, boundary },
+      autonomy: config.delivery.merge.autonomy,
+      autoMerge: flow.merge.auto,
+      humanApproval: { required: flow.merge.requireHumanApproval, given: pr.reviewDecision === 'APPROVED' },
+      vouchedBy,
+      escalation: { onBlockedVerdict: config.delivery.merge.escalateOnBlocked },
+    }
+  }
   if (workerPhaseEnabled(config, flow.flow, 'dod', true) && (config.dod.items.length || readStoredContract(ctx.loaded.stateDir, record.issue))) {
     const stored = readStoredContract(ctx.loaded.stateDir, record.issue)
+    // Verdicts are bound to the patch, not the head: a rebase or a push that leaves the diff's `git patch-id --stable`
+    // alone keeps what was proven (and spares a fleet task its local re-run); a different patch is proven again.
+    const currentPatch = ctx.dryRun ? null : await patchIdOfPullRequest(ctx.runner, { repo: config.project.repo, number: pr.number, cwd: ctx.loaded.root })
+    const fingerprint: RunFingerprint = { contract: stored?.digest ?? null, guardPolicy: hashJson({ selfEditPaths: config.delivery.selfEditPaths, secretFilePatterns: config.delivery.secretFilePatterns }), model: `${record.provider}/${record.model}`, baseSha: record.collected?.base ?? null }
+    const previous = readVerdictRecord(ctx.loaded.stateDir, record.issue)
+    const held = verdictsHold(previous, { patchId: currentPatch, fingerprint })
+    const carried = held ? previous.items.filter((item) => isProven(item.verdict)) : []
+    const carriedProofs = (list: 'project' | 'issue') => carried.filter((item) => item.list === list).map((item) => ({ id: item.id, status: 'passed' as const, verdict: item.verdict, evidence: item.evidence }))
+    if (carried.length) actions.push(`verdicts held: patch-id ${currentPatch?.slice(0, 12)} unchanged since ${previous?.head.slice(0, 7)}`)
     // `verify.json` counts as evidence for an outcome the DoD file left unproven — the worker ran the check once;
     // asking it to transcribe the same result into a second file only invents a way to be inconsistent. The
     // explicit DoD proof still wins where both exist: it is the more specific statement.
     // A fleet task has no worktree: the proofs are made here, on a local checkout of the collected commit (ADR-0045).
-    const fleetProof = record.runner === 'fleet' && !ctx.dryRun
+    // Whole-task carry-over: every item already proven on this exact patch, so nothing needs running again.
+    const expectedIds = [...config.dod.items.map((item) => item.id), ...(stored?.contract.outcomes ?? []).map((outcome) => outcome.id)]
+    const fleetCarried = record.runner === 'fleet' && carried.length > 0 && expectedIds.every((id) => carried.some((item) => item.id === id))
+    const fleetProof = record.runner === 'fleet' && !ctx.dryRun && !fleetCarried
       ? await proveFleetDod({ runner: ctx.runner, config, root: ctx.loaded.root, stateDir: ctx.loaded.stateDir, head: pr.headSha, ...(record.collected?.base ? { base: record.collected.base } : {}), contract: stored?.contract ?? null })
       : null
     if (fleetProof) actions.push(...fleetProof.notes)
-    const evidence = fleetProof ? fleetProof.evidence : readDodEvidence(record.worktreePath, config)
-    const fromVerify = fleetProof ? [] : verifyProofs(readVerifyArtifact(record.worktreePath)).filter((proof) => !evidence.outcomes.some((recorded) => recorded.id === proof.id))
-    const dod = assessDod({ config, contract: stored?.contract ?? null, evidence: { ...evidence, outcomes: [...evidence.outcomes, ...fromVerify] }, prFiles: fleetProof ? fleetProof.changedFiles : pr.files, ...(fleetProof ? { fileContents: fleetProof.fileContents } : {}) })
+    const fresh = fleetProof ? fleetProof.evidence : fleetCarried ? { project: [], outcomes: [] } : readDodEvidence(record.worktreePath, config)
+    // What was proven on this very patch stands in for what the fresh read does not state; a fresh statement always wins.
+    const evidence = { project: [...fresh.project, ...carriedProofs('project').filter((proof) => !fresh.project.some((own) => own.id === proof.id))], outcomes: [...fresh.outcomes, ...carriedProofs('issue').filter((proof) => !fresh.outcomes.some((own) => own.id === proof.id))] }
+    const fromVerify = fleetProof || fleetCarried ? [] : verifyProofs(readVerifyArtifact(record.worktreePath)).filter((proof) => !evidence.outcomes.some((recorded) => recorded.id === proof.id))
+    const dod = assessDod({ config, contract: stored?.contract ?? null, evidence: { ...evidence, outcomes: [...evidence.outcomes, ...fromVerify] }, prFiles: fleetProof ? fleetProof.changedFiles : pr.files, ...(fleetProof ? { fileContents: fleetProof.fileContents } : {}), minVerdict: config.delivery.merge.minVerdict })
     if (fromVerify.length) actions.push(`verify.json supplied ${fromVerify.length} outcome proof(s)`)
+    dodVerdicts = dod.lines.map((line) => ({ id: line.id, verdict: line.verdict }))
+    verifiedPatch = currentPatch
+    if (dod.lines.length && !ctx.dryRun) {
+      // The proof, bound to this patch: the next head with the same patch-id reuses it, a different one proves again.
+      const items = dod.lines.flatMap((line) => line.verdict ? [{ id: line.id, list: line.list, description: line.description, verdict: line.verdict, evidence: line.evidence }] : [])
+      writeVerdictRecord(ctx.loaded.stateDir, record.issue, { schemaVersion: 1, head: pr.headSha, patchId: currentPatch, fingerprint, at: ctx.now().toISOString(), items } satisfies VerdictRecord)
+    }
     if (dod.lines.length) {
-      event(ctx, { type: 'dod.assessed', issue: record.issue, pr: pr.number, head: pr.headSha, complete: dod.complete, proven: dod.lines.filter((line) => line.status === 'proven').length, missing: dod.missing.length, failed: dod.failed.length })
-      if (!ctx.dryRun) { try { const marker = `<!-- loop:dod:${pr.headSha}:${dod.complete ? 'complete' : `${dod.missing.length}-${dod.failed.length}`} -->`; if (!(await githubCommentExists(ctx.runner, { repo: config.project.repo, number: pr.number, marker }))) await githubComment(ctx.runner, { repo: config.project.repo, number: pr.number, body: `${renderDodMarkdown(dod)}\n\n${marker}` }) } catch (error) { actions.push(`DoD comment failed: ${message(error)}`) } }
+      event(ctx, { type: 'dod.assessed', issue: record.issue, pr: pr.number, head: pr.headSha, patchId: currentPatch, complete: dod.complete, level: weakestVerdict(dodVerdicts), proven: dod.lines.filter((line) => line.status === 'proven').length, missing: dod.missing.length, failed: dod.failed.length, blocked: dod.blocked.length, below: dod.below.length })
+      if (!ctx.dryRun) { try { const marker = `<!-- loop:dod:${pr.headSha}:${dod.complete ? 'complete' : `${dod.missing.length}-${dod.failed.length}-${dod.blocked.length}-${dod.below.length}`} -->`; if (!(await githubCommentExists(ctx.runner, { repo: config.project.repo, number: pr.number, marker }))) await githubComment(ctx.runner, { repo: config.project.repo, number: pr.number, body: `${renderDodMarkdown(dod)}\n\n${marker}` }) } catch (error) { actions.push(`DoD comment failed: ${message(error)}`) } }
       if (!dod.complete) {
-        const why = `definition of done not proven — missing: ${dod.missing.join(', ') || 'none'}; failing: ${dod.failed.join(', ') || 'none'}`
-        return fixRound(ctx, record, lease, state, pr, 'review', `Loop: the definition of done is not proven for PR #${pr.number}. ${dod.missing.length ? `No proof recorded for: ${dod.missing.join(', ')}.` : ''} ${dod.failed.length ? `Failing: ${dod.failed.join(', ')}.` : ''} Run each item, record the result in \`${config.dod.evidenceFile}\` at the root of this worktree (\`{"project": [{"id":"…","status":"passed","evidence":"…"}], "outcomes": [...]}\`), commit and push. The loop writes the table onto the PR.`, why, actions)
+        // An item the worker could not verify at all is a person's call: the policy says whether that escalates.
+        if (dod.blocked.length) {
+          const decision = decideMerge(policyInput(null, null))
+          if (decision.action === 'escalate') return escalateForPerson(ctx, record, lease, state, pr, `definition of done: ${decision.reason}`, actions)
+        }
+        const why = `definition of done not proven — missing: ${dod.missing.join(', ') || 'none'}; failing: ${dod.failed.join(', ') || 'none'}${dod.blocked.length ? `; blocked: ${dod.blocked.join(', ')}` : ''}${dod.below.length ? `; below ${config.delivery.merge.minVerdict}: ${dod.below.join(', ')}` : ''}`
+        return fixRound(ctx, record, lease, state, pr, 'review', `Loop: the definition of done is not proven for PR #${pr.number}. ${dod.missing.length ? `No proof recorded for: ${dod.missing.join(', ')}.` : ''} ${dod.failed.length ? `Failing: ${dod.failed.join(', ')}.` : ''} ${dod.blocked.length ? `Blocked (could not be verified): ${dod.blocked.join(', ')}.` : ''} ${dod.below.length ? `Proven, but below the required verdict \`${config.delivery.merge.minVerdict}\`: ${dod.below.join(', ')} — verify them further (run the tests / the real system).` : ''} Run each item, record the result in \`${config.dod.evidenceFile}\` at the root of this worktree (\`{"project": [{"id":"…","verdict":"unit-verified","evidence":"…"}], "outcomes": [...]}\`; verdict is one of failed, blocked, type-check-only, unit-verified, live-verified), commit and push. The loop writes the table onto the PR.`, why, actions)
       }
       actions.push(`definition of done proven (${dod.lines.length} item(s))`)
       vouchedBy.push('the definition of done')
@@ -1343,19 +1397,16 @@ ${marker}` }); actions.push('secret-file hold commented') } catch (error) { acti
   // A layer is a boundary, not a suggestion: crossing it is always reported, and held only where the project said
   // the boundary is real (`layers[].enforce`). Reporting first is what lets a team draw the line before it bites.
   const boundary = assessBoundary(config, record.labels ?? [], pr.files)
-  if (boundary.detail) {
-    actions.push(`layer boundary: ${boundary.detail}`)
-    if (boundary.enforced) return { issue: record.issue, outcome: 'held', reason: `outside its layer boundary — ${boundary.detail}`, pr: pr.number, head: pr.headSha, ...(review ? { review } : {}), actions }
-  }
+  if (boundary.detail) actions.push(`layer boundary: ${boundary.detail}`)
   if (review) vouchedBy.push('the review')
-  // The floor under auto-merge. Each of CI gating, the review, the project verify and the definition of done is a
-  // deliberate per-flow switch — an incident flow turning the review off to get a fix in is the feature. All of
-  // them off at once is not a faster flow, it is an unattended push: nothing read this diff, and no human was
-  // asked to. A flow that wants exactly that says so with `merge.auto: false` and merges by hand.
-  if (!vouchedBy.length) return { issue: record.issue, outcome: 'held', reason: 'nothing examined this change — CI gating, review, verify and the definition of done are all off for this flow; auto-merge needs at least one', pr: pr.number, head: pr.headSha, ...(review ? { review } : {}), actions }
-  actions.push(`vouched for by: ${vouchedBy.join(', ')}`)
-  if (!flow.merge.auto) return { issue: record.issue, outcome: 'held', reason: 'review clean; auto-merge disabled', pr: pr.number, head: pr.headSha, ...(review ? { review } : {}), actions }
-  if (flow.merge.requireHumanApproval && pr.reviewDecision !== 'APPROVED') return { issue: record.issue, outcome: 'held', reason: `review clean and checks green, but delivery.merge.requireHumanApproval is set and no human has approved PR #${pr.number} on GitHub yet`, pr: pr.number, head: pr.headSha, ...(review ? { review } : {}), actions }
+  if (vouchedBy.length) actions.push(`vouched for by: ${vouchedBy.join(', ')}`)
+  // ADR-0046: the whole merge decision — verdicts, CI, review, held paths, the floor (something must have examined
+  // this diff), autonomy, auto-merge and the human gate — is `decideMerge`'s alone. Nothing below merges without it.
+  // The patch-id is read again here: a push that landed while the review ran makes the verdicts stale.
+  const patchNow = verifiedPatch ? await patchIdOfPullRequest(ctx.runner, { repo: config.project.repo, number: pr.number, cwd: ctx.loaded.root }) : null
+  const decision = decideMerge(policyInput(boundary.enforced ? boundary.detail ?? null : null, patchNow))
+  if (decision.action === 'escalate') return escalateForPerson(ctx, record, lease, state, pr, decision.reason, actions)
+  if (decision.action === 'hold') return { issue: record.issue, outcome: 'held', reason: decision.reason, pr: pr.number, head: pr.headSha, ...(review ? { review } : {}), actions }
 
   const smoke = config.delivery.smoke
   if (smoke.enabled && smoke.kind === 'verify-argv') {
@@ -1377,9 +1428,54 @@ ${marker}` }); actions.push('secret-file hold commented') } catch (error) { acti
   if (beforeMerge.block) return { issue: record.issue, outcome: 'held', reason: `merge blocked by plugin: ${beforeMerge.reason}`, pr: pr.number, head: pr.headSha, actions }
   const merged = await githubMerge(ctx.runner, { repo: config.project.repo, number: pr.number, headSha: pr.headSha, method: config.delivery.merge.method, title: `${pr.title} (#${pr.number})` })
   if (!merged.merged) { actions.push(`merge refused: ${merged.message}`); event(ctx, { type: 'pr.merge-refused', issue: record.issue, pr: pr.number, head: pr.headSha, message: merged.message }); return { issue: record.issue, outcome: 'waiting', reason: `merge refused: ${merged.message}`, pr: pr.number, head: pr.headSha, actions } }
-  actions.push(`merged as ${merged.sha ?? 'unknown sha'}`)
+  // ADR-0046: the host's "merged" answer is not the record. Read the PR back and confirm it merged at the head we reviewed.
+  const readBack = await confirmMerged(ctx, pr)
+  if (!readBack.confirmed) {
+    const unconfirmed = (state.mergeUnconfirmed ?? 0) + 1
+    actions.push(`merge accepted but not confirmed: PR reads back as ${readBack.observed} (${unconfirmed}/${MERGE_UNCONFIRMED_LIMIT})`)
+    event(ctx, { type: 'pr.merge-unconfirmed', issue: record.issue, pr: pr.number, head: pr.headSha, sha: merged.sha, observed: readBack.observed, count: unconfirmed })
+    // Merged at another head cannot be retried into shape; otherwise retry on the next passes, then hand it to a person.
+    if (readBack.observed.startsWith('MERGED') || unconfirmed >= MERGE_UNCONFIRMED_LIMIT) return escalateForPerson(ctx, record, lease, { ...state, mergeUnconfirmed: unconfirmed }, pr, `GitHub accepted the merge of PR #${pr.number} at ${pr.headSha.slice(0, 12)}, but reading the PR back shows ${readBack.observed}`, actions)
+    saveState(ctx, { ...state, prNumber: pr.number, mergeUnconfirmed: unconfirmed })
+    return { issue: record.issue, outcome: 'waiting', reason: `merge not confirmed on read-back (${readBack.observed}); will check again`, pr: pr.number, head: pr.headSha, actions }
+  }
+  actions.push(`merged as ${merged.sha ?? 'unknown sha'} (confirmed on read-back)`)
   await ctx.bus.runHook('afterMerge', { issue: record.issue, pr: pr.number, head: pr.headSha, sha: merged.sha })
-  return complete(ctx, record, lease, state, pr, merged.sha, actions)
+  return complete(ctx, record, lease, { ...state, mergeUnconfirmed: 0 }, pr, merged.sha, actions)
+}
+
+// ponytail: fixed, not configurable; this many read-backs per pass, and this many passes in a row, before a person is asked.
+const MERGE_READBACK_ATTEMPTS = 3
+const MERGE_UNCONFIRMED_LIMIT = 3
+
+/** ADR-0046: whether the PR now reads as merged at the head that was reviewed. Retries briefly (GitHub can lag); never throws. */
+const confirmMerged = async (ctx: Context, pr: PullRequestSnapshot): Promise<{ readonly confirmed: true } | { readonly confirmed: false; readonly observed: string }> => {
+  let observed = 'unreadable'
+  for (let attempt = 0; attempt < MERGE_READBACK_ATTEMPTS; attempt += 1) {
+    if (attempt && ctx.readBackDelayMs) await new Promise((resolve) => { setTimeout(resolve, ctx.readBackDelayMs) })
+    try {
+      const now = await githubPullRequest(ctx.runner, { repo: ctx.config.project.repo, number: pr.number })
+      if (now.state === 'MERGED' && now.headSha === pr.headSha) return { confirmed: true }
+      observed = now.state === 'MERGED' ? `MERGED at head ${now.headSha.slice(0, 12) || 'unknown'}, not ${pr.headSha.slice(0, 12)}` : now.state
+      if (now.state === 'MERGED') break
+    } catch (error) { observed = `unreadable (${message(error)})` }
+  }
+  return { confirmed: false, observed }
+}
+
+/**
+ * ADR-0046: the merge policy said a person has to decide (or the merge could not be confirmed). Same shape as a
+ * block at the fix-round cap — tracker comment and blocked state, PR comment, slot released, worktree and PR kept —
+ * with the reason the policy gave instead of "rounds exhausted".
+ */
+const escalateForPerson = async (ctx: Context, record: DispatchRecordFile, lease: DispatchLease | undefined, state: DeliveryState, pr: PullRequestSnapshot, reason: string, actions: string[]): Promise<DeliverResult> => {
+  await escalateTracker(ctx, record, 'blocked', `**Loop: escalated** — ${reason}. PR: ${pr.url}. The worktree and PR stay open for a human; the slot was released.`, actions)
+  if (!ctx.dryRun) {
+    event(ctx, { type: 'merge.escalated', issue: record.issue, pr: pr.number, head: pr.headSha, reason })
+    try { await githubComment(ctx.runner, { repo: ctx.config.project.repo, number: pr.number, body: `**Loop: escalated** — ${reason}. A human needs to decide.\n\n<!-- loop:escalated:${pr.headSha} -->` }) } catch (error) { actions.push(`PR comment failed: ${message(error)}`) }
+  }
+  finish(ctx, record, lease, { ...state, prNumber: pr.number }, 'blocked', reason)
+  return { issue: record.issue, outcome: ctx.dryRun ? 'dry-run' : 'blocked', reason, pr: pr.number, head: pr.headSha, actions }
 }
 
 const commentOnIntakePr = async (ctx: Context, pr: PullRequestSnapshot, body: string, actions: string[]): Promise<boolean> => {
@@ -1458,7 +1554,7 @@ const handleIntakePullRequest = async (ctx: Context, identifier: string, pr: Pul
     const review = await runCodeReview(ctx.runner, { cli: config.delivery.review.cli, repo: config.project.repo, baseBranch: config.project.baseBranch, number: pr.number, provider: settings.reviewProvider ?? `${ctx.reviewer.provider}-cli`, model: ctx.reviewer.model, mode: config.delivery.review.mode, ...(config.delivery.review.transport ? { transport: config.delivery.review.transport } : {}), profile: config.delivery.review.profile, votes: config.delivery.review.votes, concurrency: config.delivery.review.concurrency, minSeverity: config.delivery.review.minSeverity, deadlineMs: ctx.reviewDeadlineMs, subprocessTimeoutMs: config.delivery.review.subprocessTimeoutMs, analysisMaxTokens: config.delivery.review.analysisMaxTokens, analysisGlobalMaxTokens: config.delivery.review.analysisGlobalMaxTokens, maxCalls: config.delivery.review.maxCalls, post: config.delivery.review.post, resultFile, cwd: ctx.loaded.root, env: ctx.env })
     actions.push(`review ${review.status}: ${review.summary}`)
     const attempts = (prior?.attempts ?? 0) + 1
-    const next: DeliveryState = { ...state, prNumber: pr.number, reviews: { ...state.reviews, [pr.headSha]: { status: review.status, at: ctx.now().toISOString(), provider: review.provider, model: review.model, blocking: review.blocking.length, attempts, ...incompleteReason(review) } } }
+    const next: DeliveryState = { ...state, prNumber: pr.number, reviews: { ...state.reviews, [pr.headSha]: { status: review.status, at: ctx.now().toISOString(), provider: review.provider, model: review.model, blocking: review.blocking.length, attempts, verdict: reviewLevel(review.status), ...incompleteReason(review) } } }
     saveState(ctx, next)
     event(ctx, { type: 'pr.reviewed', issue: identifier, pr: pr.number, head: pr.headSha, status: review.status, blocking: review.blocking.length, provider: review.provider, model: review.model, profile: config.delivery.review.profile, votes: config.delivery.review.votes, minSeverity: config.delivery.review.minSeverity, source: 'github-intake', calls: review.usage.providerCalls, inputTokens: review.usage.inputTokens, outputTokens: review.usage.outputTokens, totalTokens: review.usage.totalTokens, ...incompleteReason(review) })
     await ctx.bus.runHook('afterReview', { issue: identifier, pr: pr.number, head: pr.headSha, status: review.status, blocking: review.blocking.length, source: 'github-intake' })
@@ -1541,7 +1637,7 @@ export const runDeliver = async (input: DeliverInput): Promise<DeliverReport> =>
   const tracker = guardTracker(connectors.tracker, { stateDir: loaded.stateDir, now, dryRun, onRateLimited: (entry) => appendLoopEvent(loaded.stateDir, { at: now().toISOString(), type: 'tracker.cooldown', until: entry.until, attempts: entry.attempts, reason: entry.reason }, bus) })
   const trackerCooling = activeTrackerCooldown(loaded.stateDir, now())
   if (trackerCooling) notes.push(`${connectors.tracker.id} rate-limited until ${trackerCooling.until}: tracker writes skipped this pass; PR/merge work continues`)
-  const ctx: Context = { loaded, config, runner: input.runner, now, dryRun, reviewer, reviewerCandidates, builder, providers, env, tracker, scm, ...(input.assumeIdle === undefined ? {} : { assumeIdle: input.assumeIdle }), notes, reviewDeadlineMs, bus, builderExtras, finished: new Map() }
+  const ctx: Context = { loaded, config, runner: input.runner, now, dryRun, reviewer, reviewerCandidates, builder, providers, env, tracker, scm, ...(input.assumeIdle === undefined ? {} : { assumeIdle: input.assumeIdle }), notes, reviewDeadlineMs, readBackDelayMs: input.readBackDelayMs ?? 2_000, bus, builderExtras, finished: new Map() }
   const ledger = createDispatchLedger(loaded.stateDir)
   const leases = new Map(ledger.active().map((lease) => [lease.issue, lease]))
   const results: DeliverResult[] = []
@@ -1631,7 +1727,12 @@ export const runDeliver = async (input: DeliverInput): Promise<DeliverReport> =>
       }
       const closed = await githubPullRequestsForBranch(input.runner, { repo: config.project.repo, head: record.branch, state: 'all' })
       const merged = closed.find((item) => item.state === 'MERGED')
-      if (merged) { const actions: string[] = ['PR merged outside the loop']; results.push(await complete(ctx, record, lease, state, merged, null, actions, 'outside')); continue }
+      if (merged) {
+        // A merge the loop made but could not confirm at the time is still the loop's, once GitHub catches up.
+        const ours = (state.mergeUnconfirmed ?? 0) > 0
+        const actions: string[] = [ours ? 'PR merge confirmed on a later pass' : 'PR merged outside the loop']
+        results.push(await complete(ctx, record, lease, state, merged, null, actions, ours ? 'loop' : 'outside')); continue
+      }
       const abandoned = closed.find((item) => item.state === 'CLOSED')
       if (abandoned) {
         // A closed PR is a human decision, not a technical block. Keep the issue in review and retain the

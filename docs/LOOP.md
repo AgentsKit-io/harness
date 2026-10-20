@@ -175,6 +175,10 @@ For every issue the loop dispatched (`<stateDir>/issues/<id>/dispatch.json`) and
 | Fix rounds exhausted (`maxFixRounds`) | **blocked**: Linear comment + label + `returnState`, PR comment, lease released, worktree and PR kept |
 | Review clean, `merge.auto` | `gh api PUT …/merge` with `sha=<reviewed head>` (GitHub refuses if the head moved) → Linear attach + comment + `doneState`, worktree removed when `cleanupWorktree` |
 | Review clean, `merge.requireHumanApproval` set, no GitHub approval yet | **held**: reuses `pr.reviewDecision` already fetched with the PR snapshot — no extra GitHub call; merges automatically as soon as `reviewDecision` becomes `APPROVED` on a later run |
+| DoD item proven but below `delivery.merge.minVerdict` (default `unit-verified`) | verify-further instruction to the worker; counts as a fix round (ADR-0046) |
+| DoD item `blocked` (the worker could not verify it at all), `merge.escalateOnBlocked` | **escalated**: tracker + PR comment, blocked state, slot released, worktree and PR kept — a person decides |
+| `merge.autonomy: supervised` | **held** after review and proofs: a person merges |
+| Merge accepted, but `gh pr view` does not read it back as `MERGED` at the reviewed head | not completed: `pr.merge-unconfirmed`, `waiting` and re-checked; merged at another head, or three passes in a row, **escalates** |
 | PR merged outside the loop | same completion path |
 | PR closed without merge | **abandoned**: lease released, issue → `returnState`, worktree kept |
 
@@ -556,6 +560,31 @@ The worker's brief carries both lists and the exact file to write the proofs int
 onto the PR** before it merges. An item with no proof recorded is `missing` and sends the worker a fix round
 asking for the proof; an item proven and failing is `failed` and sends it back to fix the thing. Those are
 different instructions, and the loop keeps them apart. A reviewer reads evidence, not a promise.
+
+### Verdict levels, patch binding and the merge policy (ADR-0046)
+
+A proof states how far it was verified, not just pass/fail — `"verdict"` is one of `failed`, `blocked`,
+`type-check-only`, `unit-verified`, `live-verified` (weakest first); the legacy `"status": "passed"` still works and
+reads as `unit-verified`. The PR's DoD table and the merged comment show the level per item.
+
+```json
+{ "outcomes": [{ "id": "o1", "verdict": "live-verified", "evidence": "curl /health → 200 against the staging stack" }] }
+```
+
+```yaml
+delivery:
+  merge:
+    minVerdict: unit-verified   # weakest level a proven item may carry for the loop to merge
+    autonomy: autonomous        # supervised: the loop proves and reports, a person merges
+    escalateOnBlocked: true     # a `blocked` item goes to a person instead of another fix round
+```
+
+Verdicts are stored with the `git patch-id --stable` of the PR diff and the run fingerprint (contract digest, guard
+policy digest, model, base SHA) in `<stateDir>/issues/<id>/verdicts.json`. After a rebase or push with the same
+patch-id, contract and guard policy the verdicts hold; anything else is proven again.
+
+`src/loop/merge-policy.ts` (`decideMerge`) is the only thing that decides merge / hold / escalate, and `deliver`
+reads the PR back after merging and does not complete the issue unless it is `MERGED` at the reviewed head.
 
 ## Runs: how an issue was built (ADR-0041)
 

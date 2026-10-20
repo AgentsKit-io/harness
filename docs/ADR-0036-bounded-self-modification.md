@@ -2,7 +2,9 @@
 
 ## Status
 
-Accepted
+Accepted. Held paths are an input of the pure merge policy ([ADR-0046](ADR-0046-verdict-levels-and-the-merge-policy.md)):
+a head approved by a person releases protected paths, secret-shaped files always hold, and the guard policy digest is
+part of the run fingerprint stored with every verdict.
 
 ## Context
 

@@ -106,6 +106,10 @@ export const LOOP_EVENT_TYPES = {
   'tracker.sync-failed': ['issue', 'operation', 'error'],
   /** GitHub refused the merge — branch protection, a required check, a race with another merge. */
   'pr.merge-refused': ['issue', 'pr', 'head', 'message'],
+  /** GitHub accepted the merge but the PR did not read back as merged at the reviewed head (ADR-0046); `count` is passes in a row. */
+  'pr.merge-unconfirmed': ['issue', 'pr', 'head', 'sha', 'observed', 'count'],
+  /** The merge policy (or a failed read-back) handed the decision to a person instead of merging or holding (ADR-0046). */
+  'merge.escalated': ['issue', 'pr', 'head', 'reason'],
   /** A person attested a PR held for protected paths, for exactly this head. */
   'pr.human-approved': ['issue', 'head', 'by', 'pr'],
   /** The optional post-merge smoke failed. */
@@ -215,7 +219,7 @@ export const LOOP_EVENT_TYPES = {
   'provider.usage-observed': ['issue', 'provider', 'initialRemainingPercent', 'currentRemainingPercent', 'deltaPercent'],
 
   /** The definition of done was judged for a PR: how many of its lines were proven, missing, or failing. */
-  'dod.assessed': ['issue', 'pr', 'head', 'complete', 'proven', 'missing', 'failed'],
+  'dod.assessed': ['issue', 'pr', 'head', 'patchId', 'complete', 'level', 'proven', 'missing', 'failed', 'blocked', 'below'],
   /** The project's own `delivery.verify.argv` passed before a review was even requested. */
   'verify.passed': ['issue', 'pr', 'head'],
 

@@ -2,6 +2,7 @@ import { splitLines, toPosix } from '@agentskit/cross-platform'
 import { scanForPii } from '../kernel/pii.js'
 import { REVIEW_SEVERITIES, type ReviewSeverity } from '../adapters/code-review.js'
 import type { CommentBlock, CommentDocument } from './comment-format.js'
+import type { Verdict } from './verdict.js'
 
 /**
  * The delivery evidence posted on the tracker issue when the loop finishes it: what was verified, by what, at which
@@ -20,6 +21,8 @@ export interface EvidenceProof {
   /** The human-readable criterion (the frozen contract's outcome description, or the project DoD item). */
   readonly description?: string
   readonly list?: string
+  /** ADR-0046: how far the item was verified; shown next to the status. */
+  readonly verdict?: Verdict | null
 }
 
 export interface DeliveryEvidence {
@@ -93,6 +96,8 @@ const oneLine = (value: string, max = CELL_CHARS): string => { const text = clea
 const tail = (value: string): string => { const text = clean(value).trim(); return text.length > TAIL_CHARS ? `…${text.slice(-TAIL_CHARS)}` : text }
 const short = (sha: string | null | undefined): string => sha ? sha.slice(0, 12) : 'unknown'
 const label = (status: EvidenceStatus): string => status.toUpperCase()
+/** The status cell: the status, and the verdict level when the item has one. */
+const statusCell = (text: string, proof: EvidenceProof): string => proof.verdict ? `${text} (${proof.verdict})` : text
 const capped = <T>(rows: readonly T[]): { readonly rows: readonly T[]; readonly more: number } => ({ rows: rows.slice(0, MAX_ROWS), more: Math.max(0, rows.length - MAX_ROWS) })
 const moreRow = (more: number, width: number): readonly (readonly string[])[] => more ? [[`… ${more} more`, ...Array.from({ length: width - 1 }, () => '')]] : []
 
@@ -120,7 +125,7 @@ const proofTable = (proofs: readonly EvidenceProof[], drop: CommentBlock['drop']
   const header = withList ? ['status', 'list', 'id', 'evidence'] : ['status', 'id', 'evidence']
   return {
     kind: 'table', header, ...(drop ? { drop } : {}),
-    rows: [...rows.map((proof) => [label(proof.status), ...(withList ? [oneLine(proof.list ?? '', 80)] : []), oneLine(proof.id, 80), oneLine(proof.evidence || (proof.status === 'missing' ? 'no proof recorded' : '—'))]), ...moreRow(more, header.length)],
+    rows: [...rows.map((proof) => [statusCell(label(proof.status), proof), ...(withList ? [oneLine(proof.list ?? '', 80)] : []), oneLine(proof.id, 80), oneLine(proof.evidence || (proof.status === 'missing' ? 'no proof recorded' : '—'))]), ...moreRow(more, header.length)],
   }
 }
 
@@ -192,7 +197,7 @@ const criteriaTable = (evidence: DeliveryEvidence, criteria: readonly EvidencePr
     if (item.status === 'missing' || item.status === 'pending') return `no evidence recorded${text ? ` (${text})` : ''}`
     return `${text || '—'}${ownVerify ? ran : ''}`
   }
-  return { kind: 'table', header: ['status', 'id', 'criterion', 'evidence'], ...(drop ? { drop } : {}), rows: [...rows.map((item) => [criterionLabel(item.status), oneLine(item.id, 40), item.description ? oneLine(item.description, 200) : '—', proof(item)]), ...moreRow(more, 4)] }
+  return { kind: 'table', header: ['status', 'id', 'criterion', 'evidence'], ...(drop ? { drop } : {}), rows: [...rows.map((item) => [statusCell(criterionLabel(item.status), item), oneLine(item.id, 40), item.description ? oneLine(item.description, 200) : '—', proof(item)]), ...moreRow(more, 4)] }
 }
 
 export const buildEvidenceDocument = (evidence: DeliveryEvidence, options: EvidenceOptions): CommentDocument => {

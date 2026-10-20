@@ -28,7 +28,8 @@ const criteriaFor = (loaded: LoadedLoopConfig, issue: string, worktreePath: stri
   if (!loaded.config.dod) return (contract?.contract.outcomes ?? []).map((outcome) => ({ id: outcome.id, text: outcome.description, status: 'missing' as const, evidence: null, source: null }))
   const evidence = readDodEvidence(worktreePath, loaded.config)
   const assessment = assessDod({ config: loaded.config, contract: contract?.contract ?? null, evidence })
-  const toCriterion = (line: (typeof assessment.lines)[number], status = line.status, proofless = false): Criterion => ({
+  // The panel knows proven / failed / missing; a `blocked` verdict (could not be verified) reads as not proven: failed.
+  const toCriterion = (line: (typeof assessment.lines)[number], status: Criterion['status'] = line.status === 'blocked' ? 'failed' : line.status, proofless = false): Criterion => ({
     id: line.list === 'project' ? `dod:${line.id}` : line.id, text: line.description, status,
     evidence: proofless ? null : line.evidence || null, source: proofless ? 'harness' : line.source,
   })

@@ -2,7 +2,8 @@
 
 ## Status
 
-Accepted
+Accepted. The floor described here is now rule 7 of the pure merge policy
+([ADR-0046](ADR-0046-verdict-levels-and-the-merge-policy.md), `src/loop/merge-policy.ts`).
 
 ## Context
 

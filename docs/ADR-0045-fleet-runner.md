@@ -2,7 +2,8 @@
 
 ## Status
 
-Accepted
+Accepted. Local re-runs are `unit-verified` verdicts bound to the patch-id, and are skipped when the patch is
+unchanged ([ADR-0046](ADR-0046-verdict-levels-and-the-merge-policy.md)).
 
 ## Context
 

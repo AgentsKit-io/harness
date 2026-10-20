@@ -23,6 +23,8 @@ export interface CommandRunOptions {
    * call, a test fixture) is never affected.
    */
   readonly promptOnStdin?: boolean
+  /** Text written to the child's stdin (e.g. a diff piped to `git patch-id`). Callers that omit it get no stdin. */
+  readonly stdin?: string
 }
 
 /** Shell-free command execution seam. Adapters receive it; composition supplies the real one; tests supply fakes. */

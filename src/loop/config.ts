@@ -8,6 +8,7 @@ import { fail } from '../kernel/errors.js'
 import { hashJson } from '../kernel/hash.js'
 import { MODEL_ROLES, type ModelRole } from '../kernel/model-policy.js'
 import { PRESET_NAMES, presetFor } from './presets.js'
+import { VERDICT_LEVELS } from './verdict.js'
 
 export const LOOP_CONFIG_FILE = 'loop.config.yaml'
 /** Optional, gitignored per-machine overlay merged over the versioned config (e.g. `linear.person`, `machine.minFreeRamGb`). */
@@ -449,6 +450,15 @@ export const LoopConfigSchema = z.object({
        * False by default so existing configs keep auto-merging on a clean review, matching ADR-0027 §6.
        */
       requireHumanApproval: z.boolean().default(false),
+      /**
+       * ADR-0046: the weakest verdict a definition-of-done item may carry for the loop to merge
+       * (`failed < blocked < type-check-only < unit-verified < live-verified`). Items below it go back to the worker.
+       */
+      minVerdict: z.enum(VERDICT_LEVELS).default('unit-verified'),
+      /** `supervised`: the loop reviews and proves but never merges; a person does. `autonomous`: it merges when the policy says so. */
+      autonomy: z.enum(['supervised', 'autonomous']).default('autonomous'),
+      /** A `blocked` verdict (the worker could not verify the item at all) escalates to a person instead of another fix round. */
+      escalateOnBlocked: z.boolean().default(true),
     }).prefault({}),
     /** Optional bounded smoke gate before auto-merge (argv via CommandRunner; default off). */
     smoke: z.object({

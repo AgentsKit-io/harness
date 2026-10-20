@@ -60,7 +60,9 @@ export const createProcessRunner = (defaults: { readonly timeoutMs?: number; rea
     const [command, ...rawArgs] = argv
     const started = Date.now()
     if (!command) return resolve({ code: null, stdout: '', stderr: 'empty argv', timedOut: false, durationMs: 0 })
-    const { args, stdin } = options.promptOnStdin && process.platform === 'win32' ? extractMultilineArgs(rawArgs) : { args: rawArgs, stdin: null }
+    const extracted = options.promptOnStdin && process.platform === 'win32' ? extractMultilineArgs(rawArgs) : { args: rawArgs, stdin: null }
+    const { args } = extracted
+    const stdin = options.stdin ?? extracted.stdin
     const timeoutMs = options.timeoutMs ?? defaults.timeoutMs ?? 30_000
     const maxOutputBytes = defaults.maxOutputBytes ?? 4 * 1_048_576
     let stdout = ''

@@ -215,6 +215,9 @@ delivery:
     requireChecks: true
     requireHumanApproval: false        # true: also require a human GitHub review approval before merging, even
                                         # after a clean loop review + green checks
+    # minVerdict: unit-verified            # weakest verdict a proven DoD item may carry to merge: type-check-only | unit-verified | live-verified (ADR-0046)
+    # autonomy: autonomous                 # supervised: the loop proves and reports, a person merges
+    # escalateOnBlocked: true              # a `blocked` DoD item goes to a person instead of another fix round
   maxFixRounds: 2
   workerIdleTimeoutMin: 45
   # maxDispatchMinutes: 240                # hard ceiling on one dispatch regardless of activity; unset = disabled

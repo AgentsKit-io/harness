@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
-  "contentHash": "acc5369c16e4a0fe0a5498aa0132a7953ffaefdce82d6a6c0db0d44f6b6c2966",
+  "contentHash": "11ecf660e4d4073f7aa52b799030d3080ca12b39603e107b82574b273ea37552",
   "contentHashAlgo": "sha256-semantic-v1",
-  "generatedAt": "2026-10-20T15:18:11.742Z",
+  "generatedAt": "2026-10-20T17:40:17.455Z",
   "project": {
     "name": "AgentsKit Harness",
     "root": "."
@@ -802,24 +802,24 @@
       "type": "document",
       "title": "ADR-0035: The definition of done is two lists, and there is no manual item",
       "path": "docs/ADR-0035-definition-of-done-two-lists.md",
-      "description": "Accepted",
+      "description": "Accepted. Amended by ADR-0046: a proof carries a verdict level (failed … live-verified) instead of pass/fail, and delivery.merge.minVerdict sets the minimum to merge.",
       "tags": [
         "document",
         "human"
       ],
-      "contentHash": "4ce97b849eb57836ef19d3c2da6c63585785c1747e173db64dc6301981f2fc00"
+      "contentHash": "270b19260b581b158cf30e206f3ebaaf443ba48a016fd02f55c552209d554c67"
     },
     {
       "id": "document:docs/ADR-0036-bounded-self-modification.md",
       "type": "document",
       "title": "ADR-0036: Bounded self-modification",
       "path": "docs/ADR-0036-bounded-self-modification.md",
-      "description": "Accepted",
+      "description": "Accepted. Held paths are an input of the pure merge policy (ADR-0046): a head approved by a person releases protected paths, secret-shaped files always hold, and the guard policy digest is part of the run fingerprint stored with every verdict.",
       "tags": [
         "document",
         "human"
       ],
-      "contentHash": "b73f0cd5ecf09023dda7bcfa60577efc2c6b90cc4d31c28f3f93c98048756974"
+      "contentHash": "022887fe26a431ce674c9b45930171a199b78261f2d6f200809e895cf3a61755"
     },
     {
       "id": "document:docs/ADR-0037-cost-policy-ceilings-and-levers.md",
@@ -838,24 +838,24 @@
       "type": "document",
       "title": "ADR-0038: Worker guard — real-time enforcement inside the worker's own session",
       "path": "docs/ADR-0038-worker-guard-real-time-enforcement.md",
-      "description": "Accepted, partial (see Consequences — codex is deliberately not covered yet)",
+      "description": "Accepted, partial (see Consequences — codex is deliberately not covered yet). The guard's policy (selfEditPaths, secretFilePatterns) is digested into the run fingerprint stored with each verdict, so a policy change invalidates carried verdicts (ADR-0046).",
       "tags": [
         "document",
         "human"
       ],
-      "contentHash": "b2f6560dae6423bb9da5a3379bf7603eadbab9057586fff04ee7edff83039bf1"
+      "contentHash": "09bc3b176383f14bf5d71408acc4b1589430430faf5ad3d7b286b13e02a7148c"
     },
     {
       "id": "document:docs/ADR-0039-gate-floor-and-the-unwired-local-runner.md",
       "type": "document",
       "title": "ADR-0039: A floor under auto-merge, and an unwired runner that said it was fine",
       "path": "docs/ADR-0039-gate-floor-and-the-unwired-local-runner.md",
-      "description": "Accepted",
+      "description": "Accepted. The floor described here is now rule 7 of the pure merge policy (ADR-0046, src/loop/merge-policy.ts).",
       "tags": [
         "document",
         "human"
       ],
-      "contentHash": "249a72b4b895b60c4d49baf1ab8db50410fc834272533caf6d07aa26634a0f4b"
+      "contentHash": "0bb5255877cfbcc8f55fcf61f25d779c6c7df839b1805a88b274a28fbc53d702"
     },
     {
       "id": "document:docs/ADR-0040-control-plane-v2.md",
@@ -922,12 +922,24 @@
       "type": "document",
       "title": "ADR-0045: A fleet runner — dispatch through the fleet coordinator's queue",
       "path": "docs/ADR-0045-fleet-runner.md",
+      "description": "Accepted. Local re-runs are unit-verified verdicts bound to the patch-id, and are skipped when the patch is unchanged (ADR-0046).",
+      "tags": [
+        "document",
+        "human"
+      ],
+      "contentHash": "a1df3a29a3b58c08564dea621878824d542c22a5f9daaee4ebec1989d7ec2110"
+    },
+    {
+      "id": "document:docs/ADR-0046-verdict-levels-and-the-merge-policy.md",
+      "type": "document",
+      "title": "ADR-0046: Verdict levels bound to the patch, a pure merge policy, and a read-back after merge",
+      "path": "docs/ADR-0046-verdict-levels-and-the-merge-policy.md",
       "description": "Accepted",
       "tags": [
         "document",
         "human"
       ],
-      "contentHash": "25b272ccc1b2a21c4c734bdbaf171fdbf56cd1961d3782b79f6c8949b3a9dad2"
+      "contentHash": "80b4be389e484db0d61cbbf6c8a0f3b0016909595aede459fb62ba6e9ef99ca9"
     },
     {
       "id": "document:docs/GETTING-STARTED.md",
@@ -951,7 +963,7 @@
         "document",
         "human"
       ],
-      "contentHash": "d6a442cf88084ca2f6dbff63d0a37898b96e4e0e155a18d932c504fa35641abb"
+      "contentHash": "4c2bc2389c2d756384f4d6ed29eb52127739163d115688561c282d61eeaf2691"
     },
     {
       "id": "document:docs/MODULE-BOUNDARIES.md",
@@ -1973,7 +1985,7 @@
         "ts",
         "adapters"
       ],
-      "contentHash": "0d4fd0439fe01d0c5819820d7950f9fb2e0f8e05ca894c1f0afbcf9c082435ec"
+      "contentHash": "3ff0b66ced122500ed055a6e08907b0c0147ad94763adf6bc056710e31627561"
     },
     {
       "id": "module:src/adapters/doc-bridge.ts",
@@ -3767,7 +3779,7 @@
         "ts",
         "loop"
       ],
-      "contentHash": "8ecbabc701bdc1ed9944cb3b777d1739ce653b1d77017807903d88916d587853"
+      "contentHash": "be953ba6d06004079600c353d33031e494da223e3cfefe5c1555682d71b0e713"
     },
     {
       "id": "module:src/loop/artifacts.ts",
@@ -3955,7 +3967,7 @@
         "ts",
         "loop"
       ],
-      "contentHash": "1da0f96e49150ee2dc013f1583dd91f8bc97844eeca924c658cc7531393e01a3"
+      "contentHash": "27b4911df90ac2d7eaf623c8d426b38f4478dac9613ec5fc6863b1e457ce731f"
     },
     {
       "id": "module:src/loop/connectors.ts",
@@ -4083,7 +4095,7 @@
         "ts",
         "loop"
       ],
-      "contentHash": "c788ef33f550b857c86f6d1a149270d80d205b83bbd2c4b6b8664563c0ed192a"
+      "contentHash": "8d872ce29287cdb2045554f7d04bed2968764758b4ca11a842e8322b35e67156"
     },
     {
       "id": "module:src/loop/deliver.ts",
@@ -4117,7 +4129,7 @@
         "ts",
         "loop"
       ],
-      "contentHash": "3ab6c59e9f1dcf8b45c9cf4dc1d157d460b9efedfe440faa406f4ca965926ef1"
+      "contentHash": "669798924f5901b62264901174359e2d2a0782ef9b06086ba9757bfb7f28d7a4"
     },
     {
       "id": "module:src/loop/detached-worker.ts",
@@ -4194,6 +4206,7 @@
         "DodProof",
         "assessDod",
         "dodEvidencePath",
+        "proofVerdict",
         "readDodEvidence",
         "renderDodForBrief",
         "renderDodMarkdown"
@@ -4203,7 +4216,7 @@
         "ts",
         "loop"
       ],
-      "contentHash": "7ffc615194d8b90022adc2cb647f0192c0b6e41367149d8738b85ff3b40c7710"
+      "contentHash": "1a7bfaaa3524de644a3d3c4d04c7d3c989d2ca180e5e88a96b8d72508401f0fb"
     },
     {
       "id": "module:src/loop/event-bus.ts",
@@ -4244,7 +4257,7 @@
         "ts",
         "loop"
       ],
-      "contentHash": "7c55aa75a74053bc7c2a7f15c227892f5576974164b43ae0603b4b3627ac5742"
+      "contentHash": "58e24679839baa912b859a00b8186a1f54c980ef9aee0a01476b5c7fbbec1600"
     },
     {
       "id": "module:src/loop/evidence.ts",
@@ -4271,7 +4284,7 @@
         "ts",
         "loop"
       ],
-      "contentHash": "ff84fe49bef53b8badb1ff49dcba51cc76f9ca5c278e2785bc14cacf4f75f98d"
+      "contentHash": "6646486908c0f9a21d8edddf3ef1ec2ec9c02ea6966ca59d6ac53a56ce8854d6"
     },
     {
       "id": "module:src/loop/fleet-dod.ts",
@@ -4288,7 +4301,7 @@
         "ts",
         "loop"
       ],
-      "contentHash": "49e5aed158ac06d06c44833ea9a0bce09333874fc2d5666f330b25a3171f8c71"
+      "contentHash": "b28c66a319a4a3960600a49da85fdf30d202909077e900de5c727b9da7526e7e"
     },
     {
       "id": "module:src/loop/fleet-runner.ts",
@@ -4904,6 +4917,24 @@
       "contentHash": "bc49b76332c9a1a1a5742af3a351aa528016fe95166100a4274f111cdce3311f"
     },
     {
+      "id": "module:src/loop/merge-policy.ts",
+      "type": "module",
+      "title": "merge-policy.ts",
+      "path": "src/loop/merge-policy.ts",
+      "symbols": [
+        "MergeDecision",
+        "MergePolicyInput",
+        "decideMerge",
+        "weakestVerdict"
+      ],
+      "tags": [
+        "module",
+        "ts",
+        "loop"
+      ],
+      "contentHash": "0556c8ea5faf1014e9c2dd0087ab56fbc1b139e6db73a98024e814e8e2bd4931"
+    },
+    {
       "id": "module:src/loop/model-catalog/index.ts",
       "type": "module",
       "title": "index.ts",
@@ -5153,7 +5184,7 @@
         "ts",
         "loop"
       ],
-      "contentHash": "336df8b8923d8dba22c4067d4e6aff686909b557c179ab5f34a80e0210899480"
+      "contentHash": "fd033f673ba3b53d2b841ac23f84d7c540a34bbb6f702b25affbf8935c63781e"
     },
     {
       "id": "module:src/loop/progress.ts",
@@ -5633,6 +5664,36 @@
       "contentHash": "74d7fd1efc592f58a933c1dd2f8dbd1fdb5d8a5e9bc3e2996d0cbaa240867bdc"
     },
     {
+      "id": "module:src/loop/verdict.ts",
+      "type": "module",
+      "title": "verdict.ts",
+      "path": "src/loop/verdict.ts",
+      "symbols": [
+        "FingerprintSchema",
+        "RunFingerprint",
+        "VERDICT_LEVELS",
+        "Verdict",
+        "VerdictRecord",
+        "VerdictRecordSchema",
+        "isProven",
+        "meetsVerdict",
+        "migrateVerdict",
+        "patchIdOfPullRequest",
+        "readVerdictRecord",
+        "reviewLevel",
+        "verdictRank",
+        "verdictRecordPath",
+        "verdictsHold",
+        "writeVerdictRecord"
+      ],
+      "tags": [
+        "module",
+        "ts",
+        "loop"
+      ],
+      "contentHash": "b4157fcd722440809f4aac9a71680066943d8170336c0ecf4750d14337eb5b8c"
+    },
+    {
       "id": "module:src/loop/watch.ts",
       "type": "module",
       "title": "watch.ts",
@@ -5820,7 +5881,7 @@
         "ts",
         "api"
       ],
-      "contentHash": "8c6732628161f8b42f48b7cd1ad640fef5f8fca8064fc99d8351cc9d58d12940"
+      "contentHash": "db3797af102e9de119a82136ed5771a8d8edd610b361a242fdef76d93ce17468"
     },
     {
       "id": "module:src/ui/api/config-view.ts",
@@ -6101,7 +6162,7 @@
         "ts",
         "api"
       ],
-      "contentHash": "576c5c2dec3abed795a0bc1db93c955f9c9e03f051d8f03c24007ab56726057d"
+      "contentHash": "05de8cb1e6a890a89a620155bc3f1a05ef8d50b1a86186451c92ca0cd5425135"
     },
     {
       "id": "module:src/ui/api/routes-feed.ts",
@@ -8092,7 +8153,7 @@
         "ts",
         "test"
       ],
-      "contentHash": "ea70befe78b2f9244a47d6cb5a75670b7229547ffccb46a71eee24539fd5c06b"
+      "contentHash": "3c60bef6f3291f12d0a4ffc5ce1411615fc8e33e5959699a6bfcd671461f7935"
     },
     {
       "id": "module:test/loop-doctor-gaps.test.ts",
@@ -8419,6 +8480,18 @@
       "contentHash": "bb1d80953f5f6954a200c4f76d734d276c550712d7222ed2ce4ca82ec53ce702"
     },
     {
+      "id": "module:test/loop-merge-policy.test.ts",
+      "type": "module",
+      "title": "loop-merge-policy.test.ts",
+      "path": "test/loop-merge-policy.test.ts",
+      "tags": [
+        "module",
+        "ts",
+        "test"
+      ],
+      "contentHash": "64c4790bc91ad43b5a4bf786d32f76bbc57e79b9bdc4659a130bd275ca650040"
+    },
+    {
       "id": "module:test/loop-model-catalog.test.ts",
       "type": "module",
       "title": "loop-model-catalog.test.ts",
@@ -8729,6 +8802,18 @@
         "test"
       ],
       "contentHash": "8beeb602a1a5ac155cbf210cf81646b275a8061b0462a75adac5890e856efdca"
+    },
+    {
+      "id": "module:test/loop-verdict.test.ts",
+      "type": "module",
+      "title": "loop-verdict.test.ts",
+      "path": "test/loop-verdict.test.ts",
+      "tags": [
+        "module",
+        "ts",
+        "test"
+      ],
+      "contentHash": "e30e5ae5e638341c38fa2e8cce33e37a895cba1f7184db89918a15dae91ed51a"
     },
     {
       "id": "module:test/loop-watch.test.ts",
@@ -9356,8 +9441,8 @@
     }
   },
   "inputs": {
-    "hash": "341daa0399bfd4a8357b7126d913c00b055c32a1f6faba436be72c68b53e768d",
-    "fileCount": 595,
+    "hash": "000addcc0b8a83bb236134e0b80b7c03f255770e323a21111a2d80ab1c9c7a7c",
+    "fileCount": 600,
     "projectionVersion": 2
   },
   "retrieval": {
@@ -9379,9 +9464,9 @@
   "projection": {
     "type": "retrieval-index",
     "schemaVersion": 1,
-    "contentHash": "07e8757efaf1e0d1f58f9bed3d8e71d6c8a71ff9ce5576139bb5aa40565ee9ee",
+    "contentHash": "6cee5c10bc2f89338d2fda1f5f7a69a1fcec3b639cea1be22769d862be96d2b6",
     "contentHashAlgo": "sha256-semantic-v1",
-    "snapshotHash": "bac71d1b7257510c078be4af241afe171039d1cc3aca7ca9bd98082047779030",
+    "snapshotHash": "f9fead95919afef948e642b3de37ef18dd5eecbaeb1cc6630520200b1a0812e7",
     "overlayHash": "f99666ff9119084dd25c2974ae64eb6935ec2aa785ff5ad478fb9d541f7a5e94",
     "configurationHash": "6c17a2415ef3484014ab8350c5c245602bfb85d2baf75666fb83c1c387f3396a",
     "lexiconVersion": 1,
@@ -9401,7 +9486,7 @@
     },
     "lexical": {
       "version": 1,
-      "documentCount": 576,
+      "documentCount": 581,
       "fieldNames": [
         "aliases",
         "body",
@@ -9412,13 +9497,13 @@
         "title"
       ],
       "averageFieldLength": {
-        "aliases": 2.923611111111111,
-        "body": 44.670138888888886,
-        "headings": 3.8125,
-        "path": 6.114583333333333,
-        "summary": 2.5868055555555554,
-        "symbols": 14.043402777777779,
-        "title": 3.9791666666666665
+        "aliases": 2.9225473321858866,
+        "body": 45.2065404475043,
+        "headings": 3.8485370051635113,
+        "path": 6.118760757314974,
+        "summary": 2.757314974182444,
+        "symbols": 14.037865748709121,
+        "title": 3.9982788296041307
       }
     },
     "entries": [
@@ -9943,7 +10028,7 @@
           ],
           "outbound": []
         },
-        "contentHash": "48ee7fb331465962607c2e1113e1b2feb631f8b781ef465961bc5b5920807b83",
+        "contentHash": "bff64c0f06915a40b10328b6ce7be692637b020ae8b4a0c8b71787a4ef1f598e",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -10064,7 +10149,7 @@
           ],
           "outbound": []
         },
-        "contentHash": "101b02cc6c232cac2e3127813248d6d0f2caed2d54a021b884cd2c7b3c36e35d",
+        "contentHash": "f3846837721ef1880c0d1f911c99fa756404f5fa3efccd324dc9b6443cd041b3",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -10154,7 +10239,7 @@
           "aliases": "document unclassified"
         },
         "graph": {
-          "pagerank": 0.055067,
+          "pagerank": 0.043714,
           "inboundLinks": 4,
           "coveredBy": [],
           "mentionedBy": [
@@ -11610,7 +11695,7 @@
           "path": "apps/docs/content/docs/reference/configuration.mdx",
           "symbols": "",
           "summary": "{/* Generated by `pnpm docs:generate`. Do not edit by hand: edit `src/loop/config.ts` and regenerate. */}",
-          "body": "{/ Generated by pnpm docs:generate . Do not edit by hand: edit src/loop/config.ts and regenerate. /} The four layers that produce this configuration — the machine's global file, the project's, the team's and this machine's overlay — are described in . ak-harness loop validate prints the effective result, which is the only one that decides anything. 229 of 416 paths carry no description yet. schemaVersion Type: number · Default: 1 extends Defaults for this kind of project ( web-app , library , monorepo , data-pipeline , mobile ), merged below every other layer. Anything this file states wins over the preset; the preset only fills silence. Type: string project Path Type Default Description --- --- --- --- project.name string required project.repo string required project.baseBranch string \"main\" project.root string \".\" project.stateDir string \".ak-loop\" Where the loop keeps everything that is NOT the project's configuration: dispatch ledger, delivery state, contracts, events, agent memory, plans. Meant to be gitignored — the configuration lives at the repo root as loop.config.yaml , versioned; this directory is runtime state, per machine. project.team string Selects the loop.config.team.&lt;key&gt;.yaml layer. $AK LOOP TEAM overrides it; a declared team whose file is missing fails loudly. project.orchestratorView base · root \"base\" The tree the orchestrator's headless calls (contract, plan interview, architect, votes, decompose) read. base (default): a harness-owned detached worktree of origin/&lt;baseBranch&gt; , fetched before each use. root : project.root as it is — whatever branch and age the operator's checkout has. project.setup object {} project.setup.command string[] Argv (no shell — one element per arg, e.g. [pnpm, install, --frozen-lockfile] ) run once in a freshly created worktree before the worker terminal opens. Unset/empty = skip. project.setup.timeoutSec integer 600 project.setup.required boolean true When true, a failing/timing-out setup removes the worktree and counts as a dispatch failure instead of handing the worker a broken environment. orca Path Type Default Description --- --- --- --- orca.bin string \"orca\" orca.repoSelector string Orca repo selector for new worktrees: id:&lt;repoId&gt; , name:&lt;name&gt; or path:&lt;abs&gt; ; default path:&lt;project.root&gt; . orca.workspaceSelector string Existing worktree the automations run in; default: the enclosing worktree resolved by Orca. orca.host string orca.minVersion string \"1.4.200\" orca.timeoutMs integer 20000 linear Path Type Default Description --- --- --- --- linear.workspaceId string required linear.teamKey string required linear.person string required Linear display name of the person whose queue this machine drains. linear.people record&lt;string&gt; {} Display name → Linear user id, for assignee set and audit; the queue itself filters by display name. linear.rotation object {} Optional ordered handoff between owners after the current dispatchable queue drains. linear.rotation.enabled boolean false linear.rotation.owners string[] [] linear.rotation.advanceWhenEmpty boolean true linear.queueOwnership person · unassigned · both \"person\" Whose queue this machine drains. person (default) keeps the historical behaviour: the issues assigned to linear.person . unassigned drains the issues with NO assignee and turns the assignee into a transient claim — written on dispatch, cleared when the item returns — so several machines can share one priority-ordered queue without colliding. Note when switching to unassigned : clearing the assignees is then REQUIRED, not cosmetic. With person and an emptied backlog the queue comes back empty and the loop looks healthy while doing nothing. both drains the union of the two: issues with no assignee AND issues assigned to linear.person . Unassigned ones are claimed for person on dispatch; nothing is released on return (the issue stays the person's, which this queue still sees). linear.states string[] [\"Todo\",\"Ready\"] linear.",
+          "body": "{/ Generated by pnpm docs:generate . Do not edit by hand: edit src/loop/config.ts and regenerate. /} The four layers that produce this configuration — the machine's global file, the project's, the team's and this machine's overlay — are described in . ak-harness loop validate prints the effective result, which is the only one that decides anything. 229 of 419 paths carry no description yet. schemaVersion Type: number · Default: 1 extends Defaults for this kind of project ( web-app , library , monorepo , data-pipeline , mobile ), merged below every other layer. Anything this file states wins over the preset; the preset only fills silence. Type: string project Path Type Default Description --- --- --- --- project.name string required project.repo string required project.baseBranch string \"main\" project.root string \".\" project.stateDir string \".ak-loop\" Where the loop keeps everything that is NOT the project's configuration: dispatch ledger, delivery state, contracts, events, agent memory, plans. Meant to be gitignored — the configuration lives at the repo root as loop.config.yaml , versioned; this directory is runtime state, per machine. project.team string Selects the loop.config.team.&lt;key&gt;.yaml layer. $AK LOOP TEAM overrides it; a declared team whose file is missing fails loudly. project.orchestratorView base · root \"base\" The tree the orchestrator's headless calls (contract, plan interview, architect, votes, decompose) read. base (default): a harness-owned detached worktree of origin/&lt;baseBranch&gt; , fetched before each use. root : project.root as it is — whatever branch and age the operator's checkout has. project.setup object {} project.setup.command string[] Argv (no shell — one element per arg, e.g. [pnpm, install, --frozen-lockfile] ) run once in a freshly created worktree before the worker terminal opens. Unset/empty = skip. project.setup.timeoutSec integer 600 project.setup.required boolean true When true, a failing/timing-out setup removes the worktree and counts as a dispatch failure instead of handing the worker a broken environment. orca Path Type Default Description --- --- --- --- orca.bin string \"orca\" orca.repoSelector string Orca repo selector for new worktrees: id:&lt;repoId&gt; , name:&lt;name&gt; or path:&lt;abs&gt; ; default path:&lt;project.root&gt; . orca.workspaceSelector string Existing worktree the automations run in; default: the enclosing worktree resolved by Orca. orca.host string orca.minVersion string \"1.4.200\" orca.timeoutMs integer 20000 linear Path Type Default Description --- --- --- --- linear.workspaceId string required linear.teamKey string required linear.person string required Linear display name of the person whose queue this machine drains. linear.people record&lt;string&gt; {} Display name → Linear user id, for assignee set and audit; the queue itself filters by display name. linear.rotation object {} Optional ordered handoff between owners after the current dispatchable queue drains. linear.rotation.enabled boolean false linear.rotation.owners string[] [] linear.rotation.advanceWhenEmpty boolean true linear.queueOwnership person · unassigned · both \"person\" Whose queue this machine drains. person (default) keeps the historical behaviour: the issues assigned to linear.person . unassigned drains the issues with NO assignee and turns the assignee into a transient claim — written on dispatch, cleared when the item returns — so several machines can share one priority-ordered queue without colliding. Note when switching to unassigned : clearing the assignees is then REQUIRED, not cosmetic. With person and an emptied backlog the queue comes back empty and the loop looks healthy while doing nothing. both drains the union of the two: issues with no assignee AND issues assigned to linear.person . Unassigned ones are claimed for person on dispatch; nothing is released on return (the issue stays the person's, which this queue still sees). linear.states string[] [\"Todo\",\"Ready\"] linear.",
           "aliases": "configuration document human"
         },
         "graph": {
@@ -11662,7 +11747,7 @@
             }
           ]
         },
-        "contentHash": "ad904cac2e41bc8a3b04880fcd123d7bc1794f13f0bd008c9f7a2700d26de933",
+        "contentHash": "6d4c004a3c0bd260bd3d421f87079ea27bd6e7069a3a1b7a81435282b5c2780d",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -11682,11 +11767,11 @@
         ],
         "fields": {
           "title": "events",
-          "headings": "contract.* human.* plan.* worker.* terminals.* pr.* tracker.* github-intake.* release.* intake.* maintain.* memory.* provider.* queue.* security.* issue.* stage.* plugin.* config.* agent.* tuning.* cost-guard.* max-duration.* dod.* verify.* ui.* delivery.* orca.* Harness run events",
+          "headings": "contract.* human.* plan.* worker.* terminals.* pr.* tracker.* merge.* github-intake.* release.* intake.* maintain.* memory.* provider.* queue.* security.* issue.* stage.* plugin.* config.* agent.* tuning.* cost-guard.* max-duration.* dod.* verify.* ui.* delivery.* orca.* Harness run events",
           "path": "apps/docs/content/docs/reference/events.mdx",
           "symbols": "",
           "summary": "{/* Generated by `pnpm docs:generate`. Do not edit by hand: edit `src/loop/event-vocabulary.ts` and regenerate. */}",
-          "body": "{/ Generated by pnpm docs:generate . Do not edit by hand: edit src/loop/event-vocabulary.ts and regenerate. /} Every loop event is appended to <stateDir /events.ndjson and emitted on the plugin bus, with at (ISO timestamp) and type on top of the fields below. A plugin subscribes with bus.on('<type ' ' ', listener) ; a notification channel subscribes by listing types in notifications.events . The vocabulary is enforced by the compiler: appendLoopEvent accepts only these names, so an event that is not here cannot be emitted — and a name here that nothing emits fails the test suite. 97 loop events. contract. Event Carries What it means --- --- --- contract.escalated issue , reasons , digest A contract was frozen but is not dispatchable; a human was asked to settle it. contract.failed issue , error Contract generation failed on every candidate provider. contract.generated issue , provider , model , effort , digest A contract was frozen successfully. provider / model / effort are what actually produced it — the join key for comparing how different LLMs (at what reasoning effort) did on the same kind of issue. human. Event Carries What it means --- --- --- human.hitl-requested issue , requestId , batchId , role , stage , question , context , options , recommendedOptionId , digest A structured human decision was requested by an LLM stage. human.hitl-answered issue , requestId , batchId , role , stage , optionId , freeText , digest , actor A human answered one structured HITL request. human.hitl-batch-ready issue , batchId , requestId All requests in a structured HITL batch have answers and the stage may resume. plan. Event Carries What it means --- --- --- plan.voted issue , cycle , approvals , votes , voters One planning cycle finished: how many agents approved the plan, out of how many voted, and who each one was. plan.failed issue , error Planning failed on every candidate provider. plan.escalated issue , cycles , unresolved The cycles ran out without consensus; the unresolved objections are a human's to settle. worker. Event Carries What it means --- --- --- worker.dispatched issue , worktree , worktreeId , branch , terminal , provider , model , effort , contractDigest , briefDigest , command , briefAccepted , tuiIdle , workerGuardInstalled , maxFixRounds A worker was launched in its own worktree. Carries the whole dispatch record plus the command that ran. worker.dispatch-failed issue , error The dispatch itself failed — worktree, terminal or brief — before any work started. worker.dispatch-capacity issue , error , until orca terminal create timed out: the machine is out of room for another agent session. Not counted as a failure; the issue is re-queued and dispatch waits until until . worker.terminal-closed issue , terminal , reason , worktreeId The loop closed a worker terminal it created (finished issue, orphaned, superseded, or idle with a PR open). worker.setup issue , worktreeId , ok project.setup.command ran in the fresh worktree. worker.nudged issue , kind , reason , worktreeId An idle worker was nudged in its own terminal — and also the terminal outcome nudged , which ends a delivery pass on the same issue. Two emissions, one name: kind is present on the first, reason on the second. worker.permission-wait issue , terminal , reason The worker stopped at a tool-permission prompt: held for a person, never typed into. Once per idle window. worker.reactivated issue , terminal , previousTerminal A stale terminal was relaunched for a worker that was still supposed to be working. worker.hitl-resumed issue , requestIds A human answered a worker HITL request and the decision was sent back to the worker terminal. worker.reopened issue , pr , previousHead , head , previousOutcome A finished issue came back: a new head on a PR the loop had already closed out. worker.handed-off issue , from , to , worktreeId , branch , reason , briefAccepted The task was handed to another provider in the same worktree, on the same branch — and also t",
+          "body": "{/ Generated by pnpm docs:generate . Do not edit by hand: edit src/loop/event-vocabulary.ts and regenerate. /} Every loop event is appended to <stateDir /events.ndjson and emitted on the plugin bus, with at (ISO timestamp) and type on top of the fields below. A plugin subscribes with bus.on('<type ' ' ', listener) ; a notification channel subscribes by listing types in notifications.events . The vocabulary is enforced by the compiler: appendLoopEvent accepts only these names, so an event that is not here cannot be emitted — and a name here that nothing emits fails the test suite. 99 loop events. contract. Event Carries What it means --- --- --- contract.escalated issue , reasons , digest A contract was frozen but is not dispatchable; a human was asked to settle it. contract.failed issue , error Contract generation failed on every candidate provider. contract.generated issue , provider , model , effort , digest A contract was frozen successfully. provider / model / effort are what actually produced it — the join key for comparing how different LLMs (at what reasoning effort) did on the same kind of issue. human. Event Carries What it means --- --- --- human.hitl-requested issue , requestId , batchId , role , stage , question , context , options , recommendedOptionId , digest A structured human decision was requested by an LLM stage. human.hitl-answered issue , requestId , batchId , role , stage , optionId , freeText , digest , actor A human answered one structured HITL request. human.hitl-batch-ready issue , batchId , requestId All requests in a structured HITL batch have answers and the stage may resume. plan. Event Carries What it means --- --- --- plan.voted issue , cycle , approvals , votes , voters One planning cycle finished: how many agents approved the plan, out of how many voted, and who each one was. plan.failed issue , error Planning failed on every candidate provider. plan.escalated issue , cycles , unresolved The cycles ran out without consensus; the unresolved objections are a human's to settle. worker. Event Carries What it means --- --- --- worker.dispatched issue , worktree , worktreeId , branch , terminal , provider , model , effort , contractDigest , briefDigest , command , briefAccepted , tuiIdle , workerGuardInstalled , maxFixRounds A worker was launched in its own worktree. Carries the whole dispatch record plus the command that ran. worker.dispatch-failed issue , error The dispatch itself failed — worktree, terminal or brief — before any work started. worker.dispatch-capacity issue , error , until orca terminal create timed out: the machine is out of room for another agent session. Not counted as a failure; the issue is re-queued and dispatch waits until until . worker.terminal-closed issue , terminal , reason , worktreeId The loop closed a worker terminal it created (finished issue, orphaned, superseded, or idle with a PR open). worker.setup issue , worktreeId , ok project.setup.command ran in the fresh worktree. worker.nudged issue , kind , reason , worktreeId An idle worker was nudged in its own terminal — and also the terminal outcome nudged , which ends a delivery pass on the same issue. Two emissions, one name: kind is present on the first, reason on the second. worker.permission-wait issue , terminal , reason The worker stopped at a tool-permission prompt: held for a person, never typed into. Once per idle window. worker.reactivated issue , terminal , previousTerminal A stale terminal was relaunched for a worker that was still supposed to be working. worker.hitl-resumed issue , requestIds A human answered a worker HITL request and the decision was sent back to the worker terminal. worker.reopened issue , pr , previousHead , head , previousOutcome A finished issue came back: a new head on a PR the loop had already closed out. worker.handed-off issue , from , to , worktreeId , branch , reason , briefAccepted The task was handed to another provider in the same worktree, on the same branch — and also t",
           "aliases": "events document human"
         },
         "graph": {
@@ -11723,7 +11808,7 @@
             }
           ]
         },
-        "contentHash": "484ac2f0bc02ea721fd4c505bc903ee18a5712ca9d3e34ddec975ea639c7df18",
+        "contentHash": "f0d2246c7e035a64fce7b0eddf524a1051c99532b9fdeeff8d1a4887d6d64b91",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -11749,7 +11834,7 @@
           "aliases": "document project"
         },
         "graph": {
-          "pagerank": 0.031874,
+          "pagerank": 0.025303,
           "inboundLinks": 2,
           "coveredBy": [],
           "mentionedBy": [
@@ -12041,7 +12126,7 @@
           "aliases": "document unclassified"
         },
         "graph": {
-          "pagerank": 0.029766,
+          "pagerank": 0.023629,
           "inboundLinks": 1,
           "coveredBy": [],
           "mentionedBy": [
@@ -12124,7 +12209,7 @@
           "aliases": "document unclassified"
         },
         "graph": {
-          "pagerank": 0.042416,
+          "pagerank": 0.033672,
           "inboundLinks": 1,
           "coveredBy": [],
           "mentionedBy": [],
@@ -12168,7 +12253,7 @@
           "aliases": "document unclassified"
         },
         "graph": {
-          "pagerank": 0.029766,
+          "pagerank": 0.023629,
           "inboundLinks": 3,
           "coveredBy": [],
           "mentionedBy": [
@@ -12231,7 +12316,7 @@
           "aliases": "document unclassified"
         },
         "graph": {
-          "pagerank": 0.042416,
+          "pagerank": 0.033672,
           "inboundLinks": 1,
           "coveredBy": [],
           "mentionedBy": [],
@@ -12276,7 +12361,7 @@
           "aliases": "document project"
         },
         "graph": {
-          "pagerank": 0.031874,
+          "pagerank": 0.025303,
           "inboundLinks": 2,
           "coveredBy": [],
           "mentionedBy": [
@@ -12492,7 +12577,7 @@
           "aliases": "document human"
         },
         "graph": {
-          "pagerank": 0.0443,
+          "pagerank": 0.035168,
           "inboundLinks": 1,
           "coveredBy": [],
           "mentionedBy": [],
@@ -13332,7 +13417,7 @@
           "aliases": "document human"
         },
         "graph": {
-          "pagerank": 0.0443,
+          "pagerank": 0.035168,
           "inboundLinks": 1,
           "coveredBy": [],
           "mentionedBy": [],
@@ -13387,7 +13472,7 @@
           "aliases": "document human"
         },
         "graph": {
-          "pagerank": 0.046409,
+          "pagerank": 0.036841,
           "inboundLinks": 2,
           "coveredBy": [],
           "mentionedBy": [],
@@ -13442,7 +13527,7 @@
           "aliases": "document human"
         },
         "graph": {
-          "pagerank": 0.046287,
+          "pagerank": 0.036744,
           "inboundLinks": 2,
           "coveredBy": [],
           "mentionedBy": [],
@@ -13684,7 +13769,7 @@
           "aliases": "document human"
         },
         "graph": {
-          "pagerank": 0.035745,
+          "pagerank": 0.028376,
           "inboundLinks": 2,
           "coveredBy": [],
           "mentionedBy": [],
@@ -13734,7 +13819,7 @@
           "aliases": "document human"
         },
         "graph": {
-          "pagerank": 0.04041,
+          "pagerank": 0.032079,
           "inboundLinks": 2,
           "coveredBy": [],
           "mentionedBy": [],
@@ -13784,7 +13869,7 @@
           "aliases": "document human"
         },
         "graph": {
-          "pagerank": 0.033636,
+          "pagerank": 0.026702,
           "inboundLinks": 1,
           "coveredBy": [],
           "mentionedBy": [],
@@ -13817,7 +13902,7 @@
         "kind": "document",
         "path": "docs/ADR-0035-definition-of-done-two-lists.md",
         "title": "ADR-0035: The definition of done is two lists, and there is no manual item",
-        "summary": "Accepted",
+        "summary": "Accepted. Amended by ADR-0046: a proof carries a verdict level (failed … live-verified) instead of pass/fail, and delivery.merge.minVerdict sets the minimum to merge.",
         "audience": "human",
         "aliases": [],
         "tags": [
@@ -13829,12 +13914,12 @@
           "headings": "ADR-0035: The definition of done is two lists, and there is no manual item Status Context Decision Consequences",
           "path": "docs/ADR-0035-definition-of-done-two-lists.md",
           "symbols": "",
-          "summary": "Accepted",
-          "body": "ADR-0035: The definition of done is two lists, and there is no manual item Status Accepted Context \"Done\" in an unattended loop has to be decided without a human in the room. A single checklist cannot do it: some things are true of every issue in a repository (the suite is green, the changelog moved) and some are true only of this one (the endpoint returns 404 for an unknown id). Merging them into one list means either restating the project's rules on every issue or losing the issue's own acceptance criteria. Decision Two lists, both required before a merge: - The project's — dod.items in the config. The same for every issue: a command that must exit 0, a file the PR must touch, a pattern no changed file may contain. - The issue's — the outcomes of the contract the orchestrator froze before dispatch, each with the check that proves it. The worker runs the checks in its own worktree and writes the proofs to .ak-loop/dod.json (and what it ran to .ak-loop/verify.json , ADR-0035's companion in src/loop/artifacts.ts ). assessDod judges both lists, and the table — item, verdict, evidence — is written onto the PR either way, so a human reading the PR sees proof rather than a promise. An item the worker did not prove is missing , not failed . The difference is the instruction that goes back: missing means \"prove it\", failed means \"fix it\", and a loop that conflates them sends the wrong one. Some checks the harness can decide by itself from the PR's changed files ( file-changed , pattern-absent ); command is never one of them, because the harness does not run project commands — the worker does, in its own worktree, where the change actually is. There is deliberately no manual kind. An item whose proof is \"someone looked at it\" cannot gate an unattended merge; it is a wish, and calling it a definition of done would make the whole table untrustworthy. Work that genuinely needs a human eye is delivery.merge.requireHumanApproval , which is a gate with a name, not a checkbox nobody can check. Consequences A project with no dod.items still gets the issue list enforced, so adopting the loop costs nothing up front. The bar rises by adding items, one at a time, each of which must be provable — which is the only honest way to raise it.",
+          "summary": "Accepted. Amended by ADR-0046: a proof carries a verdict level (failed … live-verified) instead of pass/fail, and delivery.merge.minVerdict sets the minimum to merge.",
+          "body": "ADR-0035: The definition of done is two lists, and there is no manual item Status Accepted. Amended by : a proof carries a verdict level ( failed … live-verified ) instead of pass/fail, and delivery.merge.minVerdict sets the minimum to merge. Context \"Done\" in an unattended loop has to be decided without a human in the room. A single checklist cannot do it: some things are true of every issue in a repository (the suite is green, the changelog moved) and some are true only of this one (the endpoint returns 404 for an unknown id). Merging them into one list means either restating the project's rules on every issue or losing the issue's own acceptance criteria. Decision Two lists, both required before a merge: - The project's — dod.items in the config. The same for every issue: a command that must exit 0, a file the PR must touch, a pattern no changed file may contain. - The issue's — the outcomes of the contract the orchestrator froze before dispatch, each with the check that proves it. The worker runs the checks in its own worktree and writes the proofs to .ak-loop/dod.json (and what it ran to .ak-loop/verify.json , ADR-0035's companion in src/loop/artifacts.ts ). assessDod judges both lists, and the table — item, verdict, evidence — is written onto the PR either way, so a human reading the PR sees proof rather than a promise. An item the worker did not prove is missing , not failed . The difference is the instruction that goes back: missing means \"prove it\", failed means \"fix it\", and a loop that conflates them sends the wrong one. Some checks the harness can decide by itself from the PR's changed files ( file-changed , pattern-absent ); command is never one of them, because the harness does not run project commands — the worker does, in its own worktree, where the change actually is. There is deliberately no manual kind. An item whose proof is \"someone looked at it\" cannot gate an unattended merge; it is a wish, and calling it a definition of done would make the whole table untrustworthy. Work that genuinely needs a human eye is delivery.merge.requireHumanApproval , which is a gate with a name, not a checkbox nobody can check. Consequences A project with no dod.items still gets the issue list enforced, so adopting the loop costs nothing up front. The bar rises by adding items, one at a time, each of which must be provable — which is the only honest way to raise it.",
           "aliases": "document human"
         },
         "graph": {
-          "pagerank": 0.042518,
+          "pagerank": 0.033753,
           "inboundLinks": 3,
           "coveredBy": [],
           "mentionedBy": [],
@@ -13857,6 +13942,11 @@
           ],
           "outbound": [
             {
+              "kind": "links-to",
+              "id": "document:docs/ADR-0046-verdict-levels-and-the-merge-policy.md",
+              "confidence": "observed"
+            },
+            {
               "kind": "mentions",
               "id": "module:src/loop/artifacts.ts",
               "confidence": "observed"
@@ -13868,7 +13958,7 @@
             }
           ]
         },
-        "contentHash": "4ce97b849eb57836ef19d3c2da6c63585785c1747e173db64dc6301981f2fc00",
+        "contentHash": "270b19260b581b158cf30e206f3ebaaf443ba48a016fd02f55c552209d554c67",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -13877,7 +13967,7 @@
         "kind": "document",
         "path": "docs/ADR-0036-bounded-self-modification.md",
         "title": "ADR-0036: Bounded self-modification",
-        "summary": "Accepted",
+        "summary": "Accepted. Held paths are an input of the pure merge policy (ADR-0046): a head approved by a person releases protected paths, secret-shaped files always hold, and the guard policy digest is part of the run fingerprint stored with every verdict.",
         "audience": "human",
         "aliases": [],
         "tags": [
@@ -13889,12 +13979,12 @@
           "headings": "ADR-0036: Bounded self-modification Status Context Decision Consequences",
           "path": "docs/ADR-0036-bounded-self-modification.md",
           "symbols": "",
-          "summary": "Accepted",
-          "body": "ADR-0036: Bounded self-modification Status Accepted Context A loop that runs unattended for weeks accumulates evidence about itself: the same lesson proposed over and over, a knob that is plainly set wrong, a role whose runs cost more fix rounds than the others. Doing nothing with that evidence wastes it. Letting the loop act on it freely is how an autonomous system drifts away from what its owners agreed to, one defensible step at a time. Decision The loop may change three things about itself, each inside declared bounds, and nothing else. 1. Promoting a learning ( memory.autoPromote ). A lesson proposed recurrence.minSightings times stops being an anecdote. With auto-promotion on, the retro promotes it itself, attributed to loop-auto — never to human (ADR-0019, amendment of 2026-09-19) — at most recurrence.maxPerRun per run. Off by default. Every automatic promotion stays listable and revocable, and the attribution is what makes that possible: a memory record nobody can tell apart from a human's is a record nobody can safely revoke. 2. Moving a knob ( tuning ). A knob is auto-adjustable only when it declares the metric that justifies moving it — and that same metric is what moves it back when the next cycle is worse. At most maxChangesPerRetro move per retro, inside the declared range or ladder, so a bad cycle changes one thing and stays explainable. Never auto-adjustable, whatever the config says: models, providers, gates and branches — the things that decide who pays and what reaches production. 3. Improving an installed agent ( agents.autoImprove ). The retro may append one dated note to the instructions of an agent this project installed under agents/<id / , and only if the eval still passes . The bar is \"not worse\", not \"better\": a change that leaves the score alone but makes the agent clearer is worth keeping, and a change that cannot be measured is never adopted ( agents.evalCommand empty ⇒ nothing is adopted). A failing eval puts the file back exactly as it was — an agent left half-improved is worse than one never touched. Three things the machine never does: touch a critical role ( architect , reviewer ), write more than agents.maxAutoLines lines, or publish anything back to the registry. An agent installed as code gets a recorded proposal for a human instead of an edit (ADR-0036 is implemented in src/loop/agent-improvement.ts ). Consequences Every self-modification is attributable, bounded, measured and revocable, and each one is off by default — turning it on is the project's decision, made once, in a file a reviewer reads. The cost is that the loop improves slowly and only where a metric exists. That is the intended trade: an unattended system that can change anything about itself is not a loop, it is a liability.",
+          "summary": "Accepted. Held paths are an input of the pure merge policy (ADR-0046): a head approved by a person releases protected paths, secret-shaped files always hold, and the guard policy digest is part of the run fingerprint stored with every verdict.",
+          "body": "ADR-0036: Bounded self-modification Status Accepted. Held paths are an input of the pure merge policy ( ): a head approved by a person releases protected paths, secret-shaped files always hold, and the guard policy digest is part of the run fingerprint stored with every verdict. Context A loop that runs unattended for weeks accumulates evidence about itself: the same lesson proposed over and over, a knob that is plainly set wrong, a role whose runs cost more fix rounds than the others. Doing nothing with that evidence wastes it. Letting the loop act on it freely is how an autonomous system drifts away from what its owners agreed to, one defensible step at a time. Decision The loop may change three things about itself, each inside declared bounds, and nothing else. 1. Promoting a learning ( memory.autoPromote ). A lesson proposed recurrence.minSightings times stops being an anecdote. With auto-promotion on, the retro promotes it itself, attributed to loop-auto — never to human (ADR-0019, amendment of 2026-09-19) — at most recurrence.maxPerRun per run. Off by default. Every automatic promotion stays listable and revocable, and the attribution is what makes that possible: a memory record nobody can tell apart from a human's is a record nobody can safely revoke. 2. Moving a knob ( tuning ). A knob is auto-adjustable only when it declares the metric that justifies moving it — and that same metric is what moves it back when the next cycle is worse. At most maxChangesPerRetro move per retro, inside the declared range or ladder, so a bad cycle changes one thing and stays explainable. Never auto-adjustable, whatever the config says: models, providers, gates and branches — the things that decide who pays and what reaches production. 3. Improving an installed agent ( agents.autoImprove ). The retro may append one dated note to the instructions of an agent this project installed under agents/<id / , and only if the eval still passes . The bar is \"not worse\", not \"better\": a change that leaves the score alone but makes the agent clearer is worth keeping, and a change that cannot be measured is never adopted ( agents.evalCommand empty ⇒ nothing is adopted). A failing eval puts the file back exactly as it was — an agent left half-improved is worse than one never touched. Three things the machine never does: touch a critical role ( architect , reviewer ), write more than agents.maxAutoLines lines, or publish anything back to the registry. An agent installed as code gets a recorded proposal for a human instead of an edit (ADR-0036 is implemented in src/loop/agent-improvement.ts ). Consequences Every self-modification is attributable, bounded, measured and revocable, and each one is off by default — turning it on is the project's decision, made once, in a file a reviewer reads. The cost is that the loop improves slowly and only where a metric exists. That is the intended trade: an unattended system that can change anything about itself is not a loop, it is a liability.",
           "aliases": "document human"
         },
         "graph": {
-          "pagerank": 0.033636,
+          "pagerank": 0.026702,
           "inboundLinks": 1,
           "coveredBy": [],
           "mentionedBy": [],
@@ -13907,6 +13997,11 @@
           ],
           "outbound": [
             {
+              "kind": "links-to",
+              "id": "document:docs/ADR-0046-verdict-levels-and-the-merge-policy.md",
+              "confidence": "observed"
+            },
+            {
               "kind": "mentions",
               "id": "module:src/loop/agent-improvement.ts",
               "confidence": "observed"
@@ -13918,7 +14013,7 @@
             }
           ]
         },
-        "contentHash": "b73f0cd5ecf09023dda7bcfa60577efc2c6b90cc4d31c28f3f93c98048756974",
+        "contentHash": "022887fe26a431ce674c9b45930171a199b78261f2d6f200809e895cf3a61755",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -13944,7 +14039,7 @@
           "aliases": "document human"
         },
         "graph": {
-          "pagerank": 0.035745,
+          "pagerank": 0.028376,
           "inboundLinks": 2,
           "coveredBy": [],
           "mentionedBy": [],
@@ -13977,7 +14072,7 @@
         "kind": "document",
         "path": "docs/ADR-0038-worker-guard-real-time-enforcement.md",
         "title": "ADR-0038: Worker guard — real-time enforcement inside the worker's own session",
-        "summary": "Accepted, partial (see Consequences — codex is deliberately not covered yet)",
+        "summary": "Accepted, partial (see Consequences — codex is deliberately not covered yet). The guard's policy (selfEditPaths, secretFilePatterns) is digested into the run fingerprint stored with each verdict, so a policy change invalidates carried verdicts (ADR-0046).",
         "audience": "human",
         "aliases": [],
         "tags": [
@@ -13989,17 +14084,22 @@
           "headings": "ADR-0038: Worker guard — real-time enforcement inside the worker's own session Status Context Decision Consequences",
           "path": "docs/ADR-0038-worker-guard-real-time-enforcement.md",
           "symbols": "",
-          "summary": "Accepted, partial (see Consequences — codex is deliberately not covered yet)",
-          "body": "ADR-0038: Worker guard — real-time enforcement inside the worker's own session Status Accepted, partial (see Consequences — codex is deliberately not covered yet) Context Every gate this harness had before this ADR runs after the worker: deliver.ts reads a PR's changed files and holds one that touches delivery.selfEditPaths or looks like a secret ( secretFilePatterns ). A worker is free to write anything inside its own session; the harness only ever finds out once the PR exists. That gap is structural — ADR-0037 already names it: the worker's own CLI session is opaque, its tool calls never reach the harness. Four providers this loop dispatches ( claude , codex , opencode , grok ) each have some mechanism to intercept a tool call before it runs. Whether that mechanism is real enforcement, under the exact invocation this loop already uses (a TUI opened by Orca and driven by pasted text, not each CLI's own -p / exec / run headless mode), was verified live against this project's own dispatched claude binary and by reading the other three CLIs' source/docs directly — not assumed from a feature list. What follows is what that verification found, provider by provider. Decision ak-harness loop worker-guard is a new CLI subcommand: it reads one PreToolUse event on stdin ( {tool name, tool input, cwd} — the shape Claude Code and Grok Build CLI deliberately share, byte-for-byte), judges the file it names against delivery.selfEditPaths / secretFilePatterns (the exact same touchesProtectedPaths call the PR-time gate already makes), and exits 2 to block or 0 to allow. One rule, two enforcement points — this one during the work, the PR-time one as the backstop for whatever a hook missed, crashed on, or was never installed for. The loop installs it into the fresh worktree before the worker's terminal opens ( installWorkerGuard , called from tick.ts at dispatch and from deliver.ts on a handoff, since a handoff changes which format — or none — applies): - claude — .claude/settings.local.json , a PreToolUse hook on Write Edit MultiEdit NotebookEdit . Verified live in this repository's own sandbox: a real claude -p session, with a real deny hook installed, was asked to overwrite loop.config.yaml ; the write did not happen, and the model itself reported the block. Hooks here fire unconditionally, before the --permission-mode check — including in bypassPermissions . The one real risk, confirmed against the official docs rather than inferred: a hook that times out, crashes, or returns malformed output is not blocking — the call proceeds as if allowed. Only a hook that runs to completion and exits 2 (or returns permissionDecision:\"deny\" ) is fail-closed. worker-guard is deliberately a single, fast, dependency-free check for exactly this reason: less surface for it to crash or hang on. - grok ( xai-org/grok-build ) — .grok/hooks/config.json , same shape as Claude's (confirmed deliberately compatible by that project). Its own docs describe the best fail-closed story of the four for a permission rule with no terminal to answer it: the call is rejected and Grok is told why, not silently allowed and not hung. It shares Claude's fail-open-on-crash behavior, and it has its own, independent first-run \"trust this folder\" prompt that blocks with no TTY unless --trust is passed — loop.config.example.yaml 's grok.tui now carries it. Deliberately not --yolo : that would also relax the permission mode this hook depends on. - opencode — no hook at all. Its declarative permission engine's ask tier, under no attached terminal, is reported across multiple open upstream issues as either hanging indefinitely or aborting the session, depending on version — never settled, and never reported as silently auto-approving either. Rather than depend on an unresolved tier, worker-guard writes static \"deny\" rules into permission.edit for every selfEditPaths / secretFilePatterns pattern — no subprocess, no hang, nothing to crash. They go in .opencode/opencode.json , not the worktr",
+          "summary": "Accepted, partial (see Consequences — codex is deliberately not covered yet). The guard's policy (selfEditPaths, secretFilePatterns) is digested into the run fingerprint stored with each verdict, so a policy change invalidates carried verdicts (ADR-0046).",
+          "body": "ADR-0038: Worker guard — real-time enforcement inside the worker's own session Status Accepted, partial (see Consequences — codex is deliberately not covered yet). The guard's policy ( selfEditPaths , secretFilePatterns ) is digested into the run fingerprint stored with each verdict, so a policy change invalidates carried verdicts ( ). Context Every gate this harness had before this ADR runs after the worker: deliver.ts reads a PR's changed files and holds one that touches delivery.selfEditPaths or looks like a secret ( secretFilePatterns ). A worker is free to write anything inside its own session; the harness only ever finds out once the PR exists. That gap is structural — ADR-0037 already names it: the worker's own CLI session is opaque, its tool calls never reach the harness. Four providers this loop dispatches ( claude , codex , opencode , grok ) each have some mechanism to intercept a tool call before it runs. Whether that mechanism is real enforcement, under the exact invocation this loop already uses (a TUI opened by Orca and driven by pasted text, not each CLI's own -p / exec / run headless mode), was verified live against this project's own dispatched claude binary and by reading the other three CLIs' source/docs directly — not assumed from a feature list. What follows is what that verification found, provider by provider. Decision ak-harness loop worker-guard is a new CLI subcommand: it reads one PreToolUse event on stdin ( {tool name, tool input, cwd} — the shape Claude Code and Grok Build CLI deliberately share, byte-for-byte), judges the file it names against delivery.selfEditPaths / secretFilePatterns (the exact same touchesProtectedPaths call the PR-time gate already makes), and exits 2 to block or 0 to allow. One rule, two enforcement points — this one during the work, the PR-time one as the backstop for whatever a hook missed, crashed on, or was never installed for. The loop installs it into the fresh worktree before the worker's terminal opens ( installWorkerGuard , called from tick.ts at dispatch and from deliver.ts on a handoff, since a handoff changes which format — or none — applies): - claude — .claude/settings.local.json , a PreToolUse hook on Write Edit MultiEdit NotebookEdit . Verified live in this repository's own sandbox: a real claude -p session, with a real deny hook installed, was asked to overwrite loop.config.yaml ; the write did not happen, and the model itself reported the block. Hooks here fire unconditionally, before the --permission-mode check — including in bypassPermissions . The one real risk, confirmed against the official docs rather than inferred: a hook that times out, crashes, or returns malformed output is not blocking — the call proceeds as if allowed. Only a hook that runs to completion and exits 2 (or returns permissionDecision:\"deny\" ) is fail-closed. worker-guard is deliberately a single, fast, dependency-free check for exactly this reason: less surface for it to crash or hang on. - grok ( xai-org/grok-build ) — .grok/hooks/config.json , same shape as Claude's (confirmed deliberately compatible by that project). Its own docs describe the best fail-closed story of the four for a permission rule with no terminal to answer it: the call is rejected and Grok is told why, not silently allowed and not hung. It shares Claude's fail-open-on-crash behavior, and it has its own, independent first-run \"trust this folder\" prompt that blocks with no TTY unless --trust is passed — loop.config.example.yaml 's grok.tui now carries it. Deliberately not --yolo : that would also relax the permission mode this hook depends on. - opencode — no hook at all. Its declarative permission engine's ask tier, under no attached terminal, is reported across multiple open upstream issues as either hanging indefinitely or aborting the session, depending on version — never settled, and never reported as silently auto-approving either. Rather than depend on an unresolved tier, worker-guard writes static \"deny\" ",
           "aliases": "document human"
         },
         "graph": {
-          "pagerank": 0,
+          "pagerank": 0.023629,
           "inboundLinks": 0,
           "coveredBy": [],
           "mentionedBy": [],
           "inbound": [],
           "outbound": [
+            {
+              "kind": "links-to",
+              "id": "document:docs/ADR-0046-verdict-levels-and-the-merge-policy.md",
+              "confidence": "observed"
+            },
             {
               "kind": "mentions-symbol",
               "id": "module:src/adapters/github-cli.ts",
@@ -14012,7 +14112,7 @@
             }
           ]
         },
-        "contentHash": "b2f6560dae6423bb9da5a3379bf7603eadbab9057586fff04ee7edff83039bf1",
+        "contentHash": "09bc3b176383f14bf5d71408acc4b1589430430faf5ad3d7b286b13e02a7148c",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -14021,7 +14121,7 @@
         "kind": "document",
         "path": "docs/ADR-0039-gate-floor-and-the-unwired-local-runner.md",
         "title": "ADR-0039: A floor under auto-merge, and an unwired runner that said it was fine",
-        "summary": "Accepted",
+        "summary": "Accepted. The floor described here is now rule 7 of the pure merge policy (ADR-0046, src/loop/merge-policy.ts).",
         "audience": "human",
         "aliases": [],
         "tags": [
@@ -14033,17 +14133,27 @@
           "headings": "ADR-0039: A floor under auto-merge, and an unwired runner that said it was fine Status Context Decision Consequences",
           "path": "docs/ADR-0039-gate-floor-and-the-unwired-local-runner.md",
           "symbols": "",
-          "summary": "Accepted",
-          "body": "ADR-0039: A floor under auto-merge, and an unwired runner that said it was fine Status Accepted Context A pre-publish review asked a question this project had never answered out loud: with every switch this configuration offers turned off, what still stops a bad change from merging? The answer was nothing , and two separate places in the codebase claimed otherwise. The flow switches compose. flows.profiles.<name .stages can turn the review, the local verify and the definition-of-done assessment off for a flow ( flows.ts:145 ), merge.requireChecks drops CI gating ( deliver.ts:546 ), and merge.requireHumanApproval defaults to false ( config.ts:350 ). Each of those is a deliberate, defensible feature on its own — an incident flow that skips the review to get a fix in is exactly what flows are for. Set together with merge.auto: true , they reach githubMerge with red CI, no review, no proof of done and no human. The comment above the review phase asserted that \"every other gate (checks, DoD, the human approval) still runs\". Three of the four things it named are switches. A runner that was never called. connectors.runner accepts local , and createRunnerConnector returns a real createLocalRunner for it — git worktrees, tmux, the system crontab. Nothing in production calls either function: tick.ts calls orcaWorktreeCreate directly, and loop install reconciles Orca automations only. So a project that set connectors.runner: local got Orca, silently, while doctor probed for tmux and crontab and reported runner.local: passed . The interface exists, by its own comment, \"to prove the engine depends on the interface rather than on Orca\" — but an interface whose second implementation is unreachable proves the opposite. Decision Auto-merge has a floor: at least one gate must have examined the diff. deliver now records what actually vouched for a change — CI (when merge.requireChecks is on and checks came back green), the review, the project verify, the definition of done — and refuses to auto-merge when that list is empty, holding the PR for a human instead. No individual switch was removed: turning the review off still works, and so does turning any other single gate off. What is gone is the combination where nothing read the diff and nobody was asked to, which is not a faster flow but an unattended push. A flow that genuinely wants that says so with merge.auto: false and merges by hand — a decision with a person's name on it. connectors.runner: \"local\" is rejected at config load. Fail closed, with a message that says why, rather than accept a value and do something else. The createLocalRunner implementation and its tests stay: wiring it later should be a change of caller, not a rewrite. doctor 's runner.local probe is deleted — it could only ever describe a configuration that no longer loads. The CI self-approval stays, annotated. ci.yml runs plan approved --by human against this repository's own verification contract. assertHuman ( kernel/state-machine.ts:12 ) accepts no other actor, so making that line truthful would mean teaching a human-approval gate to accept a machine. That is a worse trade than a comment: the approval a human really made is the contract in the tree, reviewed; CI re-enacts it to exercise the CLI end to end. The workflow now says so where the line is. Consequences A project using a flow that disabled everything will start seeing PRs held with nothing examined this change instead of merged. That is the intended behaviour change, and it is the one case where this ADR breaks an existing setup on purpose: the previous behaviour was merging unreviewed code unattended, which nobody can have been relying on deliberately. A project with connectors.runner: \"local\" in its config will fail to load until it says orca . It was already running Orca; only the label changes, and now it is accurate. What this does not do: the floor counts gates that ran , not gates that were thorough. A flow with only CI gating on, whose CI is one green",
+          "summary": "Accepted. The floor described here is now rule 7 of the pure merge policy (ADR-0046, src/loop/merge-policy.ts).",
+          "body": "ADR-0039: A floor under auto-merge, and an unwired runner that said it was fine Status Accepted. The floor described here is now rule 7 of the pure merge policy ( , src/loop/merge-policy.ts ). Context A pre-publish review asked a question this project had never answered out loud: with every switch this configuration offers turned off, what still stops a bad change from merging? The answer was nothing , and two separate places in the codebase claimed otherwise. The flow switches compose. flows.profiles.<name .stages can turn the review, the local verify and the definition-of-done assessment off for a flow ( flows.ts:145 ), merge.requireChecks drops CI gating ( deliver.ts:546 ), and merge.requireHumanApproval defaults to false ( config.ts:350 ). Each of those is a deliberate, defensible feature on its own — an incident flow that skips the review to get a fix in is exactly what flows are for. Set together with merge.auto: true , they reach githubMerge with red CI, no review, no proof of done and no human. The comment above the review phase asserted that \"every other gate (checks, DoD, the human approval) still runs\". Three of the four things it named are switches. A runner that was never called. connectors.runner accepts local , and createRunnerConnector returns a real createLocalRunner for it — git worktrees, tmux, the system crontab. Nothing in production calls either function: tick.ts calls orcaWorktreeCreate directly, and loop install reconciles Orca automations only. So a project that set connectors.runner: local got Orca, silently, while doctor probed for tmux and crontab and reported runner.local: passed . The interface exists, by its own comment, \"to prove the engine depends on the interface rather than on Orca\" — but an interface whose second implementation is unreachable proves the opposite. Decision Auto-merge has a floor: at least one gate must have examined the diff. deliver now records what actually vouched for a change — CI (when merge.requireChecks is on and checks came back green), the review, the project verify, the definition of done — and refuses to auto-merge when that list is empty, holding the PR for a human instead. No individual switch was removed: turning the review off still works, and so does turning any other single gate off. What is gone is the combination where nothing read the diff and nobody was asked to, which is not a faster flow but an unattended push. A flow that genuinely wants that says so with merge.auto: false and merges by hand — a decision with a person's name on it. connectors.runner: \"local\" is rejected at config load. Fail closed, with a message that says why, rather than accept a value and do something else. The createLocalRunner implementation and its tests stay: wiring it later should be a change of caller, not a rewrite. doctor 's runner.local probe is deleted — it could only ever describe a configuration that no longer loads. The CI self-approval stays, annotated. ci.yml runs plan approved --by human against this repository's own verification contract. assertHuman ( kernel/state-machine.ts:12 ) accepts no other actor, so making that line truthful would mean teaching a human-approval gate to accept a machine. That is a worse trade than a comment: the approval a human really made is the contract in the tree, reviewed; CI re-enacts it to exercise the CLI end to end. The workflow now says so where the line is. Consequences A project using a flow that disabled everything will start seeing PRs held with nothing examined this change instead of merged. That is the intended behaviour change, and it is the one case where this ADR breaks an existing setup on purpose: the previous behaviour was merging unreviewed code unattended, which nobody can have been relying on deliberately. A project with connectors.runner: \"local\" in its config will fail to load until it says orca . It was already running Orca; only the label changes, and now it is accurate. What this does not do: the floor counts ga",
           "aliases": "document human"
         },
         "graph": {
-          "pagerank": 0,
+          "pagerank": 0.023629,
           "inboundLinks": 0,
           "coveredBy": [],
           "mentionedBy": [],
           "inbound": [],
           "outbound": [
+            {
+              "kind": "links-to",
+              "id": "document:docs/ADR-0046-verdict-levels-and-the-merge-policy.md",
+              "confidence": "observed"
+            },
+            {
+              "kind": "mentions",
+              "id": "module:src/loop/merge-policy.ts",
+              "confidence": "observed"
+            },
             {
               "kind": "mentions-symbol",
               "id": "module:src/adapters/github-cli.ts",
@@ -14066,7 +14176,7 @@
             }
           ]
         },
-        "contentHash": "249a72b4b895b60c4d49baf1ab8db50410fc834272533caf6d07aa26634a0f4b",
+        "contentHash": "0bb5255877cfbcc8f55fcf61f25d779c6c7df839b1805a88b274a28fbc53d702",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -14355,7 +14465,7 @@
         "kind": "document",
         "path": "docs/ADR-0045-fleet-runner.md",
         "title": "ADR-0045: A fleet runner — dispatch through the fleet coordinator's queue",
-        "summary": "Accepted",
+        "summary": "Accepted. Local re-runs are unit-verified verdicts bound to the patch-id, and are skipped when the patch is unchanged (ADR-0046).",
         "audience": "human",
         "aliases": [],
         "tags": [
@@ -14367,17 +14477,22 @@
           "headings": "ADR-0045: A fleet runner — dispatch through the fleet coordinator's queue Status Context Decision Consequences",
           "path": "docs/ADR-0045-fleet-runner.md",
           "symbols": "",
-          "summary": "Accepted",
-          "body": "ADR-0045: A fleet runner — dispatch through the fleet coordinator's queue Status Accepted Context The factory design (fleet repository, docs/design/industrial-sdlc.md §8 step 3) puts the harness's RunnerConnector in front of the factory queue. The fleet coordinator is that queue's front door: fleet submit , fleet queue --json , fleet tail , fleet collect , fleet cancel . Behind it the queue may be fleet's own or Hatchet; the harness must not know which, so it speaks only the CLI, through CommandRunner (argv, no shell). A fleet task is not an Orca terminal: it is submitted once, runs unattended, has no local worktree, and cannot be typed into afterwards. The interface has to say so honestly rather than pretend. Decision A third implementation, createFleetRunner ( src/loop/fleet-runner.ts ), selected by connectors.runner: fleet . The engine and the interface are unchanged, except one optional field: WorkspaceObservation.state , the task state, because a queued task has no pull request to report. RunnerConnector Fleet behaviour --- --- createWorkspace Records a pending workspace (harness-side id, branch, base) in <stateDir /fleet-workspaces.json . Contacts nothing. path is '' : there is no local worktree. launchAgent Returns a handle bound to that workspace (the workspace id). command is ignored — a queue does not run an interactive CLI line. send (first) Submits : fleet submit --project <p --base <workspace base --model <m [--fallback-models a,b] --priority <n --prompt-file <tmp ; parses submitted <q-id and stores the id. Prompt = the text. send (later) Refused: delivered:false , detail \"not interactive\". A failed submit is also delivered:false and leaves the workspace unsubmitted, so a retry is possible. readScreen fleet tail <q-id , last lines lines. Empty before submit or when tail fails. observeWorkspaces fleet queue --json ; each submitted workspace maps to { id, pullRequest: null, state } . States fold to queued · running · done · failed · cancelled ; any word we do not know is unknown , never done . The SCM stays the source of PR state. removeWorkspace If the task is not terminal, fleet cancel <q-id ; a failed cancel throws and keeps the record. Then forgets the record. A task already done/failed/cancelled is not cancelled again. schedule Returns the fleet coordinator owns scheduling ; writes nothing. Delivery. When a task ends done , the deliver step collects its commits with fleet collect <host-task-id --json (which never pushes) and opens the pull request as it does for any runner. The PR is the orchestrator's job, not the queue's. The connector gained an optional collect({ id }) for this: it takes the host task id from the queue row ( hostTaskId / host task id / taskId / task id , else the queue id) and runs fleet collect --json . fleet collect creates no branch under the harness's name: it fetches the commits to ref = refs/remotes/fleet/<host /<host-task-id and reports { ref, head, base, commits } . The output is validated with a zod schema ( ref , head as a hex sha, commits as an integer ≥ 0; other keys ignored); non-JSON or a wrong shape is refused. commits: 0 returns no branch, and deliver treats it as a stuck worker (escalated, no push, no PR). Otherwise the connector checks git merge-base --is-ancestor <head <ref and runs git branch -f <branch <head , so the harness's own local branch sits exactly at the collected commit. Deliver then pushes it with git push -u origin <branch , opens the PR with gh pr create (body carries Loop-Contract: <digest ), and the PR is reviewed and merged like any other. A task that ends failed / cancelled is a stuck worker, escalated to a person. Definition of done. The other runners prove the DoD from the worker's worktree and the handoff files it wrote there; a fleet task has neither (found live on factory-sandbox 3: every pass waiting on missing: verify, o1, o2; failing: test-for-new-code ). For fleet , deliver proves it in src/loop/fleet-dod.ts , on a temporary git worktree at the ",
+          "summary": "Accepted. Local re-runs are unit-verified verdicts bound to the patch-id, and are skipped when the patch is unchanged (ADR-0046).",
+          "body": "ADR-0045: A fleet runner — dispatch through the fleet coordinator's queue Status Accepted. Local re-runs are unit-verified verdicts bound to the patch-id, and are skipped when the patch is unchanged ( ). Context The factory design (fleet repository, docs/design/industrial-sdlc.md §8 step 3) puts the harness's RunnerConnector in front of the factory queue. The fleet coordinator is that queue's front door: fleet submit , fleet queue --json , fleet tail , fleet collect , fleet cancel . Behind it the queue may be fleet's own or Hatchet; the harness must not know which, so it speaks only the CLI, through CommandRunner (argv, no shell). A fleet task is not an Orca terminal: it is submitted once, runs unattended, has no local worktree, and cannot be typed into afterwards. The interface has to say so honestly rather than pretend. Decision A third implementation, createFleetRunner ( src/loop/fleet-runner.ts ), selected by connectors.runner: fleet . The engine and the interface are unchanged, except one optional field: WorkspaceObservation.state , the task state, because a queued task has no pull request to report. RunnerConnector Fleet behaviour --- --- createWorkspace Records a pending workspace (harness-side id, branch, base) in <stateDir /fleet-workspaces.json . Contacts nothing. path is '' : there is no local worktree. launchAgent Returns a handle bound to that workspace (the workspace id). command is ignored — a queue does not run an interactive CLI line. send (first) Submits : fleet submit --project <p --base <workspace base --model <m [--fallback-models a,b] --priority <n --prompt-file <tmp ; parses submitted <q-id and stores the id. Prompt = the text. send (later) Refused: delivered:false , detail \"not interactive\". A failed submit is also delivered:false and leaves the workspace unsubmitted, so a retry is possible. readScreen fleet tail <q-id , last lines lines. Empty before submit or when tail fails. observeWorkspaces fleet queue --json ; each submitted workspace maps to { id, pullRequest: null, state } . States fold to queued · running · done · failed · cancelled ; any word we do not know is unknown , never done . The SCM stays the source of PR state. removeWorkspace If the task is not terminal, fleet cancel <q-id ; a failed cancel throws and keeps the record. Then forgets the record. A task already done/failed/cancelled is not cancelled again. schedule Returns the fleet coordinator owns scheduling ; writes nothing. Delivery. When a task ends done , the deliver step collects its commits with fleet collect <host-task-id --json (which never pushes) and opens the pull request as it does for any runner. The PR is the orchestrator's job, not the queue's. The connector gained an optional collect({ id }) for this: it takes the host task id from the queue row ( hostTaskId / host task id / taskId / task id , else the queue id) and runs fleet collect --json . fleet collect creates no branch under the harness's name: it fetches the commits to ref = refs/remotes/fleet/<host /<host-task-id and reports { ref, head, base, commits } . The output is validated with a zod schema ( ref , head as a hex sha, commits as an integer ≥ 0; other keys ignored); non-JSON or a wrong shape is refused. commits: 0 returns no branch, and deliver treats it as a stuck worker (escalated, no push, no PR). Otherwise the connector checks git merge-base --is-ancestor <head <ref and runs git branch -f <branch <head , so the harness's own local branch sits exactly at the collected commit. Deliver then pushes it with git push -u origin <branch , opens the PR with gh pr create (body carries Loop-Contract: <digest ), and the PR is reviewed and merged like any other. A task that ends failed / cancelled is a stuck worker, escalated to a person. Definition of done. The other runners prove the DoD from the worker's worktree and the handoff files it wrote there; a fleet task has neither (found live on factory-sandbox 3: every pass waiting on missing: verify, o1, o2; failing:",
           "aliases": "document human"
         },
         "graph": {
-          "pagerank": 0,
+          "pagerank": 0.023629,
           "inboundLinks": 0,
           "coveredBy": [],
           "mentionedBy": [],
           "inbound": [],
           "outbound": [
+            {
+              "kind": "links-to",
+              "id": "document:docs/ADR-0046-verdict-levels-and-the-merge-policy.md",
+              "confidence": "observed"
+            },
             {
               "kind": "mentions",
               "id": "area:test",
@@ -14420,7 +14535,92 @@
             }
           ]
         },
-        "contentHash": "25b272ccc1b2a21c4c734bdbaf171fdbf56cd1961d3782b79f6c8949b3a9dad2",
+        "contentHash": "a1df3a29a3b58c08564dea621878824d542c22a5f9daaee4ebec1989d7ec2110",
+        "provenance": "observed",
+        "confidence": "observed"
+      },
+      {
+        "id": "document:docs/ADR-0046-verdict-levels-and-the-merge-policy.md",
+        "kind": "document",
+        "path": "docs/ADR-0046-verdict-levels-and-the-merge-policy.md",
+        "title": "ADR-0046: Verdict levels bound to the patch, a pure merge policy, and a read-back after merge",
+        "summary": "Accepted",
+        "audience": "human",
+        "aliases": [],
+        "tags": [
+          "document",
+          "human"
+        ],
+        "fields": {
+          "title": "ADR-0046: Verdict levels bound to the patch, a pure merge policy, and a read-back after merge",
+          "headings": "ADR-0046: Verdict levels bound to the patch, a pure merge policy, and a read-back after merge Status Context Decision Verdict levels Verdicts bound to the patch The merge decision is a pure function Read back after merge Consequences",
+          "path": "docs/ADR-0046-verdict-levels-and-the-merge-policy.md",
+          "symbols": "",
+          "summary": "Accepted",
+          "body": "ADR-0046: Verdict levels bound to the patch, a pure merge policy, and a read-back after merge Status Accepted Context Research of pstack (cursor/plugins) and google-research/harness2 (2026-10-20) found three weaknesses the maintainer approved fixing for reliability. The harness and the fleet are one product (fleet repository, docs/design/factory-app-brief.md §7 Trust), so what a \"pass\" means has to be the same on both sides. 1. Pass/fail hides how far something was checked. \"Passed\" covered \"it compiles\" and \"I ran it against the real thing\". A merge gate cannot ask for what the record cannot say (ADR-0035, ADR-0039). 2. A verdict outlived the code it judged, or was thrown away needlessly. Proofs were read per head: a rebase that changed no line re-ran everything (expensive for a fleet task, ADR-0045), and nothing recorded which change a proof was made on. 3. The merge decision was spread across handlePullRequest — held paths, the gate floor, merge.auto , the human gate — interleaved with I/O, so it could not be tested as a table. And a merge GitHub accepted was trusted as done. Decision Verdict levels src/loop/verdict.ts . A verdict is one of, weakest first: failed < blocked < type-check-only < unit-verified < live-verified blocked is \"could not be verified at all\" — not a failure of the change, a gap only a person can close. Each definition-of-done item (ADR-0035, both lists) carries a level; the proof table on the PR and the merged comment show it next to the status. A worker states it in .ak-loop/dod.json as \"verdict\": \"<level \" . Where the level comes from: Source Level --- --- worker proof with a verdict as written ( status: failed beats a proven level; blocked survives) legacy worker proof, status: passed unit-verified legacy worker proof, status: failed failed file-changed / pattern-absent , decided by the harness from the diff unit-verified (deterministic, but not a claim about running code) a command the harness re-ran in its own checkout ( fleet , ADR-0045) unit-verified a review clean → unit-verified , findings → failed , incomplete → blocked — judged by its status, not by minVerdict Migration of stored state. passed becomes unit-verified , failed stays failed ; reading is tolerant, nothing is rewritten in bulk: a stored verdicts.json item that says passed is read as unit-verified , and delivery.json review entries without a verdict get one from their status when read. Project minimum. delivery.merge.minVerdict (default unit-verified ): the weakest level a proven item may carry for the loop to merge. An item below it goes back to the worker as a fix round (\"proven, but below the required verdict … verify them further\") — the worker can raise it. Items still missing or failed are unchanged. blocked items are not fix rounds, see the policy. Verdicts bound to the patch With each assessment the loop stores <stateDir /issues/<issue /verdicts.json : every item's verdict and evidence, the git patch-id --stable of the PR diff ( gh pr diff git patch-id --stable ; the CommandRunner gained a stdin option for it), the head, and the run fingerprint: On the next pass (a push, a rebase) the stored verdicts hold when the patch-id is equal and the contract digest and guard-policy digest are equal. The base SHA and the model are recorded, not compared: a rebase moves the first and a retry the second without changing what was verified. Holding means stored proven items stand in for what the fresh read does not state (a fresh statement always wins), and a fleet task whose every item was proven on this patch skips the local re-run. Otherwise — a different patch, a changed contract or guard policy, or a patch-id that could not be computed (either side) — nothing is carried and the items are proven again, which is the existing behaviour. No binding means no reuse; it never means \"assume it holds\". The patch-id is read once more right before the merge decision: a push that landed while the review ran makes the verdicts stale and the polic",
+          "aliases": "document human"
+        },
+        "graph": {
+          "pagerank": 0.13527,
+          "inboundLinks": 5,
+          "coveredBy": [],
+          "mentionedBy": [],
+          "inbound": [
+            {
+              "kind": "links-to",
+              "id": "document:docs/ADR-0035-definition-of-done-two-lists.md",
+              "confidence": "observed"
+            },
+            {
+              "kind": "links-to",
+              "id": "document:docs/ADR-0036-bounded-self-modification.md",
+              "confidence": "observed"
+            },
+            {
+              "kind": "links-to",
+              "id": "document:docs/ADR-0038-worker-guard-real-time-enforcement.md",
+              "confidence": "observed"
+            },
+            {
+              "kind": "links-to",
+              "id": "document:docs/ADR-0039-gate-floor-and-the-unwired-local-runner.md",
+              "confidence": "observed"
+            },
+            {
+              "kind": "links-to",
+              "id": "document:docs/ADR-0045-fleet-runner.md",
+              "confidence": "observed"
+            }
+          ],
+          "outbound": [
+            {
+              "kind": "mentions",
+              "id": "module:src/loop/merge-policy.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "mentions",
+              "id": "module:src/loop/verdict.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "mentions",
+              "id": "module:test/loop-merge-policy.test.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "mentions-symbol",
+              "id": "module:src/adapters/command.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "mentions-symbol",
+              "id": "module:src/adapters/github-cli.ts",
+              "confidence": "observed"
+            }
+          ]
+        },
+        "contentHash": "80b4be389e484db0d61cbbf6c8a0f3b0016909595aede459fb62ba6e9ef99ca9",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -14446,7 +14646,7 @@
           "aliases": "document human"
         },
         "graph": {
-          "pagerank": 0.031874,
+          "pagerank": 0.025303,
           "inboundLinks": 2,
           "coveredBy": [],
           "mentionedBy": [
@@ -14511,7 +14711,7 @@
         ],
         "fields": {
           "title": "Keep-pushing loop (ak-harness loop)",
-          "headings": "Keep-pushing loop (ak-harness loop) Commands Debrief and watch The observe stage — the scan that knows what it already said Running 24/7 with Orca Worker handoff Deliver Worker terminals GitHub label intake: reviewing PRs the loop never dispatched Event bus and orchestration hooks Calling a human: notifications Presets and loop init What the orchestrator reads Configuration in four layers Flow profiles: one motor, several kinds of demand loop plan — a vague objective becomes issues The plan and its votes (worker.plan) intake and maintain — where work comes from when nobody typed it Cost: policy, ceilings, and the levers that are real Connectors: the engine names no vendor release — promotion and deploy, with a human in front Definition of Done: two lists, both proven Runs: how an issue was built (ADR-0041) Rendered specs (spec.enabled) The roles are agents, and they can be improved The loop improving itself, within limits One tick Topping up a person queue (linear.refill) and yielding to another loop (queue.yieldTo) Resilience: auto-pause after repeated failures PII/secret scanning Cost/time circuit breakers Dynamic outcome progress Skills pinned into the worker brief Worktree setup command What the doctor checks Dynamic model routing Model routing Reasoning effort per role Machine slots Integrations used by the loop Doc Bridge (context for the orchestrator) Code Review (agentskit-review) Eval battery (package quality, not the live loop) AgentsKit ecosystem map (what the harness has vs what the loop uses) What can be added to help the SDLC Boundaries Security notes Continuous improvement: loop retro",
+          "headings": "Keep-pushing loop (ak-harness loop) Commands Debrief and watch The observe stage — the scan that knows what it already said Running 24/7 with Orca Worker handoff Deliver Worker terminals GitHub label intake: reviewing PRs the loop never dispatched Event bus and orchestration hooks Calling a human: notifications Presets and loop init What the orchestrator reads Configuration in four layers Flow profiles: one motor, several kinds of demand loop plan — a vague objective becomes issues The plan and its votes (worker.plan) intake and maintain — where work comes from when nobody typed it Cost: policy, ceilings, and the levers that are real Connectors: the engine names no vendor release — promotion and deploy, with a human in front Definition of Done: two lists, both proven Verdict levels, patch binding and the merge policy (ADR-0046) Runs: how an issue was built (ADR-0041) Rendered specs (spec.enabled) The roles are agents, and they can be improved The loop improving itself, within limits One tick Topping up a person queue (linear.refill) and yielding to another loop (queue.yieldTo) Resilience: auto-pause after repeated failures PII/secret scanning Cost/time circuit breakers Dynamic outcome progress Skills pinned into the worker brief Worktree setup command What the doctor checks Dynamic model routing Model routing Reasoning effort per role Machine slots Integrations used by the loop Doc Bridge (context for the orchestrator) Code Review (agentskit-review) Eval battery (package quality, not the live loop) AgentsKit ecosystem map (what the harness has vs what the loop uses) What can be added to help the SDLC Boundaries Security notes Continuous improvement: loop retro",
           "path": "docs/LOOP.md",
           "symbols": "",
           "summary": "The loop drains one person's Linear queue through Orca worktrees, 24/7, with role-based model routing and usage-aware fallback. The harness supplies the deterministic parts (claims, machine pressure, gates, evidence); Orca supplies scheduling, worktrees, terminals, Linear access and visibility.",
@@ -14519,7 +14719,7 @@
           "aliases": "document human"
         },
         "graph": {
-          "pagerank": 0.051298,
+          "pagerank": 0.040722,
           "inboundLinks": 3,
           "coveredBy": [],
           "mentionedBy": [
@@ -14630,6 +14830,11 @@
             },
             {
               "kind": "mentions",
+              "id": "module:src/loop/merge-policy.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "mentions",
               "id": "module:src/loop/progress.ts",
               "confidence": "observed"
             },
@@ -14730,6 +14935,11 @@
             },
             {
               "kind": "mentions-symbol",
+              "id": "module:src/loop/merge-policy.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "mentions-symbol",
               "id": "module:src/loop/progress.ts",
               "confidence": "observed"
             },
@@ -14760,7 +14970,7 @@
             }
           ]
         },
-        "contentHash": "d6a442cf88084ca2f6dbff63d0a37898b96e4e0e155a18d932c504fa35641abb",
+        "contentHash": "4c2bc2389c2d756384f4d6ed29eb52127739163d115688561c282d61eeaf2691",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -14786,7 +14996,7 @@
           "aliases": "document human"
         },
         "graph": {
-          "pagerank": 0.029766,
+          "pagerank": 0.023629,
           "inboundLinks": 2,
           "coveredBy": [],
           "mentionedBy": [
@@ -15154,7 +15364,7 @@
           "aliases": "document human"
         },
         "graph": {
-          "pagerank": 0.056859,
+          "pagerank": 0.045137,
           "inboundLinks": 1,
           "coveredBy": [],
           "mentionedBy": [
@@ -15270,7 +15480,7 @@
           "aliases": "document human"
         },
         "graph": {
-          "pagerank": 0.038648,
+          "pagerank": 0.03068,
           "inboundLinks": 2,
           "coveredBy": [],
           "mentionedBy": [
@@ -15363,7 +15573,7 @@
           "aliases": "document unclassified"
         },
         "graph": {
-          "pagerank": 0.031874,
+          "pagerank": 0.025303,
           "inboundLinks": 1,
           "coveredBy": [],
           "mentionedBy": [
@@ -15409,7 +15619,7 @@
           "aliases": "document project"
         },
         "graph": {
-          "pagerank": 0.029766,
+          "pagerank": 0.023629,
           "inboundLinks": 0,
           "coveredBy": [],
           "mentionedBy": [],
@@ -15542,7 +15752,7 @@
           "aliases": "document unclassified"
         },
         "graph": {
-          "pagerank": 0.031874,
+          "pagerank": 0.025303,
           "inboundLinks": 1,
           "coveredBy": [],
           "mentionedBy": [
@@ -18218,14 +18428,15 @@
         },
         "graph": {
           "pagerank": 0,
-          "inboundLinks": 5,
+          "inboundLinks": 6,
           "coveredBy": [],
           "mentionedBy": [
             "document:docs/LOOP.md",
             "document:docs/MODULE-BOUNDARIES.md",
             "document:CHANGELOG.md",
             "document:docs/ADR-0027-keep-pushing-loop.md",
-            "document:docs/ADR-0045-fleet-runner.md"
+            "document:docs/ADR-0045-fleet-runner.md",
+            "document:docs/ADR-0046-verdict-levels-and-the-merge-policy.md"
           ],
           "areaId": "area:src/adapters",
           "packageId": "package:@agentskit/harness",
@@ -18402,6 +18613,11 @@
             },
             {
               "kind": "imports",
+              "id": "module:src/loop/verdict.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
               "id": "module:src/loop/watch.ts",
               "confidence": "observed"
             },
@@ -18428,6 +18644,11 @@
             {
               "kind": "imports",
               "id": "module:src/ui/api/server.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
+              "id": "module:test/loop-verdict.test.ts",
               "confidence": "observed"
             },
             {
@@ -18492,6 +18713,11 @@
             },
             {
               "kind": "mentions-symbol",
+              "id": "document:docs/ADR-0046-verdict-levels-and-the-merge-policy.md",
+              "confidence": "observed"
+            },
+            {
+              "kind": "mentions-symbol",
               "id": "document:docs/LOOP.md",
               "confidence": "observed"
             },
@@ -18503,7 +18729,7 @@
           ],
           "outbound": []
         },
-        "contentHash": "0d4fd0439fe01d0c5819820d7950f9fb2e0f8e05ca894c1f0afbcf9c082435ec",
+        "contentHash": "3ff0b66ced122500ed055a6e08907b0c0147ad94763adf6bc056710e31627561",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -18687,14 +18913,15 @@
         },
         "graph": {
           "pagerank": 0,
-          "inboundLinks": 5,
+          "inboundLinks": 6,
           "coveredBy": [],
           "mentionedBy": [
             "document:docs/ADR-0029-loop-resilience-pinning-intake.md",
             "document:docs/MODULE-BOUNDARIES.md",
             "document:CHANGELOG.md",
             "document:docs/ADR-0038-worker-guard-real-time-enforcement.md",
-            "document:docs/ADR-0039-gate-floor-and-the-unwired-local-runner.md"
+            "document:docs/ADR-0039-gate-floor-and-the-unwired-local-runner.md",
+            "document:docs/ADR-0046-verdict-levels-and-the-merge-policy.md"
           ],
           "areaId": "area:src/adapters",
           "packageId": "package:@agentskit/harness",
@@ -18777,6 +19004,11 @@
             {
               "kind": "mentions-symbol",
               "id": "document:docs/ADR-0039-gate-floor-and-the-unwired-local-runner.md",
+              "confidence": "observed"
+            },
+            {
+              "kind": "mentions-symbol",
+              "id": "document:docs/ADR-0046-verdict-levels-and-the-merge-policy.md",
               "confidence": "observed"
             },
             {
@@ -24098,6 +24330,11 @@
             },
             {
               "kind": "imports",
+              "id": "module:src/loop/verdict.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
               "id": "module:src/ui/api/alerts.ts",
               "confidence": "observed"
             },
@@ -25996,7 +26233,7 @@
             }
           ]
         },
-        "contentHash": "8ecbabc701bdc1ed9944cb3b777d1739ce653b1d77017807903d88916d587853",
+        "contentHash": "be953ba6d06004079600c353d33031e494da223e3cfefe5c1555682d71b0e713",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -27078,12 +27315,17 @@
             },
             {
               "kind": "imports",
+              "id": "module:src/loop/verdict.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
               "id": "module:src/record.ts",
               "confidence": "observed"
             }
           ]
         },
-        "contentHash": "1da0f96e49150ee2dc013f1583dd91f8bc97844eeca924c658cc7531393e01a3",
+        "contentHash": "27b4911df90ac2d7eaf623c8d426b38f4478dac9613ec5fc6863b1e457ce731f",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -27874,6 +28116,11 @@
               "confidence": "observed"
             },
             {
+              "kind": "imports",
+              "id": "module:test/loop-verdict.test.ts",
+              "confidence": "observed"
+            },
+            {
               "kind": "mentions",
               "id": "document:docs/ADR-0043-delivery-state-module-boundary.md",
               "confidence": "observed"
@@ -27909,10 +28156,15 @@
               "kind": "imports",
               "id": "module:src/loop/tick.ts",
               "confidence": "observed"
+            },
+            {
+              "kind": "imports",
+              "id": "module:src/loop/verdict.ts",
+              "confidence": "observed"
             }
           ]
         },
-        "contentHash": "c788ef33f550b857c86f6d1a149270d80d205b83bbd2c4b6b8664563c0ed192a",
+        "contentHash": "8d872ce29287cdb2045554f7d04bed2968764758b4ca11a842e8322b35e67156",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -28229,6 +28481,11 @@
             },
             {
               "kind": "imports",
+              "id": "module:src/loop/merge-policy.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
               "id": "module:src/loop/model-catalog/index.ts",
               "confidence": "observed"
             },
@@ -28289,6 +28546,11 @@
             },
             {
               "kind": "imports",
+              "id": "module:src/loop/verdict.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
               "id": "module:src/loop/worker-guard.ts",
               "confidence": "observed"
             },
@@ -28299,7 +28561,7 @@
             }
           ]
         },
-        "contentHash": "3ab6c59e9f1dcf8b45c9cf4dc1d157d460b9efedfe440faa406f4ca965926ef1",
+        "contentHash": "669798924f5901b62264901174359e2d2a0782ef9b06086ba9757bfb7f28d7a4",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -28705,6 +28967,7 @@
           "DodProof",
           "assessDod",
           "dodEvidencePath",
+          "proofVerdict",
           "readDodEvidence",
           "renderDodForBrief",
           "renderDodMarkdown"
@@ -28718,7 +28981,7 @@
           "title": "dod.ts",
           "headings": "",
           "path": "src/loop/dod.ts",
-          "symbols": "DodAssessment DodEvidenceFile DodItem DodLine DodProof assessDod dodEvidencePath readDodEvidence renderDodForBrief renderDodMarkdown",
+          "symbols": "DodAssessment DodEvidenceFile DodItem DodLine DodProof assessDod dodEvidencePath proofVerdict readDodEvidence renderDodForBrief renderDodMarkdown",
           "summary": "",
           "body": "",
           "aliases": "module ts loop"
@@ -28758,6 +29021,11 @@
             {
               "kind": "imports",
               "id": "module:src/ui/api/search.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
+              "id": "module:test/loop-verdict.test.ts",
               "confidence": "observed"
             },
             {
@@ -28806,10 +29074,15 @@
               "kind": "imports",
               "id": "module:src/loop/contract.ts",
               "confidence": "observed"
+            },
+            {
+              "kind": "imports",
+              "id": "module:src/loop/verdict.ts",
+              "confidence": "observed"
             }
           ]
         },
-        "contentHash": "7ffc615194d8b90022adc2cb647f0192c0b6e41367149d8738b85ff3b40c7710",
+        "contentHash": "1a7bfaaa3524de644a3d3c4d04c7d3c989d2ca180e5e88a96b8d72508401f0fb",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -29050,7 +29323,7 @@
           ],
           "outbound": []
         },
-        "contentHash": "7c55aa75a74053bc7c2a7f15c227892f5576974164b43ae0603b4b3627ac5742",
+        "contentHash": "58e24679839baa912b859a00b8186a1f54c980ef9aee0a01476b5c7fbbec1600",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -29145,10 +29418,15 @@
               "kind": "imports",
               "id": "module:src/loop/comment-format.ts",
               "confidence": "observed"
+            },
+            {
+              "kind": "imports",
+              "id": "module:src/loop/verdict.ts",
+              "confidence": "observed"
             }
           ]
         },
-        "contentHash": "ff84fe49bef53b8badb1ff49dcba51cc76f9ca5c278e2785bc14cacf4f75f98d",
+        "contentHash": "6646486908c0f9a21d8edddf3ef1ec2ec9c02ea6966ca59d6ac53a56ce8854d6",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -29231,7 +29509,7 @@
             }
           ]
         },
-        "contentHash": "49e5aed158ac06d06c44833ea9a0bce09333874fc2d5666f330b25a3171f8c71",
+        "contentHash": "b28c66a319a4a3960600a49da85fdf30d202909077e900de5c727b9da7526e7e",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -29538,6 +29816,11 @@
             {
               "kind": "imports",
               "id": "module:src/loop/tuning.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
+              "id": "module:src/loop/verdict.ts",
               "confidence": "observed"
             },
             {
@@ -31286,6 +31569,87 @@
         "confidence": "observed"
       },
       {
+        "id": "module:src/loop/merge-policy.ts",
+        "kind": "module",
+        "path": "src/loop/merge-policy.ts",
+        "title": "merge-policy.ts",
+        "aliases": [],
+        "symbols": [
+          "MergeDecision",
+          "MergePolicyInput",
+          "decideMerge",
+          "weakestVerdict"
+        ],
+        "tags": [
+          "module",
+          "ts",
+          "loop"
+        ],
+        "fields": {
+          "title": "merge-policy.ts",
+          "headings": "",
+          "path": "src/loop/merge-policy.ts",
+          "symbols": "MergeDecision MergePolicyInput decideMerge weakestVerdict",
+          "summary": "",
+          "body": "",
+          "aliases": "module ts loop"
+        },
+        "graph": {
+          "pagerank": 0,
+          "inboundLinks": 3,
+          "coveredBy": [],
+          "mentionedBy": [
+            "document:docs/ADR-0039-gate-floor-and-the-unwired-local-runner.md",
+            "document:docs/ADR-0046-verdict-levels-and-the-merge-policy.md",
+            "document:docs/LOOP.md"
+          ],
+          "areaId": "area:src/loop",
+          "packageId": "package:@agentskit/harness",
+          "inbound": [
+            {
+              "kind": "imports",
+              "id": "module:src/loop/deliver.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
+              "id": "module:test/loop-merge-policy.test.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "mentions",
+              "id": "document:docs/ADR-0039-gate-floor-and-the-unwired-local-runner.md",
+              "confidence": "observed"
+            },
+            {
+              "kind": "mentions",
+              "id": "document:docs/ADR-0046-verdict-levels-and-the-merge-policy.md",
+              "confidence": "observed"
+            },
+            {
+              "kind": "mentions",
+              "id": "document:docs/LOOP.md",
+              "confidence": "observed"
+            },
+            {
+              "kind": "mentions-symbol",
+              "id": "document:docs/LOOP.md",
+              "confidence": "observed"
+            }
+          ],
+          "outbound": [
+            {
+              "kind": "imports",
+              "id": "module:src/loop/verdict.ts",
+              "confidence": "observed"
+            }
+          ]
+        },
+        "contentHash": "0556c8ea5faf1014e9c2dd0087ab56fbc1b139e6db73a98024e814e8e2bd4931",
+        "provenance": "observed",
+        "confidence": "observed"
+      },
+      {
         "id": "module:src/loop/model-catalog/index.ts",
         "kind": "module",
         "path": "src/loop/model-catalog/index.ts",
@@ -32236,6 +32600,11 @@
               "confidence": "observed"
             },
             {
+              "kind": "imports",
+              "id": "module:test/loop-verdict.test.ts",
+              "confidence": "observed"
+            },
+            {
               "kind": "mentions",
               "id": "document:docs/MODULE-BOUNDARIES.md",
               "confidence": "observed"
@@ -32264,7 +32633,7 @@
             }
           ]
         },
-        "contentHash": "336df8b8923d8dba22c4067d4e6aff686909b557c179ab5f34a80e0210899480",
+        "contentHash": "fd033f673ba3b53d2b841ac23f84d7c540a34bbb6f702b25affbf8935c63781e",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -34800,6 +35169,117 @@
         "confidence": "observed"
       },
       {
+        "id": "module:src/loop/verdict.ts",
+        "kind": "module",
+        "path": "src/loop/verdict.ts",
+        "title": "verdict.ts",
+        "aliases": [],
+        "symbols": [
+          "FingerprintSchema",
+          "RunFingerprint",
+          "VERDICT_LEVELS",
+          "Verdict",
+          "VerdictRecord",
+          "VerdictRecordSchema",
+          "isProven",
+          "meetsVerdict",
+          "migrateVerdict",
+          "patchIdOfPullRequest",
+          "readVerdictRecord",
+          "reviewLevel",
+          "verdictRank",
+          "verdictRecordPath",
+          "verdictsHold",
+          "writeVerdictRecord"
+        ],
+        "tags": [
+          "module",
+          "ts",
+          "loop"
+        ],
+        "fields": {
+          "title": "verdict.ts",
+          "headings": "",
+          "path": "src/loop/verdict.ts",
+          "symbols": "FingerprintSchema RunFingerprint VERDICT_LEVELS Verdict VerdictRecord VerdictRecordSchema isProven meetsVerdict migrateVerdict patchIdOfPullRequest readVerdictRecord reviewLevel verdictRank verdictRecordPath verdictsHold writeVerdictRecord",
+          "summary": "",
+          "body": "",
+          "aliases": "module ts loop"
+        },
+        "graph": {
+          "pagerank": 0,
+          "inboundLinks": 1,
+          "coveredBy": [],
+          "mentionedBy": [
+            "document:docs/ADR-0046-verdict-levels-and-the-merge-policy.md"
+          ],
+          "areaId": "area:src/loop",
+          "packageId": "package:@agentskit/harness",
+          "inbound": [
+            {
+              "kind": "imports",
+              "id": "module:src/loop/config.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
+              "id": "module:src/loop/deliver-state.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
+              "id": "module:src/loop/deliver.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
+              "id": "module:src/loop/dod.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
+              "id": "module:src/loop/evidence.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
+              "id": "module:src/loop/merge-policy.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
+              "id": "module:test/loop-verdict.test.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "mentions",
+              "id": "document:docs/ADR-0046-verdict-levels-and-the-merge-policy.md",
+              "confidence": "observed"
+            }
+          ],
+          "outbound": [
+            {
+              "kind": "imports",
+              "id": "module:src/adapters/command.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
+              "id": "module:src/kernel/json-file.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
+              "id": "module:src/loop/fs-atomic.ts",
+              "confidence": "observed"
+            }
+          ]
+        },
+        "contentHash": "b4157fcd722440809f4aac9a71680066943d8170336c0ecf4750d14337eb5b8c",
+        "provenance": "observed",
+        "confidence": "observed"
+      },
+      {
         "id": "module:src/loop/watch.ts",
         "kind": "module",
         "path": "src/loop/watch.ts",
@@ -35785,7 +36265,7 @@
             }
           ]
         },
-        "contentHash": "8c6732628161f8b42f48b7cd1ad640fef5f8fca8064fc99d8351cc9d58d12940",
+        "contentHash": "db3797af102e9de119a82136ed5771a8d8edd610b361a242fdef76d93ce17468",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -37192,7 +37672,7 @@
             }
           ]
         },
-        "contentHash": "576c5c2dec3abed795a0bc1db93c955f9c9e03f051d8f03c24007ab56726057d",
+        "contentHash": "05de8cb1e6a890a89a620155bc3f1a05ef8d50b1a86186451c92ca0cd5425135",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -43844,7 +44324,7 @@
             }
           ]
         },
-        "contentHash": "ea70befe78b2f9244a47d6cb5a75670b7229547ffccb46a71eee24539fd5c06b",
+        "contentHash": "3c60bef6f3291f12d0a4ffc5ce1411615fc8e33e5959699a6bfcd671461f7935",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -44994,6 +45474,54 @@
         "confidence": "observed"
       },
       {
+        "id": "module:test/loop-merge-policy.test.ts",
+        "kind": "module",
+        "path": "test/loop-merge-policy.test.ts",
+        "title": "loop-merge-policy.test.ts",
+        "aliases": [],
+        "tags": [
+          "module",
+          "ts",
+          "test"
+        ],
+        "fields": {
+          "title": "loop-merge-policy.test.ts",
+          "headings": "",
+          "path": "test/loop-merge-policy.test.ts",
+          "symbols": "",
+          "summary": "",
+          "body": "",
+          "aliases": "module ts test"
+        },
+        "graph": {
+          "pagerank": 0,
+          "inboundLinks": 1,
+          "coveredBy": [],
+          "mentionedBy": [
+            "document:docs/ADR-0046-verdict-levels-and-the-merge-policy.md"
+          ],
+          "areaId": "area:test",
+          "packageId": "package:@agentskit/harness",
+          "inbound": [
+            {
+              "kind": "mentions",
+              "id": "document:docs/ADR-0046-verdict-levels-and-the-merge-policy.md",
+              "confidence": "observed"
+            }
+          ],
+          "outbound": [
+            {
+              "kind": "imports",
+              "id": "module:src/loop/merge-policy.ts",
+              "confidence": "observed"
+            }
+          ]
+        },
+        "contentHash": "64c4790bc91ad43b5a4bf786d32f76bbc57e79b9bdc4659a130bd275ca650040",
+        "provenance": "observed",
+        "confidence": "observed"
+      },
+      {
         "id": "module:test/loop-model-catalog.test.ts",
         "kind": "module",
         "path": "test/loop-model-catalog.test.ts",
@@ -46079,6 +46607,71 @@
           ]
         },
         "contentHash": "8beeb602a1a5ac155cbf210cf81646b275a8061b0462a75adac5890e856efdca",
+        "provenance": "observed",
+        "confidence": "observed"
+      },
+      {
+        "id": "module:test/loop-verdict.test.ts",
+        "kind": "module",
+        "path": "test/loop-verdict.test.ts",
+        "title": "loop-verdict.test.ts",
+        "aliases": [],
+        "tags": [
+          "module",
+          "ts",
+          "test"
+        ],
+        "fields": {
+          "title": "loop-verdict.test.ts",
+          "headings": "",
+          "path": "test/loop-verdict.test.ts",
+          "symbols": "",
+          "summary": "",
+          "body": "",
+          "aliases": "module ts test"
+        },
+        "graph": {
+          "pagerank": 0,
+          "inboundLinks": 0,
+          "coveredBy": [],
+          "mentionedBy": [],
+          "areaId": "area:test",
+          "packageId": "package:@agentskit/harness",
+          "inbound": [],
+          "outbound": [
+            {
+              "kind": "imports",
+              "id": "module:src/adapters/command.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
+              "id": "module:src/index.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
+              "id": "module:src/loop/deliver-state.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
+              "id": "module:src/loop/dod.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
+              "id": "module:src/loop/process.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
+              "id": "module:src/loop/verdict.ts",
+              "confidence": "observed"
+            }
+          ]
+        },
+        "contentHash": "e30e5ae5e638341c38fa2e8cce33e37a895cba1f7184db89918a15dae91ed51a",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -48341,7 +48934,7 @@
           "aliases": "harness @agentskit/harness package"
         },
         "graph": {
-          "pagerank": 0.031874,
+          "pagerank": 0.025303,
           "inboundLinks": 7,
           "coveredBy": [
             "document:README.md"
