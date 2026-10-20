@@ -697,8 +697,18 @@ export const LoopConfigSchema = z.object({
   connectors: z.object({
     tracker: z.enum(['linear', 'github']).default('linear'),
     scm: z.enum(['github']).default('github'),
-    /** `orca` drives Orca's worktrees and terminals; `local` is git worktree + tmux + the system crontab. */
-    runner: z.enum(['orca', 'local']).default('orca'),
+    /** `orca` drives Orca's worktrees and terminals; `local` is git worktree + tmux + the system crontab; `fleet` submits to the fleet coordinator's queue. */
+    runner: z.enum(['orca', 'local', 'fleet']).default('orca'),
+    /** `fleet`: dispatch through the fleet coordinator's queue (`fleet submit` / `queue` / `tail` / `cancel`). */
+    fleet: z.object({
+      bin: nonEmpty.default('fleet'),
+      /** `github:<owner>/<repo>` or `<owner>/<repo>`; default: derived from the `origin` remote of `project.root`. */
+      project: z.string().trim().regex(/^(github:)?[\w.-]+\/[\w.-]+$/, 'expected github:<owner>/<repo>').optional(),
+      model: z.enum(['haiku', 'sonnet', 'opus']).default('sonnet'),
+      fallbackModels: z.array(z.enum(['haiku', 'sonnet', 'opus'])).default([]),
+      priority: z.number().int().min(0).default(0),
+      timeoutMs: z.number().int().positive().default(30_000),
+    }).prefault({}),
     local: z.object({
       /** Where `local` puts its worktrees. Relative paths resolve against `project.root`. */
       worktreeRoot: nonEmpty.default('../.ak-worktrees'),

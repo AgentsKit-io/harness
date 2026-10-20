@@ -9,7 +9,7 @@ The four layers that produce this configuration — the machine's global file, t
 machine's overlay — are described in [ADR-0033](https://github.com/AgentsKit-io/harness/blob/main/docs/ADR-0033-four-config-layers-and-presets.md).
 `ak-harness loop validate` prints the effective result, which is the only one that decides anything.
 
-223 of 398 paths carry no description yet.
+228 of 405 paths carry no description yet.
 
 ## `schemaVersion`
 
@@ -404,7 +404,14 @@ Which implementation of each connector this project uses. The engine speaks only
 |---|---|---|---|
 | `connectors.tracker` | `linear` · `github` | `"linear"` |  |
 | `connectors.scm` | `github` | `"github"` |  |
-| `connectors.runner` | `orca` · `local` | `"orca"` | `orca` drives Orca's worktrees and terminals; `local` is git worktree + tmux + the system crontab. |
+| `connectors.runner` | `orca` · `local` · `fleet` | `"orca"` | `orca` drives Orca's worktrees and terminals; `local` is git worktree + tmux + the system crontab; `fleet` submits to the fleet coordinator's queue. |
+| `connectors.fleet` | object | `{}` | `fleet`: dispatch through the fleet coordinator's queue (`fleet submit` / `queue` / `tail` / `cancel`). |
+| `connectors.fleet.bin` | string | `"fleet"` |  |
+| `connectors.fleet.project` | string |  | `github:&lt;owner&gt;/&lt;repo&gt;` or `&lt;owner&gt;/&lt;repo&gt;`; default: derived from the `origin` remote of `project.root`. |
+| `connectors.fleet.model` | `haiku` · `sonnet` · `opus` | `"sonnet"` |  |
+| `connectors.fleet.fallbackModels` | `haiku` · `sonnet` · `opus`[] | `[]` |  |
+| `connectors.fleet.priority` | integer | `0` |  |
+| `connectors.fleet.timeoutMs` | integer | `30000` |  |
 | `connectors.local` | object | `{}` |  |
 | `connectors.local.worktreeRoot` | string | `"../.ak-worktrees"` | Where `local` puts its worktrees. Relative paths resolve against `project.root`. |
 | `connectors.local.tmuxBin` | string | `"tmux"` |  |

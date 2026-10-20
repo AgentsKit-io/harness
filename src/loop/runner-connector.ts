@@ -5,6 +5,7 @@ import { createOrcaDispatchPlan } from '../adapters/orca.js'
 import { orcaTerminalCreate, orcaTerminalScreen, orcaTerminalSend, orcaWorktreeCreate, orcaWorktreeRemove, orcaWorktrees } from '../adapters/orca-cli.js'
 import { fail } from '../kernel/errors.js'
 import type { LoadedLoopConfig } from './config.js'
+import { createFleetRunner } from './fleet-runner.js'
 import { automationName, precheckCommand, type LoopStage } from './automations.js'
 
 /** A place a worker runs: a git worktree plus whatever the runner needs to find it again. */
@@ -14,7 +15,12 @@ export interface ScheduledJob { readonly name: string; readonly cron: string; re
 
 /** What the runner itself observed about a workspace — an observation for display, never a gate: CI, review and
  * the merge sha still come from the SCM, which is the only source that knows them. */
-export interface WorkspaceObservation { readonly id: string; readonly pullRequest: { readonly number: number; readonly state: 'OPEN' | 'CLOSED' | 'MERGED' | null } | null }
+export interface WorkspaceObservation {
+  readonly id: string
+  readonly pullRequest: { readonly number: number; readonly state: 'OPEN' | 'CLOSED' | 'MERGED' | null } | null
+  /** Task state, for a runner whose work is a queued task rather than a live terminal (`fleet`). */
+  readonly state?: 'queued' | 'running' | 'done' | 'failed' | 'cancelled' | 'unknown'
+}
 
 /**
  * Where the loop puts work. Orca is the first implementation; `local` — git worktree, tmux, the system crontab —
@@ -138,5 +144,7 @@ export const scheduledJobs = (loaded: LoadedLoopConfig, stages: readonly LoopSta
   command: precheckCommand(loaded.config, loaded.path, stage),
 }))
 
-export const createRunnerConnector = (input: RunnerInput): RunnerConnector =>
-  input.loaded.config.connectors.runner === 'local' ? createLocalRunner(input) : createOrcaRunner(input)
+export const createRunnerConnector = (input: RunnerInput): RunnerConnector => {
+  const runner = input.loaded.config.connectors.runner
+  return runner === 'local' ? createLocalRunner(input) : runner === 'fleet' ? createFleetRunner(input) : createOrcaRunner(input)
+}
