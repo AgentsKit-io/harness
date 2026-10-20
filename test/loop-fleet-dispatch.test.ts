@@ -37,7 +37,7 @@ const makeFleetEnv = (options: { readonly runner?: 'fleet' | 'orca'; readonly ta
       if (bin0 === 'fleet') {
         if (verb === 'submit') { prompts.push(readFileSync(argv[argv.indexOf('--prompt-file') + 1] ?? '', 'utf8')); queueId = 'q-0001'; return done('submitted q-0001\n') }
         if (verb === 'queue') return options.fleetQueue ?? done(JSON.stringify(queueId ? [{ id: queueId, state: options.taskState?.() ?? 'running', hostTaskId: 'ht-77' }] : []))
-        if (verb === 'collect') return done(JSON.stringify({ ref: 'refs/remotes/fleet/h1/ht-77', head: 'a1b2c3d4e5f6', base: 'basesha', commits: options.commits ?? 1 }))
+        if (verb === 'collect') return done(JSON.stringify({ ref: 'refs/remotes/fleet/h1/ht-77', headSha: 'a1b2c3d4e5f6', baseSha: 'b0b0b0b', commits: options.commits ?? 1 }))
         if (verb === 'doctor') return options.fleetDoctor ?? done(JSON.stringify({ status: 'ok', checks: [{ id: 'coordinator', ok: true }, { id: 'hosts', ok: true }] }))
         return done()
       }
