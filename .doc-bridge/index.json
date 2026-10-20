@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
-  "contentHash": "8b2603398f12c93339a32ec4475c2ba7556d7ecaf0ba01790b177dbbebb91631",
+  "contentHash": "c7cd1862f1640ca9131eeb285384af8a782a8cac37f4723b8a35eee82f23375e",
   "contentHashAlgo": "sha256-semantic-v1",
-  "generatedAt": "2026-10-20T13:26:57.596Z",
+  "generatedAt": "2026-10-20T13:53:11.711Z",
   "project": {
     "name": "AgentsKit Harness",
     "root": "."
@@ -927,7 +927,7 @@
         "document",
         "human"
       ],
-      "contentHash": "9a05c023ff0b85320e3b9b055fb452f7bd46ca85bc1fae883be4cf8b3183c38c"
+      "contentHash": "e56d6760e668d85c26940a68507eb4f6a897f9a08c49e0c0679b781bd37a61a9"
     },
     {
       "id": "document:docs/GETTING-STARTED.md",
@@ -951,7 +951,7 @@
         "document",
         "human"
       ],
-      "contentHash": "8d522ed67f4d9538265b3dcfe15cb9302decbb797b735a505833ad98d9770960"
+      "contentHash": "d6a442cf88084ca2f6dbff63d0a37898b96e4e0e155a18d932c504fa35641abb"
     },
     {
       "id": "document:docs/MODULE-BOUNDARIES.md",
@@ -4117,7 +4117,7 @@
         "ts",
         "loop"
       ],
-      "contentHash": "3eb5e0140e10207156a63301c98e7a9763d294a90f22199aaade4c62ba9aa68c"
+      "contentHash": "510028d2d441436ae45384a4d491b3264b48107e75dc8a6dcc49f2f705fcaeb7"
     },
     {
       "id": "module:src/loop/detached-worker.ts",
@@ -4282,14 +4282,15 @@
         "FleetProbe",
         "createFleetRunner",
         "fleetSubmitPreview",
-        "probeFleet"
+        "probeFleet",
+        "safeFleetBranch"
       ],
       "tags": [
         "module",
         "ts",
         "loop"
       ],
-      "contentHash": "1b02f4348f9919b93950c358b09769440ad4375701190bedc65e43e7edbea43f"
+      "contentHash": "49b0b9c61d21910e8c4a8e967f55e64d01b09a38b0f7021759907808021ef1e7"
     },
     {
       "id": "module:src/loop/flows.ts",
@@ -5355,7 +5356,7 @@
         "ts",
         "loop"
       ],
-      "contentHash": "fb8c1d4a9820268af425b46fc6a933216717be3d6539b1732b7575eacbd19a66"
+      "contentHash": "dffaee0da2f64a56ddcd33c3bc39ee17881c4a1aaa238d85a29e720998b0e16c"
     },
     {
       "id": "module:src/loop/skills.ts",
@@ -8182,7 +8183,7 @@
         "ts",
         "test"
       ],
-      "contentHash": "1121627f1528f70f33713b217f538b8017a4381b0417ddd74bc68c5292d618bf"
+      "contentHash": "cffd3d146c46efd79cafa0464c88d2011582fa514fecd8bbcc2fb4b4207594b2"
     },
     {
       "id": "module:test/loop-fleet-runner.test.ts",
@@ -8194,7 +8195,7 @@
         "ts",
         "test"
       ],
-      "contentHash": "6ee601172a8e2ed4d3a40fd126d5a129a9a246e1b940a5bc90347fcda8cff6c7"
+      "contentHash": "c465c1cff71b8ec55967a1aa1700e576d11be4f7cd57c65cde6140cadb17692d"
     },
     {
       "id": "module:test/loop-flows.test.ts",
@@ -9326,7 +9327,7 @@
     }
   },
   "inputs": {
-    "hash": "1501c65f948df95f4ea7aa7069c49a691049679422cce6eaf99b3c33777e738a",
+    "hash": "af921930476512d5f92d64bcedee7bf4c361addeeffc9cc33446dd2eff75634b",
     "fileCount": 593,
     "projectionVersion": 2
   },
@@ -9349,9 +9350,9 @@
   "projection": {
     "type": "retrieval-index",
     "schemaVersion": 1,
-    "contentHash": "d6423154525a1d45f2b8063a473517c5a2b9a5d8509c200f765e3589af8614c4",
+    "contentHash": "309e21bc854f4390b55b770856a04cb3c21428c31bf9ca424287cacd3e3f257b",
     "contentHashAlgo": "sha256-semantic-v1",
-    "snapshotHash": "3c205335c6c177624959aee7f7d282cf39321dab206ab277797dff2512033946",
+    "snapshotHash": "27b5a45f27842c6cb83f8cf0b4c6e8ab6fc2062c5143a632e4e722606cec76c2",
     "overlayHash": "f99666ff9119084dd25c2974ae64eb6935ec2aa785ff5ad478fb9d541f7a5e94",
     "configurationHash": "6c17a2415ef3484014ab8350c5c245602bfb85d2baf75666fb83c1c387f3396a",
     "lexiconVersion": 1,
@@ -9383,11 +9384,11 @@
       ],
       "averageFieldLength": {
         "aliases": 2.923344947735192,
-        "body": 44.80313588850174,
+        "body": 44.8397212543554,
         "headings": 3.8257839721254356,
         "path": 6.113240418118467,
         "summary": 2.5958188153310107,
-        "symbols": 14.064459930313589,
+        "symbols": 14.071428571428571,
         "title": 3.975609756097561
       }
     },
@@ -14332,7 +14333,7 @@
           "path": "docs/ADR-0045-fleet-runner.md",
           "symbols": "",
           "summary": "Accepted",
-          "body": "ADR-0045: A fleet runner — dispatch through the fleet coordinator's queue Status Accepted Context The factory design (fleet repository, docs/design/industrial-sdlc.md §8 step 3) puts the harness's RunnerConnector in front of the factory queue. The fleet coordinator is that queue's front door: fleet submit , fleet queue --json , fleet tail , fleet collect , fleet cancel . Behind it the queue may be fleet's own or Hatchet; the harness must not know which, so it speaks only the CLI, through CommandRunner (argv, no shell). A fleet task is not an Orca terminal: it is submitted once, runs unattended, has no local worktree, and cannot be typed into afterwards. The interface has to say so honestly rather than pretend. Decision A third implementation, createFleetRunner ( src/loop/fleet-runner.ts ), selected by connectors.runner: fleet . The engine and the interface are unchanged, except one optional field: WorkspaceObservation.state , the task state, because a queued task has no pull request to report. RunnerConnector Fleet behaviour --- --- createWorkspace Records a pending workspace (harness-side id, branch, base) in <stateDir /fleet-workspaces.json . Contacts nothing. path is '' : there is no local worktree. launchAgent Returns a handle bound to that workspace (the workspace id). command is ignored — a queue does not run an interactive CLI line. send (first) Submits : fleet submit --project <p --base <workspace base --model <m [--fallback-models a,b] --priority <n --prompt-file <tmp ; parses submitted <q-id and stores the id. Prompt = the text. send (later) Refused: delivered:false , detail \"not interactive\". A failed submit is also delivered:false and leaves the workspace unsubmitted, so a retry is possible. readScreen fleet tail <q-id , last lines lines. Empty before submit or when tail fails. observeWorkspaces fleet queue --json ; each submitted workspace maps to { id, pullRequest: null, state } . States fold to queued · running · done · failed · cancelled ; any word we do not know is unknown , never done . The SCM stays the source of PR state. removeWorkspace If the task is not terminal, fleet cancel <q-id ; a failed cancel throws and keeps the record. Then forgets the record. A task already done/failed/cancelled is not cancelled again. schedule Returns the fleet coordinator owns scheduling ; writes nothing. Delivery. When a task ends done , the deliver step collects its branch with fleet collect <host-task-id (which never pushes) and opens the pull request as it does for any runner. The PR is the orchestrator's job, not the queue's. The connector gained an optional collect({ id }) for this: it takes the host task id from the queue row ( hostTaskId / host task id / taskId / task id , else the queue id), runs fleet collect , takes the branch the output names (else the workspace's own), and fails unless that branch exists in the local clone. Deliver then pushes it with git push origin , opens the PR with gh pr create (body carries Loop-Contract: <digest ), and the PR is reviewed and merged like any other. A task that ends failed / cancelled is a stuck worker, escalated to a person. Prompt hygiene. The prompt reaches fleet submit only through a 0600 file in a fresh temp directory under the state dir, removed in a finally once the submit returns. It is never in argv, logs or error text. Config ( connectors.fleet , next to connectors.local ): bin (default fleet on PATH), project ( github:<owner /<repo ; default derived from the origin remote of project.root , failing closed if that is not GitHub), model ( haiku sonnet opus , default sonnet ), fallbackModels , priority (int ≥ 0), timeoutMs . Consequences - tick and deliver follow the selected runner (this superseded the earlier \"accepted at load, but dispatch still runs Orca\" limit, which was found live: runner: fleet still planned orca worktree create ). Under fleet they create the workspace, submit the brief and collect through RunnerConnector , and never call Orca — not for account",
+          "body": "ADR-0045: A fleet runner — dispatch through the fleet coordinator's queue Status Accepted Context The factory design (fleet repository, docs/design/industrial-sdlc.md §8 step 3) puts the harness's RunnerConnector in front of the factory queue. The fleet coordinator is that queue's front door: fleet submit , fleet queue --json , fleet tail , fleet collect , fleet cancel . Behind it the queue may be fleet's own or Hatchet; the harness must not know which, so it speaks only the CLI, through CommandRunner (argv, no shell). A fleet task is not an Orca terminal: it is submitted once, runs unattended, has no local worktree, and cannot be typed into afterwards. The interface has to say so honestly rather than pretend. Decision A third implementation, createFleetRunner ( src/loop/fleet-runner.ts ), selected by connectors.runner: fleet . The engine and the interface are unchanged, except one optional field: WorkspaceObservation.state , the task state, because a queued task has no pull request to report. RunnerConnector Fleet behaviour --- --- createWorkspace Records a pending workspace (harness-side id, branch, base) in <stateDir /fleet-workspaces.json . Contacts nothing. path is '' : there is no local worktree. launchAgent Returns a handle bound to that workspace (the workspace id). command is ignored — a queue does not run an interactive CLI line. send (first) Submits : fleet submit --project <p --base <workspace base --model <m [--fallback-models a,b] --priority <n --prompt-file <tmp ; parses submitted <q-id and stores the id. Prompt = the text. send (later) Refused: delivered:false , detail \"not interactive\". A failed submit is also delivered:false and leaves the workspace unsubmitted, so a retry is possible. readScreen fleet tail <q-id , last lines lines. Empty before submit or when tail fails. observeWorkspaces fleet queue --json ; each submitted workspace maps to { id, pullRequest: null, state } . States fold to queued · running · done · failed · cancelled ; any word we do not know is unknown , never done . The SCM stays the source of PR state. removeWorkspace If the task is not terminal, fleet cancel <q-id ; a failed cancel throws and keeps the record. Then forgets the record. A task already done/failed/cancelled is not cancelled again. schedule Returns the fleet coordinator owns scheduling ; writes nothing. Delivery. When a task ends done , the deliver step collects its commits with fleet collect <host-task-id --json (which never pushes) and opens the pull request as it does for any runner. The PR is the orchestrator's job, not the queue's. The connector gained an optional collect({ id }) for this: it takes the host task id from the queue row ( hostTaskId / host task id / taskId / task id , else the queue id) and runs fleet collect --json . fleet collect creates no branch under the harness's name: it fetches the commits to ref = refs/remotes/fleet/<host /<host-task-id and reports { ref, head, base, commits } . The output is validated with a zod schema ( ref , head as a hex sha, commits as an integer ≥ 0; other keys ignored); non-JSON or a wrong shape is refused. commits: 0 returns no branch, and deliver treats it as a stuck worker (escalated, no push, no PR). Otherwise the connector checks git merge-base --is-ancestor <head <ref and runs git branch -f <branch <head , so the harness's own local branch sits exactly at the collected commit. Deliver then pushes it with git push -u origin <branch , opens the PR with gh pr create (body carries Loop-Contract: <digest ), and the PR is reviewed and merged like any other. A task that ends failed / cancelled is a stuck worker, escalated to a person. Branch name. The tracker's branch name can hold characters git refuses or people dislike (GitHub issues yield <login /<owner /<repo <n ). createWorkspace therefore derives a safe ref for fleet ( safeFleetBranch : anything outside A-Za-z0-9. /- becomes - , so login/owner/repo 3 → login/owner/repo-3 ); that name is what the dispatch record, the ",
           "aliases": "document human"
         },
         "graph": {
@@ -14364,7 +14365,7 @@
             }
           ]
         },
-        "contentHash": "9a05c023ff0b85320e3b9b055fb452f7bd46ca85bc1fae883be4cf8b3183c38c",
+        "contentHash": "e56d6760e668d85c26940a68507eb4f6a897f9a08c49e0c0679b781bd37a61a9",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -14704,7 +14705,7 @@
             }
           ]
         },
-        "contentHash": "8d522ed67f4d9538265b3dcfe15cb9302decbb797b735a505833ad98d9770960",
+        "contentHash": "d6a442cf88084ca2f6dbff63d0a37898b96e4e0e155a18d932c504fa35641abb",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -28217,7 +28218,7 @@
             }
           ]
         },
-        "contentHash": "3eb5e0140e10207156a63301c98e7a9763d294a90f22199aaade4c62ba9aa68c",
+        "contentHash": "510028d2d441436ae45384a4d491b3264b48107e75dc8a6dcc49f2f705fcaeb7",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -29069,7 +29070,8 @@
           "FleetProbe",
           "createFleetRunner",
           "fleetSubmitPreview",
-          "probeFleet"
+          "probeFleet",
+          "safeFleetBranch"
         ],
         "tags": [
           "module",
@@ -29080,7 +29082,7 @@
           "title": "fleet-runner.ts",
           "headings": "",
           "path": "src/loop/fleet-runner.ts",
-          "symbols": "FleetProbe createFleetRunner fleetSubmitPreview probeFleet",
+          "symbols": "FleetProbe createFleetRunner fleetSubmitPreview probeFleet safeFleetBranch",
           "summary": "",
           "body": "",
           "aliases": "module ts loop"
@@ -29108,6 +29110,11 @@
             {
               "kind": "imports",
               "id": "module:src/loop/tick.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
+              "id": "module:test/loop-fleet-runner.test.ts",
               "confidence": "observed"
             },
             {
@@ -29144,7 +29151,7 @@
             }
           ]
         },
-        "contentHash": "1b02f4348f9919b93950c358b09769440ad4375701190bedc65e43e7edbea43f",
+        "contentHash": "49b0b9c61d21910e8c4a8e967f55e64d01b09a38b0f7021759907808021ef1e7",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -33259,7 +33266,7 @@
             }
           ]
         },
-        "contentHash": "fb8c1d4a9820268af425b46fc6a933216717be3d6539b1732b7575eacbd19a66",
+        "contentHash": "dffaee0da2f64a56ddcd33c3bc39ee17881c4a1aaa238d85a29e720998b0e16c",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -44022,7 +44029,7 @@
             }
           ]
         },
-        "contentHash": "1121627f1528f70f33713b217f538b8017a4381b0417ddd74bc68c5292d618bf",
+        "contentHash": "cffd3d146c46efd79cafa0464c88d2011582fa514fecd8bbcc2fb4b4207594b2",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -44059,10 +44066,15 @@
               "kind": "imports",
               "id": "module:src/index.ts",
               "confidence": "observed"
+            },
+            {
+              "kind": "imports",
+              "id": "module:src/loop/fleet-runner.ts",
+              "confidence": "observed"
             }
           ]
         },
-        "contentHash": "6ee601172a8e2ed4d3a40fd126d5a129a9a246e1b940a5bc90347fcda8cff6c7",
+        "contentHash": "c465c1cff71b8ec55967a1aa1700e576d11be4f7cd57c65cde6140cadb17692d",
         "provenance": "observed",
         "confidence": "observed"
       },

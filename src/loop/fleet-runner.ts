@@ -11,6 +11,15 @@ import type { RunnerConnector, RunnerInput, WorkspaceObservation } from './runne
 const FleetRecordSchema = z.object({ id: z.string(), branch: z.string(), base: z.string(), queueId: z.string().nullable() })
 type FleetRecord = Readonly<z.infer<typeof FleetRecordSchema>>
 
+/** What `fleet collect <id> --json` prints; extra keys (`base`, …) are ignored. */
+const FleetCollectSchema = z.object({ ref: z.string().min(1), head: z.string().regex(/^[0-9a-f]{7,64}$/i), commits: z.number().int().min(0) })
+
+/** A ref name git accepts and a person can read: no `#`, spaces or other ref-hostile characters (`o/r#3` → `o/r-3`). */
+export const safeFleetBranch = (branch: string): string => {
+  const cleaned = branch.replaceAll(/[^A-Za-z0-9._/-]+/g, '-').replaceAll(/\/{2,}/g, '/').replaceAll(/\.{2,}/g, '.').replaceAll(/(^[/.-]+)|([/.-]+$)/g, '').replaceAll(/\.lock(?=\/|$)/g, '-lock')
+  return cleaned || 'fleet-task'
+}
+
 type FleetState = NonNullable<WorkspaceObservation['state']>
 
 const TERMINAL: readonly FleetState[] = ['done', 'failed', 'cancelled']
@@ -122,8 +131,9 @@ export const createFleetRunner = ({ loaded, runner }: RunnerInput): RunnerConnec
     // Nothing to contact yet: the fleet learns about the work at the first `send`.
     createWorkspace: async ({ name, branch, baseBranch }) => {
       const id = `fleet-${name.replaceAll(/[^A-Za-z0-9_-]/g, '-')}-${randomUUID().slice(0, 8)}`
-      write([...read(), { id, branch, base: baseBranch, queueId: null }])
-      return { id, path: '', branch, terminal: null }
+      const safe = safeFleetBranch(branch)
+      write([...read(), { id, branch: safe, base: baseBranch, queueId: null }])
+      return { id, path: '', branch: safe, terminal: null }
     },
     removeWorkspace: async ({ id }) => {
       const { queueId } = record(id)
@@ -159,20 +169,28 @@ export const createFleetRunner = ({ loaded, runner }: RunnerInput): RunnerConnec
       if (result.code !== 0) return ''
       return lines ? result.stdout.split(/\r?\n/).slice(-lines).join('\n') : result.stdout
     },
-    // `fleet collect` brings the task's branch into the local clone and never pushes; pushing and opening the PR stay
-    // the harness's job. The branch is the one the output names, else the one the workspace was created with — and it
-    // must exist locally afterwards, or the collect did not deliver what deliver is about to push.
+    // `fleet collect --json` fetches the task's commits to `ref` (refs/remotes/fleet/<host>/<task>) and never pushes; it
+    // creates no branch under the harness's name. The harness points its own branch at `head` — after checking `head` is
+    // on `ref` — and pushing and opening the PR stay deliver's job. A task with no commits has nothing to deliver.
     collect: async ({ id }) => {
       const entry = record(id)
       const queueId = entry.queueId ?? fail(`Fleet workspace "${id}" was never submitted; there is nothing to collect.`, 'HARNESS_ERROR')
       const row = (await queue()).find((item) => item.id === queueId)
       const taskId = row?.hostTaskId ?? queueId
-      const result = await run(['collect', taskId])
+      const result = await run(['collect', taskId, '--json'])
       if (result.code !== 0) fail(`fleet collect ${taskId} failed: ${result.stderr.trim() || `exit ${result.code ?? 'null'}`}`, 'HARNESS_ERROR')
-      const branch = /\bbranch[:=\s]+'?([\w./-]+)'?/i.exec(result.stdout)?.[1] ?? entry.branch
-      const present = await runner.run(['git', '-C', loaded.root, 'rev-parse', '--verify', '--quiet', `refs/heads/${branch}`], { timeoutMs: 15_000 })
-      if (present.code !== 0) fail(`fleet collect ${taskId} succeeded but branch "${branch}" is not in the local clone.`, 'HARNESS_ERROR')
-      return { branch, detail: `collected ${taskId} → ${branch}` }
+      let raw: unknown
+      try { raw = JSON.parse(result.stdout) } catch { fail(`fleet collect ${taskId} --json did not print JSON.`, 'HARNESS_ERROR') }
+      const parsed = FleetCollectSchema.safeParse(raw)
+      if (!parsed.success) return fail(`fleet collect ${taskId} --json: unexpected shape (${parsed.error.issues[0]?.message ?? 'invalid'}).`, 'HARNESS_ERROR')
+      const { ref, head, commits } = parsed.data
+      if (commits === 0) return { branch: null, detail: `fleet collect ${taskId}: the task made no commits; there is nothing to deliver.` }
+      const git = (args: readonly string[]) => runner.run(['git', '-C', loaded.root, ...args], { timeoutMs: 15_000 })
+      const reachable = await git(['merge-base', '--is-ancestor', head, ref])
+      if (reachable.code !== 0) fail(`fleet collect ${taskId}: head ${head} is not reachable from ${ref} in the local clone.`, 'HARNESS_ERROR')
+      const moved = await git(['branch', '-f', entry.branch, head])
+      if (moved.code !== 0) fail(`git branch -f ${entry.branch} ${head} failed: ${moved.stderr.trim() || `exit ${moved.code ?? 'null'}`}`, 'HARNESS_ERROR')
+      return { branch: entry.branch, detail: `collected ${taskId} (${commits} commit${commits === 1 ? '' : 's'}) → ${entry.branch} at ${head.slice(0, 12)}` }
     },
     schedule: async () => ['the fleet coordinator owns scheduling'],
     // ponytail: a pull request is the SCM's to report, so `pullRequest` is always null; only the task state is the fleet's.

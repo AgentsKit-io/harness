@@ -32,13 +32,23 @@ state, because a queued task has no pull request to report.
 | `removeWorkspace` | If the task is not terminal, `fleet cancel <q-id>`; a failed cancel throws and keeps the record. Then forgets the record. A task already done/failed/cancelled is not cancelled again. |
 | `schedule` | Returns `the fleet coordinator owns scheduling`; writes nothing. |
 
-**Delivery.** When a task ends `done`, the deliver step collects its branch with `fleet collect <host-task-id>`
+**Delivery.** When a task ends `done`, the deliver step collects its commits with `fleet collect <host-task-id> --json`
 (which never pushes) and opens the pull request as it does for any runner. The PR is the orchestrator's job, not
 the queue's. The connector gained an optional `collect({ id })` for this: it takes the host task id from the queue
-row (`hostTaskId`/`host_task_id`/`taskId`/`task_id`, else the queue id), runs `fleet collect`, takes the branch the
-output names (else the workspace's own), and fails unless that branch exists in the local clone. Deliver then pushes
-it with `git push origin`, opens the PR with `gh pr create` (body carries `Loop-Contract: <digest>`), and the PR is
+row (`hostTaskId`/`host_task_id`/`taskId`/`task_id`, else the queue id) and runs `fleet collect --json`.
+`fleet collect` creates **no** branch under the harness's name: it fetches the commits to
+`ref = refs/remotes/fleet/<host>/<host-task-id>` and reports `{ ref, head, base, commits }`. The output is validated
+with a zod schema (`ref`, `head` as a hex sha, `commits` as an integer ≥ 0; other keys ignored); non-JSON or a wrong
+shape is refused. `commits: 0` returns no branch, and deliver treats it as a stuck worker (escalated, no push, no PR).
+Otherwise the connector checks `git merge-base --is-ancestor <head> <ref>` and runs `git branch -f <branch> <head>`, so
+the harness's own local branch sits exactly at the collected commit. Deliver then pushes it with
+`git push -u origin <branch>`, opens the PR with `gh pr create` (body carries `Loop-Contract: <digest>`), and the PR is
 reviewed and merged like any other. A task that ends `failed`/`cancelled` is a stuck worker, escalated to a person.
+
+**Branch name.** The tracker's branch name can hold characters git refuses or people dislike (GitHub issues yield
+`<login>/<owner>/<repo>#<n>`). `createWorkspace` therefore derives a safe ref for fleet (`safeFleetBranch`: anything
+outside `A-Za-z0-9._/-` becomes `-`, so `login/owner/repo#3` → `login/owner/repo-3`); that name is what the dispatch
+record, the brief, the push and the PR use. The other runners keep the tracker's name.
 
 **Prompt hygiene.** The prompt reaches `fleet submit` only through a `0600` file in a fresh temp directory under
 the state dir, removed in a `finally` once the submit returns. It is never in argv, logs or error text.
@@ -64,9 +74,10 @@ not GitHub), `model` (`haiku|sonnet|opus`, default `sonnet`), `fallbackModels`, 
   Orca account reads unavailable; the model the fleet runs is `connectors.fleet.model`, not the routed builder.
 - `loop doctor` probes the selected runner: `fleet doctor --json` (summarised) and `fleet queue --json` for `fleet`,
   with no Orca checks; Orca checks run only under `orca`.
-- Assumption to confirm against the real CLI: `fleet collect` leaves the branch under the workspace's recorded name
-  (or names it as `branch <name>` in its output). If it uses another name the collect fails loudly ("not in the local
-  clone") instead of pushing the wrong thing.
+- Found live (factory-sandbox#3): `fleet collect` leaves no branch under the harness's name, so the first design (look
+  for the recorded branch locally) failed every pass. Collect now reads `ref`/`head` from `--json` as above.
+- `fleet collect --clean` (remove the host workspace once the PR exists) is not used yet: it would need a post-PR hook
+  on the connector. The host workspace stays until the fleet's own cleanup.
 - Records live in a state-dir file, so a later process can observe, tail and cancel what an earlier one submitted.
   Records of workspaces whose `remove` never ran are not garbage-collected.
 - The queue JSON shape is read leniently (bare array or `{ tasks }`, `id`/`queueId`, `state`); a shape change in

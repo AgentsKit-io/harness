@@ -3,6 +3,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
 import { createRunnerConnector, loadLoopConfig } from '../src/index.js'
+import { safeFleetBranch } from '../src/loop/fleet-runner.js'
 import type { CommandResult, CommandRunner, LoadedLoopConfig } from '../src/index.js'
 
 const exampleYaml = readFileSync(join(process.cwd(), 'loop.config.example.yaml'), 'utf8').replace('person: my-linear-display-name', 'person: person').replace('my-linear-display-name: <linear-user-id>', 'person: user-id-1')
@@ -136,26 +137,46 @@ describe('the fleet runner', () => {
     expect(finished.calls.some((argv) => argv[1] === 'cancel')).toBe(false)
   })
 
-  it('collects a submitted task by its host task id and refuses a branch that did not arrive', async () => {
+  it('derives a safe branch name for the workspace', async () => {
+    const fleet = createRunnerConnector({ loaded: setup(), runner: fakeFleet().runner })
+    const workspace = await fleet.createWorkspace({ name: 'a', branch: 'EmersonBraun/agentskit-io/factory-sandbox#3', baseBranch: 'main' })
+    expect(workspace.branch).toBe('EmersonBraun/agentskit-io/factory-sandbox-3')
+    expect(safeFleetBranch('person/eng-1')).toBe('person/eng-1')
+    expect(safeFleetBranch('a b..c/.lock')).toBe('a-b.c/-lock')
+  })
+
+  it('collects by host task id from `fleet collect --json`, moves its own branch to head, and refuses bad output', async () => {
     const loaded = setup()
     const calls: string[][] = []
-    let branchPresent = true
+    let collectOut = JSON.stringify({ ref: 'refs/remotes/fleet/h1/ht-9', head: 'a1b2c3d4e5f6', base: 'b0b0b0b', commits: 2 })
+    let reachable = true
     const runner: CommandRunner = { run: async (argv) => {
       calls.push([...argv])
-      if (argv[0] === 'git' && argv[3] === 'rev-parse') return { ...ok(), code: branchPresent ? 0 : 1 }
+      if (argv[0] === 'git' && argv[3] === 'merge-base') return { ...ok(), code: reachable ? 0 : 1 }
       if (argv[0] === 'git') return ok('git@github.com:acme/widgets.git\n')
       if (argv[1] === 'submit') return ok('submitted q-0001\n')
       if (argv[1] === 'queue') return ok(JSON.stringify([{ id: 'q-0001', state: 'done', hostTaskId: 'ht-9' }]))
-      return ok('collected\n')
+      return ok(collectOut)
     } }
     const fleet = createRunnerConnector({ loaded, runner })
     const workspace = await fleet.createWorkspace({ name: 'a', branch: 'person/a', baseBranch: 'main' })
     await expect(fleet.collect?.({ id: workspace.id })).rejects.toThrow(/never submitted/)
     await fleet.send({ terminal: workspace.id, text: 'x' })
-    expect(await fleet.collect?.({ id: workspace.id })).toEqual({ branch: 'person/a', detail: 'collected ht-9 → person/a' })
-    expect(calls).toContainEqual(['fleet', 'collect', 'ht-9'])
-    branchPresent = false
-    await expect(fleet.collect?.({ id: workspace.id })).rejects.toThrow(/not in the local clone/)
+    expect(await fleet.collect?.({ id: workspace.id })).toEqual({ branch: 'person/a', detail: 'collected ht-9 (2 commits) → person/a at a1b2c3d4e5f6' })
+    expect(calls).toContainEqual(['fleet', 'collect', 'ht-9', '--json'])
+    expect(calls.filter((argv) => argv[0] === 'git' && argv[3] !== 'remote').map((argv) => argv.slice(3))).toEqual([['merge-base', '--is-ancestor', 'a1b2c3d4e5f6', 'refs/remotes/fleet/h1/ht-9'], ['branch', '-f', 'person/a', 'a1b2c3d4e5f6']])
+
+    collectOut = JSON.stringify({ ref: 'refs/remotes/fleet/h1/ht-9', head: 'a1b2c3d4e5f6', base: 'b0b0b0b', commits: 0 })
+    expect(await fleet.collect?.({ id: workspace.id })).toMatchObject({ branch: null, detail: expect.stringMatching(/no commits/) })
+
+    collectOut = 'not json'
+    await expect(fleet.collect?.({ id: workspace.id })).rejects.toThrow(/did not print JSON/)
+    collectOut = JSON.stringify({ ref: 'refs/remotes/fleet/h1/ht-9', commits: 1 })
+    await expect(fleet.collect?.({ id: workspace.id })).rejects.toThrow(/unexpected shape/)
+
+    collectOut = JSON.stringify({ ref: 'refs/remotes/fleet/h1/ht-9', head: 'a1b2c3d4e5f6', base: 'b0b0b0b', commits: 1 })
+    reachable = false
+    await expect(fleet.collect?.({ id: workspace.id })).rejects.toThrow(/not reachable/)
   })
 
   it('says the coordinator owns scheduling', async () => {
