@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
-  "contentHash": "11ecf660e4d4073f7aa52b799030d3080ca12b39603e107b82574b273ea37552",
+  "contentHash": "055b93f927c909ad29ad3a8db1eb9fb540a07c5913ea7d4bf3cbcc180176ef6d",
   "contentHashAlgo": "sha256-semantic-v1",
-  "generatedAt": "2026-10-20T17:40:17.455Z",
+  "generatedAt": "2026-10-21T13:10:02.429Z",
   "project": {
     "name": "AgentsKit Harness",
     "root": "."
@@ -9441,7 +9441,7 @@
     }
   },
   "inputs": {
-    "hash": "000addcc0b8a83bb236134e0b80b7c03f255770e323a21111a2d80ab1c9c7a7c",
+    "hash": "e8740fa861d58c3140312d13319eee116693b129a14a3f2f9ed8da359a5a94c2",
     "fileCount": 600,
     "projectionVersion": 2
   },
@@ -9464,9 +9464,9 @@
   "projection": {
     "type": "retrieval-index",
     "schemaVersion": 1,
-    "contentHash": "6cee5c10bc2f89338d2fda1f5f7a69a1fcec3b639cea1be22769d862be96d2b6",
+    "contentHash": "abcb230c8fb2d7730a74e113d221e174318f8d704a6bbcd4feb7418ac45dd854",
     "contentHashAlgo": "sha256-semantic-v1",
-    "snapshotHash": "f9fead95919afef948e642b3de37ef18dd5eecbaeb1cc6630520200b1a0812e7",
+    "snapshotHash": "5d788b4d0a03d4592e6478bc115247364de56a56948a9b8edcd2e24def720468",
     "overlayHash": "f99666ff9119084dd25c2974ae64eb6935ec2aa785ff5ad478fb9d541f7a5e94",
     "configurationHash": "6c17a2415ef3484014ab8350c5c245602bfb85d2baf75666fb83c1c387f3396a",
     "lexiconVersion": 1,
@@ -48987,7 +48987,7 @@
           ],
           "outbound": []
         },
-        "contentHash": "ae3ec8afcc1911a1c88a47270e9e1fa820448744c24ba6570f68f20cdaa49131",
+        "contentHash": "653b8945820270fafa6e113262ec9f6a8d7d6a7f8799f891698196a934ccd98d",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -49021,7 +49021,7 @@
           "inbound": [],
           "outbound": []
         },
-        "contentHash": "872f4b5236ab953cdcef6085eb0a264bd3daf8dcb685247301406520e8e2fb58",
+        "contentHash": "54589c240991377df26957c630f4c4081e90ef7f208f9871c37deab5bfe33370",
         "provenance": "observed",
         "confidence": "observed"
       },
