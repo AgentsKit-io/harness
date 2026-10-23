@@ -64,8 +64,9 @@ describe('presets', () => {
     expect(overridden.delivery.verifyCommand).toBe('from-global')
   })
 
-  it('still needs the models the user declares somewhere — a project file alone is not a whole config', () => {
-    expect(() => composeLoopConfig({ text: MINIMAL })).toThrow(/models/)
+  it('runs a project file alone on the built-in models, and drops them as soon as any layer declares models', () => {
+    expect(composeLoopConfig({ text: MINIMAL }).models.watcher).toEqual([['claude/haiku']])
+    expect(composeLoopConfig({ globalText: `${exampleYaml}\n`, text: MINIMAL }).models.watcher).not.toEqual([['claude/haiku']])
   })
 
   it('refuses an unknown preset instead of quietly ignoring it', () => {

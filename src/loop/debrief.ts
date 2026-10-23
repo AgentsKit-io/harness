@@ -1,6 +1,6 @@
 import { readdirSync, existsSync } from 'node:fs'
 import { join } from 'node:path'
-import { loadLoopConfig, type LoadedLoopConfig } from './config.js'
+import { describeConfigSource, loadLoopConfig, type LoadedLoopConfig } from './config.js'
 import { readStoredContract } from './contract.js'
 import { activeCooldowns, readCooldowns } from './cooldown.js'
 import { listDispatched, readDeliveryState, type DeliveryState } from './deliver.js'
@@ -52,6 +52,8 @@ export interface DebriefReport {
   readonly tracker: 'linear' | 'github'
   readonly person: string
   readonly repo: string
+  /** Where the effective config came from, e.g. `global default (+ detected)`. */
+  readonly configSource: string
   readonly windowHours: number
   readonly inFlight: readonly DebriefIssueRow[]
   readonly held: readonly DebriefIssueRow[]
@@ -238,6 +240,7 @@ export const buildDebriefReport = (input: DebriefInput): DebriefReport => {
     tracker: config.connectors.tracker,
     person,
     repo: config.project.repo,
+    configSource: describeConfigSource(loaded),
     windowHours,
     inFlight,
     held,
@@ -252,6 +255,7 @@ export const renderDebriefMarkdown = (report: DebriefReport): string => {
   const lines: string[] = []
   lines.push(`# Loop debrief — ${report.project} · ${report.person}`, '')
   lines.push(`_${report.headline}_ · generated ${report.generatedAt.slice(0, 19)}Z · last ${report.windowHours}h`, '')
+  lines.push(`config: ${report.configSource}`, '')
   if (report.inFlight.length === 0) {
     lines.push('## In flight', '', '_Nothing dispatched right now._', '')
   } else {

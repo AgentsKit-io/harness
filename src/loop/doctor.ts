@@ -11,7 +11,7 @@ import { automationSpecs, parseAutomationRuns, reconcileAutomations, withRunning
 import { loadAgentRegistry } from './agent-registry.js'
 import { unknownFlowReferences } from './flows.js'
 import { notificationsConfigured } from './notify.js'
-import { loadLoopConfig, providerIdentity, type LoadedLoopConfig, type LoopConfig } from './config.js'
+import { configSources, describeConfigSource, loadLoopConfig, providerIdentity, type LoadedLoopConfig, type LoopConfig } from './config.js'
 import { activeCooldowns, readCooldowns } from './cooldown.js'
 import { resolveCatalogCandidates } from './model-catalog/index.js'
 import { routeAllRoles, type RoutingDecision } from './routing.js'
@@ -29,7 +29,7 @@ export interface DoctorCheck { readonly id: string; readonly status: DoctorCheck
 export interface LoopDoctorReport {
   readonly status: 'passed' | 'failed'
   readonly generatedAt: string
-  readonly config: { readonly path: string; readonly hash: string; readonly project: string; readonly repo: string; readonly person: string; readonly stateDir: string }
+  readonly config: { readonly path: string; readonly source: string; readonly sources: readonly string[]; readonly hash: string; readonly project: string; readonly repo: string; readonly person: string; readonly stateDir: string }
   readonly orca: { readonly binary: string | null; readonly version: string | null; readonly minVersion: string; readonly status: OrcaStatus | null; readonly error: string | null }
   readonly providers: readonly ProviderAvailability[]
   readonly routing: Readonly<Record<string, RoutingDecision>>
@@ -82,6 +82,7 @@ export const runLoopDoctor = async (input: LoopDoctorInput): Promise<LoopDoctorR
   const orcaOptions = { bin: config.orca.bin, timeoutMs: config.orca.timeoutMs }
   const checks: DoctorCheck[] = []
   const push = (id: string, status: DoctorCheckStatus, detail: string): void => { checks.push({ id, status, detail }) }
+  push('config.source', 'passed', `config: ${describeConfigSource(loaded)} — ${configSources(loaded).join(' ← ')}`)
 
   // The runner decides what is probed: Orca's binary, runtime, accounts, worktrees and automations only matter when
   // Orca is where work runs. Under `fleet` the fleet coordinator is what has to be there, and Orca is not asked at all.
@@ -314,7 +315,7 @@ export const runLoopDoctor = async (input: LoopDoctorInput): Promise<LoopDoctorR
   return {
     status: failed ? 'failed' : 'passed',
     generatedAt: now().toISOString(),
-    config: { path: loaded.path, hash: loaded.configHash, project: config.project.name, repo: config.project.repo, person, stateDir: loaded.stateDir },
+    config: { path: loaded.path, source: describeConfigSource(loaded), sources: configSources(loaded), hash: loaded.configHash, project: config.project.name, repo: config.project.repo, person, stateDir: loaded.stateDir },
     orca: { binary: config.orca.bin, version, minVersion: config.orca.minVersion, status, error: orcaError },
     providers,
     routing,

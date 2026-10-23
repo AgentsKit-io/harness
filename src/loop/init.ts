@@ -1,6 +1,7 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { dirname, resolve } from 'node:path'
 import { GLOBAL_CONFIG_FILE, LOOP_CONFIG_FILE, composeLoopConfig, globalConfigPath } from './config.js'
+import { STARTER_MODELS_YAML } from './detect.js'
 import { PRESET_NAMES, describePreset, isPresetName, type PresetName } from './presets.js'
 import type { RichIO } from './ui/terminal.js'
 
@@ -85,25 +86,7 @@ export const renderGlobalConfig = (answers: InitAnswers): string => [
  * The providers a first run can actually use. They live in the user's layer, not the project's: which CLIs are
  * installed and logged in is a property of this machine and this person, not of the repository.
  */
-const STARTER_MODELS: readonly string[] = [
-  'models:',
-  '  orchestrator: [[claude/opus, codex/gpt-5.6-sol]]',
-  '  reviewer:     [[claude/opus, codex/gpt-5.6-sol]]',
-  '  builder:      [[claude/sonnet, codex/gpt-5.6-luna]]',
-  '  watcher:      [[claude/haiku]]',
-  '  providers:',
-  '    claude:',
-  '      bin: claude',
-  '      auth: subscription',
-  '      tui: "claude --model {model} --permission-mode auto"',
-  '      headless: [claude, -p, "{prompt}", --model, "{model}", --permission-mode, plan, --output-format, text]',
-  '    codex:',
-  '      bin: codex',
-  '      auth: subscription',
-  '      tui: "codex -m {model} -s workspace-write -a never"',
-  '      headless: [codex, exec, -m, "{model}", -s, read-only, --skip-git-repo-check, "{prompt}"]',
-  '',
-]
+const STARTER_MODELS = STARTER_MODELS_YAML
 
 export interface InitResult {
   readonly configPath: string
