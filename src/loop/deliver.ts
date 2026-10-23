@@ -33,9 +33,10 @@ import { assessDod, readDodEvidence, renderDodMarkdown } from './dod.js'
 import { decideMerge, weakestVerdict, type MergePolicyInput } from './merge-policy.js'
 import { isProven, migrateVerdict, patchIdOfPullRequest, readVerdictRecord, reviewLevel, verdictsHold, writeVerdictRecord, type RunFingerprint, type Verdict, type VerdictRecord } from './verdict.js'
 import { proveFleetDod } from './fleet-dod.js'
+import { handoffRoot, stripHandoff } from './fleet-handoff.js'
 import { renderVerifierMarkdown, verifyIndependently } from './verifier.js'
 import { splitLines } from '@agentskit/cross-platform'
-import { artifactPath, missingArtifacts, readPhaseArtifacts, readVerifyArtifact, VerifyArtifactSchema, verifyProofs, type PhaseArtifactName } from './artifacts.js'
+import { ARTIFACT_DIR, artifactPath, missingArtifacts, readPhaseArtifacts, readVerifyArtifact, VerifyArtifactSchema, verifyProofs, type PhaseArtifactName } from './artifacts.js'
 import { hashJson, sha256 } from '../kernel/hash.js'
 import { latestIssueRun, markRunSummaryPosted, readAgentRunReport, recordRunEvidence, recordRunIo, renderRunSummaryMarkdown, runDirFor, runSummaryMarker } from './agent-runs.js'
 import { buildEvidenceDocument, checklistState, extractReproduction, isBugIssue, type DeliveryEvidence, type EvidenceOptions, type EvidenceProof, type EvidenceStatus } from './evidence.js'
@@ -783,6 +784,13 @@ const handleFleetNoPullRequest = async (ctx: Context, record: DispatchRecordFile
     return { issue: record.issue, outcome: 'stuck', reason: 'fleet task finished with no commits; no PR opened', actions }
   }
   const root = ctx.loaded.root
+  // The handoff files the worker committed are read once and kept in the state dir; the PR carries none of them.
+  const stripped = await stripHandoff({ runner: ctx.runner, root, stateDir: ctx.loaded.stateDir, issue: record.issue, rev: `refs/heads/${collected.branch}` })
+  if (stripped) {
+    const moved = await ctx.runner.run(['git', '-C', root, 'update-ref', `refs/heads/${collected.branch}`, stripped.head], { timeoutMs: 30_000 })
+    if (moved.code !== 0) fail(`could not move ${collected.branch} to the commit that removes .ak-loop/: ${(moved.stderr || moved.stdout).trim().slice(0, 300)}`, 'HARNESS_ERROR')
+    actions.push(`removed ${stripped.removed.length} .ak-loop/ handoff file(s) from ${collected.branch}`)
+  }
   const pushed = await ctx.runner.run(['git', 'push', '-u', 'origin', `refs/heads/${collected.branch}:refs/heads/${collected.branch}`], { cwd: root, timeoutMs: 120_000 })
   if (pushed.timedOut || pushed.code !== 0) fail(`git push of ${collected.branch} failed: ${(pushed.stderr || pushed.stdout).trim().slice(0, 300) || `exit ${pushed.code ?? 'null'}`}`, 'HARNESS_ERROR')
   actions.push(`pushed ${collected.branch}`)
@@ -792,7 +800,7 @@ const handleFleetNoPullRequest = async (ctx: Context, record: DispatchRecordFile
   await githubPullRequestCreate(ctx.runner, { repo: ctx.config.project.repo, head: collected.branch, base: ctx.config.project.baseBranch, title, body }, { cwd: root })
   const [pr] = await githubPullRequestsForBranch(ctx.runner, { repo: ctx.config.project.repo, head: collected.branch })
   // The collected tip and base are what the definition of done is judged on in later passes.
-  writeJsonAtomic(dispatchRecordPath(ctx.loaded.stateDir, record.issue), { ...record, branch: collected.branch, ...(collected.head ? { collected: { head: collected.head, ...(collected.base ? { base: collected.base } : {}) } } : {}) })
+  writeJsonAtomic(dispatchRecordPath(ctx.loaded.stateDir, record.issue), { ...record, branch: collected.branch, ...(collected.head ? { collected: { head: stripped?.head ?? collected.head,...(collected.base ? { base: collected.base } : {}) } } : {}) })
   if (!pr) return { issue: record.issue, outcome: 'waiting', reason: `PR created from ${collected.branch}; not listed yet`, actions }
   actions.push(`opened PR #${pr.number}`)
   return { issue: record.issue, outcome: 'waiting', reason: `PR #${pr.number} opened from the collected branch ${collected.branch}; review starts next pass`, pr: pr.number, head: pr.headSha, actions }
@@ -1144,6 +1152,16 @@ const handlePullRequest = async (ctx: Context, record: DispatchRecordFile, lease
   const closes = verifyCommandFor(config, record.labels ?? []).command
   if (flow.flow.name && flow.flow.source !== 'none') actions.push(`flow \`${flow.flow.name}\` (${flow.flow.source}${flow.flow.matched ? ` ${flow.flow.matched}` : ''})${flow.flow.profile?.reason ? `: ${flow.flow.profile.reason}` : ''}`)
   if (pr.isDraft) return { issue: record.issue, outcome: 'waiting', reason: 'PR is a draft', pr: pr.number, head: pr.headSha, actions }
+  // A fleet PR opened before handoff files were kept out of it: remove them with one commit; the new head is judged next pass.
+  if (record.runner === 'fleet' && !ctx.dryRun && pr.files.some((file) => file.startsWith(`${ARTIFACT_DIR}/`))) {
+    const stripped = await stripHandoff({ runner: ctx.runner, root: ctx.loaded.root, stateDir: ctx.loaded.stateDir, issue: record.issue, rev: pr.headSha })
+    if (stripped) {
+      const pushed = await ctx.runner.run(['git', '-C', ctx.loaded.root, 'push', 'origin', `${stripped.head}:refs/heads/${pr.headRef}`], { timeoutMs: 120_000 })
+      if (pushed.timedOut || pushed.code !== 0) fail(`push of the .ak-loop/ removal to ${record.branch} failed: ${(pushed.stderr || pushed.stdout).trim().slice(0, 300) || `exit ${pushed.code ?? 'null'}`}`, 'HARNESS_ERROR')
+      actions.push(`removed ${stripped.removed.length} .ak-loop/ handoff file(s) from the PR branch`)
+      return { issue: record.issue, outcome: 'waiting', reason: 'removed .ak-loop/ handoff files from the PR; it is judged on the new head next pass', pr: pr.number, head: stripped.head, actions }
+    }
+  }
   const protectedFiles = touchesProtectedPaths(pr.files, config.delivery.selfEditPaths)
   const approvedHere = state.humanApproval?.head === pr.headSha
   if (protectedFiles.length && approvedHere) actions.push(`protected paths approved by ${state.humanApproval?.by} for ${pr.headSha.slice(0, 12)}; reviewing and merging as usual`)
@@ -1363,7 +1381,7 @@ ${marker}` }); actions.push('secret-file hold commented') } catch (error) { acti
     const expectedIds = [...config.dod.items.map((item) => item.id), ...(stored?.contract.outcomes ?? []).map((outcome) => outcome.id)]
     const fleetCarried = record.runner === 'fleet' && carried.length > 0 && expectedIds.every((id) => carried.some((item) => item.id === id))
     const fleetProof = record.runner === 'fleet' && !ctx.dryRun && !fleetCarried
-      ? await proveFleetDod({ runner: ctx.runner, config, root: ctx.loaded.root, stateDir: ctx.loaded.stateDir, head: pr.headSha, ...(record.collected?.base ? { base: record.collected.base } : {}), contract: stored?.contract ?? null })
+      ? await proveFleetDod({ runner: ctx.runner, config, root: ctx.loaded.root, stateDir: ctx.loaded.stateDir, handoff: handoffRoot(ctx.loaded.stateDir, record.issue), head: pr.headSha, ...(record.collected?.base ? { base: record.collected.base } : {}), contract: stored?.contract ?? null })
       : null
     if (fleetProof) actions.push(...fleetProof.notes)
     const fresh = fleetProof ? fleetProof.evidence : fleetCarried ? { project: [], outcomes: [] } : readDodEvidence(record.worktreePath, config)
