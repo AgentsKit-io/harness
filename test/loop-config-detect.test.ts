@@ -1,5 +1,5 @@
 import { runCommand } from '@agentskit/cross-platform'
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, realpathSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
@@ -68,7 +68,8 @@ describe('a repository without loop.config.yaml', () => {
     await git(main, '-c', 'user.email=t@t', '-c', 'user.name=t', 'commit', '-q', '-m', 'init')
     const linked = join(main, '..', `${main.split('/').pop()}-wt`); cleanups.push(linked)
     await git(main, 'worktree', 'add', '-q', linked)
-    expect(findGitDir(linked)).toBe(join(main, '.git'))
+    // realpath: on macOS the temp dir is /var, a link to /private/var.
+    expect(realpathSync(findGitDir(linked) as string)).toBe(realpathSync(join(main, '.git')))
     const loaded = loadLoopConfig(join(linked, 'loop.config.yaml'), noGlobal)
     expect(loaded.config.project.repo).toBe('Acme/Web-Shop')
     expect(readFileSync(join(main, '.git', 'info', 'exclude'), 'utf8')).toContain('/.ak-loop/')
