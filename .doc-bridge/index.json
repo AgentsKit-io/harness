@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
-  "contentHash": "e0c34c527946090174140f4702261d697cb4f98c922dfbad195835f64bf0f344",
+  "contentHash": "bb12ca1b0922fe66c8e002dfc750ff6eb3f2efc0af2f0f2aa2f0447659c078ec",
   "contentHashAlgo": "sha256-semantic-v1",
-  "generatedAt": "2026-10-23T16:01:29.540Z",
+  "generatedAt": "2026-10-23T17:07:10.091Z",
   "project": {
     "name": "AgentsKit Harness",
     "root": "."
@@ -4144,7 +4144,7 @@
         "ts",
         "loop"
       ],
-      "contentHash": "81ed043dee081898e2c62922764817b0e4d23a81a64d745ec11b0ccc224ad503"
+      "contentHash": "04f5dcfd6bb32c76cda0d1f4d1136eea3e0d800b2b2627f1d6c5b8575a39aadd"
     },
     {
       "id": "module:src/loop/detached-worker.ts",
@@ -4316,7 +4316,23 @@
         "ts",
         "loop"
       ],
-      "contentHash": "b28c66a319a4a3960600a49da85fdf30d202909077e900de5c727b9da7526e7e"
+      "contentHash": "e597823aa033e35062cf4124882bcb65dad3e575a75c7765b87a04967f950e6f"
+    },
+    {
+      "id": "module:src/loop/fleet-handoff.ts",
+      "type": "module",
+      "title": "fleet-handoff.ts",
+      "path": "src/loop/fleet-handoff.ts",
+      "symbols": [
+        "handoffRoot",
+        "stripHandoff"
+      ],
+      "tags": [
+        "module",
+        "ts",
+        "loop"
+      ],
+      "contentHash": "6e42fd053d01c9047d7d681fb466abd9dc91d6f56fd5f02636f0a56b962e90bd"
     },
     {
       "id": "module:src/loop/fleet-runner.ts",
@@ -5584,7 +5600,7 @@
         "ts",
         "loop"
       ],
-      "contentHash": "37436a3066a79d9366d002160e2555d005867acbb7cee58a74b19b355816f778"
+      "contentHash": "28a210fe7b1ec6fccb06e989198f150504c5c12a1a44fbcf2055f3b6a42b69ba"
     },
     {
       "id": "module:src/loop/tracker-cooldown.ts",
@@ -8337,6 +8353,18 @@
       "contentHash": "fd645215382e31843473b37cb7325e4253d084918bfd9b49e235e73a2525d164"
     },
     {
+      "id": "module:test/loop-fleet-handoff.test.ts",
+      "type": "module",
+      "title": "loop-fleet-handoff.test.ts",
+      "path": "test/loop-fleet-handoff.test.ts",
+      "tags": [
+        "module",
+        "ts",
+        "test"
+      ],
+      "contentHash": "836c058eb5e2f87231960b544fa1a1130bd50d94b1fa133ce46f12afe921d9e2"
+    },
+    {
       "id": "module:test/loop-fleet-runner.test.ts",
       "type": "module",
       "title": "loop-fleet-runner.test.ts",
@@ -9526,8 +9554,8 @@
     }
   },
   "inputs": {
-    "hash": "e5e587d1edce62ada1c0b2d13435e4c5093c1fb03214178e1edddd9264095866",
-    "fileCount": 605,
+    "hash": "a72dedeaa1499c765994f8e63e50501f666079e29d857345717420614e56dfe7",
+    "fileCount": 607,
     "projectionVersion": 2
   },
   "retrieval": {
@@ -9549,9 +9577,9 @@
   "projection": {
     "type": "retrieval-index",
     "schemaVersion": 1,
-    "contentHash": "89f8eca99c8bd23256d666b9ea77a30d48cb405eefe970816e27908221099919",
+    "contentHash": "29db781c1be996b57fd5b70383756ec14e86032dff816f086faeef21cca3c3d4",
     "contentHashAlgo": "sha256-semantic-v1",
-    "snapshotHash": "e7e6bd3c0d39c391828080afc8c6dbcabb0ddf60ca2b1de0192c70f0ee7fb2bb",
+    "snapshotHash": "523de19c57b9c20502531baa46fcce4acd2166241953101f0ad338811eafe3b8",
     "overlayHash": "f99666ff9119084dd25c2974ae64eb6935ec2aa785ff5ad478fb9d541f7a5e94",
     "configurationHash": "6c17a2415ef3484014ab8350c5c245602bfb85d2baf75666fb83c1c387f3396a",
     "lexiconVersion": 1,
@@ -9571,7 +9599,7 @@
     },
     "lexical": {
       "version": 1,
-      "documentCount": 586,
+      "documentCount": 588,
       "fieldNames": [
         "aliases",
         "body",
@@ -9582,13 +9610,13 @@
         "title"
       ],
       "averageFieldLength": {
-        "aliases": 2.9215017064846416,
-        "body": 45.6382252559727,
-        "headings": 3.8515358361774745,
-        "path": 6.122866894197952,
-        "summary": 2.7354948805460753,
-        "symbols": 14.03924914675768,
-        "title": 4.011945392491468
+        "aliases": 2.921768707482993,
+        "body": 45.48299319727891,
+        "headings": 3.8384353741496597,
+        "path": 6.124149659863946,
+        "summary": 2.7261904761904763,
+        "symbols": 14.001700680272108,
+        "title": 4.01530612244898
       }
     },
     "entries": [
@@ -10113,7 +10141,7 @@
           ],
           "outbound": []
         },
-        "contentHash": "405ebd608048793e08d7d68f6f755c8e54c7fb4477e95990234df4b142b90852",
+        "contentHash": "b2e5bfe0bd64042e94ea3b1424eabcf1f58a711b125225b377b929b10dd986a5",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -10240,7 +10268,7 @@
           ],
           "outbound": []
         },
-        "contentHash": "0c57e7b3be61f53fbefafb8e6d798b63f81a6024ce91f112068c207b5ba063e4",
+        "contentHash": "5ec1c579c4acccef34979515bb05642342f5eb5bbb609e8ada43cef93af635c9",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -18678,6 +18706,11 @@
             },
             {
               "kind": "imports",
+              "id": "module:src/loop/fleet-handoff.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
               "id": "module:src/loop/github-intake.ts",
               "confidence": "observed"
             },
@@ -26484,6 +26517,11 @@
             },
             {
               "kind": "imports",
+              "id": "module:src/loop/fleet-handoff.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
               "id": "module:src/loop/tick.ts",
               "confidence": "observed"
             },
@@ -28640,6 +28678,11 @@
             },
             {
               "kind": "imports",
+              "id": "module:src/loop/fleet-handoff.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
               "id": "module:src/loop/flows.ts",
               "confidence": "observed"
             },
@@ -28755,7 +28798,7 @@
             }
           ]
         },
-        "contentHash": "81ed043dee081898e2c62922764817b0e4d23a81a64d745ec11b0ccc224ad503",
+        "contentHash": "04f5dcfd6bb32c76cda0d1f4d1136eea3e0d800b2b2627f1d6c5b8575a39aadd",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -29675,6 +29718,11 @@
               "confidence": "observed"
             },
             {
+              "kind": "imports",
+              "id": "module:test/loop-fleet-handoff.test.ts",
+              "confidence": "observed"
+            },
+            {
               "kind": "mentions",
               "id": "document:docs/ADR-0045-fleet-runner.md",
               "confidence": "observed"
@@ -29708,7 +29756,67 @@
             }
           ]
         },
-        "contentHash": "b28c66a319a4a3960600a49da85fdf30d202909077e900de5c727b9da7526e7e",
+        "contentHash": "e597823aa033e35062cf4124882bcb65dad3e575a75c7765b87a04967f950e6f",
+        "provenance": "observed",
+        "confidence": "observed"
+      },
+      {
+        "id": "module:src/loop/fleet-handoff.ts",
+        "kind": "module",
+        "path": "src/loop/fleet-handoff.ts",
+        "title": "fleet-handoff.ts",
+        "aliases": [],
+        "symbols": [
+          "handoffRoot",
+          "stripHandoff"
+        ],
+        "tags": [
+          "module",
+          "ts",
+          "loop"
+        ],
+        "fields": {
+          "title": "fleet-handoff.ts",
+          "headings": "",
+          "path": "src/loop/fleet-handoff.ts",
+          "symbols": "handoffRoot stripHandoff",
+          "summary": "",
+          "body": "",
+          "aliases": "module ts loop"
+        },
+        "graph": {
+          "pagerank": 0,
+          "inboundLinks": 0,
+          "coveredBy": [],
+          "mentionedBy": [],
+          "areaId": "area:src/loop",
+          "packageId": "package:@agentskit/harness",
+          "inbound": [
+            {
+              "kind": "imports",
+              "id": "module:src/loop/deliver.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
+              "id": "module:test/loop-fleet-handoff.test.ts",
+              "confidence": "observed"
+            }
+          ],
+          "outbound": [
+            {
+              "kind": "imports",
+              "id": "module:src/adapters/command.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
+              "id": "module:src/loop/artifacts.ts",
+              "confidence": "observed"
+            }
+          ]
+        },
+        "contentHash": "6e42fd053d01c9047d7d681fb466abd9dc91d6f56fd5f02636f0a56b962e90bd",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -32896,6 +33004,11 @@
             },
             {
               "kind": "imports",
+              "id": "module:test/loop-fleet-handoff.test.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
               "id": "module:test/loop-verdict.test.ts",
               "confidence": "observed"
             },
@@ -35058,7 +35171,7 @@
             }
           ]
         },
-        "contentHash": "37436a3066a79d9366d002160e2555d005867acbb7cee58a74b19b355816f778",
+        "contentHash": "28a210fe7b1ec6fccb06e989198f150504c5c12a1a44fbcf2055f3b6a42b69ba",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -42701,6 +42814,11 @@
               "kind": "imports",
               "id": "module:test/loop-fleet-dod.test.ts",
               "confidence": "observed"
+            },
+            {
+              "kind": "imports",
+              "id": "module:test/loop-fleet-handoff.test.ts",
+              "confidence": "observed"
             }
           ],
           "outbound": []
@@ -45169,6 +45287,66 @@
           ]
         },
         "contentHash": "fd645215382e31843473b37cb7325e4253d084918bfd9b49e235e73a2525d164",
+        "provenance": "observed",
+        "confidence": "observed"
+      },
+      {
+        "id": "module:test/loop-fleet-handoff.test.ts",
+        "kind": "module",
+        "path": "test/loop-fleet-handoff.test.ts",
+        "title": "loop-fleet-handoff.test.ts",
+        "aliases": [],
+        "tags": [
+          "module",
+          "ts",
+          "test"
+        ],
+        "fields": {
+          "title": "loop-fleet-handoff.test.ts",
+          "headings": "",
+          "path": "test/loop-fleet-handoff.test.ts",
+          "symbols": "",
+          "summary": "",
+          "body": "",
+          "aliases": "module ts test"
+        },
+        "graph": {
+          "pagerank": 0,
+          "inboundLinks": 0,
+          "coveredBy": [],
+          "mentionedBy": [],
+          "areaId": "area:test",
+          "packageId": "package:@agentskit/harness",
+          "inbound": [],
+          "outbound": [
+            {
+              "kind": "imports",
+              "id": "module:src/index.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
+              "id": "module:src/loop/fleet-dod.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
+              "id": "module:src/loop/fleet-handoff.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
+              "id": "module:src/loop/process.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
+              "id": "module:test/git.ts",
+              "confidence": "observed"
+            }
+          ]
+        },
+        "contentHash": "836c058eb5e2f87231960b544fa1a1130bd50d94b1fa133ce46f12afe921d9e2",
         "provenance": "observed",
         "confidence": "observed"
       },
