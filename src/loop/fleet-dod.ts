@@ -3,7 +3,7 @@ import { join } from 'node:path'
 import type { CommandRunner } from '../adapters/command.js'
 import type { LoopConfig } from './config.js'
 import type { TaskContract } from './contract.js'
-import { readVerifyArtifact, verifyProofs } from './artifacts.js'
+import { ARTIFACT_DIR, readVerifyArtifact, verifyProofs } from './artifacts.js'
 import { readDodEvidence, type DodEvidenceFile, type DodProof } from './dod.js'
 
 /** What the definition of done is judged on for a fleet task: proofs the harness made itself, on the collected commit. */
@@ -25,6 +25,8 @@ export interface FleetDodInput {
   /** `baseSha` from `fleet collect --json`; absent, the merge-base with `origin/<baseBranch>` stands in. */
   readonly base?: string
   readonly contract: TaskContract | null
+  /** Where `fleet-handoff.ts` kept the `.ak-loop/` files the PR no longer carries; the checkout is read when there are none. */
+  readonly handoff?: string
 }
 
 const MAX_FILE_BYTES = 256 * 1024
@@ -51,7 +53,8 @@ const tail = (value: string, max = 600): string => { const text = value.trim(); 
  * - `command` items, and contract outcomes that carry a command, are **re-run locally** — the remote agent's own
  *   claim about them is never evidence. Output is recorded as the proof, the way the other runners record it.
  * - Outcomes with no command (a `manual` check) are proven only by the handoff the agent committed in the collected
- *   branch (`.ak-loop/verify.json`, `dod.json`), read from this checkout.
+ *   branch (`.ak-loop/verify.json`, `dod.json`). The harness removes those files from the PR after reading them, so
+ *   they come from `input.handoff` (the copy in the state dir); this checkout is the fallback.
  */
 export const proveFleetDod = async (input: FleetDodInput): Promise<FleetDodEvidence> => {
   const { runner, config, root, stateDir, head, contract } = input
@@ -102,8 +105,9 @@ export const proveFleetDod = async (input: FleetDodInput): Promise<FleetDodEvide
     for (const outcome of commandOutcomes) rerun.push(await proof(outcome.id, shellArgv(outcome.check.command ?? ''), outcome.check.command ?? ''))
 
     // Only what the harness could not run itself comes from the agent's committed handoff, and never over a local result.
-    const handoff = readDodEvidence(checkout, config)
-    const verify = verifyProofs(readVerifyArtifact(checkout))
+    const from = input.handoff && existsSync(join(input.handoff, ARTIFACT_DIR)) ? input.handoff : checkout
+    const handoff = readDodEvidence(from, config)
+    const verify = verifyProofs(readVerifyArtifact(from))
     const claimed = [...handoff.outcomes, ...verify.filter((item) => !handoff.outcomes.some((recorded) => recorded.id === item.id))]
     const outcomes = [...rerun, ...claimed.filter((item) => !rerun.some((own) => own.id === item.id))]
     return { evidence: { project, outcomes }, changedFiles, fileContents, notes }
