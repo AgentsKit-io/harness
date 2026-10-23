@@ -29,11 +29,13 @@ const TERMINAL: readonly FleetState[] = ['done', 'failed', 'cancelled']
 /** `fleet queue --json` states, folded to the few the harness reasons about. Unknown words stay `unknown` — never `done`. */
 const foldState = (raw: unknown): FleetState => {
   switch (typeof raw === 'string' ? raw.toLowerCase() : '') {
-    case 'queued': case 'pending': case 'waiting': return 'queued'
-    case 'running': case 'dispatched': case 'started': case 'in_progress': return 'running'
+    case 'queued': case 'pending': case 'waiting': case 'waiting-quota': return 'queued'
+    case 'running': case 'dispatched': case 'dispatching': case 'started': case 'in_progress': return 'running'
     case 'done': case 'succeeded': case 'success': case 'completed': return 'done'
-    case 'failed': case 'error': case 'timed_out': return 'failed'
-    case 'cancelled': case 'canceled': return 'cancelled'
+    // `abandoned`: the coordinator spent its infrastructure retries; the task will not run again by itself.
+    case 'failed': case 'error': case 'timed_out': case 'abandoned': return 'failed'
+    // `stopped`: a person or the coordinator stopped it on its host.
+    case 'cancelled': case 'canceled': case 'stopped': return 'cancelled'
     default: return 'unknown'
   }
 }
