@@ -1,7 +1,7 @@
 import type { CommandRunner } from '../adapters/command.js'
 import { findExecutable } from '../adapters/command.js'
 import { orcaJson } from '../adapters/orca-cli.js'
-import { loadLoopConfig, type LoadedLoopConfig } from './config.js'
+import { describeConfigSource, loadLoopConfig, type LoadedLoopConfig } from './config.js'
 import { runLoopDoctor, type DoctorCheck, type LoopDoctorReport } from './doctor.js'
 import { automationSpecs, installLoopAutomations, loopStatus, shellQuote, type InstallReport, type LoopStatusReport } from './install.js'
 import { hasLocalConfig, promptLocalConfig, writeLocalConfig } from './local-config.js'
@@ -108,8 +108,8 @@ export const runGuidedInstall = async (input: GuidedInstallInput): Promise<Guide
   else if (io.interactive === false && !hasLocalConfig(loaded)) bullet(`no overlay and no terminal to ask; run interactively or write loop.config.local.yaml by hand`, 'warn')
   else bullet(`no overlay; queue owner comes from ${loaded.path}`, 'dim')
   const { config } = loaded
-  if (io.banner) io.banner(`Keep-pushing loop · ${config.project.repo}`, [`base ${config.project.baseBranch} · team ${config.linear.teamKey} · queue of ${config.linear.person}`, `config ${loaded.path}`, ...(loaded.localPath ? [`overlay ${loaded.localPath}`] : [])])
-  else io.write(`Keep-pushing loop for ${config.project.repo} (base ${config.project.baseBranch}) — queue of ${config.linear.person}, team ${config.linear.teamKey}\nConfig: ${loaded.path}${loaded.localPath ? `\nOverlay: ${loaded.localPath}` : ''}`)
+  if (io.banner) io.banner(`Keep-pushing loop · ${config.project.repo}`, [`base ${config.project.baseBranch} · team ${config.linear.teamKey} · queue of ${config.linear.person}`, `config ${describeConfigSource(loaded)}`, ...(loaded.localPath ? [`overlay ${loaded.localPath}`] : [])])
+  else io.write(`Keep-pushing loop for ${config.project.repo} (base ${config.project.baseBranch}) — queue of ${config.linear.person}, team ${config.linear.teamKey}\nConfig: ${describeConfigSource(loaded)}${loaded.localPath ? `\nOverlay: ${loaded.localPath}` : ''}`)
 
   section('Doctor', 2, TOTAL)
   const doctor = await runLoopDoctor({ loaded, runner: input.runner, env, platform, now: input.now, probe: false })

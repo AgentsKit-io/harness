@@ -304,8 +304,36 @@ file) before writing, because that is what the loop will actually load.
 
 `--global` also writes `~/.agentskit/harness.yaml` when you have none: the models and providers this machine can
 use, plus a commented-out notification channel. Models live there on purpose — which CLIs are installed and
-logged in is a fact about you and this machine, not about the repository. A project file alone is therefore not a
-complete config, and that is by design.
+logged in is a fact about you and this machine, not about the repository. When no layer declares `models`, the
+loop falls back to the same built-in starter set (`claude` and `codex`).
+
+## A repository without `loop.config.yaml`
+
+A repository does not need a file. Without one the loop runs on **built-in defaults ← preset ← your global default
+(`~/.agentskit/harness.yaml`) ← what it detects in the repository**; a `loop.config.yaml`, when present, only
+overrides keys of that (deep merge, lists replaced, gate lists accumulate as below). A typical global default for
+this: `connectors: { tracker: github, scm: github, runner: fleet }`, your models and providers, DoD defaults.
+
+Detection fills only keys no file sets:
+
+| Key | Read from |
+|---|---|
+| `project.repo`, `project.name`, `project.baseBranch` | `git remote get-url origin` and `refs/remotes/origin/HEAD` |
+| `connectors.fleet.project` | `github:<owner>/<repo>` (or `gitlab:`), lowercased |
+| `connectors.tracker`/`scm: github` | a GitHub remote, unless some layer declares a `linear` board |
+| preset | `package.json`: workspaces / `pnpm-workspace.yaml` / turbo / nx → `monorepo`; expo / react-native → `mobile`; next / vite / remix / nuxt / astro… → `web-app`; else `library` |
+| `delivery.verifyCommand` | package scripts `check`, else `ci`, else `verify`, else `lint && typecheck`/`check-types` `&& test`/`test:unit` `&& build` (those that exist), run with the lockfile's package manager; else a Makefile `check`/`test` target, composer scripts, pyproject (`python -m pytest`), Cargo, go.mod |
+| `dod.items` | the preset's items minus its guessed `verify` command; `test-for-new-code` only when the repository has test files, with a glob built from them (e.g. `**/*.test.ts`) |
+
+No verify command found and none configured: the loop **refuses** the repository and says so, rather than guessing.
+`project.stateDir` stays `.ak-loop`; when the repository's `.gitignore` does not cover it, the loop adds `/.ak-loop/`
+to `.git/info/exclude` — local to the clone, never a commit. With a file present, detection only fills the identity
+keys and the verify command the file leaves out; it never adds a preset or a DoD item the file did not ask for.
+
+`loop validate` and `loop doctor` print where the effective config came from (`sources`, and `provenance` per key:
+`built-in`, `preset:<name>`, `global`, `detected`, `project`, `team`, `local`); `loop debrief` and `loop status` show
+a one-liner such as `config: global default (+ detected, preset web-app)`. `loop install` works the same way: the
+automations it creates point at `<repo>/loop.config.yaml` and resolve the same effective config each run, file or not.
 
 ## What the orchestrator reads
 

@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
-  "contentHash": "2207cabce6f5c780ca79ee7cac3043b388cbd10e2faf7f34e95590685c1bfeb4",
+  "contentHash": "d9d21d6cdd8a231976725f996c280762d70593e600d47ea0207e5a71cc00cfdd",
   "contentHashAlgo": "sha256-semantic-v1",
-  "generatedAt": "2026-10-23T17:24:39.864Z",
+  "generatedAt": "2026-10-23T17:45:24.427Z",
   "project": {
     "name": "AgentsKit Harness",
     "root": "."
@@ -975,7 +975,7 @@
         "document",
         "human"
       ],
-      "contentHash": "4c2bc2389c2d756384f4d6ed29eb52127739163d115688561c282d61eeaf2691"
+      "contentHash": "969998b408e55c329472da79fdfc9b186e8d17dc6cbc5f457f3b9601884272ff"
     },
     {
       "id": "document:docs/MODULE-BOUNDARIES.md",
@@ -2309,7 +2309,7 @@
         "ts",
         "src"
       ],
-      "contentHash": "8798c129595ee84d294c6e7037b2af34185262aad9d4bde0eb892643a4aaac0f"
+      "contentHash": "029b80fa5ffdb0c7004e3fde09ddb44486a39079f55b4f7ced3c3fb39f2e5f5d"
     },
     {
       "id": "module:src/context/index.ts",
@@ -2752,6 +2752,7 @@
         "CompatibilityObservation",
         "CompatibilityReport",
         "CompatibilityStatus",
+        "ConfigOrigin",
         "ConnectorInput",
         "ContractAssessment",
         "ContractOutcomeSchema",
@@ -2907,15 +2908,14 @@
         "IssueTimelineProblem",
         "IssueTimelineReport",
         "LEARNING_STATUSES",
-        "LEGACY_CONFIG_PATH",
-        "LEGAL_TRANSITIONS"
+        "LEGACY_CONFIG_PATH"
       ],
       "tags": [
         "module",
         "ts",
         "src"
       ],
-      "contentHash": "17210ed0c7d49ad7f72ba493b4770cdbc15484d21ae6e67b18b7adb8aa3eae80"
+      "contentHash": "48dae4090d353047a34b10bfe52c50124c6e801b7fd41e15b132bd3a696137de"
     },
     {
       "id": "module:src/kernel/adapter-contract.ts",
@@ -3941,6 +3941,7 @@
       "title": "config.ts",
       "path": "src/loop/config.ts",
       "symbols": [
+        "ConfigOrigin",
         "EffectiveReviewSettings",
         "EffortLevel",
         "GATE_LISTS",
@@ -3960,6 +3961,8 @@
         "WORKER_ROLES",
         "WorkerRole",
         "composeLoopConfig",
+        "configSources",
+        "describeConfigSource",
         "globalConfigPath",
         "globalLayerDisabled",
         "loadLoopConfig",
@@ -3982,7 +3985,7 @@
         "ts",
         "loop"
       ],
-      "contentHash": "1084c60ad999d03261b7c324569ee25eb4485af2fedcb1a5a1e878062fe818f9"
+      "contentHash": "e3c37b2896b3ba7d976dfd05d02c6ce42aa85f3583c855a5e87521b7428aa3b9"
     },
     {
       "id": "module:src/loop/connectors.ts",
@@ -4084,7 +4087,7 @@
         "ts",
         "loop"
       ],
-      "contentHash": "690fb3ada69d66a629877ce352483c5508805e532ce0cbce3d6c396a8844d0a5"
+      "contentHash": "cf9dbb4d57f72c21b781b95eeca67b5afb16f4281dfd318de84c83f57b2efa11"
     },
     {
       "id": "module:src/loop/deliver-state.ts",
@@ -4163,6 +4166,34 @@
       "contentHash": "112bfee66437b37bca049adb5e55751a9acfa643ff27eb8e16842da31a28ac25"
     },
     {
+      "id": "module:src/loop/detect.ts",
+      "type": "module",
+      "title": "detect.ts",
+      "path": "src/loop/detect.ts",
+      "symbols": [
+        "BUILTIN_DEFAULTS",
+        "DetectedProject",
+        "RemoteRepo",
+        "STARTER_MODELS_YAML",
+        "detectPreset",
+        "detectProject",
+        "detectTestGlob",
+        "detectVerifyCommand",
+        "ensureStateDirIgnored",
+        "findGitDir",
+        "leafPaths",
+        "packageManager",
+        "parseRemote",
+        "unsetOnly"
+      ],
+      "tags": [
+        "module",
+        "ts",
+        "loop"
+      ],
+      "contentHash": "e4aa17b03ad45aad3043a1ee10a3ed7202b6ce305a77b178356a5e429a17d6f2"
+    },
+    {
       "id": "module:src/loop/doctor.ts",
       "type": "module",
       "title": "doctor.ts",
@@ -4181,7 +4212,7 @@
         "ts",
         "loop"
       ],
-      "contentHash": "2caea136e9eaf870cb7af8e5c0c112ab9cb1c23342a0997e68d456f4c61fcc70"
+      "contentHash": "a4e83972cd8d1c8f7b067c4ee2b0f692ca4215bf1cedfad0243f076cd12336e3"
     },
     {
       "id": "module:src/loop/documents.ts",
@@ -4351,7 +4382,7 @@
         "ts",
         "loop"
       ],
-      "contentHash": "412f905d2c038d94eca7fe0a32a914faf0130930d793b286fbe0633f213479df"
+      "contentHash": "490747807d5570e29acc241d4e2bda87b9dc30e45de6cdcf26146a766065544d"
     },
     {
       "id": "module:src/loop/flows.ts",
@@ -4433,7 +4464,7 @@
         "ts",
         "loop"
       ],
-      "contentHash": "97af41b29769fd15f88e42cc8ebaaa11ecdfdbd642cf64f10acb8b6134216acd"
+      "contentHash": "4beb13189fadef9671d2dd4f42bb5937247dae1e24c435be10b243a2f9794c9f"
     },
     {
       "id": "module:src/loop/hitl.ts",
@@ -4754,7 +4785,7 @@
         "ts",
         "loop"
       ],
-      "contentHash": "7fc78c80eaa1eee4fbd0e2d57856cd4411c430dfd89d71cf9bb0f9edc06a21e3"
+      "contentHash": "47ec22c6378ba4d8d1f0a562f74d16bdd20f9c5becca38f163e5717d3bbd95a8"
     },
     {
       "id": "module:src/loop/install.ts",
@@ -4789,7 +4820,7 @@
         "ts",
         "loop"
       ],
-      "contentHash": "a7f18d174e08ca77b77e69c60cad33ea5e02500fac24f8e24b36441e928da116"
+      "contentHash": "ee19175d0e3c49bd020a37e6d04d01d1ba048bcc3317691e1a7eb97993e2231a"
     },
     {
       "id": "module:src/loop/intake.ts",
@@ -8137,6 +8168,18 @@
       "contentHash": "1c391c9ccf5137b36993f252488bee3aac399d471d7e74bb9926375ce495ee88"
     },
     {
+      "id": "module:test/loop-config-detect.test.ts",
+      "type": "module",
+      "title": "loop-config-detect.test.ts",
+      "path": "test/loop-config-detect.test.ts",
+      "tags": [
+        "module",
+        "ts",
+        "test"
+      ],
+      "contentHash": "e46908a2909c7025254cc045af740df30d16d5b3e885e041529582dd9b6925cb"
+    },
+    {
       "id": "module:test/loop-config-layers.test.ts",
       "type": "module",
       "title": "loop-config-layers.test.ts",
@@ -8710,7 +8753,7 @@
         "ts",
         "test"
       ],
-      "contentHash": "981affee9c0cc3e9051d02695ac6cf46f8f776a70e17bb1652a88c71b4f6fec0"
+      "contentHash": "c551090a4fa72a0f8854f5428f8b2496dd8126f7166d3c4e77e643ce3a573fa8"
     },
     {
       "id": "module:test/loop-process.test.ts",
@@ -9566,8 +9609,8 @@
     }
   },
   "inputs": {
-    "hash": "644a8370b4017a6eede8545b65e140d81492b4c46d7005b098baac79f7ca37f0",
-    "fileCount": 608,
+    "hash": "46c5fc350e5846e23e11185dc7da1a330753c90c758d05c74f90af1db599253c",
+    "fileCount": 610,
     "projectionVersion": 2
   },
   "retrieval": {
@@ -9589,9 +9632,9 @@
   "projection": {
     "type": "retrieval-index",
     "schemaVersion": 1,
-    "contentHash": "7f69837834d2d971ab9b8f45620dde3858558904a77103474bc693f4c71c6e0b",
+    "contentHash": "7b38bb936ef3945119d2bfc9363f54dafebe43f97427c33328dd3a6ca222fe9a",
     "contentHashAlgo": "sha256-semantic-v1",
-    "snapshotHash": "4ab15f1786c33c965420d05da0687bf5cf1efba7fe1ea4efd59504e457bea6e9",
+    "snapshotHash": "2378184cba0ad380233adfb1764a0abe749bfdebdefc833898e322f89e49650e",
     "overlayHash": "f99666ff9119084dd25c2974ae64eb6935ec2aa785ff5ad478fb9d541f7a5e94",
     "configurationHash": "6c17a2415ef3484014ab8350c5c245602bfb85d2baf75666fb83c1c387f3396a",
     "lexiconVersion": 1,
@@ -9611,7 +9654,7 @@
     },
     "lexical": {
       "version": 1,
-      "documentCount": 589,
+      "documentCount": 591,
       "fieldNames": [
         "aliases",
         "body",
@@ -9622,13 +9665,13 @@
         "title"
       ],
       "averageFieldLength": {
-        "aliases": 2.9219015280135823,
-        "body": 45.40577249575552,
-        "headings": 3.831918505942275,
-        "path": 6.125636672325976,
-        "summary": 2.7215619694397284,
-        "symbols": 13.977928692699491,
-        "title": 4.018675721561969
+        "aliases": 2.922165820642978,
+        "body": 45.25211505922166,
+        "headings": 3.8274111675126905,
+        "path": 6.125211505922166,
+        "summary": 2.712351945854484,
+        "symbols": 14.027072758037225,
+        "title": 4.018612521150592
       }
     },
     "entries": [
@@ -10153,7 +10196,7 @@
           ],
           "outbound": []
         },
-        "contentHash": "b2e5bfe0bd64042e94ea3b1424eabcf1f58a711b125225b377b929b10dd986a5",
+        "contentHash": "83cdac93e7a6158b99d7e147dd5ac6748afe4405b536ef31d4ec2d6a6bc885e1",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -10247,13 +10290,14 @@
         },
         "graph": {
           "pagerank": 0,
-          "inboundLinks": 4,
+          "inboundLinks": 5,
           "coveredBy": [],
           "mentionedBy": [
             "document:AGENTS.md",
             "document:CONTRIBUTING.md",
             "document:docs/ADR-0045-fleet-runner.md",
-            "document:docs/ADR-0047-independent-verifier-and-structured-lessons.md"
+            "document:docs/ADR-0047-independent-verifier-and-structured-lessons.md",
+            "document:docs/LOOP.md"
           ],
           "packageId": "package:@agentskit/harness",
           "inbound": [
@@ -10276,11 +10320,16 @@
               "kind": "mentions",
               "id": "document:docs/ADR-0047-independent-verifier-and-structured-lessons.md",
               "confidence": "observed"
+            },
+            {
+              "kind": "mentions",
+              "id": "document:docs/LOOP.md",
+              "confidence": "observed"
             }
           ],
           "outbound": []
         },
-        "contentHash": "19cc1877c9dc45e161948ff4f5511a79543b6d4fa6ee8c1b64f07b1536241393",
+        "contentHash": "bb0c71b708a48f2813f2b3d4d983e7162807eb2565afbfbeeef1ee6bf089517e",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -14911,7 +14960,7 @@
         ],
         "fields": {
           "title": "Keep-pushing loop (ak-harness loop)",
-          "headings": "Keep-pushing loop (ak-harness loop) Commands Debrief and watch The observe stage — the scan that knows what it already said Running 24/7 with Orca Worker handoff Deliver Worker terminals GitHub label intake: reviewing PRs the loop never dispatched Event bus and orchestration hooks Calling a human: notifications Presets and loop init What the orchestrator reads Configuration in four layers Flow profiles: one motor, several kinds of demand loop plan — a vague objective becomes issues The plan and its votes (worker.plan) intake and maintain — where work comes from when nobody typed it Cost: policy, ceilings, and the levers that are real Connectors: the engine names no vendor release — promotion and deploy, with a human in front Definition of Done: two lists, both proven Verdict levels, patch binding and the merge policy (ADR-0046) Runs: how an issue was built (ADR-0041) Rendered specs (spec.enabled) The roles are agents, and they can be improved The loop improving itself, within limits One tick Topping up a person queue (linear.refill) and yielding to another loop (queue.yieldTo) Resilience: auto-pause after repeated failures PII/secret scanning Cost/time circuit breakers Dynamic outcome progress Skills pinned into the worker brief Worktree setup command What the doctor checks Dynamic model routing Model routing Reasoning effort per role Machine slots Integrations used by the loop Doc Bridge (context for the orchestrator) Code Review (agentskit-review) Eval battery (package quality, not the live loop) AgentsKit ecosystem map (what the harness has vs what the loop uses) What can be added to help the SDLC Boundaries Security notes Continuous improvement: loop retro",
+          "headings": "Keep-pushing loop (ak-harness loop) Commands Debrief and watch The observe stage — the scan that knows what it already said Running 24/7 with Orca Worker handoff Deliver Worker terminals GitHub label intake: reviewing PRs the loop never dispatched Event bus and orchestration hooks Calling a human: notifications Presets and loop init A repository without loop.config.yaml What the orchestrator reads Configuration in four layers Flow profiles: one motor, several kinds of demand loop plan — a vague objective becomes issues The plan and its votes (worker.plan) intake and maintain — where work comes from when nobody typed it Cost: policy, ceilings, and the levers that are real Connectors: the engine names no vendor release — promotion and deploy, with a human in front Definition of Done: two lists, both proven Verdict levels, patch binding and the merge policy (ADR-0046) Runs: how an issue was built (ADR-0041) Rendered specs (spec.enabled) The roles are agents, and they can be improved The loop improving itself, within limits One tick Topping up a person queue (linear.refill) and yielding to another loop (queue.yieldTo) Resilience: auto-pause after repeated failures PII/secret scanning Cost/time circuit breakers Dynamic outcome progress Skills pinned into the worker brief Worktree setup command What the doctor checks Dynamic model routing Model routing Reasoning effort per role Machine slots Integrations used by the loop Doc Bridge (context for the orchestrator) Code Review (agentskit-review) Eval battery (package quality, not the live loop) AgentsKit ecosystem map (what the harness has vs what the loop uses) What can be added to help the SDLC Boundaries Security notes Continuous improvement: loop retro",
           "path": "docs/LOOP.md",
           "symbols": "",
           "summary": "The loop drains one person's Linear queue through Orca worktrees, 24/7, with role-based model routing and usage-aware fallback. The harness supplies the deterministic parts (claims, machine pressure, gates, evidence); Orca supplies scheduling, worktrees, terminals, Linear access and visibility.",
@@ -14967,6 +15016,11 @@
               "kind": "mentions",
               "id": "area:src/loop",
               "confidence": "fuzzy"
+            },
+            {
+              "kind": "mentions",
+              "id": "area:test",
+              "confidence": "observed"
             },
             {
               "kind": "mentions",
@@ -15170,7 +15224,7 @@
             }
           ]
         },
-        "contentHash": "4c2bc2389c2d756384f4d6ed29eb52127739163d115688561c282d61eeaf2691",
+        "contentHash": "969998b408e55c329472da79fdfc9b186e8d17dc6cbc5f457f3b9601884272ff",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -20225,7 +20279,7 @@
             }
           ]
         },
-        "contentHash": "8798c129595ee84d294c6e7037b2af34185262aad9d4bde0eb892643a4aaac0f",
+        "contentHash": "029b80fa5ffdb0c7004e3fde09ddb44486a39079f55b4f7ced3c3fb39f2e5f5d",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -21854,6 +21908,7 @@
           "CompatibilityObservation",
           "CompatibilityReport",
           "CompatibilityStatus",
+          "ConfigOrigin",
           "ConnectorInput",
           "ContractAssessment",
           "ContractOutcomeSchema",
@@ -22009,8 +22064,7 @@
           "IssueTimelineProblem",
           "IssueTimelineReport",
           "LEARNING_STATUSES",
-          "LEGACY_CONFIG_PATH",
-          "LEGAL_TRANSITIONS"
+          "LEGACY_CONFIG_PATH"
         ],
         "tags": [
           "module",
@@ -22021,7 +22075,7 @@
           "title": "index.ts",
           "headings": "",
           "path": "src/index.ts",
-          "symbols": "AGENT_REGISTRY_SCHEMA_VERSION ARTIFACT_DIR ARTIFACT_SCHEMA_VERSION ARTIFACT_TYPES ASSURANCE_LEVELS ActionContext AdapterMetadata AdapterTelemetry AdversarialReviewResult AgentEvalCase AgentEvalReport AgentEvalSuite AgentMemoryAdapter AgentMemoryHit AgentMemoryKvStore AgentMemoryRecord AgentProposal AgentRegistry AgentRegistryEntry AgentRegistryEntrySchema AgentRegistrySchema AgentRunEvidence AgentRunIoEntry AgentRunReport AgentRunStage AgentRunState AgentRunStatus AgentUsage Alert AlertSchema AnswerDecisionInput AnswerDecisionResult ArgvRagContextProviderOptions ArtifactBinding ArtifactEnvelope ArtifactEnvelopeInput ArtifactType ArtificialAnalysisModel AssuranceLevel AutomationDriftRow AutomationFields AutomationSpec AutomationStatus BENCHMARK_SCHEMA_VERSION BLOCK_STATUSES BRIEF_POINTER_PROMPT BaseView BlockAssessment BlockManifest BlockStatus BoardIssue BoardLane BoardProvider BoardReadResult BoardSnapshot BoardStatus BoundaryVerdict BudgetVerdict CAPABILITY_KINDS CAPABILITY_MANIFEST_SCHEMA_VERSION COMPATIBILITY_COMPONENTS COMPATIBILITY_SCHEMA_VERSION CONTEXT_PROVIDER_SLOT CONTRACT_CLOSE CONTRACT_JSON_SCHEMA CONTRACT_OPEN CONTRACT_SCHEMA_VERSION CRITICAL_ROLES CacheUsage CapabilityDescriptor CapabilityKind CapabilityManifest CapabilityManifestInput CastVote CatalogModel ChangedFile CheckOutcome CheckoutState ChecksAssessment ClaimResult CodeReviewInput CodeReviewOutcome CodingAgentAdapter CodingAgentHandlerResult CodingAgentRequest CodingAgentResult CommandResult CommandRunOptions CommandRunner CommentBlock CommentDocument CommentDrop CommentFormat CompatibilityComponent CompatibilityComponentId CompatibilityManifest CompatibilityObservation CompatibilityReport CompatibilityStatus ConnectorInput ContractAssessment ContractOutcomeSchema ContractResult CooldownEntry CooldownState CoordinationIdentity DEFAULT_COMMENT_OPTIONS DEFAULT_CONFIG_PATH DESIGN_CLOSE DESIGN_OPEN DebriefInput DebriefIssueRow DebriefReport Decision DecisionOption DeliverInput DeliverOutcome DeliverReport DeliverResult DeliveryEvidence DeliveryState Design DesignSchema DetectProvidersInput DiffStat DispatchLease DispatchLedger DispatchRecord DispatchRecordFile DispatchRef DocBridgeIndexInspection DoctorCheck DoctorCheckStatus DodAssessment DodEvidenceFile DodItem DodLine DodProof EVAL_COMPONENTS EVAL_LAYERS EVAL_MANIFEST_SCHEMA_VERSION EVENT_LOG_GENESIS EVIDENCE_BUNDLE_SCHEMA_VERSION EffectiveFlowSettings EffectiveReviewSettings EffortLevel EnqueueIssueRunInput EnqueueRunInput EvalBatteryReport EvalCaseDefinition EvalCaseReport EvalComponent EvalExpectation EvalGate EvalLayer EvalManifest EvalObservation EvalObservationStatus EvidenceOptions EvidenceProof EvidenceStatus ExecutePhaseProfileOptions FailureClass FailureClassification FetchQueueInput FileArtifactStore FileEventStore FilePreflightPlan FiledRecord FlowIssue FlowProfile FlowSource GLOBAL_CONFIG_FILE GateAssessment GateBinding GateCriterion GenerateContractInput GitHubCliOptions GitHubIssueComment GitHubIssueDetail GitHubIssueSnapshot GuidedInstallIO GuidedInstallInput GuidedInstallReport HARNESS_ERROR_CATALOG HARNESS_ERROR_CODES HARNESS_EVENT_ENVELOPE_SCHEMA_VERSION HARNESS_EVENT_SCHEMA_VERSION HARNESS_EVENT_TYPES HARNESS_PLUGIN_API_VERSION HARNESS_REPO_URL HITL_ANCHOR_ID HITL_ANCHOR_TITLE HITL_FREE_TEXT_MAX HITL_SCHEMA_VERSION HandoffBriefInput HarnessError HarnessErrorClassification HarnessErrorDisposition HarnessEventEnvelope HarnessEventEnvelopeInput HarnessEventProvenance HitlAnswer HitlOption HitlRequest HitlRequestInput HitlRole HitlStatus HitlStore IMPROVEMENT_CYCLE_STEPS ISSUES_CLOSE ISSUES_OPEN ISSUE_DETAIL_FIELDS ISSUE_FIELDS ISSUE_LIFECYCLE_SCHEMA_VERSION ISSUE_QUEUE_SCHEMA_VERSION ImprovementOutcome ImprovementRecord ImprovementState InitAnswers InitInput InitQuestion InitResult InstallAction InstallInput InstallReport IntakeRecord IntakeReport IntakeResult IntakeState InterviewQuestion IssueBoardCache IssueBoardCacheOptions IssueBoardReader IssueDecision IssueFailureRecord IssueFailureState IssueLifecycle IssuePhase IssueQueue IssueQueueOptions IssueQueueProjection IssueRecord IssueRun IssueRunConfigSnapshot IssueRunContractSnapshot IssueRunPatch IssueRunPreflightSnapshot IssueRunProjection IssueRunStatus IssueSpend IssueTimelineProblem IssueTimelineReport LEARNING_STATUSES LEGACY_CONFIG_PATH LEGAL_TRANSITIONS",
+          "symbols": "AGENT_REGISTRY_SCHEMA_VERSION ARTIFACT_DIR ARTIFACT_SCHEMA_VERSION ARTIFACT_TYPES ASSURANCE_LEVELS ActionContext AdapterMetadata AdapterTelemetry AdversarialReviewResult AgentEvalCase AgentEvalReport AgentEvalSuite AgentMemoryAdapter AgentMemoryHit AgentMemoryKvStore AgentMemoryRecord AgentProposal AgentRegistry AgentRegistryEntry AgentRegistryEntrySchema AgentRegistrySchema AgentRunEvidence AgentRunIoEntry AgentRunReport AgentRunStage AgentRunState AgentRunStatus AgentUsage Alert AlertSchema AnswerDecisionInput AnswerDecisionResult ArgvRagContextProviderOptions ArtifactBinding ArtifactEnvelope ArtifactEnvelopeInput ArtifactType ArtificialAnalysisModel AssuranceLevel AutomationDriftRow AutomationFields AutomationSpec AutomationStatus BENCHMARK_SCHEMA_VERSION BLOCK_STATUSES BRIEF_POINTER_PROMPT BaseView BlockAssessment BlockManifest BlockStatus BoardIssue BoardLane BoardProvider BoardReadResult BoardSnapshot BoardStatus BoundaryVerdict BudgetVerdict CAPABILITY_KINDS CAPABILITY_MANIFEST_SCHEMA_VERSION COMPATIBILITY_COMPONENTS COMPATIBILITY_SCHEMA_VERSION CONTEXT_PROVIDER_SLOT CONTRACT_CLOSE CONTRACT_JSON_SCHEMA CONTRACT_OPEN CONTRACT_SCHEMA_VERSION CRITICAL_ROLES CacheUsage CapabilityDescriptor CapabilityKind CapabilityManifest CapabilityManifestInput CastVote CatalogModel ChangedFile CheckOutcome CheckoutState ChecksAssessment ClaimResult CodeReviewInput CodeReviewOutcome CodingAgentAdapter CodingAgentHandlerResult CodingAgentRequest CodingAgentResult CommandResult CommandRunOptions CommandRunner CommentBlock CommentDocument CommentDrop CommentFormat CompatibilityComponent CompatibilityComponentId CompatibilityManifest CompatibilityObservation CompatibilityReport CompatibilityStatus ConfigOrigin ConnectorInput ContractAssessment ContractOutcomeSchema ContractResult CooldownEntry CooldownState CoordinationIdentity DEFAULT_COMMENT_OPTIONS DEFAULT_CONFIG_PATH DESIGN_CLOSE DESIGN_OPEN DebriefInput DebriefIssueRow DebriefReport Decision DecisionOption DeliverInput DeliverOutcome DeliverReport DeliverResult DeliveryEvidence DeliveryState Design DesignSchema DetectProvidersInput DiffStat DispatchLease DispatchLedger DispatchRecord DispatchRecordFile DispatchRef DocBridgeIndexInspection DoctorCheck DoctorCheckStatus DodAssessment DodEvidenceFile DodItem DodLine DodProof EVAL_COMPONENTS EVAL_LAYERS EVAL_MANIFEST_SCHEMA_VERSION EVENT_LOG_GENESIS EVIDENCE_BUNDLE_SCHEMA_VERSION EffectiveFlowSettings EffectiveReviewSettings EffortLevel EnqueueIssueRunInput EnqueueRunInput EvalBatteryReport EvalCaseDefinition EvalCaseReport EvalComponent EvalExpectation EvalGate EvalLayer EvalManifest EvalObservation EvalObservationStatus EvidenceOptions EvidenceProof EvidenceStatus ExecutePhaseProfileOptions FailureClass FailureClassification FetchQueueInput FileArtifactStore FileEventStore FilePreflightPlan FiledRecord FlowIssue FlowProfile FlowSource GLOBAL_CONFIG_FILE GateAssessment GateBinding GateCriterion GenerateContractInput GitHubCliOptions GitHubIssueComment GitHubIssueDetail GitHubIssueSnapshot GuidedInstallIO GuidedInstallInput GuidedInstallReport HARNESS_ERROR_CATALOG HARNESS_ERROR_CODES HARNESS_EVENT_ENVELOPE_SCHEMA_VERSION HARNESS_EVENT_SCHEMA_VERSION HARNESS_EVENT_TYPES HARNESS_PLUGIN_API_VERSION HARNESS_REPO_URL HITL_ANCHOR_ID HITL_ANCHOR_TITLE HITL_FREE_TEXT_MAX HITL_SCHEMA_VERSION HandoffBriefInput HarnessError HarnessErrorClassification HarnessErrorDisposition HarnessEventEnvelope HarnessEventEnvelopeInput HarnessEventProvenance HitlAnswer HitlOption HitlRequest HitlRequestInput HitlRole HitlStatus HitlStore IMPROVEMENT_CYCLE_STEPS ISSUES_CLOSE ISSUES_OPEN ISSUE_DETAIL_FIELDS ISSUE_FIELDS ISSUE_LIFECYCLE_SCHEMA_VERSION ISSUE_QUEUE_SCHEMA_VERSION ImprovementOutcome ImprovementRecord ImprovementState InitAnswers InitInput InitQuestion InitResult InstallAction InstallInput InstallReport IntakeRecord IntakeReport IntakeResult IntakeState InterviewQuestion IssueBoardCache IssueBoardCacheOptions IssueBoardReader IssueDecision IssueFailureRecord IssueFailureState IssueLifecycle IssuePhase IssueQueue IssueQueueOptions IssueQueueProjection IssueRecord IssueRun IssueRunConfigSnapshot IssueRunContractSnapshot IssueRunPatch IssueRunPreflightSnapshot IssueRunProjection IssueRunStatus IssueSpend IssueTimelineProblem IssueTimelineReport LEARNING_STATUSES LEGACY_CONFIG_PATH",
           "summary": "",
           "body": "",
           "aliases": "module ts src"
@@ -22677,7 +22731,7 @@
             }
           ]
         },
-        "contentHash": "17210ed0c7d49ad7f72ba493b4770cdbc15484d21ae6e67b18b7adb8aa3eae80",
+        "contentHash": "48dae4090d353047a34b10bfe52c50124c6e801b7fd41e15b132bd3a696137de",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -27147,6 +27201,7 @@
         "title": "config.ts",
         "aliases": [],
         "symbols": [
+          "ConfigOrigin",
           "EffectiveReviewSettings",
           "EffortLevel",
           "GATE_LISTS",
@@ -27166,6 +27221,8 @@
           "WORKER_ROLES",
           "WorkerRole",
           "composeLoopConfig",
+          "configSources",
+          "describeConfigSource",
           "globalConfigPath",
           "globalLayerDisabled",
           "loadLoopConfig",
@@ -27192,7 +27249,7 @@
           "title": "config.ts",
           "headings": "",
           "path": "src/loop/config.ts",
-          "symbols": "EffectiveReviewSettings EffortLevel GATE_LISTS GLOBAL_CONFIG_FILE LOOP_CONFIG_FILE LOOP_CONFIG_SCHEMA_VERSION LOOP_LOCAL_CONFIG_FILE LOOP_ROLES LoadedLoopConfig LoopConfig LoopConfigInput LoopConfigLayers LoopConfigSchema LoopProviderConfig LoopRole ModelReference WORKER_ROLES WorkerRole composeLoopConfig globalConfigPath globalLayerDisabled loadLoopConfig mergeLoopConfig modelRef parseLoopConfigText parseModelRef providerIdentity renderHeadlessArgv renderTuiCommand resolveReviewSettings resolveTeamKey teamConfigFile tiersFor unknownConfigKeys validateLoopConfig",
+          "symbols": "ConfigOrigin EffectiveReviewSettings EffortLevel GATE_LISTS GLOBAL_CONFIG_FILE LOOP_CONFIG_FILE LOOP_CONFIG_SCHEMA_VERSION LOOP_LOCAL_CONFIG_FILE LOOP_ROLES LoadedLoopConfig LoopConfig LoopConfigInput LoopConfigLayers LoopConfigSchema LoopProviderConfig LoopRole ModelReference WORKER_ROLES WorkerRole composeLoopConfig configSources describeConfigSource globalConfigPath globalLayerDisabled loadLoopConfig mergeLoopConfig modelRef parseLoopConfigText parseModelRef providerIdentity renderHeadlessArgv renderTuiCommand resolveReviewSettings resolveTeamKey teamConfigFile tiersFor unknownConfigKeys validateLoopConfig",
           "summary": "",
           "body": "",
           "aliases": "module ts loop"
@@ -27544,6 +27601,11 @@
             },
             {
               "kind": "imports",
+              "id": "module:src/loop/detect.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
               "id": "module:src/loop/presets.ts",
               "confidence": "observed"
             },
@@ -27559,7 +27621,7 @@
             }
           ]
         },
-        "contentHash": "1084c60ad999d03261b7c324569ee25eb4485af2fedcb1a5a1e878062fe818f9",
+        "contentHash": "e3c37b2896b3ba7d976dfd05d02c6ce42aa85f3583c855a5e87521b7428aa3b9",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -28286,7 +28348,7 @@
             }
           ]
         },
-        "contentHash": "690fb3ada69d66a629877ce352483c5508805e532ce0cbce3d6c396a8844d0a5",
+        "contentHash": "cf9dbb4d57f72c21b781b95eeca67b5afb16f4281dfd318de84c83f57b2efa11",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -28871,6 +28933,83 @@
         "confidence": "observed"
       },
       {
+        "id": "module:src/loop/detect.ts",
+        "kind": "module",
+        "path": "src/loop/detect.ts",
+        "title": "detect.ts",
+        "aliases": [],
+        "symbols": [
+          "BUILTIN_DEFAULTS",
+          "DetectedProject",
+          "RemoteRepo",
+          "STARTER_MODELS_YAML",
+          "detectPreset",
+          "detectProject",
+          "detectTestGlob",
+          "detectVerifyCommand",
+          "ensureStateDirIgnored",
+          "findGitDir",
+          "leafPaths",
+          "packageManager",
+          "parseRemote",
+          "unsetOnly"
+        ],
+        "tags": [
+          "module",
+          "ts",
+          "loop"
+        ],
+        "fields": {
+          "title": "detect.ts",
+          "headings": "",
+          "path": "src/loop/detect.ts",
+          "symbols": "BUILTIN_DEFAULTS DetectedProject RemoteRepo STARTER_MODELS_YAML detectPreset detectProject detectTestGlob detectVerifyCommand ensureStateDirIgnored findGitDir leafPaths packageManager parseRemote unsetOnly",
+          "summary": "",
+          "body": "",
+          "aliases": "module ts loop"
+        },
+        "graph": {
+          "pagerank": 0,
+          "inboundLinks": 0,
+          "coveredBy": [],
+          "mentionedBy": [],
+          "areaId": "area:src/loop",
+          "packageId": "package:@agentskit/harness",
+          "inbound": [
+            {
+              "kind": "imports",
+              "id": "module:src/loop/config.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
+              "id": "module:src/loop/init.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
+              "id": "module:test/loop-config-detect.test.ts",
+              "confidence": "observed"
+            }
+          ],
+          "outbound": [
+            {
+              "kind": "imports",
+              "id": "module:src/loop/presets.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
+              "id": "module:src/record.ts",
+              "confidence": "observed"
+            }
+          ]
+        },
+        "contentHash": "e4aa17b03ad45aad3043a1ee10a3ed7202b6ce305a77b178356a5e429a17d6f2",
+        "provenance": "observed",
+        "confidence": "observed"
+      },
+      {
         "id": "module:src/loop/doctor.ts",
         "kind": "module",
         "path": "src/loop/doctor.ts",
@@ -29114,7 +29253,7 @@
             }
           ]
         },
-        "contentHash": "2caea136e9eaf870cb7af8e5c0c112ab9cb1c23342a0997e68d456f4c61fcc70",
+        "contentHash": "a4e83972cd8d1c8f7b067c4ee2b0f692ca4215bf1cedfad0243f076cd12336e3",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -29923,7 +30062,7 @@
             }
           ]
         },
-        "contentHash": "412f905d2c038d94eca7fe0a32a914faf0130930d793b286fbe0633f213479df",
+        "contentHash": "490747807d5570e29acc241d4e2bda87b9dc30e45de6cdcf26146a766065544d",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -30399,7 +30538,7 @@
             }
           ]
         },
-        "contentHash": "97af41b29769fd15f88e42cc8ebaaa11ecdfdbd642cf64f10acb8b6134216acd",
+        "contentHash": "4beb13189fadef9671d2dd4f42bb5937247dae1e24c435be10b243a2f9794c9f",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -31131,6 +31270,11 @@
             },
             {
               "kind": "imports",
+              "id": "module:src/loop/detect.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
               "id": "module:src/loop/presets.ts",
               "confidence": "observed"
             },
@@ -31141,7 +31285,7 @@
             }
           ]
         },
-        "contentHash": "7fc78c80eaa1eee4fbd0e2d57856cd4411c430dfd89d71cf9bb0f9edc06a21e3",
+        "contentHash": "47ec22c6378ba4d8d1f0a562f74d16bdd20f9c5becca38f163e5717d3bbd95a8",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -31297,7 +31441,7 @@
             }
           ]
         },
-        "contentHash": "a7f18d174e08ca77b77e69c60cad33ea5e02500fac24f8e24b36441e928da116",
+        "contentHash": "ee19175d0e3c49bd020a37e6d04d01d1ba048bcc3317691e1a7eb97993e2231a",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -32947,6 +33091,11 @@
             {
               "kind": "imports",
               "id": "module:src/loop/config.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
+              "id": "module:src/loop/detect.ts",
               "confidence": "observed"
             },
             {
@@ -36188,6 +36337,11 @@
             {
               "kind": "imports",
               "id": "module:src/loop/deliver.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
+              "id": "module:src/loop/detect.ts",
               "confidence": "observed"
             },
             {
@@ -44533,6 +44687,51 @@
         "confidence": "observed"
       },
       {
+        "id": "module:test/loop-config-detect.test.ts",
+        "kind": "module",
+        "path": "test/loop-config-detect.test.ts",
+        "title": "loop-config-detect.test.ts",
+        "aliases": [],
+        "tags": [
+          "module",
+          "ts",
+          "test"
+        ],
+        "fields": {
+          "title": "loop-config-detect.test.ts",
+          "headings": "",
+          "path": "test/loop-config-detect.test.ts",
+          "symbols": "",
+          "summary": "",
+          "body": "",
+          "aliases": "module ts test"
+        },
+        "graph": {
+          "pagerank": 0,
+          "inboundLinks": 0,
+          "coveredBy": [],
+          "mentionedBy": [],
+          "areaId": "area:test",
+          "packageId": "package:@agentskit/harness",
+          "inbound": [],
+          "outbound": [
+            {
+              "kind": "imports",
+              "id": "module:src/index.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
+              "id": "module:src/loop/detect.ts",
+              "confidence": "observed"
+            }
+          ]
+        },
+        "contentHash": "e46908a2909c7025254cc045af740df30d16d5b3e885e041529582dd9b6925cb",
+        "provenance": "observed",
+        "confidence": "observed"
+      },
+      {
         "id": "module:test/loop-config-layers.test.ts",
         "kind": "module",
         "path": "test/loop-config-layers.test.ts",
@@ -46581,7 +46780,7 @@
             }
           ]
         },
-        "contentHash": "981affee9c0cc3e9051d02695ac6cf46f8f776a70e17bb1652a88c71b4f6fec0",
+        "contentHash": "c551090a4fa72a0f8854f5428f8b2496dd8126f7166d3c4e77e643ce3a573fa8",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -49736,7 +49935,7 @@
           ],
           "outbound": []
         },
-        "contentHash": "f38302f409ae756ec1dbd3895f0ecd658edcccf62e7feb4457c6d268c8388397",
+        "contentHash": "5ab12c2a66f65fd7c6261a97fe49f1f50193dd0377a956c0364395eca5b6762f",
         "provenance": "observed",
         "confidence": "observed"
       },

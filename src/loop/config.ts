@@ -1,12 +1,13 @@
 import { isRecord } from '../record.js'
 import { existsSync, readFileSync } from 'node:fs'
 import { homedir } from 'node:os'
-import { dirname, resolve } from 'node:path'
+import { basename, dirname, resolve } from 'node:path'
 import { parse as parseYaml } from 'yaml'
 import { z } from 'zod'
 import { fail } from '../kernel/errors.js'
 import { hashJson } from '../kernel/hash.js'
 import { MODEL_ROLES, type ModelRole } from '../kernel/model-policy.js'
+import { BUILTIN_DEFAULTS, detectProject, ensureStateDirIgnored, leafPaths, unsetOnly } from './detect.js'
 import { PRESET_NAMES, presetFor } from './presets.js'
 import { VERDICT_LEVELS } from './verdict.js'
 
@@ -776,7 +777,7 @@ export const LoopConfigSchema = z.object({
     fleet: z.object({
       bin: nonEmpty.default('fleet'),
       /** `github:<owner>/<repo>` or `<owner>/<repo>`; default: derived from the `origin` remote of `project.root`. */
-      project: z.string().trim().regex(/^(github:)?[\w.-]+\/[\w.-]+$/, 'expected github:<owner>/<repo>').optional(),
+      project: z.string().trim().regex(/^((github|gitlab):)?[\w.-]+\/[\w.-]+$/, 'expected github:<owner>/<repo> or gitlab:<owner>/<repo>').optional(),
       model: z.enum(['haiku', 'sonnet', 'opus']).default('sonnet'),
       fallbackModels: z.array(z.enum(['haiku', 'sonnet', 'opus'])).default([]),
       priority: z.number().int().min(0).default(0),
@@ -1141,6 +1142,14 @@ export interface LoadedLoopConfig {
    * `loop validate` and `loop doctor` rather than rejected — see `unknownConfigKeys`.
    */
   readonly unknownKeys: readonly string[]
+  /** False when the repository has no `loop.config.yaml` and runs on the global default plus detection. Absent = true (hand-built values). */
+  readonly projectFile?: boolean
+  /** Which layer set each leaf key the layers declare; a key not listed is a built-in schema default. */
+  readonly provenance?: Readonly<Record<string, ConfigOrigin>>
+  /** Leaf keys whose effective value was detected from the repository. */
+  readonly detectedKeys?: readonly string[]
+  /** The preset detected for a repository without a file. */
+  readonly detectedPreset?: string
 }
 
 export const parseModelRef = (value: string): ModelReference => {
@@ -1263,15 +1272,22 @@ export const parseLoopConfigText = (text: string, localText?: string): LoopConfi
 
 /** The four layers, in the order they are merged. The most specific wins, and each one has exactly one owner. */
 export interface LoopConfigLayers {
-  /** `~/.agentskit/harness.yaml` — the user. */
+  /** `~/.agentskit/harness.yaml` — the user, and the global default for every repository without a file. */
   readonly globalText?: string
-  /** `loop.config.yaml` — the project. Weighs more than the global layer, which stays untouched. */
-  readonly text: string
+  /** `loop.config.yaml` — the project. Weighs more than the global layer, which stays untouched. Absent: the repository has none. */
+  readonly text?: string
   /** `loop.config.team.<key>.yaml` — the team, for what diverges inside one repository. */
   readonly teamText?: string
   /** `loop.config.local.yaml` — this machine. */
   readonly localText?: string
+  /** Values read from the repository itself (`detect.ts`); only the keys no file sets are kept. */
+  readonly detected?: Record<string, unknown>
+  /** Preset used when the project file names none — the one detected from the repository. */
+  readonly detectedPreset?: string
 }
+
+/** Which layer set a key: `built-in` for everything no layer mentions. */
+export type ConfigOrigin = 'built-in' | `preset:${string}` | 'global' | 'detected' | 'project' | 'team' | 'local'
 
 /** The team key this machine drains for: `$AK_LOOP_TEAM` first, else `project.team` from the layers merged so far. */
 export const resolveTeamKey = (merged: unknown, env: NodeJS.ProcessEnv = process.env): string | null => {
@@ -1284,50 +1300,134 @@ export const resolveTeamKey = (merged: unknown, env: NodeJS.ProcessEnv = process
   return typeof team === 'string' && team.trim() ? team.trim() : null
 }
 
-/** Merge the layers in order — global, project, team, machine — and validate the result once, as one config. */
-export const composeLoopConfig = (layers: LoopConfigLayers): LoopConfig => {
-  const project = parseYamlMapping(layers.text, LOOP_CONFIG_FILE)
+interface ComposedLoopConfig { readonly merged: unknown; readonly provenance: Readonly<Record<string, ConfigOrigin>> }
+
+/**
+ * Merge the layers in order — built-ins, preset, global, detected, project, team, machine. Detected values only fill
+ * keys no file sets; built-in models only apply when no layer declares `models` at all.
+ */
+const composeLayers = (layers: LoopConfigLayers): ComposedLoopConfig => {
+  const project = layers.text === undefined ? {} : parseYamlMapping(layers.text, LOOP_CONFIG_FILE)
   // The preset is the lowest layer: it fills what nobody declared and overrides nothing.
-  const extendsName = typeof project['extends'] === 'string' ? project['extends'].trim() : ''
+  const extendsName = typeof project['extends'] === 'string' ? project['extends'].trim() : layers.detectedPreset ?? ''
   const preset = extendsName ? presetFor(extendsName) : null
   if (extendsName && !preset) fail(`Unknown preset "${extendsName}" in ${LOOP_CONFIG_FILE}. Available: ${PRESET_NAMES.join(', ')}.`, 'INVALID_CONFIG')
-  const merged = [
-    preset,
-    layers.globalText === undefined ? null : parseYamlMapping(layers.globalText, GLOBAL_CONFIG_FILE),
-    project,
-    layers.teamText === undefined ? null : parseYamlMapping(layers.teamText, 'loop.config.team.<key>.yaml'),
-    layers.localText === undefined ? null : parseYamlMapping(layers.localText, LOOP_LOCAL_CONFIG_FILE),
-  ].filter((layer): layer is Record<string, unknown> => layer !== null).reduce<unknown>((base, layer) => mergeLoopConfig(base, layer), {})
-  return validateLoopConfig(merged)
+  const global: [ConfigOrigin, Record<string, unknown> | null] = ['global', layers.globalText === undefined ? null : parseYamlMapping(layers.globalText, GLOBAL_CONFIG_FILE)]
+  const above: [ConfigOrigin, Record<string, unknown> | null][] = [
+    ['project', project],
+    ['team', layers.teamText === undefined ? null : parseYamlMapping(layers.teamText, 'loop.config.team.<key>.yaml')],
+    ['local', layers.localText === undefined ? null : parseYamlMapping(layers.localText, LOOP_LOCAL_CONFIG_FILE)],
+  ]
+  const declared = [global, ...above].reduce<Record<string, unknown>>((base, [, layer]) => layer ? mergeLoopConfig(base, layer) as Record<string, unknown> : base, {})
+  // A preset refines a Linear board somebody declared; on its own it cannot make one (it would be missing the workspace).
+  const presetLayer = preset && !('linear' in declared) ? Object.fromEntries(Object.entries(preset).filter(([key]) => key !== 'linear')) : preset
+  const detected = layers.detected ? unsetOnly(layers.detected, declared) : null
+  // A declared Linear board means the tracker is Linear, whatever the remote's host says.
+  if (detected && 'linear' in declared && isRecord(detected['connectors'])) { const { tracker: _tracker, scm: _scm, ...rest } = detected['connectors']; detected['connectors'] = rest }
+  const ordered: [ConfigOrigin, Record<string, unknown> | null][] = [
+    ['built-in', 'models' in declared ? null : { ...BUILTIN_DEFAULTS }],
+    [`preset:${extendsName}`, presetLayer],
+    global,
+    ['detected', detected],
+    ...above,
+  ]
+  const provenance: Record<string, ConfigOrigin> = {}
+  let merged: unknown = {}
+  for (const [origin, layer] of ordered) {
+    if (!layer) continue
+    merged = mergeLoopConfig(merged, layer)
+    for (const key of leafPaths(layer)) provenance[key] = origin
+  }
+  return { merged, provenance }
 }
+
+/** Merge the layers in order — global, project, team, machine — and validate the result once, as one config. */
+export const composeLoopConfig = (layers: LoopConfigLayers): LoopConfig => validateLoopConfig(composeLayers(layers).merged)
 
 const readIfPresent = (path: string): string | undefined => existsSync(path) ? readFileSync(path, 'utf8') : undefined
 
+/**
+ * Load the effective config for the repository holding `path`.
+ *
+ * A repository needs no `loop.config.yaml`: without one the loop runs on the built-ins, the user's global default
+ * (`globalConfigPath`) and what it detects from the repository — remote, base branch, kind of project, verify command,
+ * where the tests are. A file, when present, only overrides keys of that. Only a missing file at a path other than
+ * `loop.config.yaml` is an error: that is a typo in `-f`, not a repository without a file.
+ */
 export const loadLoopConfig = (path: string = LOOP_CONFIG_FILE, env: NodeJS.ProcessEnv = process.env): LoadedLoopConfig => {
   const absolute = resolve(path)
-  let text: string
-  try { text = readFileSync(absolute, 'utf8') } catch { return fail(`Loop config not found: ${absolute}`, 'INVALID_CONFIG') }
   const directory = dirname(absolute)
+  const text = readIfPresent(absolute)
+  if (text === undefined && (basename(absolute) !== LOOP_CONFIG_FILE || !existsSync(directory))) return fail(`Loop config not found: ${absolute}`, 'INVALID_CONFIG')
   const globalPath = globalConfigPath(env)
   const globalText = globalLayerDisabled(env) ? undefined : readIfPresent(globalPath)
   const localPath = resolve(directory, LOOP_LOCAL_CONFIG_FILE)
   const localText = readIfPresent(localPath)
+  const fileLayers = { ...(globalText === undefined ? {} : { globalText }), ...(text === undefined ? {} : { text }), ...(localText === undefined ? {} : { localText }) }
   // The team key can come from any layer this machine already has, so it is resolved from a first merge and the
   // team file is then inserted at its own precedence — above the project, below this machine's overlay.
-  const team = resolveTeamKey(composeLoopConfig({ ...(globalText === undefined ? {} : { globalText }), text, ...(localText === undefined ? {} : { localText }) }), env)
+  const team = resolveTeamKey(composeLayers(fileLayers).merged, env)
   const teamPath = team === null ? null : resolve(directory, teamConfigFile(team))
   const teamText = teamPath === null ? undefined : readIfPresent(teamPath)
   if (teamPath !== null && teamText === undefined) fail(`Team "${team}" is declared but ${teamPath} does not exist.`, 'INVALID_CONFIG')
-  const config = composeLoopConfig({ ...(globalText === undefined ? {} : { globalText }), text, ...(teamText === undefined ? {} : { teamText }), ...(localText === undefined ? {} : { localText }) })
+  const layers: LoopConfigLayers = { ...fileLayers, ...(teamText === undefined ? {} : { teamText }) }
+  // Detection only runs when something is missing: a complete file is loaded without reading the repository.
+  const declared = [layers.globalText, layers.text, layers.teamText, layers.localText].reduce<unknown>((base, layer) => layer === undefined ? base : mergeLoopConfig(base, parseYamlMapping(layer, LOOP_CONFIG_FILE)), {})
+  const declaredKeys = new Set(leafPaths(declared))
+  const detection = text === undefined || REQUIRED_DETECTABLE.some((key) => !declaredKeys.has(key)) ? detectProject(resolve(directory, projectRootOf(declared)), { full: text === undefined }) : null
+  if (text === undefined && !declaredKeys.has('delivery.verifyCommand') && !isRecord(detection?.layer['delivery'])) {
+    fail(`${directory} has no ${LOOP_CONFIG_FILE} and no verify command could be detected (no package.json check/ci/verify/lint/typecheck/test/build script, no Makefile check/test target, no pyproject.toml, composer.json, Cargo.toml or go.mod). The loop refuses to guess: set delivery.verifyCommand in ${LOOP_CONFIG_FILE}.`, 'INVALID_CONFIG')
+  }
+  const composed = composeLayers({ ...layers, ...(detection ? { detected: detection.layer } : {}), ...(text === undefined && detection?.preset ? { detectedPreset: detection.preset } : {}) })
+  const config = validateLoopConfig(composed.merged)
   const root = resolve(directory, config.project.root)
+  const stateDir = resolve(root, config.project.stateDir)
+  // ponytail: only a repository without a file gets its state dir excluded for it; one with a file manages its own .gitignore.
+  if (text === undefined) ensureStateDirIgnored(root, stateDir)
+  const detectedKeys = Object.entries(composed.provenance).filter(([, origin]) => origin === 'detected').map(([key]) => key)
   return {
-    path: absolute, root, stateDir: resolve(root, config.project.stateDir), config, configHash: hashJson(config),
-    unknownKeys: unknownConfigKeys(parseYamlMapping(text, LOOP_CONFIG_FILE), config),
+    path: absolute, root, stateDir, config, configHash: hashJson(config),
+    unknownKeys: text === undefined ? [] : unknownConfigKeys(parseYamlMapping(text, LOOP_CONFIG_FILE), config),
+    projectFile: text !== undefined,
+    provenance: composed.provenance,
+    detectedKeys,
+    ...(text === undefined && detection?.preset ? { detectedPreset: detection.preset } : {}),
     ...(localText === undefined ? {} : { localPath }),
     ...(globalText === undefined ? {} : { globalPath }),
     ...(teamText === undefined || teamPath === null || team === null ? {} : { teamPath, team }),
   }
 }
+
+/** The keys a repository can tell about itself; a config missing one of them triggers detection. */
+const REQUIRED_DETECTABLE = ['project.name', 'project.repo', 'delivery.verifyCommand'] as const
+
+const projectRootOf = (declared: unknown): string => {
+  const project = isRecord(declared) ? declared['project'] : undefined
+  return isRecord(project) && typeof project['root'] === 'string' ? project['root'] : '.'
+}
+
+/** One line on where the effective config came from: `global default (+ detected)` or the file and the layers under it. */
+export const describeConfigSource = (loaded: Pick<LoadedLoopConfig, 'path' | 'projectFile' | 'globalPath' | 'teamPath' | 'localPath' | 'detectedKeys' | 'detectedPreset'>): string => {
+  const extras = [
+    ...(loaded.projectFile && loaded.globalPath ? ['global'] : []),
+    ...(loaded.detectedKeys?.length ? [loaded.detectedPreset ? `detected, preset ${loaded.detectedPreset}` : 'detected'] : []),
+    ...(loaded.teamPath ? ['team'] : []),
+    ...(loaded.localPath ? ['local'] : []),
+  ]
+  const head = loaded.projectFile === false ? (loaded.globalPath ? 'global default' : 'built-in defaults') : loaded.path
+  return `${head}${extras.map((extra) => ` (+ ${extra})`).join('')}`
+}
+
+/** Every file and layer that went into the effective config, lowest first. */
+export const configSources = (loaded: Pick<LoadedLoopConfig, 'path' | 'projectFile' | 'globalPath' | 'teamPath' | 'localPath' | 'detectedKeys' | 'detectedPreset' | 'provenance'>): readonly string[] => [
+  'built-in defaults',
+  ...[...new Set(Object.values(loaded.provenance ?? {}).filter((origin) => origin.startsWith('preset:')))].map((origin) => `preset ${origin.slice('preset:'.length)}${loaded.detectedPreset ? ' (detected)' : ''}`),
+  ...(loaded.globalPath ? [`global ${loaded.globalPath}`] : []),
+  ...(loaded.detectedKeys?.length ? [`detected from the repository: ${loaded.detectedKeys.join(', ')}`] : []),
+  ...(loaded.projectFile === false ? [`no ${LOOP_CONFIG_FILE}`] : [`project ${loaded.path}`]),
+  ...(loaded.teamPath ? [`team ${loaded.teamPath}`] : []),
+  ...(loaded.localPath ? [`local ${loaded.localPath}`] : []),
+]
 
 /** Effective Orca agent id and usage key for a provider. */
 export const providerIdentity = (config: LoopConfig, provider: string): { readonly orcaAgent: string; readonly orcaUsageKey: string; readonly settings: LoopProviderConfig } => {
