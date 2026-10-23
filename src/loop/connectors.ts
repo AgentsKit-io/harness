@@ -32,6 +32,8 @@ export interface TrackerConnector {
    * reads the person's queue AND the unassigned pool through the same filter rather than a second, drifting copy.
    */
   queue(input: { readonly assignee: string | null; readonly ownership?: 'person' | 'unassigned' | 'both'; readonly excludeLabels?: readonly string[] }): Promise<readonly LoopIssue[]>
+  /** Issues the last `queue()` read dropped although they carry the todo lifecycle label, each with the filter that dropped it. */
+  queueSkips?(): readonly { readonly identifier: string; readonly reason: string }[]
   issue(identifier: string): Promise<TrackerIssueDetail>
   comment(input: { readonly issue: string; readonly body: string; readonly dedupeKey?: string }): Promise<void>
   addLabels(issue: string, labels: readonly string[]): Promise<void>
@@ -162,6 +164,17 @@ const githubIssueToTracker = (config: LoopConfig, issue: GitHubIssueDetail | Awa
   raw: issue.raw,
 })
 
+/** Which queue filter dropped an issue labelled todo; mirrors the order `filterAndOrderQueue` applies them in. */
+const githubSkipReason = (issue: LoopIssue, input: { readonly effective: string; readonly target: string; readonly filter: LoopConfig['linear'] }): string => {
+  const { effective, target, filter } = input
+  if (!((effective !== 'person' && issue.assignee === null) || (effective !== 'unassigned' && issue.assignee === target))) return `assignee ${issue.assignee ?? 'none'} is outside queueOwnership "${effective}" (queue owner ${target})`
+  const excluded = issue.labels.find((label) => label === filter.outsideLabel || filter.excludeLabels.includes(label))
+  if (excluded) return `label "${excluded}" is in linear.excludeLabels`
+  if (!filter.states.includes(issue.state)) return `state "${issue.state}" is not in linear.states`
+  if (filter.anyLabels?.length && !filter.anyLabels.some((label) => issue.labels.includes(label))) return `none of github.issues.anyLabels (${filter.anyLabels.join(', ')}) is on the issue`
+  return `beyond linear.maxQueue (${filter.maxQueue})`
+}
+
 /** GitHub Issues over `gh`; all provider-specific lifecycle behaviour lives behind TrackerConnector. */
 export const createGitHubTracker = (input: ConnectorInput): TrackerConnector => {
   const { config, runner } = input
@@ -195,6 +208,7 @@ export const createGitHubTracker = (input: ConnectorInput): TrackerConnector => 
     } else if (current.state !== 'OPEN') await githubIssueReopen(runner, { repo, identifier: issue }, options)
   }
 
+  let skips: readonly { readonly identifier: string; readonly reason: string }[] = []
   let tracker: TrackerConnector
   tracker = {
     id: 'github',
@@ -209,8 +223,16 @@ export const createGitHubTracker = (input: ConnectorInput): TrackerConnector => 
       }))
       const effective = ownership ?? config.linear.queueOwnership
       const owned = normalized.filter((issue) => (effective !== 'person' && issue.assignee === null) || (effective !== 'unassigned' && issue.assignee === target))
-      return filterAndOrderQueue(owned, queueFilter(config, { ownership, excludeLabels }))
+      // The Linear label/project filters (`linear.requireLabels`, `anyLabels`, `projects`) describe a Linear board; a
+      // GitHub queue is narrowed by `github.issues.anyLabels` instead.
+      const filter = { ...queueFilter(config, { ownership, excludeLabels }), requireLabels: [], projects: [], anyLabels: config.github.issues.anyLabels }
+      const queue = filterAndOrderQueue(owned, filter)
+      const kept = new Set(queue.map((issue) => issue.identifier))
+      skips = normalized.filter((issue) => issue.labels.includes(config.github.issues.labels.todo) && !kept.has(issue.identifier))
+        .map((issue) => ({ identifier: issue.identifier, reason: githubSkipReason(issue, { effective, target, filter }) }))
+      return queue
     },
+    queueSkips: () => skips,
     issue: readDetail,
     comment: async ({ issue, body, dedupeKey }) => {
       const marker = dedupeKey ? `<!-- harness:${dedupeKey} -->` : null

@@ -439,6 +439,8 @@ export interface LoopState {
   readonly leases: readonly DispatchLease[]
   readonly busy: ReadonlySet<string>
   readonly candidates: readonly LoopIssue[]
+  /** Todo-labelled issues the queue filters dropped, one line each naming the filter. */
+  readonly skipped: readonly string[]
   /** Catalog-discovered candidates per role (`models.routing.mode: catalog`), already resolved for `routing` above — reused by `runTick` for `generateContract`'s candidate fallback so it isn't resolved twice per tick. */
   readonly extrasByRole: Partial<Record<ModelRole, readonly ModelReference[]>>
 }
@@ -524,7 +526,8 @@ export const gatherLoopState = async (input: { readonly loaded: LoadedLoopConfig
     .sort((left, right) => config.queue.mode === 'explicit'
       ? (explicitRuns.find((run) => run.issue === left.identifier)?.sequence ?? Number.MAX_SAFE_INTEGER) - (explicitRuns.find((run) => run.issue === right.identifier)?.sequence ?? Number.MAX_SAFE_INTEGER)
       : 0)
-  return { person, providers, routing, worktrees, slots, queue, leases, busy, candidates, extrasByRole }
+  const skipped = (tracker.queueSkips?.() ?? []).map((skip) => `${skip.identifier} is labelled ${config.github.issues.labels.todo} but skipped: ${skip.reason}`)
+  return { person, providers, routing, worktrees, slots, queue, leases, busy, candidates, skipped, extrasByRole }
 }
 
 /** Read-only: exit-0 semantics for Orca `--precheck`. Work exists when a builder is routable and a candidate waits; capacity is telemetry, not an enqueue or dispatch gate. */
@@ -699,6 +702,7 @@ export const runTick = async (input: TickInput): Promise<TickReport> => {
   const builder = state.routing['builder']?.selected ?? null
   const summary = { orchestrator: orchestrator.selected ? `${orchestrator.selected.provider}/${orchestrator.selected.model}` : null, builder: builder ? `${builder.provider}/${builder.model}` : null }
   const base = { generatedAt: now().toISOString(), dryRun, slots: { maxAgents: state.slots.maxAgents, running: state.slots.running, free: state.slots.free, reasons: state.slots.reasons }, routing: summary, queue: { total: state.queue.length, busy: [...state.busy], candidates: state.candidates.map((issue) => issue.identifier) } }
+  notes.push(...state.skipped)
   if (!builder) { notes.push('no builder provider available; nothing dispatched'); await flushNotifications(); return { ...base, status: 'blocked', results, notes } }
   if (!state.candidates.length) {
     const rotation = dryRun ? { owner: state.person, advanced: false } : advanceQueueOwner(loaded, { queueEmpty: state.queue.length === 0, activeLeases: countRotationBlockingLeases(loaded, state.leases), now: now() })

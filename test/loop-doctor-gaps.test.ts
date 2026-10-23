@@ -2,6 +2,7 @@ import { mkdirSync, mkdtempSync, readFileSync, rmSync, utimesSync, writeFileSync
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
+import { parse as parseYaml, stringify as stringifyYaml } from 'yaml'
 import { loadLoopConfig, runLoopDoctor } from '../src/index.js'
 import type { CommandResult, CommandRunner } from '../src/index.js'
 
@@ -297,5 +298,29 @@ describe('the installed agents a registry points at', () => {
     writeFileSync(join(dir, 'agents.registry.yaml'), `${registry}    instructions: agent.ts\n`)
     const code = await runLoopDoctor({ ...base(bin), configPath: join(dir, 'loop.config.yaml') })
     expect(code.checks.find((check) => check.id === 'agents.registry')).toMatchObject({ status: 'passed', detail: expect.stringContaining('code — improvements go to a human') })
+  })
+})
+
+describe('runLoopDoctor GitHub queue skips', () => {
+  it('says which filter skipped an issue labelled loop:todo, and leaves linear.anyLabels out of it', async () => {
+    const bin = fakeBinDir(['claude', 'codex', 'opencode', 'grok'])
+    const parsed = parseYaml(exampleYaml) as { connectors?: Record<string, unknown>; linear: Record<string, unknown> }
+    parsed.connectors = { ...parsed.connectors, tracker: 'github' }
+    parsed.linear = { ...parsed.linear, anyLabels: ['layer:ui'], excludeLabels: ['wontfix'] }
+    const dir = configDir(stringifyYaml(parsed))
+    const issue = (number: number, labels: string[]) => ({ number, url: `https://github.com/acme/app/issues/${number}`, title: `Issue ${number}`, state: 'OPEN', body: '', labels: labels.map((name) => ({ name })), assignees: [{ login: 'person' }], createdAt: '2026-09-20T00:00:00Z', updatedAt: '2026-09-23T00:00:00Z', comments: [] })
+    const orca = fakeRunner()
+    const runner: CommandRunner = { run: async (argv, options) => {
+      const key = argv.join(' ')
+      if (key.includes('auth status')) return ok('')
+      if (key.includes('repo view')) return ok({ nameWithOwner: 'acme/app', viewerPermission: 'WRITE' })
+      if (key.includes('label list')) return ok([{ name: 'loop:todo' }, { name: 'loop:in-progress' }, { name: 'loop:review' }, { name: 'loop:done' }, { name: 'loop:blocked' }])
+      if (key.includes('user')) return ok({ login: 'person' })
+      if (argv[0] === 'gh' && key.includes('issue list')) return ok([issue(1, ['loop:todo']), issue(2, ['loop:todo', 'wontfix'])])
+      return orca.run(argv, options)
+    } }
+    const report = await runLoopDoctor({ configPath: join(dir, 'loop.config.yaml'), runner, env: { PATH: bin, XAI_API_KEY: 'k' }, platform: 'darwin', now: () => new Date('2026-09-11T12:00:00.000Z'), probe: false })
+    expect(report.checks.find((check) => check.id === 'github.queue')).toMatchObject({ status: 'passed', detail: expect.stringContaining('1 dispatchable') })
+    expect(report.checks.find((check) => check.id === 'github.queue.skipped')).toMatchObject({ status: 'warning', detail: 'my-org/my-project#2 is labelled loop:todo but skipped: label "wontfix" is in linear.excludeLabels' })
   })
 })
