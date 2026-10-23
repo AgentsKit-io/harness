@@ -108,7 +108,7 @@ describe('the fleet runner', () => {
 
   it('maps queue states to observations, never to a pull request', async () => {
     const loaded = setup()
-    for (const [raw, folded] of [['queued', 'queued'], ['running', 'running'], ['done', 'done'], ['failed', 'failed'], ['cancelled', 'cancelled'], ['weird', 'unknown']] as const) {
+    for (const [raw, folded] of [['queued', 'queued'], ['running', 'running'], ['done', 'done'], ['failed', 'failed'], ['cancelled', 'cancelled'], ['dispatching', 'running'], ['waiting-quota', 'queued'], ['abandoned', 'failed'], ['stopped', 'cancelled'], ['weird', 'unknown']] as const) {
       const fleet = createRunnerConnector({ loaded, runner: fakeFleet(raw).runner })
       const workspace = await fleet.createWorkspace({ name: 'a', branch: 'b', baseBranch: 'main' })
       expect(await fleet.observeWorkspaces()).toEqual([])
