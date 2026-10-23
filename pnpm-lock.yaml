@@ -9,14 +9,14 @@ importers:
   .:
     dependencies:
       '@agentskit/core':
-        specifier: ^1.13.0
-        version: 1.13.0
+        specifier: ^1.15.0
+        version: 1.15.0
       '@agentskit/cross-platform':
         specifier: ^0.1.0 || ^0.3.0
-        version: 0.1.0
+        version: 0.3.0
       '@agentskit/net':
-        specifier: ^0.2.0
-        version: 0.2.0
+        specifier: ^0.2.3
+        version: 0.2.3
       commander:
         specifier: ^14.0.3
         version: 14.0.3
@@ -35,7 +35,7 @@ importers:
     devDependencies:
       '@agentskit/doc-bridge':
         specifier: 2.4.0
-        version: 2.4.0(@agentskit/core@1.13.0)(@types/react@19.3.0)(graphology-types@0.24.8)
+        version: 2.4.0(@agentskit/core@1.15.0)(@types/react@19.3.0)(graphology-types@0.24.8)
       '@radix-ui/react-radio-group':
         specifier: ^1.4.7
         version: 1.5.1(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
@@ -148,22 +148,20 @@ importers:
 
 packages:
 
-  '@agentskit/core@1.12.10':
-    resolution: {integrity: sha512-dKffCjASPBPvV2xq810dS7X1+/bNfxAJYdI3mPaK1Sj/Scbh8xR37lxo2AWBK+JNL40ffDe/pIJf72S+MUA+bw==}
-
-  '@agentskit/core@1.13.0':
-    resolution: {integrity: sha512-KgBCpF8232hfGm5ZIzAIEVtjQdLAroGNS2Sd091S0oDr5ouDXvqwk66tVHyVOqezFTulcAyiMKvDVw4Vg89yBA==}
-
   '@agentskit/core@1.14.1':
     resolution: {integrity: sha512-7+zyB5+azISWTCXWIWTs3pQVE9LiKUNQf8GfMV+TWSDSKDkkf7c3xlBCsVFs5QBqUVGBH72TERY+iL2JlqiAdg==}
 
-  '@agentskit/cross-platform@0.1.0':
-    resolution: {integrity: sha512-yl0VHjvs6pjtTYSYOxm3ADTnjC1m3ZAuHh11oDKwmSxEE9u09NLhsGcRFA3tJkWwNHH62a+pV3T0NwLvr0NtPw==}
+  '@agentskit/core@1.15.0':
+    resolution: {integrity: sha512-qJxJXAUBbx7BpjfkF/2YCQ9i0voimTfDbDFLRvaOsLkxa2O0ZC5yMQFdTqE8++yGPVPm14Dlc+TMxlNcCaNz9w==}
     engines: {node: '>=20.19'}
-    hasBin: true
 
   '@agentskit/cross-platform@0.2.1':
     resolution: {integrity: sha512-RXbvF8hgA1X4dMkdkhx1vRy0L4JIx9eST5BZEu+ErGpTaqcAkX4y8eH0QuEmy9CR66yxFc655s0XxAOqdADw4A==}
+    engines: {node: '>=20.19'}
+    hasBin: true
+
+  '@agentskit/cross-platform@0.3.0':
+    resolution: {integrity: sha512-UndmyjQkR+3u/3EqUrBfz7sO16hBhWB+dkJoMepvuENcpwQe5c+jcRW5neNKpxmThhrast4KdD6l1Mi92FHT+w==}
     engines: {node: '>=20.19'}
     hasBin: true
 
@@ -196,8 +194,8 @@ packages:
     peerDependencies:
       react: '>=18.0.0'
 
-  '@agentskit/net@0.2.0':
-    resolution: {integrity: sha512-GKagBMg+fUY5QEKTy7wmXVqVjV1xn1J1iuEzDoaU6cJwzupZDHbXdZhFq8YXuuknofPwLyNounPfJ4YNy+4Eug==}
+  '@agentskit/net@0.2.3':
+    resolution: {integrity: sha512-/i+yoCbFjs+hp7Qs8ygRJDmJRpMIgbNSvl9mjIl2NRH4DHv4YPBclFzmY3t13AHePY/svQvGMLM9DNY3dY046w==}
     engines: {node: '>=20.19'}
 
   '@alcalzone/ansi-tokenize@0.3.0':
@@ -3959,20 +3957,9 @@ packages:
 
 snapshots:
 
-  '@agentskit/core@1.12.10': {}
-
-  '@agentskit/core@1.13.0': {}
-
   '@agentskit/core@1.14.1': {}
 
-  '@agentskit/cross-platform@0.1.0':
-    dependencies:
-      '@agentskit/core': 1.12.10
-      cross-spawn: 7.0.6
-      graceful-fs: 4.2.11
-      pathe: 2.0.3
-      tree-kill: 1.2.2
-      which: 2.0.2
+  '@agentskit/core@1.15.0': {}
 
   '@agentskit/cross-platform@0.2.1':
     dependencies:
@@ -3983,12 +3970,21 @@ snapshots:
       tree-kill: 1.2.2
       which: 2.0.2
 
-  '@agentskit/doc-bridge@2.4.0(@agentskit/core@1.13.0)(@types/react@19.3.0)(graphology-types@0.24.8)':
+  '@agentskit/cross-platform@0.3.0':
+    dependencies:
+      '@agentskit/core': 1.15.0
+      cross-spawn: 7.0.6
+      graceful-fs: 4.2.11
+      pathe: 2.0.3
+      tree-kill: 1.2.2
+      which: 2.0.2
+
+  '@agentskit/doc-bridge@2.4.0(@agentskit/core@1.15.0)(@types/react@19.3.0)(graphology-types@0.24.8)':
     dependencies:
       '@agentskit/cross-platform': 0.2.1
       '@agentskit/harness': 0.22.3(@types/react@19.3.0)
       '@agentskit/ink': 0.10.15(@types/react@19.3.0)(react@19.3.0)
-      '@agentskit/net': 0.2.0
+      '@agentskit/net': 0.2.3
       '@flowershow/remark-wiki-link': 3.4.0
       commander: 14.0.3
       github-slugger: 2.0.0
@@ -4015,7 +4011,7 @@ snapshots:
       yaml: 2.9.1
       zod: 4.6.5
     optionalDependencies:
-      '@agentskit/core': 1.13.0
+      '@agentskit/core': 1.15.0
     transitivePeerDependencies:
       - '@types/react'
       - bufferutil
@@ -4051,9 +4047,9 @@ snapshots:
       - react-devtools-core
       - utf-8-validate
 
-  '@agentskit/net@0.2.0':
+  '@agentskit/net@0.2.3':
     dependencies:
-      '@agentskit/core': 1.13.0
+      '@agentskit/core': 1.15.0
       eventsource-parser: 4.1.1
       ipaddr.js: 2.5.0
 

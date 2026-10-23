@@ -107,9 +107,9 @@
     "cf:deploy": "pnpm docs:build && pnpm cf:headers && npx -y wrangler@4 deploy"
   },
   "dependencies": {
-    "@agentskit/core": "^1.13.0",
+    "@agentskit/core": "^1.15.0",
     "@agentskit/cross-platform": "^0.1.0 || ^0.3.0",
-    "@agentskit/net": "^0.2.0",
+    "@agentskit/net": "^0.2.3",
     "commander": "^14.0.3",
     "ink": "7.1.1",
     "react": "19.3.1",
