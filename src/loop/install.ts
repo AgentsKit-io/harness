@@ -4,7 +4,7 @@ import { orcaAccountList, orcaAgentHooks, orcaAutomationCreateArgv, orcaAutomati
 import { detectProviders } from '../adapters/providers.js'
 import { fail } from '../kernel/errors.js'
 import { automationName, automationSpecs, declaredStages, MANAGED_STAGES, parseAutomationRuns, reconcileAutomations, shellQuote, type AutomationRun, type LoopStage } from './automations.js'
-import { loadLoopConfig, providerIdentity, type LoadedLoopConfig } from './config.js'
+import { describeConfigSource, loadLoopConfig, providerIdentity, type LoadedLoopConfig } from './config.js'
 import { activeCooldowns, readCooldowns } from './cooldown.js'
 import { providerSpecs } from './doctor.js'
 import { rankModels } from './routing.js'
@@ -103,7 +103,7 @@ export const uninstallLoopAutomations = async (input: InstallInput): Promise<Ins
 }
 
 export interface AutomationStatus { readonly stage: LoopStage; readonly name: string; readonly installed: boolean; readonly enabled: boolean; readonly id: string | null; readonly trigger: string | null; readonly provider: string | null; readonly lastRun: AutomationRun | null; readonly runs: number }
-export interface LoopStatusReport { readonly installed: number; readonly total: number; readonly automations: readonly AutomationStatus[]; readonly summary: string }
+export interface LoopStatusReport { readonly installed: number; readonly total: number; readonly automations: readonly AutomationStatus[]; readonly summary: string; readonly config: string }
 
 
 export const loopStatus = async (input: Pick<InstallInput, 'configPath' | 'loaded' | 'runner'>): Promise<LoopStatusReport> => {
@@ -122,5 +122,5 @@ export const loopStatus = async (input: Pick<InstallInput, 'configPath' | 'loade
   }
   const installed = automations.filter((item) => item.installed && item.enabled).length
   const summary = installed === 0 ? `loop: not installed — to enable: ${config.schedule.harnessCommand} loop install -f ${shellQuote(loaded.path)}` : `loop: installed (${installed}/${automations.length}${automations.some((item) => item.lastRun?.at) ? `, last run ${automations.map((item) => item.lastRun?.at).filter(Boolean).sort().at(-1)}` : ''})`
-  return { installed, total: automations.length, automations, summary }
+  return { installed, total: automations.length, automations, summary, config: describeConfigSource(loaded) }
 }

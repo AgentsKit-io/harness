@@ -122,7 +122,7 @@ export const createFleetRunner = ({ loaded, runner }: RunnerInput): RunnerConnec
     return parseQueue(result.stdout)
   }
   const project = async (): Promise<string> => {
-    if (fleet.project) return fleet.project.startsWith('github:') ? fleet.project : `github:${fleet.project}`
+    if (fleet.project) return fleet.project.includes(':') ? fleet.project : `github:${fleet.project}`
     const remote = await runner.run(['git', '-C', loaded.root, 'remote', 'get-url', 'origin'], { timeoutMs: 15_000 })
     return (remote.code === 0 ? projectFromRemote(remote.stdout) : null) ?? fail('connectors.fleet.project is unset and the origin remote is not a GitHub repository.', 'INVALID_CONFIG')
   }

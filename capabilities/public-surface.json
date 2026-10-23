@@ -4,7 +4,7 @@
   "package": "@agentskit/harness",
   "packageVersion": "0.22.3",
   "entryPoint": "src/index.ts",
-  "sourceDigest": "7ef3336e2288905551d8e0e6d209caaf519cd7669956cc9c9e19600624b28344",
+  "sourceDigest": "7629c737acf8418660b67fd38c7a34c937af5400a57507279187d866968c33ec",
   "capabilities": [
     {
       "id": "public-surface:adapters/agent",
@@ -1066,6 +1066,7 @@
       "kind": "composition",
       "entryPoint": "src/index.ts",
       "exports": [
+        "ConfigOrigin",
         "EffectiveReviewSettings",
         "EffortLevel",
         "GLOBAL_CONFIG_FILE",
@@ -1083,6 +1084,8 @@
         "WORKER_ROLES",
         "WorkerRole",
         "composeLoopConfig",
+        "configSources",
+        "describeConfigSource",
         "globalConfigPath",
         "globalLayerDisabled",
         "loadLoopConfig",
@@ -2121,5 +2124,5 @@
       ]
     }
   ],
-  "digest": "ac2ae479a23277b00d5a64ffae2b0c1d9363ef4190f2af4d9d04aae8ebcdcd27"
+  "digest": "be207417f75e1c7ff0d41b7c18eac99cabb372f3b989a5e45243fae0d877be9e"
 }

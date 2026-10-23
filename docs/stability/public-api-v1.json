@@ -713,6 +713,12 @@
           ]
         },
         {
+          "name": "ConfigOrigin",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
           "name": "ConnectorInput",
           "kinds": [
             "type"
@@ -4509,6 +4515,12 @@
           ]
         },
         {
+          "name": "configSources",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
           "name": "contractIsFresh",
           "kinds": [
             "value"
@@ -4888,6 +4900,12 @@
         },
         {
           "name": "deliveryStatePath",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "describeConfigSource",
           "kinds": [
             "value"
           ]
