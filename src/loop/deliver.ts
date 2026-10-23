@@ -32,7 +32,7 @@ import { applyRoleSettings, resolveFlowSettings, resolveRoleSettings, workerPhas
 import { assessDod, readDodEvidence, renderDodMarkdown } from './dod.js'
 import { decideMerge, weakestVerdict, type MergePolicyInput } from './merge-policy.js'
 import { isProven, migrateVerdict, patchIdOfPullRequest, readVerdictRecord, reviewLevel, verdictsHold, writeVerdictRecord, type RunFingerprint, type Verdict, type VerdictRecord } from './verdict.js'
-import { proveFleetDod } from './fleet-dod.js'
+import { ciVerification, proveFleetDod } from './fleet-dod.js'
 import { handoffRoot, stripHandoff } from './fleet-handoff.js'
 import { renderVerifierMarkdown, verifyIndependently } from './verifier.js'
 import { splitLines } from '@agentskit/cross-platform'
@@ -1381,7 +1381,7 @@ ${marker}` }); actions.push('secret-file hold commented') } catch (error) { acti
     const expectedIds = [...config.dod.items.map((item) => item.id), ...(stored?.contract.outcomes ?? []).map((outcome) => outcome.id)]
     const fleetCarried = record.runner === 'fleet' && carried.length > 0 && expectedIds.every((id) => carried.some((item) => item.id === id))
     const fleetProof = record.runner === 'fleet' && !ctx.dryRun && !fleetCarried
-      ? await proveFleetDod({ runner: ctx.runner, config, root: ctx.loaded.root, stateDir: ctx.loaded.stateDir, handoff: handoffRoot(ctx.loaded.stateDir, record.issue), head: pr.headSha, ...(record.collected?.base ? { base: record.collected.base } : {}), contract: stored?.contract ?? null })
+      ? await proveFleetDod({ runner: ctx.runner, config, root: ctx.loaded.root, stateDir: ctx.loaded.stateDir, handoff: handoffRoot(ctx.loaded.stateDir, record.issue), head: pr.headSha, ...(record.collected?.base ? { base: record.collected.base } : {}), contract: stored?.contract ?? null, ci: ciVerification({ gating: flow.merge.requireChecks, status: checks.status, checks: pr.checks, ignore: config.delivery.ignoreChecks, commands: [config.delivery.verifyCommand, closes, config.delivery.verify.argv.join(' ')] }) })
       : null
     if (fleetProof) actions.push(...fleetProof.notes)
     const fresh = fleetProof ? fleetProof.evidence : fleetCarried ? { project: [], outcomes: [] } : readDodEvidence(record.worktreePath, config)
@@ -1407,7 +1407,7 @@ ${marker}` }); actions.push('secret-file hold commented') } catch (error) { acti
           if (decision.action === 'escalate') return escalateForPerson(ctx, record, lease, state, pr, `definition of done: ${decision.reason}`, actions)
         }
         const why = `definition of done not proven — missing: ${dod.missing.join(', ') || 'none'}; failing: ${dod.failed.join(', ') || 'none'}${dod.blocked.length ? `; blocked: ${dod.blocked.join(', ')}` : ''}${dod.below.length ? `; below ${config.delivery.merge.minVerdict}: ${dod.below.join(', ')}` : ''}`
-        return fixRound(ctx, record, lease, state, pr, 'review', `Loop: the definition of done is not proven for PR #${pr.number}. ${dod.missing.length ? `No proof recorded for: ${dod.missing.join(', ')}.` : ''} ${dod.failed.length ? `Failing: ${dod.failed.join(', ')}.` : ''} ${dod.blocked.length ? `Blocked (could not be verified): ${dod.blocked.join(', ')}.` : ''} ${dod.below.length ? `Proven, but below the required verdict \`${config.delivery.merge.minVerdict}\`: ${dod.below.join(', ')} — verify them further (run the tests / the real system).` : ''} Run each item, record the result in \`${config.dod.evidenceFile}\` at the root of this worktree (\`{"project": [{"id":"…","verdict":"unit-verified","evidence":"…"}], "outcomes": [...]}\`; verdict is one of failed, blocked, type-check-only, unit-verified, live-verified), commit and push. The loop writes the table onto the PR.`, why, actions)
+        return fixRound(ctx, record, lease, state, pr, 'review', `Loop: the definition of done is not proven for PR #${pr.number}. ${dod.missing.length ? `No proof recorded for: ${dod.missing.join(', ')}.` : ''} ${dod.failed.length ? `Failing: ${dod.failed.join(', ')}.` : ''} ${dod.blocked.length ? `Blocked (could not be verified): ${dod.blocked.join(', ')}.` : ''} ${dod.below.length ? `Proven, but below the required verdict \`${config.delivery.merge.minVerdict}\`: ${dod.below.join(', ')} — verify them further (run the tests / the real system).` : ''} Run each item, record the result in \`${config.dod.evidenceFile}\` at the root of this worktree (\`{"project": [{"id":"…","verdict":"unit-verified","evidence":"…"}], "outcomes": [...]}\`; verdict is one of failed, blocked, type-check-only, unit-verified, ci-verified, live-verified), commit and push. The loop writes the table onto the PR.`, why, actions)
       }
       actions.push(`definition of done proven (${dod.lines.length} item(s))`)
       vouchedBy.push('the definition of done')

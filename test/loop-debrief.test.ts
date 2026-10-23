@@ -56,6 +56,18 @@ describe('loop debrief', () => {
     expect(md).toContain('o2: in-progress')
   })
 
+  it('shows which definition-of-done items the PR\'s CI proved instead of a local re-run', () => {
+    const env = setup()
+    env.issue('ENG-3', {
+      'dispatch.json': { issue: 'ENG-3', worktreeId: 'w', worktree: 'eng-3', branch: 'u/eng-3', terminal: 't', provider: 'claude', model: 'sonnet', contractDigest: 'd', leaseKey: 'k', leaseId: 'l', dispatchedAt: '2026-09-12T11:00:00.000Z', url: 'https://linear.app/x/ENG-3' },
+      'delivery.json': { issue: 'ENG-3', prNumber: 12, reviews: {}, fixRounds: 0, nudges: [], heldFor: null, finishedAt: null, finalOutcome: null },
+      'verdicts.json': { schemaVersion: 1, head: 'h', patchId: 'p', fingerprint: { contract: null, guardPolicy: 'g', model: null, baseSha: null }, at: '2026-09-12T11:50:00.000Z', items: [{ id: 'verify', list: 'project', verdict: 'ci-verified', evidence: 'proven by CI' }, { id: 'o5', list: 'issue', verdict: 'ci-verified', evidence: 'proven by CI' }, { id: 'o6', list: 'issue', verdict: 'unit-verified', evidence: 'ran' }] },
+    })
+    const report = buildDebriefReport({ loaded: env.loaded, now: () => NOW })
+    expect(report.inFlight[0]?.ciVerified).toEqual(['verify', 'o5'])
+    expect(renderDebriefMarkdown(report)).toContain('- Proven by CI (not re-run locally): `verify`, `o5`')
+  })
+
   const dispatch = (issue: string, overrides: Record<string, unknown> = {}): Record<string, unknown> => ({ issue, worktreeId: 'w', worktree: issue.toLowerCase(), branch: `u/${issue.toLowerCase()}`, terminal: 't', provider: 'claude', model: 'sonnet', contractDigest: 'd', leaseKey: 'k', leaseId: 'l', dispatchedAt: '2026-09-12T11:00:00.000Z', url: `https://linear.app/x/${issue}`, ...overrides })
   const deliveryState = (issue: string, overrides: Record<string, unknown> = {}): Record<string, unknown> => ({ issue, prNumber: null, reviews: {}, fixRounds: 0, nudges: [], heldFor: null, finishedAt: null, finalOutcome: null, ...overrides })
 

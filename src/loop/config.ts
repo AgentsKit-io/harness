@@ -453,7 +453,7 @@ export const LoopConfigSchema = z.object({
       requireHumanApproval: z.boolean().default(false),
       /**
        * ADR-0046: the weakest verdict a definition-of-done item may carry for the loop to merge
-       * (`failed < blocked < type-check-only < unit-verified < live-verified`). Items below it go back to the worker.
+       * (`failed < blocked < type-check-only < unit-verified < ci-verified < live-verified`). Items below it go back to the worker.
        */
       minVerdict: z.enum(VERDICT_LEVELS).default('unit-verified'),
       /** `supervised`: the loop reviews and proves but never merges; a person does. `autonomous`: it merges when the policy says so. */

@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
-  "contentHash": "e5789e83a4067e2b1561a854deca0e0a25e30bbdd8123932647e5edbfacb76a0",
+  "contentHash": "c99e240d776f421f55841071ca07f09c05d13ee47f4cfccdda953ea3721790dc",
   "contentHashAlgo": "sha256-semantic-v1",
-  "generatedAt": "2026-10-23T18:27:25.325Z",
+  "generatedAt": "2026-10-23T19:05:38.911Z",
   "project": {
     "name": "AgentsKit Harness",
     "root": "."
@@ -939,7 +939,7 @@
         "document",
         "human"
       ],
-      "contentHash": "80b4be389e484db0d61cbbf6c8a0f3b0016909595aede459fb62ba6e9ef99ca9"
+      "contentHash": "acb1b07bb06ac0a365c8cbe5c3bf8284668b21c26a6df5a27a9160b9ff62e03e"
     },
     {
       "id": "document:docs/ADR-0047-independent-verifier-and-structured-lessons.md",
@@ -975,7 +975,7 @@
         "document",
         "human"
       ],
-      "contentHash": "969998b408e55c329472da79fdfc9b186e8d17dc6cbc5f457f3b9601884272ff"
+      "contentHash": "703c0e76e6d690635f0605489b346dfeb060263951f75a783fb16c8ac2b709b5"
     },
     {
       "id": "document:docs/MODULE-BOUNDARIES.md",
@@ -2074,7 +2074,7 @@
         "ts",
         "adapters"
       ],
-      "contentHash": "b1d8c2b29b59e4a3f93f30d59ee194956fb0eee99a220ac476b3bcbd71e675d5"
+      "contentHash": "c25a4a94f4bae06f2deb76fdd22db8a3e69374fa5815c375888b1f25b331ae0f"
     },
     {
       "id": "module:src/adapters/linear-orca.ts",
@@ -3985,7 +3985,7 @@
         "ts",
         "loop"
       ],
-      "contentHash": "e3c37b2896b3ba7d976dfd05d02c6ce42aa85f3583c855a5e87521b7428aa3b9"
+      "contentHash": "72d117685b87c3ff68ea0b228be890f3958b9231da8779b90b61ddacf5c7fe52"
     },
     {
       "id": "module:src/loop/connectors.ts",
@@ -4087,7 +4087,7 @@
         "ts",
         "loop"
       ],
-      "contentHash": "cf9dbb4d57f72c21b781b95eeca67b5afb16f4281dfd318de84c83f57b2efa11"
+      "contentHash": "47091c7579e5558d3cfbf80076f6f6fbc0551ea360362734c3e0783eeade9c66"
     },
     {
       "id": "module:src/loop/deliver-state.ts",
@@ -4147,7 +4147,7 @@
         "ts",
         "loop"
       ],
-      "contentHash": "04f5dcfd6bb32c76cda0d1f4d1136eea3e0d800b2b2627f1d6c5b8575a39aadd"
+      "contentHash": "c4bf75bb024b44df530d04b47e33bcc4f7dc2adcb937251d1b9b76c523abe1bc"
     },
     {
       "id": "module:src/loop/detached-worker.ts",
@@ -4338,8 +4338,11 @@
       "title": "fleet-dod.ts",
       "path": "src/loop/fleet-dod.ts",
       "symbols": [
+        "CiVerification",
         "FleetDodEvidence",
         "FleetDodInput",
+        "ciVerification",
+        "environmentFailure",
         "proveFleetDod"
       ],
       "tags": [
@@ -4347,7 +4350,7 @@
         "ts",
         "loop"
       ],
-      "contentHash": "e597823aa033e35062cf4124882bcb65dad3e575a75c7765b87a04967f950e6f"
+      "contentHash": "36944553cb5398941fb2d26af2309c40a84c6812622cebcbd87074ed806c4c28"
     },
     {
       "id": "module:src/loop/fleet-handoff.ts",
@@ -4382,7 +4385,7 @@
         "ts",
         "loop"
       ],
-      "contentHash": "523c85ddd92609e9069383ad162a19a3548e832a9a3ac3ada4fc6e0324aaca6b"
+      "contentHash": "490747807d5570e29acc241d4e2bda87b9dc30e45de6cdcf26146a766065544d"
     },
     {
       "id": "module:src/loop/flows.ts",
@@ -5772,7 +5775,7 @@
         "ts",
         "loop"
       ],
-      "contentHash": "b4157fcd722440809f4aac9a71680066943d8170336c0ecf4750d14337eb5b8c"
+      "contentHash": "2e5a72485b52bee6ad79b32a5401eb36fca9138626d8838a16580cc314e38e43"
     },
     {
       "id": "module:src/loop/verifier.ts",
@@ -5989,7 +5992,7 @@
         "ts",
         "api"
       ],
-      "contentHash": "db3797af102e9de119a82136ed5771a8d8edd610b361a242fdef76d93ce17468"
+      "contentHash": "0fbdc41e84cb738c110693a6447dd789d8c72f3a88d272e837d245b4abdd689e"
     },
     {
       "id": "module:src/ui/api/config-view.ts",
@@ -8261,7 +8264,7 @@
         "ts",
         "test"
       ],
-      "contentHash": "603ec53b6ae56fefa0306cc879aedb30ad4cc9414eef026ba4159a925edc3495"
+      "contentHash": "c0d82becd5a99df29793794437df50acbfe00e83e4da4345d78c4dfe39083873"
     },
     {
       "id": "module:test/loop-deliver.test.ts",
@@ -8393,7 +8396,7 @@
         "ts",
         "test"
       ],
-      "contentHash": "fd645215382e31843473b37cb7325e4253d084918bfd9b49e235e73a2525d164"
+      "contentHash": "7f3874216668f7eeda87d4297461107b5e4b2a17c05d0230c134bbae213cfa6d"
     },
     {
       "id": "module:test/loop-fleet-handoff.test.ts",
@@ -8417,7 +8420,7 @@
         "ts",
         "test"
       ],
-      "contentHash": "b5c84708f204a113a58a9d10391afcb6740f5c598cab3859a8dfecf68c411b31"
+      "contentHash": "bd6de7edb5a0a66daa41162b69ff8754a27dca2d9a3a319b0fb6d0501c482560"
     },
     {
       "id": "module:test/loop-flows.test.ts",
@@ -8969,7 +8972,7 @@
         "ts",
         "test"
       ],
-      "contentHash": "e30e5ae5e638341c38fa2e8cce33e37a895cba1f7184db89918a15dae91ed51a"
+      "contentHash": "1ef105f2cacc860b15cac642ce121d007b342f1540fc93f94cc56c4e1e273f54"
     },
     {
       "id": "module:test/loop-verifier.test.ts",
@@ -9609,7 +9612,7 @@
     }
   },
   "inputs": {
-    "hash": "7ff491d3252590bab31f9b43688fa4604e6256d4bca4d80bdb1c45e77c59f6a3",
+    "hash": "92b5f76dcb7a77508e57eb06a554e140e5d5d67a8162360aea16916853ced1d8",
     "fileCount": 610,
     "projectionVersion": 2
   },
@@ -9632,9 +9635,9 @@
   "projection": {
     "type": "retrieval-index",
     "schemaVersion": 1,
-    "contentHash": "c1a0a01104eed154c523a7add131d4a36fecaf847cb544754ab8be7c6c1a6eee",
+    "contentHash": "f2c508de0c46e2aa448ced38f9514bd141b8763b7abaf4ac19bee221848cad1e",
     "contentHashAlgo": "sha256-semantic-v1",
-    "snapshotHash": "34a832de9a5951baee12e5d95108edf632b388cacfea769884befe39e14a492a",
+    "snapshotHash": "d1a20a745452d2523fd85eab451d24ebf974da56343d8ce078f3c24523410cc2",
     "overlayHash": "f99666ff9119084dd25c2974ae64eb6935ec2aa785ff5ad478fb9d541f7a5e94",
     "configurationHash": "6c17a2415ef3484014ab8350c5c245602bfb85d2baf75666fb83c1c387f3396a",
     "lexiconVersion": 1,
@@ -9666,11 +9669,11 @@
       ],
       "averageFieldLength": {
         "aliases": 2.922165820642978,
-        "body": 45.25211505922166,
+        "body": 45.26565143824027,
         "headings": 3.8274111675126905,
         "path": 6.125211505922166,
         "summary": 2.712351945854484,
-        "symbols": 14.027072758037225,
+        "symbols": 14.042301184433164,
         "title": 4.018612521150592
       }
     },
@@ -11927,7 +11930,7 @@
             }
           ]
         },
-        "contentHash": "3e9c0d16c17136602a22d38317d77b5870c28a64488b5c9257ab6f8f89ef30c5",
+        "contentHash": "8b8adaa3df9718d507b1cc83e0617d9ed7fdd6848a7327b144738a45c270e478",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -14737,7 +14740,7 @@
           "path": "docs/ADR-0046-verdict-levels-and-the-merge-policy.md",
           "symbols": "",
           "summary": "Accepted",
-          "body": "ADR-0046: Verdict levels bound to the patch, a pure merge policy, and a read-back after merge Status Accepted Context Research of pstack (cursor/plugins) and google-research/harness2 (2026-10-20) found three weaknesses the maintainer approved fixing for reliability. The harness and the fleet are one product (fleet repository, docs/design/factory-app-brief.md §7 Trust), so what a \"pass\" means has to be the same on both sides. 1. Pass/fail hides how far something was checked. \"Passed\" covered \"it compiles\" and \"I ran it against the real thing\". A merge gate cannot ask for what the record cannot say (ADR-0035, ADR-0039). 2. A verdict outlived the code it judged, or was thrown away needlessly. Proofs were read per head: a rebase that changed no line re-ran everything (expensive for a fleet task, ADR-0045), and nothing recorded which change a proof was made on. 3. The merge decision was spread across handlePullRequest — held paths, the gate floor, merge.auto , the human gate — interleaved with I/O, so it could not be tested as a table. And a merge GitHub accepted was trusted as done. Decision Verdict levels src/loop/verdict.ts . A verdict is one of, weakest first: failed < blocked < type-check-only < unit-verified < live-verified blocked is \"could not be verified at all\" — not a failure of the change, a gap only a person can close. Each definition-of-done item (ADR-0035, both lists) carries a level; the proof table on the PR and the merged comment show it next to the status. A worker states it in .ak-loop/dod.json as \"verdict\": \"<level \" . Where the level comes from: Source Level --- --- worker proof with a verdict as written ( status: failed beats a proven level; blocked survives) legacy worker proof, status: passed unit-verified legacy worker proof, status: failed failed file-changed / pattern-absent , decided by the harness from the diff unit-verified (deterministic, but not a claim about running code) a command the harness re-ran in its own checkout ( fleet , ADR-0045) unit-verified a review clean → unit-verified , findings → failed , incomplete → blocked — judged by its status, not by minVerdict Migration of stored state. passed becomes unit-verified , failed stays failed ; reading is tolerant, nothing is rewritten in bulk: a stored verdicts.json item that says passed is read as unit-verified , and delivery.json review entries without a verdict get one from their status when read. Project minimum. delivery.merge.minVerdict (default unit-verified ): the weakest level a proven item may carry for the loop to merge. An item below it goes back to the worker as a fix round (\"proven, but below the required verdict … verify them further\") — the worker can raise it. Items still missing or failed are unchanged. blocked items are not fix rounds, see the policy. Verdicts bound to the patch With each assessment the loop stores <stateDir /issues/<issue /verdicts.json : every item's verdict and evidence, the git patch-id --stable of the PR diff ( gh pr diff git patch-id --stable ; the CommandRunner gained a stdin option for it), the head, and the run fingerprint: On the next pass (a push, a rebase) the stored verdicts hold when the patch-id is equal and the contract digest and guard-policy digest are equal. The base SHA and the model are recorded, not compared: a rebase moves the first and a retry the second without changing what was verified. Holding means stored proven items stand in for what the fresh read does not state (a fresh statement always wins), and a fleet task whose every item was proven on this patch skips the local re-run. Otherwise — a different patch, a changed contract or guard policy, or a patch-id that could not be computed (either side) — nothing is carried and the items are proven again, which is the existing behaviour. No binding means no reuse; it never means \"assume it holds\". The patch-id is read once more right before the merge decision: a push that landed while the review ran makes the verdicts stale and the polic",
+          "body": "ADR-0046: Verdict levels bound to the patch, a pure merge policy, and a read-back after merge Status Accepted Context Research of pstack (cursor/plugins) and google-research/harness2 (2026-10-20) found three weaknesses the maintainer approved fixing for reliability. The harness and the fleet are one product (fleet repository, docs/design/factory-app-brief.md §7 Trust), so what a \"pass\" means has to be the same on both sides. 1. Pass/fail hides how far something was checked. \"Passed\" covered \"it compiles\" and \"I ran it against the real thing\". A merge gate cannot ask for what the record cannot say (ADR-0035, ADR-0039). 2. A verdict outlived the code it judged, or was thrown away needlessly. Proofs were read per head: a rebase that changed no line re-ran everything (expensive for a fleet task, ADR-0045), and nothing recorded which change a proof was made on. 3. The merge decision was spread across handlePullRequest — held paths, the gate floor, merge.auto , the human gate — interleaved with I/O, so it could not be tested as a table. And a merge GitHub accepted was trusted as done. Decision Verdict levels src/loop/verdict.ts . A verdict is one of, weakest first: failed < blocked < type-check-only < unit-verified < ci-verified < live-verified ci-verified is the repository verification passing in the PR's own CI on the head SHA — the project's environment, not a re-run on the control machine. It meets unit-verified ; it is not a claim about the live system. blocked is \"could not be verified at all\" — not a failure of the change, a gap only a person can close. Each definition-of-done item (ADR-0035, both lists) carries a level; the proof table on the PR and the merged comment show it next to the status. A worker states it in .ak-loop/dod.json as \"verdict\": \"<level \" . Where the level comes from: Source Level --- --- worker proof with a verdict as written ( status: failed beats a proven level; blocked survives) legacy worker proof, status: passed unit-verified legacy worker proof, status: failed failed file-changed / pattern-absent , decided by the harness from the diff unit-verified (deterministic, but not a claim about running code) a command the harness re-ran in its own checkout ( fleet , ADR-0045) unit-verified ; blocked ( blocked: environment ) when the install or the run failed for the machine's sake (missing module, wrong engine) the repository verification ( verify item, or an item/outcome running delivery.verifyCommand ) with merge.requireChecks on and the PR's CI green on the head ( fleet ) ci-verified , with the passing checks and run URL as evidence; not re-run locally a review clean → unit-verified , findings → failed , incomplete → blocked — judged by its status, not by minVerdict Migration of stored state. passed becomes unit-verified , failed stays failed ; reading is tolerant, nothing is rewritten in bulk: a stored verdicts.json item that says passed is read as unit-verified , and delivery.json review entries without a verdict get one from their status when read. Project minimum. delivery.merge.minVerdict (default unit-verified ): the weakest level a proven item may carry for the loop to merge. An item below it goes back to the worker as a fix round (\"proven, but below the required verdict … verify them further\") — the worker can raise it. Items still missing or failed are unchanged. blocked items are not fix rounds, see the policy. Verdicts bound to the patch With each assessment the loop stores <stateDir /issues/<issue /verdicts.json : every item's verdict and evidence, the git patch-id --stable of the PR diff ( gh pr diff git patch-id --stable ; the CommandRunner gained a stdin option for it), the head, and the run fingerprint: On the next pass (a push, a rebase) the stored verdicts hold when the patch-id is equal and the contract digest and guard-policy digest are equal. The base SHA and the model are recorded, not compared: a rebase moves the first and a retry the second without changing what was verified. Hold",
           "aliases": "document human"
         },
         "graph": {
@@ -14800,7 +14803,7 @@
             }
           ]
         },
-        "contentHash": "80b4be389e484db0d61cbbf6c8a0f3b0016909595aede459fb62ba6e9ef99ca9",
+        "contentHash": "acb1b07bb06ac0a365c8cbe5c3bf8284668b21c26a6df5a27a9160b9ff62e03e",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -15184,6 +15187,11 @@
             },
             {
               "kind": "mentions-symbol",
+              "id": "module:src/loop/detect.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "mentions-symbol",
               "id": "module:src/loop/event-bus.ts",
               "confidence": "observed"
             },
@@ -15224,7 +15232,7 @@
             }
           ]
         },
-        "contentHash": "969998b408e55c329472da79fdfc9b186e8d17dc6cbc5f457f3b9601884272ff",
+        "contentHash": "703c0e76e6d690635f0605489b346dfeb060263951f75a783fb16c8ac2b709b5",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -19202,6 +19210,11 @@
             },
             {
               "kind": "imports",
+              "id": "module:src/loop/fleet-dod.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
               "id": "module:src/loop/github-intake.ts",
               "confidence": "observed"
             },
@@ -19294,7 +19307,7 @@
             }
           ]
         },
-        "contentHash": "b1d8c2b29b59e4a3f93f30d59ee194956fb0eee99a220ac476b3bcbd71e675d5",
+        "contentHash": "c25a4a94f4bae06f2deb76fdd22db8a3e69374fa5815c375888b1f25b331ae0f",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -27621,7 +27634,7 @@
             }
           ]
         },
-        "contentHash": "e3c37b2896b3ba7d976dfd05d02c6ce42aa85f3583c855a5e87521b7428aa3b9",
+        "contentHash": "72d117685b87c3ff68ea0b228be890f3958b9231da8779b90b61ddacf5c7fe52",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -28345,10 +28358,15 @@
               "kind": "imports",
               "id": "module:src/loop/tick.ts",
               "confidence": "observed"
+            },
+            {
+              "kind": "imports",
+              "id": "module:src/loop/verdict.ts",
+              "confidence": "observed"
             }
           ]
         },
-        "contentHash": "cf9dbb4d57f72c21b781b95eeca67b5afb16f4281dfd318de84c83f57b2efa11",
+        "contentHash": "47091c7579e5558d3cfbf80076f6f6fbc0551ea360362734c3e0783eeade9c66",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -28872,7 +28890,7 @@
             }
           ]
         },
-        "contentHash": "04f5dcfd6bb32c76cda0d1f4d1136eea3e0d800b2b2627f1d6c5b8575a39aadd",
+        "contentHash": "c4bf75bb024b44df530d04b47e33bcc4f7dc2adcb937251d1b9b76c523abe1bc",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -28970,9 +28988,11 @@
         },
         "graph": {
           "pagerank": 0,
-          "inboundLinks": 0,
+          "inboundLinks": 1,
           "coveredBy": [],
-          "mentionedBy": [],
+          "mentionedBy": [
+            "document:docs/LOOP.md"
+          ],
           "areaId": "area:src/loop",
           "packageId": "package:@agentskit/harness",
           "inbound": [
@@ -28989,6 +29009,11 @@
             {
               "kind": "imports",
               "id": "module:test/loop-config-detect.test.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "mentions-symbol",
+              "id": "document:docs/LOOP.md",
               "confidence": "observed"
             }
           ],
@@ -29830,8 +29855,11 @@
         "title": "fleet-dod.ts",
         "aliases": [],
         "symbols": [
+          "CiVerification",
           "FleetDodEvidence",
           "FleetDodInput",
+          "ciVerification",
+          "environmentFailure",
           "proveFleetDod"
         ],
         "tags": [
@@ -29843,7 +29871,7 @@
           "title": "fleet-dod.ts",
           "headings": "",
           "path": "src/loop/fleet-dod.ts",
-          "symbols": "FleetDodEvidence FleetDodInput proveFleetDod",
+          "symbols": "CiVerification FleetDodEvidence FleetDodInput ciVerification environmentFailure proveFleetDod",
           "summary": "",
           "body": "",
           "aliases": "module ts loop"
@@ -29887,6 +29915,11 @@
             },
             {
               "kind": "imports",
+              "id": "module:src/adapters/github-cli.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
               "id": "module:src/loop/artifacts.ts",
               "confidence": "observed"
             },
@@ -29907,7 +29940,7 @@
             }
           ]
         },
-        "contentHash": "e597823aa033e35062cf4124882bcb65dad3e575a75c7765b87a04967f950e6f",
+        "contentHash": "36944553cb5398941fb2d26af2309c40a84c6812622cebcbd87074ed806c4c28",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -30062,7 +30095,7 @@
             }
           ]
         },
-        "contentHash": "523c85ddd92609e9069383ad162a19a3548e832a9a3ac3ada4fc6e0324aaca6b",
+        "contentHash": "490747807d5570e29acc241d4e2bda87b9dc30e45de6cdcf26146a766065544d",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -35813,6 +35846,11 @@
             },
             {
               "kind": "imports",
+              "id": "module:src/loop/debrief.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
               "id": "module:src/loop/deliver-state.ts",
               "confidence": "observed"
             },
@@ -35865,7 +35903,7 @@
             }
           ]
         },
-        "contentHash": "b4157fcd722440809f4aac9a71680066943d8170336c0ecf4750d14337eb5b8c",
+        "contentHash": "2e5a72485b52bee6ad79b32a5401eb36fca9138626d8838a16580cc314e38e43",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -36963,7 +37001,7 @@
             }
           ]
         },
-        "contentHash": "db3797af102e9de119a82136ed5771a8d8edd610b361a242fdef76d93ce17468",
+        "contentHash": "0fbdc41e84cb738c110693a6447dd789d8c72f3a88d272e837d245b4abdd689e",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -45012,7 +45050,7 @@
             }
           ]
         },
-        "contentHash": "603ec53b6ae56fefa0306cc879aedb30ad4cc9414eef026ba4159a925edc3495",
+        "contentHash": "c0d82becd5a99df29793794437df50acbfe00e83e4da4345d78c4dfe39083873",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -45497,7 +45535,7 @@
             }
           ]
         },
-        "contentHash": "fd645215382e31843473b37cb7325e4253d084918bfd9b49e235e73a2525d164",
+        "contentHash": "7f3874216668f7eeda87d4297461107b5e4b2a17c05d0230c134bbae213cfa6d",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -45602,7 +45640,7 @@
             }
           ]
         },
-        "contentHash": "b5c84708f204a113a58a9d10391afcb6740f5c598cab3859a8dfecf68c411b31",
+        "contentHash": "bd6de7edb5a0a66daa41162b69ff8754a27dca2d9a3a319b0fb6d0501c482560",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -47569,7 +47607,7 @@
             }
           ]
         },
-        "contentHash": "e30e5ae5e638341c38fa2e8cce33e37a895cba1f7184db89918a15dae91ed51a",
+        "contentHash": "1ef105f2cacc860b15cac642ce121d007b342f1540fc93f94cc56c4e1e273f54",
         "provenance": "observed",
         "confidence": "observed"
       },

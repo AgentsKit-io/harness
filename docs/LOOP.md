@@ -592,8 +592,15 @@ different instructions, and the loop keeps them apart. A reviewer reads evidence
 ### Verdict levels, patch binding and the merge policy (ADR-0046)
 
 A proof states how far it was verified, not just pass/fail — `"verdict"` is one of `failed`, `blocked`,
-`type-check-only`, `unit-verified`, `live-verified` (weakest first); the legacy `"status": "passed"` still works and
+`type-check-only`, `unit-verified`, `ci-verified`, `live-verified` (weakest first); the legacy `"status": "passed"` still works and
 reads as `unit-verified`. The PR's DoD table and the merged comment show the level per item.
+
+For a `fleet` task the harness proves the DoD on a checkout of the collected commit. With `merge.requireChecks` on
+and the PR's CI green on the head, the repository verification (the `verify` item, or an item/outcome whose command
+is `delivery.verifyCommand`) is `ci-verified` — CI ran it, the control machine does not run it again; `loop debrief`
+lists those items. Other commands still run locally, after the repo's frozen install (`packageManager`, else the
+lockfile) under the Node it pins (`.nvmrc`, `.node-version`, exact-major `engines.node`; via `fnm` or `mise` when
+present). A missing module or a wrong engine there is `blocked: environment`, not a failure of the change.
 
 ```json
 { "outcomes": [{ "id": "o1", "verdict": "live-verified", "evidence": "curl /health → 200 against the staging stack" }] }

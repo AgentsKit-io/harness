@@ -5,7 +5,7 @@ import { dirname, join } from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
 import { assessDod, parseLoopConfigText } from '../src/index.js'
 import type { CommandRunner, LoopConfig, TaskContract } from '../src/index.js'
-import { proveFleetDod } from '../src/loop/fleet-dod.js'
+import { ciVerification, proveFleetDod } from '../src/loop/fleet-dod.js'
 import { createProcessRunner } from '../src/loop/process.js'
 import { initializeGitRepository } from './git.js'
 
@@ -141,6 +141,71 @@ describe('fleet: the definition of done on a local checkout of the collected bra
     expect(proof.evidence.project[0]?.evidence).toContain('ERR_PNPM_OUTDATED_LOCKFILE')
     expect(bad.calls.some((call) => call.argv[0] === 'node')).toBe(false)
     expect(leftovers(repo.stateDir)).toEqual([])
+  })
+
+  it('a green gating CI proves the repository verification: verify and the outcome running verifyCommand are ci-verified, not re-run', async () => {
+    const repo = await makeRepo({ 'package.json': '{}\n', 'pnpm-lock.yaml': 'lockfileVersion: 9\n' })
+    const { runner, calls } = recordingRunner()
+    const cfg = config()
+    const ci = ciVerification({ gating: true, status: 'green', checks: [{ name: 'ci', outcome: 'success', kind: 'check-run', url: 'https://github.com/o/r/actions/runs/1' }, { name: 'lint', outcome: 'skipped', kind: 'check-run' }], commands: [cfg.delivery.verifyCommand] })
+    const outcomes = { ...contract({ kind: 'command', command: cfg.delivery.verifyCommand }), outcomes: [{ id: 'o5', description: 'repo passes', check: { kind: 'command', command: ` ${cfg.delivery.verifyCommand} ` } }, { id: 'o6', description: 'ignored', check: { kind: 'command', command: 'node -e "console.log(6)"' } }] } as TaskContract
+    const proof = await proveFleetDod({ runner, config: cfg, root: repo.root, stateDir: repo.stateDir, head: repo.head, base: repo.base, contract: outcomes, ci })
+    expect(proof.evidence.project[0]).toMatchObject({ id: 'verify', status: 'passed', verdict: 'ci-verified' })
+    expect(proof.evidence.project[0]?.evidence).toContain('ci green — https://github.com/o/r/actions/runs/1')
+    expect(proof.evidence.outcomes.map((item) => [item.id, item.verdict])).toEqual([['o5', 'ci-verified'], ['o6', 'unit-verified']])
+    // The verify command never ran here; the small check did, after the install.
+    expect(calls.some((call) => call.argv.join(' ').includes('ran-here.txt'))).toBe(false)
+    expect(calls.map((call) => call.argv[0]).filter((name) => name === 'pnpm' || name === 'sh')).toEqual(['pnpm', 'sh'])
+    expect(proof.notes).toContain('proven by CI, not re-run locally: verify, o5')
+    const assessed = assessDod({ config: cfg, contract: outcomes, evidence: proof.evidence, prFiles: proof.changedFiles, fileContents: proof.fileContents, minVerdict: 'unit-verified' })
+    expect(assessed.complete).toBe(true)
+    expect(leftovers(repo.stateDir)).toEqual([])
+  })
+
+  it('CI proves nothing when it does not gate, is not green, or reported no passing check', () => {
+    const checks = [{ name: 'ci', outcome: 'success', kind: 'check-run' }] as const
+    expect(ciVerification({ gating: true, status: 'green', checks, commands: ['pnpm verify', ''] })).toEqual({ checks: ['ci'], url: null, commands: ['pnpm verify'] })
+    expect(ciVerification({ gating: true, status: 'red', checks, commands: ['pnpm verify'] })).toBeNull()
+    expect(ciVerification({ gating: true, status: 'pending', checks, commands: ['pnpm verify'] })).toBeNull()
+    expect(ciVerification({ gating: false, status: 'green', checks, commands: ['pnpm verify'] })).toBeNull()
+    expect(ciVerification({ gating: true, status: 'green', checks: [], commands: ['pnpm verify'] })).toBeNull()
+    expect(ciVerification({ gating: true, status: 'green', checks, ignore: ['ci'], commands: ['pnpm verify'] })).toBeNull()
+  })
+
+  it('without CI, the re-run installs with the packageManager the repo names, under the Node it pins', async () => {
+    const repo = await makeRepo({ 'package.json': JSON.stringify({ packageManager: 'pnpm@9.12.0' }), 'pnpm-lock.yaml': 'lockfileVersion: 9\n', '.nvmrc': 'v22.11.0\n' })
+    const calls: (readonly string[])[] = []
+    const runner: CommandRunner = {
+      run: async (argv, options) => {
+        calls.push([...argv])
+        if (argv[0] === 'fnm' && argv[1] === '--version') return { code: 0, stdout: 'fnm 1.37.0', stderr: '', timedOut: false, durationMs: 1 }
+        if (argv[0] === 'fnm') { const inner = argv.slice(argv.indexOf('--') + 1); if (inner[0] === 'pnpm') return { code: 0, stdout: '', stderr: '', timedOut: false, durationMs: 1 }; return real.run(inner, { timeoutMs: 60_000, ...(options?.cwd ? { cwd: options.cwd } : {}) }) }
+        return real.run(argv, { timeoutMs: 60_000, ...(options?.cwd ? { cwd: options.cwd } : {}) })
+      },
+    }
+    const proof = await proveFleetDod({ runner, config: config(), root: repo.root, stateDir: repo.stateDir, head: repo.head, base: repo.base, contract: null, ci: null })
+    const wrapped = calls.filter((argv) => argv[0] === 'fnm' && argv[1] === 'exec')
+    expect(wrapped.map((argv) => argv.slice(0, 5))).toEqual([['fnm', 'exec', '--using=22.11.0', '--', 'pnpm'], ['fnm', 'exec', '--using=22.11.0', '--', 'node']])
+    expect(wrapped[0]).toEqual(['fnm', 'exec', '--using=22.11.0', '--', 'pnpm', 'install', '--frozen-lockfile'])
+    expect(proof.evidence.project[0]).toMatchObject({ id: 'verify', status: 'passed', verdict: 'unit-verified' })
+    expect(proof.notes).toContain('ran under Node 22.11.0 (pinned by the repo) via fnm')
+  })
+
+  it('a missing module or a wrong engine is blocked: environment, not a failed outcome of the change', async () => {
+    const repo = await makeRepo()
+    const { runner } = recordingRunner()
+    const cfg = config(DOD.replace(/command: \[node.*\n/, 'command: [node, -e, "require(\'agentskit-module-that-is-not-installed\')"]\n'))
+    const proof = await proveFleetDod({ runner, config: cfg, root: repo.root, stateDir: repo.stateDir, head: repo.head, base: repo.base, contract: null })
+    expect(proof.evidence.project[0]).toMatchObject({ id: 'verify', status: 'failed', verdict: 'blocked' })
+    expect(proof.evidence.project[0]?.evidence).toMatch(/^blocked: environment — .*Cannot find module 'agentskit-module-that-is-not-installed'/)
+    const assessed = assessDod({ config: cfg, contract: null, evidence: proof.evidence, prFiles: proof.changedFiles, fileContents: proof.fileContents })
+    expect([assessed.blocked, assessed.failed]).toEqual([['verify'], []])
+
+    const engine = await makeRepo({ 'package.json': '{}\n', 'pnpm-lock.yaml': 'lockfileVersion: 9\n' })
+    const wrongEngine: CommandRunner = { run: async (argv, options) => argv[0] === 'pnpm' ? { code: 1, stdout: '', stderr: ' ERR_PNPM_UNSUPPORTED_ENGINE  Unsupported environment (bad pnpm and/or Node.js version)\nExpected version: 22', timedOut: false, durationMs: 1 } : real.run(argv, { timeoutMs: 60_000, ...(options?.cwd ? { cwd: options.cwd } : {}) }) }
+    const installed = await proveFleetDod({ runner: wrongEngine, config: config(), root: engine.root, stateDir: engine.stateDir, head: engine.head, base: engine.base, contract: null })
+    expect(installed.evidence.project[0]).toMatchObject({ id: 'verify', status: 'failed', verdict: 'blocked' })
+    expect(installed.evidence.project[0]?.evidence).toContain('blocked: environment — ERR_PNPM_UNSUPPORTED_ENGINE')
   })
 
   it('does not install when nothing needs a command, and removes the worktree when the checkout itself fails', async () => {
