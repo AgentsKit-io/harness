@@ -49,7 +49,7 @@ const FIELDS: Readonly<Record<string, Entry>> = {
   'delivery.merge.method': safe('Merge method: squash, merge or rebase.'),
   'delivery.merge.requireChecks': gate('Require CI checks to pass before merging.', 'off'),
   'delivery.merge.requireHumanApproval': gate('Require a human approval before merging.', 'off'),
-  'delivery.merge.minVerdict': gate('Weakest verification level a definition-of-done item may carry for a merge.', ['live-verified', 'unit-verified', 'type-check-only']),
+  'delivery.merge.minVerdict': gate('Weakest verification level a definition-of-done item may carry for a merge.', ['live-verified', 'ci-verified', 'unit-verified', 'type-check-only']),
   'delivery.merge.autonomy': gate('supervised: the loop proves and reports, a person merges.', ['supervised', 'autonomous']),
   'delivery.merge.escalateOnBlocked': gate('Send an item that could not be verified to a person instead of another fix round.', 'off'),
   'delivery.workerGuard.enabled': gate('Block workers from editing protected paths.', 'off'),

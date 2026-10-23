@@ -18,12 +18,14 @@ const record = (over: Record<string, unknown> = {}) => ({ schemaVersion: 1, head
 
 describe('verdict levels', () => {
   it('orders weakest to strongest and compares against a minimum', () => {
-    expect(VERDICT_LEVELS).toEqual(['failed', 'blocked', 'type-check-only', 'unit-verified', 'live-verified'])
-    expect(VERDICT_LEVELS.map(verdictRank)).toEqual([0, 1, 2, 3, 4])
+    expect(VERDICT_LEVELS).toEqual(['failed', 'blocked', 'type-check-only', 'unit-verified', 'ci-verified', 'live-verified'])
+    expect(meetsVerdict('ci-verified', 'unit-verified')).toBe(true)
+    expect(meetsVerdict('ci-verified', 'live-verified')).toBe(false)
+    expect(VERDICT_LEVELS.map(verdictRank)).toEqual([0, 1, 2, 3, 4, 5])
     expect(meetsVerdict('live-verified', 'unit-verified')).toBe(true)
     expect(meetsVerdict('unit-verified', 'unit-verified')).toBe(true)
     expect(meetsVerdict('type-check-only', 'unit-verified')).toBe(false)
-    expect(VERDICT_LEVELS.filter(isProven)).toEqual(['type-check-only', 'unit-verified', 'live-verified'])
+    expect(VERDICT_LEVELS.filter(isProven)).toEqual(['type-check-only', 'unit-verified', 'ci-verified', 'live-verified'])
   })
 
   it('migrates the legacy pass/fail to a level', () => {

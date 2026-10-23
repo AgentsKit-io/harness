@@ -8,6 +8,7 @@ import { readLoopEvents, parseSince, type LoopEvent } from './retro.js'
 import { readDispatchRecord, type DispatchRecordFile } from './tick.js'
 import { queueOwner } from './rotation.js'
 import { readOutcomeProgress, type OutcomeProgress } from './progress.js'
+import { readVerdictRecord } from './verdict.js'
 
 export interface DebriefInput {
   readonly configPath?: string
@@ -44,6 +45,8 @@ export interface DebriefIssueRow {
   readonly contractIntent: string | null
   /** Best-effort read of `progress.json` from the worktree, keyed by outcome id (see brief.ts rule 10); `null` when the worker hasn't written one. */
   readonly progress: OutcomeProgress | null
+  /** Definition-of-done items the PR's green CI proved (`ci-verified` in `verdicts.json`): not re-run on this machine. */
+  readonly ciVerified: readonly string[]
 }
 
 export interface DebriefReport {
@@ -114,6 +117,7 @@ const rowFor = (input: {
   readonly intent: string | null
   readonly repo: string
   readonly now: Date
+  readonly ciVerified: readonly string[]
 }): DebriefIssueRow => {
   const phase = phaseOf(input.dispatch, input.delivery)
   const review = latestReview(input.delivery)
@@ -143,6 +147,7 @@ const rowFor = (input: {
     heldFor: input.delivery.heldFor,
     finalOutcome: input.delivery.finalOutcome,
     contractIntent: input.intent,
+    ciVerified: input.ciVerified,
   }
 }
 
@@ -198,6 +203,7 @@ export const buildDebriefReport = (input: DebriefInput): DebriefReport => {
           heldFor: null,
           finalOutcome: null,
           contractIntent: intent,
+          ciVerified: [],
         })
         continue
       }
@@ -206,7 +212,8 @@ export const buildDebriefReport = (input: DebriefInput): DebriefReport => {
       // perfectly normal not-yet-dispatched issue silently returns nothing, despite the caller naming it.
       if (!input.issue) continue
     }
-    rows.push(rowFor({ issue, dispatch, delivery, intent, repo: config.project.repo, now }))
+    const ciVerified = (readVerdictRecord(stateDir, issue)?.items ?? []).filter((item) => item.verdict === 'ci-verified').map((item) => item.id)
+    rows.push(rowFor({ issue, dispatch, delivery, intent, repo: config.project.repo, now, ciVerified }))
   }
   const inFlight = rows.filter((row) => !row.finalOutcome && row.phase !== 'escalated')
   const held = rows.filter((row) => row.phase === 'held' || row.phase === 'held-incomplete-review' || row.heldFor)
@@ -271,6 +278,7 @@ export const renderDebriefMarkdown = (report: DebriefReport): string => {
         const done = Object.values(row.progress).filter((status) => status === 'done').length
         lines.push(`- Progress: ${done}/${Object.keys(row.progress).length} outcome(s) done (${Object.entries(row.progress).map(([id, status]) => `${id}: ${status}`).join(', ')})`)
       }
+      if (row.ciVerified.length) lines.push(`- Proven by CI (not re-run locally): ${row.ciVerified.map((id) => `\`${id}\``).join(', ')}`)
       if (row.worktree) lines.push(`- Worktree: \`${row.worktree}\``)
       if (row.branch) lines.push(`- Branch: \`${row.branch}\``)
       if (row.prUrl) lines.push(`- PR: ${row.prUrl}${row.reviewStatus ? ` · review ${row.reviewStatus}` : ''}`)

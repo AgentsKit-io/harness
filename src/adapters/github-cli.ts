@@ -6,7 +6,7 @@ export interface GitHubCliOptions { readonly bin?: string; readonly timeoutMs?: 
 
 export type CheckOutcome = 'success' | 'failure' | 'pending' | 'skipped' | 'neutral' | 'unknown'
 
-export interface PullRequestCheck { readonly name: string; readonly outcome: CheckOutcome; readonly kind: 'check-run' | 'status' | 'unknown' }
+export interface PullRequestCheck { readonly name: string; readonly outcome: CheckOutcome; readonly kind: 'check-run' | 'status' | 'unknown'; /** The run's page (`detailsUrl` / `targetUrl`), when the host reported one. */ readonly url?: string }
 
 export interface PullRequestSnapshot {
   readonly number: number
@@ -76,7 +76,7 @@ export const parsePullRequest = (value: unknown): PullRequestSnapshot => {
     labels: Array.isArray(record['labels']) ? record['labels'].map((label: unknown) => isRecord(label) ? str(label['name']) : str(label)).filter(Boolean) : [],
     files: Array.isArray(record['files']) ? record['files'].map((file: unknown) => isRecord(file) ? str(file['path']) : str(file)).filter(Boolean) : [],
     changedLines: Array.isArray(record['files']) ? record['files'].reduce((total: number, file: unknown) => total + (isRecord(file) ? (typeof file['additions'] === 'number' ? file['additions'] : 0) + (typeof file['deletions'] === 'number' ? file['deletions'] : 0) : 0), 0) : 0,
-    checks: rollup.map((item) => ({ name: str(item['name'], str(item['context'], 'unnamed')), outcome: outcomeOf(item), kind: item['__typename'] === 'CheckRun' ? 'check-run' : item['__typename'] === 'StatusContext' ? 'status' : 'unknown' })),
+    checks: rollup.map((item) => ({ name: str(item['name'], str(item['context'], 'unnamed')), outcome: outcomeOf(item), kind: item['__typename'] === 'CheckRun' ? 'check-run' : item['__typename'] === 'StatusContext' ? 'status' : 'unknown', ...(str(item['detailsUrl'], str(item['targetUrl'])) ? { url: str(item['detailsUrl'], str(item['targetUrl'])) } : {}) })),
     updatedAt: typeof record['updatedAt'] === 'string' ? record['updatedAt'] : null,
   }
 }

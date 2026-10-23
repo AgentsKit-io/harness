@@ -8,8 +8,10 @@ import { writeJsonAtomic } from './fs-atomic.js'
 /**
  * ADR-0046: how far an item was actually verified, weakest first. A bare pass/fail hid the difference between
  * "it compiles" and "I ran it against the real thing", and a merge gate cannot ask for what the record cannot say.
+ * `ci-verified`: the repository verification passed in the PR's own CI on the head SHA — the project's environment,
+ * not a re-run on the control machine; it meets `unit-verified` and does not claim a run against the live system.
  */
-export const VERDICT_LEVELS = ['failed', 'blocked', 'type-check-only', 'unit-verified', 'live-verified'] as const
+export const VERDICT_LEVELS = ['failed', 'blocked', 'type-check-only', 'unit-verified', 'ci-verified', 'live-verified'] as const
 export type Verdict = typeof VERDICT_LEVELS[number]
 
 export const verdictRank = (verdict: Verdict): number => VERDICT_LEVELS.indexOf(verdict)
