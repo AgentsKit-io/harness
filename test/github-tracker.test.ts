@@ -139,4 +139,38 @@ describe('GitHub tracker adapter', () => {
     expect(result.identifier).toBe('acme/app#8')
     expect(calls.find((argv) => argv[1] === 'issue' && argv[2] === 'create')).not.toContain('loop:todo')
   })
+
+  describe('queue label filters', () => {
+    const runnerFor = (issues: unknown[]): CommandRunner => ({ run: async (argv): Promise<CommandResult> => {
+      const stdout = argv.includes('user') ? JSON.stringify({ login: 'alice' }) : argv.includes('issue') && argv.includes('list') ? JSON.stringify(issues) : ''
+      return { code: 0, stdout, stderr: '', timedOut: false, durationMs: 1 }
+    } })
+    // What the web-app / monorepo presets set: a Linear layer filter that a plain `loop:todo` issue does not satisfy.
+    const withLinearLayers = (extra: Record<string, unknown> = {}) => validateLoopConfig({ ...config(), linear: { ...config().linear, anyLabels: ['layer:ui', 'layer:api'], requireLabels: ['type:fix'], projects: ['Web'] }, ...extra })
+
+    it('ignores linear.anyLabels, requireLabels and projects for a plain loop:todo issue', async () => {
+      const tracker = createGitHubTracker({ runner: runnerFor([detail()]), config: withLinearLayers() })
+      await expect(tracker.queue({ assignee: null })).resolves.toMatchObject([{ identifier: 'acme/app#7' }])
+      expect(tracker.queueSkips?.()).toEqual([])
+    })
+
+    it('github.issues.anyLabels narrows the queue and the skip names that key', async () => {
+      const base = withLinearLayers()
+      const github = validateLoopConfig({ ...base, github: { ...base.github, issues: { ...base.github.issues, anyLabels: ['ready'] } } })
+      const tracker = createGitHubTracker({ runner: runnerFor([detail(), { ...detail([{ name: 'loop:todo' }, { name: 'ready' }]), number: 8, url: 'https://github.com/acme/app/issues/8' }]), config: github })
+      expect((await tracker.queue({ assignee: null })).map((issue) => issue.identifier)).toEqual(['acme/app#8'])
+      expect(tracker.queueSkips?.()).toEqual([{ identifier: 'acme/app#7', reason: expect.stringContaining('github.issues.anyLabels (ready)') }])
+    })
+
+    it('names the excluded label and the ownership that drop a loop:todo issue', async () => {
+      const base = config()
+      const excluded = validateLoopConfig({ ...base, linear: { ...base.linear, excludeLabels: ['wontfix'] } })
+      const one = createGitHubTracker({ runner: runnerFor([detail([{ name: 'loop:todo' }, { name: 'wontfix' }])]), config: excluded })
+      expect(await one.queue({ assignee: null })).toEqual([])
+      expect(one.queueSkips?.()).toEqual([{ identifier: 'acme/app#7', reason: 'label "wontfix" is in linear.excludeLabels' }])
+      const other = createGitHubTracker({ runner: runnerFor([{ ...detail(), assignees: [{ login: 'bob' }] }]), config: base })
+      expect(await other.queue({ assignee: null })).toEqual([])
+      expect(other.queueSkips?.()[0]?.reason).toContain('assignee bob is outside queueOwnership')
+    })
+  })
 })

@@ -171,6 +171,7 @@ export const runLoopDoctor = async (input: LoopDoctorInput): Promise<LoopDoctorR
     // queue went unnoticed in the first place.
     const whose = ({ unassigned: 'unassigned', both: `unassigned or assigned to ${person}`, person: `assigned to ${person}` })[config.linear.queueOwnership]
     push(`${tracker.id}.queue`, 'passed', `${queue.length} dispatchable issue(s) ${whose} in ${config.linear.states.join('/')}`)
+    for (const skip of tracker.queueSkips?.() ?? []) push(`${tracker.id}.queue.skipped`, 'warning', `${skip.identifier} is labelled ${config.github.issues.labels.todo} but skipped: ${skip.reason}`)
   } catch (error) { queueError = message(error); push(`${config.connectors.tracker}.queue`, 'failed', queueError) }
 
   const docBridge = inspectDocBridgeIndex(loaded.root)

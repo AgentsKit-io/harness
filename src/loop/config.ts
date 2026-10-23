@@ -654,6 +654,8 @@ export const LoopConfigSchema = z.object({
       refreshSeconds: z.number().int().positive().default(60),
       /** Optional machine override. When absent, the authenticated `gh` user owns the loop queue. */
       assignee: nonEmpty.optional(),
+      /** Queue only issues carrying at least one of these labels. Empty = any; the `linear.*` label filters never apply to GitHub. */
+      anyLabels: z.array(nonEmpty).default([]),
       /** Exactly one lifecycle label is applied to a GitHub issue at a time. */
       labels: z.object({
         todo: nonEmpty.default('loop:todo'),
