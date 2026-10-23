@@ -64,27 +64,43 @@ export const fleetSubmitPreview = (config: RunnerInput['loaded']['config'], base
 
 export interface FleetProbe { readonly id: string; readonly status: 'passed' | 'warning' | 'failed'; readonly detail: string }
 
-/** What `loop doctor` asks of the fleet: `fleet doctor --json` summarised, and `fleet queue --json` reachable. Never throws. */
+/** A failed doctor check that makes the fleet unusable for this project: no reachable agents host, project not in the fleet file, queue unreachable. Any other failed check is a warning. */
+const BLOCKING_CHECK = /host|project|fleet[-_. ]?(file|config)|queue/i
+const FULL_DOCTOR_TIMEOUT_MS = 90_000
+
+/** What `loop doctor` asks of the fleet: `fleet doctor` summarised, and `fleet queue --json` reachable. Never throws. */
 export const probeFleet = async (input: RunnerInput): Promise<readonly FleetProbe[]> => {
   const { bin, timeoutMs } = input.loaded.config.connectors.fleet
-  const call = async (args: readonly string[]) => {
-    try { return await input.runner.run([bin, ...args], { timeoutMs, cwd: input.loaded.root }) } catch (error) { return { code: null, stdout: '', stderr: error instanceof Error ? error.message : String(error), timedOut: false, durationMs: 0 } }
+  const call = async (args: readonly string[], timeout = timeoutMs) => {
+    try { return await input.runner.run([bin, ...args], { timeoutMs: timeout, cwd: input.loaded.root }) } catch (error) { return { code: null, stdout: '', stderr: error instanceof Error ? error.message : String(error), timedOut: false, durationMs: 0 } }
   }
   const probes: FleetProbe[] = []
-  const doctor = await call(['doctor', '--json'])
-  if (doctor.timedOut || doctor.code !== 0) probes.push({ id: 'fleet.doctor', status: 'failed', detail: `"${bin} doctor --json" ${doctor.timedOut ? 'timed out' : `exited ${doctor.code ?? 'null'}`}${doctor.stderr.trim() ? `: ${doctor.stderr.trim().slice(0, 200)}` : ''}` })
+  // The full doctor takes ~36 s live; `--quick` skips the slow checks when this fleet CLI has it.
+  const help = await call(['doctor', '--help'])
+  const quick = help.code === 0 && /--quick\b/.test(`${help.stdout}\n${help.stderr}`)
+  const doctorArgs = quick ? ['doctor', '--quick', '--json'] : ['doctor', '--json']
+  const doctor = await call(doctorArgs, quick ? timeoutMs : Math.max(timeoutMs, FULL_DOCTOR_TIMEOUT_MS))
+  const label = `"${bin} ${doctorArgs.join(' ')}"`
+  if (doctor.timedOut || doctor.code !== 0) probes.push({ id: 'fleet.doctor', status: 'failed', detail: `${label} ${doctor.timedOut ? 'timed out' : `exited ${doctor.code ?? 'null'}`}${doctor.stderr.trim() ? `: ${doctor.stderr.trim().slice(0, 200)}` : ''}` })
   else {
     let parsed: unknown = null
     try { parsed = JSON.parse(doctor.stdout) } catch { /* reported below */ }
     const record = typeof parsed === 'object' && parsed !== null && !Array.isArray(parsed) ? parsed as Record<string, unknown> : null
-    if (!record) probes.push({ id: 'fleet.doctor', status: 'warning', detail: `"${bin} doctor --json" exited 0 but printed no JSON summary` })
+    if (!record) probes.push({ id: 'fleet.doctor', status: 'warning', detail: `${label} exited 0 but printed no JSON summary` })
     else {
       const checks = Array.isArray(record['checks']) ? record['checks'].filter((item): item is Record<string, unknown> => typeof item === 'object' && item !== null) : []
       const failing = checks.filter((item) => ['failed', 'fail', 'error'].includes(String(item['status']).toLowerCase()) || item['ok'] === false)
       const overall = typeof record['status'] === 'string' ? record['status'].toLowerCase() : null
-      const bad = record['ok'] === false || (overall !== null && ['failed', 'fail', 'error'].includes(overall)) || failing.length > 0
-      const names = failing.map((item) => text(item['id']) ?? text(item['name']) ?? 'check').slice(0, 5).join(', ')
-      probes.push({ id: 'fleet.doctor', status: bad ? 'failed' : 'passed', detail: `${checks.length ? `${checks.length - failing.length}/${checks.length} checks ok` : (overall ?? 'ok')}${failing.length ? `; failing: ${names}` : ''}` })
+      const nameOf = (item: Record<string, unknown>) => text(item['id']) ?? text(item['name']) ?? 'check'
+      const describe = (item: Record<string, unknown>) => { const why = text(item['detail']) ?? text(item['message']) ?? text(item['error']); return why ? `${nameOf(item)} (${why.slice(0, 120)})` : nameOf(item) }
+      const blocking = failing.filter((item) => BLOCKING_CHECK.test(nameOf(item)))
+      const warned = failing.filter((item) => !blocking.includes(item))
+      // A failed summary that names no failing check cannot be shown harmless, so it blocks.
+      const unexplained = failing.length === 0 && (record['ok'] === false || (overall !== null && ['failed', 'fail', 'error'].includes(overall)))
+      const parts = [checks.length ? `${checks.length - failing.length}/${checks.length} checks ok` : (overall ?? 'ok')]
+      if (blocking.length > 0) parts.push(`blocking: ${blocking.slice(0, 5).map(describe).join(', ')}`)
+      if (warned.length > 0) parts.push(`warnings: ${warned.slice(0, 5).map(describe).join(', ')}`)
+      probes.push({ id: 'fleet.doctor', status: blocking.length > 0 || unexplained ? 'failed' : warned.length > 0 ? 'warning' : 'passed', detail: parts.join('; ') })
     }
   }
   const queue = await call(['queue', '--json'])
