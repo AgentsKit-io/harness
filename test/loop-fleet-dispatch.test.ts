@@ -16,7 +16,7 @@ const REPO = 'my-org/my-project'
 const issueJson = { number: 1, url: `https://github.com/${REPO}/issues/1`, title: 'Demo issue', state: 'OPEN', labels: [], assignees: [], createdAt: '2026-10-20T10:00:00Z', updatedAt: '2026-10-20T10:00:00Z' }
 
 /** GitHub tracker + fleet runner, with a fake `gh`, `fleet` and `git`; any `orca` call is recorded and answers "not installed". */
-const makeFleetEnv = (options: { readonly runner?: 'fleet' | 'orca'; readonly taskState?: () => string; readonly fleetDoctor?: CommandResult; readonly fleetQueue?: CommandResult; readonly commits?: number } = {}) => {
+const makeFleetEnv = (options: { readonly runner?: 'fleet' | 'orca'; readonly taskState?: () => string; readonly fleetDoctor?: CommandResult; readonly quickDoctor?: boolean; readonly fleetQueue?: CommandResult; readonly commits?: number } = {}) => {
   const dir = mkdtempSync(join(tmpdir(), 'agentskit-fleet-dispatch-')); cleanups.push(dir)
   const bin = mkdtempSync(join(tmpdir(), 'agentskit-fleet-dispatch-bin-')); cleanups.push(bin)
   for (const name of ['claude', 'codex', 'opencode', 'grok']) writeFileSync(join(bin, name), '#!/bin/sh\nexit 0\n', { mode: 0o755 })
@@ -38,6 +38,7 @@ const makeFleetEnv = (options: { readonly runner?: 'fleet' | 'orca'; readonly ta
         if (verb === 'submit') { prompts.push(readFileSync(argv[argv.indexOf('--prompt-file') + 1] ?? '', 'utf8')); queueId = 'q-0001'; return done('submitted q-0001\n') }
         if (verb === 'queue') return options.fleetQueue ?? done(JSON.stringify(queueId ? [{ id: queueId, state: options.taskState?.() ?? 'running', hostTaskId: 'ht-77' }] : []))
         if (verb === 'collect') return done(JSON.stringify({ ref: 'refs/remotes/fleet/h1/ht-77', headSha: 'a1b2c3d4e5f6', baseSha: 'b0b0b0b', commits: options.commits ?? 1 }))
+        if (verb === 'doctor' && sub === '--help') return done(options.quickDoctor ? 'Usage: fleet doctor [--quick] [--json]\n' : 'Usage: fleet doctor [--json]\n')
         if (verb === 'doctor') return options.fleetDoctor ?? done(JSON.stringify({ status: 'ok', checks: [{ id: 'coordinator', ok: true }, { id: 'hosts', ok: true }] }))
         return done()
       }
@@ -165,6 +166,32 @@ describe('loop doctor probes the selected runner', () => {
     expect(report.status).toBe('failed')
     expect(report.checks.find((check) => check.id === 'fleet.doctor')).toMatchObject({ status: 'failed', detail: expect.stringContaining('hosts') })
     expect(report.checks.find((check) => check.id === 'fleet.queue')).toMatchObject({ status: 'failed', detail: expect.stringContaining('coordinator down') })
+  })
+
+  const doctorReport = (env: ReturnType<typeof makeFleetEnv>) => runLoopDoctor({ configPath: env.base.configPath, runner: env.base.runner, env: env.base.env, platform: 'linux' })
+  const doctorCall = (env: ReturnType<typeof makeFleetEnv>) => env.calls.find((argv) => argv[0] === 'fleet' && argv[1] === 'doctor' && argv[2] !== '--help')
+
+  it('fleet: uses the quick doctor when the CLI has it, else the full doctor', async () => {
+    const quick = makeFleetEnv({ quickDoctor: true })
+    await doctorReport(quick)
+    expect(doctorCall(quick)).toEqual(['fleet', 'doctor', '--quick', '--json'])
+    const full = makeFleetEnv()
+    await doctorReport(full)
+    expect(doctorCall(full)).toEqual(['fleet', 'doctor', '--json'])
+  })
+
+  it('fleet: an identity-alias or disk failure is a warning with its detail, not a failure', async () => {
+    const env = makeFleetEnv({ fleetDoctor: done(JSON.stringify({ status: 'failed', checks: [{ id: 'hosts', ok: true }, { id: 'identity-aliases', ok: false, detail: 'alias mismatch' }, { id: 'disk', status: 'fail', message: 'low' }] })) })
+    const check = (await doctorReport(env)).checks.find((item) => item.id === 'fleet.doctor')
+    expect(check).toMatchObject({ status: 'warning', detail: expect.stringContaining('identity-aliases (alias mismatch)') })
+    expect(check?.detail).toContain('disk (low)')
+  })
+
+  it('fleet: a missing agents host or project blocks, and a doctor that times out fails', async () => {
+    const project = makeFleetEnv({ fleetDoctor: done(JSON.stringify({ checks: [{ id: 'project-in-fleet-file', ok: false, detail: 'not listed' }] })) })
+    expect((await doctorReport(project)).checks.find((item) => item.id === 'fleet.doctor')).toMatchObject({ status: 'failed', detail: expect.stringContaining('blocking: project-in-fleet-file (not listed)') })
+    const slow = makeFleetEnv({ fleetDoctor: { code: null, stdout: '', stderr: '', timedOut: true, durationMs: 90_000 } })
+    expect((await doctorReport(slow)).checks.find((item) => item.id === 'fleet.doctor')).toMatchObject({ status: 'failed', detail: expect.stringContaining('timed out') })
   })
 })
 
