@@ -1,0 +1,14 @@
+{
+  "ranAt": "2026-10-24T19:30:00Z",
+  "command": "pnpm install --frozen-lockfile && pnpm run typecheck && pnpm run test && pnpm run build",
+  "exitCode": 0,
+  "outcomes": [
+    { "id": "o1", "status": "passed", "evidence": "vercel.json removed with git rm; no .vercelignore/.vercel tracked" },
+    { "id": "o2", "status": "passed", "evidence": "grep -rIil vercel over scripts .github wrangler.toml package.json .gitignore returns nothing" },
+    { "id": "o3", "status": "passed", "evidence": "script output is '/*' + nosniff, DENY, strict-origin-when-cross-origin, HSTS max-age=63072000, trailing newline: same as old logic over vercel.json. A baseline run on origin/main was not possible (git worktree add denied by the task allowlist), so equivalence was derived by reading the old script" },
+    { "id": "o4", "status": "passed", "evidence": "node --test scripts/docs-artifacts-contract.test.mjs: pass 5, fail 0" },
+    { "id": "o5", "status": "passed", "evidence": "no @vercel/ in any package.json or pnpm-lock.yaml" },
+    { "id": "o6", "status": "passed", "evidence": "no vercel match in wrangler.toml, scripts/cloudflare-headers.mjs, .gitignore" },
+    { "id": "o7", "status": "passed", "evidence": "install, typecheck, test and build all exited 0" }
+  ]
+}

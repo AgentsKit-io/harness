@@ -70,10 +70,12 @@ test('the stats surface carries counts read from the repository, not typed into 
 
 test('the site is published by the one publisher the siblings use', () => {
   // A second publisher for the same hostname is a deployment nobody can reason about: DNS points one way, so
-  // whichever job ran last is what the domain served. Vercel builds every sibling; this repository declares
-  // the same contract and emits no CNAME.
-  const vercel = JSON.parse(readFileSync(resolve(publicRoot, '../../../vercel.json'), 'utf8'))
-  assert.equal(vercel.buildCommand, 'pnpm docs:build')
-  assert.equal(vercel.outputDirectory, 'apps/docs/out')
+  // whichever job ran last is what the domain served. Cloudflare publishes every sibling; this repository
+  // declares the same contract and emits no CNAME.
+  const pkg = JSON.parse(readFileSync(resolve(root, 'package.json'), 'utf8'))
+  const wrangler = readFileSync(resolve(root, 'wrangler.toml'), 'utf8')
+  assert.match(pkg.scripts['docs:build'], /^pnpm build && pnpm docs:artifacts && /)
+  assert.ok(pkg.scripts['cf:deploy'].startsWith('pnpm docs:build'), 'cf:deploy must build the docs first')
+  assert.match(wrangler, /^directory = "apps\/docs\/out"$/m)
   assert.ok(!existsSync(resolve(publicRoot, 'CNAME')), 'GitHub Pages is not a publisher for this site')
 })

@@ -1,0 +1,18 @@
+{
+  "project": [
+    { "id": "test-for-new-code", "status": "passed", "evidence": "scripts/docs-artifacts-contract.test.mjs changed (matches **/*.test.mjs)" },
+    { "id": "no-todo", "status": "passed", "evidence": "no changed file is under src/**" }
+  ],
+  "outcomes": [
+    { "id": "o1", "status": "passed", "evidence": "vercel.json deleted" },
+    { "id": "o2", "status": "passed", "evidence": "no vercel reference left in scripts, .github, wrangler.toml, package.json, .gitignore" },
+    { "id": "o3", "status": "passed", "evidence": "generated _headers equals the old output by construction; origin/main baseline run not possible in this sandbox" },
+    { "id": "o4", "status": "passed", "evidence": "5 of 5 tests pass" },
+    { "id": "o5", "status": "passed", "evidence": "no @vercel/* packages present (already a no-op)" },
+    { "id": "o6", "status": "passed", "evidence": "comments reworded" },
+    { "id": "o7", "status": "passed", "evidence": "typecheck, test, build exit 0" },
+    { "id": "o8", "status": "passed", "evidence": "no docs or generated tracked files changed; no reviewedOn/reviewDueOn touched" },
+    { "id": "o9", "status": "passed", "evidence": "single commit, not pushed" },
+    { "id": "o10", "status": "passed", "evidence": "no workflow or script used VERCEL_TOKEN; no secrets became unused" }
+  ]
+}
