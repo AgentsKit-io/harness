@@ -83,11 +83,12 @@ export const probeFleet = async (input: RunnerInput): Promise<readonly FleetProb
   const doctorArgs = quick ? ['doctor', '--quick', '--json'] : ['doctor', '--json']
   const doctor = await call(doctorArgs, quick ? timeoutMs : Math.max(timeoutMs, FULL_DOCTOR_TIMEOUT_MS))
   const label = `"${bin} ${doctorArgs.join(' ')}"`
-  if (doctor.timedOut || doctor.code !== 0) probes.push({ id: 'fleet.doctor', status: 'failed', detail: `${label} ${doctor.timedOut ? 'timed out' : `exited ${doctor.code ?? 'null'}`}${doctor.stderr.trim() ? `: ${doctor.stderr.trim().slice(0, 200)}` : ''}` })
+  let parsed: unknown = null
+  try { parsed = JSON.parse(doctor.stdout) } catch { /* reported below */ }
+  const record = typeof parsed === 'object' && parsed !== null && !Array.isArray(parsed) ? parsed as Record<string, unknown> : null
+  // `fleet doctor` exits non-zero when any check failed, so a non-zero exit with a JSON summary is judged by its checks; only a timeout or no summary at all is a failure.
+  if (doctor.timedOut || (doctor.code !== 0 && !record)) probes.push({ id: 'fleet.doctor', status: 'failed', detail: `${label} ${doctor.timedOut ? 'timed out' : `exited ${doctor.code ?? 'null'}`}${doctor.stderr.trim() ? `: ${doctor.stderr.trim().slice(0, 200)}` : ''}` })
   else {
-    let parsed: unknown = null
-    try { parsed = JSON.parse(doctor.stdout) } catch { /* reported below */ }
-    const record = typeof parsed === 'object' && parsed !== null && !Array.isArray(parsed) ? parsed as Record<string, unknown> : null
     if (!record) probes.push({ id: 'fleet.doctor', status: 'warning', detail: `${label} exited 0 but printed no JSON summary` })
     else {
       const checks = Array.isArray(record['checks']) ? record['checks'].filter((item): item is Record<string, unknown> => typeof item === 'object' && item !== null) : []
@@ -100,6 +101,7 @@ export const probeFleet = async (input: RunnerInput): Promise<readonly FleetProb
       // A failed summary that names no failing check cannot be shown harmless, so it blocks.
       const unexplained = failing.length === 0 && (record['ok'] === false || (overall !== null && ['failed', 'fail', 'error'].includes(overall)))
       const parts = [checks.length ? `${checks.length - failing.length}/${checks.length} checks ok` : (overall ?? 'ok')]
+      if (doctor.code !== 0) parts.push(`exit ${doctor.code}`)
       if (blocking.length > 0) parts.push(`blocking: ${blocking.slice(0, 5).map(describe).join(', ')}`)
       if (warned.length > 0) parts.push(`warnings: ${warned.slice(0, 5).map(describe).join(', ')}`)
       probes.push({ id: 'fleet.doctor', status: blocking.length > 0 || unexplained ? 'failed' : warned.length > 0 ? 'warning' : 'passed', detail: parts.join('; ') })

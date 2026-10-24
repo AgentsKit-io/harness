@@ -187,6 +187,21 @@ describe('loop doctor probes the selected runner', () => {
     expect(check?.detail).toContain('disk (low)')
   })
 
+  it('fleet: a quick doctor that exits 3 with only collector and slow-check failures is a warning', async () => {
+    const stdout = JSON.stringify({ status: 'failed', checks: [{ id: 'hosts', ok: true }, { id: 'project-in-fleet-file', ok: true }, { id: 'metrics-collector', ok: false, detail: 'no samples' }, { id: 'disk-usage', status: 'fail', message: 'slow' }] })
+    const env = makeFleetEnv({ quickDoctor: true, fleetDoctor: { code: 3, stdout, stderr: 'fleet: FLEET_DOCTOR_FAILED: at least one check failed', timedOut: false, durationMs: 1 } })
+    const check = (await doctorReport(env)).checks.find((item) => item.id === 'fleet.doctor')
+    expect(check).toMatchObject({ status: 'warning', detail: expect.stringContaining('metrics-collector (no samples)') })
+    expect(check?.detail).toContain('exit 3')
+  })
+
+  it('fleet: a non-zero doctor exit still blocks on a failing host check, or when it prints no JSON', async () => {
+    const host = makeFleetEnv({ fleetDoctor: { code: 3, stdout: JSON.stringify({ checks: [{ id: 'hosts', ok: false }] }), stderr: '', timedOut: false, durationMs: 1 } })
+    expect((await doctorReport(host)).checks.find((item) => item.id === 'fleet.doctor')).toMatchObject({ status: 'failed', detail: expect.stringContaining('blocking: hosts') })
+    const bare = makeFleetEnv({ fleetDoctor: { code: 3, stdout: '', stderr: 'boom', timedOut: false, durationMs: 1 } })
+    expect((await doctorReport(bare)).checks.find((item) => item.id === 'fleet.doctor')).toMatchObject({ status: 'failed', detail: expect.stringContaining('exited 3') })
+  })
+
   it('fleet: a missing agents host or project blocks, and a doctor that times out fails', async () => {
     const project = makeFleetEnv({ fleetDoctor: done(JSON.stringify({ checks: [{ id: 'project-in-fleet-file', ok: false, detail: 'not listed' }] })) })
     expect((await doctorReport(project)).checks.find((item) => item.id === 'fleet.doctor')).toMatchObject({ status: 'failed', detail: expect.stringContaining('blocking: project-in-fleet-file (not listed)') })
