@@ -1,0 +1,12 @@
+{
+  "ranAt": "2026-10-24T20:30:00Z",
+  "command": "grep checks only; node and pnpm could not run (node -v hangs in this sandbox)",
+  "exitCode": 1,
+  "outcomes": [
+    { "id": "o1", "status": "passed", "evidence": "git rm vercel.json; commit shows 'delete mode 100644 vercel.json'; no other vercel files were tracked" },
+    { "id": "o2", "status": "passed", "evidence": "grep -rIn -i vercel scripts .github wrangler.toml package.json .gitignore printed nothing" },
+    { "id": "o5", "status": "passed", "evidence": "grep for @vercel/(analytics|speed-insights) in pnpm-lock.yaml, package.json, apps/docs found nothing" },
+    { "id": "o6", "status": "passed", "evidence": "same grep: no vercel in wrangler.toml, cloudflare-headers.mjs, .gitignore" },
+    { "id": "o9", "status": "passed", "evidence": "header is 40 chars, body lines under 100, not pushed" }
+  ]
+}

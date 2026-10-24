@@ -1,0 +1,18 @@
+{
+  "project": [
+    { "id": "test-for-new-code", "status": "passed", "evidence": "scripts/docs-artifacts-contract.test.mjs changed (not executed: node hangs in this sandbox)" },
+    { "id": "no-todo", "status": "passed", "evidence": "no src/** file changed" }
+  ],
+  "outcomes": [
+    { "id": "o1", "status": "passed", "evidence": "vercel.json deleted; no other Vercel files tracked" },
+    { "id": "o2", "status": "passed", "evidence": "grep -i vercel over scripts .github wrangler.toml package.json .gitignore is empty" },
+    { "id": "o3", "status": "failed", "evidence": "not run: node hangs in this sandbox. Header data, order and HSTS logic were moved verbatim, so output should be identical, but it is unproven" },
+    { "id": "o4", "status": "failed", "evidence": "not run: node hangs in this sandbox" },
+    { "id": "o5", "status": "passed", "evidence": "no @vercel/analytics or speed-insights in lockfile, package.json or apps/docs" },
+    { "id": "o6", "status": "passed", "evidence": "no vercel in wrangler.toml, cloudflare-headers.mjs, .gitignore" },
+    { "id": "o7", "status": "failed", "evidence": "not run: node and pnpm hang in this sandbox" },
+    { "id": "o8", "status": "failed", "evidence": "not run; no generated files or reviewedOn lines were touched" },
+    { "id": "o9", "status": "passed", "evidence": "commit 'chore: remove Vercel deploy configuration', not pushed; no .changeset directory exists" },
+    { "id": "o10", "status": "passed", "evidence": "see final report; no workflow referenced VERCEL_TOKEN, so no secret became unused" }
+  ]
+}
