@@ -1,0 +1,14 @@
+{ "project": [
+  { "id": "test-for-new-code", "status": "passed", "evidence": "scripts/docs-artifacts-contract.test.mjs changed (now reads the neutral cloudflare-headers.config.mjs)" },
+  { "id": "no-todo", "status": "passed", "evidence": "no src/** file changed" }
+],
+"outcomes": [
+  { "id": "o1", "status": "passed", "evidence": "vercel.json removed; no .vercelignore or .vercel" },
+  { "id": "o2", "status": "passed", "evidence": "contract test passes without vercel.json" },
+  { "id": "o3", "status": "passed", "evidence": "_headers output identical before and after" },
+  { "id": "o4", "status": "passed", "evidence": "git grep -il vercel in deploy files: none" },
+  { "id": "o5", "status": "passed", "evidence": "no @vercel packages present" },
+  { "id": "o6", "status": "passed", "evidence": "frozen install, typecheck, test, build exit 0" },
+  { "id": "o7", "status": "passed", "evidence": "no ci workflow; bridge config check passed" },
+  { "id": "o8", "status": "passed", "evidence": "commit title matches, not pushed" }
+] }
