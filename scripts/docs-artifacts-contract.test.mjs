@@ -2,6 +2,7 @@ import assert from 'node:assert/strict'
 import { existsSync, readFileSync, readdirSync } from 'node:fs'
 import { test } from 'node:test'
 import { join, resolve } from 'node:path'
+import * as deploy from './cloudflare-headers.config.mjs'
 
 const root = resolve(import.meta.dirname, '..')
 const publicRoot = resolve(root, 'apps/docs/public')
@@ -70,10 +71,11 @@ test('the stats surface carries counts read from the repository, not typed into 
 
 test('the site is published by the one publisher the siblings use', () => {
   // A second publisher for the same hostname is a deployment nobody can reason about: DNS points one way, so
-  // whichever job ran last is what the domain served. Vercel builds every sibling; this repository declares
-  // the same contract and emits no CNAME.
-  const vercel = JSON.parse(readFileSync(resolve(publicRoot, '../../../vercel.json'), 'utf8'))
-  assert.equal(vercel.buildCommand, 'pnpm docs:build')
-  assert.equal(vercel.outputDirectory, 'apps/docs/out')
+  // whichever job ran last is what the domain served. Cloudflare publishes the site; this repository declares
+  // the build command and output directory in one place and emits no CNAME.
+  assert.equal(deploy.buildCommand, 'pnpm docs:build')
+  assert.equal(deploy.outputDirectory, 'apps/docs/out')
+  const rootPackage = JSON.parse(readFileSync(resolve(root, 'package.json'), 'utf8'))
+  assert.ok(rootPackage.scripts['docs:build'], 'the declared build command must exist in package.json')
   assert.ok(!existsSync(resolve(publicRoot, 'CNAME')), 'GitHub Pages is not a publisher for this site')
 })
