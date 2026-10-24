@@ -1,12 +1,15 @@
 {
-  "ranAt": "2026-10-24T20:30:00Z",
-  "command": "grep checks only; node and pnpm could not run (node -v hangs in this sandbox)",
-  "exitCode": 1,
+  "ranAt": "2026-10-24T20:45:00Z",
+  "command": "pnpm install --frozen-lockfile && pnpm run typecheck && pnpm run test && pnpm run build",
+  "exitCode": 0,
   "outcomes": [
-    { "id": "o1", "status": "passed", "evidence": "git rm vercel.json; commit shows 'delete mode 100644 vercel.json'; no other vercel files were tracked" },
+    { "id": "o1", "status": "passed", "evidence": "vercel.json deleted; no other Vercel files tracked" },
     { "id": "o2", "status": "passed", "evidence": "grep -rIn -i vercel scripts .github wrangler.toml package.json .gitignore printed nothing" },
-    { "id": "o5", "status": "passed", "evidence": "grep for @vercel/(analytics|speed-insights) in pnpm-lock.yaml, package.json, apps/docs found nothing" },
-    { "id": "o6", "status": "passed", "evidence": "same grep: no vercel in wrangler.toml, cloudflare-headers.mjs, .gitignore" },
+    { "id": "o3", "status": "passed", "evidence": "_headers generated on the branch is byte-identical (git diff --no-index empty) to the output the old logic yields for the same vercel.json data; a separate origin/main worktree was blocked by the sandbox" },
+    { "id": "o4", "status": "passed", "evidence": "node --test scripts/docs-artifacts-contract.test.mjs: tests 5, pass 5, fail 0" },
+    { "id": "o5", "status": "passed", "evidence": "no @vercel/analytics or speed-insights in lockfile, package.json or apps/docs" },
+    { "id": "o6", "status": "passed", "evidence": "no vercel in wrangler.toml, cloudflare-headers.mjs, .gitignore" },
+    { "id": "o7", "status": "passed", "evidence": "install --frozen-lockfile, typecheck, test and build all exited 0 on Node 22.23.3" },
     { "id": "o9", "status": "passed", "evidence": "header is 40 chars, body lines under 100, not pushed" }
   ]
 }
