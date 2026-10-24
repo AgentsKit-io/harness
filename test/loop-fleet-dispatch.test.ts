@@ -195,6 +195,27 @@ describe('loop doctor probes the selected runner', () => {
     expect(check?.detail).toContain('exit 3')
   })
 
+  // The shape `fleet doctor --quick --json` answers: checks nested under `orchestrator` and each of `hosts`.
+  const REAL_QUICK_DOCTOR = {
+    orchestrator: { checks: [{ id: 'coordinator', ok: true }, { id: 'collector:fleet-backup', ok: false, detail: 'no backup in 48h' }, { id: 'identity', ok: false, detail: 'alias mismatch' }] },
+    hosts: [{ id: 'instabox', checks: [{ id: 'ssh', ok: true }, { id: 'agent-cli', ok: true }] }, { id: 'builder', checks: [{ id: 'ssh', ok: true }] }],
+    ok: false,
+  }
+
+  it('fleet: reads the per-machine checks of a real quick doctor answer; collector and identity failures only warn', async () => {
+    const env = makeFleetEnv({ quickDoctor: true, fleetDoctor: { code: 3, stdout: JSON.stringify(REAL_QUICK_DOCTOR), stderr: 'fleet: FLEET_DOCTOR_FAILED', timedOut: false, durationMs: 1 } })
+    const check = (await doctorReport(env)).checks.find((item) => item.id === 'fleet.doctor')
+    expect(check).toMatchObject({ status: 'warning', detail: expect.stringContaining('collector:fleet-backup (no backup in 48h)') })
+    expect(check?.detail).toContain('identity (alias mismatch)')
+    expect(check?.detail).toContain('4/6 checks ok')
+  })
+
+  it('fleet: a failing check on a host of the real answer blocks and names the host', async () => {
+    const down = { ...REAL_QUICK_DOCTOR, hosts: [{ id: 'instabox', checks: [{ id: 'host-reachable', ok: false, detail: 'ssh timeout' }] }] }
+    const env = makeFleetEnv({ quickDoctor: true, fleetDoctor: { code: 3, stdout: JSON.stringify(down), stderr: '', timedOut: false, durationMs: 1 } })
+    expect((await doctorReport(env)).checks.find((item) => item.id === 'fleet.doctor')).toMatchObject({ status: 'failed', detail: expect.stringContaining('blocking: host-reachable @instabox (ssh timeout)') })
+  })
+
   it('fleet: a non-zero doctor exit still blocks on a failing host check, or when it prints no JSON', async () => {
     const host = makeFleetEnv({ fleetDoctor: { code: 3, stdout: JSON.stringify({ checks: [{ id: 'hosts', ok: false }] }), stderr: '', timedOut: false, durationMs: 1 } })
     expect((await doctorReport(host)).checks.find((item) => item.id === 'fleet.doctor')).toMatchObject({ status: 'failed', detail: expect.stringContaining('blocking: hosts') })
