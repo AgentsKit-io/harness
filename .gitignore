@@ -23,4 +23,3 @@ apps/docs/next-env.d.ts
 # Written by `next dev` (agentRules), not by us.
 apps/docs/AGENTS.md
 apps/docs/CLAUDE.md
-.vercel
