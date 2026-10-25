@@ -15,7 +15,7 @@ product; it is wired in as the claims file of the Documentation Standard check. 
 
 - `apps/docs/lib/shell.ts` imports `ecosystem.json` and builds the products shown in the site bar, tour and
   footer (the ones with `navigation.showInBar`).
-- `apps/docs/components/home/ecosystem.tsx` renders the ecosystem section of the home page from the same file.
+- `apps/docs/components/home/ecosystem.tsx` renders the ecosystem section of the home page from that product list.
 - `scripts/build-docs-artifacts.mjs` reads it when writing the machine-readable site surfaces.
 - `scripts/generate-doc-bridge-config.mjs` names it as the `ecosystemContract` manifest for the Documentation
   Standard check.

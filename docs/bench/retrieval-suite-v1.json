@@ -282,7 +282,7 @@
     },
     {
       "id": "question-event-log-tamper",
-      "input": "how is the lifecycle event log made tamper evident with a hash chain",
+      "input": "how can I tell whether someone edited or reordered an old record in a run events file",
       "expected": {
         "regex": {
           "body": "docs/ADR-0017-event-log-integrity\\.md"
@@ -298,7 +298,7 @@
     },
     {
       "id": "question-definition-of-done",
-      "input": "what are the two lists of the definition of done proofs",
+      "input": "where does the worker write the proof for each acceptance item and what happens when one is not proved",
       "expected": {
         "regex": {
           "body": "docs/ADR-0035-definition-of-done-two-lists\\.md|apps/docs/content/docs/concepts/definition-of-done\\.mdx"
@@ -315,7 +315,7 @@
     },
     {
       "id": "question-cost-ceilings",
-      "input": "cost policy ceilings and levers per provider budget",
+      "input": "how do I stop a runaway worker from spending the whole provider window I share with a human",
       "expected": {
         "regex": {
           "body": "docs/ADR-0037-cost-policy-ceilings-and-levers\\.md|apps/docs/content/docs/concepts/cost\\.mdx"
@@ -413,7 +413,7 @@
     },
     {
       "id": "question-docker-sandbox",
-      "input": "docker sandbox runtime for tool execution",
+      "input": "run agent tools isolated from the host with no network and a read-only root filesystem",
       "expected": {
         "regex": {
           "body": "docs/ADR-0010-docker-sandbox-runtime\\.md"

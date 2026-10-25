@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
-  "contentHash": "5f5ba16b5346f791a6902a98645a23fd980e1c68ec2bec0c257321a5a3f862d4",
+  "contentHash": "ff9506d94290256c2a2ddee8f4c0cbd66cd682daa50c2c21591a4131454254c2",
   "contentHashAlgo": "sha256-semantic-v1",
-  "generatedAt": "2026-10-25T01:23:28.314Z",
+  "generatedAt": "2026-10-25T01:52:10.991Z",
   "project": {
     "name": "AgentsKit Harness",
     "root": "."
@@ -964,7 +964,7 @@
         "agent",
         "package"
       ],
-      "contentHash": "f5e61ab572595a02ea3ced83b5709ef1ae4f568e07cbccc4687bb91c28254fa8"
+      "contentHash": "f7ebdf75c558360edc02a8cd9111ada25e88bb1566db414eefb0fa093963a596"
     },
     {
       "id": "document:docs/for-agents/packages/harness-site.md",
@@ -989,7 +989,7 @@
         "document",
         "human"
       ],
-      "contentHash": "5f479d2051aba1d19ab4dbedaeec47853320e999b124841ef42b291fee2f6417"
+      "contentHash": "05a7f2d7995fee72ea4becf27f70f7c5e76ab378ae9e7045f29818ab5e4b9d91"
     },
     {
       "id": "document:docs/LOOP.md",
@@ -1013,7 +1013,7 @@
         "document",
         "human"
       ],
-      "contentHash": "6e7fd1024772898dbe3a8dc18139b705354d25342ac616583ebf8a2c1b139c2b"
+      "contentHash": "7b47c14a0c2b87b4e66e94bda27f0f7186b0da83abfd4667a7f6fa04b7d01adc"
     },
     {
       "id": "document:docs/ORGANIZATION.md",
@@ -9651,7 +9651,7 @@
     }
   },
   "inputs": {
-    "hash": "eb93d89ac2dfb7523616ae5b5e7d2bb2d81a707735d4da9a5c5ae42291cd8bfb",
+    "hash": "ba7430f3cd5f201fc19cc52fbe3fb8a2957e5f4d24fc88eb906dfc5306321727",
     "fileCount": 614,
     "projectionVersion": 2
   },
@@ -9674,9 +9674,9 @@
   "projection": {
     "type": "retrieval-index",
     "schemaVersion": 1,
-    "contentHash": "7e8711919371436ed9d6a3aabc8787c682340d8e020dde92af83cf9723762ad2",
+    "contentHash": "25dc359b4877b7d0a7e3cb8490a05a92224d40a450037e6a14ce4c3010183b08",
     "contentHashAlgo": "sha256-semantic-v1",
-    "snapshotHash": "0fad0b95f58471e590784377cd68d6e9d4cb0f511c9e493dea3efd81ce7d6994",
+    "snapshotHash": "5f6dd2c50137f8113e51abac3939f5498c4aa5bb32eea9e8fa8041efb15e8b44",
     "overlayHash": "f99666ff9119084dd25c2974ae64eb6935ec2aa785ff5ad478fb9d541f7a5e94",
     "configurationHash": "497822431910cd9fa7d674a48a9f0b96fbbbf779f22a001de0b52252117fe3ab",
     "lexiconVersion": 1,
@@ -9708,7 +9708,7 @@
       ],
       "averageFieldLength": {
         "aliases": 2.925925925925926,
-        "body": 46.11447811447812,
+        "body": 46.13636363636363,
         "headings": 3.835016835016835,
         "path": 6.127946127946128,
         "summary": 2.8653198653198655,
@@ -10332,13 +10332,14 @@
         },
         "graph": {
           "pagerank": 0,
-          "inboundLinks": 4,
+          "inboundLinks": 5,
           "coveredBy": [],
           "mentionedBy": [
             "document:CHANGELOG.md",
             "document:docs/ADR-0027-keep-pushing-loop.md",
             "document:docs/ADR-0029-loop-resilience-pinning-intake.md",
-            "document:docs/LOOP.md"
+            "document:docs/LOOP.md",
+            "document:docs/MODULE-BOUNDARIES.md"
           ],
           "packageId": "package:@agentskit/harness",
           "inbound": [
@@ -10361,6 +10362,11 @@
               "kind": "mentions",
               "id": "document:docs/LOOP.md",
               "confidence": "fuzzy"
+            },
+            {
+              "kind": "mentions",
+              "id": "document:docs/MODULE-BOUNDARIES.md",
+              "confidence": "observed"
             }
           ],
           "outbound": []
@@ -15258,7 +15264,7 @@
           "path": "docs/for-agents/packages/ecosystem-manifest.md",
           "symbols": "",
           "summary": "ecosystem.json is the shared product catalog: the AgentsKit products, their navigation order, metadata and public URLs. ecosystem-claims.json holds the verifiable public claims (counts and their evidence) for each product; it is wired in as the claims file of the Documentation Standard check. The manifest feeds the site shell.",
-          "body": "Ecosystem manifest ecosystem.json is the shared product catalog: the AgentsKit products, their navigation order, metadata and public URLs. ecosystem-claims.json holds the verifiable public claims (counts and their evidence) for each product; it is wired in as the claims file of the Documentation Standard check. The manifest feeds the site shell. Who reads it - apps/docs/lib/shell.ts imports ecosystem.json and builds the products shown in the site bar, tour and footer (the ones with navigation.showInBar ). - apps/docs/components/home/ecosystem.tsx renders the ecosystem section of the home page from the same file. - scripts/build-docs-artifacts.mjs reads it when writing the machine-readable site surfaces. - scripts/generate-doc-bridge-config.mjs names it as the ecosystemContract manifest for the Documentation Standard check. Change rules - Keep the header order agentskit → registry → agentskit-chat → doc-bridge → code-review → harness ; Playbook stays catalogued with navigation.showInBar: false . - Do not add private or unreleased products. The verifier rejects public AKOS metadata. - A claim needs evidence in ecosystem-claims.json ; do not raise a number without it. Check node scripts/verify-ecosystem-public-outputs.mjs validates the header order, the Playbook and Code Review navigation flags, and the public outputs that mention the products.",
+          "body": "Ecosystem manifest ecosystem.json is the shared product catalog: the AgentsKit products, their navigation order, metadata and public URLs. ecosystem-claims.json holds the verifiable public claims (counts and their evidence) for each product; it is wired in as the claims file of the Documentation Standard check. The manifest feeds the site shell. Who reads it - apps/docs/lib/shell.ts imports ecosystem.json and builds the products shown in the site bar, tour and footer (the ones with navigation.showInBar ). - apps/docs/components/home/ecosystem.tsx renders the ecosystem section of the home page from that product list. - scripts/build-docs-artifacts.mjs reads it when writing the machine-readable site surfaces. - scripts/generate-doc-bridge-config.mjs names it as the ecosystemContract manifest for the Documentation Standard check. Change rules - Keep the header order agentskit → registry → agentskit-chat → doc-bridge → code-review → harness ; Playbook stays catalogued with navigation.showInBar: false . - Do not add private or unreleased products. The verifier rejects public AKOS metadata. - A claim needs evidence in ecosystem-claims.json ; do not raise a number without it. Check node scripts/verify-ecosystem-public-outputs.mjs validates the header order, the Playbook and Code Review navigation flags, and the public outputs that mention the products.",
           "aliases": "document agent package"
         },
         "graph": {
@@ -15295,7 +15301,7 @@
             }
           ]
         },
-        "contentHash": "f5e61ab572595a02ea3ced83b5709ef1ae4f568e07cbccc4687bb91c28254fa8",
+        "contentHash": "f7ebdf75c558360edc02a8cd9111ada25e88bb1566db414eefb0fa093963a596",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -15422,7 +15428,7 @@
           "path": "docs/GETTING-STARTED.md",
           "symbols": "",
           "summary": "Install the package, then run the included consumer example (examples/minimum-profile.mjs, from the examples directory):",
-          "body": "Getting started Install the package, then run the included consumer example ( examples/minimum-profile.mjs , from the examples directory): The example uses a fake profile in YOLO mode, a coding-agent adapter, a local Doc Bridge index, adversarial code review, and a dry-run tracking adapter. It prints a structured result and never performs a network mutation. For a real project, keep phase decisions in the kernel, select a named profile, and provide integrations through adapters. Start with mode: \"dry-run\" , inspect the evidence, then move to safe or yolo only after the preflight contract is current. The keep-pushing loop, from nothing to a first tick Four commands, in this order. Each one is safe to run again, and nothing before the last one touches your repository, your tracker or your schedule. 1. ak-harness loop init It asks only what a preset cannot answer — the repository, the project name, the Linear team and workspace, whose queue this machine drains — and writes loop.config.yaml from one of five presets ( web-app , library , monorepo , data-pipeline , mobile ). Everything the preset already says is left out of the file, so the config diff shows what this project decided. Use --dry-run to see the file it would write, --preset <name to skip the question, and --global to also create ~/.agentskit/harness.yaml (providers, binaries and notification channels, shared by every project on this machine — see for the four layers). 2. ak-harness loop doctor Nothing is dispatched. It checks Orca and its version, the provider CLIs and their remaining usage, the routing decision for each role, this machine's free slots, the Linear queue, the review CLI, the installed agents your registry points at, and the flow profiles your rules reference. Read this output before anything else — it is the answer to \"why isn't it working\" about nine times out of ten. Exit code 1 means at least one check failed. Then rehearse a tick without touching anything: It prints exactly what it would do: which issue, which contract, which worktree and which model — and writes nothing. 3. ak-harness loop install The guided install: the doctor checks again, an optional dry-run rehearsal, an offer to create loop.config.local.yaml for this machine, and then — after you confirm — the Orca automations that run loop stage tick and loop stage deliver on the schedule in schedule. . It is idempotent by name, so running it again reconciles rather than duplicates. --dry-run shows the exact orca argv and creates nothing; --yes accepts every prompt for a non-interactive install. 4. The first real tick The schedule will do this by itself from now on; running it once by hand is how you watch it happen: Do not run tick / deliver by hand on a project whose automations already run them: that races the scheduled run and can double-dispatch. Once installed, use the read-only commands instead — loop debrief (what is the loop doing right now), loop observe (anomalies and metrics), loop retro --since 7d (how it has been doing), loop paused (what it stopped on). The worker writes three files into its worktree at .ak-loop/ — plan.md , verify.json and dod.json — and the loop advances on those rather than on what a terminal said. A missing one comes back to the worker as a fix round naming the file ( ). The commands above are implemented in src/loop/init.ts , src/loop/doctor.ts , src/loop/install.ts , src/loop/tick.ts , src/loop/deliver.ts , src/loop/watch.ts , src/loop/debrief.ts and src/loop/retro.ts . Full reference, including Orca automations, Doc Bridge and agentskit-review wiring: . When something is stuck: .",
+          "body": "Getting started Install the package, then run the included consumer example ( examples/minimum-profile.mjs , from the examples directory): The example uses a fake profile in YOLO mode, a coding-agent adapter, a local Doc Bridge index, adversarial code review, and a dry-run tracking adapter. It prints a structured result and never performs a network mutation. For a real project, keep phase decisions in the kernel, select a named profile, and provide integrations through adapters. Start with mode: \"dry-run\" , inspect the evidence, then move to safe or yolo only after the preflight contract is current. The keep-pushing loop, from nothing to a first tick Four commands, in this order. Each one is safe to run again, and nothing before the last one touches your repository, your tracker or your schedule. 1. ak-harness loop init It asks only what a preset cannot answer — the repository, the project name, the Linear team and workspace, whose queue this machine drains — and writes loop.config.yaml from one of five presets ( web-app , library , monorepo , data-pipeline , mobile ). Everything the preset already says is left out of the file, so the config diff shows what this project decided. Use --dry-run to see the file it would write, --preset <name to skip the question, and --global to also create ~/.agentskit/harness.yaml (providers, binaries and notification channels, shared by every project on this machine — see for the four layers). 2. ak-harness loop doctor Nothing is dispatched. It checks Orca and its version, the provider CLIs and their remaining usage, the routing decision for each role, this machine's free slots, the Linear queue, the review CLI, the installed agents your registry points at, and the flow profiles your rules reference. Read this output before anything else — it is the answer to \"why isn't it working\" about nine times out of ten. Exit code 1 means at least one check failed. Then rehearse a tick without touching anything: It prints exactly what it would do: which issue, which contract, which worktree and which model — and writes nothing. 3. ak-harness loop install The guided install: the doctor checks again, an optional dry-run rehearsal, an offer to create loop.config.local.yaml for this machine, and then — after you confirm — the Orca automations that run loop stage tick and loop stage deliver on the schedule in schedule. . It is idempotent by name, so running it again reconciles rather than duplicates. --dry-run shows the exact orca argv and creates nothing; --yes accepts every prompt for a non-interactive install. 4. The first real tick The schedule will do this by itself from now on; running it once by hand is how you watch it happen: Do not run tick / deliver by hand on a project whose automations already run them: that races the scheduled run and can double-dispatch. Once installed, use the read-only commands instead — loop debrief (what is the loop doing right now), loop observe (anomalies and metrics), loop retro --since 7d (how it has been doing), loop paused (what it stopped on). The worker writes three files into its worktree at .ak-loop/ — plan.md , verify.json and dod.json — and the loop advances on those rather than on what a terminal said. A missing one comes back to the worker as a fix round naming the file ( ). The commands above are implemented in src/loop/init.ts , src/loop/doctor.ts , src/loop/guided-install.ts , src/loop/install.ts , src/loop/tick.ts , src/loop/deliver.ts , src/loop/watch.ts , src/loop/debrief.ts and src/loop/retro.ts . Full reference, including Orca automations, Doc Bridge and agentskit-review wiring: . When something is stuck: .",
           "aliases": "document human"
         },
         "graph": {
@@ -15498,6 +15504,11 @@
             },
             {
               "kind": "mentions",
+              "id": "module:src/loop/guided-install.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "mentions",
               "id": "module:src/loop/init.ts",
               "confidence": "observed"
             },
@@ -15523,7 +15534,7 @@
             }
           ]
         },
-        "contentHash": "5f479d2051aba1d19ab4dbedaeec47853320e999b124841ef42b291fee2f6417",
+        "contentHash": "05a7f2d7995fee72ea4becf27f70f7c5e76ab378ae9e7045f29818ab5e4b9d91",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -15832,7 +15843,7 @@
           "path": "docs/MODULE-BOUNDARIES.md",
           "symbols": "",
           "summary": "This document is the reviewed starting point for the 0.4.0 work. It describes the repository at revision f4b2b092af97d528bd5fe5955ed38f101521b98d (the main baseline captured on 2026-09-10) and is intentionally descriptive: it does not claim that the proposed 0.4.0 boundary has already been accepted.",
-          "body": "Module and boundary inventory (H-040) This document is the reviewed starting point for the 0.4.0 work. It describes the repository at revision f4b2b092af97d528bd5fe5955ed38f101521b98d (the main baseline captured on 2026-09-10) and is intentionally descriptive: it does not claim that the proposed 0.4.0 boundary has already been accepted. Classification Class Meaning Dependency rule --- --- --- Kernel Deterministic contracts, state transitions, policy and metric projections May use Node standard library and other kernel modules; must not import adapters, provider SDKs, CLI composition, credentials, or UI libraries ( ink / react are composition-only). Execution support Local process, filesystem, event, evidence, and run lifecycle plumbing May depend on the kernel; must expose provenance and fail closed at trust boundaries. Adapter Provider-specific or external-system integration May depend on kernel contracts; must not be imported by kernel modules. Composition Package and CLI entry points May compose kernel, execution support, and adapters; consumers use src/index.ts . The directories behind those classes are src/kernel (kernel), src/execution (execution support), src/delivery (delivery gates), src/profiles and src/context (profiles and context providers) and src/adapters (adapters). Complete source inventory Every current TypeScript module is listed below. Relative imports are the observed imports at the baseline revision; stdlib means Node's built-in modules, not a provider dependency. Module Class Responsibility Relative dependencies External boundary --- --- --- --- --- src/kernel/constants.ts Kernel State, decision, and surface constants types (type-only) None src/kernel/errors.ts Kernel Typed fail-closed errors None None src/kernel/hash.ts Kernel SHA-256 and JSON digests stdlib None src/kernel/types.ts Kernel Shared contract, run, evidence, and metric types context (type-only) None src/kernel/state-machine.ts Kernel Legal lifecycle transitions and human decisions constants , types None src/kernel/discovery.ts Kernel Discovery freshness, ambiguity, and decision packets errors , hash None src/kernel/wip.ts Kernel WIP admission and capacity decisions errors None src/kernel/experiment.ts Kernel Comparable runtime/provider selection errors None src/delivery/index.ts Delivery G2–G5 delivery gates and deterministic PR projection errors , hash None src/delivery/review.ts Delivery Bounded parallel adversarial review lenses and evidence verdicts errors , hash , workflow , delivery/index (type-only) Reviewer callback supplied by caller src/kernel/cycle.ts Kernel Bounded improvement-cycle assessment stdlib, errors None src/kernel/eval.ts Kernel Versioned eval manifest validation, deterministic battery runner, min/median/max aggregation, and fail-closed assessment errors , hash Grader callback supplied by caller src/kernel/compatibility.ts Kernel Pinned AgentsKit component manifest and evidence-bound compatibility assessment errors , hash Upstream commands and reports supplied by caller src/kernel/cache.ts Kernel Safe cache keys and in-memory LLM cache contract hash , errors Cache backend supplied by caller src/kernel/optimization.ts Kernel Token, memory, cache, parallelism comparisons hash , errors None src/kernel/memory.ts Kernel Memory record validation and memory adapter contract errors KV store supplied by caller src/kernel/policy.ts Kernel Tool/action policy gate errors None src/kernel/preflight.ts Kernel File-scoped checks and safe-command validation stdlib, errors Shell command is data, never executed here src/kernel/block.ts Kernel Portable execution block manifest and dependency admission errors , hash None src/kernel/learning.ts Kernel Retrospective parsing and human learning promotion stdlib, errors None src/kernel/status.ts Kernel Deterministic status snapshot and digest errors , hash , block , types (type-only) None src/kernel/model-policy.ts Kernel Role-to-model binding and validation errors , hash Provider is data, not ",
+          "body": "Module and boundary inventory (H-040) This document is the reviewed starting point for the 0.4.0 work. It describes the repository at revision f4b2b092af97d528bd5fe5955ed38f101521b98d (the main baseline captured on 2026-09-10) and is intentionally descriptive: it does not claim that the proposed 0.4.0 boundary has already been accepted. Classification Class Meaning Dependency rule --- --- --- Kernel Deterministic contracts, state transitions, policy and metric projections May use Node standard library and other kernel modules; must not import adapters, provider SDKs, CLI composition, credentials, or UI libraries ( ink / react are composition-only). Execution support Local process, filesystem, event, evidence, and run lifecycle plumbing May depend on the kernel; must expose provenance and fail closed at trust boundaries. Adapter Provider-specific or external-system integration May depend on kernel contracts; must not be imported by kernel modules. Composition Package and CLI entry points May compose kernel, execution support, and adapters; consumers use src/index.ts . The main source directories are src/kernel (kernel), src/execution (execution support), src/adapters (adapters), src/loop , src/cli.ts and src/index.ts (composition); the inventory below gives src/delivery (delivery gates), src/profiles and src/context their own Delivery, Profiles and Context rows. Complete source inventory Every current TypeScript module is listed below. Relative imports are the observed imports at the baseline revision; stdlib means Node's built-in modules, not a provider dependency. Module Class Responsibility Relative dependencies External boundary --- --- --- --- --- src/kernel/constants.ts Kernel State, decision, and surface constants types (type-only) None src/kernel/errors.ts Kernel Typed fail-closed errors None None src/kernel/hash.ts Kernel SHA-256 and JSON digests stdlib None src/kernel/types.ts Kernel Shared contract, run, evidence, and metric types context (type-only) None src/kernel/state-machine.ts Kernel Legal lifecycle transitions and human decisions constants , types None src/kernel/discovery.ts Kernel Discovery freshness, ambiguity, and decision packets errors , hash None src/kernel/wip.ts Kernel WIP admission and capacity decisions errors None src/kernel/experiment.ts Kernel Comparable runtime/provider selection errors None src/delivery/index.ts Delivery G2–G5 delivery gates and deterministic PR projection errors , hash None src/delivery/review.ts Delivery Bounded parallel adversarial review lenses and evidence verdicts errors , hash , workflow , delivery/index (type-only) Reviewer callback supplied by caller src/kernel/cycle.ts Kernel Bounded improvement-cycle assessment stdlib, errors None src/kernel/eval.ts Kernel Versioned eval manifest validation, deterministic battery runner, min/median/max aggregation, and fail-closed assessment errors , hash Grader callback supplied by caller src/kernel/compatibility.ts Kernel Pinned AgentsKit component manifest and evidence-bound compatibility assessment errors , hash Upstream commands and reports supplied by caller src/kernel/cache.ts Kernel Safe cache keys and in-memory LLM cache contract hash , errors Cache backend supplied by caller src/kernel/optimization.ts Kernel Token, memory, cache, parallelism comparisons hash , errors None src/kernel/memory.ts Kernel Memory record validation and memory adapter contract errors KV store supplied by caller src/kernel/policy.ts Kernel Tool/action policy gate errors None src/kernel/preflight.ts Kernel File-scoped checks and safe-command validation stdlib, errors Shell command is data, never executed here src/kernel/block.ts Kernel Portable execution block manifest and dependency admission errors , hash None src/kernel/learning.ts Kernel Retrospective parsing and human learning promotion stdlib, errors None src/kernel/status.ts Kernel Deterministic status snapshot and digest errors , hash , block , types (type-only) None src/kernel/model-policy.ts",
           "aliases": "document human"
         },
         "graph": {
@@ -15893,6 +15904,11 @@
             },
             {
               "kind": "mentions",
+              "id": "area:src/loop",
+              "confidence": "observed"
+            },
+            {
+              "kind": "mentions",
               "id": "area:src/profiles",
               "confidence": "observed"
             },
@@ -15919,11 +15935,6 @@
             {
               "kind": "mentions",
               "id": "module:src/adapters/orca.ts",
-              "confidence": "observed"
-            },
-            {
-              "kind": "mentions",
-              "id": "module:src/adapters/providers.ts",
               "confidence": "observed"
             },
             {
@@ -16178,7 +16189,7 @@
             }
           ]
         },
-        "contentHash": "6e7fd1024772898dbe3a8dc18139b705354d25342ac616583ebf8a2c1b139c2b",
+        "contentHash": "7b47c14a0c2b87b4e66e94bda27f0f7186b0da83abfd4667a7f6fa04b7d01adc",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -20557,10 +20568,9 @@
         },
         "graph": {
           "pagerank": 0,
-          "inboundLinks": 2,
+          "inboundLinks": 1,
           "coveredBy": [],
           "mentionedBy": [
-            "document:docs/MODULE-BOUNDARIES.md",
             "document:docs/ADR-0029-loop-resilience-pinning-intake.md"
           ],
           "areaId": "area:src/adapters",
@@ -20639,11 +20649,6 @@
             {
               "kind": "imports",
               "id": "module:test/routing-dynamic.test.ts",
-              "confidence": "observed"
-            },
-            {
-              "kind": "mentions",
-              "id": "document:docs/MODULE-BOUNDARIES.md",
               "confidence": "observed"
             },
             {
@@ -31361,15 +31366,22 @@
         },
         "graph": {
           "pagerank": 0,
-          "inboundLinks": 0,
+          "inboundLinks": 1,
           "coveredBy": [],
-          "mentionedBy": [],
+          "mentionedBy": [
+            "document:docs/GETTING-STARTED.md"
+          ],
           "areaId": "area:src/loop",
           "packageId": "package:@agentskit/harness",
           "inbound": [
             {
               "kind": "imports",
               "id": "module:src/loop/ui/terminal.tsx",
+              "confidence": "observed"
+            },
+            {
+              "kind": "mentions",
+              "id": "document:docs/GETTING-STARTED.md",
               "confidence": "observed"
             },
             {
