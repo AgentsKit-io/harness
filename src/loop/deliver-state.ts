@@ -47,6 +47,8 @@ export interface DeliveryState {
   readonly lostTrackSince?: string | null
   /** Passes in a row where a merge GitHub accepted could not be read back as merged at the reviewed head (ADR-0046). */
   readonly mergeUnconfirmed?: number
+  /** A fleet fix task in flight: cut from `head` (the PR head it was sent for), collected and pushed to the PR branch when done. */
+  readonly fleetFix?: { readonly workspaceId: string; readonly head: string; readonly kind: 'ci' | 'review' | 'conflict' } | null
 }
 
 export const deliveryStatePath = (stateDir: string, identifier: string): string => join(stateDir, 'issues', identifier, 'delivery.json')
