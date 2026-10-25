@@ -1,5 +1,7 @@
 # ADR-0011: Runtime attestation in tool evidence
 
+Code: `src/execution/runtime.ts` (`DockerRuntimeEvidence`), `src/kernel/events.ts` (`tool.completed` event).
+
 ## Status
 
 Accepted

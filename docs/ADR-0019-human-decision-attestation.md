@@ -1,5 +1,7 @@
 # ADR-0019: Record human decisions as attested lifecycle events
 
+Code: `src/execution/verification.ts` (`recordDecision`), `src/kernel/events.ts` (event types).
+
 ## Context
 
 The verification result is now attested before approval, but the approval and

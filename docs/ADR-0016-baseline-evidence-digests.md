@@ -1,5 +1,7 @@
 # ADR-0016: Baseline evidence digests
 
+Code: `src/execution/metrics.ts` (`evidenceDigest`), `src/cli.ts` (`benchmark baseline`).
+
 ## Context
 
 Criterion coverage and directional metrics can still be detached from the

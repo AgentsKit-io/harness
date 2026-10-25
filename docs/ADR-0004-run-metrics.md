@@ -1,5 +1,7 @@
 # ADR-0004: Derive benchmark metrics from immutable run projections
 
+Code: `src/execution/metrics.ts` (`benchmarkRuns`), `src/execution`.
+
 ## Status
 
 Accepted

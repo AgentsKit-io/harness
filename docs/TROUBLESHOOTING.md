@@ -21,4 +21,4 @@ are excluded from improvement claims and can block a configured quality gate.
 
 Use the process runtime for a local shell-free boundary or the Docker runtime
 when isolation is required. Both report timeout, cancellation, output-limit,
-and non-zero-exit failures as structured evidence.
+and non-zero-exit failures as structured evidence. Both runtimes live in `src/execution/runtime.ts`.
