@@ -117,7 +117,7 @@
     "zod": "^4.6.7"
   },
   "devDependencies": {
-    "@agentskit/doc-bridge": "2.4.0",
+    "@agentskit/doc-bridge": "2.4.2",
     "@radix-ui/react-radio-group": "^1.5.1",
     "@radix-ui/react-slot": "^1.5.0",
     "@tailwindcss/vite": "^4.3.3",
