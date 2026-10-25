@@ -592,15 +592,25 @@ different instructions, and the loop keeps them apart. A reviewer reads evidence
 ### Verdict levels, patch binding and the merge policy (ADR-0046)
 
 A proof states how far it was verified, not just pass/fail — `"verdict"` is one of `failed`, `blocked`,
-`type-check-only`, `unit-verified`, `ci-verified`, `live-verified` (weakest first); the legacy `"status": "passed"` still works and
+`type-check-only`, `unit-verified`, `fleet-verified`, `ci-verified`, `live-verified` (weakest first); the legacy `"status": "passed"` still works and
 reads as `unit-verified`. The PR's DoD table and the merged comment show the level per item.
 
 For a `fleet` task the harness proves the DoD on a checkout of the collected commit. With `merge.requireChecks` on
 and the PR's CI green on the head, the repository verification (the `verify` item, or an item/outcome whose command
 is `delivery.verifyCommand`) is `ci-verified` — CI ran it, the control machine does not run it again; `loop debrief`
-lists those items. Other commands still run locally, after the repo's frozen install (`packageManager`, else the
-lockfile) under the Node it pins (`.nvmrc`, `.node-version`, exact-major `engines.node`; via `fnm` or `mise` when
-present). A missing module or a wrong engine there is `blocked: environment`, not a failure of the change.
+lists those items. Every other command runs **as one fleet task** on the PR head (`fleet submit --base <head>`,
+read-only except its own worktree): the task prints the exit code and log tail per command on a
+`LOOP-VERIFY-RESULT:` line, and the harness judges it — exit 0 is `fleet-verified` with the task id (`q-…`) as
+evidence. Until the task answers the issue is `waiting`; a task that ends without a result is `blocked`. State:
+`<stateDir>/issues/<id>/fleet-verify.json`; a judged head is never submitted again.
+
+Ids in `connectors.fleet.localOnly` (secrets, homolog, Docker on the Mac) still run on the control machine, after
+the repo's frozen install (`packageManager`, else the lockfile) under the Node it pins (`.nvmrc`, `.node-version`,
+exact-major `engines.node`; via `fnm` or `mise` when present). A missing module or a wrong engine there is
+`blocked: environment`, not a failure of the change. Every local verify — these, and `delivery.verify.argv` before
+the review — runs **one at a time across all loops on the machine** (the `.stage-control-verify.lock` in the user
+state dir, `$AK_HARNESS_HOME` or `~/.agentskit`) and only while the machine is quiet: swap under 2 GiB and load
+under 1 per core. Otherwise it is `waiting: control machine busy (…)`, never a failure.
 
 ```json
 { "outcomes": [{ "id": "o1", "verdict": "live-verified", "evidence": "curl /health → 200 against the staging stack" }] }

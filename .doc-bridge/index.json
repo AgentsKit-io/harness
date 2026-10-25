@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
-  "contentHash": "0360e84b88c1400cffb7d28f009b7489e3296c9bf7cb19a532a9fc6dd4441d50",
+  "contentHash": "175b82f8eb51e4b31bfad02da7de93a43cef5bfb107a9c943782b7e8c501c223",
   "contentHashAlgo": "sha256-semantic-v1",
-  "generatedAt": "2026-10-25T03:19:06.101Z",
+  "generatedAt": "2026-10-25T15:47:39.995Z",
   "project": {
     "name": "AgentsKit Harness",
     "root": "."
@@ -939,7 +939,7 @@
         "document",
         "human"
       ],
-      "contentHash": "acb1b07bb06ac0a365c8cbe5c3bf8284668b21c26a6df5a27a9160b9ff62e03e"
+      "contentHash": "7cd3c43d43e936f2bc32c83786448e4cd74f03dc9c704e8e9f83a9f34e8772f1"
     },
     {
       "id": "document:docs/ADR-0047-independent-verifier-and-structured-lessons.md",
@@ -1001,7 +1001,7 @@
         "document",
         "human"
       ],
-      "contentHash": "703c0e76e6d690635f0605489b346dfeb060263951f75a783fb16c8ac2b709b5"
+      "contentHash": "acafc816993b0bfde40f74e76d4706ee183e890872eea156d92a145cb5503c89"
     },
     {
       "id": "document:docs/MODULE-BOUNDARIES.md",
@@ -4041,7 +4041,7 @@
         "ts",
         "loop"
       ],
-      "contentHash": "72d117685b87c3ff68ea0b228be890f3958b9231da8779b90b61ddacf5c7fe52"
+      "contentHash": "2aef819bc77f17a5b9bffd4f426dbe38a0cdbfc53315145898352f7c6118c2ce"
     },
     {
       "id": "module:src/loop/connectors.ts",
@@ -4104,6 +4104,31 @@
         "loop"
       ],
       "contentHash": "a4bc670c429207e41528df1c72d2892879a868463ce13b33abbd0302a09c7650"
+    },
+    {
+      "id": "module:src/loop/control-machine.ts",
+      "type": "module",
+      "title": "control-machine.ts",
+      "path": "src/loop/control-machine.ts",
+      "symbols": [
+        "CONTROL_LOAD_PER_CORE_LIMIT",
+        "CONTROL_LOCK",
+        "CONTROL_SWAP_LIMIT_BYTES",
+        "ControlMachineGate",
+        "ControlPressure",
+        "ControlRun",
+        "controlMachineBusy",
+        "createControlMachineGate",
+        "parseSwapUsage",
+        "sampleControlMachine",
+        "userStateDir"
+      ],
+      "tags": [
+        "module",
+        "ts",
+        "loop"
+      ],
+      "contentHash": "175f060966f72c2fd921d6192e2c7832e9a879038259abb9559bc0026cff5291"
     },
     {
       "id": "module:src/loop/cooldown.ts",
@@ -4203,7 +4228,7 @@
         "ts",
         "loop"
       ],
-      "contentHash": "c4bf75bb024b44df530d04b47e33bcc4f7dc2adcb937251d1b9b76c523abe1bc"
+      "contentHash": "05ea2370558e6a2fe7c0a3c773638c26d24538eb1dc0115ae765578034db1c50"
     },
     {
       "id": "module:src/loop/detached-worker.ts",
@@ -4406,7 +4431,7 @@
         "ts",
         "loop"
       ],
-      "contentHash": "36944553cb5398941fb2d26af2309c40a84c6812622cebcbd87074ed806c4c28"
+      "contentHash": "5ec75ef673ab9c5baa6726a674af95473f33bbe8df2c46700a24a0f205aec0e8"
     },
     {
       "id": "module:src/loop/fleet-handoff.ts",
@@ -4442,6 +4467,27 @@
         "loop"
       ],
       "contentHash": "da7111a89129e8e1ee8e865ca1f919c716186cc020c51a41350508df6831843c"
+    },
+    {
+      "id": "module:src/loop/fleet-verify.ts",
+      "type": "module",
+      "title": "fleet-verify.ts",
+      "path": "src/loop/fleet-verify.ts",
+      "symbols": [
+        "FleetVerifyCommand",
+        "FleetVerifyInput",
+        "FleetVerifyResult",
+        "fleetVerifyStatePath",
+        "parseFleetVerifyResult",
+        "renderFleetVerifyBrief",
+        "verifyOnFleet"
+      ],
+      "tags": [
+        "module",
+        "ts",
+        "loop"
+      ],
+      "contentHash": "9fd571c4ace13a9d681f246cb2580c8bd862d3dfff813cd3a7ff011c428cc69f"
     },
     {
       "id": "module:src/loop/flows.ts",
@@ -5831,7 +5877,7 @@
         "ts",
         "loop"
       ],
-      "contentHash": "2e5a72485b52bee6ad79b32a5401eb36fca9138626d8838a16580cc314e38e43"
+      "contentHash": "f7499596fdc31c6f63a41464332f4e8557300b459e447c86a4b04c08c18ff36c"
     },
     {
       "id": "module:src/loop/verifier.ts",
@@ -6048,7 +6094,7 @@
         "ts",
         "api"
       ],
-      "contentHash": "0fbdc41e84cb738c110693a6447dd789d8c72f3a88d272e837d245b4abdd689e"
+      "contentHash": "5353252ab20f3787853f1e06aa172e52f856ba787d4d989c6c0afb58a1347fc6"
     },
     {
       "id": "module:src/ui/api/config-view.ts",
@@ -8287,6 +8333,18 @@
       "contentHash": "0f3b9e6e8b545491e6da4a138fa2a88e66598ad1bcbd366e6da11ac22926bd14"
     },
     {
+      "id": "module:test/loop-control-machine.test.ts",
+      "type": "module",
+      "title": "loop-control-machine.test.ts",
+      "path": "test/loop-control-machine.test.ts",
+      "tags": [
+        "module",
+        "ts",
+        "test"
+      ],
+      "contentHash": "738b1198ba4e6a85a1944b24187b04fa1c7e670ef64ae7c85521c854808f5791"
+    },
+    {
       "id": "module:test/loop-cooldown-gaps.test.ts",
       "type": "module",
       "title": "loop-cooldown-gaps.test.ts",
@@ -8332,7 +8390,7 @@
         "ts",
         "test"
       ],
-      "contentHash": "e3bcb0eb2185808539ecbd747abf61bc88977aade4ff6f9bd309db06f2ad7adc"
+      "contentHash": "f2096d2fbd013cb283a3f99b4cdc7a98db8d4af98805be8f8f7d5fcb5a22ad67"
     },
     {
       "id": "module:test/loop-doctor-gaps.test.ts",
@@ -8452,7 +8510,7 @@
         "ts",
         "test"
       ],
-      "contentHash": "7f3874216668f7eeda87d4297461107b5e4b2a17c05d0230c134bbae213cfa6d"
+      "contentHash": "70d202ae9c081ef37f04afda896ad58dd99e8edb9030ca778374f987da2ffce6"
     },
     {
       "id": "module:test/loop-fleet-handoff.test.ts",
@@ -9028,7 +9086,7 @@
         "ts",
         "test"
       ],
-      "contentHash": "1ef105f2cacc860b15cac642ce121d007b342f1540fc93f94cc56c4e1e273f54"
+      "contentHash": "91547f2d83d59688aab027edfd73c0f8bdbe2417ea8f79370f0cb6eeeb380c5a"
     },
     {
       "id": "module:test/loop-verifier.test.ts",
@@ -9668,8 +9726,8 @@
     }
   },
   "inputs": {
-    "hash": "af54442cc1d06585da20753e4dc2e873b06929a8530fedd2f9d09b9e61180bd8",
-    "fileCount": 614,
+    "hash": "8af4ee1ce1ae3226788d381ebbe9daafa77a7ee24efb6af154f8a4bf0857e515",
+    "fileCount": 617,
     "projectionVersion": 2
   },
   "retrieval": {
@@ -9691,9 +9749,9 @@
   "projection": {
     "type": "retrieval-index",
     "schemaVersion": 1,
-    "contentHash": "5594f2d211356ee7e0b62070d9cf90259a48365d5de71270751ff069ff7dfa41",
+    "contentHash": "140f04c1f04eee348f3ac97c0891e5f3a9a660db2019e5183ceb0a77c35eaf56",
     "contentHashAlgo": "sha256-semantic-v1",
-    "snapshotHash": "1225624e2cfe36e436a9c29fc991ba2dbc91ef3ac8f88a933b0a4a5086e0defb",
+    "snapshotHash": "79518456e7d50db351488a1c3f7b1a27239f31986db31474cc195493f42cac9a",
     "overlayHash": "f99666ff9119084dd25c2974ae64eb6935ec2aa785ff5ad478fb9d541f7a5e94",
     "configurationHash": "497822431910cd9fa7d674a48a9f0b96fbbbf779f22a001de0b52252117fe3ab",
     "lexiconVersion": 1,
@@ -9713,7 +9771,7 @@
     },
     "lexical": {
       "version": 1,
-      "documentCount": 595,
+      "documentCount": 598,
       "fieldNames": [
         "aliases",
         "body",
@@ -9724,13 +9782,13 @@
         "title"
       ],
       "averageFieldLength": {
-        "aliases": 2.926050420168067,
-        "body": 46.06050420168067,
-        "headings": 3.8285714285714287,
-        "path": 6.127731092436975,
-        "summary": 2.8605042016806723,
-        "symbols": 13.959663865546219,
-        "title": 4.020168067226891
+        "aliases": 2.9264214046822743,
+        "body": 45.824414715719065,
+        "headings": 3.809364548494983,
+        "path": 6.12876254180602,
+        "summary": 2.8461538461538463,
+        "symbols": 14.013377926421406,
+        "title": 4.023411371237458
       }
     },
     "entries": [
@@ -10388,7 +10446,7 @@
           ],
           "outbound": []
         },
-        "contentHash": "83cdac93e7a6158b99d7e147dd5ac6748afe4405b536ef31d4ec2d6a6bc885e1",
+        "contentHash": "384d912cbb0c2a4d7fbe661e0bde91d4be6eb844741e179942e2d1c7d88e5904",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -10535,7 +10593,7 @@
           ],
           "outbound": []
         },
-        "contentHash": "bb0c71b708a48f2813f2b3d4d983e7162807eb2565afbfbeeef1ee6bf089517e",
+        "contentHash": "1f166fa61d9eb319699ef7e385ec205673f93b6e4601ec2dca00cc8e1c535300",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -12089,7 +12147,7 @@
           "path": "apps/docs/content/docs/reference/configuration.mdx",
           "symbols": "",
           "summary": "{/* Generated by `pnpm docs:generate`. Do not edit by hand: edit `src/loop/config.ts` and regenerate. */}",
-          "body": "{/ Generated by pnpm docs:generate . Do not edit by hand: edit src/loop/config.ts and regenerate. /} The four layers that produce this configuration — the machine's global file, the project's, the team's and this machine's overlay — are described in . ak-harness loop validate prints the effective result, which is the only one that decides anything. 231 of 427 paths carry no description yet. schemaVersion Type: number · Default: 1 extends Defaults for this kind of project ( web-app , library , monorepo , data-pipeline , mobile ), merged below every other layer. Anything this file states wins over the preset; the preset only fills silence. Type: string project Path Type Default Description --- --- --- --- project.name string required project.repo string required project.baseBranch string \"main\" project.root string \".\" project.stateDir string \".ak-loop\" Where the loop keeps everything that is NOT the project's configuration: dispatch ledger, delivery state, contracts, events, agent memory, plans. Meant to be gitignored — the configuration lives at the repo root as loop.config.yaml , versioned; this directory is runtime state, per machine. project.team string Selects the loop.config.team.&lt;key&gt;.yaml layer. $AK LOOP TEAM overrides it; a declared team whose file is missing fails loudly. project.orchestratorView base · root \"base\" The tree the orchestrator's headless calls (contract, plan interview, architect, votes, decompose) read. base (default): a harness-owned detached worktree of origin/&lt;baseBranch&gt; , fetched before each use. root : project.root as it is — whatever branch and age the operator's checkout has. project.setup object {} project.setup.command string[] Argv (no shell — one element per arg, e.g. [pnpm, install, --frozen-lockfile] ) run once in a freshly created worktree before the worker terminal opens. Unset/empty = skip. project.setup.timeoutSec integer 600 project.setup.required boolean true When true, a failing/timing-out setup removes the worktree and counts as a dispatch failure instead of handing the worker a broken environment. orca Path Type Default Description --- --- --- --- orca.bin string \"orca\" orca.repoSelector string Orca repo selector for new worktrees: id:&lt;repoId&gt; , name:&lt;name&gt; or path:&lt;abs&gt; ; default path:&lt;project.root&gt; . orca.workspaceSelector string Existing worktree the automations run in; default: the enclosing worktree resolved by Orca. orca.host string orca.minVersion string \"1.4.200\" orca.timeoutMs integer 20000 linear Path Type Default Description --- --- --- --- linear.workspaceId string required linear.teamKey string required linear.person string required Linear display name of the person whose queue this machine drains. linear.people record&lt;string&gt; {} Display name → Linear user id, for assignee set and audit; the queue itself filters by display name. linear.rotation object {} Optional ordered handoff between owners after the current dispatchable queue drains. linear.rotation.enabled boolean false linear.rotation.owners string[] [] linear.rotation.advanceWhenEmpty boolean true linear.queueOwnership person · unassigned · both \"person\" Whose queue this machine drains. person (default) keeps the historical behaviour: the issues assigned to linear.person . unassigned drains the issues with NO assignee and turns the assignee into a transient claim — written on dispatch, cleared when the item returns — so several machines can share one priority-ordered queue without colliding. Note when switching to unassigned : clearing the assignees is then REQUIRED, not cosmetic. With person and an emptied backlog the queue comes back empty and the loop looks healthy while doing nothing. both drains the union of the two: issues with no assignee AND issues assigned to linear.person . Unassigned ones are claimed for person on dispatch; nothing is released on return (the issue stays the person's, which this queue still sees). linear.states string[] [\"Todo\",\"Ready\"] linear.",
+          "body": "{/ Generated by pnpm docs:generate . Do not edit by hand: edit src/loop/config.ts and regenerate. /} The four layers that produce this configuration — the machine's global file, the project's, the team's and this machine's overlay — are described in . ak-harness loop validate prints the effective result, which is the only one that decides anything. 231 of 428 paths carry no description yet. schemaVersion Type: number · Default: 1 extends Defaults for this kind of project ( web-app , library , monorepo , data-pipeline , mobile ), merged below every other layer. Anything this file states wins over the preset; the preset only fills silence. Type: string project Path Type Default Description --- --- --- --- project.name string required project.repo string required project.baseBranch string \"main\" project.root string \".\" project.stateDir string \".ak-loop\" Where the loop keeps everything that is NOT the project's configuration: dispatch ledger, delivery state, contracts, events, agent memory, plans. Meant to be gitignored — the configuration lives at the repo root as loop.config.yaml , versioned; this directory is runtime state, per machine. project.team string Selects the loop.config.team.&lt;key&gt;.yaml layer. $AK LOOP TEAM overrides it; a declared team whose file is missing fails loudly. project.orchestratorView base · root \"base\" The tree the orchestrator's headless calls (contract, plan interview, architect, votes, decompose) read. base (default): a harness-owned detached worktree of origin/&lt;baseBranch&gt; , fetched before each use. root : project.root as it is — whatever branch and age the operator's checkout has. project.setup object {} project.setup.command string[] Argv (no shell — one element per arg, e.g. [pnpm, install, --frozen-lockfile] ) run once in a freshly created worktree before the worker terminal opens. Unset/empty = skip. project.setup.timeoutSec integer 600 project.setup.required boolean true When true, a failing/timing-out setup removes the worktree and counts as a dispatch failure instead of handing the worker a broken environment. orca Path Type Default Description --- --- --- --- orca.bin string \"orca\" orca.repoSelector string Orca repo selector for new worktrees: id:&lt;repoId&gt; , name:&lt;name&gt; or path:&lt;abs&gt; ; default path:&lt;project.root&gt; . orca.workspaceSelector string Existing worktree the automations run in; default: the enclosing worktree resolved by Orca. orca.host string orca.minVersion string \"1.4.200\" orca.timeoutMs integer 20000 linear Path Type Default Description --- --- --- --- linear.workspaceId string required linear.teamKey string required linear.person string required Linear display name of the person whose queue this machine drains. linear.people record&lt;string&gt; {} Display name → Linear user id, for assignee set and audit; the queue itself filters by display name. linear.rotation object {} Optional ordered handoff between owners after the current dispatchable queue drains. linear.rotation.enabled boolean false linear.rotation.owners string[] [] linear.rotation.advanceWhenEmpty boolean true linear.queueOwnership person · unassigned · both \"person\" Whose queue this machine drains. person (default) keeps the historical behaviour: the issues assigned to linear.person . unassigned drains the issues with NO assignee and turns the assignee into a transient claim — written on dispatch, cleared when the item returns — so several machines can share one priority-ordered queue without colliding. Note when switching to unassigned : clearing the assignees is then REQUIRED, not cosmetic. With person and an emptied backlog the queue comes back empty and the loop looks healthy while doing nothing. both drains the union of the two: issues with no assignee AND issues assigned to linear.person . Unassigned ones are claimed for person on dispatch; nothing is released on return (the issue stays the person's, which this queue still sees). linear.states string[] [\"Todo\",\"Ready\"] linear.",
           "aliases": "configuration document human"
         },
         "graph": {
@@ -12141,7 +12199,7 @@
             }
           ]
         },
-        "contentHash": "8b8adaa3df9718d507b1cc83e0617d9ed7fdd6848a7327b144738a45c270e478",
+        "contentHash": "afdbb08a04b8fc250d4bb14b7a4f2d4a4300eef211bec8491270ae9b141a16a0",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -15126,7 +15184,7 @@
           "path": "docs/ADR-0046-verdict-levels-and-the-merge-policy.md",
           "symbols": "",
           "summary": "Accepted",
-          "body": "ADR-0046: Verdict levels bound to the patch, a pure merge policy, and a read-back after merge Status Accepted Context Research of pstack (cursor/plugins) and google-research/harness2 (2026-10-20) found three weaknesses the maintainer approved fixing for reliability. The harness and the fleet are one product (fleet repository, docs/design/factory-app-brief.md §7 Trust), so what a \"pass\" means has to be the same on both sides. 1. Pass/fail hides how far something was checked. \"Passed\" covered \"it compiles\" and \"I ran it against the real thing\". A merge gate cannot ask for what the record cannot say (ADR-0035, ADR-0039). 2. A verdict outlived the code it judged, or was thrown away needlessly. Proofs were read per head: a rebase that changed no line re-ran everything (expensive for a fleet task, ADR-0045), and nothing recorded which change a proof was made on. 3. The merge decision was spread across handlePullRequest — held paths, the gate floor, merge.auto , the human gate — interleaved with I/O, so it could not be tested as a table. And a merge GitHub accepted was trusted as done. Decision Verdict levels src/loop/verdict.ts . A verdict is one of, weakest first: failed < blocked < type-check-only < unit-verified < ci-verified < live-verified ci-verified is the repository verification passing in the PR's own CI on the head SHA — the project's environment, not a re-run on the control machine. It meets unit-verified ; it is not a claim about the live system. blocked is \"could not be verified at all\" — not a failure of the change, a gap only a person can close. Each definition-of-done item (ADR-0035, both lists) carries a level; the proof table on the PR and the merged comment show it next to the status. A worker states it in .ak-loop/dod.json as \"verdict\": \"<level \" . Where the level comes from: Source Level --- --- worker proof with a verdict as written ( status: failed beats a proven level; blocked survives) legacy worker proof, status: passed unit-verified legacy worker proof, status: failed failed file-changed / pattern-absent , decided by the harness from the diff unit-verified (deterministic, but not a claim about running code) a command the harness re-ran in its own checkout ( fleet , ADR-0045) unit-verified ; blocked ( blocked: environment ) when the install or the run failed for the machine's sake (missing module, wrong engine) the repository verification ( verify item, or an item/outcome running delivery.verifyCommand ) with merge.requireChecks on and the PR's CI green on the head ( fleet ) ci-verified , with the passing checks and run URL as evidence; not re-run locally a review clean → unit-verified , findings → failed , incomplete → blocked — judged by its status, not by minVerdict Migration of stored state. passed becomes unit-verified , failed stays failed ; reading is tolerant, nothing is rewritten in bulk: a stored verdicts.json item that says passed is read as unit-verified , and delivery.json review entries without a verdict get one from their status when read. Project minimum. delivery.merge.minVerdict (default unit-verified ): the weakest level a proven item may carry for the loop to merge. An item below it goes back to the worker as a fix round (\"proven, but below the required verdict … verify them further\") — the worker can raise it. Items still missing or failed are unchanged. blocked items are not fix rounds, see the policy. Verdicts bound to the patch With each assessment the loop stores <stateDir /issues/<issue /verdicts.json : every item's verdict and evidence, the git patch-id --stable of the PR diff ( gh pr diff git patch-id --stable ; the CommandRunner gained a stdin option for it), the head, and the run fingerprint: On the next pass (a push, a rebase) the stored verdicts hold when the patch-id is equal and the contract digest and guard-policy digest are equal. The base SHA and the model are recorded, not compared: a rebase moves the first and a retry the second without changing what was verified. Hold",
+          "body": "ADR-0046: Verdict levels bound to the patch, a pure merge policy, and a read-back after merge Status Accepted Context Research of pstack (cursor/plugins) and google-research/harness2 (2026-10-20) found three weaknesses the maintainer approved fixing for reliability. The harness and the fleet are one product (fleet repository, docs/design/factory-app-brief.md §7 Trust), so what a \"pass\" means has to be the same on both sides. 1. Pass/fail hides how far something was checked. \"Passed\" covered \"it compiles\" and \"I ran it against the real thing\". A merge gate cannot ask for what the record cannot say (ADR-0035, ADR-0039). 2. A verdict outlived the code it judged, or was thrown away needlessly. Proofs were read per head: a rebase that changed no line re-ran everything (expensive for a fleet task, ADR-0045), and nothing recorded which change a proof was made on. 3. The merge decision was spread across handlePullRequest — held paths, the gate floor, merge.auto , the human gate — interleaved with I/O, so it could not be tested as a table. And a merge GitHub accepted was trusted as done. Decision Verdict levels src/loop/verdict.ts . A verdict is one of, weakest first: failed < blocked < type-check-only < unit-verified < fleet-verified < ci-verified < live-verified ci-verified is the repository verification passing in the PR's own CI on the head SHA — the project's environment, not a re-run on the control machine. It meets unit-verified ; it is not a claim about the live system. fleet-verified (added 2026-10-25) is a command the harness ran as a fleet task on the PR head because CI did not prove it: a clean checkout off the control machine, judged by the harness from the task's exit code — stronger than a local re-run, weaker than the project's own CI. blocked is \"could not be verified at all\" — not a failure of the change, a gap only a person can close. Each definition-of-done item (ADR-0035, both lists) carries a level; the proof table on the PR and the merged comment show it next to the status. A worker states it in .ak-loop/dod.json as \"verdict\": \"<level \" . Where the level comes from: Source Level --- --- worker proof with a verdict as written ( status: failed beats a proven level; blocked survives) legacy worker proof, status: passed unit-verified legacy worker proof, status: failed failed file-changed / pattern-absent , decided by the harness from the diff unit-verified (deterministic, but not a claim about running code) a command CI did not prove, run as a fleet verify task on the head ( fleet ) fleet-verified on exit 0 with the task id as evidence; failed otherwise; blocked when the task ended without a result a connectors.fleet.localOnly command the harness re-ran in its own checkout ( fleet , ADR-0045) unit-verified ; blocked ( blocked: environment ) when the install or the run failed for the machine's sake (missing module, wrong engine) the repository verification ( verify item, or an item/outcome running delivery.verifyCommand ) with merge.requireChecks on and the PR's CI green on the head ( fleet ) ci-verified , with the passing checks and run URL as evidence; not re-run locally a review clean → unit-verified , findings → failed , incomplete → blocked — judged by its status, not by minVerdict Migration of stored state. passed becomes unit-verified , failed stays failed ; reading is tolerant, nothing is rewritten in bulk: a stored verdicts.json item that says passed is read as unit-verified , and delivery.json review entries without a verdict get one from their status when read. Project minimum. delivery.merge.minVerdict (default unit-verified ): the weakest level a proven item may carry for the loop to merge. An item below it goes back to the worker as a fix round (\"proven, but below the required verdict … verify them further\") — the worker can raise it. Items still missing or failed are unchanged. blocked items are not fix rounds, see the policy. Verdicts bound to the patch With each assessment the loop stores <stateDir /",
           "aliases": "document human"
         },
         "graph": {
@@ -15189,7 +15247,7 @@
             }
           ]
         },
-        "contentHash": "acb1b07bb06ac0a365c8cbe5c3bf8284668b21c26a6df5a27a9160b9ff62e03e",
+        "contentHash": "7cd3c43d43e936f2bc32c83786448e4cd74f03dc9c704e8e9f83a9f34e8772f1",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -15838,7 +15896,7 @@
             }
           ]
         },
-        "contentHash": "703c0e76e6d690635f0605489b346dfeb060263951f75a783fb16c8ac2b709b5",
+        "contentHash": "acafc816993b0bfde40f74e76d4706ee183e890872eea156d92a145cb5503c89",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -19523,6 +19581,11 @@
             {
               "kind": "imports",
               "id": "module:src/loop/contract.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
+              "id": "module:src/loop/control-machine.ts",
               "confidence": "observed"
             },
             {
@@ -25438,6 +25501,11 @@
             },
             {
               "kind": "imports",
+              "id": "module:src/loop/fleet-verify.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
               "id": "module:src/loop/github-intake.ts",
               "confidence": "observed"
             },
@@ -28232,6 +28300,11 @@
             },
             {
               "kind": "imports",
+              "id": "module:src/loop/control-machine.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
               "id": "module:src/loop/debrief.ts",
               "confidence": "observed"
             },
@@ -28504,11 +28577,6 @@
               "kind": "imports",
               "id": "module:test/ui-api-actions.test.ts",
               "confidence": "observed"
-            },
-            {
-              "kind": "imports",
-              "id": "module:test/ui-api-server.test.ts",
-              "confidence": "observed"
             }
           ],
           "outbound": [
@@ -28549,7 +28617,7 @@
             }
           ]
         },
-        "contentHash": "72d117685b87c3ff68ea0b228be890f3958b9231da8779b90b61ddacf5c7fe52",
+        "contentHash": "2aef819bc77f17a5b9bffd4f426dbe38a0cdbfc53315145898352f7c6118c2ce",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -29064,6 +29132,95 @@
           ]
         },
         "contentHash": "a4bc670c429207e41528df1c72d2892879a868463ce13b33abbd0302a09c7650",
+        "provenance": "observed",
+        "confidence": "observed"
+      },
+      {
+        "id": "module:src/loop/control-machine.ts",
+        "kind": "module",
+        "path": "src/loop/control-machine.ts",
+        "title": "control-machine.ts",
+        "aliases": [],
+        "symbols": [
+          "CONTROL_LOAD_PER_CORE_LIMIT",
+          "CONTROL_LOCK",
+          "CONTROL_SWAP_LIMIT_BYTES",
+          "ControlMachineGate",
+          "ControlPressure",
+          "ControlRun",
+          "controlMachineBusy",
+          "createControlMachineGate",
+          "parseSwapUsage",
+          "sampleControlMachine",
+          "userStateDir"
+        ],
+        "tags": [
+          "module",
+          "ts",
+          "loop"
+        ],
+        "fields": {
+          "title": "control-machine.ts",
+          "headings": "",
+          "path": "src/loop/control-machine.ts",
+          "symbols": "CONTROL_LOAD_PER_CORE_LIMIT CONTROL_LOCK CONTROL_SWAP_LIMIT_BYTES ControlMachineGate ControlPressure ControlRun controlMachineBusy createControlMachineGate parseSwapUsage sampleControlMachine userStateDir",
+          "summary": "",
+          "body": "",
+          "aliases": "module ts loop"
+        },
+        "graph": {
+          "pagerank": 0,
+          "inboundLinks": 0,
+          "coveredBy": [],
+          "mentionedBy": [],
+          "areaId": "area:src/loop",
+          "packageId": "package:@agentskit/harness",
+          "inbound": [
+            {
+              "kind": "imports",
+              "id": "module:src/loop/deliver.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
+              "id": "module:src/loop/fleet-dod.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
+              "id": "module:test/loop-control-machine.test.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
+              "id": "module:test/loop-deliver.test.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
+              "id": "module:test/loop-fleet-dod.test.ts",
+              "confidence": "observed"
+            }
+          ],
+          "outbound": [
+            {
+              "kind": "imports",
+              "id": "module:src/adapters/command.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
+              "id": "module:src/loop/config.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
+              "id": "module:src/loop/stage-lock.ts",
+              "confidence": "observed"
+            }
+          ]
+        },
+        "contentHash": "175f060966f72c2fd921d6192e2c7832e9a879038259abb9559bc0026cff5291",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -29663,6 +29820,11 @@
             },
             {
               "kind": "imports",
+              "id": "module:src/loop/control-machine.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
               "id": "module:src/loop/cooldown.ts",
               "confidence": "observed"
             },
@@ -29818,7 +29980,7 @@
             }
           ]
         },
-        "contentHash": "c4bf75bb024b44df530d04b47e33bcc4f7dc2adcb937251d1b9b76c523abe1bc",
+        "contentHash": "05ea2370558e6a2fe7c0a3c773638c26d24538eb1dc0115ae765578034db1c50",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -30362,6 +30524,11 @@
             },
             {
               "kind": "imports",
+              "id": "module:src/loop/fleet-verify.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
               "id": "module:src/loop/verifier.ts",
               "confidence": "observed"
             },
@@ -30869,12 +31036,27 @@
             },
             {
               "kind": "imports",
+              "id": "module:src/loop/control-machine.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
               "id": "module:src/loop/dod.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
+              "id": "module:src/loop/fleet-verify.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
+              "id": "module:src/loop/runner-connector.ts",
               "confidence": "observed"
             }
           ]
         },
-        "contentHash": "36944553cb5398941fb2d26af2309c40a84c6812622cebcbd87074ed806c4c28",
+        "contentHash": "5ec75ef673ab9c5baa6726a674af95473f33bbe8df2c46700a24a0f205aec0e8",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -31034,6 +31216,76 @@
         "confidence": "observed"
       },
       {
+        "id": "module:src/loop/fleet-verify.ts",
+        "kind": "module",
+        "path": "src/loop/fleet-verify.ts",
+        "title": "fleet-verify.ts",
+        "aliases": [],
+        "symbols": [
+          "FleetVerifyCommand",
+          "FleetVerifyInput",
+          "FleetVerifyResult",
+          "fleetVerifyStatePath",
+          "parseFleetVerifyResult",
+          "renderFleetVerifyBrief",
+          "verifyOnFleet"
+        ],
+        "tags": [
+          "module",
+          "ts",
+          "loop"
+        ],
+        "fields": {
+          "title": "fleet-verify.ts",
+          "headings": "",
+          "path": "src/loop/fleet-verify.ts",
+          "symbols": "FleetVerifyCommand FleetVerifyInput FleetVerifyResult fleetVerifyStatePath parseFleetVerifyResult renderFleetVerifyBrief verifyOnFleet",
+          "summary": "",
+          "body": "",
+          "aliases": "module ts loop"
+        },
+        "graph": {
+          "pagerank": 0,
+          "inboundLinks": 0,
+          "coveredBy": [],
+          "mentionedBy": [],
+          "areaId": "area:src/loop",
+          "packageId": "package:@agentskit/harness",
+          "inbound": [
+            {
+              "kind": "imports",
+              "id": "module:src/loop/fleet-dod.ts",
+              "confidence": "observed"
+            }
+          ],
+          "outbound": [
+            {
+              "kind": "imports",
+              "id": "module:src/kernel/json-file.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
+              "id": "module:src/loop/dod.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
+              "id": "module:src/loop/fs-atomic.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
+              "id": "module:src/loop/runner-connector.ts",
+              "confidence": "observed"
+            }
+          ]
+        },
+        "contentHash": "9fd571c4ace13a9d681f246cb2580c8bd862d3dfff813cd3a7ff011c428cc69f",
+        "provenance": "observed",
+        "confidence": "observed"
+      },
+      {
         "id": "module:src/loop/flows.ts",
         "kind": "module",
         "path": "src/loop/flows.ts",
@@ -31181,6 +31433,11 @@
             {
               "kind": "imports",
               "id": "module:src/loop/fleet-runner.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
+              "id": "module:src/loop/fleet-verify.ts",
               "confidence": "observed"
             },
             {
@@ -35270,7 +35527,17 @@
             },
             {
               "kind": "imports",
+              "id": "module:src/loop/fleet-dod.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
               "id": "module:src/loop/fleet-runner.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
+              "id": "module:src/loop/fleet-verify.ts",
               "confidence": "observed"
             },
             {
@@ -35286,6 +35553,11 @@
             {
               "kind": "imports",
               "id": "module:src/ui/api/server.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
+              "id": "module:test/loop-fleet-dod.test.ts",
               "confidence": "observed"
             },
             {
@@ -35732,6 +36004,11 @@
             {
               "kind": "imports",
               "id": "module:src/cli.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
+              "id": "module:src/loop/control-machine.ts",
               "confidence": "observed"
             },
             {
@@ -36863,7 +37140,7 @@
             }
           ]
         },
-        "contentHash": "2e5a72485b52bee6ad79b32a5401eb36fca9138626d8838a16580cc314e38e43",
+        "contentHash": "f7499596fdc31c6f63a41464332f4e8557300b459e447c86a4b04c08c18ff36c",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -37968,7 +38245,7 @@
             }
           ]
         },
-        "contentHash": "0fbdc41e84cb738c110693a6447dd789d8c72f3a88d272e837d245b4abdd689e",
+        "contentHash": "5353252ab20f3787853f1e06aa172e52f856ba787d4d989c6c0afb58a1347fc6",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -45902,6 +46179,51 @@
         "confidence": "observed"
       },
       {
+        "id": "module:test/loop-control-machine.test.ts",
+        "kind": "module",
+        "path": "test/loop-control-machine.test.ts",
+        "title": "loop-control-machine.test.ts",
+        "aliases": [],
+        "tags": [
+          "module",
+          "ts",
+          "test"
+        ],
+        "fields": {
+          "title": "loop-control-machine.test.ts",
+          "headings": "",
+          "path": "test/loop-control-machine.test.ts",
+          "symbols": "",
+          "summary": "",
+          "body": "",
+          "aliases": "module ts test"
+        },
+        "graph": {
+          "pagerank": 0,
+          "inboundLinks": 0,
+          "coveredBy": [],
+          "mentionedBy": [],
+          "areaId": "area:test",
+          "packageId": "package:@agentskit/harness",
+          "inbound": [],
+          "outbound": [
+            {
+              "kind": "imports",
+              "id": "module:src/index.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
+              "id": "module:src/loop/control-machine.ts",
+              "confidence": "observed"
+            }
+          ]
+        },
+        "contentHash": "738b1198ba4e6a85a1944b24187b04fa1c7e670ef64ae7c85521c854808f5791",
+        "provenance": "observed",
+        "confidence": "observed"
+      },
+      {
         "id": "module:test/loop-cooldown-gaps.test.ts",
         "kind": "module",
         "path": "test/loop-cooldown-gaps.test.ts",
@@ -46062,6 +46384,11 @@
             },
             {
               "kind": "imports",
+              "id": "module:src/loop/control-machine.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
               "id": "module:src/loop/deliver.ts",
               "confidence": "observed"
             },
@@ -46077,7 +46404,7 @@
             }
           ]
         },
-        "contentHash": "e3bcb0eb2185808539ecbd747abf61bc88977aade4ff6f9bd309db06f2ad7adc",
+        "contentHash": "f2096d2fbd013cb283a3f99b4cdc7a98db8d4af98805be8f8f7d5fcb5a22ad67",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -46487,6 +46814,11 @@
             },
             {
               "kind": "imports",
+              "id": "module:src/loop/control-machine.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
               "id": "module:src/loop/fleet-dod.ts",
               "confidence": "observed"
             },
@@ -46497,12 +46829,17 @@
             },
             {
               "kind": "imports",
+              "id": "module:src/loop/runner-connector.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
               "id": "module:test/git.ts",
               "confidence": "observed"
             }
           ]
         },
-        "contentHash": "7f3874216668f7eeda87d4297461107b5e4b2a17c05d0230c134bbae213cfa6d",
+        "contentHash": "70d202ae9c081ef37f04afda896ad58dd99e8edb9030ca778374f987da2ffce6",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -48574,7 +48911,7 @@
             }
           ]
         },
-        "contentHash": "1ef105f2cacc860b15cac642ce121d007b342f1540fc93f94cc56c4e1e273f54",
+        "contentHash": "91547f2d83d59688aab027edfd73c0f8bdbe2417ea8f79370f0cb6eeeb380c5a",
         "provenance": "observed",
         "confidence": "observed"
       },

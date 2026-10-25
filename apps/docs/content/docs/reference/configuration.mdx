@@ -9,7 +9,7 @@ The four layers that produce this configuration — the machine's global file, t
 machine's overlay — are described in [ADR-0033](https://github.com/AgentsKit-io/harness/blob/main/docs/ADR-0033-four-config-layers-and-presets.md).
 `ak-harness loop validate` prints the effective result, which is the only one that decides anything.
 
-231 of 427 paths carry no description yet.
+231 of 428 paths carry no description yet.
 
 ## `schemaVersion`
 
@@ -219,7 +219,7 @@ Stricter review for the slices of the board that deserve it, keyed by label. The
 | `delivery.merge.method` | `squash` · `merge` · `rebase` | `"squash"` |  |
 | `delivery.merge.requireChecks` | boolean | `true` |  |
 | `delivery.merge.requireHumanApproval` | boolean | `false` | Extra synchronous gate on top of a clean review + green checks: a real human must approve the PR on GitHub (`reviewDecision: 'APPROVED'`, already fetched with every PR snapshot) before the loop merges it. False by default so existing configs keep auto-merging on a clean review, matching ADR-0027 §6. |
-| `delivery.merge.minVerdict` | `failed` · `blocked` · `type-check-only` · `unit-verified` · `ci-verified` · `live-verified` | `"unit-verified"` | ADR-0046: the weakest verdict a definition-of-done item may carry for the loop to merge (`failed &lt; blocked &lt; type-check-only &lt; unit-verified &lt; ci-verified &lt; live-verified`). Items below it go back to the worker. |
+| `delivery.merge.minVerdict` | `failed` · `blocked` · `type-check-only` · `unit-verified` · `fleet-verified` · `ci-verified` · `live-verified` | `"unit-verified"` | ADR-0046: the weakest verdict a definition-of-done item may carry for the loop to merge (`failed &lt; blocked &lt; type-check-only &lt; unit-verified &lt; fleet-verified &lt; ci-verified &lt; live-verified`). Items below it go back to the worker. |
 | `delivery.merge.autonomy` | `supervised` · `autonomous` | `"autonomous"` | `supervised`: the loop reviews and proves but never merges; a person does. `autonomous`: it merges when the policy says so. |
 | `delivery.merge.escalateOnBlocked` | boolean | `true` | A `blocked` verdict (the worker could not verify the item at all) escalates to a person instead of another fix round. |
 | `delivery.smoke` | object | `{}` | Optional bounded smoke gate before auto-merge (argv via CommandRunner; default off). |
@@ -427,6 +427,7 @@ Which implementation of each connector this project uses. The engine speaks only
 | `connectors.fleet.priority` | integer | `0` |  |
 | `connectors.fleet.timeoutMs` | integer | `30000` |  |
 | `connectors.fleet.verifyTimeoutMs` | integer | `600000` | Budget for each command run in the local checkout of a collected branch (dependency install, every `command` DoD item and outcome check). |
+| `connectors.fleet.localOnly` | string[] | `[]` | DoD item / contract outcome ids that need the control machine (secrets, homolog, Docker on the Mac). They run locally, one at a time across every loop on the machine, and only while it is quiet; every other command CI did not prove runs as a fleet task on the PR head. |
 | `connectors.local` | object | `{}` |  |
 | `connectors.local.worktreeRoot` | string | `"../.ak-worktrees"` | Where `local` puts its worktrees. Relative paths resolve against `project.root`. |
 | `connectors.local.tmuxBin` | string | `"tmux"` |  |

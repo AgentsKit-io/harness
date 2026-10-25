@@ -5,7 +5,10 @@ import type { ChecksAssessment, PullRequestCheck } from '../adapters/github-cli.
 import type { LoopConfig } from './config.js'
 import type { TaskContract } from './contract.js'
 import { ARTIFACT_DIR, readVerifyArtifact, verifyProofs } from './artifacts.js'
+import type { ControlMachineGate } from './control-machine.js'
 import { readDodEvidence, type DodEvidenceFile, type DodProof } from './dod.js'
+import { verifyOnFleet } from './fleet-verify.js'
+import type { RunnerConnector } from './runner-connector.js'
 
 /** What the definition of done is judged on for a fleet task: proofs the harness made itself, on the collected commit. */
 export interface FleetDodEvidence {
@@ -14,6 +17,8 @@ export interface FleetDodEvidence {
   readonly changedFiles: readonly string[]
   readonly fileContents: Readonly<Record<string, string>>
   readonly notes: readonly string[]
+  /** Set when a proof is still on its way (a fleet verify task running, the control machine busy): the evidence is empty and nothing is judged this pass. */
+  readonly waiting?: string
 }
 
 export interface FleetDodInput {
@@ -30,6 +35,10 @@ export interface FleetDodInput {
   readonly handoff?: string
   /** The PR's green CI on `head`, from `ciVerification`: it proves the repository verification, which is then not re-run here. */
   readonly ci?: CiVerification | null
+  /** The fleet to run the commands CI did not prove on (all but `connectors.fleet.localOnly`); absent, they all run here. */
+  readonly fleet?: { readonly connector: RunnerConnector; readonly issue: string; readonly now: Date }
+  /** Admits the commands that run here; absent, they run at once. */
+  readonly controlMachine?: ControlMachineGate
 }
 
 /** What a green, gating CI run on the head stands for: the checks that passed, a run to read, and the verify command(s) it covers. */
@@ -123,6 +132,10 @@ const tail = (value: string, max = 600): string => { const text = value.trim(); 
  *   or a run that fails for the machine's sake (a missing module, a wrong engine) is `blocked: environment`, not `failed`.
  * - The repository verification (the `verify` item, or an item/outcome running `delivery.verifyCommand`) is not
  *   re-run when `input.ci` says the PR's gating CI is green on `head`: it is `ci-verified`, with the checks as evidence.
+ * - With `input.fleet`, a command CI did not prove is not run here at all: one fleet task runs them on `head`
+ *   (`fleet-verified`, the task id as evidence). Only ids in `connectors.fleet.localOnly` still run in this checkout,
+ *   admitted by `input.controlMachine` (one at a time machine-wide, only while it is quiet). Until both answer the
+ *   result is `waiting`, never a failure.
  * - Outcomes with no command (a `manual` check) are proven only by the handoff the agent committed in the collected
  *   branch (`.ak-loop/verify.json`, `dod.json`). The harness removes those files from the PR after reading them, so
  *   they come from `input.handoff` (the copy in the state dir); this checkout is the fallback.
@@ -158,17 +171,27 @@ export const proveFleetDod = async (input: FleetDodInput): Promise<FleetDodEvide
     const { ci } = input
     const provenByCi = (id: string, label: string): boolean => !!ci && (id === 'verify' || ci.commands.some((command) => sameCommand(command, label)))
     const ciProof = (id: string): DodProof => ({ id, status: 'passed', verdict: 'ci-verified', evidence: `proven by CI on ${head.slice(0, 12)}: ${(ci?.checks ?? []).slice(0, 5).join(', ')}${(ci?.checks.length ?? 0) > 5 ? ` (+${(ci?.checks.length ?? 0) - 5})` : ''} green${ci?.url ? ` — ${ci.url}` : ''}; not re-run locally` })
-    const localItems = commandItems.filter((item) => !provenByCi(item.id, (item.command ?? []).join(' ')))
-    const localOutcomes = commandOutcomes.filter((outcome) => !provenByCi(outcome.id, outcome.check.command ?? ''))
-    let blocked: DodProof | null = null
-    let wrap = (argv: readonly string[]): readonly string[] => argv
-    if (localItems.length || localOutcomes.length) {
+    const uncovered = [
+      ...commandItems.filter((item) => !provenByCi(item.id, (item.command ?? []).join(' '))).map((item) => ({ id: item.id, argv: item.command ?? [], label: (item.command ?? []).join(' ') })),
+      ...commandOutcomes.filter((outcome) => !provenByCi(outcome.id, outcome.check.command ?? '')).map((outcome) => ({ id: outcome.id, argv: shellArgv(outcome.check.command ?? ''), label: outcome.check.command ?? '' })),
+    ]
+    // On the fleet runner the control machine runs only what the config pins to it; the rest is a fleet task.
+    const onFleet = input.fleet ? uncovered.filter((item) => !config.connectors.fleet.localOnly.includes(item.id)) : []
+    const local = uncovered.filter((item) => !onFleet.includes(item))
+    const ran = new Map<string, DodProof>()
+    const waiting: string[] = []
+    if (input.fleet && onFleet.length) {
+      const fleet = await verifyOnFleet({ stateDir, connector: input.fleet.connector, issue: input.fleet.issue, head, commands: onFleet.map((item) => ({ id: item.id, command: item.label })), now: input.fleet.now, timeoutMs: config.verifier.budget.timeoutMs, environmentFailure })
+      if (fleet.status === 'waiting') waiting.push(fleet.detail)
+      else { notes.push(fleet.detail); for (const proof of fleet.proofs) ran.set(proof.id, proof) }
+    }
+    const runLocal = async (): Promise<void> => {
+      let blocked: DodProof | null = null
       const node = await nodeWrapper(runner, pinnedNode(checkout))
-      wrap = node.wrap
       if (node.note) notes.push(node.note)
       const install = installArgv(checkout)
       if (install) {
-        const installed = await runner.run(wrap(install), { cwd: checkout, timeoutMs })
+        const installed = await runner.run(node.wrap(install), { cwd: checkout, timeoutMs })
         const output = `${installed.stderr}\n${installed.stdout}`
         const environment = installed.timedOut ? `\`${install.join(' ')}\` timed out after ${timeoutMs}ms` : installed.code !== 0 ? environmentFailure(output) : null
         // A lockfile the change left stale is the change's failure; a machine that cannot install is not.
@@ -176,10 +199,10 @@ export const proveFleetDod = async (input: FleetDodInput): Promise<FleetDodEvide
         else if (installed.code !== 0) blocked = { id: '', status: 'failed', evidence: `\`${install.join(' ')}\` exited ${installed.code ?? 'null'} on ${head.slice(0, 12)}: ${tail(installed.stderr || installed.stdout)}` }
         else notes.push(`installed dependencies with \`${install.join(' ')}\``)
       }
+      for (const item of local) ran.set(item.id, blocked ? { ...blocked, id: item.id } : await proof(item.id, node.wrap(item.argv), item.label))
     }
     const proof = async (id: string, argv: readonly string[], label: string): Promise<DodProof> => {
-      if (blocked) return { ...blocked, id }
-      const outcome = await runner.run(wrap(argv), { cwd: checkout, timeoutMs })
+      const outcome = await runner.run(argv, { cwd: checkout, timeoutMs })
       const status = !outcome.timedOut && outcome.code === 0 ? 'passed' : 'failed'
       const result = outcome.timedOut ? `timed out after ${timeoutMs}ms` : `exit ${outcome.code ?? 'null'}`
       const output = tail(`${outcome.stdout}\n${outcome.stderr}`)
@@ -188,10 +211,14 @@ export const proveFleetDod = async (input: FleetDodInput): Promise<FleetDodEvide
       // A command the harness re-ran in a checkout is a test result, not a run against the live system.
       return { id, status, verdict: status === 'passed' ? 'unit-verified' : 'failed', evidence: `ran \`${label}\` in a local checkout of ${head.slice(0, 12)}: ${result}${output ? `\n${output}` : ''}` }
     }
-    const project: DodProof[] = []
-    for (const item of commandItems) project.push(localItems.includes(item) ? await proof(item.id, item.command ?? [], (item.command ?? []).join(' ')) : ciProof(item.id))
-    const rerun: DodProof[] = []
-    for (const outcome of commandOutcomes) rerun.push(localOutcomes.includes(outcome) ? await proof(outcome.id, shellArgv(outcome.check.command ?? ''), outcome.check.command ?? '') : ciProof(outcome.id))
+    if (local.length) {
+      const gate = input.controlMachine ?? (async (work) => ({ ran: true, value: await work() }))
+      const gated = await gate(runLocal)
+      if (!gated.ran) waiting.push(`${gated.detail} — local-only: ${local.map((item) => item.id).join(', ')}`)
+    }
+    if (waiting.length) return { evidence: { project: [], outcomes: [] }, changedFiles, fileContents, notes, waiting: waiting.join('; ') }
+    const project = commandItems.map((item) => ran.get(item.id) ?? ciProof(item.id))
+    const rerun = commandOutcomes.map((outcome) => ran.get(outcome.id) ?? ciProof(outcome.id))
     const byCi = [...project, ...rerun].filter((item) => item.verdict === 'ci-verified').map((item) => item.id)
     if (byCi.length) notes.push(`proven by CI, not re-run locally: ${byCi.join(', ')}`)
 

@@ -33,6 +33,7 @@ import { assessDod, readDodEvidence, renderDodMarkdown } from './dod.js'
 import { decideMerge, weakestVerdict, type MergePolicyInput } from './merge-policy.js'
 import { isProven, migrateVerdict, patchIdOfPullRequest, readVerdictRecord, reviewLevel, verdictsHold, writeVerdictRecord, type RunFingerprint, type Verdict, type VerdictRecord } from './verdict.js'
 import { ciVerification, proveFleetDod } from './fleet-dod.js'
+import { createControlMachineGate, userStateDir, type ControlMachineGate } from './control-machine.js'
 import { handoffRoot, stripHandoff } from './fleet-handoff.js'
 import { renderVerifierMarkdown, verifyIndependently } from './verifier.js'
 import { splitLines } from '@agentskit/cross-platform'
@@ -96,6 +97,8 @@ export interface DeliverInput {
   readonly bus?: LoopEventBus
   /** Pause between the read-backs that confirm a merge (ms); GitHub can lag a moment behind its own merge answer. Default 2000. */
   readonly readBackDelayMs?: number
+  /** Admits a verify the harness runs on this machine. Default: one at a time across every loop (a lock in the user state dir), only while the machine is quiet. */
+  readonly controlMachine?: ControlMachineGate
 }
 
 const message = (error: unknown): string => error instanceof HarnessError ? `${error.code}: ${error.message}` : error instanceof Error ? error.message : String(error)
@@ -165,6 +168,7 @@ interface Context {
   readonly builderExtras: readonly ModelReference[]
   /** Issues `finish()` closed out this pass → outcome; their worker terminals are closed once the pass is done. */
   readonly finished: Map<string, string>
+  readonly controlMachine: ControlMachineGate
 }
 
 const orcaOptions = (config: LoopConfig) => ({ bin: config.orca.bin, timeoutMs: config.orca.timeoutMs })
@@ -1245,7 +1249,11 @@ ${marker}` }); actions.push('secret-file hold commented') } catch (error) { acti
     const verifyWanted = config.delivery.verify.argv.length > 0 && workerPhaseEnabled(config, flow.flow, 'verify', true) && !ctx.dryRun
     if (verifyWanted && !record.worktreePath) actions.push('local verify skipped: no worktree recorded for this dispatch, so it cannot run against the PR\'s code (not counted as evidence)')
     if (verifyWanted && record.worktreePath) {
-      const verify = await ctx.runner.run(config.delivery.verify.argv, { timeoutMs: 600_000, cwd: record.worktreePath })
+      // The worktree is on this machine, so this is a control-machine verify: one at a time, only while it is quiet.
+      const worktreePath = record.worktreePath
+      const gated = await ctx.controlMachine(() => ctx.runner.run(config.delivery.verify.argv, { timeoutMs: 600_000, cwd: worktreePath }))
+      if (!gated.ran) return { issue: record.issue, outcome: 'waiting', reason: `local verify ${gated.detail}`, pr: pr.number, head: pr.headSha, actions }
+      const verify = gated.value
       if (verify.code !== 0) {
         actions.push(`local verify failed before review: ${(verify.stderr || verify.stdout).trim().slice(0, 200)}`)
         return fixRound(ctx, record, lease, state, pr, 'ci', `Loop: the project verification failed on PR #${pr.number} before the review was even requested: \`${config.delivery.verify.argv.join(' ')}\`. Fix it, re-run it locally, commit and push. No review is spent on a build that does not pass.`, 'local verify failed before review', actions)
@@ -1381,9 +1389,11 @@ ${marker}` }); actions.push('secret-file hold commented') } catch (error) { acti
     const expectedIds = [...config.dod.items.map((item) => item.id), ...(stored?.contract.outcomes ?? []).map((outcome) => outcome.id)]
     const fleetCarried = record.runner === 'fleet' && carried.length > 0 && expectedIds.every((id) => carried.some((item) => item.id === id))
     const fleetProof = record.runner === 'fleet' && !ctx.dryRun && !fleetCarried
-      ? await proveFleetDod({ runner: ctx.runner, config, root: ctx.loaded.root, stateDir: ctx.loaded.stateDir, handoff: handoffRoot(ctx.loaded.stateDir, record.issue), head: pr.headSha, ...(record.collected?.base ? { base: record.collected.base } : {}), contract: stored?.contract ?? null, ci: ciVerification({ gating: flow.merge.requireChecks, status: checks.status, checks: pr.checks, ignore: config.delivery.ignoreChecks, commands: [config.delivery.verifyCommand, closes, config.delivery.verify.argv.join(' ')] }) })
+      ? await proveFleetDod({ runner: ctx.runner, config, root: ctx.loaded.root, stateDir: ctx.loaded.stateDir, handoff: handoffRoot(ctx.loaded.stateDir, record.issue), head: pr.headSha, ...(record.collected?.base ? { base: record.collected.base } : {}), contract: stored?.contract ?? null, ci: ciVerification({ gating: flow.merge.requireChecks, status: checks.status, checks: pr.checks, ignore: config.delivery.ignoreChecks, commands: [config.delivery.verifyCommand, closes, config.delivery.verify.argv.join(' ')] }), fleet: { connector: createRunnerConnector({ loaded: ctx.loaded, runner: ctx.runner }), issue: record.issue, now: ctx.now() }, controlMachine: ctx.controlMachine })
       : null
     if (fleetProof) actions.push(...fleetProof.notes)
+    // A verify still running on the fleet, or a local-only step waiting for a quiet machine, is pending — never a failure.
+    if (fleetProof?.waiting) return { issue: record.issue, outcome: 'waiting', reason: `definition of done: ${fleetProof.waiting}`, pr: pr.number, head: pr.headSha, actions }
     const fresh = fleetProof ? fleetProof.evidence : fleetCarried ? { project: [], outcomes: [] } : readDodEvidence(record.worktreePath, config)
     // What was proven on this very patch stands in for what the fresh read does not state; a fresh statement always wins.
     const evidence = { project: [...fresh.project, ...carriedProofs('project').filter((proof) => !fresh.project.some((own) => own.id === proof.id))], outcomes: [...fresh.outcomes, ...carriedProofs('issue').filter((proof) => !fresh.outcomes.some((own) => own.id === proof.id))] }
@@ -1407,7 +1417,7 @@ ${marker}` }); actions.push('secret-file hold commented') } catch (error) { acti
           if (decision.action === 'escalate') return escalateForPerson(ctx, record, lease, state, pr, `definition of done: ${decision.reason}`, actions)
         }
         const why = `definition of done not proven — missing: ${dod.missing.join(', ') || 'none'}; failing: ${dod.failed.join(', ') || 'none'}${dod.blocked.length ? `; blocked: ${dod.blocked.join(', ')}` : ''}${dod.below.length ? `; below ${config.delivery.merge.minVerdict}: ${dod.below.join(', ')}` : ''}`
-        return fixRound(ctx, record, lease, state, pr, 'review', `Loop: the definition of done is not proven for PR #${pr.number}. ${dod.missing.length ? `No proof recorded for: ${dod.missing.join(', ')}.` : ''} ${dod.failed.length ? `Failing: ${dod.failed.join(', ')}.` : ''} ${dod.blocked.length ? `Blocked (could not be verified): ${dod.blocked.join(', ')}.` : ''} ${dod.below.length ? `Proven, but below the required verdict \`${config.delivery.merge.minVerdict}\`: ${dod.below.join(', ')} — verify them further (run the tests / the real system).` : ''} Run each item, record the result in \`${config.dod.evidenceFile}\` at the root of this worktree (\`{"project": [{"id":"…","verdict":"unit-verified","evidence":"…"}], "outcomes": [...]}\`; verdict is one of failed, blocked, type-check-only, unit-verified, ci-verified, live-verified), commit and push. The loop writes the table onto the PR.`, why, actions)
+        return fixRound(ctx, record, lease, state, pr, 'review', `Loop: the definition of done is not proven for PR #${pr.number}. ${dod.missing.length ? `No proof recorded for: ${dod.missing.join(', ')}.` : ''} ${dod.failed.length ? `Failing: ${dod.failed.join(', ')}.` : ''} ${dod.blocked.length ? `Blocked (could not be verified): ${dod.blocked.join(', ')}.` : ''} ${dod.below.length ? `Proven, but below the required verdict \`${config.delivery.merge.minVerdict}\`: ${dod.below.join(', ')} — verify them further (run the tests / the real system).` : ''} Run each item, record the result in \`${config.dod.evidenceFile}\` at the root of this worktree (\`{"project": [{"id":"…","verdict":"unit-verified","evidence":"…"}], "outcomes": [...]}\`; verdict is one of failed, blocked, type-check-only, unit-verified, fleet-verified, ci-verified, live-verified), commit and push. The loop writes the table onto the PR.`, why, actions)
       }
       actions.push(`definition of done proven (${dod.lines.length} item(s))`)
       vouchedBy.push('the definition of done')
@@ -1671,7 +1681,7 @@ export const runDeliver = async (input: DeliverInput): Promise<DeliverReport> =>
   const tracker = guardTracker(connectors.tracker, { stateDir: loaded.stateDir, now, dryRun, onRateLimited: (entry) => appendLoopEvent(loaded.stateDir, { at: now().toISOString(), type: 'tracker.cooldown', until: entry.until, attempts: entry.attempts, reason: entry.reason }, bus) })
   const trackerCooling = activeTrackerCooldown(loaded.stateDir, now())
   if (trackerCooling) notes.push(`${connectors.tracker.id} rate-limited until ${trackerCooling.until}: tracker writes skipped this pass; PR/merge work continues`)
-  const ctx: Context = { loaded, config, runner: input.runner, now, dryRun, reviewer, reviewerCandidates, builder, providers, env, tracker, scm, ...(input.assumeIdle === undefined ? {} : { assumeIdle: input.assumeIdle }), notes, reviewDeadlineMs, readBackDelayMs: input.readBackDelayMs ?? 2_000, bus, builderExtras, finished: new Map() }
+  const ctx: Context = { loaded, config, runner: input.runner, now, dryRun, reviewer, reviewerCandidates, builder, providers, env, tracker, scm, ...(input.assumeIdle === undefined ? {} : { assumeIdle: input.assumeIdle }), notes, reviewDeadlineMs, readBackDelayMs: input.readBackDelayMs ?? 2_000, bus, builderExtras, finished: new Map(), controlMachine: input.controlMachine ?? createControlMachineGate({ runner: input.runner, lockDir: userStateDir(input.env) }) }
   const ledger = createDispatchLedger(loaded.stateDir)
   const leases = new Map(ledger.active().map((lease) => [lease.issue, lease]))
   const results: DeliverResult[] = []

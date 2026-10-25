@@ -6,6 +6,8 @@ import { afterEach, describe, expect, it } from 'vitest'
 import { assessDod, parseLoopConfigText } from '../src/index.js'
 import type { CommandRunner, LoopConfig, TaskContract } from '../src/index.js'
 import { ciVerification, proveFleetDod } from '../src/loop/fleet-dod.js'
+import type { ControlMachineGate } from '../src/loop/control-machine.js'
+import type { RunnerConnector } from '../src/loop/runner-connector.js'
 import { createProcessRunner } from '../src/loop/process.js'
 import { initializeGitRepository } from './git.js'
 
@@ -206,6 +208,96 @@ describe('fleet: the definition of done on a local checkout of the collected bra
     const installed = await proveFleetDod({ runner: wrongEngine, config: config(), root: engine.root, stateDir: engine.stateDir, head: engine.head, base: engine.base, contract: null })
     expect(installed.evidence.project[0]).toMatchObject({ id: 'verify', status: 'failed', verdict: 'blocked' })
     expect(installed.evidence.project[0]?.evidence).toContain('blocked: environment — ERR_PNPM_UNSUPPORTED_ENGINE')
+  })
+
+  /** A fleet that queues one task and answers with whatever `output` holds when read. */
+  const fakeFleet = () => {
+    const submitted: { base: string; brief: string }[] = []
+    const removed: string[] = []
+    let output = ''
+    let state: 'running' | 'done' | 'failed' = 'running'
+    const connector: RunnerConnector = {
+      id: 'fleet',
+      createWorkspace: async ({ branch, baseBranch }) => { submitted.push({ base: baseBranch, brief: '' }); return { id: `ws-${submitted.length}`, path: '', branch, terminal: null } },
+      removeWorkspace: async ({ id }) => { removed.push(id) },
+      launchAgent: async ({ workspace }) => workspace.id,
+      send: async ({ text }) => { const last = submitted.at(-1); if (last) last.brief = text; return { delivered: true, detail: `submitted q-00${submitted.length}` } },
+      readScreen: async () => output,
+      schedule: async () => [],
+      observeWorkspaces: async () => submitted.map((_, index) => ({ id: `ws-${index + 1}`, pullRequest: null, state })),
+    }
+    return { connector, submitted, removed, answer: (text: string, next: typeof state = 'done') => { output = text; state = next } }
+  }
+  const nonceOf = (brief: string): string => /exactly `([^`]+)`/.exec(brief)?.[1] ?? ''
+  const resultLine = (head: string, nonce: string, items: readonly { id: string; exitCode: number | null; tail: string }[]) => `LOOP-VERIFY-RESULT: ${JSON.stringify({ head, nonce, items })}`
+  const quiet: ControlMachineGate = async (work) => ({ ran: true, value: await work() })
+
+  it('no CI: the verify runs as a fleet task on the PR head, and its result is the verdict (fleet-verified, task id as evidence)', async () => {
+    const repo = await makeRepo()
+    const { runner, calls } = recordingRunner()
+    const cfg = config()
+    const fleet = fakeFleet()
+    const input = { runner, config: cfg, root: repo.root, stateDir: repo.stateDir, head: repo.head, base: repo.base, contract: contract({ kind: 'test', command: 'pnpm test' }), ci: null, fleet: { connector: fleet.connector, issue: 'ISSUE-1', now: new Date('2026-10-25T14:00:00Z') }, controlMachine: quiet }
+    const first = await proveFleetDod(input)
+    expect(first.waiting).toMatch(/fleet verify task q-001 submitted/)
+    expect(fleet.submitted).toHaveLength(1)
+    expect(fleet.submitted[0]?.base).toBe(repo.head)
+    expect(fleet.submitted[0]?.brief).toContain('read-only')
+    expect(fleet.submitted[0]?.brief).toContain('`o1`: `pnpm test`')
+    // Nothing ran on this machine.
+    expect(calls.some((call) => call.argv[0] === 'node' || call.argv[0] === 'sh')).toBe(false)
+
+    const again = await proveFleetDod(input)
+    expect(again.waiting).toMatch(/waiting for fleet verify task q-001/)
+    expect(fleet.submitted).toHaveLength(1)
+
+    const nonce = nonceOf(fleet.submitted[0]?.brief ?? '')
+    fleet.answer(`noise\n${resultLine(repo.head, nonce, [{ id: 'verify', exitCode: 0, tail: 'check ok' }, { id: 'o1', exitCode: 1, tail: '1 test failed' }])}\n`)
+    const done = await proveFleetDod(input)
+    expect(done.waiting).toBeUndefined()
+    expect(done.evidence.project[0]).toMatchObject({ id: 'verify', status: 'passed', verdict: 'fleet-verified' })
+    expect(done.evidence.project[0]?.evidence).toContain('fleet task q-001 ran')
+    expect(done.evidence.outcomes[0]).toMatchObject({ id: 'o1', status: 'failed', verdict: 'failed' })
+    expect(fleet.removed).toEqual(['ws-1'])
+    const assessed = assessDod({ config: cfg, contract: input.contract, evidence: done.evidence, prFiles: done.changedFiles, fileContents: done.fileContents, minVerdict: 'unit-verified' })
+    expect([assessed.lines.find((line) => line.id === 'verify')?.verdict, assessed.failed]).toEqual(['fleet-verified', ['o1']])
+    // A judged head is not submitted again.
+    await proveFleetDod(input)
+    expect(fleet.submitted).toHaveLength(1)
+    expect(calls.some((call) => call.argv[0] === 'node' || call.argv[0] === 'sh')).toBe(false)
+    expect(leftovers(repo.stateDir)).toEqual([])
+  })
+
+  it('a fleet task that ends without a result is blocked, not passed', async () => {
+    const repo = await makeRepo()
+    const { runner } = recordingRunner()
+    const fleet = fakeFleet()
+    const input = { runner, config: config(), root: repo.root, stateDir: repo.stateDir, head: repo.head, base: repo.base, contract: null, fleet: { connector: fleet.connector, issue: 'ISSUE-1', now: new Date() }, controlMachine: quiet }
+    await proveFleetDod(input)
+    fleet.answer('LOOP-VERIFY-RESULT: {"head":"0000000","nonce":"someone-elses","items":[]}', 'failed')
+    const proof = await proveFleetDod(input)
+    expect(proof.evidence.project[0]).toMatchObject({ id: 'verify', status: 'failed', verdict: 'blocked' })
+    expect(proof.evidence.project[0]?.evidence).toContain('q-001 failed before it printed a result')
+  })
+
+  it('a localOnly item runs here only through the control-machine gate, and waits (not fails) while it is shut', async () => {
+    const repo = await makeRepo()
+    const { runner, calls } = recordingRunner()
+    const cfg = config(`${DOD}connectors:\n  fleet:\n    localOnly: [verify]\n`)
+    const fleet = fakeFleet()
+    let open = false
+    const gate: ControlMachineGate = async (work) => open ? { ran: true, value: await work() } : { ran: false, detail: 'waiting: control machine busy (load 3.10/core ≥ 1)' }
+    const input = { runner, config: cfg, root: repo.root, stateDir: repo.stateDir, head: repo.head, base: repo.base, contract: null, fleet: { connector: fleet.connector, issue: 'ISSUE-1', now: new Date() }, controlMachine: gate }
+    const shut = await proveFleetDod(input)
+    expect(shut.waiting).toBe('waiting: control machine busy (load 3.10/core ≥ 1) — local-only: verify')
+    expect(shut.evidence).toEqual({ project: [], outcomes: [] })
+    expect(calls.some((call) => call.argv[0] === 'node')).toBe(false)
+    // Nothing else needed the fleet.
+    expect(fleet.submitted).toEqual([])
+    open = true
+    const ran = await proveFleetDod(input)
+    expect(ran.evidence.project[0]).toMatchObject({ id: 'verify', status: 'passed', verdict: 'unit-verified' })
+    expect(calls.find((call) => call.argv[0] === 'node')?.cwd).toContain('fleet-checkout-')
   })
 
   it('does not install when nothing needs a command, and removes the worktree when the checkout itself fails', async () => {

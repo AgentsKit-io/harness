@@ -10,8 +10,10 @@ import { writeJsonAtomic } from './fs-atomic.js'
  * "it compiles" and "I ran it against the real thing", and a merge gate cannot ask for what the record cannot say.
  * `ci-verified`: the repository verification passed in the PR's own CI on the head SHA — the project's environment,
  * not a re-run on the control machine; it meets `unit-verified` and does not claim a run against the live system.
+ * `fleet-verified`: the harness ran the command itself, as a fleet task on the PR head (CI did not prove it) — a clean
+ * checkout off the control machine, but not the project's own CI; it sits between the two.
  */
-export const VERDICT_LEVELS = ['failed', 'blocked', 'type-check-only', 'unit-verified', 'ci-verified', 'live-verified'] as const
+export const VERDICT_LEVELS = ['failed', 'blocked', 'type-check-only', 'unit-verified', 'fleet-verified', 'ci-verified', 'live-verified'] as const
 export type Verdict = typeof VERDICT_LEVELS[number]
 
 export const verdictRank = (verdict: Verdict): number => VERDICT_LEVELS.indexOf(verdict)

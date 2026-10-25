@@ -25,10 +25,14 @@ maintainer approved fixing for reliability. The harness and the fleet are one pr
 
 `src/loop/verdict.ts`. A verdict is one of, weakest first:
 
-`failed` < `blocked` < `type-check-only` < `unit-verified` < `ci-verified` < `live-verified`
+`failed` < `blocked` < `type-check-only` < `unit-verified` < `fleet-verified` < `ci-verified` < `live-verified`
 
 `ci-verified` is the repository verification passing in the PR's own CI on the head SHA — the project's environment,
 not a re-run on the control machine. It meets `unit-verified`; it is not a claim about the live system.
+
+`fleet-verified` (added 2026-10-25) is a command the harness ran as a fleet task on the PR head because CI did not
+prove it: a clean checkout off the control machine, judged by the harness from the task's exit code — stronger than a
+local re-run, weaker than the project's own CI.
 
 `blocked` is "could not be verified at all" — not a failure of the change, a gap only a person can close.
 Each definition-of-done item (ADR-0035, both lists) carries a level; the proof table on the PR and the merged
@@ -42,7 +46,8 @@ Where the level comes from:
 | legacy worker proof, `status: passed` | `unit-verified` |
 | legacy worker proof, `status: failed` | `failed` |
 | `file-changed` / `pattern-absent`, decided by the harness from the diff | `unit-verified` (deterministic, but not a claim about running code) |
-| a command the harness re-ran in its own checkout (`fleet`, ADR-0045) | `unit-verified`; `blocked` (`blocked: environment`) when the install or the run failed for the machine's sake (missing module, wrong engine) |
+| a command CI did not prove, run as a fleet verify task on the head (`fleet`) | `fleet-verified` on exit 0 with the task id as evidence; `failed` otherwise; `blocked` when the task ended without a result |
+| a `connectors.fleet.localOnly` command the harness re-ran in its own checkout (`fleet`, ADR-0045) | `unit-verified`; `blocked` (`blocked: environment`) when the install or the run failed for the machine's sake (missing module, wrong engine) |
 | the repository verification (`verify` item, or an item/outcome running `delivery.verifyCommand`) with `merge.requireChecks` on and the PR's CI green on the head (`fleet`) | `ci-verified`, with the passing checks and run URL as evidence; not re-run locally |
 | a review | `clean` → `unit-verified`, `findings` → `failed`, `incomplete` → `blocked` — judged by its status, not by `minVerdict` |
 

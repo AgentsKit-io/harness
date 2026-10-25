@@ -453,7 +453,7 @@ export const LoopConfigSchema = z.object({
       requireHumanApproval: z.boolean().default(false),
       /**
        * ADR-0046: the weakest verdict a definition-of-done item may carry for the loop to merge
-       * (`failed < blocked < type-check-only < unit-verified < ci-verified < live-verified`). Items below it go back to the worker.
+       * (`failed < blocked < type-check-only < unit-verified < fleet-verified < ci-verified < live-verified`). Items below it go back to the worker.
        */
       minVerdict: z.enum(VERDICT_LEVELS).default('unit-verified'),
       /** `supervised`: the loop reviews and proves but never merges; a person does. `autonomous`: it merges when the policy says so. */
@@ -784,6 +784,12 @@ export const LoopConfigSchema = z.object({
       timeoutMs: z.number().int().positive().default(30_000),
       /** Budget for each command run in the local checkout of a collected branch (dependency install, every `command` DoD item and outcome check). */
       verifyTimeoutMs: z.number().int().positive().default(600_000),
+      /**
+       * DoD item / contract outcome ids that need the control machine (secrets, homolog, Docker on the Mac). They run
+       * locally, one at a time across every loop on the machine, and only while it is quiet; every other command CI
+       * did not prove runs as a fleet task on the PR head.
+       */
+      localOnly: z.array(nonEmpty).default([]),
     }).prefault({}),
     local: z.object({
       /** Where `local` puts its worktrees. Relative paths resolve against `project.root`. */

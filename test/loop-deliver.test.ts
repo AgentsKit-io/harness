@@ -9,6 +9,7 @@ import { renderSpec, writeSpec } from '../src/loop/spec.js'
 import { readAgentRunReport } from '../src/loop/agent-runs.js'
 import { activeTrackerCooldown, isTrackerRateLimit, markTrackerRateLimited } from '../src/loop/tracker-cooldown.js'
 import { usageLimitOnScreen } from '../src/loop/deliver.js'
+import type { ControlMachineGate } from '../src/loop/control-machine.js'
 import { splitLines } from '@agentskit/cross-platform'
 
 const fixture = (name: string): unknown => JSON.parse(readFileSync(join(process.cwd(), 'test/fixtures/loop', `${name}.json`), 'utf8')) as unknown
@@ -16,6 +17,8 @@ const exampleYaml = readFileSync(join(process.cwd(), 'loop.config.example.yaml')
 const ok = (payload: unknown): CommandResult => ({ code: 0, stdout: JSON.stringify(payload), stderr: '', timedOut: false, durationMs: 1 })
 const okResult = (result: unknown): CommandResult => ok({ ok: true, result })
 const NOW = new Date('2026-09-11T12:00:00.000Z')
+/** The test machine's real load and the user's real lock dir are not the fixture's business. */
+const quietMachine: ControlMachineGate = async (work) => ({ ran: true, value: await work() })
 
 const cleanups: string[] = []
 afterEach(() => { for (const dir of cleanups.splice(0)) rmSync(dir, { recursive: true, force: true }) })
@@ -212,7 +215,7 @@ const setup = (initial: Scenario = {}) => {
   return { dir, bin, loaded, runner, record, ledger, scenario, worktreePath }
 }
 
-const deliver = (env: ReturnType<typeof setup>, extra: Partial<Parameters<typeof runDeliver>[0]> = {}) => runDeliver({ configPath: env.loaded.path, runner: env.runner, env: { PATH: env.bin, XAI_API_KEY: 'k' }, platform: 'darwin', now: () => NOW, ...extra })
+const deliver = (env: ReturnType<typeof setup>, extra: Partial<Parameters<typeof runDeliver>[0]> = {}) => runDeliver({ configPath: env.loaded.path, runner: env.runner, env: { PATH: env.bin, XAI_API_KEY: 'k' }, platform: 'darwin', now: () => NOW, controlMachine: quietMachine, ...extra })
 
 describe('code review adapter', () => {
   it('builds argv with the severity floor, parses findings from the result file, and classifies exit codes', async () => {
@@ -1170,6 +1173,15 @@ describe('deliver', () => {
     const events = readFileSync(join(env.loaded.stateDir, 'events.ndjson'), 'utf8').split('\n').filter(Boolean).map((line) => JSON.parse(line) as Record<string, unknown>)
     const passed = events.find((event) => event['type'] === 'verify.passed')
     expect(passed).toMatchObject({ issue: 'ENG-10', pr: 42 })
+  })
+
+  it('waits, without running or failing the verify, while the control machine is busy', async () => {
+    const env = setup({ review: { code: 0 }, worktreeFiles: { 'verify.json': JSON.stringify({ command: 'pnpm test', exitCode: 0, outcomes: [] }) } })
+    writeFileSync(join(env.dir, 'loop.config.local.yaml'), 'delivery:\n  verify:\n    argv: [agentskit-verify-fixture]\n')
+    const report = await deliver(env, { controlMachine: async () => ({ ran: false, detail: 'waiting: control machine busy (swap 3.0 GiB ≥ 2 GiB)' }) })
+    expect(report.results[0]).toMatchObject({ outcome: 'waiting', reason: 'local verify waiting: control machine busy (swap 3.0 GiB ≥ 2 GiB)' })
+    expect(env.runner.calls.some((argv) => argv[0] === 'agentskit-verify-fixture')).toBe(false)
+    expect(readDeliveryState(env.loaded.stateDir, 'ENG-10').fixRounds).toBe(0)
   })
 
   it('does not run or vouch with delivery.verify.argv when the dispatch has no worktree to run it in', async () => {
