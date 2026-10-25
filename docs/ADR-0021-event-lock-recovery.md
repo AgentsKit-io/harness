@@ -1,5 +1,7 @@
 # ADR-0021: Explicit recovery for orphaned event-log locks
 
+Code: `src/kernel/events.ts` (lock inspection and recovery), `src/cli.ts` (`events unlock`).
+
 ## Context
 
 The per-run event-log lock prevents concurrent append and read operations from

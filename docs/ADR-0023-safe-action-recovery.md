@@ -1,5 +1,7 @@
 # ADR-0023: Require human decisions for ambiguous action recovery
 
+Code: `src/execution/agent.ts` (`recoverTool`).
+
 ## Status
 
 Accepted
