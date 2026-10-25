@@ -1,0 +1,431 @@
+{
+  "evalFormatVersion": "2026-04",
+  "name": "harness-retrieval-v1",
+  "description": "Golden retrieval queries for this repository: exported symbols, file paths, natural-language questions and ownership routing. A case passes when one of its expected targets appears in the top ranks; a target matches a result by entity id or by repository path.",
+  "tags": [
+    "retrieval",
+    "doc-bridge",
+    "deterministic"
+  ],
+  "cases": [
+    {
+      "id": "symbol-create-plugin-registry",
+      "input": "createPluginRegistry",
+      "expected": {
+        "regex": {
+          "body": "src/kernel/plugins\\.ts"
+        }
+      },
+      "metadata": {
+        "expectedTargets": [
+          "src/kernel/plugins.ts"
+        ],
+        "lang": "en",
+        "kind": "symbol"
+      }
+    },
+    {
+      "id": "symbol-benchmark-runs",
+      "input": "benchmarkRuns",
+      "expected": {
+        "regex": {
+          "body": "src/execution/metrics\\.ts"
+        }
+      },
+      "metadata": {
+        "expectedTargets": [
+          "src/execution/metrics.ts"
+        ],
+        "lang": "en",
+        "kind": "symbol"
+      }
+    },
+    {
+      "id": "symbol-file-event-store",
+      "input": "FileEventStore",
+      "expected": {
+        "regex": {
+          "body": "src/kernel/events\\.ts"
+        }
+      },
+      "metadata": {
+        "expectedTargets": [
+          "src/kernel/events.ts"
+        ],
+        "lang": "en",
+        "kind": "symbol"
+      }
+    },
+    {
+      "id": "symbol-recover-tool",
+      "input": "recoverTool",
+      "expected": {
+        "regex": {
+          "body": "src/execution/agent\\.ts"
+        }
+      },
+      "metadata": {
+        "expectedTargets": [
+          "src/execution/agent.ts"
+        ],
+        "lang": "en",
+        "kind": "symbol"
+      }
+    },
+    {
+      "id": "symbol-decide-merge",
+      "input": "decideMerge",
+      "expected": {
+        "regex": {
+          "body": "src/loop/merge-policy\\.ts"
+        }
+      },
+      "metadata": {
+        "expectedTargets": [
+          "src/loop/merge-policy.ts"
+        ],
+        "lang": "en",
+        "kind": "symbol"
+      }
+    },
+    {
+      "id": "symbol-resolve-profile",
+      "input": "resolveProfile",
+      "expected": {
+        "regex": {
+          "body": "src/profiles/index\\.ts"
+        }
+      },
+      "metadata": {
+        "expectedTargets": [
+          "src/profiles/index.ts"
+        ],
+        "lang": "en",
+        "kind": "symbol"
+      }
+    },
+    {
+      "id": "symbol-run-adversarial-review",
+      "input": "runAdversarialReview",
+      "expected": {
+        "regex": {
+          "body": "src/delivery/review\\.ts"
+        }
+      },
+      "metadata": {
+        "expectedTargets": [
+          "src/delivery/review.ts"
+        ],
+        "lang": "en",
+        "kind": "symbol"
+      }
+    },
+    {
+      "id": "symbol-create-doc-bridge-provider",
+      "input": "createDocBridgeContextProvider",
+      "expected": {
+        "regex": {
+          "body": "src/adapters/doc-bridge\\.ts"
+        }
+      },
+      "metadata": {
+        "expectedTargets": [
+          "src/adapters/doc-bridge.ts"
+        ],
+        "lang": "en",
+        "kind": "symbol"
+      }
+    },
+    {
+      "id": "symbol-create-policy-gate",
+      "input": "createPolicyGate",
+      "expected": {
+        "regex": {
+          "body": "src/kernel/policy\\.ts"
+        }
+      },
+      "metadata": {
+        "expectedTargets": [
+          "src/kernel/policy.ts"
+        ],
+        "lang": "en",
+        "kind": "symbol"
+      }
+    },
+    {
+      "id": "symbol-select-model",
+      "input": "selectModel",
+      "expected": {
+        "regex": {
+          "body": "src/loop/routing\\.ts"
+        }
+      },
+      "metadata": {
+        "expectedTargets": [
+          "src/loop/routing.ts"
+        ],
+        "lang": "en",
+        "kind": "symbol"
+      }
+    },
+    {
+      "id": "symbol-create-hitl-store",
+      "input": "createHitlStore",
+      "expected": {
+        "regex": {
+          "body": "src/loop/hitl\\.ts"
+        }
+      },
+      "metadata": {
+        "expectedTargets": [
+          "src/loop/hitl.ts"
+        ],
+        "lang": "en",
+        "kind": "symbol"
+      }
+    },
+    {
+      "id": "symbol-assess-checks",
+      "input": "assessChecks",
+      "expected": {
+        "regex": {
+          "body": "src/adapters/github-cli\\.ts"
+        }
+      },
+      "metadata": {
+        "expectedTargets": [
+          "src/adapters/github-cli.ts"
+        ],
+        "lang": "en",
+        "kind": "symbol"
+      }
+    },
+    {
+      "id": "path-loop-tick",
+      "input": "src/loop/tick.ts",
+      "expected": {
+        "regex": {
+          "body": "src/loop/tick\\.ts"
+        }
+      },
+      "metadata": {
+        "expectedTargets": [
+          "src/loop/tick.ts"
+        ],
+        "lang": "en",
+        "kind": "path"
+      }
+    },
+    {
+      "id": "path-loop-deliver",
+      "input": "src/loop/deliver.ts",
+      "expected": {
+        "regex": {
+          "body": "src/loop/deliver\\.ts"
+        }
+      },
+      "metadata": {
+        "expectedTargets": [
+          "src/loop/deliver.ts"
+        ],
+        "lang": "en",
+        "kind": "path"
+      }
+    },
+    {
+      "id": "path-kernel-state-machine",
+      "input": "src/kernel/state-machine.ts",
+      "expected": {
+        "regex": {
+          "body": "src/kernel/state-machine\\.ts"
+        }
+      },
+      "metadata": {
+        "expectedTargets": [
+          "src/kernel/state-machine.ts"
+        ],
+        "lang": "en",
+        "kind": "path"
+      }
+    },
+    {
+      "id": "path-docker-runtime",
+      "input": "src/execution/runtime.ts",
+      "expected": {
+        "regex": {
+          "body": "src/execution/runtime\\.ts"
+        }
+      },
+      "metadata": {
+        "expectedTargets": [
+          "src/execution/runtime.ts"
+        ],
+        "lang": "en",
+        "kind": "path"
+      }
+    },
+    {
+      "id": "question-what-is-module-boundaries",
+      "input": "which modules may import adapters and the kernel dependency rules",
+      "expected": {
+        "regex": {
+          "body": "docs/MODULE-BOUNDARIES\\.md"
+        }
+      },
+      "metadata": {
+        "expectedTargets": [
+          "docs/MODULE-BOUNDARIES.md"
+        ],
+        "lang": "en",
+        "kind": "question"
+      }
+    },
+    {
+      "id": "question-event-log-tamper",
+      "input": "how is the lifecycle event log made tamper evident with a hash chain",
+      "expected": {
+        "regex": {
+          "body": "docs/ADR-0017-event-log-integrity\\.md"
+        }
+      },
+      "metadata": {
+        "expectedTargets": [
+          "docs/ADR-0017-event-log-integrity.md"
+        ],
+        "lang": "en",
+        "kind": "question"
+      }
+    },
+    {
+      "id": "question-definition-of-done",
+      "input": "what are the two lists of the definition of done proofs",
+      "expected": {
+        "regex": {
+          "body": "docs/ADR-0035-definition-of-done-two-lists\\.md|apps/docs/content/docs/concepts/definition-of-done\\.mdx"
+        }
+      },
+      "metadata": {
+        "expectedTargets": [
+          "docs/ADR-0035-definition-of-done-two-lists.md",
+          "apps/docs/content/docs/concepts/definition-of-done.mdx"
+        ],
+        "lang": "en",
+        "kind": "question"
+      }
+    },
+    {
+      "id": "question-cost-ceilings",
+      "input": "cost policy ceilings and levers per provider budget",
+      "expected": {
+        "regex": {
+          "body": "docs/ADR-0037-cost-policy-ceilings-and-levers\\.md|apps/docs/content/docs/concepts/cost\\.mdx"
+        }
+      },
+      "metadata": {
+        "expectedTargets": [
+          "docs/ADR-0037-cost-policy-ceilings-and-levers.md",
+          "apps/docs/content/docs/concepts/cost.mdx"
+        ],
+        "lang": "en",
+        "kind": "question"
+      }
+    },
+    {
+      "id": "question-first-tick",
+      "input": "how do I run the first tick of the keep-pushing loop",
+      "expected": {
+        "regex": {
+          "body": "docs/GETTING-STARTED\\.md|apps/docs/content/docs/get-started/quickstart\\.mdx"
+        }
+      },
+      "metadata": {
+        "expectedTargets": [
+          "docs/GETTING-STARTED.md",
+          "apps/docs/content/docs/get-started/quickstart.mdx"
+        ],
+        "lang": "en",
+        "kind": "question"
+      }
+    },
+    {
+      "id": "question-stale-run",
+      "input": "what to do when a run is STALE after verification",
+      "expected": {
+        "regex": {
+          "body": "docs/TROUBLESHOOTING\\.md"
+        }
+      },
+      "metadata": {
+        "expectedTargets": [
+          "docs/TROUBLESHOOTING.md"
+        ],
+        "lang": "en",
+        "kind": "question"
+      }
+    },
+    {
+      "id": "question-ownership-site",
+      "input": "who owns the public documentation site and how to build it",
+      "expected": {
+        "regex": {
+          "body": "docs/for-agents/packages/harness-site\\.md"
+        }
+      },
+      "metadata": {
+        "expectedTargets": [
+          "docs/for-agents/packages/harness-site.md"
+        ],
+        "lang": "en",
+        "kind": "ownership"
+      }
+    },
+    {
+      "id": "question-ownership-ecosystem",
+      "input": "which file owns the shared AgentsKit product catalog and ecosystem metadata",
+      "expected": {
+        "regex": {
+          "body": "docs/for-agents/packages/ecosystem-manifest\\.md"
+        }
+      },
+      "metadata": {
+        "expectedTargets": [
+          "docs/for-agents/packages/ecosystem-manifest.md"
+        ],
+        "lang": "en",
+        "kind": "ownership"
+      }
+    },
+    {
+      "id": "question-ambiguous-recovery",
+      "input": "a tool action may have started before the process stopped, who decides retry or abandon",
+      "expected": {
+        "regex": {
+          "body": "docs/ADR-0023-safe-action-recovery\\.md"
+        }
+      },
+      "metadata": {
+        "expectedTargets": [
+          "docs/ADR-0023-safe-action-recovery.md"
+        ],
+        "lang": "en",
+        "kind": "question"
+      }
+    },
+    {
+      "id": "question-docker-sandbox",
+      "input": "docker sandbox runtime for tool execution",
+      "expected": {
+        "regex": {
+          "body": "docs/ADR-0010-docker-sandbox-runtime\\.md"
+        }
+      },
+      "metadata": {
+        "expectedTargets": [
+          "docs/ADR-0010-docker-sandbox-runtime.md"
+        ],
+        "lang": "en",
+        "kind": "question"
+      }
+    }
+  ]
+}
