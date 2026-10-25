@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
-  "contentHash": "ff9506d94290256c2a2ddee8f4c0cbd66cd682daa50c2c21591a4131454254c2",
+  "contentHash": "4b6e1c7e54be160a9d52737654d0722ac285ed8d3818e1feb399681dabc38602",
   "contentHashAlgo": "sha256-semantic-v1",
-  "generatedAt": "2026-10-25T01:52:10.991Z",
+  "generatedAt": "2026-10-25T01:55:48.870Z",
   "project": {
     "name": "AgentsKit Harness",
     "root": "."
@@ -964,7 +964,7 @@
         "agent",
         "package"
       ],
-      "contentHash": "f7ebdf75c558360edc02a8cd9111ada25e88bb1566db414eefb0fa093963a596"
+      "contentHash": "ab9b2824d111c1f4c7885059fa73d22c35b4d9053317b6f102fb32d51c5c6fc0"
     },
     {
       "id": "document:docs/for-agents/packages/harness-site.md",
@@ -9651,7 +9651,7 @@
     }
   },
   "inputs": {
-    "hash": "ba7430f3cd5f201fc19cc52fbe3fb8a2957e5f4d24fc88eb906dfc5306321727",
+    "hash": "c53937eb8fbc4e6c583a8b20adbef75a2f7b7abb1e312bddff1b700e017103a3",
     "fileCount": 614,
     "projectionVersion": 2
   },
@@ -9674,9 +9674,9 @@
   "projection": {
     "type": "retrieval-index",
     "schemaVersion": 1,
-    "contentHash": "25dc359b4877b7d0a7e3cb8490a05a92224d40a450037e6a14ce4c3010183b08",
+    "contentHash": "21eb0e28a2bf63cfd514d61cc189d15102c51550efe5caffaeb09c0b800c1212",
     "contentHashAlgo": "sha256-semantic-v1",
-    "snapshotHash": "5f6dd2c50137f8113e51abac3939f5498c4aa5bb32eea9e8fa8041efb15e8b44",
+    "snapshotHash": "5f172e2e054f7e0ef335a8d1070feffba79ed5b950b57b6c79ed011c1c67bd12",
     "overlayHash": "f99666ff9119084dd25c2974ae64eb6935ec2aa785ff5ad478fb9d541f7a5e94",
     "configurationHash": "497822431910cd9fa7d674a48a9f0b96fbbbf779f22a001de0b52252117fe3ab",
     "lexiconVersion": 1,
@@ -9708,7 +9708,7 @@
       ],
       "averageFieldLength": {
         "aliases": 2.925925925925926,
-        "body": 46.13636363636363,
+        "body": 46.138047138047135,
         "headings": 3.835016835016835,
         "path": 6.127946127946128,
         "summary": 2.8653198653198655,
@@ -15264,7 +15264,7 @@
           "path": "docs/for-agents/packages/ecosystem-manifest.md",
           "symbols": "",
           "summary": "ecosystem.json is the shared product catalog: the AgentsKit products, their navigation order, metadata and public URLs. ecosystem-claims.json holds the verifiable public claims (counts and their evidence) for each product; it is wired in as the claims file of the Documentation Standard check. The manifest feeds the site shell.",
-          "body": "Ecosystem manifest ecosystem.json is the shared product catalog: the AgentsKit products, their navigation order, metadata and public URLs. ecosystem-claims.json holds the verifiable public claims (counts and their evidence) for each product; it is wired in as the claims file of the Documentation Standard check. The manifest feeds the site shell. Who reads it - apps/docs/lib/shell.ts imports ecosystem.json and builds the products shown in the site bar, tour and footer (the ones with navigation.showInBar ). - apps/docs/components/home/ecosystem.tsx renders the ecosystem section of the home page from that product list. - scripts/build-docs-artifacts.mjs reads it when writing the machine-readable site surfaces. - scripts/generate-doc-bridge-config.mjs names it as the ecosystemContract manifest for the Documentation Standard check. Change rules - Keep the header order agentskit → registry → agentskit-chat → doc-bridge → code-review → harness ; Playbook stays catalogued with navigation.showInBar: false . - Do not add private or unreleased products. The verifier rejects public AKOS metadata. - A claim needs evidence in ecosystem-claims.json ; do not raise a number without it. Check node scripts/verify-ecosystem-public-outputs.mjs validates the header order, the Playbook and Code Review navigation flags, and the public outputs that mention the products.",
+          "body": "Ecosystem manifest ecosystem.json is the shared product catalog: the AgentsKit products, their navigation order, metadata and public URLs. ecosystem-claims.json holds the verifiable public claims (counts and their evidence) for each product; it is wired in as the claims file of the Documentation Standard check. The manifest feeds the site shell. Who reads it - apps/docs/lib/shell.ts imports ecosystem.json and builds the products shown in the site bar, tour and footer (the ones with navigation.showInBar ). - apps/docs/components/home/ecosystem.tsx renders the ecosystem section of the home page from that product list. - scripts/build-docs-artifacts.mjs reads it when writing the machine-readable site surfaces. - scripts/generate-doc-bridge-config.mjs names it as the ecosystemContract manifest for the Documentation Standard check. Change rules - Keep the header order agentskit → registry → agentskit-chat → doc-bridge → code-review → harness ; Playbook stays catalogued with navigation.showInBar: false . - Do not add private, unreleased or retired products; the verifier rejects metadata for the retired ones. - A claim needs evidence in ecosystem-claims.json ; do not raise a number without it. Check node scripts/verify-ecosystem-public-outputs.mjs validates the header order, the Playbook and Code Review navigation flags, and the public outputs that mention the products.",
           "aliases": "document agent package"
         },
         "graph": {
@@ -15301,7 +15301,7 @@
             }
           ]
         },
-        "contentHash": "f7ebdf75c558360edc02a8cd9111ada25e88bb1566db414eefb0fa093963a596",
+        "contentHash": "ab9b2824d111c1f4c7885059fa73d22c35b4d9053317b6f102fb32d51c5c6fc0",
         "provenance": "observed",
         "confidence": "observed"
       },

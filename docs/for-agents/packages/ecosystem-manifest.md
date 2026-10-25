@@ -24,7 +24,7 @@ product; it is wired in as the claims file of the Documentation Standard check. 
 
 - Keep the header order `agentskit → registry → agentskit-chat → doc-bridge → code-review → harness`; Playbook
   stays catalogued with `navigation.showInBar: false`.
-- Do not add private or unreleased products. The verifier rejects public AKOS metadata.
+- Do not add private, unreleased or retired products; the verifier rejects metadata for the retired ones.
 - A claim needs evidence in `ecosystem-claims.json`; do not raise a number without it.
 
 ## Check
