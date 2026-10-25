@@ -42,7 +42,14 @@ const foldState = (raw: unknown): FleetState => {
 
 const text = (value: unknown): string | null => typeof value === 'string' && value.length > 0 ? value : null
 
-interface QueueRow { readonly id: string; readonly state: FleetState; /** The id `fleet collect` takes, when the row carries one distinct from the queue id. */ readonly hostTaskId: string | null }
+interface QueueRow {
+  readonly id: string
+  readonly state: FleetState
+  /** The id `fleet collect` takes, when the row carries one distinct from the queue id. */ readonly hostTaskId: string | null
+  /** The coordinator retried this task under a new id (`retriedAs`); the retry row may instead name this one (`retryOf`). */
+  readonly retriedAs: string | null
+  readonly retryOf: string | null
+}
 
 /** Accepts a bare array or `{ tasks: [...] }`; rows without an id are dropped. */
 const parseQueue = (stdout: string): readonly QueueRow[] => {
@@ -53,8 +60,27 @@ const parseQueue = (stdout: string): readonly QueueRow[] => {
     const record = typeof row === 'object' && row !== null ? row as Record<string, unknown> : {}
     const id = text(record['id']) ?? text(record['queueId'])
     const hostTaskId = text(record['hostTaskId']) ?? text(record['host_task_id']) ?? text(record['taskId']) ?? text(record['task_id'])
-    return id ? [{ id, state: foldState(record['state']), hostTaskId }] : []
+    const retriedAs = text(record['retriedAs']) ?? text(record['retried_as'])
+    const retryOf = text(record['retryOf']) ?? text(record['retry_of']) ?? text(record['retriedFrom']) ?? text(record['retried_from'])
+    return id ? [{ id, state: foldState(record['state']), hostTaskId, retriedAs, retryOf }] : []
   })
+}
+
+/**
+ * The task now carrying `queueId`'s work: a stopped task the coordinator retried lives on under a new id, so the
+ * harness follows the chain of retries rather than reading the old id as dead. Bounded so a cyclic answer cannot loop.
+ */
+// ponytail: only the queue's explicit retry links are followed; a retry with neither `retriedAs` nor `retryOf` still reads as the old task's end.
+const followRetries = (rows: readonly QueueRow[], queueId: string): QueueRow | undefined => {
+  const byId = new Map(rows.map((row) => [row.id, row]))
+  let row = byId.get(queueId)
+  for (let hop = 0; row && row.state !== 'done' && hop < 10; hop++) {
+    const from: QueueRow = row
+    const next = (from.retriedAs ? byId.get(from.retriedAs) : undefined) ?? rows.find((item) => item.retryOf === from.id)
+    if (!next) break
+    row = next
+  }
+  return row
 }
 
 /** `fleet submit` argv as a dry run reports it: the same shape the real submit uses, with the prompt file named by a placeholder. */
@@ -224,8 +250,14 @@ export const createFleetRunner = ({ loaded, runner }: RunnerInput): RunnerConnec
     observeWorkspaces: async () => {
       const records = read().filter((entry) => entry.queueId)
       if (records.length === 0) return []
-      const rows = new Map((await queue()).map((row) => [row.id, row.state]))
-      return records.map((entry) => ({ id: entry.id, pullRequest: null, state: rows.get(entry.queueId ?? '') ?? 'unknown' }))
+      const rows = await queue()
+      return records.map((entry) => {
+        const queueId = entry.queueId ?? ''
+        const row = followRetries(rows, queueId)
+        // The workspace now follows the retry, so later collect, tail and cancel reach the task that is actually running.
+        if (row && row.id !== queueId) update(entry.id, { queueId: row.id })
+        return { id: entry.id, pullRequest: null, state: row?.state ?? 'unknown', ...(row && row.id !== queueId ? { retriedFrom: queueId, task: row.id } : {}) }
+      })
     },
   }
 }
