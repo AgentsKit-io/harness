@@ -61,7 +61,7 @@ Outcomes (every one stays satisfied):
 ${contract.contract.outcomes.map((outcome) => `- ${outcome.id}: ${outcome.description}${outcome.check.command ? ` — check \`${outcome.check.command}\`` : ''}`).join('\n')}`
     : '(the frozen contract is not on file; the pull request description and the issue are the contract)'
   const task = input.kind === 'conflict'
-    ? `Rebase onto \`origin/${input.baseRef}\` (\`git fetch origin ${input.baseRef} && git rebase origin/${input.baseRef}\`), resolve the conflicts keeping the contract's behaviour, and finish the rebase.`
+    ? `Merge the base into this branch (\`git fetch origin ${input.baseRef} && git merge origin/${input.baseRef}\`), resolve the conflicts keeping the contract's behaviour, and commit the merge: one merge commit on top of the PR head. No amend, no squash.`
     : input.kind === 'ci'
       ? 'Fix the root cause of each failing check (never skip or disable a check), then re-run the project verification.'
       : 'Address each finding (or explain in your last commit message why it does not apply), then re-run the project verification.'
@@ -72,7 +72,7 @@ You are a fix-round worker in an unattended delivery loop for ${config.project.r
 1. Read the repository's agent guide (AGENTS.md / CLAUDE.md) first and follow it.
 2. Keep every acceptance criterion of the contract below satisfied; change nothing outside it.
 3. Run \`${config.delivery.verifyCommand}\` and make it pass before you commit.
-4. Commit your work (rebase: finish the rebase so the branch is a clean commit history on \`origin/${input.baseRef}\`). Do NOT push and do NOT open a pull request — the harness collects the commits and pushes them to the PR branch itself.
+4. Commit your work (history is never rewritten: the fleet does not collect it). Do NOT push and do NOT open a pull request — the harness collects the commits and pushes them to the PR branch itself.
 5. Commit nothing under \`.ak-loop/\`.
 
 ## What is wrong (${input.kind})

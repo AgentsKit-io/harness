@@ -1039,7 +1039,7 @@ const submitFleetFix = async (ctx: Context, record: DispatchRecordFile, state: D
   const parts = [`${why}.`]
   if (kind === 'conflict') {
     const files = await conflictingFiles({ runner, root, base: config.project.baseBranch, head: pr.headSha })
-    parts.push(files === null ? 'The conflicting files could not be computed here; the rebase will show them.' : files.length ? `Conflicting files (from \`git merge-tree\`):\n${files.map((file) => `- ${file}`).join('\n')}` : '`git merge-tree` finds no conflicting file now (the base moved); rebase anyway.')
+    parts.push(files === null ? 'The conflicting files could not be computed here; the merge will show them.' : files.length ? `Conflicting files (from \`git merge-tree\`):\n${files.map((file) => `- ${file}`).join('\n')}` : '`git merge-tree` finds no conflicting file now (the base moved); merge anyway.')
   } else {
     const failing = assessChecks(pr.checks, config.delivery.requiredChecks, config.delivery.ignoreChecks).failing
     const known = findings.length ? findings : readBlockingReviewFindings(ctx.loaded.stateDir, record.issue, pr.headSha, 'nit')
@@ -1059,8 +1059,8 @@ const submitFleetFix = async (ctx: Context, record: DispatchRecordFile, state: D
 }
 
 /**
- * A fleet fix task in flight. While it runs, wait. Done: collect it and push it to the PR branch — a plain push when it
- * only added commits, `--force-with-lease` pinned to the head it was cut from when it rebased. A task that failed or
+ * A fleet fix task in flight. While it runs, wait. Done: collect it and push it to the PR branch — a fast-forward push,
+ * never forced: a moved head ends the round as a retry. A task that failed or
  * made nothing is escalated, not retried. Null: the PR moved on without it, carry on with the PR as it is.
  */
 const handleFleetFix = async (ctx: Context, record: DispatchRecordFile, lease: DispatchLease | undefined, state: DeliveryState, pr: PullRequestSnapshot, fix: NonNullable<DeliveryState['fleetFix']>, actions: string[]): Promise<DeliverResult | null> => {
@@ -1090,10 +1090,11 @@ const handleFleetFix = async (ctx: Context, record: DispatchRecordFile, lease: D
   // The worker may have committed handoff files again; they never belong on the PR branch.
   const stripped = await stripHandoff({ runner: ctx.runner, root, stateDir: ctx.loaded.stateDir, issue: record.issue, rev: collected.head })
   const head = stripped?.head ?? collected.head
-  const rebased = (await git(['merge-base', '--is-ancestor', fix.head, head])).code !== 0
-  const pushed = await git(['push', ...(rebased ? [`--force-with-lease=refs/heads/${pr.headRef}:${fix.head}`] : []), 'origin', `${head}:refs/heads/${pr.headRef}`])
+  const pushed = await git(['push', 'origin', `${head}:refs/heads/${pr.headRef}`])
+  // Never forced: a head that moved meanwhile (or history that does not descend from it) is rejected, and the round is retried.
+  if (pushed.code !== 0 && /non-fast-forward|\(fetch first\)|\[rejected\]/.test(pushed.stderr)) return waiting(`the push of the fleet ${fix.kind} fix to ${pr.headRef} was rejected (the PR head moved); retrying`)
   if (pushed.timedOut || pushed.code !== 0) fail(`push of the fleet ${fix.kind} fix to ${pr.headRef} failed: ${(pushed.stderr || pushed.stdout).trim().slice(0, 300) || `exit ${pushed.code ?? 'null'}`}`, 'HARNESS_ERROR')
-  actions.push(`pushed the fleet ${fix.kind} fix to ${pr.headRef} at ${head.slice(0, 7)}${rebased ? ' (rebased, force-with-lease)' : ''}`)
+  actions.push(`pushed the fleet ${fix.kind} fix to ${pr.headRef} at ${head.slice(0, 7)}`)
   await git(['branch', '-D', collected.branch]).catch(() => undefined)
   await forget()
   return waiting(`fleet ${fix.kind} fix pushed to ${pr.headRef}; checks run again on the new head`, head)

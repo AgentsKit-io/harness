@@ -29,7 +29,7 @@ const makeEnv = () => {
   const submits: { readonly base: string; readonly prompt: string }[] = []
   const states = new Map<string, string>()
   const prs: Record<string, unknown>[] = []
-  const state = { rebased: false }
+  const state = { rejectPush: false }
   const runner: CommandRunner = {
     run: async (argv) => {
       calls.push([...argv])
@@ -55,8 +55,10 @@ const makeEnv = () => {
       if (bin0 === 'claude' && verb === '-p') return done(`thinking…\n${CONTRACT_OPEN}\n${JSON.stringify(contract)}\n${CONTRACT_CLOSE}\n`)
       if (bin0 === 'git') {
         if (argv.includes('merge-tree')) return done('0123abc\nsrc/a.ts\nsrc/b.ts\n\nCONFLICT (content): ...\n', 1)
-        // Only the question "did the fix keep the PR head in its history?" is about the PR head; collect's own check is not.
-        if (argv.includes('--is-ancestor')) return done('', state.rebased && argv.at(-2) === 'a1b2c3d4e5f6' ? 1 : 0)
+        if (verb === 'push' || argv.includes('push')) {
+          if (argv.includes('-u')) return done()
+          return state.rejectPush ? { code: 1, stdout: '', stderr: ' ! [rejected] c0ffee -> branch (non-fast-forward)', timedOut: false, durationMs: 1 } : done()
+        }
         return done(verb === 'rev-parse' ? 'basesha\n' : '')
       }
       return { code: 127, stdout: '', stderr: `no fixture for ${argv.join(' ')}`, timedOut: false, durationMs: 1 }
@@ -95,7 +97,8 @@ describe('runner: fleet — a PR that needs a fix gets a fix round on the fleet'
     expect(fix.prompt).toContain('- src/b.ts')
     expect(fix.prompt).toContain('Add the demo binding')
     expect(fix.prompt).toContain('o1: tests pass')
-    expect(fix.prompt).toContain('git rebase origin/main')
+    expect(fix.prompt).toContain('git fetch origin main && git merge origin/main')
+    expect(fix.prompt).not.toMatch(/git rebase/)
     expect(fix.prompt).toContain('Do NOT push')
     expect(env.calls.some((argv) => argv[0] === 'orca')).toBe(false)
     const state = readDeliveryState(env.loaded().stateDir, ISSUE)
@@ -136,17 +139,22 @@ describe('runner: fleet — a PR that needs a fix gets a fix round on the fleet'
     expect(readDeliveryState(env.loaded().stateDir, ISSUE).fleetFix ?? null).toBeNull()
   })
 
-  it('a fix that rebased is pushed with --force-with-lease pinned to the head it was cut from', async () => {
+  it('a push the remote rejects (the PR head moved) is a retry, never forced', async () => {
     const env = makeEnv()
     await env.openPr()
     env.pr()['mergeable'] = 'CONFLICTING'
     await runDeliver({ ...env.base })
     env.states.set('q-0002', 'done')
-    env.state.rebased = true
-    await runDeliver({ ...env.base })
-    const ref = String(env.pr()['headRefName'])
-    const push = env.pushes().at(-1)
-    expect(push).toEqual(expect.arrayContaining([`--force-with-lease=refs/heads/${ref}:a1b2c3d4e5f6`, 'origin', `c0ffee123456:refs/heads/${ref}`]))
+    env.state.rejectPush = true
+    const report = await runDeliver({ ...env.base })
+    expect(report.results[0]).toMatchObject({ outcome: 'waiting', reason: expect.stringMatching(/rejected.*retrying/) })
+    expect(env.pushes()).toHaveLength(1)
+    expect(env.pushes().flat().some((arg) => arg.startsWith('--force'))).toBe(false)
+    expect(readDeliveryState(env.loaded().stateDir, ISSUE).fleetFix).toMatchObject({ kind: 'conflict' })
+    // The PR head moves on: the stale task is dropped and a new round starts.
+    env.pr()['headRefOid'] = 'd00dfeed0000'
+    expect((await runDeliver({ ...env.base })).results[0]).toMatchObject({ outcome: 'fix-round' })
+    expect(env.pushes()).toHaveLength(1)
   })
 
   it('a fix task that failed is escalated, not left waiting', async () => {
