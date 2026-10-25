@@ -1,0 +1,15 @@
+{
+  "project": [
+    { "id": "test-for-new-code", "status": "passed", "evidence": "scripts/retrieval-suite.test.mjs added; node --test passes its 2 tests" },
+    { "id": "no-todo", "status": "passed", "evidence": "no file under src/ changed in this branch" }
+  ],
+  "outcomes": [
+    { "id": "o1", "status": "passed", "evidence": "doctor grade A score 97, connectivity 84%, benchmark hit@3 0.923, unmet []" },
+    { "id": "o2", "status": "passed", "evidence": "two package docs under docs/for-agents/packages/ with verified paths" },
+    { "id": "o3", "status": "passed", "evidence": "26 cases, valid JSON" },
+    { "id": "o4", "status": "passed", "evidence": "hit@3 92.3%, MRR 0.913, no baseline written" },
+    { "id": "o5", "status": "passed", "evidence": "index regenerated, tree clean afterwards" },
+    { "id": "o6", "status": "passed", "evidence": "typecheck/test/build exit 0" },
+    { "id": "o7", "status": "passed", "evidence": "no .github edits, headers <= 72" }
+  ]
+}
