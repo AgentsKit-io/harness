@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
-  "contentHash": "4b6e1c7e54be160a9d52737654d0722ac285ed8d3818e1feb399681dabc38602",
+  "contentHash": "0360e84b88c1400cffb7d28f009b7489e3296c9bf7cb19a532a9fc6dd4441d50",
   "contentHashAlgo": "sha256-semantic-v1",
-  "generatedAt": "2026-10-25T01:55:48.870Z",
+  "generatedAt": "2026-10-25T03:19:06.101Z",
   "project": {
     "name": "AgentsKit Harness",
     "root": "."
@@ -1534,6 +1534,23 @@
       "contentHash": "32ab05cceb913a33ef8c26eba6ceed0a49b48d14b0124394060152403b5f0a38"
     },
     {
+      "id": "module:scripts/cloudflare-headers.config.mjs",
+      "type": "module",
+      "title": "cloudflare-headers.config.mjs",
+      "path": "scripts/cloudflare-headers.config.mjs",
+      "symbols": [
+        "buildCommand",
+        "outputDirectory",
+        "rules"
+      ],
+      "tags": [
+        "module",
+        "mjs",
+        "scripts"
+      ],
+      "contentHash": "74fd8a59b98ef5dbe3eba60c7d094b24c96c06b39892284c589dc687a03af997"
+    },
+    {
       "id": "module:scripts/cloudflare-headers.mjs",
       "type": "module",
       "title": "cloudflare-headers.mjs",
@@ -1543,7 +1560,7 @@
         "mjs",
         "scripts"
       ],
-      "contentHash": "3d0bf277343d0d7cc2a4bc17c7eab398a4135e2f35d980af81ce4a4af8d97a9d"
+      "contentHash": "95cbb7944821462b3dfb8a2f0c922922d78e0db32e437d5ea092762559cc975c"
     },
     {
       "id": "module:scripts/docs-artifacts-contract.test.mjs",
@@ -1556,7 +1573,7 @@
         "test",
         "scripts"
       ],
-      "contentHash": "4c6f5420f41f0de2214ef5c38dd11ebdf80d222e2f76cd5af82bb925269004e3"
+      "contentHash": "b7611bccd6680e005d2e2acad7320034d39fe9be4a6caa8749b5f074f23461f5"
     },
     {
       "id": "module:scripts/frontmatter.test.mjs",
@@ -4424,7 +4441,7 @@
         "ts",
         "loop"
       ],
-      "contentHash": "e12789a675391bffb7dd98ce19c262ae5f42d76b72eb62e1d5849115efd78dae"
+      "contentHash": "da7111a89129e8e1ee8e865ca1f919c716186cc020c51a41350508df6831843c"
     },
     {
       "id": "module:src/loop/flows.ts",
@@ -8423,7 +8440,7 @@
         "ts",
         "test"
       ],
-      "contentHash": "2697b5fabf231edec73d2e2ecdd7d996dca8cb7b4bbdcccf7994f89457f7f228"
+      "contentHash": "19bebde38a2f7133b478a894916def35e72df511751f6f70762247623aeb6b7e"
     },
     {
       "id": "module:test/loop-fleet-dod.test.ts",
@@ -9651,7 +9668,7 @@
     }
   },
   "inputs": {
-    "hash": "c53937eb8fbc4e6c583a8b20adbef75a2f7b7abb1e312bddff1b700e017103a3",
+    "hash": "af54442cc1d06585da20753e4dc2e873b06929a8530fedd2f9d09b9e61180bd8",
     "fileCount": 614,
     "projectionVersion": 2
   },
@@ -9674,9 +9691,9 @@
   "projection": {
     "type": "retrieval-index",
     "schemaVersion": 1,
-    "contentHash": "21eb0e28a2bf63cfd514d61cc189d15102c51550efe5caffaeb09c0b800c1212",
+    "contentHash": "5594f2d211356ee7e0b62070d9cf90259a48365d5de71270751ff069ff7dfa41",
     "contentHashAlgo": "sha256-semantic-v1",
-    "snapshotHash": "5f172e2e054f7e0ef335a8d1070feffba79ed5b950b57b6c79ed011c1c67bd12",
+    "snapshotHash": "1225624e2cfe36e436a9c29fc991ba2dbc91ef3ac8f88a933b0a4a5086e0defb",
     "overlayHash": "f99666ff9119084dd25c2974ae64eb6935ec2aa785ff5ad478fb9d541f7a5e94",
     "configurationHash": "497822431910cd9fa7d674a48a9f0b96fbbbf779f22a001de0b52252117fe3ab",
     "lexiconVersion": 1,
@@ -9696,7 +9713,7 @@
     },
     "lexical": {
       "version": 1,
-      "documentCount": 594,
+      "documentCount": 595,
       "fieldNames": [
         "aliases",
         "body",
@@ -9707,13 +9724,13 @@
         "title"
       ],
       "averageFieldLength": {
-        "aliases": 2.925925925925926,
-        "body": 46.138047138047135,
-        "headings": 3.835016835016835,
-        "path": 6.127946127946128,
-        "summary": 2.8653198653198655,
-        "symbols": 13.97138047138047,
-        "title": 4.018518518518518
+        "aliases": 2.926050420168067,
+        "body": 46.06050420168067,
+        "headings": 3.8285714285714287,
+        "path": 6.127731092436975,
+        "summary": 2.8605042016806723,
+        "symbols": 13.959663865546219,
+        "title": 4.020168067226891
       }
     },
     "entries": [
@@ -10095,7 +10112,7 @@
           ],
           "outbound": []
         },
-        "contentHash": "58ceaf6b69e84d6d00ffe9f0026329e342fa8802a527a6991c175b862dc12b85",
+        "contentHash": "5ff0c36767c533f35dd89f3de9b34c9e6f3514dc69d65bcfc5a88ccaeb50683d",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -17862,6 +17879,56 @@
         "confidence": "observed"
       },
       {
+        "id": "module:scripts/cloudflare-headers.config.mjs",
+        "kind": "module",
+        "path": "scripts/cloudflare-headers.config.mjs",
+        "title": "cloudflare-headers.config.mjs",
+        "aliases": [],
+        "symbols": [
+          "buildCommand",
+          "outputDirectory",
+          "rules"
+        ],
+        "tags": [
+          "module",
+          "mjs",
+          "scripts"
+        ],
+        "fields": {
+          "title": "cloudflare-headers.config.mjs",
+          "headings": "",
+          "path": "scripts/cloudflare-headers.config.mjs",
+          "symbols": "buildCommand outputDirectory rules",
+          "summary": "",
+          "body": "",
+          "aliases": "module mjs scripts"
+        },
+        "graph": {
+          "pagerank": 0,
+          "inboundLinks": 0,
+          "coveredBy": [],
+          "mentionedBy": [],
+          "areaId": "area:scripts",
+          "packageId": "package:@agentskit/harness",
+          "inbound": [
+            {
+              "kind": "imports",
+              "id": "module:scripts/cloudflare-headers.mjs",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
+              "id": "module:scripts/docs-artifacts-contract.test.mjs",
+              "confidence": "observed"
+            }
+          ],
+          "outbound": []
+        },
+        "contentHash": "74fd8a59b98ef5dbe3eba60c7d094b24c96c06b39892284c589dc687a03af997",
+        "provenance": "observed",
+        "confidence": "observed"
+      },
+      {
         "id": "module:scripts/cloudflare-headers.mjs",
         "kind": "module",
         "path": "scripts/cloudflare-headers.mjs",
@@ -17889,9 +17956,15 @@
           "areaId": "area:scripts",
           "packageId": "package:@agentskit/harness",
           "inbound": [],
-          "outbound": []
+          "outbound": [
+            {
+              "kind": "imports",
+              "id": "module:scripts/cloudflare-headers.config.mjs",
+              "confidence": "observed"
+            }
+          ]
         },
-        "contentHash": "3d0bf277343d0d7cc2a4bc17c7eab398a4135e2f35d980af81ce4a4af8d97a9d",
+        "contentHash": "95cbb7944821462b3dfb8a2f0c922922d78e0db32e437d5ea092762559cc975c",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -17924,9 +17997,15 @@
           "areaId": "area:scripts",
           "packageId": "package:@agentskit/harness",
           "inbound": [],
-          "outbound": []
+          "outbound": [
+            {
+              "kind": "imports",
+              "id": "module:scripts/cloudflare-headers.config.mjs",
+              "confidence": "observed"
+            }
+          ]
         },
-        "contentHash": "4c6f5420f41f0de2214ef5c38dd11ebdf80d222e2f76cd5af82bb925269004e3",
+        "contentHash": "b7611bccd6680e005d2e2acad7320034d39fe9be4a6caa8749b5f074f23461f5",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -30950,7 +31029,7 @@
             }
           ]
         },
-        "contentHash": "e12789a675391bffb7dd98ce19c262ae5f42d76b72eb62e1d5849115efd78dae",
+        "contentHash": "da7111a89129e8e1ee8e865ca1f919c716186cc020c51a41350508df6831843c",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -46368,7 +46447,7 @@
             }
           ]
         },
-        "contentHash": "2697b5fabf231edec73d2e2ecdd7d996dca8cb7b4bbdcccf7994f89457f7f228",
+        "contentHash": "19bebde38a2f7133b478a894916def35e72df511751f6f70762247623aeb6b7e",
         "provenance": "observed",
         "confidence": "observed"
       },
