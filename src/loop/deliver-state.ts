@@ -26,7 +26,7 @@ export interface DeliveryHandoff {
 export interface DeliveryState {
   readonly issue: string
   readonly prNumber: number | null
-  readonly reviews: Readonly<Record<string, { readonly status: CodeReviewOutcome['status']; readonly at: string; readonly provider: string; readonly model: string | null; readonly blocking: number; readonly attempts: number; readonly reason?: string; /** ADR-0046 level of this review; filled from `status` when a stored state predates it. */ readonly verdict?: Verdict }>>
+  readonly reviews: Readonly<Record<string, { readonly status: CodeReviewOutcome['status']; readonly at: string; readonly provider: string; readonly model: string | null; readonly blocking: number; readonly attempts: number; readonly reason?: string; /** ADR-0046 level of this review; filled from `status` when a stored state predates it. */ readonly verdict?: Verdict; /** Files the review could not cover even after retrying them: it "ran with gaps", listed here. */ readonly gaps?: readonly string[]; /** The leftovers issue the stop rule filed for this head's remaining findings. */ readonly leftovers?: string }>>
   readonly fixRounds: number
   readonly nudges: readonly { readonly kind: 'idle' | 'conflict' | 'ci' | 'review' | 'handoff' | 'permission' | 'brief' | 'hitl'; readonly at: string; readonly head: string | null }[]
   readonly handoffs: readonly DeliveryHandoff[]
@@ -94,6 +94,25 @@ export const approveHeldDelivery = (loaded: LoadedLoopConfig, issue: string, inp
   writeJsonAtomic(deliveryStatePath(loaded.stateDir, issue), next)
   appendLoopEvent(loaded.stateDir, { at, type: 'pr.human-approved', issue, head: state.heldFor, by, pr: state.prNumber })
   return next
+}
+
+/**
+ * `loop retry-review <pr>`: drop the PR's incomplete review attempts so the next deliver pass reviews its head again,
+ * and resume a delivery that finished (held / blocked) on them. Replaces resetting `delivery.json` by hand.
+ */
+export const retryReview = (loaded: LoadedLoopConfig, pr: number, now = new Date()): { readonly issue: string; readonly heads: readonly string[]; readonly reopened: boolean } => {
+  const { stateDir } = loaded
+  const intake = `pr-${pr}`
+  const issue = existsSync(deliveryStatePath(stateDir, intake)) ? intake : listDispatched(stateDir).map((record) => record.issue).find((identifier) => readDeliveryState(stateDir, identifier).prNumber === pr)
+  if (!issue) return fail(`No delivery tracks PR #${pr}.`, 'INVALID_INPUT')
+  const state = readDeliveryState(stateDir, issue)
+  const heads = Object.entries(state.reviews).filter(([, review]) => review.status === 'incomplete').map(([head]) => head)
+  if (!heads.length) return fail(`PR #${pr} (${issue}) has no incomplete review to retry.`, 'INVALID_STATE')
+  const reviews = Object.fromEntries(Object.entries(state.reviews).filter(([head]) => !heads.includes(head)))
+  const reopened = state.finishedAt !== null && !state.cancelledAt && (state.finalOutcome === 'held' || state.finalOutcome === 'blocked')
+  writeJsonAtomic(deliveryStatePath(stateDir, issue), { ...state, reviews, ...(reopened ? { finishedAt: null, finalOutcome: null, heldFor: null } : {}) })
+  appendLoopEvent(stateDir, { at: now.toISOString(), type: 'review.retry-requested', issue, pr, heads, reopened })
+  return { issue, heads, reopened }
 }
 
 /** Every issue the loop ever dispatched (finished or not) — callers that only care about in-flight work must filter on `readDeliveryState(...).finishedAt` themselves. */

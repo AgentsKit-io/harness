@@ -6951,6 +6951,12 @@
           ]
         },
         {
+          "name": "retryReview",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
           "name": "retryRun",
           "kinds": [
             "value"

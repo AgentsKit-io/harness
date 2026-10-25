@@ -256,6 +256,8 @@ export const createGitHubTracker = (input: ConnectorInput): TrackerConnector => 
       const relation = [project ? `**Project:** ${project}` : '', parent ? `**Parent issue:** ${parent}` : ''].filter(Boolean).join('\n\n')
       const content = [description, relation].filter(Boolean).join('\n\n')
       const body = dedupeKey ? `${content}\n\n<!-- harness:${dedupeKey} -->` : content
+      // `gh issue create --label` fails on a label the repo does not have yet (`loop:backlog` on a leftovers issue).
+      await ensureLabels(labels ?? [])
       return githubIssueCreate(runner, { repo, title, body, labels: [...new Set([...(lifecycle ? [lifecycle] : []), ...(labels ?? [])])], assignee: await defaultAssignee(), ...(dedupeKey ? { dedupeKey } : {}) }, options)
     },
     transitions: createTrackingAdapter('github', async (transition) => { await setState({ issue: transition.issue, to: transition.to }) }, { ...(input.dryRun === undefined ? {} : { dryRun: input.dryRun }) }),

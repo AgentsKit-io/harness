@@ -3,7 +3,7 @@ import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync
 import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
-import { approveHeldDelivery, atLeast, buildReviewArgv, createDispatchLedger, createHitlStore, dispatchRecordPath, listDispatched, loadLoopConfig, parseReviewResult, precheckDeliver, readDeliveryState, renderFindingsForWorker, runCodeReview, runDeliver, createIssueQueue } from '../src/index.js'
+import { approveHeldDelivery, atLeast, buildReviewArgv, createDispatchLedger, createHitlStore, dispatchRecordPath, listDispatched, loadLoopConfig, parseReviewResult, precheckDeliver, readDeliveryState, renderFindingsForWorker, retryReview, runCodeReview, runDeliver, createIssueQueue } from '../src/index.js'
 import type { CommandResult, CommandRunner, DispatchRecordFile, StoredContract } from '../src/index.js'
 import { renderSpec, writeSpec } from '../src/loop/spec.js'
 import { readAgentRunReport } from '../src/loop/agent-runs.js'
@@ -26,6 +26,8 @@ interface Scenario {
   readonly closedPr?: Record<string, unknown>
   readonly terminals?: readonly Record<string, unknown>[]
   readonly review?: { readonly code: number; readonly findings?: readonly Record<string, unknown>[]; readonly incomplete?: boolean; readonly failureMessage?: string; /** The CLI exits without writing `--result`. */ readonly noResultFile?: boolean }
+  /** What a review scoped to one file (`--file`) returns; omitted = the same as `review`. */
+  readonly fileReview?: (argv: readonly string[]) => NonNullable<Scenario['review']>
   readonly mergeRefused?: boolean
   /** `gh pr diff` output (what `git patch-id` is computed from); omitted = the diff is unavailable. */
   readonly prDiff?: string
@@ -188,13 +190,15 @@ const setup = (initial: Scenario = {}) => {
       }
       if (scenario.orcaWorktreeMissing && (key.startsWith('orca worktree set') || key.startsWith('orca worktree rm'))) return { code: 1, stdout: '', stderr: 'selector_not_found', timedOut: false, durationMs: 1 }
       if (key.startsWith('orca linear') && scenario.linearRateLimited) return { code: 1, stdout: '', stderr: 'Linear API: HTTP 429 Too Many Requests', timedOut: false, durationMs: 1 }
+      if (key.startsWith('orca linear save-issue')) return okResult({ issue: { identifier: 'ENG-99', url: 'https://linear.app/x/issue/ENG-99' } })
       if (key.startsWith('orca linear issue ') && scenario.linearIssue) return okResult({ issue: { identifier: 'ENG-10', title: 'Export is empty', url: 'https://linear.app/x/issue/ENG-10', state: { name: 'In Progress', type: 'started' }, updatedAt: '2026-09-10T00:00:00.000Z', createdAt: '2026-09-09T00:00:00.000Z', ...scenario.linearIssue } })
       if (key.startsWith('orca linear') || key.startsWith('orca worktree set') || key.startsWith('orca worktree rm')) return okResult({ ok: true })
       if (argv[0] === 'agentskit-review' && (scenario.reviewThrows ?? 0) > 0) { scenario.reviewThrows = (scenario.reviewThrows ?? 1) - 1; throw new Error('spawn agentskit-review EAGAIN') }
       if (argv[0] === 'agentskit-review') {
         const resultFile = argv[argv.indexOf('--result') + 1]
-        if (resultFile && scenario.review && !scenario.review.noResultFile) writeFileSync(resultFile, JSON.stringify({ blocking: scenario.review.code === 1, incomplete: scenario.review.incomplete ?? false, findings: scenario.review.findings ?? [] }))
-        return { code: scenario.review?.code ?? 0, stdout: scenario.review?.failureMessage ?? '## Code review — done', stderr: '', timedOut: false, durationMs: 1 }
+        const review = argv.includes('--file') && scenario.fileReview ? scenario.fileReview(argv) : scenario.review
+        if (resultFile && review && !review.noResultFile) writeFileSync(resultFile, JSON.stringify({ blocking: review.code === 1, incomplete: review.incomplete ?? false, findings: review.findings ?? [] }))
+        return { code: review?.code ?? 0, stdout: review?.failureMessage ?? '## Code review — done', stderr: '', timedOut: false, durationMs: 1 }
       }
       if (argv[0] === 'gh' && argv[1] === 'api' && argv.includes('--method') && !scenario.mergeRefused) merges += 1
       if (argv[0] === 'gh' && argv[1] === 'api' && argv.includes('--method')) return scenario.mergeRefused ? { code: 1, stdout: JSON.stringify({ message: 'Head branch was modified.' }), stderr: '', timedOut: false, durationMs: 1 } : ok({ merged: true, sha: 'deadbeef', message: 'merged' })
@@ -433,17 +437,136 @@ describe('deliver', () => {
   })
 
   it('keeps why a review was incomplete, and says it when holding the PR for a human', async () => {
-    const env = setup({ review: { code: 2, failureMessage: 'Review execution failed: 9 of 10 lens executions succeeded (1 failed); 1 reviewable file had zero successful lenses: scripts/check-quality-gates.mjs' } })
+    // No file named (and no result file): nothing to retry alone, so it stays fail-closed.
+    const env = setup({ review: { code: 2, noResultFile: true, failureMessage: 'Review execution failed: 9 of 10 lens executions succeeded (1 failed)' } })
     await deliver(env)
     await deliver(env)
     const review = Object.values(readDeliveryState(env.loaded.stateDir, 'ENG-10').reviews)[0]
     expect(review).toMatchObject({ status: 'incomplete', attempts: 2 })
-    expect(review?.reason).toContain('zero successful lenses: scripts/check-quality-gates.mjs')
+    expect(review?.reason).toContain('lens executions succeeded')
     const held = (await deliver(env)).results[0]
     expect(held).toMatchObject({ outcome: 'blocked' })
-    expect(held?.reason).toContain('zero successful lenses')
+    expect(held?.reason).toContain('lens executions succeeded')
     const reviewed = readFileSync(join(env.loaded.stateDir, 'events.ndjson'), 'utf8').split('\n').filter(Boolean).map((line) => JSON.parse(line) as Record<string, unknown>).filter((event) => event['type'] === 'pr.reviewed')
     expect(reviewed.every((event) => String(event['reason']).includes('lens executions'))).toBe(true)
+  })
+
+  describe('a failing review never holds a PR forever (Miaudota #282–#284)', () => {
+    const failing = 'lens tests: no JSON returned for e2e/checkout.spec.ts\nReview execution failed: 9 of 10 lens executions succeeded (1 failed); 1 reviewable file had zero successful lenses: e2e/checkout.spec.ts'
+
+    it('retries the failing file alone, then with another model, and on a green PR merges with the gap listed — not held', async () => {
+      const env = setup({ review: { code: 2, findings: [{ severity: 'nit', title: 'naming', file: 'a.ts', line: 1 }], failureMessage: failing } })
+      const result = (await deliver(env)).results[0]
+      expect(result).toMatchObject({ outcome: 'merged', pr: 42 })
+      const retries = env.runner.calls.filter((argv) => argv[0] === 'agentskit-review' && argv.includes('--file'))
+      expect(retries.map((argv) => argv[argv.indexOf('--file') + 1])).toEqual(['e2e/checkout.spec.ts', 'e2e/checkout.spec.ts'])
+      expect(retries[0]?.[retries[0].indexOf('--provider') + 1]).toBe('codex-cli')
+      expect(retries[1]?.[retries[1].indexOf('--provider') + 1]).not.toBe('codex-cli')
+      expect(retries.every((argv) => !argv.includes('--post'))).toBe(true)
+      const review = Object.values(readDeliveryState(env.loaded.stateDir, 'ENG-10').reviews)[0]
+      expect(review).toMatchObject({ status: 'clean', attempts: 1, gaps: [expect.stringContaining('e2e/checkout.spec.ts')] })
+      expect(review?.gaps?.[0]).toContain('empty output')
+      expect(review?.reason).toContain('review ran with gaps')
+      const comment = env.runner.calls.find((argv) => argv[0] === 'gh' && argv[1] === 'pr' && argv[2] === 'comment' && argv.join(' ').includes('review ran with gaps'))?.join(' ')
+      expect(comment).toContain('e2e/checkout.spec.ts')
+      expect(comment).toContain('ak-harness loop retry-review 42')
+      expect(readFileSync(join(env.loaded.stateDir, 'events.ndjson'), 'utf8')).toContain('"type":"review.gaps"')
+    })
+
+    it('a file that passes when retried alone completes the review: its findings count, no gap is left', async () => {
+      const env = setup({ review: { code: 2, findings: [], failureMessage: failing }, fileReview: () => ({ code: 1, findings: [{ severity: 'high', title: 'Flaky wait', file: 'e2e/checkout.spec.ts', line: 9 }] }) })
+      const result = (await deliver(env)).results[0]
+      expect(result).toMatchObject({ outcome: 'fix-round' })
+      expect(env.runner.calls.find((argv) => argv[1] === 'terminal' && argv[2] === 'send')?.join(' ')).toContain('Flaky wait')
+      const review = Object.values(readDeliveryState(env.loaded.stateDir, 'ENG-10').reviews)[0]
+      expect(review).toMatchObject({ status: 'findings', blocking: 1 })
+      expect(review?.gaps).toBeUndefined()
+      expect(env.runner.calls.filter((argv) => argv[0] === 'agentskit-review' && argv.includes('--file'))).toHaveLength(1)
+    })
+
+    it('reviews a large failing file in chunks', async () => {
+      const env = setup({ review: { code: 2, failureMessage: failing }, fileReview: () => ({ code: 0 }), pr: basePr({ files: [{ path: 'packages/demo/src/index.ts', additions: 3, deletions: 0 }, { path: 'e2e/checkout.spec.ts', additions: 1000, deletions: 0 }] }) })
+      expect((await deliver(env)).results[0]).toMatchObject({ outcome: 'merged' })
+      const scopes = env.runner.calls.filter((argv) => argv.includes('--file')).map((argv) => argv[argv.indexOf('--file') + 1])
+      expect(scopes).toEqual(['e2e/checkout.spec.ts:1-400', 'e2e/checkout.spec.ts:401-800', 'e2e/checkout.spec.ts:801-'])
+    })
+
+    it('`loop retry-review <pr>` drops the incomplete attempts and resumes a delivery that stopped on them', async () => {
+      const env = setup({ review: { code: 0 } })
+      const head = String((basePr() as Record<string, unknown>).headRefOid)
+      writeFileSync(join(env.loaded.stateDir, 'issues', 'ENG-10', 'delivery.json'), JSON.stringify({
+        ...readDeliveryState(env.loaded.stateDir, 'ENG-10'),
+        prNumber: 42, finishedAt: '2026-09-11T11:30:00.000Z', finalOutcome: 'blocked',
+        reviews: { [head]: { status: 'incomplete', at: '2026-09-11T11:00:00.000Z', provider: 'codex-cli', model: 'gpt-5.6-sol', blocking: 0, attempts: 2, reason: 'no JSON' } },
+      }))
+      expect(retryReview(env.loaded, 42)).toEqual({ issue: 'ENG-10', heads: [head], reopened: true })
+      expect(readDeliveryState(env.loaded.stateDir, 'ENG-10')).toMatchObject({ reviews: {}, finishedAt: null, finalOutcome: null })
+      expect(readFileSync(join(env.loaded.stateDir, 'events.ndjson'), 'utf8')).toContain('"type":"review.retry-requested"')
+      expect(() => retryReview(env.loaded, 42)).toThrow(/no incomplete review/)
+      expect(() => retryReview(env.loaded, 77)).toThrow(/No delivery tracks PR #77/)
+      // An intake PR held on an incomplete review (never finished) is found by its pr-<n> state.
+      mkdirSync(join(env.loaded.stateDir, 'issues', 'pr-282'), { recursive: true })
+      writeFileSync(join(env.loaded.stateDir, 'issues', 'pr-282', 'delivery.json'), JSON.stringify({ issue: 'pr-282', prNumber: 282, reviews: { [head]: { status: 'incomplete', at: '2026-09-11T11:00:00.000Z', provider: 'codex-cli', model: null, blocking: 0, attempts: 2 } }, fixRounds: 0, nudges: [], handoffs: [], heldFor: null, finishedAt: null, finalOutcome: null }))
+      expect(retryReview(env.loaded, 282)).toMatchObject({ issue: 'pr-282', reopened: false })
+      expect(readDeliveryState(env.loaded.stateDir, 'pr-282').reviews).toEqual({})
+    })
+  })
+
+  describe('stop rule: after 2 rounds, leftovers go in one issue and the PR merges', () => {
+    const medium = (title: string) => ({ code: 1, findings: [{ severity: 'med', category: 'tests', title, file: 'a.test.ts', line: 3 }] })
+    const twoRounds = async (env: ReturnType<typeof setup>) => {
+      expect((await deliver(env)).results[0]).toMatchObject({ outcome: 'fix-round' })
+      env.scenario.pr = basePr({ headRefOid: '1111111111111111111111111111111111111111' })
+      env.scenario.review = medium('Assert the error message')
+      expect((await deliver(env)).results[0]).toMatchObject({ outcome: 'fix-round' })
+      env.scenario.pr = basePr({ headRefOid: '2222222222222222222222222222222222222222' })
+    }
+
+    it('files the remaining medium findings in one loop:backlog issue, says "ready to merge with leftovers", and merges', async () => {
+      const env = setup({ review: medium('Test the empty case') })
+      await twoRounds(env)
+      env.scenario.review = medium('Name the fixture')
+      const result = (await deliver(env)).results[0]
+      expect(result).toMatchObject({ outcome: 'merged', pr: 42 })
+      const created = env.runner.calls.find((argv) => argv[1] === 'linear' && argv[2] === 'save-issue')
+      expect(created?.[created.indexOf('--label') + 1]).toBe('loop:backlog')
+      expect(created?.[created.indexOf('--state') + 1]).toBe('Backlog')
+      expect(created?.[created.indexOf('--description') + 1]).toContain('Name the fixture')
+      expect(created?.[created.indexOf('--description') + 1]).toContain('https://github.com/o/r/pull/42')
+      expect(env.runner.calls.some((argv) => argv[0] === 'gh' && argv[1] === 'pr' && argv[2] === 'comment' && argv.join(' ').includes('ready to merge with leftovers (ENG-99)'))).toBe(true)
+      expect(readDeliveryState(env.loaded.stateDir, 'ENG-10').reviews['2222222222222222222222222222222222222222']).toMatchObject({ status: 'findings', leftovers: 'ENG-99' })
+      expect(readFileSync(join(env.loaded.stateDir, 'events.ndjson'), 'utf8')).toContain('"type":"review.converged"')
+    })
+
+    it('keeps asking for rounds while a finding is high or about correctness/security', async () => {
+      for (const finding of [{ severity: 'high', title: 'Off by one' }, { severity: 'med', category: 'security', title: 'Token in log' }, { severity: 'med', category: 'correctness', title: 'Wrong total' }]) {
+        const env = setup({ review: medium('Test the empty case') })
+        await twoRounds(env)
+        env.scenario.review = { code: 1, findings: [{ ...finding, file: 'a.ts', line: 1 }] }
+        expect((await deliver(env)).results[0]?.outcome).not.toBe('merged')
+        expect(env.runner.calls.some((argv) => argv[1] === 'linear' && argv[2] === 'save-issue')).toBe(false)
+      }
+    })
+
+    it('does not stop before 2 rounds', async () => {
+      const env = setup({ review: medium('Test the empty case') })
+      expect((await deliver(env)).results[0]).toMatchObject({ outcome: 'fix-round' })
+      expect(env.runner.calls.some((argv) => argv[1] === 'linear' && argv[2] === 'save-issue')).toBe(false)
+    })
+
+    it('leaves a loop:risk PR for a person: leftovers filed and commented, never merged', async () => {
+      const env = setup({ review: medium('Test the empty case') })
+      writeFileSync(dispatchRecordPath(env.loaded.stateDir, 'ENG-10'), JSON.stringify({ ...env.record, labels: ['loop:risk'] }))
+      await twoRounds(env)
+      env.scenario.review = medium('Name the fixture')
+      const result = (await deliver(env)).results[0]
+      expect(result).toMatchObject({ outcome: 'held', reason: 'ready to merge with leftovers (ENG-99); loop:risk stays for a person' })
+      expect(env.runner.calls.some((argv) => argv[0] === 'gh' && argv[1] === 'api' && argv.includes('--method'))).toBe(false)
+      expect(env.runner.calls.find((argv) => argv[0] === 'gh' && argv[2] === 'comment' && argv.join(' ').includes('leftovers'))?.join(' ')).toContain('a person merges it')
+      // The next pass does not re-review or send the leftovers back as a round.
+      expect((await deliver(env)).results[0]).toMatchObject({ outcome: 'held' })
+      expect(env.runner.calls.filter((argv) => argv[1] === 'terminal' && argv[2] === 'send')).toHaveLength(2)
+    })
   })
 
   it('sends known blocking findings even when the review is incomplete, without approving the PR', async () => {

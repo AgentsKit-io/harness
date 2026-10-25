@@ -440,6 +440,25 @@ export const LoopConfigSchema = z.object({
       smallChangeLines: z.number().int().min(0).default(0),
       /** Path prefixes that always get the strongest reviewer, whatever the size (contracts, security, migrations). */
       criticalPaths: z.array(nonEmpty).default([]),
+      /**
+       * A review that fails on some files retries each one alone, then with another reviewer, through this
+       * `agentskit-review` flag (`<path>` or `<path>:<start>-<end>`). What still fails is listed as a gap: on a
+       * green PR the review counts as "ran with gaps", not a hold. null = no file retries; the gaps stand as reported.
+       */
+      fileFlag: nonEmpty.nullable().default('--file'),
+      /** A failing file with more changed lines than this (an e2e spec), or one that failed on size or a limit, is retried in chunks. */
+      chunkLines: z.number().int().positive().default(400),
+      /**
+       * The stop rule. After `afterRounds` review fix rounds on a PR, with checks green and no open finding high or
+       * about correctness/security, the loop stops asking for rounds: the remaining findings go in one leftovers
+       * issue (`backlogLabel`, linked to the PR), the PR says "ready to merge with leftovers", and the loop merges
+       * it — unless the issue was dispatched with one of `personLabels`, which stay for a person. 0 = off.
+       */
+      converge: z.object({
+        afterRounds: z.number().int().min(0).default(2),
+        backlogLabel: nonEmpty.default('loop:backlog'),
+        personLabels: z.array(nonEmpty).default(['loop:risk', 'loop:review']),
+      }).prefault({}),
     }).prefault({}),
     merge: z.object({
       auto: z.boolean().default(true),

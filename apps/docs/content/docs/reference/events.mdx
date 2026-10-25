@@ -13,7 +13,7 @@ timestamp) and `type` on top of the fields below. A plugin subscribes with
 The vocabulary is enforced by the compiler: `appendLoopEvent` accepts only these names, so an event that is not
 here cannot be emitted — and a name here that nothing emits fails the test suite.
 
-100 loop events.
+103 loop events.
 
 ## `contract.*`
 
@@ -87,6 +87,14 @@ here cannot be emitted — and a name here that nothing emits fails the test sui
 | `pr.merge-unconfirmed` | `issue`, `pr`, `head`, `sha`, `observed`, `count` | GitHub accepted the merge but the PR did not read back as merged at the reviewed head (ADR-0046); `count` is passes in a row. |
 | `pr.human-approved` | `issue`, `head`, `by`, `pr` | A person attested a PR held for protected paths, for exactly this head. |
 | `pr.smoke-failed` | `issue`, `pr`, `head`, `detail` | The optional post-merge smoke failed. |
+
+## `review.*`
+
+| Event | Carries | What it means |
+|---|---|---|
+| `review.gaps` | `issue`, `pr`, `head`, `gaps`, `source` | A file the review could not cover even after retrying it alone, in chunks and with another model; on a green PR the review counts as "ran with gaps". |
+| `review.converged` | `issue`, `pr`, `head`, `leftovers`, `findings`, `rounds` | The stop rule: after its fix rounds a PR's remaining medium/low findings went into one leftovers issue, and the loop stopped asking for rounds. |
+| `review.retry-requested` | `issue`, `pr`, `heads`, `reopened` | `loop retry-review <pr>`: a person dropped the PR's incomplete review attempts so the next pass reviews it again. |
 
 ## `tracker.*`
 

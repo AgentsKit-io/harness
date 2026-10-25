@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
-  "contentHash": "38fbf77b560fa16a67e2f5ea99260c32387ddeb95cc9c7f4b8476afe4e8224b2",
+  "contentHash": "f5ffe5fe2852428d3e55ee34dffbdf67112f47dcf3211ecf4f15198078ef6ad8",
   "contentHashAlgo": "sha256-semantic-v1",
-  "generatedAt": "2026-10-25T11:25:58.575Z",
+  "generatedAt": "2026-10-25T14:38:38.555Z",
   "project": {
     "name": "AgentsKit Harness",
     "root": "."
@@ -1001,7 +1001,7 @@
         "document",
         "human"
       ],
-      "contentHash": "703c0e76e6d690635f0605489b346dfeb060263951f75a783fb16c8ac2b709b5"
+      "contentHash": "7ba2290f464d0420aace4a55164d36460ad3011b2b4f825168cbbaf05da150c7"
     },
     {
       "id": "document:docs/MODULE-BOUNDARIES.md",
@@ -1085,7 +1085,7 @@
         "document",
         "project"
       ],
-      "contentHash": "2dcad6b70449e27294b048a92adc5d09ba00c7e8ab6dcacd8860715dcc5669ec"
+      "contentHash": "95510273ecc4b7210ebd410a114301b10f3d4360e8dcfa1aca24b2a85fd5a712"
     },
     {
       "id": "document:release/notes.md",
@@ -2015,17 +2015,23 @@
       "symbols": [
         "CodeReviewInput",
         "CodeReviewOutcome",
+        "GapRecoveryOptions",
         "REVIEW_SEVERITIES",
         "ReviewFinding",
+        "ReviewGap",
         "ReviewSeverity",
         "ReviewUsage",
         "StructuredReviewHitl",
         "atLeast",
         "buildReviewArgv",
+        "chunkRanges",
         "parseReviewEvidence",
+        "parseReviewGaps",
         "parseReviewHitl",
         "parseReviewResult",
+        "recoverReviewGaps",
         "renderFindingsForWorker",
+        "renderReviewGap",
         "runCodeReview",
         "severityRank"
       ],
@@ -2034,7 +2040,7 @@
         "ts",
         "adapters"
       ],
-      "contentHash": "a5064ff7d476b056e8b53d9ef88614c5101f230b70739f66fd3c33c5bc0c52f2"
+      "contentHash": "94aee6c7b1b4261cb16218cec88b08ad01d6b946ce12baa66cb2b0a603f2c0a3"
     },
     {
       "id": "module:src/adapters/command.ts",
@@ -2130,7 +2136,7 @@
         "ts",
         "adapters"
       ],
-      "contentHash": "c25a4a94f4bae06f2deb76fdd22db8a3e69374fa5815c375888b1f25b331ae0f"
+      "contentHash": "893be370997aca005a1a1aa1a6dc59f83e0537301a26ff067fd32b5768568a2b"
     },
     {
       "id": "module:src/adapters/linear-orca.ts",
@@ -2365,7 +2371,7 @@
         "ts",
         "src"
       ],
-      "contentHash": "029b80fa5ffdb0c7004e3fde09ddb44486a39079f55b4f7ced3c3fb39f2e5f5d"
+      "contentHash": "2859920f747e81936b46739a3e89d1d9e89bc97286758100c18eaeea07cc8449"
     },
     {
       "id": "module:src/context/index.ts",
@@ -2971,7 +2977,7 @@
         "ts",
         "src"
       ],
-      "contentHash": "48dae4090d353047a34b10bfe52c50124c6e801b7fd41e15b132bd3a696137de"
+      "contentHash": "5d06a9372a2fa7275910861e399b669b24c117a46331302efc89973aeb9710c6"
     },
     {
       "id": "module:src/kernel/adapter-contract.ts",
@@ -4041,7 +4047,7 @@
         "ts",
         "loop"
       ],
-      "contentHash": "72d117685b87c3ff68ea0b228be890f3958b9231da8779b90b61ddacf5c7fe52"
+      "contentHash": "63cae7446da75ce54080ae18aaecea3559b65a993fda7b2a620ad2b5348b4347"
     },
     {
       "id": "module:src/loop/connectors.ts",
@@ -4063,7 +4069,7 @@
         "ts",
         "loop"
       ],
-      "contentHash": "d1f0dc3f5282c083591158fe62d6ea570f883edf457c0495871f454d875d713c"
+      "contentHash": "7b50f2bde88d79d78111bf5d63fe6c5bfac41b3a1582eccf43ab9dbfd161e64d"
     },
     {
       "id": "module:src/loop/contract.ts",
@@ -4162,14 +4168,15 @@
         "markDispatchCancelled",
         "readDeliveryState",
         "readRestarts",
-        "restartsPath"
+        "restartsPath",
+        "retryReview"
       ],
       "tags": [
         "module",
         "ts",
         "loop"
       ],
-      "contentHash": "31c0128ae9241ed875a57a9e985da099dd4808a2b721177c7ed1b558f3f832b7"
+      "contentHash": "f8f67eb8edc5ae140205ba4aa063dc305b6f08e474041a6489868126947262b1"
     },
     {
       "id": "module:src/loop/deliver.ts",
@@ -4192,6 +4199,7 @@
         "precheckDeliver",
         "readDeliveryState",
         "readRestarts",
+        "retryReview",
         "runDeliver",
         "usageLimitOnScreen",
         "workerAtUsageLimit",
@@ -4203,7 +4211,7 @@
         "ts",
         "loop"
       ],
-      "contentHash": "50544dc5745a833f79b136ad1535e34b42b86e275df4e8f5477c5980fa8b9c17"
+      "contentHash": "3d41f08d69408f38139cf24947988d40f25cdcacab9467011a7d9e9321963122"
     },
     {
       "id": "module:src/loop/detached-worker.ts",
@@ -4359,7 +4367,7 @@
         "ts",
         "loop"
       ],
-      "contentHash": "b550435aae6b69568f4cf133d64c89117cd7830cc30923ad6de7565b3a1217cd"
+      "contentHash": "e6138584986075f602093ab092e37cb2660786eec1d86b13f659074cf22d9f3a"
     },
     {
       "id": "module:src/loop/evidence.ts",
@@ -4424,7 +4432,7 @@
         "ts",
         "loop"
       ],
-      "contentHash": "e3e1e4652b79f9ea241ca6b33eb355f0d043bd59f90fd4033fad5ffc7b17e8ad"
+      "contentHash": "f56d71d208174507da6607046fe3ab323603b8864ebfee9c43a261796819b139"
     },
     {
       "id": "module:src/loop/fleet-handoff.ts",
@@ -4839,7 +4847,7 @@
         "ts",
         "loop"
       ],
-      "contentHash": "a4e23f4a25482ff05c721af7d5cd3b2892a4a24741ca75a3fe46c803e51aaba0"
+      "contentHash": "351e979c7b128ee83cc7afee139cbdaae52166007f9674997624ec516460da0b"
     },
     {
       "id": "module:src/loop/init.ts",
@@ -5090,7 +5098,7 @@
         "ts",
         "loop"
       ],
-      "contentHash": "0556c8ea5faf1014e9c2dd0087ab56fbc1b139e6db73a98024e814e8e2bd4931"
+      "contentHash": "2ef220117f683d0ac1919f2de1ecc9ce0f17164f7439b729cbe78d3d66dc9fe8"
     },
     {
       "id": "module:src/loop/model-catalog/index.ts",
@@ -7252,7 +7260,7 @@
         "ts",
         "test"
       ],
-      "contentHash": "861dcfcf4f5689d4a55183cf6ac0ba14389262259d0700a0665ce682942b2649"
+      "contentHash": "3151ed98b5a5cfcea87765d15d48df243236543dbc81deb715c87099eff4c04b"
     },
     {
       "id": "module:test/adapters-command.test.ts",
@@ -8350,7 +8358,7 @@
         "ts",
         "test"
       ],
-      "contentHash": "e3bcb0eb2185808539ecbd747abf61bc88977aade4ff6f9bd309db06f2ad7adc"
+      "contentHash": "57272d6637e95e173e0237ec3baf64f126cc34c3c95438826cdc88a773c10343"
     },
     {
       "id": "module:test/loop-doctor-gaps.test.ts",
@@ -8482,7 +8490,7 @@
         "ts",
         "test"
       ],
-      "contentHash": "a83a2b41990b2b152ef94ba852a6b792eef1b203acbf109cf42e16f9cd3a740e"
+      "contentHash": "c08b198a787dc8f996343282bba3ad01f159699bbbe28efbc230ab07b88f5b8e"
     },
     {
       "id": "module:test/loop-fleet-handoff.test.ts",
@@ -8722,7 +8730,7 @@
         "ts",
         "test"
       ],
-      "contentHash": "64c4790bc91ad43b5a4bf786d32f76bbc57e79b9bdc4659a130bd275ca650040"
+      "contentHash": "8d11f5dd02dae774d46825e3eae08bc03efe693aed0ffa1d4a9608b24f492768"
     },
     {
       "id": "module:test/loop-model-catalog.test.ts",
@@ -9698,7 +9706,7 @@
     }
   },
   "inputs": {
-    "hash": "4f6da261725225ec2d34c1cfb6acf8aa27775a86d53b1ee9ab88b594f1bf7ea6",
+    "hash": "da04d6cc057bc6638d79070ecc90f1d132220cca86c0547f51d6bd435bdd7665",
     "fileCount": 616,
     "projectionVersion": 2
   },
@@ -9721,9 +9729,9 @@
   "projection": {
     "type": "retrieval-index",
     "schemaVersion": 1,
-    "contentHash": "cbfe6c153aa3c483663ec4c9317a946dbee251642f6d2aeb078612bad9b030d1",
+    "contentHash": "200b0ace6cacca213db77d1ad74698adbe085362d37dcd8c31fddbf9e61c48bb",
     "contentHashAlgo": "sha256-semantic-v1",
-    "snapshotHash": "ddaaf864b0387aa4314127e4caf1fde02069447f5652106150a7084a2c526b0d",
+    "snapshotHash": "b4d53bfa1de9d4103efd4c32241b8f2de8d7423e71c9f69ba952aaa034ed45ff",
     "overlayHash": "f99666ff9119084dd25c2974ae64eb6935ec2aa785ff5ad478fb9d541f7a5e94",
     "configurationHash": "497822431910cd9fa7d674a48a9f0b96fbbbf779f22a001de0b52252117fe3ab",
     "lexiconVersion": 1,
@@ -9755,11 +9763,11 @@
       ],
       "averageFieldLength": {
         "aliases": 2.926298157453936,
-        "body": 45.90619765494137,
-        "headings": 3.815745393634841,
+        "body": 45.91122278056952,
+        "headings": 3.8207705192629815,
         "path": 6.1289782244556115,
         "summary": 2.8509212730318256,
-        "symbols": 13.941373534338359,
+        "symbols": 13.988274706867672,
         "title": 4.023450586264657
       }
     },
@@ -12074,7 +12082,7 @@
         ],
         "fields": {
           "title": "cli",
-          "headings": "ak-harness doctor ak-harness ui ak-harness plan ak-harness context ak-harness context resolve ak-harness discovery ak-harness discovery assess ak-harness wip ak-harness wip assess ak-harness experiment ak-harness experiment select ak-harness delivery ak-harness delivery preflight ak-harness delivery pr ak-harness delivery integration ak-harness delivery production ak-harness delivery acceptance ak-harness delivery cleanup ak-harness pilot ak-harness cycle ak-harness cycle assess ak-harness block ak-harness block validate ak-harness block assess ak-harness preflight ak-harness preflight files ak-harness snapshot ak-harness snapshot validate ak-harness learning ak-harness learning parse ak-harness coordination ak-harness coordination claim ak-harness artifacts ak-harness artifacts inspect ak-harness artifacts list ak-harness artifacts schema ak-harness loop ak-harness loop validate ak-harness loop doctor ak-harness loop precheck ak-harness loop deliver ak-harness loop stage ak-harness loop tick-worker ak-harness loop deliver-worker ak-harness loop tick ak-harness loop contract ak-harness loop init ak-harness loop install ak-harness loop uninstall ak-harness loop status ak-harness loop approve ak-harness loop resume ak-harness loop paused ak-harness loop hook ak-harness loop debrief ak-harness loop issue-timeline ak-harness loop run ak-harness loop run list ak-harness loop run show ak-harness loop worker-guard ak-harness loop observe ak-harness loop watch ak-harness loop retro ak-harness loop plan",
+          "headings": "ak-harness doctor ak-harness ui ak-harness plan ak-harness context ak-harness context resolve ak-harness discovery ak-harness discovery assess ak-harness wip ak-harness wip assess ak-harness experiment ak-harness experiment select ak-harness delivery ak-harness delivery preflight ak-harness delivery pr ak-harness delivery integration ak-harness delivery production ak-harness delivery acceptance ak-harness delivery cleanup ak-harness pilot ak-harness cycle ak-harness cycle assess ak-harness block ak-harness block validate ak-harness block assess ak-harness preflight ak-harness preflight files ak-harness snapshot ak-harness snapshot validate ak-harness learning ak-harness learning parse ak-harness coordination ak-harness coordination claim ak-harness artifacts ak-harness artifacts inspect ak-harness artifacts list ak-harness artifacts schema ak-harness loop ak-harness loop validate ak-harness loop doctor ak-harness loop precheck ak-harness loop deliver ak-harness loop stage ak-harness loop tick-worker ak-harness loop deliver-worker ak-harness loop tick ak-harness loop contract ak-harness loop init ak-harness loop install ak-harness loop uninstall ak-harness loop status ak-harness loop approve ak-harness loop retry-review ak-harness loop resume ak-harness loop paused ak-harness loop hook ak-harness loop debrief ak-harness loop issue-timeline ak-harness loop run ak-harness loop run list ak-harness loop run show ak-harness loop worker-guard ak-harness loop observe ak-harness loop watch ak-harness loop retro",
           "path": "apps/docs/content/docs/reference/cli.mdx",
           "symbols": "",
           "summary": "{/* Generated by `pnpm docs:generate`. Do not edit by hand: edit `src/cli.ts` and regenerate. */}",
@@ -12095,7 +12103,7 @@
             }
           ]
         },
-        "contentHash": "3d6c4d78125823957af76e007ac702e4536d2773fd3ffd0e4ab3fea9c843b6d3",
+        "contentHash": "fd497ba120c29857db92479b1943bf3c36b2a89e312eca3ff1f253ded5ae7580",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -12119,7 +12127,7 @@
           "path": "apps/docs/content/docs/reference/configuration.mdx",
           "symbols": "",
           "summary": "{/* Generated by `pnpm docs:generate`. Do not edit by hand: edit `src/loop/config.ts` and regenerate. */}",
-          "body": "{/ Generated by pnpm docs:generate . Do not edit by hand: edit src/loop/config.ts and regenerate. /} The four layers that produce this configuration — the machine's global file, the project's, the team's and this machine's overlay — are described in . ak-harness loop validate prints the effective result, which is the only one that decides anything. 231 of 427 paths carry no description yet. schemaVersion Type: number · Default: 1 extends Defaults for this kind of project ( web-app , library , monorepo , data-pipeline , mobile ), merged below every other layer. Anything this file states wins over the preset; the preset only fills silence. Type: string project Path Type Default Description --- --- --- --- project.name string required project.repo string required project.baseBranch string \"main\" project.root string \".\" project.stateDir string \".ak-loop\" Where the loop keeps everything that is NOT the project's configuration: dispatch ledger, delivery state, contracts, events, agent memory, plans. Meant to be gitignored — the configuration lives at the repo root as loop.config.yaml , versioned; this directory is runtime state, per machine. project.team string Selects the loop.config.team.&lt;key&gt;.yaml layer. $AK LOOP TEAM overrides it; a declared team whose file is missing fails loudly. project.orchestratorView base · root \"base\" The tree the orchestrator's headless calls (contract, plan interview, architect, votes, decompose) read. base (default): a harness-owned detached worktree of origin/&lt;baseBranch&gt; , fetched before each use. root : project.root as it is — whatever branch and age the operator's checkout has. project.setup object {} project.setup.command string[] Argv (no shell — one element per arg, e.g. [pnpm, install, --frozen-lockfile] ) run once in a freshly created worktree before the worker terminal opens. Unset/empty = skip. project.setup.timeoutSec integer 600 project.setup.required boolean true When true, a failing/timing-out setup removes the worktree and counts as a dispatch failure instead of handing the worker a broken environment. orca Path Type Default Description --- --- --- --- orca.bin string \"orca\" orca.repoSelector string Orca repo selector for new worktrees: id:&lt;repoId&gt; , name:&lt;name&gt; or path:&lt;abs&gt; ; default path:&lt;project.root&gt; . orca.workspaceSelector string Existing worktree the automations run in; default: the enclosing worktree resolved by Orca. orca.host string orca.minVersion string \"1.4.200\" orca.timeoutMs integer 20000 linear Path Type Default Description --- --- --- --- linear.workspaceId string required linear.teamKey string required linear.person string required Linear display name of the person whose queue this machine drains. linear.people record&lt;string&gt; {} Display name → Linear user id, for assignee set and audit; the queue itself filters by display name. linear.rotation object {} Optional ordered handoff between owners after the current dispatchable queue drains. linear.rotation.enabled boolean false linear.rotation.owners string[] [] linear.rotation.advanceWhenEmpty boolean true linear.queueOwnership person · unassigned · both \"person\" Whose queue this machine drains. person (default) keeps the historical behaviour: the issues assigned to linear.person . unassigned drains the issues with NO assignee and turns the assignee into a transient claim — written on dispatch, cleared when the item returns — so several machines can share one priority-ordered queue without colliding. Note when switching to unassigned : clearing the assignees is then REQUIRED, not cosmetic. With person and an emptied backlog the queue comes back empty and the loop looks healthy while doing nothing. both drains the union of the two: issues with no assignee AND issues assigned to linear.person . Unassigned ones are claimed for person on dispatch; nothing is released on return (the issue stays the person's, which this queue still sees). linear.states string[] [\"Todo\",\"Ready\"] linear.",
+          "body": "{/ Generated by pnpm docs:generate . Do not edit by hand: edit src/loop/config.ts and regenerate. /} The four layers that produce this configuration — the machine's global file, the project's, the team's and this machine's overlay — are described in . ak-harness loop validate prints the effective result, which is the only one that decides anything. 234 of 433 paths carry no description yet. schemaVersion Type: number · Default: 1 extends Defaults for this kind of project ( web-app , library , monorepo , data-pipeline , mobile ), merged below every other layer. Anything this file states wins over the preset; the preset only fills silence. Type: string project Path Type Default Description --- --- --- --- project.name string required project.repo string required project.baseBranch string \"main\" project.root string \".\" project.stateDir string \".ak-loop\" Where the loop keeps everything that is NOT the project's configuration: dispatch ledger, delivery state, contracts, events, agent memory, plans. Meant to be gitignored — the configuration lives at the repo root as loop.config.yaml , versioned; this directory is runtime state, per machine. project.team string Selects the loop.config.team.&lt;key&gt;.yaml layer. $AK LOOP TEAM overrides it; a declared team whose file is missing fails loudly. project.orchestratorView base · root \"base\" The tree the orchestrator's headless calls (contract, plan interview, architect, votes, decompose) read. base (default): a harness-owned detached worktree of origin/&lt;baseBranch&gt; , fetched before each use. root : project.root as it is — whatever branch and age the operator's checkout has. project.setup object {} project.setup.command string[] Argv (no shell — one element per arg, e.g. [pnpm, install, --frozen-lockfile] ) run once in a freshly created worktree before the worker terminal opens. Unset/empty = skip. project.setup.timeoutSec integer 600 project.setup.required boolean true When true, a failing/timing-out setup removes the worktree and counts as a dispatch failure instead of handing the worker a broken environment. orca Path Type Default Description --- --- --- --- orca.bin string \"orca\" orca.repoSelector string Orca repo selector for new worktrees: id:&lt;repoId&gt; , name:&lt;name&gt; or path:&lt;abs&gt; ; default path:&lt;project.root&gt; . orca.workspaceSelector string Existing worktree the automations run in; default: the enclosing worktree resolved by Orca. orca.host string orca.minVersion string \"1.4.200\" orca.timeoutMs integer 20000 linear Path Type Default Description --- --- --- --- linear.workspaceId string required linear.teamKey string required linear.person string required Linear display name of the person whose queue this machine drains. linear.people record&lt;string&gt; {} Display name → Linear user id, for assignee set and audit; the queue itself filters by display name. linear.rotation object {} Optional ordered handoff between owners after the current dispatchable queue drains. linear.rotation.enabled boolean false linear.rotation.owners string[] [] linear.rotation.advanceWhenEmpty boolean true linear.queueOwnership person · unassigned · both \"person\" Whose queue this machine drains. person (default) keeps the historical behaviour: the issues assigned to linear.person . unassigned drains the issues with NO assignee and turns the assignee into a transient claim — written on dispatch, cleared when the item returns — so several machines can share one priority-ordered queue without colliding. Note when switching to unassigned : clearing the assignees is then REQUIRED, not cosmetic. With person and an emptied backlog the queue comes back empty and the loop looks healthy while doing nothing. both drains the union of the two: issues with no assignee AND issues assigned to linear.person . Unassigned ones are claimed for person on dispatch; nothing is released on return (the issue stays the person's, which this queue still sees). linear.states string[] [\"Todo\",\"Ready\"] linear.",
           "aliases": "configuration document human"
         },
         "graph": {
@@ -12171,7 +12179,7 @@
             }
           ]
         },
-        "contentHash": "8b8adaa3df9718d507b1cc83e0617d9ed7fdd6848a7327b144738a45c270e478",
+        "contentHash": "30b9df1ba63af1c627fcd6667c4602a345ae6ded508edcc549982f5b5e12a4d8",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -12191,11 +12199,11 @@
         ],
         "fields": {
           "title": "events",
-          "headings": "contract.* human.* plan.* worker.* terminals.* pr.* tracker.* merge.* github-intake.* release.* intake.* maintain.* memory.* provider.* queue.* security.* issue.* stage.* plugin.* config.* agent.* tuning.* cost-guard.* max-duration.* dod.* verifier.* verify.* ui.* delivery.* orca.* Harness run events",
+          "headings": "contract.* human.* plan.* worker.* terminals.* pr.* review.* tracker.* merge.* github-intake.* release.* intake.* maintain.* memory.* provider.* queue.* security.* issue.* stage.* plugin.* config.* agent.* tuning.* cost-guard.* max-duration.* dod.* verifier.* verify.* ui.* delivery.* orca.* Harness run events",
           "path": "apps/docs/content/docs/reference/events.mdx",
           "symbols": "",
           "summary": "{/* Generated by `pnpm docs:generate`. Do not edit by hand: edit `src/loop/event-vocabulary.ts` and regenerate. */}",
-          "body": "{/ Generated by pnpm docs:generate . Do not edit by hand: edit src/loop/event-vocabulary.ts and regenerate. /} Every loop event is appended to <stateDir /events.ndjson and emitted on the plugin bus, with at (ISO timestamp) and type on top of the fields below. A plugin subscribes with bus.on('<type ' ' ', listener) ; a notification channel subscribes by listing types in notifications.events . The vocabulary is enforced by the compiler: appendLoopEvent accepts only these names, so an event that is not here cannot be emitted — and a name here that nothing emits fails the test suite. 100 loop events. contract. Event Carries What it means --- --- --- contract.escalated issue , reasons , digest A contract was frozen but is not dispatchable; a human was asked to settle it. contract.failed issue , error Contract generation failed on every candidate provider. contract.generated issue , provider , model , effort , digest A contract was frozen successfully. provider / model / effort are what actually produced it — the join key for comparing how different LLMs (at what reasoning effort) did on the same kind of issue. human. Event Carries What it means --- --- --- human.hitl-requested issue , requestId , batchId , role , stage , question , context , options , recommendedOptionId , digest A structured human decision was requested by an LLM stage. human.hitl-answered issue , requestId , batchId , role , stage , optionId , freeText , digest , actor A human answered one structured HITL request. human.hitl-batch-ready issue , batchId , requestId All requests in a structured HITL batch have answers and the stage may resume. plan. Event Carries What it means --- --- --- plan.voted issue , cycle , approvals , votes , voters One planning cycle finished: how many agents approved the plan, out of how many voted, and who each one was. plan.failed issue , error Planning failed on every candidate provider. plan.escalated issue , cycles , unresolved The cycles ran out without consensus; the unresolved objections are a human's to settle. worker. Event Carries What it means --- --- --- worker.dispatched issue , worktree , worktreeId , branch , terminal , provider , model , effort , contractDigest , briefDigest , command , briefAccepted , tuiIdle , workerGuardInstalled , maxFixRounds A worker was launched in its own worktree. Carries the whole dispatch record plus the command that ran. worker.dispatch-failed issue , error The dispatch itself failed — worktree, terminal or brief — before any work started. worker.dispatch-capacity issue , error , until orca terminal create timed out: the machine is out of room for another agent session. Not counted as a failure; the issue is re-queued and dispatch waits until until . worker.terminal-closed issue , terminal , reason , worktreeId The loop closed a worker terminal it created (finished issue, orphaned, superseded, or idle with a PR open). worker.setup issue , worktreeId , ok project.setup.command ran in the fresh worktree. worker.nudged issue , kind , reason , worktreeId An idle worker was nudged in its own terminal — and also the terminal outcome nudged , which ends a delivery pass on the same issue. Two emissions, one name: kind is present on the first, reason on the second. worker.permission-wait issue , terminal , reason The worker stopped at a tool-permission prompt: held for a person, never typed into. Once per idle window. worker.reactivated issue , terminal , previousTerminal A stale terminal was relaunched for a worker that was still supposed to be working. worker.hitl-resumed issue , requestIds A human answered a worker HITL request and the decision was sent back to the worker terminal. worker.reopened issue , pr , previousHead , head , previousOutcome A finished issue came back: a new head on a PR the loop had already closed out. worker.handed-off issue , from , to , worktreeId , branch , reason , briefAccepted The task was handed to another provider in the same worktree, on the same branch — and also ",
+          "body": "{/ Generated by pnpm docs:generate . Do not edit by hand: edit src/loop/event-vocabulary.ts and regenerate. /} Every loop event is appended to <stateDir /events.ndjson and emitted on the plugin bus, with at (ISO timestamp) and type on top of the fields below. A plugin subscribes with bus.on('<type ' ' ', listener) ; a notification channel subscribes by listing types in notifications.events . The vocabulary is enforced by the compiler: appendLoopEvent accepts only these names, so an event that is not here cannot be emitted — and a name here that nothing emits fails the test suite. 103 loop events. contract. Event Carries What it means --- --- --- contract.escalated issue , reasons , digest A contract was frozen but is not dispatchable; a human was asked to settle it. contract.failed issue , error Contract generation failed on every candidate provider. contract.generated issue , provider , model , effort , digest A contract was frozen successfully. provider / model / effort are what actually produced it — the join key for comparing how different LLMs (at what reasoning effort) did on the same kind of issue. human. Event Carries What it means --- --- --- human.hitl-requested issue , requestId , batchId , role , stage , question , context , options , recommendedOptionId , digest A structured human decision was requested by an LLM stage. human.hitl-answered issue , requestId , batchId , role , stage , optionId , freeText , digest , actor A human answered one structured HITL request. human.hitl-batch-ready issue , batchId , requestId All requests in a structured HITL batch have answers and the stage may resume. plan. Event Carries What it means --- --- --- plan.voted issue , cycle , approvals , votes , voters One planning cycle finished: how many agents approved the plan, out of how many voted, and who each one was. plan.failed issue , error Planning failed on every candidate provider. plan.escalated issue , cycles , unresolved The cycles ran out without consensus; the unresolved objections are a human's to settle. worker. Event Carries What it means --- --- --- worker.dispatched issue , worktree , worktreeId , branch , terminal , provider , model , effort , contractDigest , briefDigest , command , briefAccepted , tuiIdle , workerGuardInstalled , maxFixRounds A worker was launched in its own worktree. Carries the whole dispatch record plus the command that ran. worker.dispatch-failed issue , error The dispatch itself failed — worktree, terminal or brief — before any work started. worker.dispatch-capacity issue , error , until orca terminal create timed out: the machine is out of room for another agent session. Not counted as a failure; the issue is re-queued and dispatch waits until until . worker.terminal-closed issue , terminal , reason , worktreeId The loop closed a worker terminal it created (finished issue, orphaned, superseded, or idle with a PR open). worker.setup issue , worktreeId , ok project.setup.command ran in the fresh worktree. worker.nudged issue , kind , reason , worktreeId An idle worker was nudged in its own terminal — and also the terminal outcome nudged , which ends a delivery pass on the same issue. Two emissions, one name: kind is present on the first, reason on the second. worker.permission-wait issue , terminal , reason The worker stopped at a tool-permission prompt: held for a person, never typed into. Once per idle window. worker.reactivated issue , terminal , previousTerminal A stale terminal was relaunched for a worker that was still supposed to be working. worker.hitl-resumed issue , requestIds A human answered a worker HITL request and the decision was sent back to the worker terminal. worker.reopened issue , pr , previousHead , head , previousOutcome A finished issue came back: a new head on a PR the loop had already closed out. worker.handed-off issue , from , to , worktreeId , branch , reason , briefAccepted The task was handed to another provider in the same worktree, on the same branch — and also ",
           "aliases": "events document human"
         },
         "graph": {
@@ -12232,7 +12240,7 @@
             }
           ]
         },
-        "contentHash": "ec3841bb057796f8295fc51a60384be88fd5f0a5d626ed4fbdaf4ecec6bab9c2",
+        "contentHash": "e8ccf7a0672ff9bc856093f9faec3576ecd582f219ddaf254974394f236ff077",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -15868,7 +15876,7 @@
             }
           ]
         },
-        "contentHash": "703c0e76e6d690635f0605489b346dfeb060263951f75a783fb16c8ac2b709b5",
+        "contentHash": "7ba2290f464d0420aace4a55164d36460ad3011b2b4f825168cbbaf05da150c7",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -16519,7 +16527,7 @@
           "path": "README.md",
           "symbols": "",
           "summary": "The keep-pushing loop for your SDLC. A vague objective becomes a PRD, the PRD becomes issues, each issue becomes a frozen contract, a worker in its own worktree, a reviewed pull request proven against a definition of done, a merge — and, behind a human gate, a release.",
-          "body": "@agentskit/harness The keep-pushing loop for your SDLC. A vague objective becomes a PRD, the PRD becomes issues, each issue becomes a frozen contract, a worker in its own worktree, a reviewed pull request proven against a definition of done, a merge — and, behind a human gate, a release. The local UI is optional and loopback-protected: it projects .ak-loop/ files and events and can start typed Harness jobs without adding a daemon or database. Its primary flow is issue-first: select an available issue, freeze its contract/profile/limits, enqueue it, and resolve only human decisions from the persistent Inbox. Docs: Install Node 22 or newer. Two binaries: ak-harness (everything) and ak-verify (the same binary under the common verification-protocol name). 60 seconds Then it runs without you: tick contracts and dispatches, deliver drives the pull request to merge. What a run looks like The worker leaves evidence, not promises Three files in .ak-loop/ at the root of its worktree. deliver reads them before the merge gate; a missing one comes back as a fix round naming the file . .ak-loop/plan.md is the third: the plan the worker actually followed, and where it departed from the approved one. Configuration, by example GitHub Issues as the configured tracker Set the tracker to GitHub when the UI and execution loop should operate on issues from project.repo : The Harness calls the existing gh CLI, sorts by most recently updated, and caches the board at .ak-loop/ui/github-issues.json . gh auth status and repository write permission are checked before a mutating job. Lifecycle labels are exclusive; done closes an issue and active states reopen it. Missing configured labels fail closed. The UI exposes typed, confirmed actions and jobs; only one tracker is selected per configuration. The Harness reads loop.config.yaml ; it does not consume a project's .github/ai-loop.yaml , whose schema belongs to a different executor. Commands Read-only --- --- loop doctor Providers, usage, routing, slots, selected tracker board, installed agents loop debrief What the loop is doing right now, per issue loop observe --since 24h Anomalies and metrics; --precheck gives a scheduler exit code loop retro --since 7d Digest, learnings and calibration suggestions loop status · loop watch --once · loop paused Schedule, in-flight phases, what it stopped on Acts --- --- loop tick · loop deliver One dispatch pass · one delivery pass (both take --dry-run ) loop plan start \\ answer \\ approve \\ architect \\ approve-design \\ decompose Objective → PRD → design → issues, two human gates loop release status \\ approve \\ run Promote a batch a human approved, bound to a head sha loop install · loop uninstall · loop resume Schedule, and clearing a pause As a library Also: the verification protocol The same binary runs the single-run protocol the loop is built on — a frozen contract, executable checks bound to the current revision, and an explicit human decision: Every check's final output line is JSON mapping to the outcome ids it proves. Evidence is bound to a committed Git HEAD ; any source, configuration or contract change moves the run to STALE . Runs append a hash-chained events.ndjson — verify one with ak-harness events verify [run-id] . Runnable example: (after pnpm build ). More - — concepts, guides, examples, and the generated reference for every config path, command and event. - · · - Decisions: (the loop) · (stages) · (definition of done) · (cost) - · · Release The publish job in publishes on a merge to main , through npm Trusted Publishing (GitHub OIDC) — no NPM TOKEN anywhere. It lives in the same workflow as the checks and needs every one of them, so a commit cannot publish past a red gate; a version not yet on the registry is the trigger. That file holds the checks as well as the publish: npm Trusted Publishing authorises by repository and workflow filename , so renaming it breaks releases until the npm setting matches. The candidate checklist and any open blocker l",
+          "body": "@agentskit/harness The keep-pushing loop for your SDLC. A vague objective becomes a PRD, the PRD becomes issues, each issue becomes a frozen contract, a worker in its own worktree, a reviewed pull request proven against a definition of done, a merge — and, behind a human gate, a release. The local UI is optional and loopback-protected: it projects .ak-loop/ files and events and can start typed Harness jobs without adding a daemon or database. Its primary flow is issue-first: select an available issue, freeze its contract/profile/limits, enqueue it, and resolve only human decisions from the persistent Inbox. Docs: Install Node 22 or newer. Two binaries: ak-harness (everything) and ak-verify (the same binary under the common verification-protocol name). 60 seconds Then it runs without you: tick contracts and dispatches, deliver drives the pull request to merge. What a run looks like The worker leaves evidence, not promises Three files in .ak-loop/ at the root of its worktree. deliver reads them before the merge gate; a missing one comes back as a fix round naming the file . .ak-loop/plan.md is the third: the plan the worker actually followed, and where it departed from the approved one. Configuration, by example GitHub Issues as the configured tracker Set the tracker to GitHub when the UI and execution loop should operate on issues from project.repo : The Harness calls the existing gh CLI, sorts by most recently updated, and caches the board at .ak-loop/ui/github-issues.json . gh auth status and repository write permission are checked before a mutating job. Lifecycle labels are exclusive; done closes an issue and active states reopen it. Missing configured labels fail closed. The UI exposes typed, confirmed actions and jobs; only one tracker is selected per configuration. The Harness reads loop.config.yaml ; it does not consume a project's .github/ai-loop.yaml , whose schema belongs to a different executor. Commands Read-only --- --- loop doctor Providers, usage, routing, slots, selected tracker board, installed agents loop debrief What the loop is doing right now, per issue loop observe --since 24h Anomalies and metrics; --precheck gives a scheduler exit code loop retro --since 7d Digest, learnings and calibration suggestions loop status · loop watch --once · loop paused Schedule, in-flight phases, what it stopped on Acts --- --- loop tick · loop deliver One dispatch pass · one delivery pass (both take --dry-run ) loop plan start \\ answer \\ approve \\ architect \\ approve-design \\ decompose Objective → PRD → design → issues, two human gates loop release status \\ approve \\ run Promote a batch a human approved, bound to a head sha loop install · loop uninstall · loop resume Schedule, and clearing a pause loop retry-review <pr Review a PR's head again after an incomplete review stopped it As a library Also: the verification protocol The same binary runs the single-run protocol the loop is built on — a frozen contract, executable checks bound to the current revision, and an explicit human decision: Every check's final output line is JSON mapping to the outcome ids it proves. Evidence is bound to a committed Git HEAD ; any source, configuration or contract change moves the run to STALE . Runs append a hash-chained events.ndjson — verify one with ak-harness events verify [run-id] . Runnable example: (after pnpm build ). More - — concepts, guides, examples, and the generated reference for every config path, command and event. - · · - Decisions: (the loop) · (stages) · (definition of done) · (cost) - · · Release The publish job in publishes on a merge to main , through npm Trusted Publishing (GitHub OIDC) — no NPM TOKEN anywhere. It lives in the same workflow as the checks and needs every one of them, so a commit cannot publish past a red gate; a version not yet on the registry is the trigger. That file holds the checks as well as the publish: npm Trusted Publishing authorises by repository and workflow filename , so renaming it breaks r",
           "aliases": "document project"
         },
         "graph": {
@@ -16631,7 +16639,7 @@
             }
           ]
         },
-        "contentHash": "2dcad6b70449e27294b048a92adc5d09ba00c7e8ab6dcacd8860715dcc5669ec",
+        "contentHash": "95510273ecc4b7210ebd410a114301b10f3d4360e8dcfa1aca24b2a85fd5a712",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -19361,17 +19369,23 @@
         "symbols": [
           "CodeReviewInput",
           "CodeReviewOutcome",
+          "GapRecoveryOptions",
           "REVIEW_SEVERITIES",
           "ReviewFinding",
+          "ReviewGap",
           "ReviewSeverity",
           "ReviewUsage",
           "StructuredReviewHitl",
           "atLeast",
           "buildReviewArgv",
+          "chunkRanges",
           "parseReviewEvidence",
+          "parseReviewGaps",
           "parseReviewHitl",
           "parseReviewResult",
+          "recoverReviewGaps",
           "renderFindingsForWorker",
+          "renderReviewGap",
           "runCodeReview",
           "severityRank"
         ],
@@ -19384,7 +19398,7 @@
           "title": "code-review.ts",
           "headings": "",
           "path": "src/adapters/code-review.ts",
-          "symbols": "CodeReviewInput CodeReviewOutcome REVIEW_SEVERITIES ReviewFinding ReviewSeverity ReviewUsage StructuredReviewHitl atLeast buildReviewArgv parseReviewEvidence parseReviewHitl parseReviewResult renderFindingsForWorker runCodeReview severityRank",
+          "symbols": "CodeReviewInput CodeReviewOutcome GapRecoveryOptions REVIEW_SEVERITIES ReviewFinding ReviewGap ReviewSeverity ReviewUsage StructuredReviewHitl atLeast buildReviewArgv chunkRanges parseReviewEvidence parseReviewGaps parseReviewHitl parseReviewResult recoverReviewGaps renderFindingsForWorker renderReviewGap runCodeReview severityRank",
           "summary": "",
           "body": "",
           "aliases": "module ts adapters"
@@ -19421,6 +19435,11 @@
               "confidence": "observed"
             },
             {
+              "kind": "imports",
+              "id": "module:test/adapters-code-review.test.ts",
+              "confidence": "observed"
+            },
+            {
               "kind": "mentions",
               "id": "document:docs/LOOP.md",
               "confidence": "observed"
@@ -19454,7 +19473,7 @@
             }
           ]
         },
-        "contentHash": "a5064ff7d476b056e8b53d9ef88614c5101f230b70739f66fd3c33c5bc0c52f2",
+        "contentHash": "94aee6c7b1b4261cb16218cec88b08ad01d6b946ce12baa66cb2b0a603f2c0a3",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -20103,7 +20122,7 @@
             }
           ]
         },
-        "contentHash": "c25a4a94f4bae06f2deb76fdd22db8a3e69374fa5815c375888b1f25b331ae0f",
+        "contentHash": "893be370997aca005a1a1aa1a6dc59f83e0537301a26ff067fd32b5768568a2b",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -21089,7 +21108,7 @@
             }
           ]
         },
-        "contentHash": "029b80fa5ffdb0c7004e3fde09ddb44486a39079f55b4f7ced3c3fb39f2e5f5d",
+        "contentHash": "2859920f747e81936b46739a3e89d1d9e89bc97286758100c18eaeea07cc8449",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -23629,7 +23648,7 @@
             }
           ]
         },
-        "contentHash": "48dae4090d353047a34b10bfe52c50124c6e801b7fd41e15b132bd3a696137de",
+        "contentHash": "5d06a9372a2fa7275910861e399b669b24c117a46331302efc89973aeb9710c6",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -28584,7 +28603,7 @@
             }
           ]
         },
-        "contentHash": "72d117685b87c3ff68ea0b228be890f3958b9231da8779b90b61ddacf5c7fe52",
+        "contentHash": "63cae7446da75ce54080ae18aaecea3559b65a993fda7b2a620ad2b5348b4347",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -28784,7 +28803,7 @@
             }
           ]
         },
-        "contentHash": "d1f0dc3f5282c083591158fe62d6ea570f883edf457c0495871f454d875d713c",
+        "contentHash": "7b50f2bde88d79d78111bf5d63fe6c5bfac41b3a1582eccf43ab9dbfd161e64d",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -29350,7 +29369,8 @@
           "markDispatchCancelled",
           "readDeliveryState",
           "readRestarts",
-          "restartsPath"
+          "restartsPath",
+          "retryReview"
         ],
         "tags": [
           "module",
@@ -29361,7 +29381,7 @@
           "title": "deliver-state.ts",
           "headings": "",
           "path": "src/loop/deliver-state.ts",
-          "symbols": "DeliverOutcome DeliveryHandoff DeliveryState MAX_LOST_TRACKING_RESTARTS approveHeldDelivery clearRestarts deliveryStatePath listDispatched markDispatchCancelled readDeliveryState readRestarts restartsPath",
+          "symbols": "DeliverOutcome DeliveryHandoff DeliveryState MAX_LOST_TRACKING_RESTARTS approveHeldDelivery clearRestarts deliveryStatePath listDispatched markDispatchCancelled readDeliveryState readRestarts restartsPath retryReview",
           "summary": "",
           "body": "",
           "aliases": "module ts loop"
@@ -29445,7 +29465,7 @@
             }
           ]
         },
-        "contentHash": "31c0128ae9241ed875a57a9e985da099dd4808a2b721177c7ed1b558f3f832b7",
+        "contentHash": "f8f67eb8edc5ae140205ba4aa063dc305b6f08e474041a6489868126947262b1",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -29471,6 +29491,7 @@
           "precheckDeliver",
           "readDeliveryState",
           "readRestarts",
+          "retryReview",
           "runDeliver",
           "usageLimitOnScreen",
           "workerAtUsageLimit",
@@ -29486,7 +29507,7 @@
           "title": "deliver.ts",
           "headings": "",
           "path": "src/loop/deliver.ts",
-          "symbols": "DeliverInput DeliverOutcome DeliverReport DeliverResult DeliveryHandoff DeliveryState MAX_LOST_TRACKING_RESTARTS approveHeldDelivery clearRestarts deliveryStatePath listDispatched markDispatchCancelled precheckDeliver readDeliveryState readRestarts runDeliver usageLimitOnScreen workerAtUsageLimit workerAwaitingPermission workerDeclaredBlocked",
+          "symbols": "DeliverInput DeliverOutcome DeliverReport DeliverResult DeliveryHandoff DeliveryState MAX_LOST_TRACKING_RESTARTS approveHeldDelivery clearRestarts deliveryStatePath listDispatched markDispatchCancelled precheckDeliver readDeliveryState readRestarts retryReview runDeliver usageLimitOnScreen workerAtUsageLimit workerAwaitingPermission workerDeclaredBlocked",
           "summary": "",
           "body": "",
           "aliases": "module ts loop"
@@ -29863,7 +29884,7 @@
             }
           ]
         },
-        "contentHash": "50544dc5745a833f79b136ad1535e34b42b86e275df4e8f5477c5980fa8b9c17",
+        "contentHash": "3d41f08d69408f38139cf24947988d40f25cdcacab9467011a7d9e9321963122",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -30720,7 +30741,7 @@
           ],
           "outbound": []
         },
-        "contentHash": "b550435aae6b69568f4cf133d64c89117cd7830cc30923ad6de7565b3a1217cd",
+        "contentHash": "e6138584986075f602093ab092e37cb2660786eec1d86b13f659074cf22d9f3a",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -30981,7 +31002,7 @@
             }
           ]
         },
-        "contentHash": "e3e1e4652b79f9ea241ca6b33eb355f0d043bd59f90fd4033fad5ffc7b17e8ad",
+        "contentHash": "f56d71d208174507da6607046fe3ab323603b8864ebfee9c43a261796819b139",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -32289,7 +32310,7 @@
             }
           ]
         },
-        "contentHash": "a4e23f4a25482ff05c721af7d5cd3b2892a4a24741ca75a3fe46c803e51aaba0",
+        "contentHash": "351e979c7b128ee83cc7afee139cbdaae52166007f9674997624ec516460da0b",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -33298,7 +33319,7 @@
             }
           ]
         },
-        "contentHash": "0556c8ea5faf1014e9c2dd0087ab56fbc1b139e6db73a98024e814e8e2bd4931",
+        "contentHash": "2ef220117f683d0ac1919f2de1ecc9ce0f17164f7439b729cbe78d3d66dc9fe8",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -42325,12 +42346,17 @@
           "outbound": [
             {
               "kind": "imports",
+              "id": "module:src/adapters/code-review.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
               "id": "module:src/index.ts",
               "confidence": "observed"
             }
           ]
         },
-        "contentHash": "861dcfcf4f5689d4a55183cf6ac0ba14389262259d0700a0665ce682942b2649",
+        "contentHash": "3151ed98b5a5cfcea87765d15d48df243236543dbc81deb715c87099eff4c04b",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -46184,7 +46210,7 @@
             }
           ]
         },
-        "contentHash": "e3bcb0eb2185808539ecbd747abf61bc88977aade4ff6f9bd309db06f2ad7adc",
+        "contentHash": "57272d6637e95e173e0237ec3baf64f126cc34c3c95438826cdc88a773c10343",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -46649,7 +46675,7 @@
             }
           ]
         },
-        "contentHash": "a83a2b41990b2b152ef94ba852a6b792eef1b203acbf109cf42e16f9cd3a740e",
+        "contentHash": "c08b198a787dc8f996343282bba3ad01f159699bbbe28efbc230ab07b88f5b8e",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -47527,7 +47553,7 @@
             }
           ]
         },
-        "contentHash": "64c4790bc91ad43b5a4bf786d32f76bbc57e79b9bdc4659a130bd275ca650040",
+        "contentHash": "8d11f5dd02dae774d46825e3eae08bc03efe693aed0ffa1d4a9608b24f492768",
         "provenance": "observed",
         "confidence": "observed"
       },

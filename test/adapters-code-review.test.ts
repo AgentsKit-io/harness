@@ -4,6 +4,7 @@ import { join } from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
 import { atLeast, buildReviewArgv, parseReviewEvidence, parseReviewResult, renderFindingsForWorker, runCodeReview, severityRank } from '../src/index.js'
 import type { CodeReviewInput, CommandResult, CommandRunner, ReviewFinding } from '../src/index.js'
+import { chunkRanges, parseReviewGaps, recoverReviewGaps, type CodeReviewOutcome } from '../src/adapters/code-review.js'
 
 const cleanups: string[] = []
 afterEach(() => { for (const dir of cleanups.splice(0)) rmSync(dir, { recursive: true, force: true }) })
@@ -307,5 +308,85 @@ describe('renderFindingsForWorker', () => {
     const rendered = renderFindingsForWorker(many, 5)
     expect(rendered.split('\n').filter((line) => /^\d+\./.test(line))).toHaveLength(5)
     expect(rendered).toContain('… 15 more in the PR review.')
+  })
+})
+
+describe('review gaps: the file that failed and why', () => {
+  it('reads failing files from the reviewer summary line and the result JSON, with the cause', () => {
+    const tail = 'lens tests: no JSON returned for e2e/a.spec.ts\nReview execution failed: 1 reviewable file had zero successful lenses: e2e/a.spec.ts, e2e/b.spec.ts.'
+    expect(parseReviewGaps({}, tail)).toEqual([
+      { file: 'e2e/a.spec.ts', lens: null, reason: 'empty output' },
+      { file: 'e2e/b.spec.ts', lens: null, reason: 'empty output' },
+    ])
+    expect(parseReviewGaps({ gaps: [{ file: 'big.ts', lens: 'security', reason: 'file exceeds 4000 lines' }, { path: 'x.ts', error: 'analysis tokens budget exceeded (87200)' }, 'y.ts'] }, '')).toEqual([
+      { file: 'big.ts', lens: 'security', reason: 'size' },
+      { file: 'x.ts', lens: null, reason: 'limit' },
+      { file: 'y.ts', lens: null, reason: 'cause not reported by the reviewer' },
+    ])
+    expect(parseReviewGaps({}, 'spawn ENAMETOOLONG')).toEqual([])
+  })
+
+  it('an incomplete report names the file that failed and why', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'agentskit-review-gaps-')); cleanups.push(dir)
+    const resultFile = join(dir, 'r.json')
+    const runner: CommandRunner = { run: async () => { writeFileSync(resultFile, JSON.stringify({ incomplete: true, findings: [] })); return { code: 2, stdout: '1 reviewable file had zero successful lenses: e2e/a.spec.ts', stderr: 'lens tests: empty output for e2e/a.spec.ts', timedOut: false, durationMs: 1 } } }
+    const outcome = await runCodeReview(runner, { ...baseInput, resultFile })
+    expect(outcome).toMatchObject({ status: 'incomplete', gaps: [{ file: 'e2e/a.spec.ts', reason: 'empty output' }] })
+    expect(outcome.summary).toContain('not reviewed: e2e/a.spec.ts: empty output')
+  })
+
+  it('splits a large file into at most four line ranges, the last open-ended', () => {
+    expect(chunkRanges(1000, 400)).toEqual(['1-400', '401-800', '801-'])
+    expect(chunkRanges(0, 400)).toEqual(['1-400', '401-'])
+    expect(chunkRanges(10_000, 400)).toEqual(['1-2500', '2501-5000', '5001-7500', '7501-'])
+  })
+})
+
+describe('recoverReviewGaps', () => {
+  const setupRecovery = (answer: (argv: readonly string[]) => { readonly code: number; readonly findings?: readonly Record<string, unknown>[] }) => {
+    const dir = mkdtempSync(join(tmpdir(), 'agentskit-review-recover-')); cleanups.push(dir)
+    const calls: string[][] = []
+    const runner: CommandRunner = { run: async (argv) => {
+      calls.push([...argv])
+      const reply = answer(argv)
+      writeFileSync(argv[argv.indexOf('--result') + 1] as string, JSON.stringify({ incomplete: reply.code === 2, findings: reply.findings ?? [] }))
+      return { code: reply.code, stdout: reply.code === 2 ? `no JSON returned for ${argv[argv.indexOf('--file') + 1]}` : '', stderr: '', timedOut: false, durationMs: 1 }
+    } }
+    const input: CodeReviewInput = { ...baseInput, model: 'gpt', post: true, resultFile: join(dir, 'review-abc.json') }
+    const first: CodeReviewOutcome = { status: 'incomplete', exitCode: 2, findings: [{ severity: 'med', file: 'a.ts', line: 1, title: 'Name it', detail: '', category: null }], blocking: [], summary: 'incomplete', provider: 'codex', model: 'gpt', resultParsed: true, rawTail: '', usage: { providerCalls: 1, inputTokens: null, outputTokens: null, totalTokens: null }, gaps: [{ file: 'e2e/a.spec.ts', lens: 'tests', reason: 'empty output' }] }
+    const options = { fileFlag: '--file', chunkLines: 400, fileLines: {}, fallback: { provider: 'claude-cli', model: 'opus' } }
+    return { calls, runner, input, first, options }
+  }
+
+  it('retries the file alone with the same model; its findings join the first run and are written back', async () => {
+    const env = setupRecovery(() => ({ code: 1, findings: [{ severity: 'high', title: 'Flaky wait', file: 'e2e/a.spec.ts', line: 4 }] }))
+    const outcome = await recoverReviewGaps(env.runner, env.input, env.first, env.options)
+    expect(env.calls).toHaveLength(1)
+    expect(env.calls[0]?.slice(-2)).toEqual(['--file', 'e2e/a.spec.ts'])
+    expect(env.calls[0]).not.toContain('--post')
+    expect(outcome).toMatchObject({ status: 'findings', gaps: undefined })
+    expect(outcome.findings.map((finding) => finding.title)).toEqual(['Name it', 'Flaky wait'])
+    expect(parseReviewResult(JSON.parse(readFileSync(env.input.resultFile, 'utf8'))).findings).toHaveLength(2)
+  })
+
+  it('then tries another model; what still fails stays a named gap', async () => {
+    const env = setupRecovery((argv) => ({ code: argv.includes('claude-cli') ? 0 : 2 }))
+    const recovered = await recoverReviewGaps(env.runner, env.input, env.first, env.options)
+    expect(env.calls.map((argv) => argv[argv.indexOf('--provider') + 1])).toEqual(['codex', 'claude-cli'])
+    // Covered by the second model; the first run's own medium finding still counts.
+    expect(recovered).toMatchObject({ status: 'findings', gaps: undefined, blocking: [{ title: 'Name it' }] })
+    const stuck = setupRecovery(() => ({ code: 2 }))
+    const left = await recoverReviewGaps(stuck.runner, stuck.input, stuck.first, stuck.options)
+    expect(left).toMatchObject({ status: 'incomplete', gaps: [{ file: 'e2e/a.spec.ts', reason: 'empty output (retried alone, then with another model)' }] })
+    expect(left.summary).toContain('not reviewed: e2e/a.spec.ts (tests): empty output')
+  })
+
+  it('chunks a large file, and does nothing without a file flag or a parsed first result', async () => {
+    const env = setupRecovery(() => ({ code: 0 }))
+    await recoverReviewGaps(env.runner, env.input, env.first, { ...env.options, fileLines: { 'e2e/a.spec.ts': 900 } })
+    expect(env.calls.map((argv) => argv.at(-1))).toEqual(['e2e/a.spec.ts:1-400', 'e2e/a.spec.ts:401-800', 'e2e/a.spec.ts:801-'])
+    expect(await recoverReviewGaps(env.runner, env.input, env.first, { ...env.options, fileFlag: null })).toBe(env.first)
+    expect(await recoverReviewGaps(env.runner, env.input, { ...env.first, resultParsed: false }, env.options)).toMatchObject({ status: 'incomplete' })
+    expect(env.calls).toHaveLength(3)
   })
 })

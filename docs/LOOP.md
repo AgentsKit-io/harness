@@ -172,6 +172,9 @@ For every issue the loop dispatched (`<stateDir>/issues/<id>/dispatch.json`) and
 | CI pending / required check missing | wait |
 | CI green, head not reviewed | `agentskit-review --pr … --block <minSeverity> --result … [--post]` with the first available reviewer candidate |
 | Review findings ≥ floor | findings to the worker; counts as a fix round; same head is never re-reviewed |
+| Review findings ≥ floor after `review.converge.afterRounds` (default 2) review rounds, checks green, none `high`+ or about correctness/security | **stop rule**: every remaining finding goes in one leftovers issue (`converge.backlogLabel`, default `loop:backlog`, entry state, linked to the PR), the PR gets "ready to merge with leftovers (#N)", and the merge path continues. An issue dispatched with a `converge.personLabels` label (`loop:risk`, `loop:review`) is **held** for a person instead |
+| Review incomplete on named files (`zero successful lenses: …`, or `gaps` in the result) | each file retried alone with `--file` (in `<path>:<start>-<end>` chunks above `review.chunkLines`), then with the next reviewer candidate; what still fails is a gap naming the file and why (`empty output`, `limit`, `size`). On a green PR the review **ran with gaps**: listed on the PR and in `delivery.json`, judged on the rest — not a hold |
+| Review incomplete twice with no file named | **blocked** for a person; `ak-harness loop retry-review <pr>` drops the incomplete attempts and resumes it |
 | Fix rounds exhausted (`maxFixRounds`) | **blocked**: Linear comment + label + `returnState`, PR comment, lease released, worktree and PR kept |
 | Review clean, `merge.auto` | `gh api PUT …/merge` with `sha=<reviewed head>` (GitHub refuses if the head moved) → Linear attach + comment + `doneState`, worktree removed when `cleanupWorktree` |
 | Review clean, `merge.requireHumanApproval` set, no GitHub approval yet | **held**: reuses `pr.reviewDecision` already fetched with the PR snapshot — no extra GitHub call; merges automatically as soon as `reviewDecision` becomes `APPROVED` on a later run |
@@ -958,6 +961,7 @@ the published dependency tree. `@agentskit/harness` stays dependency-light (`com
 | Knobs | `mode` (`trusted-local` recommended so CLI logins work), `transport` (`headless` for current Grok CLI), `profile` (`fast` fits a 600 s Orca stage; `full` needs batching), `votes`, `concurrency`, `minSeverity`, `deadlineMs`, `maxCalls`, `post` |
 | Provider/model | First available candidate from `models.reviewer` tiers |
 | Verdicts | exit `0` → clean (merge path); `1` → findings ≥ floor (fix round); `2` / timeout / incomplete → wait and retry |
+| Failing files | `recoverReviewGaps`: a file named as failed is retried alone via `fileFlag` (chunked when large), then with another reviewer; at most 5 files, 4 chunks each. Still failing on a green PR → "ran with gaps" (listed), not a hold |
 | Boundary | Argv + `--result` file only; the harness never embeds the review SDK. |
 
 ### Eval battery (package quality, not the live loop)

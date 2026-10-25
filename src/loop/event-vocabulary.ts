@@ -98,6 +98,12 @@ export const LOOP_EVENT_TYPES = {
    * floor) and what it cost (`calls`/token fields, from `agentskit-review`'s own usage tracking) — what a study
    * comparing review thoroughness and spend across models needs. `source` marks a PR that came from GitHub intake. */
   'pr.reviewed': ['issue', 'pr', 'head', 'status', 'blocking', 'provider', 'model', 'profile', 'votes', 'minSeverity', 'source', 'calls', 'inputTokens', 'outputTokens', 'totalTokens'],
+  /** A file the review could not cover even after retrying it alone, in chunks and with another model; on a green PR the review counts as "ran with gaps". */
+  'review.gaps': ['issue', 'pr', 'head', 'gaps', 'source'],
+  /** The stop rule: after its fix rounds a PR's remaining medium/low findings went into one leftovers issue, and the loop stopped asking for rounds. */
+  'review.converged': ['issue', 'pr', 'head', 'leftovers', 'findings', 'rounds'],
+  /** `loop retry-review <pr>`: a person dropped the PR's incomplete review attempts so the next pass reviews it again. */
+  'review.retry-requested': ['issue', 'pr', 'heads', 'reopened'],
   /** The PR was squash-merged by the loop. */
   'pr.merged': ['issue', 'pr', 'head', 'sha'],
   /** A tracked PR closed without merge; the issue waits for a close-or-reopen decision. */

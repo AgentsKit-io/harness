@@ -160,6 +160,7 @@ different executor.
 | `loop plan start \| answer \| approve \| architect \| approve-design \| decompose` | Objective → PRD → design → issues, two human gates |
 | `loop release status \| approve \| run` | Promote a batch a human approved, bound to a head sha |
 | `loop install` · `loop uninstall` · `loop resume` | Schedule, and clearing a pause |
+| `loop retry-review <pr>` | Review a PR's head again after an incomplete review stopped it |
 
 ## As a library
 

@@ -26,6 +26,8 @@ export interface PullRequestSnapshot {
   readonly files: readonly string[]
   /** Lines added and removed across the PR's files; 0 when the host did not report them. */
   readonly changedLines: number
+  /** Lines added and removed per file, when the host reported them. */
+  readonly fileLines?: Readonly<Record<string, number>>
   readonly checks: readonly PullRequestCheck[]
   readonly updatedAt: string | null
 }
@@ -59,6 +61,7 @@ export const parsePullRequest = (value: unknown): PullRequestSnapshot => {
   const rollup = Array.isArray(record['statusCheckRollup']) ? record['statusCheckRollup'].filter(isRecord) : []
   const state = str(record['state']).toUpperCase()
   const mergeable = str(record['mergeable']).toUpperCase()
+  const fileLines = Object.fromEntries((Array.isArray(record['files']) ? record['files'] : []).filter(isRecord).filter((file) => str(file['path']) && (typeof file['additions'] === 'number' || typeof file['deletions'] === 'number')).map((file) => [str(file['path']), (typeof file['additions'] === 'number' ? file['additions'] : 0) + (typeof file['deletions'] === 'number' ? file['deletions'] : 0)]))
   return {
     number: record['number'] as number,
     url: str(record['url']),
@@ -78,6 +81,7 @@ export const parsePullRequest = (value: unknown): PullRequestSnapshot => {
     changedLines: Array.isArray(record['files']) ? record['files'].reduce((total: number, file: unknown) => total + (isRecord(file) ? (typeof file['additions'] === 'number' ? file['additions'] : 0) + (typeof file['deletions'] === 'number' ? file['deletions'] : 0) : 0), 0) : 0,
     checks: rollup.map((item) => ({ name: str(item['name'], str(item['context'], 'unnamed')), outcome: outcomeOf(item), kind: item['__typename'] === 'CheckRun' ? 'check-run' : item['__typename'] === 'StatusContext' ? 'status' : 'unknown', ...(str(item['detailsUrl'], str(item['targetUrl'])) ? { url: str(item['detailsUrl'], str(item['targetUrl'])) } : {}) })),
     updatedAt: typeof record['updatedAt'] === 'string' ? record['updatedAt'] : null,
+    ...(Object.keys(fileLines).length ? { fileLines } : {}),
   }
 }
 

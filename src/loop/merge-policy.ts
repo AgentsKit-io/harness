@@ -15,8 +15,12 @@ export interface MergePolicyInput {
   readonly patch: { readonly verified: string | null; readonly current: string | null }
   /** `gating` off is a flow's deliberate choice (`merge.requireChecks: false`); the status is then only reported. */
   readonly checks: { readonly gating: boolean; readonly status: 'green' | 'pending' | 'red' | 'missing' }
-  /** `required` off = the flow turned the review phase off. */
-  readonly review: { readonly required: boolean; readonly status: 'clean' | 'findings' | 'incomplete' | null; readonly blocking: number }
+  /**
+   * `required` off = the flow turned the review phase off. `leftovers`: the stop rule moved this head's remaining
+   * (medium/low, non-correctness) findings into that issue, so they no longer block. `personLabels`: labels the
+   * issue was dispatched with that keep such a PR for a person.
+   */
+  readonly review: { readonly required: boolean; readonly status: 'clean' | 'findings' | 'incomplete' | null; readonly blocking: number; readonly leftovers?: string | null; readonly personLabels?: readonly string[] }
   readonly heldPaths: {
     readonly protectedFiles: readonly string[]
     /** A person approved this exact head. */
@@ -55,7 +59,8 @@ export const decideMerge = (input: MergePolicyInput): MergeDecision => {
   if (review.required) {
     if (review.status === null) return hold('no review recorded for this head')
     // `findings` with nothing at or above the severity floor (blocking 0) is a clean review; anything blocking, or no complete review, is not.
-    if (review.status === 'incomplete' || review.blocking > 0) return hold(`review is not clean (${review.status}, ${review.blocking} blocking)`)
+    if (review.status === 'incomplete' || (review.blocking > 0 && !review.leftovers)) return hold(`review is not clean (${review.status}, ${review.blocking} blocking)`)
+    if (review.leftovers && review.personLabels?.length) return hold(`ready to merge with leftovers (${review.leftovers}); ${review.personLabels.join(', ')} stays for a person`)
   }
   if (checks.gating && checks.status !== 'green') return hold(`checks ${checks.status}`)
 

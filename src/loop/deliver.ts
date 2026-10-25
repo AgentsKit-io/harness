@@ -2,7 +2,7 @@ import { existsSync, mkdirSync, readdirSync, readFileSync } from 'node:fs'
 import { z } from 'zod'
 import { dirname, join } from 'node:path'
 import type { CommandRunner } from '../adapters/command.js'
-import { atLeast, parseReviewResult, renderFindingsForWorker, runCodeReview, type CodeReviewOutcome } from '../adapters/code-review.js'
+import { atLeast, parseReviewResult, recoverReviewGaps, renderFindingsForWorker, renderReviewGap, runCodeReview, type CodeReviewInput, type CodeReviewOutcome, type ReviewFinding } from '../adapters/code-review.js'
 import { createHitlStore, HITL_ANCHOR_ID, HITL_ANCHOR_TITLE, type HitlRequest } from './hitl.js'
 import { assessChecks, githubComment, githubCommentExists, githubCompare, githubLabelRemove, githubMerge, githubOpenPullRequests, githubPullRequest, githubPullRequestCreate, githubPullRequestsForBranch, touchesProtectedPaths, type PullRequestSnapshot } from '../adapters/github-cli.js'
 import { requireWritableTracker, resolveConnectors, type ScmConnector, type TrackerConnector } from './connectors.js'
@@ -50,11 +50,11 @@ import { parseJsonFileText, readJsonFile } from '../kernel/json-file.js'
 import { createIssueQueue } from './queue.js'
 import { createLifecycleStore, type LifecyclePullRequest } from './lifecycle.js'
 import { activeTrackerCooldown, guardTracker, TrackerCooldownError } from './tracker-cooldown.js'
-import { approveHeldDelivery, clearRestarts, deliveryStatePath, listDispatched, markDispatchCancelled, MAX_LOST_TRACKING_RESTARTS, readDeliveryState, readRestarts, restartsPath } from './deliver-state.js'
+import { approveHeldDelivery, clearRestarts, deliveryStatePath, listDispatched, markDispatchCancelled, MAX_LOST_TRACKING_RESTARTS, readDeliveryState, readRestarts, restartsPath, retryReview } from './deliver-state.js'
 import type { DeliveryHandoff, DeliveryState, DeliverOutcome } from './deliver-state.js'
 import { reapWorkerTerminals } from './terminal-reaper.js'
 
-export { approveHeldDelivery, clearRestarts, deliveryStatePath, listDispatched, markDispatchCancelled, MAX_LOST_TRACKING_RESTARTS, readDeliveryState, readRestarts }
+export { approveHeldDelivery, clearRestarts, deliveryStatePath, listDispatched, markDispatchCancelled, MAX_LOST_TRACKING_RESTARTS, readDeliveryState, readRestarts, retryReview }
 export type { DeliveryHandoff, DeliveryState, DeliverOutcome }
 
 export interface DeliverResult {
@@ -1010,6 +1010,67 @@ const blockAfterRounds = async (ctx: Context, record: DispatchRecordFile, lease:
   return { issue: record.issue, outcome: ctx.dryRun ? 'dry-run' : 'blocked', reason: why, pr: pr.number, head: pr.headSha, actions }
 }
 
+const reviewProviderFor = (config: LoopConfig, provider: string): string => providerIdentity(config, provider).settings.reviewProvider ?? `${provider}-cli`
+
+/**
+ * A review that failed on some files: each one is retried alone (in chunks when large), then with another reviewer.
+ * On a green PR, what still fails after that is "review ran with gaps" — listed on the PR and in the delivery
+ * state — and the review counts by its findings, instead of holding the PR on that head until someone resets it
+ * (Miaudota #282–#284: no JSON for some e2e files, twice). `gaps` is null when nothing was accepted that way.
+ */
+const completeReview = async (ctx: Context, issue: string, input: CodeReviewInput, review: CodeReviewOutcome, pr: PullRequestSnapshot, settings: Pick<LoopConfig['delivery']['review'], 'fileFlag' | 'chunkLines'>, green: boolean, actions: string[], source?: 'github-intake'): Promise<{ readonly review: CodeReviewOutcome; readonly gaps: readonly string[] | null }> => {
+  if (review.status !== 'incomplete' || !review.gaps?.length || !review.resultParsed) return { review, gaps: null }
+  const other = ctx.reviewerCandidates.find((candidate) => reviewProviderFor(ctx.config, candidate.provider) !== input.provider || candidate.model !== input.model)
+  const fallback = other ? { provider: reviewProviderFor(ctx.config, other.provider), model: other.model } : null
+  actions.push(`review incomplete on ${review.gaps.length} file(s): ${review.gaps.map(renderReviewGap).join('; ')}${settings.fileFlag ? ` — retrying each alone${fallback ? `, then with ${fallback.provider}/${fallback.model}` : ' (no other reviewer available)'}` : ' (file retries off: delivery.review.fileFlag is null)'}`)
+  const recovered = await recoverReviewGaps(ctx.runner, input, review, { fileFlag: settings.fileFlag, chunkLines: settings.chunkLines, fileLines: pr.fileLines ?? {}, fallback })
+  if (recovered !== review) actions.push(`after the retries: ${recovered.summary}`)
+  if (recovered.status !== 'incomplete' || !green) return { review: recovered, gaps: null }
+  const gaps = (recovered.gaps ?? []).map(renderReviewGap)
+  actions.push(`review ran with gaps on a green PR, not a hold: ${gaps.join('; ')}`)
+  event(ctx, { type: 'review.gaps', issue, pr: pr.number, head: pr.headSha, gaps, ...(source ? { source } : {}) })
+  if (!ctx.dryRun) {
+    const marker = `<!-- loop:review-gaps:${pr.headSha} -->`
+    try { if (!(await githubCommentExists(ctx.runner, { repo: ctx.config.project.repo, number: pr.number, marker }))) await githubComment(ctx.runner, { repo: ctx.config.project.repo, number: pr.number, body: `**Loop: review ran with gaps** at \`${pr.headSha.slice(0, 12)}\` — these files were not reviewed, even retried alone${fallback ? ' and with another model' : ''}:\n${gaps.map((gap) => `- ${gap}`).join('\n')}\n\nEverything else was reviewed; the PR is judged on that. \`ak-harness loop retry-review ${pr.number}\` reviews the head again.\n\n${marker}` }) } catch (error) { actions.push(`gaps comment failed: ${message(error)}`) }
+  }
+  return { review: { ...recovered, status: recovered.blocking.length ? 'findings' : 'clean', summary: `review ran with gaps (${gaps.join('; ')}): ${recovered.blocking.length} finding(s) at/above ${input.minSeverity}` }, gaps }
+}
+
+/** A finding the stop rule never moves to leftovers: high or worse, or about correctness or security. */
+const mustFixBeforeMerge = (finding: ReviewFinding): boolean => atLeast(finding.severity, 'high') || /correctness|security/i.test(`${finding.category ?? ''}`)
+
+/**
+ * The stop rule (factory lessons 2026-10-25: PRs #389–#400 got 1–4 new medium findings every round, mostly about
+ * test quality, long after the code findings were fixed). After `converge.afterRounds` review rounds, with checks
+ * green and no finding that must be fixed, the remaining findings go in one leftovers issue linked to the PR, the
+ * PR says "ready to merge with leftovers (#N)", and the loop stops asking for rounds. Returns the leftovers
+ * reference, or null to send the round as usual — a tracker that cannot file the issue never waves findings through.
+ */
+const convergeReview = async (ctx: Context, record: DispatchRecordFile, state: DeliveryState, pr: PullRequestSnapshot, findings: readonly ReviewFinding[], green: boolean, actions: string[]): Promise<string | null> => {
+  const { afterRounds, backlogLabel, personLabels } = flowFor(ctx, record).review.converge
+  const rounds = state.nudges.filter((nudge) => nudge.kind === 'review').length
+  if (!afterRounds || rounds < afterRounds || !green || findings.some(mustFixBeforeMerge)) return null
+  if (ctx.dryRun) { actions.push(`would file ${findings.length} leftover finding(s) in a ${backlogLabel} issue and stop asking for rounds`); return null }
+  try {
+    const created = await ctx.tracker.createIssue({
+      title: `Leftovers from PR #${pr.number}: ${pr.title}`.slice(0, 200),
+      description: `Review findings still open when ${pr.url} (${record.issue}) stopped taking fix rounds: ${rounds} round(s) done, checks green, nothing high or about correctness/security. Medium/low, for a later pass.\n\n${renderFindingsForWorker(findings, 50)}`,
+      // The entry state is never dispatched: a leftovers issue waits for a person to pick it up.
+      state: ctx.config.linear.entryState,
+      labels: [backlogLabel],
+      dedupeKey: `loop-leftovers-${record.issue}-pr-${pr.number}`,
+    })
+    const ref = created.identifier?.includes('#') ? `#${created.identifier.split('#').at(-1)}` : created.identifier ?? created.url
+    if (!ref) { actions.push('the leftovers issue returned no reference; sending the round instead'); return null }
+    const held = personLabels.filter((label) => (record.labels ?? []).includes(label))
+    const marker = `<!-- loop:leftovers:${pr.number} -->`
+    try { if (!(await githubCommentExists(ctx.runner, { repo: ctx.config.project.repo, number: pr.number, marker }))) await githubComment(ctx.runner, { repo: ctx.config.project.repo, number: pr.number, body: `**Loop: ready to merge with leftovers (${ref})** — ${rounds} review round(s) done, checks green, and no open finding is high or about correctness/security. The ${findings.length} remaining finding(s) are in ${created.url ?? ref} (\`${backlogLabel}\`).${held.length ? ` Dispatched as ${held.map((label) => `\`${label}\``).join(', ')}: a person merges it.` : ''}\n\n${marker}` }) } catch (error) { actions.push(`leftovers comment failed: ${message(error)}`) }
+    event(ctx, { type: 'review.converged', issue: record.issue, pr: pr.number, head: pr.headSha, leftovers: ref, findings: findings.length, rounds })
+    actions.push(`stop rule: ${findings.length} finding(s) moved to leftovers ${ref} after ${rounds} round(s)`)
+    return ref
+  } catch (error) { actions.push(`leftovers issue failed (${message(error)}); sending the round instead`); return null }
+}
+
 /** What makes two review findings the same finding across heads: the file and the title, not the line (code moves). */
 const findingKey = (finding: Pick<CodeReviewOutcome['blocking'][number], 'file' | 'title'>): string => `${finding.file ?? ''}::${finding.title.trim().toLowerCase()}`
 
@@ -1285,6 +1346,7 @@ ${marker}` }); actions.push('secret-file hold commented') } catch (error) { acti
   const reviewPhase = workerPhaseEnabled(config, flow.flow, 'review', true)
   if (!reviewPhase) actions.push('review phase off for this flow')
   let review: CodeReviewOutcome | null = null
+  let leftovers = prior?.leftovers ?? null
   if (reviewPhase && (!prior || prior.status === 'incomplete')) {
     if (!ctx.reviewer) return { issue: record.issue, outcome: 'waiting', reason: 'no reviewer provider available', pr: pr.number, head: pr.headSha, actions }
     // Who reviews on this flow, before the change's own shape gets a say: a profile that pins the role narrows the
@@ -1343,10 +1405,12 @@ ${marker}` }); actions.push('secret-file hold commented') } catch (error) { acti
     const resultFile = join(ctx.loaded.stateDir, 'issues', record.issue, `review-${pr.headSha.slice(0, 12)}.json`)
     mkdirSync(dirname(resultFile), { recursive: true })
     if (reviewSettings.overriddenBy) actions.push(`review reinforced by \`${reviewSettings.overriddenBy}\`: ${reviewSettings.votes} vote(s), min severity ${reviewSettings.minSeverity}`)
-    review = await runCodeReview(ctx.runner, { cli: reviewSettings.cli, repo: config.project.repo, baseBranch: config.project.baseBranch, number: pr.number, provider: reviewProvider, model: chosen.model, mode: reviewSettings.mode, ...(reviewSettings.transport ? { transport: reviewSettings.transport } : {}), profile: reviewSettings.profile, votes: reviewSettings.votes, concurrency: reviewSettings.concurrency, minSeverity: reviewSettings.minSeverity, deadlineMs: Math.min(ctx.reviewDeadlineMs, roleSettings.timeoutMs ?? ctx.reviewDeadlineMs), subprocessTimeoutMs: reviewSettings.subprocessTimeoutMs, analysisMaxTokens: reviewSettings.analysisMaxTokens, analysisGlobalMaxTokens: reviewSettings.analysisGlobalMaxTokens, maxCalls: reviewSettings.maxCalls, post: reviewSettings.post, resultFile, cwd: ctx.loaded.root, env: ctx.env })
+    const reviewInput: CodeReviewInput = { cli: reviewSettings.cli, repo: config.project.repo, baseBranch: config.project.baseBranch, number: pr.number, provider: reviewProvider, model: chosen.model, mode: reviewSettings.mode, ...(reviewSettings.transport ? { transport: reviewSettings.transport } : {}), profile: reviewSettings.profile, votes: reviewSettings.votes, concurrency: reviewSettings.concurrency, minSeverity: reviewSettings.minSeverity, deadlineMs: Math.min(ctx.reviewDeadlineMs, roleSettings.timeoutMs ?? ctx.reviewDeadlineMs), subprocessTimeoutMs: reviewSettings.subprocessTimeoutMs, analysisMaxTokens: reviewSettings.analysisMaxTokens, analysisGlobalMaxTokens: reviewSettings.analysisGlobalMaxTokens, maxCalls: reviewSettings.maxCalls, post: reviewSettings.post, resultFile, cwd: ctx.loaded.root, env: ctx.env }
+    const completed = await completeReview(ctx, record.issue, reviewInput, await runCodeReview(ctx.runner, reviewInput), pr, reviewSettings, checks.status === 'green', actions)
+    review = completed.review
     actions.push(`review ${review.status}: ${review.summary}`)
     const attempts = (prior?.attempts ?? 0) + 1
-    state = { ...state, prNumber: pr.number, reviews: { ...state.reviews, [pr.headSha]: { status: review.status, at: ctx.now().toISOString(), provider: review.provider, model: review.model, blocking: review.blocking.length, attempts, verdict: reviewLevel(review.status), ...incompleteReason(review) } } }
+    state = { ...state, prNumber: pr.number, reviews: { ...state.reviews, [pr.headSha]: { status: review.status, at: ctx.now().toISOString(), provider: review.provider, model: review.model, blocking: review.blocking.length, attempts, verdict: reviewLevel(review.status), ...incompleteReason(review), ...(completed.gaps ? { gaps: completed.gaps, reason: review.summary } : {}) } } }
     saveState(ctx, state)
     // windowed/cost visibility: agentskit-review already tracks provider calls and tokens per invocation
     // (`review.usage`); recording it here is what lets issueBudget/issueSpend see review spend at all.
@@ -1373,8 +1437,13 @@ ${marker}` }); actions.push('secret-file hold commented') } catch (error) { acti
     // count) already lets us check on the cached `prior` path below, and it is what stopped AGE-1871/AGE-1874
     // from being stuck forever in "waiting: review findings pending a new push" — a push that never comes
     // because there is nothing left to fix.
-    if (review.status === 'findings' && review.blocking.length) return fixRound(ctx, record, lease, state, pr, 'review', `Loop: the code review of PR #${pr.number} (head ${pr.headSha.slice(0, 7)}) found ${review.blocking.length} issue(s) at or above "${reviewSettings.minSeverity}". Address each one (or explain in the PR why it is not applicable), re-run \`${closes}\`, commit and push. Findings:\n${renderFindingsForWorker(review.blocking)}\nThe full review is on the PR. Reply here when pushed.`, `review found ${review.blocking.length} blocking finding(s)`, actions, review.blocking)
-  } else if (reviewPhase && prior?.status === 'findings' && prior.blocking > 0) {
+    if (review.status === 'findings' && review.blocking.length) {
+      leftovers = await convergeReview(ctx, record, state, pr, review.findings, checks.status === 'green', actions)
+      if (!leftovers) return fixRound(ctx, record, lease, state, pr, 'review', `Loop: the code review of PR #${pr.number} (head ${pr.headSha.slice(0, 7)}) found ${review.blocking.length} issue(s) at or above "${reviewSettings.minSeverity}". Address each one (or explain in the PR why it is not applicable), re-run \`${closes}\`, commit and push. Findings:\n${renderFindingsForWorker(review.blocking)}\nThe full review is on the PR. Reply here when pushed.`, `review found ${review.blocking.length} blocking finding(s)`, actions, review.blocking)
+      state = { ...state, reviews: { ...state.reviews, [pr.headSha]: { ...state.reviews[pr.headSha]!, leftovers } } }
+      saveState(ctx, state)
+    }
+  } else if (reviewPhase && prior?.status === 'findings' && prior.blocking > 0 && !prior.leftovers) {
     // The worker must have been told this head's findings. A delivery blocked at the fix-round cap never sent them,
     // and Retry clears the nudges: without a replay the worker waits for instructions and deliver waits for a push
     // (vivva #86 sat idle after Retry). Same replay the incomplete-review path does.
@@ -1434,7 +1503,7 @@ ${marker}` }); actions.push('secret-file hold commented') } catch (error) { acti
       minVerdict: config.delivery.merge.minVerdict,
       patch: { verified: verifiedPatch, current: patchNow },
       checks: { gating: flow.merge.requireChecks, status: checks.status },
-      review: { required: reviewPhase, status: review?.status ?? prior?.status ?? null, blocking: review ? review.blocking.length : prior?.blocking ?? 0 },
+      review: { required: reviewPhase, status: review?.status ?? prior?.status ?? null, blocking: review ? review.blocking.length : prior?.blocking ?? 0, leftovers, personLabels: flow.review.converge.personLabels.filter((label) => (record.labels ?? []).includes(label)) },
       heldPaths: { protectedFiles, protectedApproved: approvedHere, secretFiles: secretShapedFiles, boundary },
       autonomy: config.delivery.merge.autonomy,
       autoMerge: flow.merge.auto,
@@ -1666,10 +1735,12 @@ const handleIntakePullRequest = async (ctx: Context, identifier: string, pr: Pul
     if (beforeReview.block) return { issue: identifier, outcome: 'waiting', reason: `review blocked by plugin: ${beforeReview.reason}`, pr: pr.number, head: pr.headSha, actions }
     const resultFile = join(ctx.loaded.stateDir, 'issues', identifier, `review-${pr.headSha.slice(0, 12)}.json`)
     mkdirSync(dirname(resultFile), { recursive: true })
-    const review = await runCodeReview(ctx.runner, { cli: config.delivery.review.cli, repo: config.project.repo, baseBranch: config.project.baseBranch, number: pr.number, provider: settings.reviewProvider ?? `${ctx.reviewer.provider}-cli`, model: ctx.reviewer.model, mode: config.delivery.review.mode, ...(config.delivery.review.transport ? { transport: config.delivery.review.transport } : {}), profile: config.delivery.review.profile, votes: config.delivery.review.votes, concurrency: config.delivery.review.concurrency, minSeverity: config.delivery.review.minSeverity, deadlineMs: ctx.reviewDeadlineMs, subprocessTimeoutMs: config.delivery.review.subprocessTimeoutMs, analysisMaxTokens: config.delivery.review.analysisMaxTokens, analysisGlobalMaxTokens: config.delivery.review.analysisGlobalMaxTokens, maxCalls: config.delivery.review.maxCalls, post: config.delivery.review.post, resultFile, cwd: ctx.loaded.root, env: ctx.env })
+    const reviewInput: CodeReviewInput = { cli: config.delivery.review.cli, repo: config.project.repo, baseBranch: config.project.baseBranch, number: pr.number, provider: settings.reviewProvider ?? `${ctx.reviewer.provider}-cli`, model: ctx.reviewer.model, mode: config.delivery.review.mode, ...(config.delivery.review.transport ? { transport: config.delivery.review.transport } : {}), profile: config.delivery.review.profile, votes: config.delivery.review.votes, concurrency: config.delivery.review.concurrency, minSeverity: config.delivery.review.minSeverity, deadlineMs: ctx.reviewDeadlineMs, subprocessTimeoutMs: config.delivery.review.subprocessTimeoutMs, analysisMaxTokens: config.delivery.review.analysisMaxTokens, analysisGlobalMaxTokens: config.delivery.review.analysisGlobalMaxTokens, maxCalls: config.delivery.review.maxCalls, post: config.delivery.review.post, resultFile, cwd: ctx.loaded.root, env: ctx.env }
+    const completed = await completeReview(ctx, identifier, reviewInput, await runCodeReview(ctx.runner, reviewInput), pr, config.delivery.review, true, actions, 'github-intake')
+    const review = completed.review
     actions.push(`review ${review.status}: ${review.summary}`)
     const attempts = (prior?.attempts ?? 0) + 1
-    const next: DeliveryState = { ...state, prNumber: pr.number, reviews: { ...state.reviews, [pr.headSha]: { status: review.status, at: ctx.now().toISOString(), provider: review.provider, model: review.model, blocking: review.blocking.length, attempts, verdict: reviewLevel(review.status), ...incompleteReason(review) } } }
+    const next: DeliveryState = { ...state, prNumber: pr.number, reviews: { ...state.reviews, [pr.headSha]: { status: review.status, at: ctx.now().toISOString(), provider: review.provider, model: review.model, blocking: review.blocking.length, attempts, verdict: reviewLevel(review.status), ...incompleteReason(review), ...(completed.gaps ? { gaps: completed.gaps, reason: review.summary } : {}) } } }
     saveState(ctx, next)
     event(ctx, { type: 'pr.reviewed', issue: identifier, pr: pr.number, head: pr.headSha, status: review.status, blocking: review.blocking.length, provider: review.provider, model: review.model, profile: config.delivery.review.profile, votes: config.delivery.review.votes, minSeverity: config.delivery.review.minSeverity, source: 'github-intake', calls: review.usage.providerCalls, inputTokens: review.usage.inputTokens, outputTokens: review.usage.outputTokens, totalTokens: review.usage.totalTokens, ...incompleteReason(review) })
     await ctx.bus.runHook('afterReview', { issue: identifier, pr: pr.number, head: pr.headSha, status: review.status, blocking: review.blocking.length, source: 'github-intake' })

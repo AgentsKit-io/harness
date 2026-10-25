@@ -499,6 +499,14 @@ ak-harness loop approve [options] <issue>
 | `--head &lt;sha&gt;` | the head commit you reviewed (at least 7 characters) |  |
 | `--by &lt;actor&gt;` | who approves — recorded in the event log |  |
 
+### `ak-harness loop retry-review`
+
+Drop a PR's incomplete review attempts so the next deliver pass reviews its head again, and resume a delivery that stopped on them (instead of editing delivery.json by hand).
+
+```bash
+ak-harness loop retry-review [options] <pr>
+```
+
 ### `ak-harness loop resume`
 
 Resume a paused issue (clears its failure counter and removes the pause label) or, with --stage, a paused tick/deliver stage.

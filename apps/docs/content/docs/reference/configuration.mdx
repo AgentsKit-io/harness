@@ -9,7 +9,7 @@ The four layers that produce this configuration — the machine's global file, t
 machine's overlay — are described in [ADR-0033](https://github.com/AgentsKit-io/harness/blob/main/docs/ADR-0033-four-config-layers-and-presets.md).
 `ak-harness loop validate` prints the effective result, which is the only one that decides anything.
 
-231 of 427 paths carry no description yet.
+234 of 433 paths carry no description yet.
 
 ## `schemaVersion`
 
@@ -214,6 +214,12 @@ Stricter review for the slices of the board that deserve it, keyed by label. The
 | `delivery.review.doctorProbe` | `help` · `none` | `"help"` | Doctor probe depth for the review CLI (`help` runs `--help`; `none` only checks PATH). |
 | `delivery.review.smallChangeLines` | integer | `0` | Cost lever: a change at or below this many lines — or touching only documentation — is reviewed by the cheapest available candidate instead of the strongest. 0 disables it and every review uses the strongest. |
 | `delivery.review.criticalPaths` | string[] | `[]` | Path prefixes that always get the strongest reviewer, whatever the size (contracts, security, migrations). |
+| `delivery.review.fileFlag` | string | null | `"--file"` | A review that fails on some files retries each one alone, then with another reviewer, through this `agentskit-review` flag (`&lt;path&gt;` or `&lt;path&gt;:&lt;start&gt;-&lt;end&gt;`). What still fails is listed as a gap: on a green PR the review counts as "ran with gaps", not a hold. null = no file retries; the gaps stand as reported. |
+| `delivery.review.chunkLines` | integer | `400` | A failing file with more changed lines than this (an e2e spec), or one that failed on size or a limit, is retried in chunks. |
+| `delivery.review.converge` | object | `{}` | The stop rule. After `afterRounds` review fix rounds on a PR, with checks green and no open finding high or about correctness/security, the loop stops asking for rounds: the remaining findings go in one leftovers issue (`backlogLabel`, linked to the PR), the PR says "ready to merge with leftovers", and the loop merges it — unless the issue was dispatched with one of `personLabels`, which stay for a person. 0 = off. |
+| `delivery.review.converge.afterRounds` | integer | `2` |  |
+| `delivery.review.converge.backlogLabel` | string | `"loop:backlog"` |  |
+| `delivery.review.converge.personLabels` | string[] | `["loop:risk","loop:review"]` |  |
 | `delivery.merge` | object | `{}` |  |
 | `delivery.merge.auto` | boolean | `true` |  |
 | `delivery.merge.method` | `squash` · `merge` · `rebase` | `"squash"` |  |
