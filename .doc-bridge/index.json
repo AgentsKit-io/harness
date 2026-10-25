@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
-  "contentHash": "0360e84b88c1400cffb7d28f009b7489e3296c9bf7cb19a532a9fc6dd4441d50",
+  "contentHash": "38fbf77b560fa16a67e2f5ea99260c32387ddeb95cc9c7f4b8476afe4e8224b2",
   "contentHashAlgo": "sha256-semantic-v1",
-  "generatedAt": "2026-10-25T03:19:06.101Z",
+  "generatedAt": "2026-10-25T11:25:58.575Z",
   "project": {
     "name": "AgentsKit Harness",
     "root": "."
@@ -4169,7 +4169,7 @@
         "ts",
         "loop"
       ],
-      "contentHash": "8d872ce29287cdb2045554f7d04bed2968764758b4ca11a842e8322b35e67156"
+      "contentHash": "31c0128ae9241ed875a57a9e985da099dd4808a2b721177c7ed1b558f3f832b7"
     },
     {
       "id": "module:src/loop/deliver.ts",
@@ -4203,7 +4203,7 @@
         "ts",
         "loop"
       ],
-      "contentHash": "c4bf75bb024b44df530d04b47e33bcc4f7dc2adcb937251d1b9b76c523abe1bc"
+      "contentHash": "50544dc5745a833f79b136ad1535e34b42b86e275df4e8f5477c5980fa8b9c17"
     },
     {
       "id": "module:src/loop/detached-worker.ts",
@@ -4407,6 +4407,24 @@
         "loop"
       ],
       "contentHash": "36944553cb5398941fb2d26af2309c40a84c6812622cebcbd87074ed806c4c28"
+    },
+    {
+      "id": "module:src/loop/fleet-fix.ts",
+      "type": "module",
+      "title": "fleet-fix.ts",
+      "path": "src/loop/fleet-fix.ts",
+      "symbols": [
+        "FleetFixBriefInput",
+        "conflictingFiles",
+        "failedCheckLogs",
+        "renderFleetFixBrief"
+      ],
+      "tags": [
+        "module",
+        "ts",
+        "loop"
+      ],
+      "contentHash": "e3e1e4652b79f9ea241ca6b33eb355f0d043bd59f90fd4033fad5ffc7b17e8ad"
     },
     {
       "id": "module:src/loop/fleet-handoff.ts",
@@ -8455,6 +8473,18 @@
       "contentHash": "7f3874216668f7eeda87d4297461107b5e4b2a17c05d0230c134bbae213cfa6d"
     },
     {
+      "id": "module:test/loop-fleet-fix.test.ts",
+      "type": "module",
+      "title": "loop-fleet-fix.test.ts",
+      "path": "test/loop-fleet-fix.test.ts",
+      "tags": [
+        "module",
+        "ts",
+        "test"
+      ],
+      "contentHash": "a83a2b41990b2b152ef94ba852a6b792eef1b203acbf109cf42e16f9cd3a740e"
+    },
+    {
       "id": "module:test/loop-fleet-handoff.test.ts",
       "type": "module",
       "title": "loop-fleet-handoff.test.ts",
@@ -9668,8 +9698,8 @@
     }
   },
   "inputs": {
-    "hash": "af54442cc1d06585da20753e4dc2e873b06929a8530fedd2f9d09b9e61180bd8",
-    "fileCount": 614,
+    "hash": "4f6da261725225ec2d34c1cfb6acf8aa27775a86d53b1ee9ab88b594f1bf7ea6",
+    "fileCount": 616,
     "projectionVersion": 2
   },
   "retrieval": {
@@ -9691,9 +9721,9 @@
   "projection": {
     "type": "retrieval-index",
     "schemaVersion": 1,
-    "contentHash": "5594f2d211356ee7e0b62070d9cf90259a48365d5de71270751ff069ff7dfa41",
+    "contentHash": "cbfe6c153aa3c483663ec4c9317a946dbee251642f6d2aeb078612bad9b030d1",
     "contentHashAlgo": "sha256-semantic-v1",
-    "snapshotHash": "1225624e2cfe36e436a9c29fc991ba2dbc91ef3ac8f88a933b0a4a5086e0defb",
+    "snapshotHash": "ddaaf864b0387aa4314127e4caf1fde02069447f5652106150a7084a2c526b0d",
     "overlayHash": "f99666ff9119084dd25c2974ae64eb6935ec2aa785ff5ad478fb9d541f7a5e94",
     "configurationHash": "497822431910cd9fa7d674a48a9f0b96fbbbf779f22a001de0b52252117fe3ab",
     "lexiconVersion": 1,
@@ -9713,7 +9743,7 @@
     },
     "lexical": {
       "version": 1,
-      "documentCount": 595,
+      "documentCount": 597,
       "fieldNames": [
         "aliases",
         "body",
@@ -9724,13 +9754,13 @@
         "title"
       ],
       "averageFieldLength": {
-        "aliases": 2.926050420168067,
-        "body": 46.06050420168067,
-        "headings": 3.8285714285714287,
-        "path": 6.127731092436975,
-        "summary": 2.8605042016806723,
-        "symbols": 13.959663865546219,
-        "title": 4.020168067226891
+        "aliases": 2.926298157453936,
+        "body": 45.90619765494137,
+        "headings": 3.815745393634841,
+        "path": 6.1289782244556115,
+        "summary": 2.8509212730318256,
+        "symbols": 13.941373534338359,
+        "title": 4.023450586264657
       }
     },
     "entries": [
@@ -10388,7 +10418,7 @@
           ],
           "outbound": []
         },
-        "contentHash": "83cdac93e7a6158b99d7e147dd5ac6748afe4405b536ef31d4ec2d6a6bc885e1",
+        "contentHash": "1f6382405776c56fb91e702284f20466c18d693f057dcbe571e016f823b94b40",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -10535,7 +10565,7 @@
           ],
           "outbound": []
         },
-        "contentHash": "bb0c71b708a48f2813f2b3d4d983e7162807eb2565afbfbeeef1ee6bf089517e",
+        "contentHash": "1f166fa61d9eb319699ef7e385ec205673f93b6e4601ec2dca00cc8e1c535300",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -19547,6 +19577,11 @@
             },
             {
               "kind": "imports",
+              "id": "module:src/loop/fleet-fix.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
               "id": "module:src/loop/fleet-handoff.ts",
               "confidence": "observed"
             },
@@ -28267,6 +28302,11 @@
             },
             {
               "kind": "imports",
+              "id": "module:src/loop/fleet-fix.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
               "id": "module:src/loop/flows.ts",
               "confidence": "observed"
             },
@@ -28503,11 +28543,6 @@
             {
               "kind": "imports",
               "id": "module:test/ui-api-actions.test.ts",
-              "confidence": "observed"
-            },
-            {
-              "kind": "imports",
-              "id": "module:test/ui-api-server.test.ts",
               "confidence": "observed"
             }
           ],
@@ -28842,6 +28877,11 @@
             {
               "kind": "imports",
               "id": "module:src/loop/fleet-dod.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
+              "id": "module:src/loop/fleet-fix.ts",
               "confidence": "observed"
             },
             {
@@ -29405,7 +29445,7 @@
             }
           ]
         },
-        "contentHash": "8d872ce29287cdb2045554f7d04bed2968764758b4ca11a842e8322b35e67156",
+        "contentHash": "31c0128ae9241ed875a57a9e985da099dd4808a2b721177c7ed1b558f3f832b7",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -29698,6 +29738,11 @@
             },
             {
               "kind": "imports",
+              "id": "module:src/loop/fleet-fix.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
               "id": "module:src/loop/fleet-handoff.ts",
               "confidence": "observed"
             },
@@ -29818,7 +29863,7 @@
             }
           ]
         },
-        "contentHash": "c4bf75bb024b44df530d04b47e33bcc4f7dc2adcb937251d1b9b76c523abe1bc",
+        "contentHash": "50544dc5745a833f79b136ad1535e34b42b86e275df4e8f5477c5980fa8b9c17",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -30875,6 +30920,68 @@
           ]
         },
         "contentHash": "36944553cb5398941fb2d26af2309c40a84c6812622cebcbd87074ed806c4c28",
+        "provenance": "observed",
+        "confidence": "observed"
+      },
+      {
+        "id": "module:src/loop/fleet-fix.ts",
+        "kind": "module",
+        "path": "src/loop/fleet-fix.ts",
+        "title": "fleet-fix.ts",
+        "aliases": [],
+        "symbols": [
+          "FleetFixBriefInput",
+          "conflictingFiles",
+          "failedCheckLogs",
+          "renderFleetFixBrief"
+        ],
+        "tags": [
+          "module",
+          "ts",
+          "loop"
+        ],
+        "fields": {
+          "title": "fleet-fix.ts",
+          "headings": "",
+          "path": "src/loop/fleet-fix.ts",
+          "symbols": "FleetFixBriefInput conflictingFiles failedCheckLogs renderFleetFixBrief",
+          "summary": "",
+          "body": "",
+          "aliases": "module ts loop"
+        },
+        "graph": {
+          "pagerank": 0,
+          "inboundLinks": 0,
+          "coveredBy": [],
+          "mentionedBy": [],
+          "areaId": "area:src/loop",
+          "packageId": "package:@agentskit/harness",
+          "inbound": [
+            {
+              "kind": "imports",
+              "id": "module:src/loop/deliver.ts",
+              "confidence": "observed"
+            }
+          ],
+          "outbound": [
+            {
+              "kind": "imports",
+              "id": "module:src/adapters/command.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
+              "id": "module:src/loop/config.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
+              "id": "module:src/loop/contract.ts",
+              "confidence": "observed"
+            }
+          ]
+        },
+        "contentHash": "e3e1e4652b79f9ea241ca6b33eb355f0d043bd59f90fd4033fad5ffc7b17e8ad",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -46503,6 +46610,46 @@
           ]
         },
         "contentHash": "7f3874216668f7eeda87d4297461107b5e4b2a17c05d0230c134bbae213cfa6d",
+        "provenance": "observed",
+        "confidence": "observed"
+      },
+      {
+        "id": "module:test/loop-fleet-fix.test.ts",
+        "kind": "module",
+        "path": "test/loop-fleet-fix.test.ts",
+        "title": "loop-fleet-fix.test.ts",
+        "aliases": [],
+        "tags": [
+          "module",
+          "ts",
+          "test"
+        ],
+        "fields": {
+          "title": "loop-fleet-fix.test.ts",
+          "headings": "",
+          "path": "test/loop-fleet-fix.test.ts",
+          "symbols": "",
+          "summary": "",
+          "body": "",
+          "aliases": "module ts test"
+        },
+        "graph": {
+          "pagerank": 0,
+          "inboundLinks": 0,
+          "coveredBy": [],
+          "mentionedBy": [],
+          "areaId": "area:test",
+          "packageId": "package:@agentskit/harness",
+          "inbound": [],
+          "outbound": [
+            {
+              "kind": "imports",
+              "id": "module:src/index.ts",
+              "confidence": "observed"
+            }
+          ]
+        },
+        "contentHash": "a83a2b41990b2b152ef94ba852a6b792eef1b203acbf109cf42e16f9cd3a740e",
         "provenance": "observed",
         "confidence": "observed"
       },

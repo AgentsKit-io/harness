@@ -7,7 +7,7 @@
     "name": "AgentsKit Harness",
     "root": "."
   },
-  "contentHash": "0360e84b88c1400cffb7d28f009b7489e3296c9bf7cb19a532a9fc6dd4441d50",
+  "contentHash": "38fbf77b560fa16a67e2f5ea99260c32387ddeb95cc9c7f4b8476afe4e8224b2",
   "artifacts": {
     "index": ".doc-bridge/index.json",
     "llmsTxt": ".doc-bridge/llms.txt"
