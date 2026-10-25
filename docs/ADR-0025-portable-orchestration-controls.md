@@ -1,5 +1,8 @@
 # ADR-0025: Portable orchestration controls
 
+Code: `src/kernel/preflight.ts`, `src/kernel/status.ts`, `src/kernel/block.ts`, `src/kernel/learning.ts`,
+`src/execution/coordination.ts`, `src/adapters/orca.ts`.
+
 ## Status
 
 Accepted

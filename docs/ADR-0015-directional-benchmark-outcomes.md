@@ -1,5 +1,7 @@
 # ADR-0015: Directional benchmark outcomes
 
+Code: `src/execution/metrics.ts` (directional outcome labels in the benchmark report).
+
 ## Context
 
 The harness already reports raw deltas, but a negative duration delta is easy

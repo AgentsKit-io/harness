@@ -1,5 +1,7 @@
 # ADR-0017: Hash chained lifecycle event logs
 
+Code: `src/kernel/events.ts` (`FileEventStore`).
+
 ## Context
 
 The lifecycle log already preserves order and binds events to a run revision

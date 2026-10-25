@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
-  "contentHash": "f2be816d4ddeb3d3042197ff0e0cbe6941119667d2869ef1d6c2cf014080c8f1",
+  "contentHash": "0360e84b88c1400cffb7d28f009b7489e3296c9bf7cb19a532a9fc6dd4441d50",
   "contentHashAlgo": "sha256-semantic-v1",
-  "generatedAt": "2026-10-24T21:25:15.374Z",
+  "generatedAt": "2026-10-25T03:19:06.101Z",
   "project": {
     "name": "AgentsKit Harness",
     "root": "."
@@ -394,24 +394,24 @@
       "type": "document",
       "title": "ADR-0001: Extensible kernel with append-only run events",
       "path": "docs/ADR-0001-extensible-kernel.md",
-      "description": "Status: accepted",
+      "description": "Code: src/kernel/plugins.ts (plugin registry), src/kernel/events.ts (event log), src/kernel.",
       "tags": [
         "document",
         "human"
       ],
-      "contentHash": "9d94b41391b891bf9a3b36e001e7dfa14dcaba5aa252bc98e4420bd370f52060"
+      "contentHash": "7b1dd0f37411b83da972d236ec096be861be767d6fa7cd75964d497bb53ca4a4"
     },
     {
       "id": "document:docs/ADR-0002-profiles-and-context.md",
       "type": "document",
       "title": "ADR-0002: Profiles and optional context providers",
       "path": "docs/ADR-0002-profiles-and-context.md",
-      "description": "Status: accepted",
+      "description": "Code: src/profiles (profile resolution), src/context (context providers).",
       "tags": [
         "document",
         "human"
       ],
-      "contentHash": "feb91862ee63f433b84be968bdd7075eb92d52a48eee54de869ea9568cf391df"
+      "contentHash": "5727dc845ddab3604678ed721da2fed4408e8d61023018c1839ed89a395c98d4"
     },
     {
       "id": "document:docs/ADR-0003-doc-bridge-context-binding.md",
@@ -430,24 +430,24 @@
       "type": "document",
       "title": "ADR-0004: Derive benchmark metrics from immutable run projections",
       "path": "docs/ADR-0004-run-metrics.md",
-      "description": "Accepted",
+      "description": "Code: src/execution/metrics.ts (benchmarkRuns), src/execution.",
       "tags": [
         "document",
         "human"
       ],
-      "contentHash": "a7eaca2954ce8e8ac671fdc392e3d0bf7291646ef84139ba108d19edf38ccf40"
+      "contentHash": "70eb837522917b13c8a46841abb4d4b3396890789cd57b4277223193538dd707"
     },
     {
       "id": "document:docs/ADR-0005-benchmark-manifest.md",
       "type": "document",
       "title": "ADR-0005: Use explicit benchmark manifests and task bindings",
       "path": "docs/ADR-0005-benchmark-manifest.md",
-      "description": "Accepted",
+      "description": "Code: src/execution/metrics.ts (manifest validation and report), src/execution/config.ts (contract binding).",
       "tags": [
         "document",
         "human"
       ],
-      "contentHash": "01ffda8b1928da1ca182ff56b6d80c348c0565c2723c452020970a184d091559"
+      "contentHash": "e7610a6acc28a938b59025718d7ee7ed335b56cb312cc2266c123fb464c07782"
     },
     {
       "id": "document:docs/ADR-0006-agent-session-protocol.md",
@@ -514,12 +514,12 @@
       "type": "document",
       "title": "ADR-0011: Runtime attestation in tool evidence",
       "path": "docs/ADR-0011-runtime-attestation.md",
-      "description": "Accepted",
+      "description": "Code: src/execution/runtime.ts (DockerRuntimeEvidence), src/kernel/events.ts (tool.completed event).",
       "tags": [
         "document",
         "human"
       ],
-      "contentHash": "f72738fc76ca34b8c13285f3fcd560afc5c4448869a35c10ac108b12bcd0d548"
+      "contentHash": "4cab4b030d2687a89ec422edb59318b98f2c048a84f97eb6440cf2577db96f7a"
     },
     {
       "id": "document:docs/ADR-0012-controlled-baseline-observations.md",
@@ -550,72 +550,72 @@
       "type": "document",
       "title": "ADR-0014: Criterion-level benchmark evidence",
       "path": "docs/ADR-0014-criterion-level-benchmark-evidence.md",
-      "description": "Scalar baseline numbers do not prove that a benchmark task exercised its acceptance criteria. Treating those numbers as comparable can make an incomplete delivery look like an improvement.",
+      "description": "Code: src/execution/metrics.ts (baselineEvidenceCoverageRate).",
       "tags": [
         "document",
         "human"
       ],
-      "contentHash": "bef1c8aa7bf7b846fad40b1d7e3b2f9acfbd97e067419bf459056b8eb2a8d2e4"
+      "contentHash": "d7a69b5e49562a61a1a501f605f3b14946f05fbcac9ea069f733a714b178e51b"
     },
     {
       "id": "document:docs/ADR-0015-directional-benchmark-outcomes.md",
       "type": "document",
       "title": "ADR-0015: Directional benchmark outcomes",
       "path": "docs/ADR-0015-directional-benchmark-outcomes.md",
-      "description": "The harness already reports raw deltas, but a negative duration delta is easy to misread and non-comparable tasks can be mistaken for missing data. Operators need a small, explicit interpretation layer for the measured resources.",
+      "description": "Code: src/execution/metrics.ts (directional outcome labels in the benchmark report).",
       "tags": [
         "document",
         "human"
       ],
-      "contentHash": "5a77436c4ba0c87639343870fd72fdf853fc763462fea00766f92cf337c09217"
+      "contentHash": "a4fd9cd1325df250dd3c31a67ce95a0bbad24770f0ac6d949c4649c6d1714a2a"
     },
     {
       "id": "document:docs/ADR-0016-baseline-evidence-digests.md",
       "type": "document",
       "title": "ADR-0016: Baseline evidence digests",
       "path": "docs/ADR-0016-baseline-evidence-digests.md",
-      "description": "Criterion coverage and directional metrics can still be detached from the exact JSON input used during baseline collection. Without a digest, a later review cannot distinguish the recorded evidence file from a changed copy.",
+      "description": "Code: src/execution/metrics.ts (evidenceDigest), src/cli.ts (benchmark baseline).",
       "tags": [
         "document",
         "human"
       ],
-      "contentHash": "21abcd07a25fe7baf0ca121d5248ce8eb11dcd0e232e7b7bd564c2658d0fadd0"
+      "contentHash": "74a45b7b7dcb641bc649541bbb93aa332ddf8f43ad12b072175e7399b86b6ee4"
     },
     {
       "id": "document:docs/ADR-0017-event-log-integrity.md",
       "type": "document",
       "title": "ADR-0017: Hash chained lifecycle event logs",
       "path": "docs/ADR-0017-event-log-integrity.md",
-      "description": "The lifecycle log already preserves order and binds events to a run revision and contract hash, but a later edit to an existing record would not be detected. Enterprise review needs a deterministic integrity signal without persisting prompts, tool arguments, or adding a remote service.",
+      "description": "Code: src/kernel/events.ts (FileEventStore).",
       "tags": [
         "document",
         "human"
       ],
-      "contentHash": "9267708b30c5002132fb78f2b6a0ec0cc09f665429d99a2636ff04c000cf5739"
+      "contentHash": "d753842bd4c712ab74179c5a9daf76f67bd972949786ba9d09b787cd2e678fb7"
     },
     {
       "id": "document:docs/ADR-0018-verification-projection-attestation.md",
       "type": "document",
       "title": "ADR-0018: Attest verification projections before approval",
       "path": "docs/ADR-0018-verification-projection-attestation.md",
-      "description": "run.json is a convenient projection of checks and outcomes, but it is not itself an immutable store. Approval must not trust a projection that was changed after verification while the source and contract remain unchanged.",
+      "description": "Code: src/execution/verification.ts (verificationDigest, approval checks).",
       "tags": [
         "document",
         "human"
       ],
-      "contentHash": "4f60f4fd2d4ee49460689a04d6d26b6da7328ff6b81cfd080b40a06b1eba15f6"
+      "contentHash": "7c2b52e4791c3fa5e91e135c656295251d0dfc0794fdcfee714d5c791eba9078"
     },
     {
       "id": "document:docs/ADR-0019-human-decision-attestation.md",
       "type": "document",
       "title": "ADR-0019: Record human decisions as attested lifecycle events",
       "path": "docs/ADR-0019-human-decision-attestation.md",
-      "description": "The verification result is now attested before approval, but the approval and tracking authorization themselves only existed in the mutable run.json projection. An audit consumer could see that a run reached COMPLETE without an immutable record of which human decision accepted the exact evidence.",
+      "description": "Code: src/execution/verification.ts (recordDecision), src/kernel/events.ts (event types).",
       "tags": [
         "document",
         "human"
       ],
-      "contentHash": "0abbe1699fee232b6c4a34a306bb26f935bfe3da70de3b2a75ed87a146c259a7"
+      "contentHash": "34f224ca090feb150bd0e53db7ba9554bd3f9da1b676410878311211191cb85e"
     },
     {
       "id": "document:docs/ADR-0020-terminal-reconciliation.md",
@@ -634,12 +634,12 @@
       "type": "document",
       "title": "ADR-0021: Explicit recovery for orphaned event-log locks",
       "path": "docs/ADR-0021-event-lock-recovery.md",
-      "description": "The per-run event-log lock prevents concurrent append and read operations from duplicating sequence numbers or observing a partial write. A process can still terminate after acquiring the lock, leaving a file that must not be removed automatically because another writer may still own it.",
+      "description": "Code: src/kernel/events.ts (lock inspection and recovery), src/cli.ts (events unlock).",
       "tags": [
         "document",
         "human"
       ],
-      "contentHash": "818342cfd4b944619770b83d39d56716829065a00839d8da3a8a4b7c8b9f2b04"
+      "contentHash": "f8a74caac170a78dfa9259eedf000d5272c07345c46959abb49ca0658ff8d79c"
     },
     {
       "id": "document:docs/ADR-0022-signed-evidence-bundle.md",
@@ -658,36 +658,36 @@
       "type": "document",
       "title": "ADR-0023: Require human decisions for ambiguous action recovery",
       "path": "docs/ADR-0023-safe-action-recovery.md",
-      "description": "Accepted",
+      "description": "Code: src/execution/agent.ts (recoverTool).",
       "tags": [
         "document",
         "human"
       ],
-      "contentHash": "d21d2ec9d4d8b5b0768df3b9c803f551334c78650e79ec0aef426791f2072a94"
+      "contentHash": "03274ccf09e21e1879a6376b7d268bfd99944f5d2a62075cb232d572d7d6db13"
     },
     {
       "id": "document:docs/ADR-0024-controlled-completion-metrics.md",
       "type": "document",
       "title": "ADR-0024: Measure escaped incomplete delivery with controlled baselines",
       "path": "docs/ADR-0024-controlled-completion-metrics.md",
-      "description": "Accepted",
+      "description": "Code: src/execution/metrics.ts (escapedIncomplete).",
       "tags": [
         "document",
         "human"
       ],
-      "contentHash": "a70677b0fc9e8c66674a0fef1f00fe7f805cf8b823f13c7e5dae65170cfc6fc4"
+      "contentHash": "9c1ec2933130f3945ba3a8c9cef7454020274af92204e6806e8c587f634e4e3e"
     },
     {
       "id": "document:docs/ADR-0025-portable-orchestration-controls.md",
       "type": "document",
       "title": "ADR-0025: Portable orchestration controls",
       "path": "docs/ADR-0025-portable-orchestration-controls.md",
-      "description": "Accepted",
+      "description": "Code: src/kernel/preflight.ts, src/kernel/status.ts, src/kernel/block.ts, src/kernel/learning.ts, src/execution/coordination.ts, src/adapters/orca.ts.",
       "tags": [
         "document",
         "human"
       ],
-      "contentHash": "b2c154613ac9581340c1665ac757ffa4e1da6f77fd535bc3364aeea4e2b2094d"
+      "contentHash": "b882da882d22fa65206c234b670ec1fdefaa02c89372815360100b6beb8db208"
     },
     {
       "id": "document:docs/ADR-0026-kernel-adapters-boundary.md",
@@ -954,16 +954,42 @@
       "contentHash": "ae4f2c724b484b01956de41f50c1cadcfa7115beda01faae345f8213da7c0a35"
     },
     {
+      "id": "document:docs/for-agents/packages/ecosystem-manifest.md",
+      "type": "document",
+      "title": "Ecosystem manifest",
+      "path": "docs/for-agents/packages/ecosystem-manifest.md",
+      "description": "ecosystem.json is the shared product catalog: the AgentsKit products, their navigation order, metadata and public URLs. ecosystem-claims.json holds the verifiable public claims (counts and their evidence) for each product; it is wired in as the claims file of the Documentation Standard check. The manifest feeds the site shell.",
+      "tags": [
+        "document",
+        "agent",
+        "package"
+      ],
+      "contentHash": "ab9b2824d111c1f4c7885059fa73d22c35b4d9053317b6f102fb32d51c5c6fc0"
+    },
+    {
+      "id": "document:docs/for-agents/packages/harness-site.md",
+      "type": "document",
+      "title": "Harness documentation site",
+      "path": "docs/for-agents/packages/harness-site.md",
+      "description": "apps/docs is the public Fumadocs site served at harness.agentskit.io. It is its own package (@agentskit/harness-docs) so Next and React 19 never reach the harness runtime, which renders its TUI with ink.",
+      "tags": [
+        "document",
+        "agent",
+        "package"
+      ],
+      "contentHash": "ee0168ef6e1b96a00252fb6750e8a529ee76543a33bda97982f2d9e249ccedc0"
+    },
+    {
       "id": "document:docs/GETTING-STARTED.md",
       "type": "document",
       "title": "Getting started",
       "path": "docs/GETTING-STARTED.md",
-      "description": "Install the package, then run the included consumer example:",
+      "description": "Install the package, then run the included consumer example (examples/minimum-profile.mjs, from the examples directory):",
       "tags": [
         "document",
         "human"
       ],
-      "contentHash": "a46787bff55334e03e16342bc140d6583186ca2331b6cb48120776543f384d3e"
+      "contentHash": "05a7f2d7995fee72ea4becf27f70f7c5e76ab378ae9e7045f29818ab5e4b9d91"
     },
     {
       "id": "document:docs/LOOP.md",
@@ -987,7 +1013,7 @@
         "document",
         "human"
       ],
-      "contentHash": "8a18a55b8d926f930c4726da4758b702674d48fb19320d17964d8ac5ba481206"
+      "contentHash": "7b47c14a0c2b87b4e66e94bda27f0f7186b0da83abfd4667a7f6fa04b7d01adc"
     },
     {
       "id": "document:docs/ORGANIZATION.md",
@@ -1023,7 +1049,7 @@
         "document",
         "human"
       ],
-      "contentHash": "3515676840eef2f6f9bae93b77aca49ec11a0de54722e06f80760a95c59d6be6"
+      "contentHash": "ae5ccedc0eb9c93661f98bb6c88e717b6862ff324267197f17f04a1bfeaff7c8"
     },
     {
       "id": "document:HOME-BRIEF.md",
@@ -1632,7 +1658,7 @@
         "mjs",
         "scripts"
       ],
-      "contentHash": "55b65b6525ad43390936e08df6916fca2efe0167940cd297fa9e0cec5cfd7300"
+      "contentHash": "fc7b6491c45bcf701f81ea90edfd813b8ee8b87792b261233dc62c54c06cc2cb"
     },
     {
       "id": "module:scripts/lib/frontmatter.mjs",
@@ -1680,6 +1706,19 @@
         "lib"
       ],
       "contentHash": "a56780f1abe69542f8be017f8e92e53b487817d24249433f915f72b95366cca4"
+    },
+    {
+      "id": "module:scripts/retrieval-suite.test.mjs",
+      "type": "module",
+      "title": "retrieval-suite.test.mjs",
+      "path": "scripts/retrieval-suite.test.mjs",
+      "tags": [
+        "module",
+        "mjs",
+        "test",
+        "scripts"
+      ],
+      "contentHash": "bde5921ffa8aff74eaeadf19684a114f70eb0c17dccb2013512824505d1b50ab"
     },
     {
       "id": "module:scripts/smoke-pi-minimax.mjs",
@@ -9534,9 +9573,9 @@
         "id": "ecosystem-manifest",
         "path": "ecosystem.json"
       },
-      "startHere": "apps/docs/content/docs/index.mdx",
+      "startHere": "docs/for-agents/packages/ecosystem-manifest.md",
       "readBeforeEditing": [
-        "apps/docs/content/docs/index.mdx",
+        "docs/for-agents/packages/ecosystem-manifest.md",
         "AGENTS.md"
       ],
       "editRoots": [
@@ -9562,9 +9601,9 @@
         "id": "harness-site",
         "path": "apps/docs"
       },
-      "startHere": "apps/docs/content/docs/index.mdx",
+      "startHere": "docs/for-agents/packages/harness-site.md",
       "readBeforeEditing": [
-        "apps/docs/content/docs/index.mdx",
+        "docs/for-agents/packages/harness-site.md",
         "AGENTS.md"
       ],
       "editRoots": [
@@ -9597,7 +9636,7 @@
         "checksSource": "ownership",
         "purpose": "Shared product metadata and public ecosystem references.",
         "humanDoc": "https://harness.agentskit.io/docs",
-        "agentDoc": "apps/docs/content/docs/index.mdx"
+        "agentDoc": "docs/for-agents/packages/ecosystem-manifest.md"
       },
       "harness-site": {
         "id": "harness-site",
@@ -9608,7 +9647,7 @@
         "checksSource": "ownership",
         "purpose": "Public Fumadocs product site and its curated documentation.",
         "humanDoc": "https://harness.agentskit.io/docs",
-        "agentDoc": "apps/docs/content/docs/index.mdx"
+        "agentDoc": "docs/for-agents/packages/harness-site.md"
       }
     },
     "intents": {
@@ -9629,8 +9668,8 @@
     }
   },
   "inputs": {
-    "hash": "5b014ed3f575af8338270ba2e121b263d6490cc5d7d68ea07e27f6c48b8b0c9f",
-    "fileCount": 610,
+    "hash": "af54442cc1d06585da20753e4dc2e873b06929a8530fedd2f9d09b9e61180bd8",
+    "fileCount": 614,
     "projectionVersion": 2
   },
   "retrieval": {
@@ -9652,11 +9691,11 @@
   "projection": {
     "type": "retrieval-index",
     "schemaVersion": 1,
-    "contentHash": "5bb00223966b55134a5160c643b9f5fa69bcfa61bb5516477cfb38b4eda0decd",
+    "contentHash": "5594f2d211356ee7e0b62070d9cf90259a48365d5de71270751ff069ff7dfa41",
     "contentHashAlgo": "sha256-semantic-v1",
-    "snapshotHash": "4b54fb55bcc4884f51497b39d8126198e2ce1b345130226ac775630416197fc7",
+    "snapshotHash": "1225624e2cfe36e436a9c29fc991ba2dbc91ef3ac8f88a933b0a4a5086e0defb",
     "overlayHash": "f99666ff9119084dd25c2974ae64eb6935ec2aa785ff5ad478fb9d541f7a5e94",
-    "configurationHash": "6c17a2415ef3484014ab8350c5c245602bfb85d2baf75666fb83c1c387f3396a",
+    "configurationHash": "497822431910cd9fa7d674a48a9f0b96fbbbf779f22a001de0b52252117fe3ab",
     "lexiconVersion": 1,
     "graphMetricsVersion": "1.0.0",
     "weights": {
@@ -9674,7 +9713,7 @@
     },
     "lexical": {
       "version": 1,
-      "documentCount": 592,
+      "documentCount": 595,
       "fieldNames": [
         "aliases",
         "body",
@@ -9685,13 +9724,13 @@
         "title"
       ],
       "averageFieldLength": {
-        "aliases": 2.9222972972972974,
-        "body": 45.189189189189186,
-        "headings": 3.820945945945946,
-        "path": 6.125,
-        "summary": 2.70777027027027,
-        "symbols": 14.030405405405405,
-        "title": 4.02027027027027
+        "aliases": 2.926050420168067,
+        "body": 46.06050420168067,
+        "headings": 3.8285714285714287,
+        "path": 6.127731092436975,
+        "summary": 2.8605042016806723,
+        "symbols": 13.959663865546219,
+        "title": 4.020168067226891
       }
     },
     "entries": [
@@ -9699,9 +9738,9 @@
         "id": "area:apps/docs",
         "kind": "area",
         "path": "apps/docs",
-        "title": "index",
+        "title": "Harness documentation site",
         "summary": "Public Fumadocs product site and its curated documentation.",
-        "audience": "human",
+        "audience": "agent",
         "aliases": [
           "harness-site"
         ],
@@ -9710,26 +9749,39 @@
           "ownership"
         ],
         "fields": {
-          "title": "index",
-          "headings": "What the harness decides, and what it does not Where to start Requirements",
+          "title": "Harness documentation site",
+          "headings": "Harness documentation site Layout Change rules Check",
           "path": "apps/docs",
           "symbols": "",
           "summary": "Public Fumadocs product site and its curated documentation.",
-          "body": "@agentskit/harness runs one project's software development lifecycle unattended: a vague objective becomes a PRD, the PRD becomes a design and issues, each issue becomes a contract, a worker in its own worktree, a reviewed pull request proven against a definition of done, a merge — and, behind a human gate, a release. It is a CLI, a library and an optional local operational UI. The UI is served by ak-harness ui , reads the files in .ak-loop/ next to your repository, and does not introduce a daemon or database. Its issue-first flow freezes a selected issue's contract/profile/limits into a durable queue; the Inbox is reserved for human decisions. Its remote board can use either Linear or GitHub Issues, selected by connectors.tracker ; both providers use the same Harness execution seam. It is free and open source under the . <LoopFactory / What the harness decides, and what it does not The harness orchestrates: what to dispatch, who runs each role, when to nudge, hand off or escalate, what blocks a merge, and when a batch may be promoted. It does not drive the worker's own model and tool loop. Each worker is an opaque CLI session — claude, codex, grok, opencode — in its own worktree. The harness hands it a brief and reads what it leaves behind: three files in .ak-loop/ that say what it planned, what it ran, and what it proved. The loop advances on files it can check, never on what a terminal said. Where to start If you want to… Read --- --- Get it running Understand the shape , Know what blocks a merge , Spend less , Know where it stops for you Operate one , See it happen Look something up , , Requirements Node.js 22 or newer, a git repository with a committed HEAD , at least one coding-agent CLI on PATH , and a tracker the loop can read a queue from. ak-harness loop doctor tells you which of those is missing before anything is dispatched.",
+          "body": "Harness documentation site apps/docs is the public Fumadocs site served at harness.agentskit.io. It is its own package ( @agentskit/harness-docs ) so Next and React 19 never reach the harness runtime, which renders its TUI with ink. Layout - apps/docs/content/docs/ — the curated MDX pages (get-started, concepts, configuration, guides, examples, reference). Pages under reference/ are generated by scripts/gen-docs-reference.mjs ; edit the generator, not the page. - apps/docs/app/(home) — the landing page; its sections live in apps/docs/components/home . - apps/docs/app/docs — the Fumadocs documentation layout and the catch-all page route. - apps/docs/app/api — the search route ( apps/docs/app/api/search/route.ts ), a static index built from the content source. - apps/docs/app/for-agents — the page that tells agents how to read the site. - apps/docs/components — shared client components (shell, mermaid, pipeline and run-replay visuals). - apps/docs/lib — source.ts (content loader), shell.ts (ecosystem shell data), site.ts (origin and base path), stats.ts . - apps/docs/types — ambient types for the shell element. Change rules - Keep numbers on the site derived from the repository ( scripts/lib/stats.mjs ), never typed by hand. - Machine-readable surfaces ( llms.txt , raw Markdown, stats) come from scripts/build-docs-artifacts.mjs . Check pnpm docs:build builds the harness, writes the artifacts and builds the site; pnpm docs:typecheck type-checks it.",
           "aliases": "harness-site area ownership"
         },
         "graph": {
-          "pagerank": 0,
-          "inboundLinks": 1,
-          "coveredBy": [],
+          "pagerank": 0.040956,
+          "inboundLinks": 2,
+          "coveredBy": [
+            "document:docs/for-agents/packages/harness-site.md"
+          ],
           "mentionedBy": [
-            "document:CHANGELOG.md"
+            "document:CHANGELOG.md",
+            "document:docs/for-agents/packages/harness-site.md"
           ],
           "packageId": "package:@agentskit/harness-docs",
           "inbound": [
             {
+              "kind": "covers",
+              "id": "document:docs/for-agents/packages/harness-site.md",
+              "confidence": "declared"
+            },
+            {
               "kind": "mentions",
               "id": "document:CHANGELOG.md",
+              "confidence": "observed"
+            },
+            {
+              "kind": "mentions",
+              "id": "document:docs/for-agents/packages/harness-site.md",
               "confidence": "observed"
             }
           ],
@@ -9760,12 +9812,20 @@
         },
         "graph": {
           "pagerank": 0,
-          "inboundLinks": 0,
+          "inboundLinks": 1,
           "coveredBy": [],
-          "mentionedBy": [],
+          "mentionedBy": [
+            "document:docs/for-agents/packages/harness-site.md"
+          ],
           "areaId": "area:apps/docs",
           "packageId": "package:@agentskit/harness-docs",
-          "inbound": [],
+          "inbound": [
+            {
+              "kind": "mentions",
+              "id": "document:docs/for-agents/packages/harness-site.md",
+              "confidence": "observed"
+            }
+          ],
           "outbound": []
         },
         "contentHash": "cdee0fa5ff80a6e82b7aa5091af718f0fd5e0f977370cfce629bbcd3c94986cc",
@@ -9792,12 +9852,20 @@
         },
         "graph": {
           "pagerank": 0,
-          "inboundLinks": 0,
+          "inboundLinks": 1,
           "coveredBy": [],
-          "mentionedBy": [],
+          "mentionedBy": [
+            "document:docs/for-agents/packages/harness-site.md"
+          ],
           "areaId": "area:apps/docs",
           "packageId": "package:@agentskit/harness-docs",
-          "inbound": [],
+          "inbound": [
+            {
+              "kind": "mentions",
+              "id": "document:docs/for-agents/packages/harness-site.md",
+              "confidence": "observed"
+            }
+          ],
           "outbound": []
         },
         "contentHash": "985d753a6334c9f42aa46124309c21a5ea524e2c6798f90778a0c1dac31ecb13",
@@ -9824,12 +9892,20 @@
         },
         "graph": {
           "pagerank": 0,
-          "inboundLinks": 0,
+          "inboundLinks": 1,
           "coveredBy": [],
-          "mentionedBy": [],
+          "mentionedBy": [
+            "document:docs/for-agents/packages/harness-site.md"
+          ],
           "areaId": "area:apps/docs",
           "packageId": "package:@agentskit/harness-docs",
-          "inbound": [],
+          "inbound": [
+            {
+              "kind": "mentions",
+              "id": "document:docs/for-agents/packages/harness-site.md",
+              "confidence": "observed"
+            }
+          ],
           "outbound": []
         },
         "contentHash": "078df9c25e10f3bff010afdb84ecafe50b2ad09377a11f0c38fb5a70274814bf",
@@ -9856,12 +9932,20 @@
         },
         "graph": {
           "pagerank": 0,
-          "inboundLinks": 0,
+          "inboundLinks": 1,
           "coveredBy": [],
-          "mentionedBy": [],
+          "mentionedBy": [
+            "document:docs/for-agents/packages/harness-site.md"
+          ],
           "areaId": "area:apps/docs",
           "packageId": "package:@agentskit/harness-docs",
-          "inbound": [],
+          "inbound": [
+            {
+              "kind": "mentions",
+              "id": "document:docs/for-agents/packages/harness-site.md",
+              "confidence": "observed"
+            }
+          ],
           "outbound": []
         },
         "contentHash": "33fd99f48899a1785c2ec0d672b7692de5ff3fbed9a819d7526d0f9fa2540fdb",
@@ -9888,12 +9972,20 @@
         },
         "graph": {
           "pagerank": 0,
-          "inboundLinks": 0,
+          "inboundLinks": 1,
           "coveredBy": [],
-          "mentionedBy": [],
+          "mentionedBy": [
+            "document:docs/for-agents/packages/harness-site.md"
+          ],
           "areaId": "area:apps/docs",
           "packageId": "package:@agentskit/harness-docs",
-          "inbound": [],
+          "inbound": [
+            {
+              "kind": "mentions",
+              "id": "document:docs/for-agents/packages/harness-site.md",
+              "confidence": "observed"
+            }
+          ],
           "outbound": []
         },
         "contentHash": "a995c30b1f5f6185e4bafc8069bb1c6a2d19aac65d1497750b93381b96a72a93",
@@ -9920,12 +10012,20 @@
         },
         "graph": {
           "pagerank": 0,
-          "inboundLinks": 0,
+          "inboundLinks": 1,
           "coveredBy": [],
-          "mentionedBy": [],
+          "mentionedBy": [
+            "document:docs/for-agents/packages/harness-site.md"
+          ],
           "areaId": "area:apps/docs",
           "packageId": "package:@agentskit/harness-docs",
-          "inbound": [],
+          "inbound": [
+            {
+              "kind": "mentions",
+              "id": "document:docs/for-agents/packages/harness-site.md",
+              "confidence": "observed"
+            }
+          ],
           "outbound": []
         },
         "contentHash": "a9222c597da887fdf351994ec2d2b6cafacbf0ff695261b6cf4f4dcb855bf724",
@@ -9952,11 +10052,19 @@
         },
         "graph": {
           "pagerank": 0,
-          "inboundLinks": 0,
+          "inboundLinks": 1,
           "coveredBy": [],
-          "mentionedBy": [],
+          "mentionedBy": [
+            "document:docs/GETTING-STARTED.md"
+          ],
           "packageId": "package:@agentskit/harness",
-          "inbound": [],
+          "inbound": [
+            {
+              "kind": "mentions",
+              "id": "document:docs/GETTING-STARTED.md",
+              "confidence": "observed"
+            }
+          ],
           "outbound": []
         },
         "contentHash": "b80a9432b9e63e16c61b4d7df80bb70e9c0449619adda340a165bffce3d16f56",
@@ -10004,7 +10112,7 @@
           ],
           "outbound": []
         },
-        "contentHash": "58ceaf6b69e84d6d00ffe9f0026329e342fa8802a527a6991c175b862dc12b85",
+        "contentHash": "5ff0c36767c533f35dd89f3de9b34c9e6f3514dc69d65bcfc5a88ccaeb50683d",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -10028,11 +10136,19 @@
         },
         "graph": {
           "pagerank": 0,
-          "inboundLinks": 0,
+          "inboundLinks": 1,
           "coveredBy": [],
-          "mentionedBy": [],
+          "mentionedBy": [
+            "document:docs/MODULE-BOUNDARIES.md"
+          ],
           "packageId": "package:@agentskit/harness",
-          "inbound": [],
+          "inbound": [
+            {
+              "kind": "mentions",
+              "id": "document:docs/MODULE-BOUNDARIES.md",
+              "confidence": "observed"
+            }
+          ],
           "outbound": []
         },
         "contentHash": "a443d7d7ec9e81fa0e07430784c1b35c7567e21acc4be9484434c3f16c2e1edc",
@@ -10059,11 +10175,25 @@
         },
         "graph": {
           "pagerank": 0,
-          "inboundLinks": 0,
+          "inboundLinks": 2,
           "coveredBy": [],
-          "mentionedBy": [],
+          "mentionedBy": [
+            "document:docs/ADR-0002-profiles-and-context.md",
+            "document:docs/MODULE-BOUNDARIES.md"
+          ],
           "packageId": "package:@agentskit/harness",
-          "inbound": [],
+          "inbound": [
+            {
+              "kind": "mentions",
+              "id": "document:docs/ADR-0002-profiles-and-context.md",
+              "confidence": "observed"
+            },
+            {
+              "kind": "mentions",
+              "id": "document:docs/MODULE-BOUNDARIES.md",
+              "confidence": "observed"
+            }
+          ],
           "outbound": []
         },
         "contentHash": "f6b6c2a271ecd5f5b5f8beacf6b7e9ecd81b28058058d55443f657e00ab2dc75",
@@ -10090,11 +10220,19 @@
         },
         "graph": {
           "pagerank": 0,
-          "inboundLinks": 0,
+          "inboundLinks": 1,
           "coveredBy": [],
-          "mentionedBy": [],
+          "mentionedBy": [
+            "document:docs/MODULE-BOUNDARIES.md"
+          ],
           "packageId": "package:@agentskit/harness",
-          "inbound": [],
+          "inbound": [
+            {
+              "kind": "mentions",
+              "id": "document:docs/MODULE-BOUNDARIES.md",
+              "confidence": "observed"
+            }
+          ],
           "outbound": []
         },
         "contentHash": "0ee277c7a5c4b4c1708e50d7bbf1831872d33e3c3bac44177537d772d5d59e84",
@@ -10121,11 +10259,25 @@
         },
         "graph": {
           "pagerank": 0,
-          "inboundLinks": 0,
+          "inboundLinks": 2,
           "coveredBy": [],
-          "mentionedBy": [],
+          "mentionedBy": [
+            "document:docs/ADR-0004-run-metrics.md",
+            "document:docs/MODULE-BOUNDARIES.md"
+          ],
           "packageId": "package:@agentskit/harness",
-          "inbound": [],
+          "inbound": [
+            {
+              "kind": "mentions",
+              "id": "document:docs/ADR-0004-run-metrics.md",
+              "confidence": "observed"
+            },
+            {
+              "kind": "mentions",
+              "id": "document:docs/MODULE-BOUNDARIES.md",
+              "confidence": "observed"
+            }
+          ],
           "outbound": []
         },
         "contentHash": "537db64f3a067ae7597883e6619cc49199c3e25fec4a942a0d7d2cdd65e68b24",
@@ -10152,11 +10304,25 @@
         },
         "graph": {
           "pagerank": 0,
-          "inboundLinks": 0,
+          "inboundLinks": 2,
           "coveredBy": [],
-          "mentionedBy": [],
+          "mentionedBy": [
+            "document:docs/ADR-0001-extensible-kernel.md",
+            "document:docs/MODULE-BOUNDARIES.md"
+          ],
           "packageId": "package:@agentskit/harness",
-          "inbound": [],
+          "inbound": [
+            {
+              "kind": "mentions",
+              "id": "document:docs/ADR-0001-extensible-kernel.md",
+              "confidence": "observed"
+            },
+            {
+              "kind": "mentions",
+              "id": "document:docs/MODULE-BOUNDARIES.md",
+              "confidence": "observed"
+            }
+          ],
           "outbound": []
         },
         "contentHash": "0138875e48471eda438113d7e95540d6b2f3fac3e03a359184c969f4cceaa59f",
@@ -10183,13 +10349,14 @@
         },
         "graph": {
           "pagerank": 0,
-          "inboundLinks": 4,
+          "inboundLinks": 5,
           "coveredBy": [],
           "mentionedBy": [
             "document:CHANGELOG.md",
             "document:docs/ADR-0027-keep-pushing-loop.md",
             "document:docs/ADR-0029-loop-resilience-pinning-intake.md",
-            "document:docs/LOOP.md"
+            "document:docs/LOOP.md",
+            "document:docs/MODULE-BOUNDARIES.md"
           ],
           "packageId": "package:@agentskit/harness",
           "inbound": [
@@ -10212,6 +10379,11 @@
               "kind": "mentions",
               "id": "document:docs/LOOP.md",
               "confidence": "fuzzy"
+            },
+            {
+              "kind": "mentions",
+              "id": "document:docs/MODULE-BOUNDARIES.md",
+              "confidence": "observed"
             }
           ],
           "outbound": []
@@ -10240,11 +10412,25 @@
         },
         "graph": {
           "pagerank": 0,
-          "inboundLinks": 0,
+          "inboundLinks": 2,
           "coveredBy": [],
-          "mentionedBy": [],
+          "mentionedBy": [
+            "document:docs/ADR-0002-profiles-and-context.md",
+            "document:docs/MODULE-BOUNDARIES.md"
+          ],
           "packageId": "package:@agentskit/harness",
-          "inbound": [],
+          "inbound": [
+            {
+              "kind": "mentions",
+              "id": "document:docs/ADR-0002-profiles-and-context.md",
+              "confidence": "observed"
+            },
+            {
+              "kind": "mentions",
+              "id": "document:docs/MODULE-BOUNDARIES.md",
+              "confidence": "observed"
+            }
+          ],
           "outbound": []
         },
         "contentHash": "dbc6037cf75774eb5489eb8ca7e3c4039ef04ccbd3f6e0d95b219ece37a77ef1",
@@ -10439,7 +10625,7 @@
           "aliases": "document unclassified"
         },
         "graph": {
-          "pagerank": 0.043714,
+          "pagerank": 0.040956,
           "inboundLinks": 4,
           "coveredBy": [],
           "mentionedBy": [
@@ -11818,10 +12004,18 @@
         },
         "graph": {
           "pagerank": 0,
-          "inboundLinks": 0,
+          "inboundLinks": 1,
           "coveredBy": [],
-          "mentionedBy": [],
-          "inbound": [],
+          "mentionedBy": [
+            "document:docs/for-agents/packages/harness-site.md"
+          ],
+          "inbound": [
+            {
+              "kind": "mentions",
+              "id": "document:docs/for-agents/packages/harness-site.md",
+              "confidence": "fuzzy"
+            }
+          ],
           "outbound": [
             {
               "kind": "mentions",
@@ -12034,7 +12228,7 @@
           "aliases": "document project"
         },
         "graph": {
-          "pagerank": 0.025303,
+          "pagerank": 0.023707,
           "inboundLinks": 2,
           "coveredBy": [],
           "mentionedBy": [
@@ -12326,7 +12520,7 @@
           "aliases": "document unclassified"
         },
         "graph": {
-          "pagerank": 0.023629,
+          "pagerank": 0.022139,
           "inboundLinks": 1,
           "coveredBy": [],
           "mentionedBy": [
@@ -12409,7 +12603,7 @@
           "aliases": "document unclassified"
         },
         "graph": {
-          "pagerank": 0.033672,
+          "pagerank": 0.031547,
           "inboundLinks": 1,
           "coveredBy": [],
           "mentionedBy": [],
@@ -12453,7 +12647,7 @@
           "aliases": "document unclassified"
         },
         "graph": {
-          "pagerank": 0.023629,
+          "pagerank": 0.022139,
           "inboundLinks": 3,
           "coveredBy": [],
           "mentionedBy": [
@@ -12516,7 +12710,7 @@
           "aliases": "document unclassified"
         },
         "graph": {
-          "pagerank": 0.033672,
+          "pagerank": 0.031547,
           "inboundLinks": 1,
           "coveredBy": [],
           "mentionedBy": [],
@@ -12561,7 +12755,7 @@
           "aliases": "document project"
         },
         "graph": {
-          "pagerank": 0.025303,
+          "pagerank": 0.023707,
           "inboundLinks": 2,
           "coveredBy": [],
           "mentionedBy": [
@@ -12694,7 +12888,7 @@
         "kind": "document",
         "path": "docs/ADR-0001-extensible-kernel.md",
         "title": "ADR-0001: Extensible kernel with append-only run events",
-        "summary": "Status: accepted",
+        "summary": "Code: src/kernel/plugins.ts (plugin registry), src/kernel/events.ts (event log), src/kernel.",
         "audience": "human",
         "aliases": [],
         "tags": [
@@ -12706,8 +12900,8 @@
           "headings": "ADR-0001: Extensible kernel with append-only run events Context Decision Constraints Consequences",
           "path": "docs/ADR-0001-extensible-kernel.md",
           "symbols": "",
-          "summary": "Status: accepted",
-          "body": "ADR-0001: Extensible kernel with append-only run events - Status: accepted - Date: 2026-08-29 Context The harness must work with different coding agents, repositories, browsers, databases, documentation systems, and tracking providers without moving its completion guarantees into optional integrations. A mutable summary alone is also insufficient for diagnosing retries and stale evidence. Decision Keep the contract, lifecycle transitions, evidence validation, source binding, staleness rules, approval boundaries, and security checks in the kernel. Expose an in-process, typed plugin registry for optional capabilities. Plugins declare their API version and dependencies, contribute through named typed slots, and are cleaned up deterministically. Persist lifecycle facts as append-only NDJSON under each run. run.json remains the compatible projection used by the current CLI; event records carry the run ID, source revision, and contract hash so projections and diagnostics can be checked against the same execution. Constraints - No remote plugin installation, hot reload, marketplace, or distributed event store is part of this decision. - A plugin cannot approve a run or bypass kernel evidence validation. - Event records are appended by the harness and rejected when malformed or out of order. - Doc Bridge, Playbook profiles, browser adapters, and SCM integrations are consumers of this seam, not kernel dependencies. Consequences The public API can grow by adding typed slots and event payloads while the existing CLI and JSON projection remain stable. The current event log records run creation and state transitions; check-level event types and remote stores can be added when a measured diagnostic need justifies them.",
+          "summary": "Code: src/kernel/plugins.ts (plugin registry), src/kernel/events.ts (event log), src/kernel.",
+          "body": "ADR-0001: Extensible kernel with append-only run events Code: src/kernel/plugins.ts (plugin registry), src/kernel/events.ts (event log), src/kernel . - Status: accepted - Date: 2026-08-29 Context The harness must work with different coding agents, repositories, browsers, databases, documentation systems, and tracking providers without moving its completion guarantees into optional integrations. A mutable summary alone is also insufficient for diagnosing retries and stale evidence. Decision Keep the contract, lifecycle transitions, evidence validation, source binding, staleness rules, approval boundaries, and security checks in the kernel. Expose an in-process, typed plugin registry for optional capabilities. Plugins declare their API version and dependencies, contribute through named typed slots, and are cleaned up deterministically. Persist lifecycle facts as append-only NDJSON under each run. run.json remains the compatible projection used by the current CLI; event records carry the run ID, source revision, and contract hash so projections and diagnostics can be checked against the same execution. Constraints - No remote plugin installation, hot reload, marketplace, or distributed event store is part of this decision. - A plugin cannot approve a run or bypass kernel evidence validation. - Event records are appended by the harness and rejected when malformed or out of order. - Doc Bridge, Playbook profiles, browser adapters, and SCM integrations are consumers of this seam, not kernel dependencies. Consequences The public API can grow by adding typed slots and event payloads while the existing CLI and JSON projection remain stable. The current event log records run creation and state transitions; check-level event types and remote stores can be added when a measured diagnostic need justifies them.",
           "aliases": "document human"
         },
         "graph": {
@@ -12716,9 +12910,25 @@
           "coveredBy": [],
           "mentionedBy": [],
           "inbound": [],
-          "outbound": []
+          "outbound": [
+            {
+              "kind": "mentions",
+              "id": "area:src/kernel",
+              "confidence": "observed"
+            },
+            {
+              "kind": "mentions",
+              "id": "module:src/kernel/events.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "mentions",
+              "id": "module:src/kernel/plugins.ts",
+              "confidence": "observed"
+            }
+          ]
         },
-        "contentHash": "9d94b41391b891bf9a3b36e001e7dfa14dcaba5aa252bc98e4420bd370f52060",
+        "contentHash": "7b1dd0f37411b83da972d236ec096be861be767d6fa7cd75964d497bb53ca4a4",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -12727,7 +12937,7 @@
         "kind": "document",
         "path": "docs/ADR-0002-profiles-and-context.md",
         "title": "ADR-0002: Profiles and optional context providers",
-        "summary": "Status: accepted",
+        "summary": "Code: src/profiles (profile resolution), src/context (context providers).",
         "audience": "human",
         "aliases": [],
         "tags": [
@@ -12739,8 +12949,8 @@
           "headings": "ADR-0002: Profiles and optional context providers Decision Boundaries",
           "path": "docs/ADR-0002-profiles-and-context.md",
           "symbols": "",
-          "summary": "Status: accepted",
-          "body": "ADR-0002: Profiles and optional context providers - Status: accepted - Date: 2026-08-29 Decision Verification contracts may define named profiles. A selected profile resolves its parent chain deterministically, then overlays budgets, cleanup roots, and existing checks by ID before validation and contract hashing. Missing profiles, cycles, and unknown check IDs fail closed. Context retrieval is an optional typed plugin slot. A provider returns a query, references, content provenance, and a snapshot hash. Doc Bridge and Playbook adapters can use the seam without becoming kernel dependencies. Boundaries Profiles cannot bypass required checks or human approval. Providers cannot approve runs, alter evidence validation, or silently replace the frozen contract. Remote provider discovery, credential management, and context cache policy remain integration concerns.",
+          "summary": "Code: src/profiles (profile resolution), src/context (context providers).",
+          "body": "ADR-0002: Profiles and optional context providers Code: src/profiles (profile resolution), src/context (context providers). - Status: accepted - Date: 2026-08-29 Decision Verification contracts may define named profiles. A selected profile resolves its parent chain deterministically, then overlays budgets, cleanup roots, and existing checks by ID before validation and contract hashing. Missing profiles, cycles, and unknown check IDs fail closed. Context retrieval is an optional typed plugin slot. A provider returns a query, references, content provenance, and a snapshot hash. Doc Bridge and Playbook adapters can use the seam without becoming kernel dependencies. Boundaries Profiles cannot bypass required checks or human approval. Providers cannot approve runs, alter evidence validation, or silently replace the frozen contract. Remote provider discovery, credential management, and context cache policy remain integration concerns.",
           "aliases": "document human"
         },
         "graph": {
@@ -12749,9 +12959,20 @@
           "coveredBy": [],
           "mentionedBy": [],
           "inbound": [],
-          "outbound": []
+          "outbound": [
+            {
+              "kind": "mentions",
+              "id": "area:src/context",
+              "confidence": "observed"
+            },
+            {
+              "kind": "mentions",
+              "id": "area:src/profiles",
+              "confidence": "observed"
+            }
+          ]
         },
-        "contentHash": "feb91862ee63f433b84be968bdd7075eb92d52a48eee54de869ea9568cf391df",
+        "contentHash": "5727dc845ddab3604678ed721da2fed4408e8d61023018c1839ed89a395c98d4",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -12777,7 +12998,7 @@
           "aliases": "document human"
         },
         "graph": {
-          "pagerank": 0.035168,
+          "pagerank": 0.032949,
           "inboundLinks": 1,
           "coveredBy": [],
           "mentionedBy": [],
@@ -12810,7 +13031,7 @@
         "kind": "document",
         "path": "docs/ADR-0004-run-metrics.md",
         "title": "ADR-0004: Derive benchmark metrics from immutable run projections",
-        "summary": "Accepted",
+        "summary": "Code: src/execution/metrics.ts (benchmarkRuns), src/execution.",
         "audience": "human",
         "aliases": [],
         "tags": [
@@ -12822,8 +13043,8 @@
           "headings": "ADR-0004: Derive benchmark metrics from immutable run projections Status Context Decision Consequences",
           "path": "docs/ADR-0004-run-metrics.md",
           "symbols": "",
-          "summary": "Accepted",
-          "body": "ADR-0004: Derive benchmark metrics from immutable run projections Status Accepted Context The harness needs to measure improvement across repeated development runs without introducing a database or a remote telemetry service. Each run already stores its source, contract, checks, evidence, lifecycle state, approval, retry lineage, and duration. Decision Expose benchmarkRuns(stateDir) and the ak-harness benchmark command. They read the historical run.json projections, sort by run ID, and emit a versioned JSON report with per-run facts and aggregate rates for checks, outcomes, evidence, approvals, retries, stale runs, and duration. Consequences - Metrics are local, reproducible, portable, and usable without a service. - Historical reports can be committed or exported by CI when the project wants a trend record. - The report measures harness execution and review friction; it does not claim developer productivity or causality without a controlled task benchmark. - A future remote metrics store can consume this versioned report without changing the verification kernel.",
+          "summary": "Code: src/execution/metrics.ts (benchmarkRuns), src/execution.",
+          "body": "ADR-0004: Derive benchmark metrics from immutable run projections Code: src/execution/metrics.ts ( benchmarkRuns ), src/execution . Status Accepted Context The harness needs to measure improvement across repeated development runs without introducing a database or a remote telemetry service. Each run already stores its source, contract, checks, evidence, lifecycle state, approval, retry lineage, and duration. Decision Expose benchmarkRuns(stateDir) and the ak-harness benchmark command. They read the historical run.json projections, sort by run ID, and emit a versioned JSON report with per-run facts and aggregate rates for checks, outcomes, evidence, approvals, retries, stale runs, and duration. Consequences - Metrics are local, reproducible, portable, and usable without a service. - Historical reports can be committed or exported by CI when the project wants a trend record. - The report measures harness execution and review friction; it does not claim developer productivity or causality without a controlled task benchmark. - A future remote metrics store can consume this versioned report without changing the verification kernel.",
           "aliases": "document human"
         },
         "graph": {
@@ -12832,9 +13053,25 @@
           "coveredBy": [],
           "mentionedBy": [],
           "inbound": [],
-          "outbound": []
+          "outbound": [
+            {
+              "kind": "mentions",
+              "id": "area:src/execution",
+              "confidence": "observed"
+            },
+            {
+              "kind": "mentions",
+              "id": "module:src/execution/metrics.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "mentions-symbol",
+              "id": "module:src/execution/metrics.ts",
+              "confidence": "observed"
+            }
+          ]
         },
-        "contentHash": "a7eaca2954ce8e8ac671fdc392e3d0bf7291646ef84139ba108d19edf38ccf40",
+        "contentHash": "70eb837522917b13c8a46841abb4d4b3396890789cd57b4277223193538dd707",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -12843,7 +13080,7 @@
         "kind": "document",
         "path": "docs/ADR-0005-benchmark-manifest.md",
         "title": "ADR-0005: Use explicit benchmark manifests and task bindings",
-        "summary": "Accepted",
+        "summary": "Code: src/execution/metrics.ts (manifest validation and report), src/execution/config.ts (contract binding).",
         "audience": "human",
         "aliases": [],
         "tags": [
@@ -12855,8 +13092,8 @@
           "headings": "ADR-0005: Use explicit benchmark manifests and task bindings Status Context Decision Consequences",
           "path": "docs/ADR-0005-benchmark-manifest.md",
           "symbols": "",
-          "summary": "Accepted",
-          "body": "ADR-0005: Use explicit benchmark manifests and task bindings Status Accepted Context Run IDs identify executions, not the task being measured. Comparing harness performance requires a stable task corpus and an honest baseline. A missing baseline must not be silently inferred from harness history. Decision Add a versioned benchmark manifest containing task IDs, titles, acceptance criteria, and optional baseline observations. Verification contracts may bind a run to a suite and task ID. The benchmark report compares only bound harness runs with explicit, non- not-run baseline observations and reports the rest as non-comparable. Consequences - Multiple runs can be grouped as attempts of one task. - Baseline provenance is visible and reviewable. - The first corpus can be committed without fabricating baseline data. - Controlled task execution and baseline collection remain a later phase; this schema provides the stable seam now.",
+          "summary": "Code: src/execution/metrics.ts (manifest validation and report), src/execution/config.ts (contract binding).",
+          "body": "ADR-0005: Use explicit benchmark manifests and task bindings Code: src/execution/metrics.ts (manifest validation and report), src/execution/config.ts (contract binding). Status Accepted Context Run IDs identify executions, not the task being measured. Comparing harness performance requires a stable task corpus and an honest baseline. A missing baseline must not be silently inferred from harness history. Decision Add a versioned benchmark manifest containing task IDs, titles, acceptance criteria, and optional baseline observations. Verification contracts may bind a run to a suite and task ID. The benchmark report compares only bound harness runs with explicit, non- not-run baseline observations and reports the rest as non-comparable. Consequences - Multiple runs can be grouped as attempts of one task. - Baseline provenance is visible and reviewable. - The first corpus can be committed without fabricating baseline data. - Controlled task execution and baseline collection remain a later phase; this schema provides the stable seam now.",
           "aliases": "document human"
         },
         "graph": {
@@ -12865,9 +13102,20 @@
           "coveredBy": [],
           "mentionedBy": [],
           "inbound": [],
-          "outbound": []
+          "outbound": [
+            {
+              "kind": "mentions",
+              "id": "module:src/execution/config.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "mentions",
+              "id": "module:src/execution/metrics.ts",
+              "confidence": "observed"
+            }
+          ]
         },
-        "contentHash": "01ffda8b1928da1ca182ff56b6d80c348c0565c2723c452020970a184d091559",
+        "contentHash": "e7610a6acc28a938b59025718d7ee7ed335b56cb312cc2266c123fb464c07782",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -13081,7 +13329,7 @@
         "kind": "document",
         "path": "docs/ADR-0011-runtime-attestation.md",
         "title": "ADR-0011: Runtime attestation in tool evidence",
-        "summary": "Accepted",
+        "summary": "Code: src/execution/runtime.ts (DockerRuntimeEvidence), src/kernel/events.ts (tool.completed event).",
         "audience": "human",
         "aliases": [],
         "tags": [
@@ -13093,8 +13341,8 @@
           "headings": "ADR-0011: Runtime attestation in tool evidence Status Context Decision Consequences",
           "path": "docs/ADR-0011-runtime-attestation.md",
           "symbols": "",
-          "summary": "Accepted",
-          "body": "ADR-0011: Runtime attestation in tool evidence Status Accepted Context A sandbox result hash proves what the tool returned, but not which image or limits produced it. Enterprise review needs to correlate terminal tool events with the exact runtime profile used for that action. Decision Runtime providers may attach typed runtime evidence to completed or failed tool results. The Docker provider resolves the local image ID before execution, hashes the effective profile plus that ID, and carries the attestation into the terminal event. Missing images or an unavailable daemon fail before execution. The evidence is descriptive and bound to the harness event's run, source revision, and configuration hash; it is not a claim that the Docker daemon or host kernel is trustworthy. Consequences - Reviewers can identify the provider, image digest, security profile, and resource limits for each action without storing raw command output. - Custom runtimes remain compatible because runtime evidence is optional. - Future VM or remote providers can publish their own typed evidence without changing the session protocol.",
+          "summary": "Code: src/execution/runtime.ts (DockerRuntimeEvidence), src/kernel/events.ts (tool.completed event).",
+          "body": "ADR-0011: Runtime attestation in tool evidence Code: src/execution/runtime.ts ( DockerRuntimeEvidence ), src/kernel/events.ts ( tool.completed event). Status Accepted Context A sandbox result hash proves what the tool returned, but not which image or limits produced it. Enterprise review needs to correlate terminal tool events with the exact runtime profile used for that action. Decision Runtime providers may attach typed runtime evidence to completed or failed tool results. The Docker provider resolves the local image ID before execution, hashes the effective profile plus that ID, and carries the attestation into the terminal event. Missing images or an unavailable daemon fail before execution. The evidence is descriptive and bound to the harness event's run, source revision, and configuration hash; it is not a claim that the Docker daemon or host kernel is trustworthy. Consequences - Reviewers can identify the provider, image digest, security profile, and resource limits for each action without storing raw command output. - Custom runtimes remain compatible because runtime evidence is optional. - Future VM or remote providers can publish their own typed evidence without changing the session protocol.",
           "aliases": "document human"
         },
         "graph": {
@@ -13103,9 +13351,25 @@
           "coveredBy": [],
           "mentionedBy": [],
           "inbound": [],
-          "outbound": []
+          "outbound": [
+            {
+              "kind": "mentions",
+              "id": "module:src/execution/runtime.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "mentions",
+              "id": "module:src/kernel/events.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "mentions-symbol",
+              "id": "module:src/execution/runtime.ts",
+              "confidence": "observed"
+            }
+          ]
         },
-        "contentHash": "f72738fc76ca34b8c13285f3fcd560afc5c4448869a35c10ac108b12bcd0d548",
+        "contentHash": "4cab4b030d2687a89ec422edb59318b98f2c048a84f97eb6440cf2577db96f7a",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -13192,7 +13456,7 @@
         "kind": "document",
         "path": "docs/ADR-0014-criterion-level-benchmark-evidence.md",
         "title": "ADR-0014: Criterion-level benchmark evidence",
-        "summary": "Scalar baseline numbers do not prove that a benchmark task exercised its acceptance criteria. Treating those numbers as comparable can make an incomplete delivery look like an improvement.",
+        "summary": "Code: src/execution/metrics.ts (baselineEvidenceCoverageRate).",
         "audience": "human",
         "aliases": [],
         "tags": [
@@ -13204,8 +13468,8 @@
           "headings": "ADR-0014: Criterion-level benchmark evidence Context Decision Consequences",
           "path": "docs/ADR-0014-criterion-level-benchmark-evidence.md",
           "symbols": "",
-          "summary": "Scalar baseline numbers do not prove that a benchmark task exercised its acceptance criteria. Treating those numbers as comparable can make an incomplete delivery look like an improvement.",
-          "body": "ADR-0014: Criterion-level benchmark evidence Context Scalar baseline numbers do not prove that a benchmark task exercised its acceptance criteria. Treating those numbers as comparable can make an incomplete delivery look like an improvement. Decision Baseline observations may include an evidence array. Each entry names one acceptance criterion exactly, records its status, and points to a source. The manifest validator rejects unknown or duplicate criteria and invalid evidence metadata. A comparison is comparable only when every criterion is covered, the baseline is not not-run , and the latest bound harness run is COMPLETE . The report exposes baselineEvidenceCoverageRate and returns baseline-evidence-missing when coverage is incomplete. Consequences Baseline collection has a small additional input requirement, but benchmark reports can distinguish missing proof from a real completed comparison. The evidence source remains a reference; this phase does not claim causality or replace criterion-level harness evidence for the current run.",
+          "summary": "Code: src/execution/metrics.ts (baselineEvidenceCoverageRate).",
+          "body": "ADR-0014: Criterion-level benchmark evidence Code: src/execution/metrics.ts ( baselineEvidenceCoverageRate ). Context Scalar baseline numbers do not prove that a benchmark task exercised its acceptance criteria. Treating those numbers as comparable can make an incomplete delivery look like an improvement. Decision Baseline observations may include an evidence array. Each entry names one acceptance criterion exactly, records its status, and points to a source. The manifest validator rejects unknown or duplicate criteria and invalid evidence metadata. A comparison is comparable only when every criterion is covered, the baseline is not not-run , and the latest bound harness run is COMPLETE . The report exposes baselineEvidenceCoverageRate and returns baseline-evidence-missing when coverage is incomplete. Consequences Baseline collection has a small additional input requirement, but benchmark reports can distinguish missing proof from a real completed comparison. The evidence source remains a reference; this phase does not claim causality or replace criterion-level harness evidence for the current run.",
           "aliases": "document human"
         },
         "graph": {
@@ -13214,9 +13478,15 @@
           "coveredBy": [],
           "mentionedBy": [],
           "inbound": [],
-          "outbound": []
+          "outbound": [
+            {
+              "kind": "mentions",
+              "id": "module:src/execution/metrics.ts",
+              "confidence": "observed"
+            }
+          ]
         },
-        "contentHash": "bef1c8aa7bf7b846fad40b1d7e3b2f9acfbd97e067419bf459056b8eb2a8d2e4",
+        "contentHash": "d7a69b5e49562a61a1a501f605f3b14946f05fbcac9ea069f733a714b178e51b",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -13225,7 +13495,7 @@
         "kind": "document",
         "path": "docs/ADR-0015-directional-benchmark-outcomes.md",
         "title": "ADR-0015: Directional benchmark outcomes",
-        "summary": "The harness already reports raw deltas, but a negative duration delta is easy to misread and non-comparable tasks can be mistaken for missing data. Operators need a small, explicit interpretation layer for the measured resources.",
+        "summary": "Code: src/execution/metrics.ts (directional outcome labels in the benchmark report).",
         "audience": "human",
         "aliases": [],
         "tags": [
@@ -13237,8 +13507,8 @@
           "headings": "ADR-0015: Directional benchmark outcomes Context Decision Consequences",
           "path": "docs/ADR-0015-directional-benchmark-outcomes.md",
           "symbols": "",
-          "summary": "The harness already reports raw deltas, but a negative duration delta is easy to misread and non-comparable tasks can be mistaken for missing data. Operators need a small, explicit interpretation layer for the measured resources.",
-          "body": "ADR-0015: Directional benchmark outcomes Context The harness already reports raw deltas, but a negative duration delta is easy to misread and non-comparable tasks can be mistaken for missing data. Operators need a small, explicit interpretation layer for the measured resources. Decision For comparable tasks, report a rate for duration, attempts, and human review: (baseline - harness) / baseline . Positive means the harness used less of the resource and is labelled improved ; negative is regressed ; zero is unchanged . A missing value, zero baseline, or non-comparable task is labelled unavailable . These are per-resource signals, not a composite productivity score or a causal claim. Consequences Benchmark consumers can read the direction without reimplementing arithmetic, while trade-offs remain visible instead of being hidden in one score. A real baseline with complete criterion evidence is still required before any outcome is reported as comparable.",
+          "summary": "Code: src/execution/metrics.ts (directional outcome labels in the benchmark report).",
+          "body": "ADR-0015: Directional benchmark outcomes Code: src/execution/metrics.ts (directional outcome labels in the benchmark report). Context The harness already reports raw deltas, but a negative duration delta is easy to misread and non-comparable tasks can be mistaken for missing data. Operators need a small, explicit interpretation layer for the measured resources. Decision For comparable tasks, report a rate for duration, attempts, and human review: (baseline - harness) / baseline . Positive means the harness used less of the resource and is labelled improved ; negative is regressed ; zero is unchanged . A missing value, zero baseline, or non-comparable task is labelled unavailable . These are per-resource signals, not a composite productivity score or a causal claim. Consequences Benchmark consumers can read the direction without reimplementing arithmetic, while trade-offs remain visible instead of being hidden in one score. A real baseline with complete criterion evidence is still required before any outcome is reported as comparable.",
           "aliases": "document human"
         },
         "graph": {
@@ -13247,9 +13517,15 @@
           "coveredBy": [],
           "mentionedBy": [],
           "inbound": [],
-          "outbound": []
+          "outbound": [
+            {
+              "kind": "mentions",
+              "id": "module:src/execution/metrics.ts",
+              "confidence": "observed"
+            }
+          ]
         },
-        "contentHash": "5a77436c4ba0c87639343870fd72fdf853fc763462fea00766f92cf337c09217",
+        "contentHash": "a4fd9cd1325df250dd3c31a67ce95a0bbad24770f0ac6d949c4649c6d1714a2a",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -13258,7 +13534,7 @@
         "kind": "document",
         "path": "docs/ADR-0016-baseline-evidence-digests.md",
         "title": "ADR-0016: Baseline evidence digests",
-        "summary": "Criterion coverage and directional metrics can still be detached from the exact JSON input used during baseline collection. Without a digest, a later review cannot distinguish the recorded evidence file from a changed copy.",
+        "summary": "Code: src/execution/metrics.ts (evidenceDigest), src/cli.ts (benchmark baseline).",
         "audience": "human",
         "aliases": [],
         "tags": [
@@ -13270,8 +13546,8 @@
           "headings": "ADR-0016: Baseline evidence digests Context Decision Consequences",
           "path": "docs/ADR-0016-baseline-evidence-digests.md",
           "symbols": "",
-          "summary": "Criterion coverage and directional metrics can still be detached from the exact JSON input used during baseline collection. Without a digest, a later review cannot distinguish the recorded evidence file from a changed copy.",
-          "body": "ADR-0016: Baseline evidence digests Context Criterion coverage and directional metrics can still be detached from the exact JSON input used during baseline collection. Without a digest, a later review cannot distinguish the recorded evidence file from a changed copy. Decision When ak-harness benchmark baseline reads --evidence-file , it computes and stores the file's lowercase SHA-256 digest in evidenceDigest . Manifest validation accepts only a 64-character lowercase SHA-256 value. The digest is of the evidence file content, not of the external artifact named by each criterion source. Consequences The baseline record is tamper-evident with respect to its input file and can be replayed from the same bytes. External systems remain an explicit integration boundary; their content verification is not claimed by the local harness.",
+          "summary": "Code: src/execution/metrics.ts (evidenceDigest), src/cli.ts (benchmark baseline).",
+          "body": "ADR-0016: Baseline evidence digests Code: src/execution/metrics.ts ( evidenceDigest ), src/cli.ts ( benchmark baseline ). Context Criterion coverage and directional metrics can still be detached from the exact JSON input used during baseline collection. Without a digest, a later review cannot distinguish the recorded evidence file from a changed copy. Decision When ak-harness benchmark baseline reads --evidence-file , it computes and stores the file's lowercase SHA-256 digest in evidenceDigest . Manifest validation accepts only a 64-character lowercase SHA-256 value. The digest is of the evidence file content, not of the external artifact named by each criterion source. Consequences The baseline record is tamper-evident with respect to its input file and can be replayed from the same bytes. External systems remain an explicit integration boundary; their content verification is not claimed by the local harness.",
           "aliases": "document human"
         },
         "graph": {
@@ -13280,9 +13556,20 @@
           "coveredBy": [],
           "mentionedBy": [],
           "inbound": [],
-          "outbound": []
+          "outbound": [
+            {
+              "kind": "mentions",
+              "id": "module:src/cli.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "mentions",
+              "id": "module:src/execution/metrics.ts",
+              "confidence": "observed"
+            }
+          ]
         },
-        "contentHash": "21abcd07a25fe7baf0ca121d5248ce8eb11dcd0e232e7b7bd564c2658d0fadd0",
+        "contentHash": "74a45b7b7dcb641bc649541bbb93aa332ddf8f43ad12b072175e7399b86b6ee4",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -13291,7 +13578,7 @@
         "kind": "document",
         "path": "docs/ADR-0017-event-log-integrity.md",
         "title": "ADR-0017: Hash chained lifecycle event logs",
-        "summary": "The lifecycle log already preserves order and binds events to a run revision and contract hash, but a later edit to an existing record would not be detected. Enterprise review needs a deterministic integrity signal without persisting prompts, tool arguments, or adding a remote service.",
+        "summary": "Code: src/kernel/events.ts (FileEventStore).",
         "audience": "human",
         "aliases": [],
         "tags": [
@@ -13303,8 +13590,8 @@
           "headings": "ADR-0017: Hash chained lifecycle event logs Context Decision Consequences",
           "path": "docs/ADR-0017-event-log-integrity.md",
           "symbols": "",
-          "summary": "The lifecycle log already preserves order and binds events to a run revision and contract hash, but a later edit to an existing record would not be detected. Enterprise review needs a deterministic integrity signal without persisting prompts, tool arguments, or adding a remote service.",
-          "body": "ADR-0017: Hash chained lifecycle event logs Context The lifecycle log already preserves order and binds events to a run revision and contract hash, but a later edit to an existing record would not be detected. Enterprise review needs a deterministic integrity signal without persisting prompts, tool arguments, or adding a remote service. Decision New events include previousHash and eventHash . The hash covers the exact serialized event body, including the preceding hash, so changing or reordering records makes the chain invalid. FileEventStore.read validates the chain and FileEventStore.verify exposes a typed verified or legacy result. Existing logs without integrity fields remain readable and are never reported as verified; appending to them preserves their legacy status. Consequences The log is tamper-evident for new records and can be checked locally or through ak-harness events verify . This is not a signature or external notarization: an attacker able to rewrite both the log and its consumer can recompute the chain. A future signed export can add that trust boundary without changing the event lifecycle API.",
+          "summary": "Code: src/kernel/events.ts (FileEventStore).",
+          "body": "ADR-0017: Hash chained lifecycle event logs Code: src/kernel/events.ts ( FileEventStore ). Context The lifecycle log already preserves order and binds events to a run revision and contract hash, but a later edit to an existing record would not be detected. Enterprise review needs a deterministic integrity signal without persisting prompts, tool arguments, or adding a remote service. Decision New events include previousHash and eventHash . The hash covers the exact serialized event body, including the preceding hash, so changing or reordering records makes the chain invalid. FileEventStore.read validates the chain and FileEventStore.verify exposes a typed verified or legacy result. Existing logs without integrity fields remain readable and are never reported as verified; appending to them preserves their legacy status. Consequences The log is tamper-evident for new records and can be checked locally or through ak-harness events verify . This is not a signature or external notarization: an attacker able to rewrite both the log and its consumer can recompute the chain. A future signed export can add that trust boundary without changing the event lifecycle API.",
           "aliases": "document human"
         },
         "graph": {
@@ -13313,9 +13600,20 @@
           "coveredBy": [],
           "mentionedBy": [],
           "inbound": [],
-          "outbound": []
+          "outbound": [
+            {
+              "kind": "mentions",
+              "id": "module:src/kernel/events.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "mentions-symbol",
+              "id": "module:src/kernel/events.ts",
+              "confidence": "observed"
+            }
+          ]
         },
-        "contentHash": "9267708b30c5002132fb78f2b6a0ec0cc09f665429d99a2636ff04c000cf5739",
+        "contentHash": "d753842bd4c712ab74179c5a9daf76f67bd972949786ba9d09b787cd2e678fb7",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -13324,7 +13622,7 @@
         "kind": "document",
         "path": "docs/ADR-0018-verification-projection-attestation.md",
         "title": "ADR-0018: Attest verification projections before approval",
-        "summary": "run.json is a convenient projection of checks and outcomes, but it is not itself an immutable store. Approval must not trust a projection that was changed after verification while the source and contract remain unchanged.",
+        "summary": "Code: src/execution/verification.ts (verificationDigest, approval checks).",
         "audience": "human",
         "aliases": [],
         "tags": [
@@ -13336,8 +13634,8 @@
           "headings": "ADR-0018: Attest verification projections before approval Context Decision Consequences",
           "path": "docs/ADR-0018-verification-projection-attestation.md",
           "symbols": "",
-          "summary": "run.json is a convenient projection of checks and outcomes, but it is not itself an immutable store. Approval must not trust a projection that was changed after verification while the source and contract remain unchanged.",
-          "body": "ADR-0018: Attest verification projections before approval Context run.json is a convenient projection of checks and outcomes, but it is not itself an immutable store. Approval must not trust a projection that was changed after verification while the source and contract remain unchanged. Decision After every verification pass, the harness hashes the checks, outcomes, and metrics projection, persists that verificationDigest in run.json , and appends a verification.completed event carrying the same digest. Human approval recomputes the digest, verifies the audit log, and requires the latest completion event to match it. Consequences Manual edits to the verification projection are rejected before approval while the existing source and contract freshness checks remain in force. The digest protects the local projection through the audit log; it is not a digital signature or external notarization. Dogfood uses the public API, and prior Docker sandbox evidence remains covered by the earlier runtime phase.",
+          "summary": "Code: src/execution/verification.ts (verificationDigest, approval checks).",
+          "body": "ADR-0018: Attest verification projections before approval Code: src/execution/verification.ts ( verificationDigest , approval checks). Context run.json is a convenient projection of checks and outcomes, but it is not itself an immutable store. Approval must not trust a projection that was changed after verification while the source and contract remain unchanged. Decision After every verification pass, the harness hashes the checks, outcomes, and metrics projection, persists that verificationDigest in run.json , and appends a verification.completed event carrying the same digest. Human approval recomputes the digest, verifies the audit log, and requires the latest completion event to match it. Consequences Manual edits to the verification projection are rejected before approval while the existing source and contract freshness checks remain in force. The digest protects the local projection through the audit log; it is not a digital signature or external notarization. Dogfood uses the public API, and prior Docker sandbox evidence remains covered by the earlier runtime phase.",
           "aliases": "document human"
         },
         "graph": {
@@ -13346,9 +13644,15 @@
           "coveredBy": [],
           "mentionedBy": [],
           "inbound": [],
-          "outbound": []
+          "outbound": [
+            {
+              "kind": "mentions",
+              "id": "module:src/execution/verification.ts",
+              "confidence": "observed"
+            }
+          ]
         },
-        "contentHash": "4f60f4fd2d4ee49460689a04d6d26b6da7328ff6b81cfd080b40a06b1eba15f6",
+        "contentHash": "7c2b52e4791c3fa5e91e135c656295251d0dfc0794fdcfee714d5c791eba9078",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -13357,7 +13661,7 @@
         "kind": "document",
         "path": "docs/ADR-0019-human-decision-attestation.md",
         "title": "ADR-0019: Record human decisions as attested lifecycle events",
-        "summary": "The verification result is now attested before approval, but the approval and tracking authorization themselves only existed in the mutable run.json projection. An audit consumer could see that a run reached COMPLETE without an immutable record of which human decision accepted the exact evidence.",
+        "summary": "Code: src/execution/verification.ts (recordDecision), src/kernel/events.ts (event types).",
         "audience": "human",
         "aliases": [],
         "tags": [
@@ -13369,8 +13673,8 @@
           "headings": "ADR-0019: Record human decisions as attested lifecycle events Context Decision Amendment 2026-09-19: learning promotion may be automated, attested as such Consequences",
           "path": "docs/ADR-0019-human-decision-attestation.md",
           "symbols": "",
-          "summary": "The verification result is now attested before approval, but the approval and tracking authorization themselves only existed in the mutable run.json projection. An audit consumer could see that a run reached COMPLETE without an immutable record of which human decision accepted the exact evidence.",
-          "body": "ADR-0019: Record human decisions as attested lifecycle events Context The verification result is now attested before approval, but the approval and tracking authorization themselves only existed in the mutable run.json projection. An audit consumer could see that a run reached COMPLETE without an immutable record of which human decision accepted the exact evidence. Decision Record approval.recorded and authorization.recorded events in the existing hash-chained lifecycle log. Each event contains the decision, resulting state, verification digest, source revision, contract hash, and human actor; tracking authorization also contains its declared target. Rejections are recorded too, so every human terminal decision is auditable. The default tracking mode is goal-scoped: one human approval covers the declared tracking effect and emits both events. A project may set tracking.authorization: \"separate\" when an independent tracking decision is required. The existing freshness and verification-attestation checks run before either decision is accepted. The run.json fields remain a convenient projection, but the event is the audit record. Amendment 2026-09-19: learning promotion may be automated, attested as such promoteLearnings refused any actor that was not human , which made memory promotion a manual step for every recurring lesson. The rule it was protecting is real — memory is injected into every worker brief, so a wrong lesson becomes a wrong instruction on every future task — but it was enforced by forbidding the actor rather than by bounding the decision. Automated promotion is now allowed under three bounds, and only when a project opts in with memory.autoPromote.enabled : 1. Recurrence, not novelty. The same lesson must have been proposed at least memory.recurrence.minSightings times. A lesson seen once cannot promote. 2. A cap per run , memory.recurrence.maxPerRun , so one bad retro cannot flood the store. 3. Only the configured categories ( memory.categories , adjustment by default) — process tweaks, not claims about the product. The actor is recorded as loop-auto , never as human . That distinction is the point of the amendment: the attestation stays truthful about who decided, so an auditor can list every automatically promoted lesson and a human can revoke any of them. A promotion is still a decision with a name attached; it is no longer required to be a person's. What remains human-only: approving a verification result and authorizing an external tracking effect. Those act on the world. Promoting a lesson acts on the next brief, and is reversible by rejecting the record. Consequences Consumers can independently prove which verified result was approved and which external tracking target was authorized. Humans do not need to copy a run ID or digest: approval commands resolve the latest pending run, while the identifiers remain in the audit record. Legacy logs remain readable and are reported as legacy until they contain the new hashed event protocol. This is an audit attestation, not a digital signature or external notarization.",
+          "summary": "Code: src/execution/verification.ts (recordDecision), src/kernel/events.ts (event types).",
+          "body": "ADR-0019: Record human decisions as attested lifecycle events Code: src/execution/verification.ts ( recordDecision ), src/kernel/events.ts (event types). Context The verification result is now attested before approval, but the approval and tracking authorization themselves only existed in the mutable run.json projection. An audit consumer could see that a run reached COMPLETE without an immutable record of which human decision accepted the exact evidence. Decision Record approval.recorded and authorization.recorded events in the existing hash-chained lifecycle log. Each event contains the decision, resulting state, verification digest, source revision, contract hash, and human actor; tracking authorization also contains its declared target. Rejections are recorded too, so every human terminal decision is auditable. The default tracking mode is goal-scoped: one human approval covers the declared tracking effect and emits both events. A project may set tracking.authorization: \"separate\" when an independent tracking decision is required. The existing freshness and verification-attestation checks run before either decision is accepted. The run.json fields remain a convenient projection, but the event is the audit record. Amendment 2026-09-19: learning promotion may be automated, attested as such promoteLearnings refused any actor that was not human , which made memory promotion a manual step for every recurring lesson. The rule it was protecting is real — memory is injected into every worker brief, so a wrong lesson becomes a wrong instruction on every future task — but it was enforced by forbidding the actor rather than by bounding the decision. Automated promotion is now allowed under three bounds, and only when a project opts in with memory.autoPromote.enabled : 1. Recurrence, not novelty. The same lesson must have been proposed at least memory.recurrence.minSightings times. A lesson seen once cannot promote. 2. A cap per run , memory.recurrence.maxPerRun , so one bad retro cannot flood the store. 3. Only the configured categories ( memory.categories , adjustment by default) — process tweaks, not claims about the product. The actor is recorded as loop-auto , never as human . That distinction is the point of the amendment: the attestation stays truthful about who decided, so an auditor can list every automatically promoted lesson and a human can revoke any of them. A promotion is still a decision with a name attached; it is no longer required to be a person's. What remains human-only: approving a verification result and authorizing an external tracking effect. Those act on the world. Promoting a lesson acts on the next brief, and is reversible by rejecting the record. Consequences Consumers can independently prove which verified result was approved and which external tracking target was authorized. Humans do not need to copy a run ID or digest: approval commands resolve the latest pending run, while the identifiers remain in the audit record. Legacy logs remain readable and are reported as legacy until they contain the new hashed event protocol. This is an audit attestation, not a digital signature or external notarization.",
           "aliases": "document human"
         },
         "graph": {
@@ -13379,9 +13683,20 @@
           "coveredBy": [],
           "mentionedBy": [],
           "inbound": [],
-          "outbound": []
+          "outbound": [
+            {
+              "kind": "mentions",
+              "id": "module:src/execution/verification.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "mentions",
+              "id": "module:src/kernel/events.ts",
+              "confidence": "observed"
+            }
+          ]
         },
-        "contentHash": "0abbe1699fee232b6c4a34a306bb26f935bfe3da70de3b2a75ed87a146c259a7",
+        "contentHash": "34f224ca090feb150bd0e53db7ba9554bd3f9da1b676410878311211191cb85e",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -13429,7 +13744,7 @@
         "kind": "document",
         "path": "docs/ADR-0021-event-lock-recovery.md",
         "title": "ADR-0021: Explicit recovery for orphaned event-log locks",
-        "summary": "The per-run event-log lock prevents concurrent append and read operations from duplicating sequence numbers or observing a partial write. A process can still terminate after acquiring the lock, leaving a file that must not be removed automatically because another writer may still own it.",
+        "summary": "Code: src/kernel/events.ts (lock inspection and recovery), src/cli.ts (events unlock).",
         "audience": "human",
         "aliases": [],
         "tags": [
@@ -13441,8 +13756,8 @@
           "headings": "ADR-0021: Explicit recovery for orphaned event-log locks Context Decision Consequences",
           "path": "docs/ADR-0021-event-lock-recovery.md",
           "symbols": "",
-          "summary": "The per-run event-log lock prevents concurrent append and read operations from duplicating sequence numbers or observing a partial write. A process can still terminate after acquiring the lock, leaving a file that must not be removed automatically because another writer may still own it.",
-          "body": "ADR-0021: Explicit recovery for orphaned event-log locks Context The per-run event-log lock prevents concurrent append and read operations from duplicating sequence numbers or observing a partial write. A process can still terminate after acquiring the lock, leaving a file that must not be removed automatically because another writer may still own it. Decision Write the owning process ID and creation timestamp into every lock. Expose lock inspection and an explicit human -authorized recovery operation. Recovery is allowed only when the lock is older than the requested threshold and its owner process is no longer alive. Malformed, young, or live locks remain fail-closed. The CLI exposes this maintenance operation as events unlock ; it never runs as part of normal status, verification, or append flows. Consequences An interrupted local run can be recovered without manually deleting an audit artifact, while active or ambiguous locks cannot be silently bypassed. A lock owner PID is local-process evidence; distributed writers still require a shared coordination primitive outside this file store.",
+          "summary": "Code: src/kernel/events.ts (lock inspection and recovery), src/cli.ts (events unlock).",
+          "body": "ADR-0021: Explicit recovery for orphaned event-log locks Code: src/kernel/events.ts (lock inspection and recovery), src/cli.ts ( events unlock ). Context The per-run event-log lock prevents concurrent append and read operations from duplicating sequence numbers or observing a partial write. A process can still terminate after acquiring the lock, leaving a file that must not be removed automatically because another writer may still own it. Decision Write the owning process ID and creation timestamp into every lock. Expose lock inspection and an explicit human -authorized recovery operation. Recovery is allowed only when the lock is older than the requested threshold and its owner process is no longer alive. Malformed, young, or live locks remain fail-closed. The CLI exposes this maintenance operation as events unlock ; it never runs as part of normal status, verification, or append flows. Consequences An interrupted local run can be recovered without manually deleting an audit artifact, while active or ambiguous locks cannot be silently bypassed. A lock owner PID is local-process evidence; distributed writers still require a shared coordination primitive outside this file store.",
           "aliases": "document human"
         },
         "graph": {
@@ -13451,9 +13766,20 @@
           "coveredBy": [],
           "mentionedBy": [],
           "inbound": [],
-          "outbound": []
+          "outbound": [
+            {
+              "kind": "mentions",
+              "id": "module:src/cli.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "mentions",
+              "id": "module:src/kernel/events.ts",
+              "confidence": "observed"
+            }
+          ]
         },
-        "contentHash": "818342cfd4b944619770b83d39d56716829065a00839d8da3a8a4b7c8b9f2b04",
+        "contentHash": "f8a74caac170a78dfa9259eedf000d5272c07345c46959abb49ca0658ff8d79c",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -13501,7 +13827,7 @@
         "kind": "document",
         "path": "docs/ADR-0023-safe-action-recovery.md",
         "title": "ADR-0023: Require human decisions for ambiguous action recovery",
-        "summary": "Accepted",
+        "summary": "Code: src/execution/agent.ts (recoverTool).",
         "audience": "human",
         "aliases": [],
         "tags": [
@@ -13513,8 +13839,8 @@
           "headings": "ADR-0023: Require human decisions for ambiguous action recovery Status Context Decision Consequences",
           "path": "docs/ADR-0023-safe-action-recovery.md",
           "symbols": "",
-          "summary": "Accepted",
-          "body": "ADR-0023: Require human decisions for ambiguous action recovery Status Accepted Context Session recovery can identify a requested tool action from the event log, but a process can stop after the runtime starts and before a terminal event is persisted. Automatically retrying that action can duplicate an external side effect. Decision Record tool.execution.started immediately before entering a runtime. During session recovery, such actions remain pending but fail closed. The public session API exposes recoverTool with human-only retry and abandon decisions. Retry clears the ambiguous marker and records the decision; abandonment records the decision and blocks the action. Actions without an execution-start event can resume normally, and terminal actions are never replayed. Consequences - Recovery is safe by default for side-effecting tools. - Human review is required only when the event log cannot prove that execution never started. - Runtime providers remain portable; idempotency and external transaction semantics remain provider responsibilities.",
+          "summary": "Code: src/execution/agent.ts (recoverTool).",
+          "body": "ADR-0023: Require human decisions for ambiguous action recovery Code: src/execution/agent.ts ( recoverTool ). Status Accepted Context Session recovery can identify a requested tool action from the event log, but a process can stop after the runtime starts and before a terminal event is persisted. Automatically retrying that action can duplicate an external side effect. Decision Record tool.execution.started immediately before entering a runtime. During session recovery, such actions remain pending but fail closed. The public session API exposes recoverTool with human-only retry and abandon decisions. Retry clears the ambiguous marker and records the decision; abandonment records the decision and blocks the action. Actions without an execution-start event can resume normally, and terminal actions are never replayed. Consequences - Recovery is safe by default for side-effecting tools. - Human review is required only when the event log cannot prove that execution never started. - Runtime providers remain portable; idempotency and external transaction semantics remain provider responsibilities.",
           "aliases": "document human"
         },
         "graph": {
@@ -13523,9 +13849,15 @@
           "coveredBy": [],
           "mentionedBy": [],
           "inbound": [],
-          "outbound": []
+          "outbound": [
+            {
+              "kind": "mentions",
+              "id": "module:src/execution/agent.ts",
+              "confidence": "observed"
+            }
+          ]
         },
-        "contentHash": "d21d2ec9d4d8b5b0768df3b9c803f551334c78650e79ec0aef426791f2072a94",
+        "contentHash": "03274ccf09e21e1879a6376b7d268bfd99944f5d2a62075cb232d572d7d6db13",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -13534,7 +13866,7 @@
         "kind": "document",
         "path": "docs/ADR-0024-controlled-completion-metrics.md",
         "title": "ADR-0024: Measure escaped incomplete delivery with controlled baselines",
-        "summary": "Accepted",
+        "summary": "Code: src/execution/metrics.ts (escapedIncomplete).",
         "audience": "human",
         "aliases": [],
         "tags": [
@@ -13546,8 +13878,8 @@
           "headings": "ADR-0024: Measure escaped incomplete delivery with controlled baselines Status Context Decision Consequences",
           "path": "docs/ADR-0024-controlled-completion-metrics.md",
           "symbols": "",
-          "summary": "Accepted",
-          "body": "ADR-0024: Measure escaped incomplete delivery with controlled baselines Status Accepted Context Pass rates and duration do not prove that a harness reduces incomplete deliveries. The benchmark needs an explicit baseline and a metric for work that was reported complete despite missing acceptance evidence. Decision Allow a baseline observation to record escapedIncomplete . A completed harness run is projected as zero only when every check, outcome, and evidence slot passes. Comparable reports expose escapedIncompleteRate , direction, and delta alongside existing duration, attempt, and review metrics. A controlled fixture must provide criterion-level evidence; missing baselines remain unavailable. Consequences - Improvement claims are tied to an explicit baseline rather than historical averages or raw pass counts. - A synthetic fixture can validate the metric pipeline, but it is not evidence of production causality; real task cohorts remain necessary for that claim. - The metric remains provider-independent and requires no new runtime.",
+          "summary": "Code: src/execution/metrics.ts (escapedIncomplete).",
+          "body": "ADR-0024: Measure escaped incomplete delivery with controlled baselines Code: src/execution/metrics.ts ( escapedIncomplete ). Status Accepted Context Pass rates and duration do not prove that a harness reduces incomplete deliveries. The benchmark needs an explicit baseline and a metric for work that was reported complete despite missing acceptance evidence. Decision Allow a baseline observation to record escapedIncomplete . A completed harness run is projected as zero only when every check, outcome, and evidence slot passes. Comparable reports expose escapedIncompleteRate , direction, and delta alongside existing duration, attempt, and review metrics. A controlled fixture must provide criterion-level evidence; missing baselines remain unavailable. Consequences - Improvement claims are tied to an explicit baseline rather than historical averages or raw pass counts. - A synthetic fixture can validate the metric pipeline, but it is not evidence of production causality; real task cohorts remain necessary for that claim. - The metric remains provider-independent and requires no new runtime.",
           "aliases": "document human"
         },
         "graph": {
@@ -13556,9 +13888,15 @@
           "coveredBy": [],
           "mentionedBy": [],
           "inbound": [],
-          "outbound": []
+          "outbound": [
+            {
+              "kind": "mentions",
+              "id": "module:src/execution/metrics.ts",
+              "confidence": "observed"
+            }
+          ]
         },
-        "contentHash": "a70677b0fc9e8c66674a0fef1f00fe7f805cf8b823f13c7e5dae65170cfc6fc4",
+        "contentHash": "9c1ec2933130f3945ba3a8c9cef7454020274af92204e6806e8c587f634e4e3e",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -13567,7 +13905,7 @@
         "kind": "document",
         "path": "docs/ADR-0025-portable-orchestration-controls.md",
         "title": "ADR-0025: Portable orchestration controls",
-        "summary": "Accepted",
+        "summary": "Code: src/kernel/preflight.ts, src/kernel/status.ts, src/kernel/block.ts, src/kernel/learning.ts, src/execution/coordination.ts, src/adapters/orca.ts.",
         "audience": "human",
         "aliases": [],
         "tags": [
@@ -13579,8 +13917,8 @@
           "headings": "ADR-0025: Portable orchestration controls Status Context Decision Consequences",
           "path": "docs/ADR-0025-portable-orchestration-controls.md",
           "symbols": "",
-          "summary": "Accepted",
-          "body": "ADR-0025: Portable orchestration controls Status Accepted Context The SDLC reference project contained useful dispatch, machine, recovery, and retro mechanisms, but also hard-coded repositories, people, branches, provider CLIs, and dashboard infrastructure. The Harness must remain reusable and provider-neutral. Decision Add only deterministic kernel seams: issue/worktree claims, an idempotent dispatch ledger, failure classification with bounded recovery, file-scoped preflight planning, portable block/status/learning records, model bindings, machine thresholds, and provider-neutral Orca/tracking adapters. External adapters own network effects and credentials. Human decisions remain required for material ambiguity, recovery, and learning promotion. Consequences The same controls can be used with Orca, another orchestrator, Linear, GitHub, or a local process. A dashboard, watcher, provider SDK, or repository-specific shell workflow can be added later without weakening the kernel gates.",
+          "summary": "Code: src/kernel/preflight.ts, src/kernel/status.ts, src/kernel/block.ts, src/kernel/learning.ts, src/execution/coordination.ts, src/adapters/orca.ts.",
+          "body": "ADR-0025: Portable orchestration controls Code: src/kernel/preflight.ts , src/kernel/status.ts , src/kernel/block.ts , src/kernel/learning.ts , src/execution/coordination.ts , src/adapters/orca.ts . Status Accepted Context The SDLC reference project contained useful dispatch, machine, recovery, and retro mechanisms, but also hard-coded repositories, people, branches, provider CLIs, and dashboard infrastructure. The Harness must remain reusable and provider-neutral. Decision Add only deterministic kernel seams: issue/worktree claims, an idempotent dispatch ledger, failure classification with bounded recovery, file-scoped preflight planning, portable block/status/learning records, model bindings, machine thresholds, and provider-neutral Orca/tracking adapters. External adapters own network effects and credentials. Human decisions remain required for material ambiguity, recovery, and learning promotion. Consequences The same controls can be used with Orca, another orchestrator, Linear, GitHub, or a local process. A dashboard, watcher, provider SDK, or repository-specific shell workflow can be added later without weakening the kernel gates.",
           "aliases": "document human"
         },
         "graph": {
@@ -13589,9 +13927,40 @@
           "coveredBy": [],
           "mentionedBy": [],
           "inbound": [],
-          "outbound": []
+          "outbound": [
+            {
+              "kind": "mentions",
+              "id": "module:src/adapters/orca.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "mentions",
+              "id": "module:src/execution/coordination.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "mentions",
+              "id": "module:src/kernel/block.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "mentions",
+              "id": "module:src/kernel/learning.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "mentions",
+              "id": "module:src/kernel/preflight.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "mentions",
+              "id": "module:src/kernel/status.ts",
+              "confidence": "observed"
+            }
+          ]
         },
-        "contentHash": "b2c154613ac9581340c1665ac757ffa4e1da6f77fd535bc3364aeea4e2b2094d",
+        "contentHash": "b882da882d22fa65206c234b670ec1fdefaa02c89372815360100b6beb8db208",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -13617,7 +13986,7 @@
           "aliases": "document human"
         },
         "graph": {
-          "pagerank": 0.035168,
+          "pagerank": 0.032949,
           "inboundLinks": 1,
           "coveredBy": [],
           "mentionedBy": [],
@@ -13672,7 +14041,7 @@
           "aliases": "document human"
         },
         "graph": {
-          "pagerank": 0.036841,
+          "pagerank": 0.034517,
           "inboundLinks": 2,
           "coveredBy": [],
           "mentionedBy": [],
@@ -13727,7 +14096,7 @@
           "aliases": "document human"
         },
         "graph": {
-          "pagerank": 0.036744,
+          "pagerank": 0.034426,
           "inboundLinks": 2,
           "coveredBy": [],
           "mentionedBy": [],
@@ -13969,7 +14338,7 @@
           "aliases": "document human"
         },
         "graph": {
-          "pagerank": 0.028376,
+          "pagerank": 0.026585,
           "inboundLinks": 2,
           "coveredBy": [],
           "mentionedBy": [],
@@ -14019,7 +14388,7 @@
           "aliases": "document human"
         },
         "graph": {
-          "pagerank": 0.032079,
+          "pagerank": 0.030055,
           "inboundLinks": 2,
           "coveredBy": [],
           "mentionedBy": [],
@@ -14069,7 +14438,7 @@
           "aliases": "document human"
         },
         "graph": {
-          "pagerank": 0.026702,
+          "pagerank": 0.025017,
           "inboundLinks": 1,
           "coveredBy": [],
           "mentionedBy": [],
@@ -14119,7 +14488,7 @@
           "aliases": "document human"
         },
         "graph": {
-          "pagerank": 0.033753,
+          "pagerank": 0.031623,
           "inboundLinks": 3,
           "coveredBy": [],
           "mentionedBy": [],
@@ -14184,7 +14553,7 @@
           "aliases": "document human"
         },
         "graph": {
-          "pagerank": 0.026702,
+          "pagerank": 0.025017,
           "inboundLinks": 1,
           "coveredBy": [],
           "mentionedBy": [],
@@ -14239,7 +14608,7 @@
           "aliases": "document human"
         },
         "graph": {
-          "pagerank": 0.028376,
+          "pagerank": 0.026585,
           "inboundLinks": 2,
           "coveredBy": [],
           "mentionedBy": [],
@@ -14289,7 +14658,7 @@
           "aliases": "document human"
         },
         "graph": {
-          "pagerank": 0.023629,
+          "pagerank": 0.022139,
           "inboundLinks": 0,
           "coveredBy": [],
           "mentionedBy": [],
@@ -14338,7 +14707,7 @@
           "aliases": "document human"
         },
         "graph": {
-          "pagerank": 0.023629,
+          "pagerank": 0.022139,
           "inboundLinks": 0,
           "coveredBy": [],
           "mentionedBy": [],
@@ -14682,7 +15051,7 @@
           "aliases": "document human"
         },
         "graph": {
-          "pagerank": 0.023629,
+          "pagerank": 0.022139,
           "inboundLinks": 0,
           "coveredBy": [],
           "mentionedBy": [],
@@ -14761,7 +15130,7 @@
           "aliases": "document human"
         },
         "graph": {
-          "pagerank": 0.13527,
+          "pagerank": 0.126735,
           "inboundLinks": 5,
           "coveredBy": [],
           "mentionedBy": [],
@@ -14894,11 +15263,176 @@
         "confidence": "observed"
       },
       {
+        "id": "document:docs/for-agents/packages/ecosystem-manifest.md",
+        "kind": "document",
+        "path": "docs/for-agents/packages/ecosystem-manifest.md",
+        "title": "Ecosystem manifest",
+        "summary": "ecosystem.json is the shared product catalog: the AgentsKit products, their navigation order, metadata and public URLs. ecosystem-claims.json holds the verifiable public claims (counts and their evidence) for each product; it is wired in as the claims file of the Documentation Standard check. The manifest feeds the site shell.",
+        "audience": "agent",
+        "aliases": [],
+        "tags": [
+          "document",
+          "agent",
+          "package"
+        ],
+        "fields": {
+          "title": "Ecosystem manifest",
+          "headings": "Ecosystem manifest Who reads it Change rules Check",
+          "path": "docs/for-agents/packages/ecosystem-manifest.md",
+          "symbols": "",
+          "summary": "ecosystem.json is the shared product catalog: the AgentsKit products, their navigation order, metadata and public URLs. ecosystem-claims.json holds the verifiable public claims (counts and their evidence) for each product; it is wired in as the claims file of the Documentation Standard check. The manifest feeds the site shell.",
+          "body": "Ecosystem manifest ecosystem.json is the shared product catalog: the AgentsKit products, their navigation order, metadata and public URLs. ecosystem-claims.json holds the verifiable public claims (counts and their evidence) for each product; it is wired in as the claims file of the Documentation Standard check. The manifest feeds the site shell. Who reads it - apps/docs/lib/shell.ts imports ecosystem.json and builds the products shown in the site bar, tour and footer (the ones with navigation.showInBar ). - apps/docs/components/home/ecosystem.tsx renders the ecosystem section of the home page from that product list. - scripts/build-docs-artifacts.mjs reads it when writing the machine-readable site surfaces. - scripts/generate-doc-bridge-config.mjs names it as the ecosystemContract manifest for the Documentation Standard check. Change rules - Keep the header order agentskit → registry → agentskit-chat → doc-bridge → code-review → harness ; Playbook stays catalogued with navigation.showInBar: false . - Do not add private, unreleased or retired products; the verifier rejects metadata for the retired ones. - A claim needs evidence in ecosystem-claims.json ; do not raise a number without it. Check node scripts/verify-ecosystem-public-outputs.mjs validates the header order, the Playbook and Code Review navigation flags, and the public outputs that mention the products.",
+          "aliases": "document agent package"
+        },
+        "graph": {
+          "pagerank": 0,
+          "inboundLinks": 0,
+          "coveredBy": [],
+          "mentionedBy": [],
+          "inbound": [],
+          "outbound": [
+            {
+              "kind": "covers",
+              "id": "unresolved:ecosystem-manifest",
+              "confidence": "declared"
+            },
+            {
+              "kind": "mentions",
+              "id": "module:apps/docs/components/home/ecosystem.tsx",
+              "confidence": "observed"
+            },
+            {
+              "kind": "mentions",
+              "id": "module:apps/docs/lib/shell.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "mentions",
+              "id": "module:scripts/build-docs-artifacts.mjs",
+              "confidence": "observed"
+            },
+            {
+              "kind": "mentions",
+              "id": "module:scripts/generate-doc-bridge-config.mjs",
+              "confidence": "observed"
+            }
+          ]
+        },
+        "contentHash": "ab9b2824d111c1f4c7885059fa73d22c35b4d9053317b6f102fb32d51c5c6fc0",
+        "provenance": "observed",
+        "confidence": "observed"
+      },
+      {
+        "id": "document:docs/for-agents/packages/harness-site.md",
+        "kind": "document",
+        "path": "docs/for-agents/packages/harness-site.md",
+        "title": "Harness documentation site",
+        "summary": "apps/docs is the public Fumadocs site served at harness.agentskit.io. It is its own package (@agentskit/harness-docs) so Next and React 19 never reach the harness runtime, which renders its TUI with ink.",
+        "audience": "agent",
+        "aliases": [],
+        "tags": [
+          "document",
+          "agent",
+          "package"
+        ],
+        "fields": {
+          "title": "Harness documentation site",
+          "headings": "Harness documentation site Layout Change rules Check",
+          "path": "docs/for-agents/packages/harness-site.md",
+          "symbols": "",
+          "summary": "apps/docs is the public Fumadocs site served at harness.agentskit.io. It is its own package (@agentskit/harness-docs) so Next and React 19 never reach the harness runtime, which renders its TUI with ink.",
+          "body": "Harness documentation site apps/docs is the public Fumadocs site served at harness.agentskit.io. It is its own package ( @agentskit/harness-docs ) so Next and React 19 never reach the harness runtime, which renders its TUI with ink. Layout - apps/docs/content/docs/ — the curated MDX pages (get-started, concepts, configuration, guides, examples, reference). Pages under reference/ are generated by scripts/gen-docs-reference.mjs ; edit the generator, not the page. - apps/docs/app/(home) — the landing page; its sections live in apps/docs/components/home . - apps/docs/app/docs — the Fumadocs documentation layout and the catch-all page route. - apps/docs/app/api — the search route ( apps/docs/app/api/search/route.ts ), a static index built from the content source. - apps/docs/app/for-agents — the page that tells agents how to read the site. - apps/docs/components — shared client components (shell, mermaid, pipeline and run-replay visuals). - apps/docs/lib — source.ts (content loader), shell.ts (ecosystem shell data), site.ts (origin and base path), stats.ts . - apps/docs/types — ambient types for the shell element. Change rules - Keep numbers on the site derived from the repository ( scripts/lib/stats.mjs ), never typed by hand. - Machine-readable surfaces ( llms.txt , raw Markdown, stats) come from scripts/build-docs-artifacts.mjs . Check pnpm docs:build builds the harness, writes the artifacts and builds the site; pnpm docs:typecheck type-checks it.",
+          "aliases": "document agent package"
+        },
+        "graph": {
+          "pagerank": 0.022139,
+          "inboundLinks": 0,
+          "coveredBy": [],
+          "mentionedBy": [],
+          "inbound": [],
+          "outbound": [
+            {
+              "kind": "covers",
+              "id": "area:apps/docs",
+              "confidence": "declared"
+            },
+            {
+              "kind": "mentions",
+              "id": "area:apps/docs",
+              "confidence": "observed"
+            },
+            {
+              "kind": "mentions",
+              "id": "area:apps/docs/app/(home)",
+              "confidence": "observed"
+            },
+            {
+              "kind": "mentions",
+              "id": "area:apps/docs/app/api",
+              "confidence": "observed"
+            },
+            {
+              "kind": "mentions",
+              "id": "area:apps/docs/app/docs",
+              "confidence": "observed"
+            },
+            {
+              "kind": "mentions",
+              "id": "area:apps/docs/app/for-agents",
+              "confidence": "observed"
+            },
+            {
+              "kind": "mentions",
+              "id": "area:apps/docs/components",
+              "confidence": "observed"
+            },
+            {
+              "kind": "mentions",
+              "id": "area:apps/docs/types",
+              "confidence": "observed"
+            },
+            {
+              "kind": "mentions",
+              "id": "document:apps/docs/content/docs/index.mdx",
+              "confidence": "fuzzy"
+            },
+            {
+              "kind": "mentions",
+              "id": "module:apps/docs/app/api/search/route.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "mentions",
+              "id": "module:scripts/build-docs-artifacts.mjs",
+              "confidence": "observed"
+            },
+            {
+              "kind": "mentions",
+              "id": "module:scripts/gen-docs-reference.mjs",
+              "confidence": "observed"
+            },
+            {
+              "kind": "mentions",
+              "id": "module:scripts/lib/stats.mjs",
+              "confidence": "observed"
+            },
+            {
+              "kind": "mentions",
+              "id": "package:@agentskit/harness-docs",
+              "confidence": "observed"
+            }
+          ]
+        },
+        "contentHash": "ee0168ef6e1b96a00252fb6750e8a529ee76543a33bda97982f2d9e249ccedc0",
+        "provenance": "observed",
+        "confidence": "observed"
+      },
+      {
         "id": "document:docs/GETTING-STARTED.md",
         "kind": "document",
         "path": "docs/GETTING-STARTED.md",
         "title": "Getting started",
-        "summary": "Install the package, then run the included consumer example:",
+        "summary": "Install the package, then run the included consumer example (examples/minimum-profile.mjs, from the examples directory):",
         "audience": "human",
         "aliases": [],
         "tags": [
@@ -14910,12 +15444,12 @@
           "headings": "Getting started The keep-pushing loop, from nothing to a first tick 1. ak-harness loop init 2. ak-harness loop doctor 3. ak-harness loop install 4. The first real tick",
           "path": "docs/GETTING-STARTED.md",
           "symbols": "",
-          "summary": "Install the package, then run the included consumer example:",
-          "body": "Getting started Install the package, then run the included consumer example: The example uses a fake profile in YOLO mode, a coding-agent adapter, a local Doc Bridge index, adversarial code review, and a dry-run tracking adapter. It prints a structured result and never performs a network mutation. For a real project, keep phase decisions in the kernel, select a named profile, and provide integrations through adapters. Start with mode: \"dry-run\" , inspect the evidence, then move to safe or yolo only after the preflight contract is current. The keep-pushing loop, from nothing to a first tick Four commands, in this order. Each one is safe to run again, and nothing before the last one touches your repository, your tracker or your schedule. 1. ak-harness loop init It asks only what a preset cannot answer — the repository, the project name, the Linear team and workspace, whose queue this machine drains — and writes loop.config.yaml from one of five presets ( web-app , library , monorepo , data-pipeline , mobile ). Everything the preset already says is left out of the file, so the config diff shows what this project decided. Use --dry-run to see the file it would write, --preset <name to skip the question, and --global to also create ~/.agentskit/harness.yaml (providers, binaries and notification channels, shared by every project on this machine — see for the four layers). 2. ak-harness loop doctor Nothing is dispatched. It checks Orca and its version, the provider CLIs and their remaining usage, the routing decision for each role, this machine's free slots, the Linear queue, the review CLI, the installed agents your registry points at, and the flow profiles your rules reference. Read this output before anything else — it is the answer to \"why isn't it working\" about nine times out of ten. Exit code 1 means at least one check failed. Then rehearse a tick without touching anything: It prints exactly what it would do: which issue, which contract, which worktree and which model — and writes nothing. 3. ak-harness loop install The guided install: the doctor checks again, an optional dry-run rehearsal, an offer to create loop.config.local.yaml for this machine, and then — after you confirm — the Orca automations that run loop stage tick and loop stage deliver on the schedule in schedule. . It is idempotent by name, so running it again reconciles rather than duplicates. --dry-run shows the exact orca argv and creates nothing; --yes accepts every prompt for a non-interactive install. 4. The first real tick The schedule will do this by itself from now on; running it once by hand is how you watch it happen: Do not run tick / deliver by hand on a project whose automations already run them: that races the scheduled run and can double-dispatch. Once installed, use the read-only commands instead — loop debrief (what is the loop doing right now), loop observe (anomalies and metrics), loop retro --since 7d (how it has been doing), loop paused (what it stopped on). The worker writes three files into its worktree at .ak-loop/ — plan.md , verify.json and dod.json — and the loop advances on those rather than on what a terminal said. A missing one comes back to the worker as a fix round naming the file ( ). Full reference, including Orca automations, Doc Bridge and agentskit-review wiring: . When something is stuck: .",
+          "summary": "Install the package, then run the included consumer example (examples/minimum-profile.mjs, from the examples directory):",
+          "body": "Getting started Install the package, then run the included consumer example ( examples/minimum-profile.mjs , from the examples directory): The example uses a fake profile in YOLO mode, a coding-agent adapter, a local Doc Bridge index, adversarial code review, and a dry-run tracking adapter. It prints a structured result and never performs a network mutation. For a real project, keep phase decisions in the kernel, select a named profile, and provide integrations through adapters. Start with mode: \"dry-run\" , inspect the evidence, then move to safe or yolo only after the preflight contract is current. The keep-pushing loop, from nothing to a first tick Four commands, in this order. Each one is safe to run again, and nothing before the last one touches your repository, your tracker or your schedule. 1. ak-harness loop init It asks only what a preset cannot answer — the repository, the project name, the Linear team and workspace, whose queue this machine drains — and writes loop.config.yaml from one of five presets ( web-app , library , monorepo , data-pipeline , mobile ). Everything the preset already says is left out of the file, so the config diff shows what this project decided. Use --dry-run to see the file it would write, --preset <name to skip the question, and --global to also create ~/.agentskit/harness.yaml (providers, binaries and notification channels, shared by every project on this machine — see for the four layers). 2. ak-harness loop doctor Nothing is dispatched. It checks Orca and its version, the provider CLIs and their remaining usage, the routing decision for each role, this machine's free slots, the Linear queue, the review CLI, the installed agents your registry points at, and the flow profiles your rules reference. Read this output before anything else — it is the answer to \"why isn't it working\" about nine times out of ten. Exit code 1 means at least one check failed. Then rehearse a tick without touching anything: It prints exactly what it would do: which issue, which contract, which worktree and which model — and writes nothing. 3. ak-harness loop install The guided install: the doctor checks again, an optional dry-run rehearsal, an offer to create loop.config.local.yaml for this machine, and then — after you confirm — the Orca automations that run loop stage tick and loop stage deliver on the schedule in schedule. . It is idempotent by name, so running it again reconciles rather than duplicates. --dry-run shows the exact orca argv and creates nothing; --yes accepts every prompt for a non-interactive install. 4. The first real tick The schedule will do this by itself from now on; running it once by hand is how you watch it happen: Do not run tick / deliver by hand on a project whose automations already run them: that races the scheduled run and can double-dispatch. Once installed, use the read-only commands instead — loop debrief (what is the loop doing right now), loop observe (anomalies and metrics), loop retro --since 7d (how it has been doing), loop paused (what it stopped on). The worker writes three files into its worktree at .ak-loop/ — plan.md , verify.json and dod.json — and the loop advances on those rather than on what a terminal said. A missing one comes back to the worker as a fix round naming the file ( ). The commands above are implemented in src/loop/init.ts , src/loop/doctor.ts , src/loop/guided-install.ts , src/loop/install.ts , src/loop/tick.ts , src/loop/deliver.ts , src/loop/watch.ts , src/loop/debrief.ts and src/loop/retro.ts . Full reference, including Orca automations, Doc Bridge and agentskit-review wiring: . When something is stuck: .",
           "aliases": "document human"
         },
         "graph": {
-          "pagerank": 0.025303,
+          "pagerank": 0.023707,
           "inboundLinks": 2,
           "coveredBy": [],
           "mentionedBy": [
@@ -14959,10 +15493,65 @@
               "kind": "links-to",
               "id": "document:docs/TROUBLESHOOTING.md",
               "confidence": "observed"
+            },
+            {
+              "kind": "mentions",
+              "id": "area:examples",
+              "confidence": "observed"
+            },
+            {
+              "kind": "mentions",
+              "id": "module:examples/minimum-profile.mjs",
+              "confidence": "observed"
+            },
+            {
+              "kind": "mentions",
+              "id": "module:src/loop/debrief.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "mentions",
+              "id": "module:src/loop/deliver.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "mentions",
+              "id": "module:src/loop/doctor.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "mentions",
+              "id": "module:src/loop/guided-install.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "mentions",
+              "id": "module:src/loop/init.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "mentions",
+              "id": "module:src/loop/install.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "mentions",
+              "id": "module:src/loop/retro.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "mentions",
+              "id": "module:src/loop/tick.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "mentions",
+              "id": "module:src/loop/watch.ts",
+              "confidence": "observed"
             }
           ]
         },
-        "contentHash": "a46787bff55334e03e16342bc140d6583186ca2331b6cb48120776543f384d3e",
+        "contentHash": "05a7f2d7995fee72ea4becf27f70f7c5e76ab378ae9e7045f29818ab5e4b9d91",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -14988,7 +15577,7 @@
           "aliases": "document human"
         },
         "graph": {
-          "pagerank": 0.040722,
+          "pagerank": 0.038153,
           "inboundLinks": 3,
           "coveredBy": [],
           "mentionedBy": [
@@ -15271,11 +15860,11 @@
           "path": "docs/MODULE-BOUNDARIES.md",
           "symbols": "",
           "summary": "This document is the reviewed starting point for the 0.4.0 work. It describes the repository at revision f4b2b092af97d528bd5fe5955ed38f101521b98d (the main baseline captured on 2026-09-10) and is intentionally descriptive: it does not claim that the proposed 0.4.0 boundary has already been accepted.",
-          "body": "Module and boundary inventory (H-040) This document is the reviewed starting point for the 0.4.0 work. It describes the repository at revision f4b2b092af97d528bd5fe5955ed38f101521b98d (the main baseline captured on 2026-09-10) and is intentionally descriptive: it does not claim that the proposed 0.4.0 boundary has already been accepted. Classification Class Meaning Dependency rule --- --- --- Kernel Deterministic contracts, state transitions, policy and metric projections May use Node standard library and other kernel modules; must not import adapters, provider SDKs, CLI composition, credentials, or UI libraries ( ink / react are composition-only). Execution support Local process, filesystem, event, evidence, and run lifecycle plumbing May depend on the kernel; must expose provenance and fail closed at trust boundaries. Adapter Provider-specific or external-system integration May depend on kernel contracts; must not be imported by kernel modules. Composition Package and CLI entry points May compose kernel, execution support, and adapters; consumers use src/index.ts . Complete source inventory Every current TypeScript module is listed below. Relative imports are the observed imports at the baseline revision; stdlib means Node's built-in modules, not a provider dependency. Module Class Responsibility Relative dependencies External boundary --- --- --- --- --- src/kernel/constants.ts Kernel State, decision, and surface constants types (type-only) None src/kernel/errors.ts Kernel Typed fail-closed errors None None src/kernel/hash.ts Kernel SHA-256 and JSON digests stdlib None src/kernel/types.ts Kernel Shared contract, run, evidence, and metric types context (type-only) None src/kernel/state-machine.ts Kernel Legal lifecycle transitions and human decisions constants , types None src/kernel/discovery.ts Kernel Discovery freshness, ambiguity, and decision packets errors , hash None src/kernel/wip.ts Kernel WIP admission and capacity decisions errors None src/kernel/experiment.ts Kernel Comparable runtime/provider selection errors None src/delivery/index.ts Delivery G2–G5 delivery gates and deterministic PR projection errors , hash None src/delivery/review.ts Delivery Bounded parallel adversarial review lenses and evidence verdicts errors , hash , workflow , delivery/index (type-only) Reviewer callback supplied by caller src/kernel/cycle.ts Kernel Bounded improvement-cycle assessment stdlib, errors None src/kernel/eval.ts Kernel Versioned eval manifest validation, deterministic battery runner, min/median/max aggregation, and fail-closed assessment errors , hash Grader callback supplied by caller src/kernel/compatibility.ts Kernel Pinned AgentsKit component manifest and evidence-bound compatibility assessment errors , hash Upstream commands and reports supplied by caller src/kernel/cache.ts Kernel Safe cache keys and in-memory LLM cache contract hash , errors Cache backend supplied by caller src/kernel/optimization.ts Kernel Token, memory, cache, parallelism comparisons hash , errors None src/kernel/memory.ts Kernel Memory record validation and memory adapter contract errors KV store supplied by caller src/kernel/policy.ts Kernel Tool/action policy gate errors None src/kernel/preflight.ts Kernel File-scoped checks and safe-command validation stdlib, errors Shell command is data, never executed here src/kernel/block.ts Kernel Portable execution block manifest and dependency admission errors , hash None src/kernel/learning.ts Kernel Retrospective parsing and human learning promotion stdlib, errors None src/kernel/status.ts Kernel Deterministic status snapshot and digest errors , hash , block , types (type-only) None src/kernel/model-policy.ts Kernel Role-to-model binding and validation errors , hash Provider is data, not an SDK src/kernel/pii.ts Kernel Deterministic PII/secret pattern scan + redaction over a plain string None None src/execution/machine.ts Execution support Machine sampling and adaptive concurrency stdlib, types , errors",
+          "body": "Module and boundary inventory (H-040) This document is the reviewed starting point for the 0.4.0 work. It describes the repository at revision f4b2b092af97d528bd5fe5955ed38f101521b98d (the main baseline captured on 2026-09-10) and is intentionally descriptive: it does not claim that the proposed 0.4.0 boundary has already been accepted. Classification Class Meaning Dependency rule --- --- --- Kernel Deterministic contracts, state transitions, policy and metric projections May use Node standard library and other kernel modules; must not import adapters, provider SDKs, CLI composition, credentials, or UI libraries ( ink / react are composition-only). Execution support Local process, filesystem, event, evidence, and run lifecycle plumbing May depend on the kernel; must expose provenance and fail closed at trust boundaries. Adapter Provider-specific or external-system integration May depend on kernel contracts; must not be imported by kernel modules. Composition Package and CLI entry points May compose kernel, execution support, and adapters; consumers use src/index.ts . The main source directories are src/kernel (kernel), src/execution (execution support), src/adapters (adapters), src/loop , src/cli.ts and src/index.ts (composition); the inventory below gives src/delivery (delivery gates), src/profiles and src/context their own Delivery, Profiles and Context rows. Complete source inventory Every current TypeScript module is listed below. Relative imports are the observed imports at the baseline revision; stdlib means Node's built-in modules, not a provider dependency. Module Class Responsibility Relative dependencies External boundary --- --- --- --- --- src/kernel/constants.ts Kernel State, decision, and surface constants types (type-only) None src/kernel/errors.ts Kernel Typed fail-closed errors None None src/kernel/hash.ts Kernel SHA-256 and JSON digests stdlib None src/kernel/types.ts Kernel Shared contract, run, evidence, and metric types context (type-only) None src/kernel/state-machine.ts Kernel Legal lifecycle transitions and human decisions constants , types None src/kernel/discovery.ts Kernel Discovery freshness, ambiguity, and decision packets errors , hash None src/kernel/wip.ts Kernel WIP admission and capacity decisions errors None src/kernel/experiment.ts Kernel Comparable runtime/provider selection errors None src/delivery/index.ts Delivery G2–G5 delivery gates and deterministic PR projection errors , hash None src/delivery/review.ts Delivery Bounded parallel adversarial review lenses and evidence verdicts errors , hash , workflow , delivery/index (type-only) Reviewer callback supplied by caller src/kernel/cycle.ts Kernel Bounded improvement-cycle assessment stdlib, errors None src/kernel/eval.ts Kernel Versioned eval manifest validation, deterministic battery runner, min/median/max aggregation, and fail-closed assessment errors , hash Grader callback supplied by caller src/kernel/compatibility.ts Kernel Pinned AgentsKit component manifest and evidence-bound compatibility assessment errors , hash Upstream commands and reports supplied by caller src/kernel/cache.ts Kernel Safe cache keys and in-memory LLM cache contract hash , errors Cache backend supplied by caller src/kernel/optimization.ts Kernel Token, memory, cache, parallelism comparisons hash , errors None src/kernel/memory.ts Kernel Memory record validation and memory adapter contract errors KV store supplied by caller src/kernel/policy.ts Kernel Tool/action policy gate errors None src/kernel/preflight.ts Kernel File-scoped checks and safe-command validation stdlib, errors Shell command is data, never executed here src/kernel/block.ts Kernel Portable execution block manifest and dependency admission errors , hash None src/kernel/learning.ts Kernel Retrospective parsing and human learning promotion stdlib, errors None src/kernel/status.ts Kernel Deterministic status snapshot and digest errors , hash , block , types (type-only) None src/kernel/model-policy.ts",
           "aliases": "document human"
         },
         "graph": {
-          "pagerank": 0.023629,
+          "pagerank": 0.022139,
           "inboundLinks": 2,
           "coveredBy": [],
           "mentionedBy": [
@@ -15307,12 +15896,42 @@
             },
             {
               "kind": "mentions",
-              "id": "module:src/adapters/agent.ts",
+              "id": "area:src/adapters",
               "confidence": "observed"
             },
             {
               "kind": "mentions",
-              "id": "module:src/adapters/code-review.ts",
+              "id": "area:src/context",
+              "confidence": "observed"
+            },
+            {
+              "kind": "mentions",
+              "id": "area:src/delivery",
+              "confidence": "observed"
+            },
+            {
+              "kind": "mentions",
+              "id": "area:src/execution",
+              "confidence": "observed"
+            },
+            {
+              "kind": "mentions",
+              "id": "area:src/kernel",
+              "confidence": "observed"
+            },
+            {
+              "kind": "mentions",
+              "id": "area:src/loop",
+              "confidence": "observed"
+            },
+            {
+              "kind": "mentions",
+              "id": "area:src/profiles",
+              "confidence": "observed"
+            },
+            {
+              "kind": "mentions",
+              "id": "module:src/adapters/agent.ts",
               "confidence": "observed"
             },
             {
@@ -15327,27 +15946,12 @@
             },
             {
               "kind": "mentions",
-              "id": "module:src/adapters/github-cli.ts",
-              "confidence": "observed"
-            },
-            {
-              "kind": "mentions",
-              "id": "module:src/adapters/linear-orca.ts",
-              "confidence": "observed"
-            },
-            {
-              "kind": "mentions",
               "id": "module:src/adapters/orca-cli.ts",
               "confidence": "observed"
             },
             {
               "kind": "mentions",
               "id": "module:src/adapters/orca.ts",
-              "confidence": "observed"
-            },
-            {
-              "kind": "mentions",
-              "id": "module:src/adapters/providers.ts",
               "confidence": "observed"
             },
             {
@@ -15592,16 +16196,6 @@
             },
             {
               "kind": "mentions",
-              "id": "module:src/loop/config.ts",
-              "confidence": "observed"
-            },
-            {
-              "kind": "mentions",
-              "id": "module:src/loop/process.ts",
-              "confidence": "observed"
-            },
-            {
-              "kind": "mentions",
               "id": "module:src/profiles/index.ts",
               "confidence": "observed"
             },
@@ -15609,15 +16203,10 @@
               "kind": "mentions-symbol",
               "id": "module:apps/docs/lib/source.ts",
               "confidence": "observed"
-            },
-            {
-              "kind": "mentions-symbol",
-              "id": "module:src/adapters/tracking.ts",
-              "confidence": "observed"
             }
           ]
         },
-        "contentHash": "8a18a55b8d926f930c4726da4758b702674d48fb19320d17964d8ac5ba481206",
+        "contentHash": "7b47c14a0c2b87b4e66e94bda27f0f7186b0da83abfd4667a7f6fa04b7d01adc",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -15643,7 +16232,7 @@
           "aliases": "document human"
         },
         "graph": {
-          "pagerank": 0.045137,
+          "pagerank": 0.042289,
           "inboundLinks": 1,
           "coveredBy": [],
           "mentionedBy": [
@@ -15755,11 +16344,11 @@
           "path": "docs/TROUBLESHOOTING.md",
           "symbols": "",
           "summary": "The source, contract, or context changed after verification. Run ak-verify again; do not reuse the old evidence bundle.",
-          "body": "Troubleshooting STALE The source, contract, or context changed after verification. Run ak-verify again; do not reuse the old evidence bundle. BLOCKED or AWAITING HUMAN APPROVAL Inspect the structured run with ak-harness status --json . Resolve the listed ambiguity, failed gate, missing evidence, or approval, then rerun verification. YOLO only removes unnecessary pauses; it does not bypass a required safety or provenance gate. Missing adapter telemetry Return status: \"unknown\" for measurements you cannot observe. Unknown values are excluded from improvement claims and can block a configured quality gate. Runtime failures Use the process runtime for a local shell-free boundary or the Docker runtime when isolation is required. Both report timeout, cancellation, output-limit, and non-zero-exit failures as structured evidence.",
+          "body": "Troubleshooting STALE The source, contract, or context changed after verification. Run ak-verify again; do not reuse the old evidence bundle. BLOCKED or AWAITING HUMAN APPROVAL Inspect the structured run with ak-harness status --json . Resolve the listed ambiguity, failed gate, missing evidence, or approval, then rerun verification. YOLO only removes unnecessary pauses; it does not bypass a required safety or provenance gate. Missing adapter telemetry Return status: \"unknown\" for measurements you cannot observe. Unknown values are excluded from improvement claims and can block a configured quality gate. Runtime failures Use the process runtime for a local shell-free boundary or the Docker runtime when isolation is required. Both report timeout, cancellation, output-limit, and non-zero-exit failures as structured evidence. Both runtimes live in src/execution/runtime.ts .",
           "aliases": "document human"
         },
         "graph": {
-          "pagerank": 0.03068,
+          "pagerank": 0.028744,
           "inboundLinks": 2,
           "coveredBy": [],
           "mentionedBy": [
@@ -15782,9 +16371,15 @@
               "confidence": "observed"
             }
           ],
-          "outbound": []
+          "outbound": [
+            {
+              "kind": "mentions",
+              "id": "module:src/execution/runtime.ts",
+              "confidence": "observed"
+            }
+          ]
         },
-        "contentHash": "3515676840eef2f6f9bae93b77aca49ec11a0de54722e06f80760a95c59d6be6",
+        "contentHash": "ae5ccedc0eb9c93661f98bb6c88e717b6862ff324267197f17f04a1bfeaff7c8",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -15852,7 +16447,7 @@
           "aliases": "document unclassified"
         },
         "graph": {
-          "pagerank": 0.025303,
+          "pagerank": 0.023707,
           "inboundLinks": 1,
           "coveredBy": [],
           "mentionedBy": [
@@ -15898,7 +16493,7 @@
           "aliases": "document project"
         },
         "graph": {
-          "pagerank": 0.023629,
+          "pagerank": 0.022139,
           "inboundLinks": 0,
           "coveredBy": [],
           "mentionedBy": [],
@@ -16031,7 +16626,7 @@
           "aliases": "document unclassified"
         },
         "graph": {
-          "pagerank": 0.025303,
+          "pagerank": 0.023707,
           "inboundLinks": 1,
           "coveredBy": [],
           "mentionedBy": [
@@ -16211,9 +16806,10 @@
         },
         "graph": {
           "pagerank": 0,
-          "inboundLinks": 4,
+          "inboundLinks": 5,
           "coveredBy": [],
           "mentionedBy": [
+            "document:docs/for-agents/packages/harness-site.md",
             "document:apps/docs/content/docs/configuration/models.mdx",
             "document:apps/docs/content/docs/reference/configuration.mdx",
             "document:CHANGELOG.md",
@@ -16222,6 +16818,11 @@
           "areaId": "area:apps/docs/app/api",
           "packageId": "package:@agentskit/harness-docs",
           "inbound": [
+            {
+              "kind": "mentions",
+              "id": "document:docs/for-agents/packages/harness-site.md",
+              "confidence": "observed"
+            },
             {
               "kind": "mentions-symbol",
               "id": "document:apps/docs/content/docs/configuration/models.mdx",
@@ -16506,15 +17107,22 @@
         },
         "graph": {
           "pagerank": 0,
-          "inboundLinks": 0,
+          "inboundLinks": 1,
           "coveredBy": [],
-          "mentionedBy": [],
+          "mentionedBy": [
+            "document:docs/for-agents/packages/ecosystem-manifest.md"
+          ],
           "areaId": "area:apps/docs/components",
           "packageId": "package:@agentskit/harness-docs",
           "inbound": [
             {
               "kind": "imports",
               "id": "module:apps/docs/components/home/harness-home.tsx",
+              "confidence": "observed"
+            },
+            {
+              "kind": "mentions",
+              "id": "document:docs/for-agents/packages/ecosystem-manifest.md",
               "confidence": "observed"
             }
           ],
@@ -16778,12 +17386,20 @@
         },
         "graph": {
           "pagerank": 0,
-          "inboundLinks": 0,
+          "inboundLinks": 1,
           "coveredBy": [],
-          "mentionedBy": [],
+          "mentionedBy": [
+            "document:docs/for-agents/packages/ecosystem-manifest.md"
+          ],
           "areaId": "area:apps/docs",
           "packageId": "package:@agentskit/harness-docs",
-          "inbound": [],
+          "inbound": [
+            {
+              "kind": "mentions",
+              "id": "document:docs/for-agents/packages/ecosystem-manifest.md",
+              "confidence": "observed"
+            }
+          ],
           "outbound": []
         },
         "contentHash": "37e7ecc967167156cf4ba90c3e2e1e9598c039dea1962777bbd1a8aef4fd9599",
@@ -17143,14 +17759,20 @@
         },
         "graph": {
           "pagerank": 0,
-          "inboundLinks": 1,
+          "inboundLinks": 2,
           "coveredBy": [],
           "mentionedBy": [
+            "document:docs/GETTING-STARTED.md",
             "document:README.md"
           ],
           "areaId": "area:examples",
           "packageId": "package:@agentskit/harness",
           "inbound": [
+            {
+              "kind": "mentions",
+              "id": "document:docs/GETTING-STARTED.md",
+              "confidence": "observed"
+            },
             {
               "kind": "mentions",
               "id": "document:README.md",
@@ -17185,12 +17807,26 @@
         },
         "graph": {
           "pagerank": 0,
-          "inboundLinks": 0,
+          "inboundLinks": 2,
           "coveredBy": [],
-          "mentionedBy": [],
+          "mentionedBy": [
+            "document:docs/for-agents/packages/ecosystem-manifest.md",
+            "document:docs/for-agents/packages/harness-site.md"
+          ],
           "areaId": "area:scripts",
           "packageId": "package:@agentskit/harness",
-          "inbound": [],
+          "inbound": [
+            {
+              "kind": "mentions",
+              "id": "document:docs/for-agents/packages/ecosystem-manifest.md",
+              "confidence": "observed"
+            },
+            {
+              "kind": "mentions",
+              "id": "document:docs/for-agents/packages/harness-site.md",
+              "confidence": "observed"
+            }
+          ],
           "outbound": [
             {
               "kind": "imports",
@@ -17510,12 +18146,20 @@
         },
         "graph": {
           "pagerank": 0,
-          "inboundLinks": 0,
+          "inboundLinks": 1,
           "coveredBy": [],
-          "mentionedBy": [],
+          "mentionedBy": [
+            "document:docs/for-agents/packages/harness-site.md"
+          ],
           "areaId": "area:scripts",
           "packageId": "package:@agentskit/harness",
-          "inbound": [],
+          "inbound": [
+            {
+              "kind": "mentions",
+              "id": "document:docs/for-agents/packages/harness-site.md",
+              "confidence": "observed"
+            }
+          ],
           "outbound": []
         },
         "contentHash": "f417f1e355b096ca61a1e7678bdac41026b1e6c46596d863a889ce02a0a015e1",
@@ -17618,15 +18262,23 @@
         },
         "graph": {
           "pagerank": 0,
-          "inboundLinks": 0,
+          "inboundLinks": 1,
           "coveredBy": [],
-          "mentionedBy": [],
+          "mentionedBy": [
+            "document:docs/for-agents/packages/ecosystem-manifest.md"
+          ],
           "areaId": "area:scripts",
           "packageId": "package:@agentskit/harness",
-          "inbound": [],
+          "inbound": [
+            {
+              "kind": "mentions",
+              "id": "document:docs/for-agents/packages/ecosystem-manifest.md",
+              "confidence": "observed"
+            }
+          ],
           "outbound": []
         },
-        "contentHash": "55b65b6525ad43390936e08df6916fca2efe0167940cd297fa9e0cec5cfd7300",
+        "contentHash": "fc7b6491c45bcf701f81ea90edfd813b8ee8b87792b261233dc62c54c06cc2cb",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -17753,9 +18405,11 @@
         },
         "graph": {
           "pagerank": 0,
-          "inboundLinks": 0,
+          "inboundLinks": 1,
           "coveredBy": [],
-          "mentionedBy": [],
+          "mentionedBy": [
+            "document:docs/for-agents/packages/harness-site.md"
+          ],
           "areaId": "area:scripts",
           "packageId": "package:@agentskit/harness",
           "inbound": [
@@ -17763,11 +18417,51 @@
               "kind": "imports",
               "id": "module:scripts/build-docs-artifacts.mjs",
               "confidence": "observed"
+            },
+            {
+              "kind": "mentions",
+              "id": "document:docs/for-agents/packages/harness-site.md",
+              "confidence": "observed"
             }
           ],
           "outbound": []
         },
         "contentHash": "a56780f1abe69542f8be017f8e92e53b487817d24249433f915f72b95366cca4",
+        "provenance": "observed",
+        "confidence": "observed"
+      },
+      {
+        "id": "module:scripts/retrieval-suite.test.mjs",
+        "kind": "module",
+        "path": "scripts/retrieval-suite.test.mjs",
+        "title": "retrieval-suite.test.mjs",
+        "aliases": [],
+        "tags": [
+          "module",
+          "mjs",
+          "test",
+          "scripts"
+        ],
+        "fields": {
+          "title": "retrieval-suite.test.mjs",
+          "headings": "",
+          "path": "scripts/retrieval-suite.test.mjs",
+          "symbols": "",
+          "summary": "",
+          "body": "",
+          "aliases": "module mjs test scripts"
+        },
+        "graph": {
+          "pagerank": 0,
+          "inboundLinks": 0,
+          "coveredBy": [],
+          "mentionedBy": [],
+          "areaId": "area:scripts",
+          "packageId": "package:@agentskit/harness",
+          "inbound": [],
+          "outbound": []
+        },
+        "contentHash": "bde5921ffa8aff74eaeadf19684a114f70eb0c17dccb2013512824505d1b50ab",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -18667,11 +19361,10 @@
         },
         "graph": {
           "pagerank": 0,
-          "inboundLinks": 3,
+          "inboundLinks": 2,
           "coveredBy": [],
           "mentionedBy": [
             "document:docs/LOOP.md",
-            "document:docs/MODULE-BOUNDARIES.md",
             "document:apps/docs/content/docs/reference/configuration.mdx"
           ],
           "areaId": "area:src/adapters",
@@ -18700,11 +19393,6 @@
             {
               "kind": "mentions",
               "id": "document:docs/LOOP.md",
-              "confidence": "observed"
-            },
-            {
-              "kind": "mentions",
-              "id": "document:docs/MODULE-BOUNDARIES.md",
               "confidence": "observed"
             },
             {
@@ -19259,11 +19947,10 @@
         },
         "graph": {
           "pagerank": 0,
-          "inboundLinks": 6,
+          "inboundLinks": 5,
           "coveredBy": [],
           "mentionedBy": [
             "document:docs/ADR-0029-loop-resilience-pinning-intake.md",
-            "document:docs/MODULE-BOUNDARIES.md",
             "document:CHANGELOG.md",
             "document:docs/ADR-0038-worker-guard-real-time-enforcement.md",
             "document:docs/ADR-0039-gate-floor-and-the-unwired-local-runner.md",
@@ -19330,11 +20017,6 @@
             {
               "kind": "mentions",
               "id": "document:docs/ADR-0029-loop-resilience-pinning-intake.md",
-              "confidence": "observed"
-            },
-            {
-              "kind": "mentions",
-              "id": "document:docs/MODULE-BOUNDARIES.md",
               "confidence": "observed"
             },
             {
@@ -19448,10 +20130,9 @@
         },
         "graph": {
           "pagerank": 0,
-          "inboundLinks": 3,
+          "inboundLinks": 2,
           "coveredBy": [],
           "mentionedBy": [
-            "document:docs/MODULE-BOUNDARIES.md",
             "document:CHANGELOG.md",
             "document:docs/ADR-0044-delivery-evidence-on-the-tracker.md"
           ],
@@ -19481,11 +20162,6 @@
             {
               "kind": "imports",
               "id": "module:src/ui/api/board.ts",
-              "confidence": "observed"
-            },
-            {
-              "kind": "mentions",
-              "id": "document:docs/MODULE-BOUNDARIES.md",
               "confidence": "observed"
             },
             {
@@ -19868,9 +20544,10 @@
         },
         "graph": {
           "pagerank": 0,
-          "inboundLinks": 1,
+          "inboundLinks": 2,
           "coveredBy": [],
           "mentionedBy": [
+            "document:docs/ADR-0025-portable-orchestration-controls.md",
             "document:docs/MODULE-BOUNDARIES.md"
           ],
           "areaId": "area:src/adapters",
@@ -19884,6 +20561,11 @@
             {
               "kind": "imports",
               "id": "module:src/loop/tick.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "mentions",
+              "id": "document:docs/ADR-0025-portable-orchestration-controls.md",
               "confidence": "observed"
             },
             {
@@ -19965,10 +20647,9 @@
         },
         "graph": {
           "pagerank": 0,
-          "inboundLinks": 2,
+          "inboundLinks": 1,
           "coveredBy": [],
           "mentionedBy": [
-            "document:docs/MODULE-BOUNDARIES.md",
             "document:docs/ADR-0029-loop-resilience-pinning-intake.md"
           ],
           "areaId": "area:src/adapters",
@@ -20047,11 +20728,6 @@
             {
               "kind": "imports",
               "id": "module:test/routing-dynamic.test.ts",
-              "confidence": "observed"
-            },
-            {
-              "kind": "mentions",
-              "id": "document:docs/MODULE-BOUNDARIES.md",
               "confidence": "observed"
             },
             {
@@ -20224,11 +20900,6 @@
               "confidence": "observed"
             },
             {
-              "kind": "mentions-symbol",
-              "id": "document:docs/MODULE-BOUNDARIES.md",
-              "confidence": "observed"
-            },
-            {
               "kind": "re-exports",
               "id": "module:src/index.ts",
               "confidence": "observed"
@@ -20281,11 +20952,13 @@
         },
         "graph": {
           "pagerank": 0,
-          "inboundLinks": 5,
+          "inboundLinks": 7,
           "coveredBy": [],
           "mentionedBy": [
             "document:AGENTS.md",
             "document:apps/docs/content/docs/reference/cli.mdx",
+            "document:docs/ADR-0016-baseline-evidence-digests.md",
+            "document:docs/ADR-0021-event-lock-recovery.md",
             "document:docs/ADR-0026-kernel-adapters-boundary.md",
             "document:docs/MODULE-BOUNDARIES.md",
             "document:docs/PRD-0.4.0.md"
@@ -20305,6 +20978,16 @@
             {
               "kind": "mentions",
               "id": "document:apps/docs/content/docs/reference/cli.mdx",
+              "confidence": "observed"
+            },
+            {
+              "kind": "mentions",
+              "id": "document:docs/ADR-0016-baseline-evidence-digests.md",
+              "confidence": "observed"
+            },
+            {
+              "kind": "mentions",
+              "id": "document:docs/ADR-0021-event-lock-recovery.md",
               "confidence": "observed"
             },
             {
@@ -20711,9 +21394,10 @@
         },
         "graph": {
           "pagerank": 0,
-          "inboundLinks": 4,
+          "inboundLinks": 5,
           "coveredBy": [],
           "mentionedBy": [
+            "document:docs/ADR-0023-safe-action-recovery.md",
             "document:docs/MODULE-BOUNDARIES.md",
             "document:docs/ADR-0006-agent-session-protocol.md",
             "document:docs/ADR-0007-policy-gate.md",
@@ -20722,6 +21406,11 @@
           "areaId": "area:src/execution",
           "packageId": "package:@agentskit/harness",
           "inbound": [
+            {
+              "kind": "mentions",
+              "id": "document:docs/ADR-0023-safe-action-recovery.md",
+              "confidence": "observed"
+            },
             {
               "kind": "mentions",
               "id": "document:docs/MODULE-BOUNDARIES.md",
@@ -20911,9 +21600,10 @@
         },
         "graph": {
           "pagerank": 0,
-          "inboundLinks": 2,
+          "inboundLinks": 3,
           "coveredBy": [],
           "mentionedBy": [
+            "document:docs/ADR-0005-benchmark-manifest.md",
             "document:docs/MODULE-BOUNDARIES.md",
             "document:CHANGELOG.md"
           ],
@@ -20928,6 +21618,11 @@
             {
               "kind": "imports",
               "id": "module:src/execution/verification.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "mentions",
+              "id": "document:docs/ADR-0005-benchmark-manifest.md",
               "confidence": "observed"
             },
             {
@@ -21019,9 +21714,10 @@
         },
         "graph": {
           "pagerank": 0,
-          "inboundLinks": 1,
+          "inboundLinks": 2,
           "coveredBy": [],
           "mentionedBy": [
+            "document:docs/ADR-0025-portable-orchestration-controls.md",
             "document:docs/MODULE-BOUNDARIES.md"
           ],
           "areaId": "area:src/execution",
@@ -21070,6 +21766,11 @@
             {
               "kind": "imports",
               "id": "module:test/ui-core-server.test.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "mentions",
+              "id": "document:docs/ADR-0025-portable-orchestration-controls.md",
               "confidence": "observed"
             },
             {
@@ -21411,9 +22112,15 @@
         },
         "graph": {
           "pagerank": 0,
-          "inboundLinks": 4,
+          "inboundLinks": 10,
           "coveredBy": [],
           "mentionedBy": [
+            "document:docs/ADR-0004-run-metrics.md",
+            "document:docs/ADR-0005-benchmark-manifest.md",
+            "document:docs/ADR-0014-criterion-level-benchmark-evidence.md",
+            "document:docs/ADR-0015-directional-benchmark-outcomes.md",
+            "document:docs/ADR-0016-baseline-evidence-digests.md",
+            "document:docs/ADR-0024-controlled-completion-metrics.md",
             "document:docs/MODULE-BOUNDARIES.md",
             "document:CHANGELOG.md",
             "document:docs/ADR-0012-controlled-baseline-observations.md",
@@ -21434,12 +22141,47 @@
             },
             {
               "kind": "mentions",
+              "id": "document:docs/ADR-0004-run-metrics.md",
+              "confidence": "observed"
+            },
+            {
+              "kind": "mentions",
+              "id": "document:docs/ADR-0005-benchmark-manifest.md",
+              "confidence": "observed"
+            },
+            {
+              "kind": "mentions",
+              "id": "document:docs/ADR-0014-criterion-level-benchmark-evidence.md",
+              "confidence": "observed"
+            },
+            {
+              "kind": "mentions",
+              "id": "document:docs/ADR-0015-directional-benchmark-outcomes.md",
+              "confidence": "observed"
+            },
+            {
+              "kind": "mentions",
+              "id": "document:docs/ADR-0016-baseline-evidence-digests.md",
+              "confidence": "observed"
+            },
+            {
+              "kind": "mentions",
+              "id": "document:docs/ADR-0024-controlled-completion-metrics.md",
+              "confidence": "observed"
+            },
+            {
+              "kind": "mentions",
               "id": "document:docs/MODULE-BOUNDARIES.md",
               "confidence": "observed"
             },
             {
               "kind": "mentions-symbol",
               "id": "document:CHANGELOG.md",
+              "confidence": "observed"
+            },
+            {
+              "kind": "mentions-symbol",
+              "id": "document:docs/ADR-0004-run-metrics.md",
               "confidence": "observed"
             },
             {
@@ -21596,10 +22338,12 @@
         },
         "graph": {
           "pagerank": 0,
-          "inboundLinks": 4,
+          "inboundLinks": 6,
           "coveredBy": [],
           "mentionedBy": [
+            "document:docs/ADR-0011-runtime-attestation.md",
             "document:docs/MODULE-BOUNDARIES.md",
+            "document:docs/TROUBLESHOOTING.md",
             "document:docs/ADR-0008-runtime-executor.md",
             "document:docs/ADR-0009-process-runtime-boundary.md",
             "document:docs/ADR-0010-docker-sandbox-runtime.md"
@@ -21624,7 +22368,17 @@
             },
             {
               "kind": "mentions",
+              "id": "document:docs/ADR-0011-runtime-attestation.md",
+              "confidence": "observed"
+            },
+            {
+              "kind": "mentions",
               "id": "document:docs/MODULE-BOUNDARIES.md",
+              "confidence": "observed"
+            },
+            {
+              "kind": "mentions",
+              "id": "document:docs/TROUBLESHOOTING.md",
               "confidence": "observed"
             },
             {
@@ -21640,6 +22394,11 @@
             {
               "kind": "mentions-symbol",
               "id": "document:docs/ADR-0010-docker-sandbox-runtime.md",
+              "confidence": "observed"
+            },
+            {
+              "kind": "mentions-symbol",
+              "id": "document:docs/ADR-0011-runtime-attestation.md",
               "confidence": "observed"
             },
             {
@@ -21780,10 +22539,12 @@
         },
         "graph": {
           "pagerank": 0,
-          "inboundLinks": 4,
+          "inboundLinks": 6,
           "coveredBy": [],
           "mentionedBy": [
             "document:AGENTS.md",
+            "document:docs/ADR-0018-verification-projection-attestation.md",
+            "document:docs/ADR-0019-human-decision-attestation.md",
             "document:docs/MODULE-BOUNDARIES.md",
             "document:docs/ADR-0003-doc-bridge-context-binding.md",
             "document:docs/ADR-0020-terminal-reconciliation.md"
@@ -21799,6 +22560,16 @@
             {
               "kind": "mentions",
               "id": "document:AGENTS.md",
+              "confidence": "observed"
+            },
+            {
+              "kind": "mentions",
+              "id": "document:docs/ADR-0018-verification-projection-attestation.md",
+              "confidence": "observed"
+            },
+            {
+              "kind": "mentions",
+              "id": "document:docs/ADR-0019-human-decision-attestation.md",
               "confidence": "observed"
             },
             {
@@ -23067,9 +23838,10 @@
         },
         "graph": {
           "pagerank": 0,
-          "inboundLinks": 1,
+          "inboundLinks": 2,
           "coveredBy": [],
           "mentionedBy": [
+            "document:docs/ADR-0025-portable-orchestration-controls.md",
             "document:docs/MODULE-BOUNDARIES.md"
           ],
           "areaId": "area:src/kernel",
@@ -23078,6 +23850,11 @@
             {
               "kind": "imports",
               "id": "module:src/kernel/status.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "mentions",
+              "id": "document:docs/ADR-0025-portable-orchestration-controls.md",
               "confidence": "observed"
             },
             {
@@ -24068,9 +24845,14 @@
         },
         "graph": {
           "pagerank": 0,
-          "inboundLinks": 3,
+          "inboundLinks": 8,
           "coveredBy": [],
           "mentionedBy": [
+            "document:docs/ADR-0001-extensible-kernel.md",
+            "document:docs/ADR-0011-runtime-attestation.md",
+            "document:docs/ADR-0017-event-log-integrity.md",
+            "document:docs/ADR-0019-human-decision-attestation.md",
+            "document:docs/ADR-0021-event-lock-recovery.md",
             "document:docs/MODULE-BOUNDARIES.md",
             "document:apps/docs/content/docs/reference/events.mdx",
             "document:docs/ADR-0030-loop-event-bus-orchestration-hooks.md"
@@ -24115,12 +24897,42 @@
             },
             {
               "kind": "mentions",
+              "id": "document:docs/ADR-0001-extensible-kernel.md",
+              "confidence": "observed"
+            },
+            {
+              "kind": "mentions",
+              "id": "document:docs/ADR-0011-runtime-attestation.md",
+              "confidence": "observed"
+            },
+            {
+              "kind": "mentions",
+              "id": "document:docs/ADR-0017-event-log-integrity.md",
+              "confidence": "observed"
+            },
+            {
+              "kind": "mentions",
+              "id": "document:docs/ADR-0019-human-decision-attestation.md",
+              "confidence": "observed"
+            },
+            {
+              "kind": "mentions",
+              "id": "document:docs/ADR-0021-event-lock-recovery.md",
+              "confidence": "observed"
+            },
+            {
+              "kind": "mentions",
               "id": "document:docs/MODULE-BOUNDARIES.md",
               "confidence": "observed"
             },
             {
               "kind": "mentions-symbol",
               "id": "document:apps/docs/content/docs/reference/events.mdx",
+              "confidence": "observed"
+            },
+            {
+              "kind": "mentions-symbol",
+              "id": "document:docs/ADR-0017-event-log-integrity.md",
               "confidence": "observed"
             },
             {
@@ -24754,9 +25566,10 @@
         },
         "graph": {
           "pagerank": 0,
-          "inboundLinks": 4,
+          "inboundLinks": 5,
           "coveredBy": [],
           "mentionedBy": [
+            "document:docs/ADR-0025-portable-orchestration-controls.md",
             "document:docs/MODULE-BOUNDARIES.md",
             "document:CHANGELOG.md",
             "document:docs/ADR-0047-independent-verifier-and-structured-lessons.md",
@@ -24798,6 +25611,11 @@
             {
               "kind": "imports",
               "id": "module:test/loop-memory.test.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "mentions",
+              "id": "document:docs/ADR-0025-portable-orchestration-controls.md",
               "confidence": "observed"
             },
             {
@@ -25391,9 +26209,10 @@
         },
         "graph": {
           "pagerank": 0,
-          "inboundLinks": 1,
+          "inboundLinks": 2,
           "coveredBy": [],
           "mentionedBy": [
+            "document:docs/ADR-0001-extensible-kernel.md",
             "document:docs/MODULE-BOUNDARIES.md"
           ],
           "areaId": "area:src/kernel",
@@ -25402,6 +26221,11 @@
             {
               "kind": "imports",
               "id": "module:src/context/index.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "mentions",
+              "id": "document:docs/ADR-0001-extensible-kernel.md",
               "confidence": "observed"
             },
             {
@@ -25558,9 +26382,10 @@
         },
         "graph": {
           "pagerank": 0,
-          "inboundLinks": 1,
+          "inboundLinks": 2,
           "coveredBy": [],
           "mentionedBy": [
+            "document:docs/ADR-0025-portable-orchestration-controls.md",
             "document:docs/MODULE-BOUNDARIES.md"
           ],
           "areaId": "area:src/kernel",
@@ -25569,6 +26394,11 @@
             {
               "kind": "imports",
               "id": "module:src/adapters/orca.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "mentions",
+              "id": "document:docs/ADR-0025-portable-orchestration-controls.md",
               "confidence": "observed"
             },
             {
@@ -25904,14 +26734,20 @@
         },
         "graph": {
           "pagerank": 0,
-          "inboundLinks": 1,
+          "inboundLinks": 2,
           "coveredBy": [],
           "mentionedBy": [
+            "document:docs/ADR-0025-portable-orchestration-controls.md",
             "document:docs/MODULE-BOUNDARIES.md"
           ],
           "areaId": "area:src/kernel",
           "packageId": "package:@agentskit/harness",
           "inbound": [
+            {
+              "kind": "mentions",
+              "id": "document:docs/ADR-0025-portable-orchestration-controls.md",
+              "confidence": "observed"
+            },
             {
               "kind": "mentions",
               "id": "document:docs/MODULE-BOUNDARIES.md",
@@ -28375,15 +29211,22 @@
         },
         "graph": {
           "pagerank": 0,
-          "inboundLinks": 0,
+          "inboundLinks": 1,
           "coveredBy": [],
-          "mentionedBy": [],
+          "mentionedBy": [
+            "document:docs/GETTING-STARTED.md"
+          ],
           "areaId": "area:src/loop",
           "packageId": "package:@agentskit/harness",
           "inbound": [
             {
               "kind": "imports",
               "id": "module:src/loop/observability.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "mentions",
+              "id": "document:docs/GETTING-STARTED.md",
               "confidence": "observed"
             },
             {
@@ -28610,11 +29453,12 @@
         },
         "graph": {
           "pagerank": 0,
-          "inboundLinks": 3,
+          "inboundLinks": 4,
           "coveredBy": [],
           "mentionedBy": [
             "document:AGENTS.md",
             "document:docs/ADR-0043-delivery-state-module-boundary.md",
+            "document:docs/GETTING-STARTED.md",
             "document:docs/ADR-0040-control-plane-v2.md"
           ],
           "areaId": "area:src/loop",
@@ -28703,6 +29547,11 @@
             {
               "kind": "mentions",
               "id": "document:docs/ADR-0043-delivery-state-module-boundary.md",
+              "confidence": "observed"
+            },
+            {
+              "kind": "mentions",
+              "id": "document:docs/GETTING-STARTED.md",
               "confidence": "observed"
             },
             {
@@ -29144,10 +29993,11 @@
         },
         "graph": {
           "pagerank": 0,
-          "inboundLinks": 2,
+          "inboundLinks": 3,
           "coveredBy": [],
           "mentionedBy": [
             "document:AGENTS.md",
+            "document:docs/GETTING-STARTED.md",
             "document:docs/ADR-0040-control-plane-v2.md"
           ],
           "areaId": "area:src/loop",
@@ -29226,6 +30076,11 @@
             {
               "kind": "mentions",
               "id": "document:AGENTS.md",
+              "confidence": "observed"
+            },
+            {
+              "kind": "mentions",
+              "id": "document:docs/GETTING-STARTED.md",
               "confidence": "observed"
             },
             {
@@ -30590,15 +31445,22 @@
         },
         "graph": {
           "pagerank": 0,
-          "inboundLinks": 0,
+          "inboundLinks": 1,
           "coveredBy": [],
-          "mentionedBy": [],
+          "mentionedBy": [
+            "document:docs/GETTING-STARTED.md"
+          ],
           "areaId": "area:src/loop",
           "packageId": "package:@agentskit/harness",
           "inbound": [
             {
               "kind": "imports",
               "id": "module:src/loop/ui/terminal.tsx",
+              "confidence": "observed"
+            },
+            {
+              "kind": "mentions",
+              "id": "document:docs/GETTING-STARTED.md",
               "confidence": "observed"
             },
             {
@@ -31357,12 +32219,19 @@
         },
         "graph": {
           "pagerank": 0,
-          "inboundLinks": 0,
+          "inboundLinks": 1,
           "coveredBy": [],
-          "mentionedBy": [],
+          "mentionedBy": [
+            "document:docs/GETTING-STARTED.md"
+          ],
           "areaId": "area:src/loop",
           "packageId": "package:@agentskit/harness",
           "inbound": [
+            {
+              "kind": "mentions",
+              "id": "document:docs/GETTING-STARTED.md",
+              "confidence": "observed"
+            },
             {
               "kind": "re-exports",
               "id": "module:src/index.ts",
@@ -31446,9 +32315,10 @@
         },
         "graph": {
           "pagerank": 0,
-          "inboundLinks": 1,
+          "inboundLinks": 2,
           "coveredBy": [],
           "mentionedBy": [
+            "document:docs/GETTING-STARTED.md",
             "document:docs/ADR-0040-control-plane-v2.md"
           ],
           "areaId": "area:src/loop",
@@ -31482,6 +32352,11 @@
             {
               "kind": "imports",
               "id": "module:test/ui-system.test.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "mentions",
+              "id": "document:docs/GETTING-STARTED.md",
               "confidence": "observed"
             },
             {
@@ -33257,11 +34132,9 @@
         },
         "graph": {
           "pagerank": 0,
-          "inboundLinks": 1,
+          "inboundLinks": 0,
           "coveredBy": [],
-          "mentionedBy": [
-            "document:docs/MODULE-BOUNDARIES.md"
-          ],
+          "mentionedBy": [],
           "areaId": "area:src/loop",
           "packageId": "package:@agentskit/harness",
           "inbound": [
@@ -33283,11 +34156,6 @@
             {
               "kind": "imports",
               "id": "module:test/loop-verdict.test.ts",
-              "confidence": "observed"
-            },
-            {
-              "kind": "mentions",
-              "id": "document:docs/MODULE-BOUNDARIES.md",
               "confidence": "observed"
             },
             {
@@ -33861,9 +34729,11 @@
         },
         "graph": {
           "pagerank": 0,
-          "inboundLinks": 0,
+          "inboundLinks": 1,
           "coveredBy": [],
-          "mentionedBy": [],
+          "mentionedBy": [
+            "document:docs/GETTING-STARTED.md"
+          ],
           "areaId": "area:src/loop",
           "packageId": "package:@agentskit/harness",
           "inbound": [
@@ -33975,6 +34845,11 @@
             {
               "kind": "imports",
               "id": "module:test/ui-projection.test.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "mentions",
+              "id": "document:docs/GETTING-STARTED.md",
               "confidence": "observed"
             },
             {
@@ -35056,10 +35931,11 @@
         },
         "graph": {
           "pagerank": 0,
-          "inboundLinks": 7,
+          "inboundLinks": 8,
           "coveredBy": [],
           "mentionedBy": [
             "document:docs/ADR-0030-loop-event-bus-orchestration-hooks.md",
+            "document:docs/GETTING-STARTED.md",
             "document:apps/docs/content/docs/concepts/events.mdx",
             "document:apps/docs/content/docs/reference/events.mdx",
             "document:CHANGELOG.md",
@@ -35183,6 +36059,11 @@
             {
               "kind": "mentions",
               "id": "document:docs/ADR-0030-loop-event-bus-orchestration-hooks.md",
+              "confidence": "observed"
+            },
+            {
+              "kind": "mentions",
+              "id": "document:docs/GETTING-STARTED.md",
               "confidence": "observed"
             },
             {
@@ -36123,12 +37004,19 @@
         },
         "graph": {
           "pagerank": 0,
-          "inboundLinks": 0,
+          "inboundLinks": 1,
           "coveredBy": [],
-          "mentionedBy": [],
+          "mentionedBy": [
+            "document:docs/GETTING-STARTED.md"
+          ],
           "areaId": "area:src/loop",
           "packageId": "package:@agentskit/harness",
           "inbound": [
+            {
+              "kind": "mentions",
+              "id": "document:docs/GETTING-STARTED.md",
+              "confidence": "observed"
+            },
             {
               "kind": "re-exports",
               "id": "module:src/index.ts",
@@ -49948,7 +50836,7 @@
         "summary": "Shared product metadata and public ecosystem references.",
         "aliases": [
           "ecosystem-manifest",
-          "apps/docs/content/docs/index.mdx",
+          "docs/for-agents/packages/ecosystem-manifest.md",
           "https://harness.agentskit.io/docs"
         ],
         "tags": [
@@ -49962,7 +50850,7 @@
           "symbols": "",
           "summary": "Shared product metadata and public ecosystem references.",
           "body": "",
-          "aliases": "ecosystem-manifest apps/docs/content/docs/index.mdx https://harness.agentskit.io/docs package ownership"
+          "aliases": "ecosystem-manifest docs/for-agents/packages/ecosystem-manifest.md https://harness.agentskit.io/docs package ownership"
         },
         "graph": {
           "pagerank": 0,
@@ -49972,7 +50860,7 @@
           "inbound": [],
           "outbound": []
         },
-        "contentHash": "620a01419547fd3dc1e932c0945517ce0d33c188c59a412d8b8c0f7a34f05ee1",
+        "contentHash": "e3e766392018ee4312fd7320ff5e71a45fe1ba162bc85dd00e6186676c2d0389",
         "provenance": "declared",
         "confidence": "declared",
         "ownershipId": "ecosystem-manifest"
@@ -49999,7 +50887,7 @@
           "aliases": "harness @agentskit/harness package"
         },
         "graph": {
-          "pagerank": 0.025303,
+          "pagerank": 0.023707,
           "inboundLinks": 7,
           "coveredBy": [
             "document:README.md"
@@ -50052,7 +50940,7 @@
           ],
           "outbound": []
         },
-        "contentHash": "48c9c598c3b4f2a8e6ffbf387fb567f94cbc8185dc1f0253e831dc5bf6c3e602",
+        "contentHash": "8c77716d949f2bc51e95cb93e58fe1c449d55ae62ff3cac7b2d423117c648abc",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -50079,11 +50967,19 @@
         },
         "graph": {
           "pagerank": 0,
-          "inboundLinks": 0,
+          "inboundLinks": 1,
           "coveredBy": [],
-          "mentionedBy": [],
+          "mentionedBy": [
+            "document:docs/for-agents/packages/harness-site.md"
+          ],
           "packageId": "package:@agentskit/harness-docs",
-          "inbound": [],
+          "inbound": [
+            {
+              "kind": "mentions",
+              "id": "document:docs/for-agents/packages/harness-site.md",
+              "confidence": "observed"
+            }
+          ],
           "outbound": []
         },
         "contentHash": "052824f0609ddd79fe0c9f62e675c4a4b8dc2c40e6596818f0d397429163e3a4",

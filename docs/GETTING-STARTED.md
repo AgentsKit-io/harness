@@ -1,6 +1,7 @@
 # Getting started
 
-Install the package, then run the included consumer example:
+Install the package, then run the included consumer example
+(`examples/minimum-profile.mjs`, from the `examples` directory):
 
 ```bash
 pnpm add -D @agentskit/harness
@@ -95,6 +96,10 @@ The worker writes three files into its worktree at `.ak-loop/` — `plan.md`,
 `verify.json` and `dod.json` — and the loop advances on those rather than on what a
 terminal said. A missing one comes back to the worker as a fix round naming the file
 ([ADR-0035](ADR-0035-definition-of-done-two-lists.md)).
+
+The commands above are implemented in `src/loop/init.ts`, `src/loop/doctor.ts`, `src/loop/guided-install.ts`,
+`src/loop/install.ts`, `src/loop/tick.ts`, `src/loop/deliver.ts`, `src/loop/watch.ts`, `src/loop/debrief.ts` and
+`src/loop/retro.ts`.
 
 Full reference, including Orca automations, Doc Bridge and `agentskit-review` wiring:
 [`LOOP.md`](LOOP.md). When something is stuck: [`TROUBLESHOOTING.md`](TROUBLESHOOTING.md).

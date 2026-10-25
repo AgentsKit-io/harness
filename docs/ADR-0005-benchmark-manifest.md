@@ -1,5 +1,7 @@
 # ADR-0005: Use explicit benchmark manifests and task bindings
 
+Code: `src/execution/metrics.ts` (manifest validation and report), `src/execution/config.ts` (contract binding).
+
 ## Status
 
 Accepted

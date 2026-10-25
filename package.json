@@ -47,7 +47,7 @@
     "check:public-api:update": "node scripts/check-public-api.mjs --update",
     "docs:artifacts": "node scripts/build-docs-artifacts.mjs",
     "docs:build": "pnpm build && pnpm docs:artifacts && pnpm --filter @agentskit/harness-docs build",
-    "test:docs-artifacts": "node --test scripts/docs-artifacts-contract.test.mjs scripts/frontmatter.test.mjs",
+    "test:docs-artifacts": "node --test scripts/docs-artifacts-contract.test.mjs scripts/frontmatter.test.mjs scripts/retrieval-suite.test.mjs",
     "docs:typecheck": "pnpm --filter @agentskit/harness-docs typecheck",
     "test": "pnpm typecheck && vitest run --config vitest.config.ts test && node -e \"console.log(JSON.stringify({status:'passed',criteria:['package']}))\"",
     "test:coverage": "pnpm typecheck && vitest run --config vitest.config.ts --coverage test && node -e \"console.log(JSON.stringify({status:'passed',criteria:['package']}))\"",
@@ -117,7 +117,7 @@
     "zod": "^4.6.7"
   },
   "devDependencies": {
-    "@agentskit/doc-bridge": "2.4.0",
+    "@agentskit/doc-bridge": "2.4.2",
     "@radix-ui/react-radio-group": "^1.5.1",
     "@radix-ui/react-slot": "^1.5.0",
     "@tailwindcss/vite": "^4.3.3",
