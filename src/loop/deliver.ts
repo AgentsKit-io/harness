@@ -4,7 +4,7 @@ import { dirname, join } from 'node:path'
 import type { CommandRunner } from '../adapters/command.js'
 import { atLeast, parseReviewResult, renderFindingsForWorker, runCodeReview, type CodeReviewOutcome } from '../adapters/code-review.js'
 import { createHitlStore, HITL_ANCHOR_ID, HITL_ANCHOR_TITLE, type HitlRequest } from './hitl.js'
-import { assessChecks, githubComment, githubCommentExists, githubCompare, githubLabelRemove, githubMerge, githubOpenPullRequests, githubPullRequest, githubPullRequestCreate, githubPullRequestsForBranch, touchesProtectedPaths, type PullRequestSnapshot } from '../adapters/github-cli.js'
+import { assessChecks, githubComment, githubCommentExists, githubCompare, githubEnsureLabels, githubLabelRemove, githubMerge, githubOpenPullRequests, githubPullRequest, githubPullRequestCreate, githubPullRequestsForBranch, touchesProtectedPaths, type PullRequestSnapshot } from '../adapters/github-cli.js'
 import { requireWritableTracker, resolveConnectors, type ScmConnector, type TrackerConnector } from './connectors.js'
 import { issueBudget, issueSpend, modelForChange } from './budget.js'
 import { assessBoundary, verifyCommandFor } from './layers.js'
@@ -49,7 +49,9 @@ import { parseJsonFileText, readJsonFile } from '../kernel/json-file.js'
 import { createIssueQueue } from './queue.js'
 import { createLifecycleStore, type LifecyclePullRequest } from './lifecycle.js'
 import { activeTrackerCooldown, guardTracker, TrackerCooldownError } from './tracker-cooldown.js'
-import { approveHeldDelivery, clearRestarts, deliveryStatePath, listDispatched, markDispatchCancelled, MAX_LOST_TRACKING_RESTARTS, readDeliveryState, readRestarts, restartsPath } from './deliver-state.js'
+import { approveHeldDelivery, clearRestarts, deliveryStatePath, listDispatched, markDispatchCancelled, MAX_INFRA_FIX_RETRIES, MAX_LOST_TRACKING_RESTARTS, MAX_STUCK_DISPATCHES, readDeliveryState, readFixRetries, readRestarts, readStuck, recordFixRetry, recordStuck, restartsPath } from './deliver-state.js'
+import { classifyFixFailure, type FixFailure } from './fleet-fix.js'
+import type { RunnerConnector } from './runner-connector.js'
 import type { DeliveryHandoff, DeliveryState, DeliverOutcome } from './deliver-state.js'
 import { reapWorkerTerminals } from './terminal-reaper.js'
 
@@ -503,16 +505,18 @@ const renderEvidence = async (ctx: Context, record: DispatchRecordFile, state: D
   return fitComment(document, { ...comments, maxChars: maxChars ?? comments.maxChars })
 }
 
-const escalateTracker = async (ctx: Context, record: DispatchRecordFile, kind: 'stuck' | 'blocked' | 'abandoned', body: string, actions: string[]): Promise<void> => {
+/** `to: 'todo'` puts the issue back in the queue (the lifecycle label becomes `loop:todo`, `loop:blocked`/`loop:in-progress` go); `'blocked'` is a real block for a person. */
+const escalateTracker = async (ctx: Context, record: DispatchRecordFile, kind: 'stuck' | 'blocked' | 'abandoned', body: string, actions: string[], to: 'blocked' | 'todo' = 'blocked'): Promise<void> => {
   if (ctx.dryRun) { actions.push(`would mark ${kind} in ${ctx.tracker.id} and Orca`); return }
   const workerOutput = await captureWorkerOutput(ctx, record.terminal, record)
   const fullBody = workerOutput ? `${body}\n\n<details><summary>Worker's last terminal output</summary>\n\n\`\`\`\n${workerOutput}\n\`\`\`\n\n</details>` : body
   if (workerOutput) { actions.push('captured worker terminal output for the escalation'); recordRunIo(ctx.loaded.stateDir, record.issue, { direction: 'output', stage: 'build', role: 'worker-terminal', content: workerOutput, extension: 'txt', maxBytes: ctx.config.runs.maxIoBytes }, ctx.now) }
   try {
     await ctx.tracker.comment({ issue: record.issue, body: `${fullBody}\n\n<!-- loop:${kind}:${record.leaseId} -->`, dedupeKey: `${kind}:${record.issue}:${record.leaseId}` })
-    if (ctx.tracker.id === 'github') await ctx.tracker.transitions.transition({ tracker: ctx.tracker.id, issue: record.issue, to: ctx.config.linear.blockedLabel, reason: `loop ${kind}` })
+    if (ctx.tracker.id === 'github') await ctx.tracker.transitions.transition({ tracker: ctx.tracker.id, issue: record.issue, to: to === 'todo' ? ctx.config.delivery.returnState : ctx.config.linear.blockedLabel, reason: `loop ${kind}` })
     else {
-      await ctx.tracker.addLabels(record.issue, [ctx.config.linear.blockedLabel])
+      if (to === 'todo') await ctx.tracker.removeLabels(record.issue, [ctx.config.linear.blockedLabel])
+      else await ctx.tracker.addLabels(record.issue, [ctx.config.linear.blockedLabel])
       await ctx.tracker.transitions.transition({ tracker: ctx.tracker.id, issue: record.issue, to: ctx.config.delivery.returnState, reason: `loop ${kind}` })
     }
     // Release the claim, under `queueOwnership: 'unassigned'`. Returning an issue to the queue state
@@ -522,7 +526,7 @@ const escalateTracker = async (ctx: Context, record: DispatchRecordFile, kind: '
       await ctx.tracker.release(record.issue)
       actions.push(`${ctx.tracker.id}: assignee cleared (claim released)`)
     }
-    actions.push(ctx.tracker.id === 'github' ? `${ctx.tracker.id}: comment + blocked lifecycle state` : `${ctx.tracker.id}: comment + ${ctx.config.linear.blockedLabel} + ${ctx.config.delivery.returnState}`)
+    actions.push(to === 'todo' ? `${ctx.tracker.id}: comment + returned to ${ctx.config.delivery.returnState} (${ctx.config.linear.blockedLabel} cleared)` : ctx.tracker.id === 'github' ? `${ctx.tracker.id}: comment + blocked lifecycle state` : `${ctx.tracker.id}: comment + ${ctx.config.linear.blockedLabel} + ${ctx.config.delivery.returnState}`)
   } catch (error) {
     const detail = message(error)
     actions.push(`${ctx.tracker.id} escalation failed: ${detail}`)
@@ -758,19 +762,35 @@ const performHandoff = async (
  * A worker dispatched through the fleet queue has no terminal to inspect and never opens its own PR: the task state is
  * what there is to read. While it runs, wait. When it ends `done`, `fleet collect` brings its branch into the local
  * clone (it never pushes), then the harness pushes that branch and opens the pull request — from there the PR is
- * handled like any other. A task that failed or was cancelled is a stuck worker for a person.
+ * handled like any other. A task that failed, was cancelled or kept nothing is a stuck worker (`workerStuck`); one that
+ * ended `incomplete` with a WIP commit is delivered as a draft PR labelled `loop:wip`, and a continuation is dispatched.
  */
+const WIP_LABEL = 'loop:wip'
+
+/**
+ * A fleet worker left nothing to deliver. The issue goes back to Todo — the queue picks it up again — and the dispatch is
+ * counted: the third stuck dispatch of one issue inside 24 h is a real block for a person, with the three reasons.
+ */
+const workerStuck = async (ctx: Context, record: DispatchRecordFile, lease: DispatchLease | undefined, state: DeliveryState, reason: string, what: string, actions: string[]): Promise<DeliverResult> => {
+  const at = ctx.now()
+  const stuck = ctx.dryRun ? [...readStuck(ctx.loaded.stateDir, record.issue, at), { at: at.toISOString(), reason }] : recordStuck(ctx.loaded.stateDir, record.issue, at, reason)
+  const block = stuck.length >= MAX_STUCK_DISPATCHES
+  const body = block
+    ? `**Loop: worker stuck ${stuck.length} times in 24 h** — blocked for a person. ${what} Reasons:\n${stuck.map((entry, index) => `${index + 1}. ${entry.reason} (${entry.at})`).join('\n')}`
+    : `**Loop: worker stuck** — ${what} The slot was released and the issue returned to ${ctx.config.delivery.returnState} (stuck dispatch ${stuck.length}/${MAX_STUCK_DISPATCHES} in 24 h).`
+  await escalateTracker(ctx, record, 'stuck', body, actions, block ? 'blocked' : 'todo')
+  event(ctx, { type: 'worker.stuck-counted', issue: record.issue, count: stuck.length, reason, blocked: block })
+  finish(ctx, record, lease, state, 'stuck', reason)
+  return { issue: record.issue, outcome: ctx.dryRun ? 'dry-run' : 'stuck', reason: block ? `${reason}; stuck ${stuck.length} times in 24 h, blocked` : reason, actions }
+}
+
 const handleFleetNoPullRequest = async (ctx: Context, record: DispatchRecordFile, lease: DispatchLease | undefined, state: DeliveryState): Promise<DeliverResult> => {
   const actions: string[] = []
   const connector = createRunnerConnector({ loaded: ctx.loaded, runner: ctx.runner })
   const observed = (await connector.observeWorkspaces()).find((item) => item.id === record.worktreeId)
   const task = observed?.state ?? 'unknown'
   if (task === 'queued' || task === 'running' || task === 'unknown') return { issue: record.issue, outcome: 'waiting', reason: `fleet task ${task === 'unknown' ? 'not reported by the queue yet' : task}`, actions }
-  if (task !== 'done') {
-    await escalateTracker(ctx, record, 'stuck', `**Loop: worker stuck** — the fleet task for \`${record.worktree}\` ended ${task} without a branch to deliver. The slot was released and the issue returned to ${ctx.config.delivery.returnState}.`, actions)
-    finish(ctx, record, lease, state, 'stuck', `fleet task ${task}`)
-    return { issue: record.issue, outcome: ctx.dryRun ? 'dry-run' : 'stuck', reason: `fleet task ${task} before a PR was opened`, actions }
-  }
+  if (task !== 'done') return workerStuck(ctx, record, lease, state, `fleet task ${task} before a PR was opened`, `the fleet task for \`${record.worktree}\` ended ${task} without a branch to deliver.`, actions)
   const collect = connector.collect?.bind(connector) ?? fail(`runner "${connector.id}" cannot collect a finished task.`, 'HARNESS_ERROR')
   if (ctx.dryRun) {
     actions.push(`would run fleet collect, push ${record.branch} and open a pull request against ${ctx.config.project.baseBranch}`)
@@ -778,11 +798,9 @@ const handleFleetNoPullRequest = async (ctx: Context, record: DispatchRecordFile
   }
   const collected = await collect({ id: record.worktreeId })
   actions.push(collected.detail)
-  if (collected.branch === null) {
-    await escalateTracker(ctx, record, 'stuck', `**Loop: worker stuck** — the fleet task for \`${record.worktree}\` finished without making a commit, so there is no branch to open a PR from. The slot was released and the issue returned to ${ctx.config.delivery.returnState}.`, actions)
-    finish(ctx, record, lease, state, 'stuck', 'fleet task made no commits')
-    return { issue: record.issue, outcome: 'stuck', reason: 'fleet task finished with no commits; no PR opened', actions }
-  }
+  // An empty ref, "no commit" or an `incomplete` task with no WIP commit is the attempt's terminal outcome, not a transient error.
+  if (collected.branch === null) return workerStuck(ctx, record, lease, state, collected.incomplete ? 'fleet task ended incomplete with no WIP commit; no PR opened' : 'fleet task finished with no commits; no PR opened', `the fleet task for \`${record.worktree}\` ${collected.incomplete ? 'ended incomplete and kept no WIP commit' : 'finished without making a commit'}, so there is no branch to open a PR from.`, actions)
+  const wip = collected.incomplete === true
   const root = ctx.loaded.root
   // The handoff files the worker committed are read once and kept in the state dir; the PR carries none of them.
   const stripped = await stripHandoff({ runner: ctx.runner, root, stateDir: ctx.loaded.stateDir, issue: record.issue, rev: `refs/heads/${collected.branch}` })
@@ -796,14 +814,135 @@ const handleFleetNoPullRequest = async (ctx: Context, record: DispatchRecordFile
   actions.push(`pushed ${collected.branch}`)
   let title = record.issue
   try { title = `${record.issue}: ${(await ctx.tracker.issue(record.issue)).title}` } catch { /* the identifier alone is a fine title */ }
-  const body = `${record.issue}${record.url ? ` — ${record.url}` : ''}\n\nOpened by the loop from the branch a ${connector.id} task produced (\`${record.provider}/${record.model}\`); the worker could not push or open it itself.\n\nLoop-Contract: ${record.contractDigest}`
-  await githubPullRequestCreate(ctx.runner, { repo: ctx.config.project.repo, head: collected.branch, base: ctx.config.project.baseBranch, title, body }, { cwd: root })
+  const body = `${record.issue}${record.url ? ` — ${record.url}` : ''}\n\nOpened by the loop from the branch a ${connector.id} task produced (\`${record.provider}/${record.model}\`); the worker could not push or open it itself.${wip ? '\n\n**Work in progress:** the task ended `incomplete`; this draft carries its WIP commit and a continuation task was dispatched.' : ''}\n\nLoop-Contract: ${record.contractDigest}`
+  if (wip) await githubEnsureLabels(ctx.runner, { repo: ctx.config.project.repo, labels: [WIP_LABEL] }, { cwd: root })
+  await githubPullRequestCreate(ctx.runner, { repo: ctx.config.project.repo, head: collected.branch, base: ctx.config.project.baseBranch, title, body, ...(wip ? { draft: true, labels: [WIP_LABEL] } : {}) }, { cwd: root })
   const [pr] = await githubPullRequestsForBranch(ctx.runner, { repo: ctx.config.project.repo, head: collected.branch })
   // The collected tip and base are what the definition of done is judged on in later passes.
-  writeJsonAtomic(dispatchRecordPath(ctx.loaded.stateDir, record.issue), { ...record, branch: collected.branch, ...(collected.head ? { collected: { head: stripped?.head ?? collected.head,...(collected.base ? { base: collected.base } : {}) } } : {}) })
+  const delivered: DispatchRecordFile = { ...record, branch: collected.branch, ...(collected.head ? { collected: { head: stripped?.head ?? collected.head, ...(collected.base ? { base: collected.base } : {}) } } : {}) }
+  writeJsonAtomic(dispatchRecordPath(ctx.loaded.stateDir, record.issue), delivered)
   if (!pr) return { issue: record.issue, outcome: 'waiting', reason: `PR created from ${collected.branch}; not listed yet`, actions }
-  actions.push(`opened PR #${pr.number}`)
+  actions.push(`opened ${wip ? 'draft ' : ''}PR #${pr.number}`)
+  if (wip) {
+    const continued = await startFleetFix(ctx, delivered, pr.headSha, 'continuation', `Loop: the previous task on this issue ended incomplete; its WIP commit is the starting point of this branch. Continue the work from where it stopped, finish every outcome of the contract (digest \`${record.contractDigest.slice(0, 12)}\`), run the verification, and commit.`, state.fixRounds, actions)
+    return { issue: record.issue, outcome: 'waiting', reason: `draft PR #${pr.number} (${WIP_LABEL}) opened from the incomplete task's WIP commit; ${continued ? 'continuation dispatched' : 'continuation could not be dispatched'}`, pr: pr.number, head: pr.headSha, actions }
+  }
   return { issue: record.issue, outcome: 'waiting', reason: `PR #${pr.number} opened from the collected branch ${collected.branch}; review starts next pass`, pr: pr.number, head: pr.headSha, actions }
+}
+
+/**
+ * A fix (conflict/CI/review) or continuation for a fleet PR is a new fleet task cut from the PR branch: a queued task
+ * cannot be messaged. Its result is collected by `handleFleetFix` on a later pass. False when the fleet refused it.
+ */
+const startFleetFix = async (ctx: Context, record: DispatchRecordFile, head: string, kind: NonNullable<DispatchRecordFile['fleetFix']>['kind'], text: string, roundsBefore: number, actions: string[]): Promise<boolean> => {
+  if (ctx.dryRun) { actions.push(`would submit a fleet ${kind} task from ${record.branch}`); return true }
+  const connector = createRunnerConnector({ loaded: ctx.loaded, runner: ctx.runner })
+  try {
+    const workspace = await connector.createWorkspace({ name: `${record.worktree}-${kind}`, branch: `${record.branch}-${kind}-${ctx.now().getTime().toString(36)}`, baseBranch: record.branch })
+    const terminal = await connector.launchAgent({ workspace, command: ctx.builder?.tui ?? '', title: `loop ${record.issue} ${kind}` })
+    const prompt = `${text}\n\n## Delivery by the queue\n\nThis task runs unattended in the ${connector.id} queue, cut from the pull request branch. Commit your work on branch \`${workspace.branch}\`; do NOT push and do NOT open a pull request — the harness collects the branch and pushes it onto the PR${kind === 'conflict' ? ` (a fast-forward only: resolve the conflict by merging \`origin/${ctx.config.project.baseBranch}\` into the branch, never by rebasing it)` : ''}.`
+    const sent = await connector.send({ terminal, text: prompt })
+    if (!sent.delivered) {
+      try { await connector.removeWorkspace({ id: workspace.id }) } catch { /* the record is only ours */ }
+      actions.push(`${connector.id} did not accept the ${kind} task: ${sent.detail}`)
+      return false
+    }
+    writeDispatchRecord(ctx.loaded.stateDir, { ...record, fleetFix: { workspaceId: workspace.id, kind, head, branch: workspace.branch, at: ctx.now().toISOString(), roundsBefore } })
+    event(ctx, { type: 'worker.fix-dispatched', issue: record.issue, kind, head, workspaceId: workspace.id })
+    actions.push(`submitted a ${connector.id} ${kind} task (${sent.detail})`)
+    return true
+  } catch (error) { actions.push(`${kind} task could not be submitted: ${message(error)}`); return false }
+}
+
+/**
+ * The fix task of an open fleet PR ended badly. An infrastructure failure (no host, install failed, host died, cancelled
+ * by the fleet, a no-op) is retried — up to `MAX_INFRA_FIX_RETRIES` per issue per day, without spending a fix round — and
+ * only a fix task that ran and produced a failing result, or the retries running out, blocks the issue for a person.
+ */
+const fixTaskFailed = async (ctx: Context, record: DispatchRecordFile, lease: DispatchLease | undefined, state: DeliveryState, pr: PullRequestSnapshot, fix: NonNullable<DispatchRecordFile['fleetFix']>, failure: FixFailure, actions: string[]): Promise<DeliverResult> => {
+  const retries = readFixRetries(ctx.loaded.stateDir, record.issue, ctx.now())
+  const retry = failure.infrastructure && retries.length < MAX_INFRA_FIX_RETRIES
+  if (!ctx.dryRun) {
+    const { fleetFix: _done, ...rest } = record
+    writeDispatchRecord(ctx.loaded.stateDir, rest)
+    try { await createRunnerConnector({ loaded: ctx.loaded, runner: ctx.runner }).removeWorkspace({ id: fix.workspaceId }) } catch (error) { actions.push(`fleet workspace cleanup failed (kept): ${message(error)}`) }
+  }
+  if (retry) {
+    if (!ctx.dryRun) {
+      recordFixRetry(ctx.loaded.stateDir, record.issue, ctx.now(), failure.reason)
+      saveState(ctx, { ...state, fixRounds: fix.roundsBefore, nudges: state.nudges.filter((nudge) => !(nudge.kind === fix.kind && nudge.head === fix.head)) })
+      event(ctx, { type: 'worker.fix-retried', issue: record.issue, kind: fix.kind, reason: failure.reason, retry: retries.length + 1 })
+    }
+    actions.push(`${fix.kind} task failed for infrastructure (${failure.reason}); retrying (${retries.length + 1}/${MAX_INFRA_FIX_RETRIES} today)`)
+    return { issue: record.issue, outcome: ctx.dryRun ? 'dry-run' : 'waiting', reason: `${fix.kind} task failed for infrastructure (${failure.reason}); retry ${retries.length + 1}/${MAX_INFRA_FIX_RETRIES} today`, pr: pr.number, head: pr.headSha, actions }
+  }
+  const why = failure.infrastructure ? `the ${fix.kind} task failed for infrastructure (${failure.reason}) again after ${retries.length} retries today` : `the ${fix.kind} task itself failed: ${failure.reason}`
+  return blockAfterRounds(ctx, record, lease, state, pr, why, actions)
+}
+
+/** The fleet fix or continuation task of an open PR: wait for it, push what it made onto the PR branch, or settle its failure. */
+const handleFleetFix = async (ctx: Context, record: DispatchRecordFile, lease: DispatchLease | undefined, state: DeliveryState, pr: PullRequestSnapshot, fix: NonNullable<DispatchRecordFile['fleetFix']>): Promise<DeliverResult> => {
+  const actions: string[] = []
+  const waiting = (reason: string): DeliverResult => ({ issue: record.issue, outcome: 'waiting', reason, pr: pr.number, head: pr.headSha, actions })
+  const connector = createRunnerConnector({ loaded: ctx.loaded, runner: ctx.runner })
+  const task = (await connector.observeWorkspaces()).find((item) => item.id === fix.workspaceId)?.state ?? 'unknown'
+  if (task === 'queued' || task === 'running' || task === 'unknown') return waiting(`fleet ${fix.kind} task ${task === 'unknown' ? 'not reported by the queue yet' : task}`)
+  if (ctx.dryRun) return waiting(`fleet ${fix.kind} task ${task}; would collect it`)
+  const tail = async (): Promise<string> => { try { return await connector.readScreen({ terminal: fix.workspaceId, lines: 40 }) } catch { return '' } }
+  if (task !== 'done') return fixTaskFailed(ctx, record, lease, state, pr, fix, classifyFixFailure(task, await tail(), false), actions)
+  const collect = connector.collect?.bind(connector) ?? fail(`runner "${connector.id}" cannot collect a finished task.`, 'HARNESS_ERROR')
+  const collected = await collect({ id: fix.workspaceId })
+  actions.push(collected.detail)
+  if (collected.branch === null) return fixTaskFailed(ctx, record, lease, state, pr, fix, classifyFixFailure(task, await tail(), true), actions)
+  const root = ctx.loaded.root
+  const stripped = await stripHandoff({ runner: ctx.runner, root, stateDir: ctx.loaded.stateDir, issue: record.issue, rev: `refs/heads/${collected.branch}` })
+  if (stripped) {
+    const moved = await ctx.runner.run(['git', '-C', root, 'update-ref', `refs/heads/${collected.branch}`, stripped.head], { timeoutMs: 30_000 })
+    if (moved.code !== 0) fail(`could not move ${collected.branch} to the commit that removes .ak-loop/: ${(moved.stderr || moved.stdout).trim().slice(0, 300)}`, 'HARNESS_ERROR')
+  }
+  const pushed = await ctx.runner.run(['git', 'push', 'origin', `refs/heads/${collected.branch}:refs/heads/${record.branch}`], { cwd: root, timeoutMs: 120_000 })
+  if (pushed.timedOut || pushed.code !== 0) fail(`git push of ${collected.branch} onto ${record.branch} failed: ${(pushed.stderr || pushed.stdout).trim().slice(0, 300) || `exit ${pushed.code ?? 'null'}`}`, 'HARNESS_ERROR')
+  actions.push(`pushed ${collected.branch} onto ${record.branch}`)
+  const { fleetFix: _done, ...rest } = record
+  writeDispatchRecord(ctx.loaded.stateDir, { ...rest, ...(collected.head ? { collected: { head: stripped?.head ?? collected.head, ...(record.collected?.base ? { base: record.collected.base } : collected.base ? { base: collected.base } : {}) } } : {}) })
+  try { await connector.removeWorkspace({ id: fix.workspaceId }) } catch (error) { actions.push(`fleet workspace cleanup failed (kept): ${message(error)}`) }
+  if (fix.kind === 'continuation') {
+    try {
+      await githubLabelRemove(ctx.runner, { repo: ctx.config.project.repo, number: pr.number, label: WIP_LABEL }, { cwd: root })
+      await ctx.runner.run(['gh', 'pr', 'ready', String(pr.number), '--repo', ctx.config.project.repo], { cwd: root, timeoutMs: 30_000 })
+      actions.push(`PR #${pr.number} marked ready; ${WIP_LABEL} removed`)
+    } catch (error) { actions.push(`could not clear ${WIP_LABEL} on PR #${pr.number}: ${message(error)}`) }
+  }
+  event(ctx, { type: 'worker.fix-collected', issue: record.issue, kind: fix.kind, pr: pr.number })
+  return waiting(`${fix.kind} task collected and pushed onto ${record.branch}; review starts next pass`)
+}
+
+/**
+ * Every `loop:in-progress` issue must have a live fleet task behind it. One whose dispatch ended without a PR and whose
+ * task is gone (a collect that failed three times, a tracker write that never landed) is reclaimed through the stuck
+ * path, so it returns to Todo instead of sitting in-progress forever. Fails closed: when the tracker or the fleet queue
+ * cannot be read, nothing is reclaimed — a task not yet visible is not an orphan.
+ */
+const reclaimOrphans = async (ctx: Context, leases: ReadonlyMap<string, DispatchLease>, results: DeliverResult[]): Promise<void> => {
+  if (ctx.config.connectors.runner !== 'fleet' || !ctx.tracker.inProgressIssues) return
+  let issues: readonly string[]
+  let observed: Awaited<ReturnType<RunnerConnector['observeWorkspaces']>>
+  try {
+    issues = await ctx.tracker.inProgressIssues()
+    observed = await createRunnerConnector({ loaded: ctx.loaded, runner: ctx.runner }).observeWorkspaces()
+  } catch (error) { ctx.notes.push(`in-progress reconcile skipped (fail closed): ${message(error)}`); return }
+  const records = new Map(listDispatched(ctx.loaded.stateDir).map((record) => [record.issue, record]))
+  for (const issue of issues) {
+    const record = records.get(issue)
+    if (!record || record.runner !== 'fleet' || leases.has(issue) || results.some((result) => result.issue === issue)) continue
+    const state = readDeliveryState(ctx.loaded.stateDir, issue)
+    // Only an attempt that ended with no PR behind it; anything else is the regular pass's (or a person's) to settle.
+    if (!state.finishedAt || state.prNumber !== null || !['failed', 'stuck', 'restarted'].includes(state.finalOutcome ?? '')) continue
+    const task = observed.find((item) => item.id === record.worktreeId)?.state
+    if (task === 'queued' || task === 'running' || task === 'unknown') continue
+    const actions = [`${issue} is ${ctx.config.github.issues.labels.inProgress} with no live fleet task (${task ?? 'none recorded'})`]
+    results.push(await workerStuck(ctx, record, undefined, state, `orphaned in-progress: no live fleet task after ${state.finalOutcome}`, 'the issue was in progress with no live fleet task behind it.', actions))
+  }
 }
 
 const handleNoPullRequest = async (ctx: Context, record: DispatchRecordFile, lease: DispatchLease | undefined, state: DeliveryState): Promise<DeliverResult> => {
@@ -1041,7 +1180,7 @@ const fixRound = async (ctx: Context, record: DispatchRecordFile, lease: Dispatc
   // The worker already has its brief; the round points back at it by digest instead of re-sending what it holds.
   // Delta, not repetition — and the anchor is what lets a worker that lost the thread find it again.
   const anchor = record.briefDigest ? `\n\nContext: contract \`${record.contractDigest.slice(0, 12)}\` · brief \`${record.briefDigest.slice(0, 12)}\`${record.skills?.length ? ` · pinned skills: ${record.skills.map((skill) => `\`${skill.path}\``).join(', ')} — re-read them in the worktree, they are unchanged for this run` : ''}.` : ''
-  const sent = await sendToWorker(ctx, record, `${text}${anchor}`, actions)
+  const sent = record.runner === 'fleet' ? await startFleetFix(ctx, record, pr.headSha, kind, `${text}${anchor}`, state.fixRounds, actions) : await sendToWorker(ctx, record, `${text}${anchor}`, actions)
   const next: DeliveryState = { ...state, prNumber: pr.number, fixRounds: sent && counts ? state.fixRounds + 1 : state.fixRounds, nudges: sent ? [...state.nudges, { kind, at: ctx.now().toISOString(), head: pr.headSha }] : state.nudges }
   saveState(ctx, next)
   if (sent) event(ctx, { type: `worker.${kind}-round`, issue: record.issue, pr: pr.number, head: pr.headSha, round: next.fixRounds })
@@ -1740,6 +1879,8 @@ export const runDeliver = async (input: DeliverInput): Promise<DeliverReport> =>
       const pr = open[0]
       if (pr) {
         seenHead = pr.headSha
+        // A fleet fix or continuation task is running or waiting to be collected: the PR is not judged until its result is in.
+        if (record.runner === 'fleet' && record.fleetFix && !state.finishedAt) { results.push(await handleFleetFix(ctx, record, lease, state, pr, record.fleetFix)); continue }
         const wasFinished = Boolean(state.finishedAt)
         state = await reopenFinishedIssue(ctx, record, state, pr)
         if (wasFinished && state.finishedAt) continue
@@ -1803,6 +1944,8 @@ export const runDeliver = async (input: DeliverInput): Promise<DeliverReport> =>
       if (!threw && (state.consecutiveErrors ?? 0) > 0) saveState(ctx, { ...readDeliveryState(loaded.stateDir, record.issue), consecutiveErrors: 0 })
     }
   }
+
+  if (!onlyIssue) await reclaimOrphans(ctx, leases, results)
 
   // Worker terminals of finished, orphaned or idle-waiting issues: re-read, since this pass may have relaunched one.
   // Orca's terminals only: a fleet task has none, and under `fleet` Orca is not asked at all.

@@ -81,6 +81,10 @@ export const LOOP_EVENT_TYPES = {
   'worker.lost-tracking': ['issue', 'evidence', 'worktreeId'],
   /** The lost run was aborted (terminal, worktree, lease cleared) and a fresh attempt queued; `restarts` counts them. */
   'worker.restarted': ['issue', 'attempt', 'restarts', 'reason'],
+  'worker.stuck-counted': ['issue', 'count', 'reason', 'blocked'],
+  'worker.fix-dispatched': ['issue', 'kind', 'head', 'workspaceId'],
+  'worker.fix-retried': ['issue', 'kind', 'reason', 'retry'],
+  'worker.fix-collected': ['issue', 'kind', 'pr'],
   /** The pull request was closed without merging, or the branch disappeared. */
   'worker.abandoned': ['issue', 'reason', 'worktreeId'],
   /** The delivery pass itself failed - a tool, a credential, an unexpected state. */

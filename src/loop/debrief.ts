@@ -61,10 +61,31 @@ export interface DebriefReport {
   readonly inFlight: readonly DebriefIssueRow[]
   readonly held: readonly DebriefIssueRow[]
   readonly recentEscalations: readonly { readonly issue: string; readonly at: string; readonly reason: string }[]
+  /** Anomalies: issues in one loop state for more than `STALE_STATE_MIN` with no event of their own since. */
+  readonly staleStates: readonly StaleState[]
   readonly cooldowns: readonly { readonly provider: string; readonly reason: string; readonly until: string }[]
   readonly recentEvents: readonly { readonly at: string; readonly type: string; readonly issue: string | null }[]
   readonly headline: string
 }
+
+export interface StaleState { readonly issue: string; readonly phase: string; readonly idleMin: number }
+
+/** An issue that sat in one loop state this long without an event is stuck somewhere no other check looks. */
+export const STALE_STATE_MIN = 120
+
+/**
+ * Unfinished issues whose state is older than `STALE_STATE_MIN`: the quiet time is counted from the later of the phase
+ * start and the issue's last event, so an issue that keeps logging events is never stale. Pure; callers pass the events
+ * they already read for their own window (windowed: nothing here reads the log).
+ */
+export const staleStates = (rows: readonly Pick<DebriefIssueRow, 'issue' | 'phase' | 'phaseAgeMin' | 'finalOutcome'>[], events: readonly LoopEvent[], now: Date): readonly StaleState[] =>
+  rows.flatMap((row) => {
+    if (row.finalOutcome || row.phase === 'escalated' || row.phaseAgeMin === null) return []
+    const last = events.filter((event) => event.issue === row.issue).map((event) => Date.parse(event.at)).filter(Number.isFinite).reduce((max, at) => Math.max(max, at), Number.NEGATIVE_INFINITY)
+    const sinceEvent = Number.isFinite(last) ? Math.max(0, Math.round((now.getTime() - last) / 60_000)) : Number.POSITIVE_INFINITY
+    const idleMin = Math.min(row.phaseAgeMin, sinceEvent)
+    return idleMin > STALE_STATE_MIN ? [{ issue: row.issue, phase: row.phase, idleMin }] : []
+  })
 
 const minutesBetween = (later: Date, earlier: string | null): number | null => {
   if (!earlier) return null
@@ -252,6 +273,8 @@ export const buildDebriefReport = (input: DebriefInput): DebriefReport => {
     inFlight,
     held,
     recentEscalations,
+    // Its own window, whatever `--since` says: an event just inside the threshold must be seen to clear an issue.
+    staleStates: staleStates(inFlight, readLoopEvents(stateDir, now.getTime() - (STALE_STATE_MIN + 5) * 60_000), now),
     cooldowns,
     recentEvents,
     headline,
@@ -291,6 +314,11 @@ export const renderDebriefMarkdown = (report: DebriefReport): string => {
     for (const row of report.held) {
       lines.push(`- **${row.issue}**: ${row.summary}${row.prUrl ? ` (${row.prUrl})` : ''}`)
     }
+    lines.push('')
+  }
+  if (report.staleStates.length) {
+    lines.push('## Anomalies', '')
+    for (const item of report.staleStates) lines.push(`- **${item.issue}**: in \`${item.phase}\` for ${item.idleMin} min without an event (threshold ${STALE_STATE_MIN} min)`)
     lines.push('')
   }
   if (report.cooldowns.length) {

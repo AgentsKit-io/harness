@@ -123,5 +123,30 @@ export const restartsPath = (stateDir: string, issue: string): string => join(st
 export const readRestarts = (stateDir: string, issue: string): readonly string[] =>
   readJsonFile(restartsPath(stateDir, issue), z.object({ at: z.array(z.string()) }))?.at ?? []
 
+/** How many stuck dispatches (and infrastructure fix retries) one issue may spend inside `DAY_MS` before it is a real block. */
+export const MAX_STUCK_DISPATCHES = 3
+export const MAX_INFRA_FIX_RETRIES = 3
+const DAY_MS = 24 * 60 * 60_000
+
+export interface DatedReason { readonly at: string; readonly reason: string }
+const datedLogPath = (stateDir: string, issue: string, file: string): string => join(stateDir, 'issues', issue, file)
+
+/** windowed: only the entries of the last 24 h are ever read or written back, so the file cannot grow without bound. */
+const readDatedLog = (stateDir: string, issue: string, file: string, now: Date): readonly DatedReason[] =>
+  (readJsonFile(datedLogPath(stateDir, issue, file), z.object({ entries: z.array(z.object({ at: z.string(), reason: z.string() })) }))?.entries ?? []).filter((entry) => now.getTime() - Date.parse(entry.at) < DAY_MS)
+
+const appendDatedLog = (stateDir: string, issue: string, file: string, now: Date, reason: string): readonly DatedReason[] => {
+  const entries = [...readDatedLog(stateDir, issue, file, now), { at: now.toISOString(), reason }]
+  writeJsonAtomic(datedLogPath(stateDir, issue, file), { entries })
+  return entries
+}
+
+/** Stuck dispatches of this issue in the last 24 h (`stuck.json`); survives a redispatch like `restarts.json`. */
+export const readStuck = (stateDir: string, issue: string, now: Date): readonly DatedReason[] => readDatedLog(stateDir, issue, 'stuck.json', now)
+export const recordStuck = (stateDir: string, issue: string, now: Date, reason: string): readonly DatedReason[] => appendDatedLog(stateDir, issue, 'stuck.json', now, reason)
+/** Fix rounds retried after an infrastructure failure in the last 24 h (`fix-retries.json`). */
+export const readFixRetries = (stateDir: string, issue: string, now: Date): readonly DatedReason[] => readDatedLog(stateDir, issue, 'fix-retries.json', now)
+export const recordFixRetry = (stateDir: string, issue: string, now: Date, reason: string): readonly DatedReason[] => appendDatedLog(stateDir, issue, 'fix-retries.json', now, reason)
+
 /** A person's Retry starts the restart budget over: the cap counts automatic restarts since a human last looked. */
 export const clearRestarts = (stateDir: string, issue: string): void => rmSync(restartsPath(stateDir, issue), { force: true })

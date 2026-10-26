@@ -16,6 +16,11 @@ type FleetRecord = Readonly<z.infer<typeof FleetRecordSchema>>
 const Sha = z.string().regex(/^[0-9a-f]{7,64}$/i)
 const FleetCollectSchema = z.object({ ref: z.string().min(1), headSha: Sha, commits: z.number().int().min(0), baseSha: Sha.optional() })
 
+/** `fleet collect` saying (on stderr or stdout) that the task kept no commit. */
+const NO_COMMIT = /\bno commits?\b/i
+/** Fleet >= #232 reports a task that stopped short of its goal as `incomplete`, keeping a WIP commit when it had one. */
+const isIncomplete = (raw: unknown): boolean => typeof raw === 'object' && raw !== null && ((raw as { incomplete?: unknown }).incomplete === true || [(raw as { outcome?: unknown }).outcome, (raw as { status?: unknown }).status].includes('incomplete'))
+
 /** A ref name git accepts and a person can read: no `#`, spaces or other ref-hostile characters (`o/r#3` → `o/r-3`). */
 export const safeFleetBranch = (branch: string): string => {
   const cleaned = branch.replaceAll(/[^A-Za-z0-9._/-]+/g, '-').replaceAll(/\/{2,}/g, '/').replaceAll(/\.{2,}/g, '.').replaceAll(/(^[/.-]+)|([/.-]+$)/g, '').replaceAll(/\.lock(?=\/|$)/g, '-lock')
@@ -200,19 +205,28 @@ export const createFleetRunner = ({ loaded, runner }: RunnerInput): RunnerConnec
       const row = (await queue()).find((item) => item.id === queueId)
       const taskId = row?.hostTaskId ?? queueId
       const result = await run(['collect', taskId, '--json'])
-      if (result.code !== 0) fail(`fleet collect ${taskId} failed: ${result.stderr.trim() || `exit ${result.code ?? 'null'}`}`, 'HARNESS_ERROR')
+      // "No commit" is the task's outcome, not a transport error: nothing to deliver, and the caller decides what that means.
+      if (result.code !== 0) {
+        if (NO_COMMIT.test(`${result.stderr}\n${result.stdout}`)) return { branch: null, detail: `fleet collect ${taskId}: the task made no commit; there is nothing to deliver.` }
+        fail(`fleet collect ${taskId} failed: ${result.stderr.trim() || `exit ${result.code ?? 'null'}`}`, 'HARNESS_ERROR')
+      }
       let raw: unknown
       try { raw = JSON.parse(result.stdout) } catch { fail(`fleet collect ${taskId} --json did not print JSON.`, 'HARNESS_ERROR') }
+      const incomplete = isIncomplete(raw)
       const parsed = FleetCollectSchema.safeParse(raw)
-      if (!parsed.success) return fail(`fleet collect ${taskId} --json: unexpected shape (${parsed.error.issues[0]?.message ?? 'invalid'}).`, 'HARNESS_ERROR')
+      if (!parsed.success) {
+        // A task that ended `done` with no commit prints an empty ref: terminal, not a malformed answer.
+        if (typeof raw === 'object' && raw !== null && !text((raw as { ref?: unknown }).ref)) return { branch: null, detail: `fleet collect ${taskId}: empty ref; the task kept no commit and there is nothing to deliver.`, ...(incomplete ? { incomplete } : {}) }
+        return fail(`fleet collect ${taskId} --json: unexpected shape (${parsed.error.issues[0]?.message ?? 'invalid'}).`, 'HARNESS_ERROR')
+      }
       const { ref, headSha: head, baseSha: base, commits } = parsed.data
-      if (commits === 0) return { branch: null, detail: `fleet collect ${taskId}: the task made no commits; there is nothing to deliver.` }
+      if (commits === 0) return { branch: null, detail: `fleet collect ${taskId}: the task made no commits; there is nothing to deliver.`, ...(incomplete ? { incomplete } : {}) }
       const git = (args: readonly string[]) => runner.run(['git', '-C', loaded.root, ...args], { timeoutMs: 15_000 })
       const reachable = await git(['merge-base', '--is-ancestor', head, ref])
       if (reachable.code !== 0) fail(`fleet collect ${taskId}: head ${head} is not reachable from ${ref} in the local clone.`, 'HARNESS_ERROR')
       const moved = await git(['branch', '-f', entry.branch, head])
       if (moved.code !== 0) fail(`git branch -f ${entry.branch} ${head} failed: ${moved.stderr.trim() || `exit ${moved.code ?? 'null'}`}`, 'HARNESS_ERROR')
-      return { branch: entry.branch, detail: `collected ${taskId} (${commits} commit${commits === 1 ? '' : 's'}) → ${entry.branch} at ${head.slice(0, 12)}`, head, ...(base ? { base } : {}) }
+      return { branch: entry.branch, detail: `collected ${taskId} (${commits} commit${commits === 1 ? '' : 's'}) → ${entry.branch} at ${head.slice(0, 12)}`, head, ...(base ? { base } : {}), ...(incomplete ? { incomplete } : {}) }
     },
     schedule: async () => ['the fleet coordinator owns scheduling'],
     // ponytail: a pull request is the SCM's to report, so `pullRequest` is always null; only the task state is the fleet's.

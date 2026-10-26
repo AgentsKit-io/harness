@@ -3,8 +3,10 @@ import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync
 import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
-import { approveHeldDelivery, atLeast, buildReviewArgv, createDispatchLedger, createHitlStore, dispatchRecordPath, listDispatched, loadLoopConfig, parseReviewResult, precheckDeliver, readDeliveryState, renderFindingsForWorker, runCodeReview, runDeliver, createIssueQueue } from '../src/index.js'
-import type { CommandResult, CommandRunner, DispatchRecordFile, StoredContract } from '../src/index.js'
+import { assessObservability, buildDebriefReport, CONTRACT_CLOSE, CONTRACT_OPEN, readDispatchRecord, runTick, approveHeldDelivery, atLeast, buildReviewArgv, createDispatchLedger, createHitlStore, dispatchRecordPath, listDispatched, loadLoopConfig, parseReviewResult, precheckDeliver, readDeliveryState, renderFindingsForWorker, runCodeReview, runDeliver, createIssueQueue } from '../src/index.js'
+import type { CommandResult, CommandRunner, DispatchRecordFile, StoredContract, TaskContract } from '../src/index.js'
+import { readFixRetries, readStuck } from '../src/loop/deliver-state.js'
+import { staleStates } from '../src/loop/debrief.js'
 import { renderSpec, writeSpec } from '../src/loop/spec.js'
 import { readAgentRunReport } from '../src/loop/agent-runs.js'
 import { activeTrackerCooldown, isTrackerRateLimit, markTrackerRateLimited } from '../src/loop/tracker-cooldown.js'
@@ -1801,5 +1803,276 @@ describe('deliver closes worker terminals (2026-10-16: 48 idle sessions stalled 
     const env = setup({ pr: basePr(redCi), terminals: [{ handle: 'term_w', connected: true, orphaned: false, worktreeId: 'repo-1::/w/eng-10-demo', worktreePath: '/w/eng-10-demo', lastOutputAt: Date.parse('2026-09-11T09:00:00.000Z') }] })
     expect((await deliver(env)).results[0]).toMatchObject({ outcome: 'fix-round' })
     expect(closes(env)).toEqual([])
+  })
+})
+
+// --- no dead states (#235): GitHub tracker + fleet runner, with a fake tracker (gh) and a fake fleet --------------------------------------
+const FLEET_REPO = 'my-org/my-project'
+const plain = (stdout = '', code = 0, stderr = ''): CommandResult => ({ code, stdout, stderr, timedOut: false, durationMs: 1 })
+const fleetContract: TaskContract = { intent: 'Add the demo binding', scope: { inScope: ['binding'], outOfScope: ['ui'] }, outcomes: [{ id: 'o1', description: 'tests pass', check: { kind: 'test', command: 'pnpm --filter demo test' } }], ambiguities: [], touchpoints: ['packages/demo'], risks: [] }
+const T0 = new Date('2026-10-20T12:00:00.000Z')
+const hoursAfter = (hours: number): Date => new Date(T0.getTime() + hours * 3_600_000)
+
+const makeFleet = () => {
+  const dir = mkdtempSync(join(tmpdir(), 'agentskit-fleet-deliver-')); cleanups.push(dir)
+  const bin = mkdtempSync(join(tmpdir(), 'agentskit-fleet-deliver-bin-')); cleanups.push(bin)
+  for (const name of ['claude', 'codex', 'opencode', 'grok']) writeFileSync(join(bin, name), '#!/bin/sh\nexit 0\n', { mode: 0o755 })
+  const yaml = exampleYaml.replace(/\r\n/g, '\n').replace('my-linear-display-name: <linear-user-id>', 'person: user-id-1').replace('# connectors:\n#   tracker: linear', 'connectors:\n  tracker: github').replace('  queueOwnership: person ', '  queueOwnership: unassigned ')
+  writeFileSync(join(dir, 'loop.config.yaml'), yaml)
+  writeFileSync(join(dir, 'loop.config.local.yaml'), `connectors:\n  runner: fleet\n  fleet:\n    project: ${FLEET_REPO}\n`)
+  const configPath = join(dir, 'loop.config.yaml')
+  const loaded = () => loadLoopConfig(configPath, { AK_HARNESS_NO_GLOBAL: '1' })
+  const lifecycle = loaded().config.github.issues.labels
+  const issue = `${FLEET_REPO}#1`
+  const labels = new Set<string>([lifecycle.todo])
+  const comments: string[] = []
+  const tasks = new Map<string, string>()
+  const collects = new Map<string, CommandResult>()
+  const tails = new Map<string, string>()
+  const prs: Record<string, unknown>[] = []
+  const calls: string[][] = []
+  const flags = { queueDown: false }
+  const issueJson = () => ({ number: 1, url: `https://github.com/${FLEET_REPO}/issues/1`, title: 'Demo issue', state: 'OPEN', labels: [...labels].map((name) => ({ name })), assignees: [], createdAt: '2026-10-20T10:00:00Z', updatedAt: '2026-10-20T10:00:00Z' })
+  const flag = (argv: readonly string[], name: string): string[] => argv.flatMap((arg, index) => arg === name ? [argv[index + 1] ?? ''] : [])
+  let submits = 0
+  const runner: CommandRunner = {
+    run: async (argv) => {
+      calls.push([...argv])
+      const [bin0, verb, sub] = argv
+      if (bin0 === 'orca') return plain('', 127, 'orca: not installed')
+      if (bin0 === 'fleet') {
+        if (verb === 'submit') { submits += 1; const id = `q-000${submits}`; tasks.set(id, 'running'); return plain(`submitted ${id}\n`) }
+        if (verb === 'queue') return flags.queueDown ? plain('', 1, 'coordinator unreachable') : plain(JSON.stringify([...tasks].map(([id, state]) => ({ id, state, hostTaskId: `ht-${id}` }))))
+        if (verb === 'tail') return plain(tails.get(sub ?? '') ?? '')
+        if (verb === 'collect') return collects.get(sub ?? '') ?? plain(JSON.stringify({ ref: 'refs/remotes/fleet/h1/task', headSha: 'a1b2c3d4e5f6', baseSha: 'b0b0b0b', commits: 1 }))
+        if (verb === 'doctor' && sub === '--help') return plain('Usage: fleet doctor [--json]\n')
+        if (verb === 'doctor') return plain(JSON.stringify({ status: 'ok', checks: [{ id: 'coordinator', ok: true }, { id: 'hosts', ok: true }] }))
+        return plain()
+      }
+      if (bin0 === 'gh') {
+        if (verb === 'api' && sub === 'user') return plain(JSON.stringify({ login: 'person' }))
+        if (verb === 'api') return plain('')
+        if (verb === 'auth') return plain('token\n')
+        if (verb === 'label') return plain('[]')
+        if (verb === 'issue' && sub === 'list') return plain(JSON.stringify([issueJson()]))
+        if (verb === 'issue' && sub === 'view') return plain(JSON.stringify({ ...issueJson(), body: 'Add the binding.\n\n## Acceptance\n- tests pass', comments: [] }))
+        if (verb === 'issue' && sub === 'comment') { comments.push(flag(argv, '--body')[0] ?? ''); return plain() }
+        if (verb === 'issue' && sub === 'edit') { for (const label of flag(argv, '--remove-label')) labels.delete(label); for (const label of flag(argv, '--add-label')) labels.add(label); return plain() }
+        if (verb === 'pr' && sub === 'create') { prs.push({ number: 7, url: `https://github.com/${FLEET_REPO}/pull/7`, title: flag(argv, '--title')[0], state: 'OPEN', isDraft: argv.includes('--draft'), headRefName: flag(argv, '--head')[0], headRefOid: 'abc123', baseRefName: 'main', mergeable: 'MERGEABLE', mergeStateStatus: 'CLEAN', labels: flag(argv, '--label').map((name) => ({ name })), files: [], statusCheckRollup: [], updatedAt: '2026-10-20T11:00:00Z' }); return plain(`https://github.com/${FLEET_REPO}/pull/7\n`) }
+        if (verb === 'pr' && sub === 'list') return plain(JSON.stringify(prs))
+        return plain()
+      }
+      if (bin0 === 'claude' && verb === '-p') return plain(`thinking…\n${CONTRACT_OPEN}\n${JSON.stringify(fleetContract)}\n${CONTRACT_CLOSE}\n`)
+      if (bin0 === 'git') return plain(verb === 'rev-parse' ? 'basesha\n' : '')
+      return plain('', 127, `no fixture for ${argv.join(' ')}`)
+    },
+  }
+  const machine = { sample: { at: '2026-10-20T12:00:00.000Z', cpus: 10, load1: 1, load1PerCpuPercent: 10, memoryUsedPercent: 40, rssBytes: 1 }, freeBytes: 20 * 1024 ** 3, totalBytes: 32 * 1024 ** 3 }
+  const base = (now: Date = T0) => ({ configPath, runner, env: { PATH: bin, XAI_API_KEY: 'k', AK_HARNESS_NO_GLOBAL: '1' }, platform: 'linux' as const, now: () => now, machine })
+  const latest = (state: string): void => { tasks.set(`q-000${submits}`, state) }
+  return {
+    issue, lifecycle, labels, comments, tasks, collects, tails, prs, calls, flags, latest, loaded,
+    dispatch: (now: Date = T0) => runTick({ ...base(now), maxDispatch: 1 }),
+    deliver: (now: Date = T0) => runDeliver(base(now)),
+    submits: () => calls.filter((argv) => argv[0] === 'fleet' && argv[1] === 'submit'),
+    record: () => readDispatchRecord(loaded().stateDir, issue),
+    /** The lifecycle labels the issue carries now (GitHub keeps exactly one). */
+    lifecycleNow: () => [...labels].filter((label) => Object.values(lifecycle).includes(label)),
+  }
+}
+
+describe('no dead states: a stuck fleet worker goes back to Todo, counted', () => {
+  it('a task that failed before a PR returns the issue to loop:todo (not blocked) and records the stuck dispatch', async () => {
+    const env = makeFleet()
+    await env.dispatch()
+    expect(env.lifecycleNow()).toEqual([env.lifecycle.inProgress])
+    env.latest('failed')
+    const report = await env.deliver(hoursAfter(1))
+    expect(report.results[0]).toMatchObject({ outcome: 'stuck' })
+    expect(env.lifecycleNow()).toEqual([env.lifecycle.todo])
+    expect(env.labels.has(env.lifecycle.blocked)).toBe(false)
+    expect(env.labels.has(env.lifecycle.inProgress)).toBe(false)
+    expect(readStuck(env.loaded().stateDir, env.issue, hoursAfter(1))).toHaveLength(1)
+    expect(env.comments.join('\n')).toContain('stuck dispatch 1/3 in 24 h')
+  })
+
+  it('the 3rd stuck dispatch inside 24 h blocks the issue and lists the 3 reasons; the counter read is time-bounded', async () => {
+    const env = makeFleet()
+    for (const [round, state] of [[0, 'failed'], [1, 'cancelled'], [2, 'failed']] as const) {
+      await env.dispatch(hoursAfter(round * 2))
+      env.latest(state)
+      await env.deliver(hoursAfter(round * 2 + 1))
+      if (round < 2) expect(env.lifecycleNow()).toEqual([env.lifecycle.todo])
+    }
+    expect(env.lifecycleNow()).toEqual([env.lifecycle.blocked])
+    const blockComment = env.comments.find((body) => body.includes('stuck 3 times in 24 h')) ?? ''
+    expect(blockComment).toContain('1. fleet task failed')
+    expect(blockComment).toContain('2. fleet task cancelled')
+    expect(blockComment).toContain('3. fleet task failed')
+    // Stuck dispatches older than 24 h are not read: a day later the issue starts counting from zero.
+    expect(readStuck(env.loaded().stateDir, env.issue, hoursAfter(5))).toHaveLength(3)
+    expect(readStuck(env.loaded().stateDir, env.issue, hoursAfter(40))).toHaveLength(0)
+  })
+})
+
+describe('no dead states: an empty or incomplete collect is a terminal outcome', () => {
+  it.each([
+    ['an empty ref', plain(JSON.stringify({ ref: '', headSha: '', commits: 0 })), /no commits/],
+    ['a "no commit" answer', plain('', 1, 'fleet: no commit to collect for ht-q-0001'), /no commits/],
+    ['an incomplete task that kept no WIP commit', plain(JSON.stringify({ ref: '', outcome: 'incomplete', commits: 0 })), /incomplete with no WIP/],
+  ])('%s goes back to Todo through the worker-stuck path, not a transient error', async (_name, collected, reason) => {
+    const env = makeFleet()
+    await env.dispatch()
+    env.latest('done')
+    env.collects.set('ht-q-0001', collected)
+    const report = await env.deliver(hoursAfter(1))
+    expect(report.results[0]).toMatchObject({ outcome: 'stuck', reason: expect.stringMatching(reason) })
+    expect(env.lifecycleNow()).toEqual([env.lifecycle.todo])
+    const state = readDeliveryState(env.loaded().stateDir, env.issue)
+    expect(state.finalOutcome).toBe('stuck')
+    expect(state.consecutiveErrors ?? 0).toBe(0)
+    expect(readStuck(env.loaded().stateDir, env.issue, hoursAfter(1))).toHaveLength(1)
+  })
+
+  it('an incomplete task with a WIP commit opens a draft PR labelled loop:wip and dispatches a continuation, then clears both when it lands', async () => {
+    const env = makeFleet()
+    await env.dispatch()
+    env.latest('done')
+    env.collects.set('ht-q-0001', plain(JSON.stringify({ ref: 'refs/remotes/fleet/h1/task', headSha: 'a1b2c3d4e5f6', baseSha: 'b0b0b0b', commits: 1, outcome: 'incomplete' })))
+    const first = await env.deliver(hoursAfter(1))
+    expect(first.results[0]).toMatchObject({ outcome: 'waiting', pr: 7, reason: expect.stringContaining('continuation dispatched') })
+    const create = env.calls.find((argv) => argv[0] === 'gh' && argv[1] === 'pr' && argv[2] === 'create') ?? []
+    expect(create).toContain('--draft')
+    expect(create[create.indexOf('--label') + 1]).toBe('loop:wip')
+    expect(env.submits()).toHaveLength(2)
+    const fix = env.record()?.fleetFix
+    expect(fix).toMatchObject({ kind: 'continuation' })
+    // While the continuation runs the draft is not judged.
+    expect((await env.deliver(hoursAfter(2))).results[0]).toMatchObject({ outcome: 'waiting', reason: 'fleet continuation task running' })
+    env.tasks.set('q-0002', 'done')
+    const landed = await env.deliver(hoursAfter(3))
+    expect(landed.results[0]).toMatchObject({ outcome: 'waiting', reason: expect.stringContaining('collected and pushed') })
+    expect(env.calls.some((argv) => argv[0] === 'git' && argv[1] === 'push' && argv[3] === `refs/heads/${fix?.branch}:refs/heads/${env.record()?.branch}`)).toBe(true)
+    expect(env.calls).toContainEqual(['gh', 'pr', 'ready', '7', '--repo', FLEET_REPO])
+    expect(env.calls.some((argv) => argv[0] === 'gh' && argv[1] === 'pr' && argv[2] === 'edit' && argv.includes('--remove-label') && argv.includes('loop:wip'))).toBe(true)
+    expect(env.record()?.fleetFix).toBeUndefined()
+  })
+})
+
+describe('no dead states: every loop:in-progress issue is reconciled against fleet queue', () => {
+  /** A dispatch that finished as `failed` (what 3 transient collect errors used to leave behind) while the tracker still says in-progress. */
+  const failedDispatch = async (env: ReturnType<typeof makeFleet>, taskState: string) => {
+    await env.dispatch()
+    const { stateDir } = env.loaded()
+    writeFileSync(join(stateDir, 'issues', ...env.issue.split('/'), 'delivery.json'), JSON.stringify({ ...readDeliveryState(stateDir, env.issue), finishedAt: T0.toISOString(), finalOutcome: 'failed' }))
+    for (const lease of createDispatchLedger(stateDir).active()) createDispatchLedger(stateDir).release(lease, 'failed')
+    env.latest(taskState)
+  }
+
+  it('reclaims an orphan with no live task: back to Todo, counted', async () => {
+    const env = makeFleet()
+    await failedDispatch(env, 'failed')
+    expect(env.lifecycleNow()).toEqual([env.lifecycle.inProgress])
+    const report = await env.deliver(hoursAfter(1))
+    expect(report.results).toEqual([expect.objectContaining({ issue: env.issue, outcome: 'stuck', reason: expect.stringContaining('orphaned in-progress') })])
+    expect(env.lifecycleNow()).toEqual([env.lifecycle.todo])
+    expect(readStuck(env.loaded().stateDir, env.issue, hoursAfter(1))).toHaveLength(1)
+  })
+
+  it('leaves an in-progress issue alone while the fleet still has a live task for it', async () => {
+    const env = makeFleet()
+    await failedDispatch(env, 'running')
+    const report = await env.deliver(hoursAfter(1))
+    expect(report.results).toEqual([])
+    expect(env.lifecycleNow()).toEqual([env.lifecycle.inProgress])
+  })
+
+  it('fails closed: an unreadable fleet queue reclaims nothing', async () => {
+    const env = makeFleet()
+    await failedDispatch(env, 'failed')
+    env.flags.queueDown = true
+    const report = await env.deliver(hoursAfter(1))
+    expect(report.results).toEqual([])
+    expect(report.notes.join('\n')).toContain('in-progress reconcile skipped (fail closed)')
+    expect(env.lifecycleNow()).toEqual([env.lifecycle.inProgress])
+  })
+})
+
+describe('no dead states: fix rounds retry infrastructure failures and block on a real one', () => {
+  /** An open PR in conflict for the dispatched issue; the first deliver pass submits the fix task. */
+  const conflictingPr = async (env: ReturnType<typeof makeFleet>) => {
+    await env.dispatch()
+    env.prs.push({ number: 7, url: `https://github.com/${FLEET_REPO}/pull/7`, title: 'Demo', state: 'OPEN', isDraft: false, headRefName: env.record()?.branch, headRefOid: 'abc123', baseRefName: 'main', mergeable: 'CONFLICTING', mergeStateStatus: 'DIRTY', labels: [], files: [], statusCheckRollup: [], updatedAt: '2026-10-20T11:00:00Z' })
+    const submitted = await env.deliver(hoursAfter(1))
+    expect(submitted.results[0]).toMatchObject({ outcome: 'fix-round' })
+    expect(env.record()?.fleetFix).toMatchObject({ kind: 'conflict', head: 'abc123' })
+    expect(env.submits()).toHaveLength(2)
+  }
+
+  it('retries a fix task that failed for infrastructure, without blocking or spending a fix round', async () => {
+    const env = makeFleet()
+    await conflictingPr(env)
+    env.latest('failed')
+    env.tails.set('q-0002', '# fleet-tail outcome=failed\nno eligible host could run the variant')
+    const retried = await env.deliver(hoursAfter(2))
+    expect(retried.results[0]).toMatchObject({ outcome: 'waiting', reason: expect.stringContaining('failed for infrastructure (no eligible host)') })
+    expect(readFixRetries(env.loaded().stateDir, env.issue, hoursAfter(2))).toHaveLength(1)
+    expect(env.record()?.fleetFix).toBeUndefined()
+    expect(env.labels.has(env.lifecycle.blocked)).toBe(false)
+    expect(readDeliveryState(env.loaded().stateDir, env.issue)).toMatchObject({ finishedAt: null, nudges: [] })
+    // The next pass sees the same conflict and submits the fix again.
+    expect((await env.deliver(hoursAfter(3))).results[0]).toMatchObject({ outcome: 'fix-round' })
+    expect(env.submits()).toHaveLength(3)
+  })
+
+  it('blocks for a human when the fix task itself produced a failing result', async () => {
+    const env = makeFleet()
+    await conflictingPr(env)
+    env.latest('failed')
+    env.tails.set('q-0002', '# fleet-tail outcome=failed\n12 tests failed after the merge')
+    const blocked = await env.deliver(hoursAfter(2))
+    expect(blocked.results[0]).toMatchObject({ outcome: 'blocked', reason: expect.stringContaining('the conflict task itself failed') })
+    expect(env.lifecycleNow()).toEqual([env.lifecycle.blocked])
+    expect(readFixRetries(env.loaded().stateDir, env.issue, hoursAfter(2))).toHaveLength(0)
+  })
+
+  it('blocks on the 4th infrastructure failure in a day; the retry count is windowed to 24 h', async () => {
+    const env = makeFleet()
+    await conflictingPr(env)
+    const issueDir = join(env.loaded().stateDir, 'issues', ...env.issue.split('/'))
+    writeFileSync(join(issueDir, 'fix-retries.json'), JSON.stringify({ entries: [0, 1, 2].map((hour) => ({ at: hoursAfter(hour).toISOString(), reason: 'host down' })) }))
+    env.latest('cancelled')
+    const blocked = await env.deliver(hoursAfter(4))
+    expect(blocked.results[0]).toMatchObject({ outcome: 'blocked', reason: expect.stringContaining('again after 3 retries today') })
+    expect(env.lifecycleNow()).toEqual([env.lifecycle.blocked])
+    // Retries from 30 h ago no longer count.
+    expect(readFixRetries(env.loaded().stateDir, env.issue, hoursAfter(30))).toHaveLength(0)
+  })
+})
+
+describe('no dead states: stale loop states are anomalies', () => {
+  const now = new Date('2026-10-20T15:00:00.000Z')
+  const rows = [
+    { issue: 'o/r#1', phase: 'waiting-for-pr', phaseAgeMin: 150, finalOutcome: null },
+    { issue: 'o/r#2', phase: 'waiting-for-pr', phaseAgeMin: 90, finalOutcome: null },
+    { issue: 'o/r#3', phase: 'waiting-for-pr', phaseAgeMin: 400, finalOutcome: null },
+  ]
+
+  it('lists an issue in one state past 2 h with no event, and not a younger one or one that keeps logging events', () => {
+    const events = [{ at: '2026-10-20T14:30:00.000Z', type: 'delivery.error', issue: 'o/r#3' }]
+    expect(staleStates(rows, events, now)).toEqual([{ issue: 'o/r#1', phase: 'waiting-for-pr', idleMin: 150 }])
+  })
+
+  it('observe turns each stale state into an action_required anomaly', () => {
+    const report = assessObservability({ generatedAt: now.toISOString(), project: 'p', person: 'x', windowHours: 24, workerIdleTimeoutMin: 1_000_000, queueReady: 0, freeSlots: 0, runningWorkers: 0, maxAgents: 1, activeClaims: 0, missingDeliveryIssues: [], terminals: [], finalizedDirtyWorktrees: [], issues: [], events: [], staleStates: [{ issue: 'o/r#1', phase: 'waiting-for-pr', idleMin: 150 }], merged: 0, blocked: 0, fixRounds: 0, reviewFindings: 0, reviewIncomplete: 0, medianLeadTimeMin: null, providerRemainingPercent: {}, machine: { cpuCount: 1, load1PerCpuPercent: 0, memoryUsedPercent: 0, freeRamGb: 8 }, memory: { recalls: 0, hits: 0, approxCharsSaved: 0 }, cache: { cachedContracts: 0 }, tokens: { input: 0, output: 0, total: 0, cacheRead: 0, cacheWrite: 0 } })
+    expect(report.anomalies).toEqual([expect.objectContaining({ id: 'stale-state', severity: 'action_required', issue: 'o/r#1' })])
+    expect(report.status).toBe('action_required')
+  })
+
+  it('debrief reports a dispatch that has been quiet past 2 h, and not a fresh one', async () => {
+    const env = makeFleet()
+    await env.dispatch()
+    expect(buildDebriefReport({ loaded: env.loaded(), now: () => hoursAfter(1) }).staleStates).toEqual([])
+    expect(buildDebriefReport({ loaded: env.loaded(), now: () => hoursAfter(3) }).staleStates).toEqual([expect.objectContaining({ issue: env.issue, idleMin: 180 })])
   })
 })

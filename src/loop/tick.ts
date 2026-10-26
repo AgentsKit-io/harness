@@ -103,6 +103,8 @@ export interface DispatchRecordFile {
   readonly runner?: 'fleet'
   /** `fleet`: the tip and base `fleet collect --json` reported; the definition of done is judged on `base...head` in a local checkout of `head`. */
   readonly collected?: { readonly head: string; readonly base?: string }
+  /** `fleet`: a fix (conflict/CI/review) or continuation task submitted for the open PR; `deliver` observes it, collects it onto `branch` and pushes. */
+  readonly fleetFix?: { readonly workspaceId: string; readonly kind: 'ci' | 'review' | 'conflict' | 'continuation'; readonly head: string; readonly branch: string; readonly at: string; /** `fixRounds` before the round was counted, restored when the task failed for infrastructure. */ readonly roundsBefore: number }
   /** Builder provider's remaining Orca usage percent at dispatch time (`resilience.maxUsageDeltaPercent` cost guard); `null` when usage was unknown. */
   readonly initialRemainingPercent: number | null
   /**

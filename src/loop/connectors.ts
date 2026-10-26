@@ -34,6 +34,8 @@ export interface TrackerConnector {
   queue(input: { readonly assignee: string | null; readonly ownership?: 'person' | 'unassigned' | 'both'; readonly excludeLabels?: readonly string[] }): Promise<readonly LoopIssue[]>
   /** Issues the last `queue()` read dropped although they carry the todo lifecycle label, each with the filter that dropped it. */
   queueSkips?(): readonly { readonly identifier: string; readonly reason: string }[]
+  /** Identifiers of the open issues in the in-progress lifecycle state, for the orphan reconcile; absent where the tracker cannot list them. */
+  inProgressIssues?(): Promise<readonly string[]>
   issue(identifier: string): Promise<TrackerIssueDetail>
   comment(input: { readonly issue: string; readonly body: string; readonly dedupeKey?: string }): Promise<void>
   addLabels(issue: string, labels: readonly string[]): Promise<void>
@@ -233,6 +235,7 @@ export const createGitHubTracker = (input: ConnectorInput): TrackerConnector => 
       return queue
     },
     queueSkips: () => skips,
+    inProgressIssues: async () => (await githubOpenIssues(runner, { repo, limit: config.github.issues.maxIssues }, options)).filter((issue) => issue.labels.includes(config.github.issues.labels.inProgress)).map((issue) => issue.identifier),
     issue: readDetail,
     comment: async ({ issue, body, dedupeKey }) => {
       const marker = dedupeKey ? `<!-- harness:${dedupeKey} -->` : null
