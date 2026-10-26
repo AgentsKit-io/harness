@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
-  "contentHash": "2a8f5758d6b85c7881af906fc02e19d37765d579b78fe1d3d95dd8ae2511e382",
+  "contentHash": "5e67e22f871c86da849caa8c8354d79ba2b61109af4180827daba6dc9948c758",
   "contentHashAlgo": "sha256-semantic-v1",
-  "generatedAt": "2026-10-26T01:54:50.578Z",
+  "generatedAt": "2026-10-26T17:33:54.745Z",
   "project": {
     "name": "AgentsKit Harness",
     "root": "."
@@ -2130,7 +2130,7 @@
         "ts",
         "adapters"
       ],
-      "contentHash": "c25a4a94f4bae06f2deb76fdd22db8a3e69374fa5815c375888b1f25b331ae0f"
+      "contentHash": "bb827381ac7743ff90cd9ffd66e321cf3b8302da392a8a7c07f39ce5ce7080cc"
     },
     {
       "id": "module:src/adapters/linear-orca.ts",
@@ -4063,7 +4063,7 @@
         "ts",
         "loop"
       ],
-      "contentHash": "0747d7235f12bba40ba0154603d31e5b836be02c1fefb9e6d9cbff57869a7d02"
+      "contentHash": "f83f6000c917945bef5bb3f16f57dff9a667e22d836804e767d7b4fbda866fb5"
     },
     {
       "id": "module:src/loop/contract.ts",
@@ -4135,15 +4135,18 @@
         "DebriefInput",
         "DebriefIssueRow",
         "DebriefReport",
+        "STALE_STATE_MIN",
+        "StaleState",
         "buildDebriefReport",
-        "renderDebriefMarkdown"
+        "renderDebriefMarkdown",
+        "staleStates"
       ],
       "tags": [
         "module",
         "ts",
         "loop"
       ],
-      "contentHash": "b72a6aa79d9e4283e77d5f585e456c8baf1d2adef50b0e6ea5aa43383e847723"
+      "contentHash": "6a19e05a4f3c6ec203a9bde5d06a5c05fdd5d797e75869aa95913c60c9fcc146"
     },
     {
       "id": "module:src/loop/deliver-state.ts",
@@ -4151,17 +4154,24 @@
       "title": "deliver-state.ts",
       "path": "src/loop/deliver-state.ts",
       "symbols": [
+        "DatedReason",
         "DeliverOutcome",
         "DeliveryHandoff",
         "DeliveryState",
+        "MAX_INFRA_FIX_RETRIES",
         "MAX_LOST_TRACKING_RESTARTS",
+        "MAX_STUCK_DISPATCHES",
         "approveHeldDelivery",
         "clearRestarts",
         "deliveryStatePath",
         "listDispatched",
         "markDispatchCancelled",
         "readDeliveryState",
+        "readFixRetries",
         "readRestarts",
+        "readStuck",
+        "recordFixRetry",
+        "recordStuck",
         "restartsPath"
       ],
       "tags": [
@@ -4169,7 +4179,7 @@
         "ts",
         "loop"
       ],
-      "contentHash": "31c0128ae9241ed875a57a9e985da099dd4808a2b721177c7ed1b558f3f832b7"
+      "contentHash": "9ae3a333128bcccafa480e70679cb6e8cc20d216c4e01f9f0676a5cdea76beeb"
     },
     {
       "id": "module:src/loop/deliver.ts",
@@ -4203,7 +4213,7 @@
         "ts",
         "loop"
       ],
-      "contentHash": "0997acb8bb6d5bc1e44b6437dea38054664308690e39bbe0ee45400da58bfbfb"
+      "contentHash": "2f4af8206571acf8b1bb74ee42d221d37da68e7257aadba0fd0bbc57a96dfb6d"
     },
     {
       "id": "module:src/loop/detached-worker.ts",
@@ -4359,7 +4369,7 @@
         "ts",
         "loop"
       ],
-      "contentHash": "0e2b4444fea801809a3c000a39455b4e17630c2a575b7f865b36ba8841cbda3a"
+      "contentHash": "34c8b951bd20a3c338fef423fbcbbbdc2d8c7593448b9d3cf3561f29374ecbd0"
     },
     {
       "id": "module:src/loop/evidence.ts",
@@ -4414,7 +4424,9 @@
       "title": "fleet-fix.ts",
       "path": "src/loop/fleet-fix.ts",
       "symbols": [
+        "FixFailure",
         "FleetFixBriefInput",
+        "classifyFixFailure",
         "conflictingFiles",
         "failedCheckLogs",
         "renderFleetFixBrief"
@@ -4424,7 +4436,7 @@
         "ts",
         "loop"
       ],
-      "contentHash": "f56d71d208174507da6607046fe3ab323603b8864ebfee9c43a261796819b139"
+      "contentHash": "14ed2796a22be800ff76bb31f40d79f354e5e559c5849a2b8cbf824fd5142ef1"
     },
     {
       "id": "module:src/loop/fleet-handoff.ts",
@@ -4459,7 +4471,7 @@
         "ts",
         "loop"
       ],
-      "contentHash": "da7111a89129e8e1ee8e865ca1f919c716186cc020c51a41350508df6831843c"
+      "contentHash": "07e0e319f6b6b81f7f51cb37395802156ee6e79ea326c50a6db9c262c7f32a23"
     },
     {
       "id": "module:src/loop/flows.ts",
@@ -5166,7 +5178,7 @@
         "ts",
         "loop"
       ],
-      "contentHash": "18edc643ee86abe4afbc641743eb6429f3d625d1c167b652ee1fa58034f39d70"
+      "contentHash": "ff01b08e47f93a40a38bbe01afe10ec93604420505be7d4d50ff7a2067f92de6"
     },
     {
       "id": "module:src/loop/observe-stage.ts",
@@ -5562,7 +5574,7 @@
         "ts",
         "loop"
       ],
-      "contentHash": "3ff295badd478a9721bffa785562ea80aa42bf9dbbdd6eab673378a7a29979a3"
+      "contentHash": "b244979b759f2531bd8026318c9dd5417c3dcfcf67372c3e41f929fa28d817fe"
     },
     {
       "id": "module:src/loop/skills.ts",
@@ -5708,7 +5720,7 @@
         "ts",
         "loop"
       ],
-      "contentHash": "de1b65ee07c97a3202f54c038b5d033ce6c242db65b62b62b52ce0bc6eef3420"
+      "contentHash": "1a8eac69297bde0b97ef14fc612bb1a413143644c1a28959114a833c860d9156"
     },
     {
       "id": "module:src/loop/tracker-cooldown.ts",
@@ -8350,7 +8362,7 @@
         "ts",
         "test"
       ],
-      "contentHash": "e3bcb0eb2185808539ecbd747abf61bc88977aade4ff6f9bd309db06f2ad7adc"
+      "contentHash": "9d67bda289d780f7d7b5b4549fe96bb08d0e8c8718a29bac8875d7540c326339"
     },
     {
       "id": "module:test/loop-doctor-gaps.test.ts",
@@ -9698,7 +9710,7 @@
     }
   },
   "inputs": {
-    "hash": "98defc566d75b2a8c1d3bb14bdfbb30bb5dd3ddf90dad2baa1d59bc2450a9257",
+    "hash": "16fbb95108eb982bb84763b85007b97f257adf255a0e4b68616cca11630589dd",
     "fileCount": 616,
     "projectionVersion": 2
   },
@@ -9721,9 +9733,9 @@
   "projection": {
     "type": "retrieval-index",
     "schemaVersion": 1,
-    "contentHash": "1999b3d03ba58acbc6876692131fc9282f4a8be15c423ee683b3cb83c598c828",
+    "contentHash": "dc1f8af80240e504ff96b44d92ca7488e48fcda4900e5766b6f0b98c2cf6c54e",
     "contentHashAlgo": "sha256-semantic-v1",
-    "snapshotHash": "96f13f97e33218d34e2dfd9083db573f8ecdf1c08168f890840e64a08ecd3c9a",
+    "snapshotHash": "bc623b81d99a5ca5284b98f207600ca9a8e0f40c9b2abbd6d6d5ce3f999ae7e2",
     "overlayHash": "f99666ff9119084dd25c2974ae64eb6935ec2aa785ff5ad478fb9d541f7a5e94",
     "configurationHash": "497822431910cd9fa7d674a48a9f0b96fbbbf779f22a001de0b52252117fe3ab",
     "lexiconVersion": 1,
@@ -9759,7 +9771,7 @@
         "headings": 3.8174204355108876,
         "path": 6.1289782244556115,
         "summary": 2.8509212730318256,
-        "symbols": 13.941373534338359,
+        "symbols": 14.013400335008376,
         "title": 4.023450586264657
       }
     },
@@ -20103,7 +20115,7 @@
             }
           ]
         },
-        "contentHash": "c25a4a94f4bae06f2deb76fdd22db8a3e69374fa5815c375888b1f25b331ae0f",
+        "contentHash": "bb827381ac7743ff90cd9ffd66e321cf3b8302da392a8a7c07f39ce5ce7080cc",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -28784,7 +28796,7 @@
             }
           ]
         },
-        "contentHash": "0747d7235f12bba40ba0154603d31e5b836be02c1fefb9e6d9cbff57869a7d02",
+        "contentHash": "f83f6000c917945bef5bb3f16f57dff9a667e22d836804e767d7b4fbda866fb5",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -29232,8 +29244,11 @@
           "DebriefInput",
           "DebriefIssueRow",
           "DebriefReport",
+          "STALE_STATE_MIN",
+          "StaleState",
           "buildDebriefReport",
-          "renderDebriefMarkdown"
+          "renderDebriefMarkdown",
+          "staleStates"
         ],
         "tags": [
           "module",
@@ -29244,7 +29259,7 @@
           "title": "debrief.ts",
           "headings": "",
           "path": "src/loop/debrief.ts",
-          "symbols": "DebriefInput DebriefIssueRow DebriefReport buildDebriefReport renderDebriefMarkdown",
+          "symbols": "DebriefInput DebriefIssueRow DebriefReport STALE_STATE_MIN StaleState buildDebriefReport renderDebriefMarkdown staleStates",
           "summary": "",
           "body": "",
           "aliases": "module ts loop"
@@ -29262,6 +29277,11 @@
             {
               "kind": "imports",
               "id": "module:src/loop/observability.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
+              "id": "module:test/loop-deliver.test.ts",
               "confidence": "observed"
             },
             {
@@ -29328,7 +29348,7 @@
             }
           ]
         },
-        "contentHash": "b72a6aa79d9e4283e77d5f585e456c8baf1d2adef50b0e6ea5aa43383e847723",
+        "contentHash": "6a19e05a4f3c6ec203a9bde5d06a5c05fdd5d797e75869aa95913c60c9fcc146",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -29339,17 +29359,24 @@
         "title": "deliver-state.ts",
         "aliases": [],
         "symbols": [
+          "DatedReason",
           "DeliverOutcome",
           "DeliveryHandoff",
           "DeliveryState",
+          "MAX_INFRA_FIX_RETRIES",
           "MAX_LOST_TRACKING_RESTARTS",
+          "MAX_STUCK_DISPATCHES",
           "approveHeldDelivery",
           "clearRestarts",
           "deliveryStatePath",
           "listDispatched",
           "markDispatchCancelled",
           "readDeliveryState",
+          "readFixRetries",
           "readRestarts",
+          "readStuck",
+          "recordFixRetry",
+          "recordStuck",
           "restartsPath"
         ],
         "tags": [
@@ -29361,7 +29388,7 @@
           "title": "deliver-state.ts",
           "headings": "",
           "path": "src/loop/deliver-state.ts",
-          "symbols": "DeliverOutcome DeliveryHandoff DeliveryState MAX_LOST_TRACKING_RESTARTS approveHeldDelivery clearRestarts deliveryStatePath listDispatched markDispatchCancelled readDeliveryState readRestarts restartsPath",
+          "symbols": "DatedReason DeliverOutcome DeliveryHandoff DeliveryState MAX_INFRA_FIX_RETRIES MAX_LOST_TRACKING_RESTARTS MAX_STUCK_DISPATCHES approveHeldDelivery clearRestarts deliveryStatePath listDispatched markDispatchCancelled readDeliveryState readFixRetries readRestarts readStuck recordFixRetry recordStuck restartsPath",
           "summary": "",
           "body": "",
           "aliases": "module ts loop"
@@ -29389,6 +29416,11 @@
             {
               "kind": "imports",
               "id": "module:src/loop/tick.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
+              "id": "module:test/loop-deliver.test.ts",
               "confidence": "observed"
             },
             {
@@ -29445,7 +29477,7 @@
             }
           ]
         },
-        "contentHash": "31c0128ae9241ed875a57a9e985da099dd4808a2b721177c7ed1b558f3f832b7",
+        "contentHash": "9ae3a333128bcccafa480e70679cb6e8cc20d216c4e01f9f0676a5cdea76beeb",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -29863,7 +29895,7 @@
             }
           ]
         },
-        "contentHash": "0997acb8bb6d5bc1e44b6437dea38054664308690e39bbe0ee45400da58bfbfb",
+        "contentHash": "2f4af8206571acf8b1bb74ee42d221d37da68e7257aadba0fd0bbc57a96dfb6d",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -30720,7 +30752,7 @@
           ],
           "outbound": []
         },
-        "contentHash": "0e2b4444fea801809a3c000a39455b4e17630c2a575b7f865b36ba8841cbda3a",
+        "contentHash": "34c8b951bd20a3c338fef423fbcbbbdc2d8c7593448b9d3cf3561f29374ecbd0",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -30930,7 +30962,9 @@
         "title": "fleet-fix.ts",
         "aliases": [],
         "symbols": [
+          "FixFailure",
           "FleetFixBriefInput",
+          "classifyFixFailure",
           "conflictingFiles",
           "failedCheckLogs",
           "renderFleetFixBrief"
@@ -30944,7 +30978,7 @@
           "title": "fleet-fix.ts",
           "headings": "",
           "path": "src/loop/fleet-fix.ts",
-          "symbols": "FleetFixBriefInput conflictingFiles failedCheckLogs renderFleetFixBrief",
+          "symbols": "FixFailure FleetFixBriefInput classifyFixFailure conflictingFiles failedCheckLogs renderFleetFixBrief",
           "summary": "",
           "body": "",
           "aliases": "module ts loop"
@@ -30978,10 +31012,15 @@
               "kind": "imports",
               "id": "module:src/loop/contract.ts",
               "confidence": "observed"
+            },
+            {
+              "kind": "imports",
+              "id": "module:src/loop/runner-connector.ts",
+              "confidence": "observed"
             }
           ]
         },
-        "contentHash": "f56d71d208174507da6607046fe3ab323603b8864ebfee9c43a261796819b139",
+        "contentHash": "14ed2796a22be800ff76bb31f40d79f354e5e559c5849a2b8cbf824fd5142ef1",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -31136,7 +31175,7 @@
             }
           ]
         },
-        "contentHash": "da7111a89129e8e1ee8e865ca1f919c716186cc020c51a41350508df6831843c",
+        "contentHash": "07e0e319f6b6b81f7f51cb37395802156ee6e79ea326c50a6db9c262c7f32a23",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -33649,7 +33688,7 @@
             }
           ]
         },
-        "contentHash": "18edc643ee86abe4afbc641743eb6429f3d625d1c167b652ee1fa58034f39d70",
+        "contentHash": "ff01b08e47f93a40a38bbe01afe10ec93604420505be7d4d50ff7a2067f92de6",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -35377,6 +35416,11 @@
             },
             {
               "kind": "imports",
+              "id": "module:src/loop/fleet-fix.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
               "id": "module:src/loop/fleet-runner.ts",
               "confidence": "observed"
             },
@@ -35499,7 +35543,7 @@
             }
           ]
         },
-        "contentHash": "3ff295badd478a9721bffa785562ea80aa42bf9dbbdd6eab673378a7a29979a3",
+        "contentHash": "b244979b759f2531bd8026318c9dd5417c3dcfcf67372c3e41f929fa28d817fe",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -36432,7 +36476,7 @@
             }
           ]
         },
-        "contentHash": "de1b65ee07c97a3202f54c038b5d033ce6c242db65b62b62b52ce0bc6eef3420",
+        "contentHash": "1a8eac69297bde0b97ef14fc612bb1a413143644c1a28959114a833c860d9156",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -46169,6 +46213,16 @@
             },
             {
               "kind": "imports",
+              "id": "module:src/loop/debrief.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
+              "id": "module:src/loop/deliver-state.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
               "id": "module:src/loop/deliver.ts",
               "confidence": "observed"
             },
@@ -46184,7 +46238,7 @@
             }
           ]
         },
-        "contentHash": "e3bcb0eb2185808539ecbd747abf61bc88977aade4ff6f9bd309db06f2ad7adc",
+        "contentHash": "9d67bda289d780f7d7b5b4549fe96bb08d0e8c8718a29bac8875d7540c326339",
         "provenance": "observed",
         "confidence": "observed"
       },
