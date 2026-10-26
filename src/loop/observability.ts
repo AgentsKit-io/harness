@@ -5,7 +5,7 @@ import { remainingUsagePercent } from '../adapters/providers.js'
 import { orcaTerminalList, orcaWorktrees, type OrcaTerminal, type OrcaWorktree } from '../adapters/orca-cli.js'
 import { createDispatchLedger } from '../execution/coordination.js'
 import { contractPath } from './contract.js'
-import { buildDebriefReport, type DebriefIssueRow } from './debrief.js'
+import { buildDebriefReport, SILENT_STATE_MIN, type DebriefIssueRow, type SilentState } from './debrief.js'
 import { deliveryStatePath, listDispatched, readDeliveryState } from './deliver.js'
 import { dispatchRecordPath } from './tick.js'
 import { loadLoopConfig, type LoadedLoopConfig } from './config.js'
@@ -81,6 +81,8 @@ export interface ObservabilitySnapshot {
   readonly terminals: readonly ObservabilityTerminal[]
   readonly finalizedDirtyWorktrees: readonly { readonly worktreeId: string; readonly issue: string | null; readonly files: number }[]
   readonly issues: readonly Pick<DebriefIssueRow, 'issue' | 'phase' | 'ageMin' | 'heldFor'>[]
+  /** In-flight issues in one state for over two hours without an event (debrief's `anomalies`). */
+  readonly silentStates?: readonly SilentState[]
   readonly events: readonly LoopEvent[]
   /** Doctor checks that did not pass; absent for a snapshot built without a doctor sweep. */
   readonly failingChecks?: readonly DoctorCheck[]
@@ -119,6 +121,7 @@ export const assessObservability = (input: ObservabilitySnapshot): Observability
     if (row.heldFor || !stalledPhases.has(row.phase) || row.ageMin === null || row.ageMin < input.workerIdleTimeoutMin) continue
     anomalies.push({ id: 'stalled-delivery', severity: 'action_required', issue: row.issue, message: `${row.issue} is in ${row.phase} for ${row.ageMin} min (threshold ${input.workerIdleTimeoutMin} min)`, evidence: { issue: row.issue, phase: row.phase, ageMin: row.ageMin, thresholdMin: input.workerIdleTimeoutMin } })
   }
+  for (const silent of input.silentStates ?? []) anomalies.push({ id: 'silent-state', severity: 'action_required', issue: silent.issue, message: `${silent.issue} has been ${silent.phase} for ${silent.silentMin} min without an event (over ${SILENT_STATE_MIN} min)`, evidence: { ...silent, thresholdMin: SILENT_STATE_MIN } })
   const events: Record<string, number> = {}
   for (const event of input.events) events[event.type] = (events[event.type] ?? 0) + 1
   const report: ObservabilityReport = {
@@ -189,7 +192,7 @@ export const runObservability = async (input: { readonly configPath?: string; re
   const snapshot: ObservabilitySnapshot = {
     generatedAt: at.toISOString(), project: doctor.config.project, person: doctor.config.person, windowHours: Math.max(1, Math.round((at.getTime() - since.getTime()) / 3_600_000)), workerIdleTimeoutMin: loaded.config.delivery.workerIdleTimeoutMin,
     queueReady: doctor.queue.count, freeSlots: doctor.machine.free, stageBusy, runningWorkers: doctor.workers.running, maxAgents: doctor.machine.maxAgents, activeClaims: active.length, missingDeliveryIssues,
-    terminals: terminals.map(compactTerminal), finalizedDirtyWorktrees: await dirtyFinalizedWorktrees(input.runner, worktrees), issues: debrief.inFlight.map(({ issue, phase, ageMin, heldFor }) => ({ issue, phase, ageMin, heldFor })), events,
+    terminals: terminals.map(compactTerminal), finalizedDirtyWorktrees: await dirtyFinalizedWorktrees(input.runner, worktrees), issues: debrief.inFlight.map(({ issue, phase, ageMin, heldFor }) => ({ issue, phase, ageMin, heldFor })), silentStates: debrief.anomalies, events,
     failingChecks: doctor.checks.filter((check) => check.status !== 'passed'),
     merged: uniqueIssues(events, ['pr.merged', 'worker.merged']), blocked: Math.max(records.filter((record) => readDeliveryState(loaded.stateDir, record.issue).finalOutcome === 'blocked').length, uniqueIssues(events, ['worker.blocked'])), fixRounds: records.reduce((total, record) => total + readDeliveryState(loaded.stateDir, record.issue).fixRounds, 0),
     reviewFindings: count(events, 'pr.reviewed') - count(events.filter((event) => event['status'] !== 'findings'), 'pr.reviewed'), reviewIncomplete: events.filter((event) => event.type === 'pr.reviewed' && event['status'] === 'incomplete').length,

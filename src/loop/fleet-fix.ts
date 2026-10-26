@@ -43,7 +43,7 @@ export interface FleetFixBriefInput {
   readonly prUrl: string
   readonly headRef: string
   readonly baseRef: string
-  readonly kind: 'ci' | 'review' | 'conflict'
+  readonly kind: 'ci' | 'review' | 'conflict' | 'continue'
   /** The exact reason: conflicting files, failing checks with their log tail, or review findings with file:line. */
   readonly reason: string
 }
@@ -64,7 +64,9 @@ ${contract.contract.outcomes.map((outcome) => `- ${outcome.id}: ${outcome.descri
     ? `Merge the base into this branch (\`git fetch origin ${input.baseRef} && git merge origin/${input.baseRef}\`), resolve the conflicts keeping the contract's behaviour, and commit the merge: one merge commit on top of the PR head. No amend, no squash.`
     : input.kind === 'ci'
       ? 'Fix the root cause of each failing check (never skip or disable a check), then re-run the project verification.'
-      : 'Address each finding (or explain in your last commit message why it does not apply), then re-run the project verification.'
+      : input.kind === 'continue'
+        ? 'A previous worker stopped before finishing; its work in progress is the last commit on this branch. Read it (`git log -p -1`), then finish the contract on top of it and re-run the project verification.'
+        : 'Address each finding (or explain in your last commit message why it does not apply), then re-run the project verification.'
   return `# Loop worker — ${config.project.repo}
 
 You are a fix-round worker in an unattended delivery loop for ${config.project.repo}. Your worktree is cut from the head of pull request #${input.prNumber} (${input.prUrl}), branch \`${input.headRef}\`, which targets \`${input.baseRef}\`. Nobody is watching: finish and stop.

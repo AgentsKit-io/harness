@@ -3,7 +3,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
 import { createRunnerConnector, loadLoopConfig } from '../src/index.js'
-import { safeFleetBranch } from '../src/loop/fleet-runner.js'
+import { isInfraFailure, safeFleetBranch } from '../src/loop/fleet-runner.js'
 import type { CommandResult, CommandRunner, LoadedLoopConfig } from '../src/index.js'
 
 const exampleYaml = readFileSync(join(process.cwd(), 'loop.config.example.yaml'), 'utf8').replace('person: my-linear-display-name', 'person: person').replace('my-linear-display-name: <linear-user-id>', 'person: user-id-1')
@@ -113,7 +113,8 @@ describe('the fleet runner', () => {
       const workspace = await fleet.createWorkspace({ name: 'a', branch: 'b', baseBranch: 'main' })
       expect(await fleet.observeWorkspaces()).toEqual([])
       await fleet.send({ terminal: workspace.id, text: 'x' })
-      expect(await fleet.observeWorkspaces()).toEqual([{ id: workspace.id, pullRequest: null, state: folded }])
+      // `abandoned` carries its own reason (the coordinator spent its infrastructure retries); the others carry none.
+      expect(await fleet.observeWorkspaces()).toEqual([{ id: workspace.id, pullRequest: null, state: folded, ...(raw === 'abandoned' ? { reason: expect.stringMatching(/abandoned/) } : {}) }])
       await fleet.removeWorkspace({ id: workspace.id })
     }
   })
@@ -169,6 +170,15 @@ describe('the fleet runner', () => {
     collectOut = JSON.stringify({ ref: 'refs/remotes/fleet/h1/ht-9', headSha: 'a1b2c3d4e5f6', baseSha: 'b0b0b0b', bundleSha256: 'f'.repeat(64), review: [], cleaned: false, commits: 0 })
     expect(await fleet.collect?.({ id: workspace.id })).toMatchObject({ branch: null, detail: expect.stringMatching(/no commits/) })
 
+    // A done task with no commit (empty ref) is the attempt's outcome, not an unexpected shape to retry (2026-10-26).
+    collectOut = JSON.stringify({ ref: '', headSha: '', commits: 0 })
+    expect(await fleet.collect?.({ id: workspace.id })).toMatchObject({ branch: null, detail: expect.stringMatching(/no commits/) })
+    collectOut = JSON.stringify({ ref: '', headSha: 'a1b2c3d4e5f6', commits: 1, status: 'incomplete' })
+    expect(await fleet.collect?.({ id: workspace.id })).toMatchObject({ branch: null, detail: expect.stringMatching(/kept no WIP commit/) })
+    // fleet ≥ #232: an incomplete task with a WIP commit is collected and flagged.
+    collectOut = JSON.stringify({ ref: 'refs/remotes/fleet/h1/ht-9', headSha: 'a1b2c3d4e5f6', baseSha: 'b0b0b0b', commits: 1, status: 'incomplete' })
+    expect(await fleet.collect?.({ id: workspace.id })).toMatchObject({ branch: 'person/a', head: 'a1b2c3d4e5f6', incomplete: true })
+
     collectOut = 'not json'
     await expect(fleet.collect?.({ id: workspace.id })).rejects.toThrow(/did not print JSON/)
     collectOut = JSON.stringify({ ref: 'refs/remotes/fleet/h1/ht-9', commits: 1 })
@@ -177,6 +187,23 @@ describe('the fleet runner', () => {
     collectOut = JSON.stringify({ ref: 'refs/remotes/fleet/h1/ht-9', headSha: 'a1b2c3d4e5f6', baseSha: 'b0b0b0b', bundleSha256: 'f'.repeat(64), review: [], cleaned: false, commits: 1 })
     reachable = false
     await expect(fleet.collect?.({ id: workspace.id })).rejects.toThrow(/not reachable/)
+  })
+
+  it('classifies the fleet infrastructure reasons apart from a task that failed on its own', () => {
+    for (const reason of ['no-op', 'no_op on every variant', 'no-eligible-host', 'no host could run the variant', 'install failed', 'install-failed: pnpm exited 1', 'host down', 'host-died', 'cancelled by the fleet', 'fleet-cancelled', 'abandoned by the fleet coordinator']) expect(isInfraFailure(reason), reason).toBe(true)
+    for (const reason of [null, '', 'tests failed', 'agent exited 1', 'verification failed', 'cancelled by person']) expect(isInfraFailure(reason), String(reason)).toBe(false)
+  })
+
+  it('reports a submitted task the queue no longer lists, and the reason a listed one failed', async () => {
+    const loaded = setup()
+    let rows: unknown[] = []
+    const runner: CommandRunner = { run: async (argv) => argv[0] === 'git' ? ok('git@github.com:acme/widgets.git\n') : argv[1] === 'submit' ? ok('submitted q-0001\n') : ok(JSON.stringify(rows)) }
+    const fleet = createRunnerConnector({ loaded, runner })
+    const workspace = await fleet.createWorkspace({ name: 'a', branch: 'b', baseBranch: 'main' })
+    await fleet.send({ terminal: workspace.id, text: 'x' })
+    expect(await fleet.observeWorkspaces()).toEqual([{ id: workspace.id, pullRequest: null, state: 'unknown', listed: false }])
+    rows = [{ id: 'q-0001', state: 'failed', reasonClass: 'no-eligible-host', reason: 'no host has the variant' }]
+    expect(await fleet.observeWorkspaces()).toEqual([{ id: workspace.id, pullRequest: null, state: 'failed', reason: 'no-eligible-host: no host has the variant' }])
   })
 
   it('says the coordinator owns scheduling', async () => {

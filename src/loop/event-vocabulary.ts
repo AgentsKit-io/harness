@@ -68,6 +68,14 @@ export const LOOP_EVENT_TYPES = {
   'worker.review-round': ['issue', 'pr', 'head', 'round'],
   /** The PR conflicts with the base branch; the rebase instruction went back to the worker. It costs no fix round. */
   'worker.conflict-round': ['issue', 'pr', 'head', 'round'],
+  /** A fleet task stopped before finishing; a continuation task was cut from its WIP draft PR. */
+  'worker.continue-round': ['issue', 'pr', 'head', 'round'],
+  /** A fleet fix task failed for an infrastructure reason (no-op, no host, install, host down, cancelled by the fleet); the round was given back to be resubmitted. */
+  'worker.fix-retried': ['issue', 'pr', 'kind', 'reason', 'retries'],
+  /** A fleet worker ended with nothing to deliver; the issue went back to Todo for a fresh dispatch. `retries` counts them in 24 h. */
+  'worker.requeued': ['issue', 'attempt', 'retries', 'reason'],
+  /** An issue in progress with no live delivery behind it (no lease, dispatch, fleet task or PR) went back to Todo. */
+  'worker.orphan-reclaimed': ['issue', 'reason'],
 
   /** Delivery finished for this issue: the pull request was merged and the issue closed out. */
   'worker.merged': ['issue', 'reason', 'worktreeId'],

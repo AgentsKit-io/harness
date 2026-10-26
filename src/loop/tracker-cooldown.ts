@@ -64,6 +64,7 @@ export const guardTracker = (tracker: TrackerConnector, input: { readonly stateD
   return {
     ...tracker,
     queue: guard(tracker.queue),
+    ...(tracker.inProgress ? { inProgress: guard(tracker.inProgress) } : {}),
     issue: guard(tracker.issue),
     comment: guard(tracker.comment),
     addLabels: guard(tracker.addLabels),

@@ -42,7 +42,14 @@ const foldState = (raw: unknown): FleetState => {
 
 const text = (value: unknown): string | null => typeof value === 'string' && value.length > 0 ? value : null
 
-interface QueueRow { readonly id: string; readonly state: FleetState; /** The id `fleet collect` takes, when the row carries one distinct from the queue id. */ readonly hostTaskId: string | null }
+/**
+ * The fleet's infrastructure reason classes: the task never got a fair run, so it says nothing about the work. No-op on
+ * every variant, no host could run the variant, install failed, host down, cancelled (or abandoned) by the fleet.
+ */
+const INFRA_FAILURE = /\bno ?op\b|\bno (eligible|available|capable) host|\bno host (could|can|was able|available)|\binstall(ation)? failed|\bfailed to install|\bhost (is )?(down|died|dead|lost|unreachable|offline)|\b(cancell?ed|stopped|abandoned) by (the )?(fleet|coordinator)|\bfleet cancell?ed|\babandoned\b/
+export const isInfraFailure = (reason: string | null | undefined): boolean => Boolean(reason) && INFRA_FAILURE.test(reason!.toLowerCase().replaceAll(/[_-]+/g, ' '))
+
+interface QueueRow { readonly id: string; readonly state: FleetState; /** The id `fleet collect` takes, when the row carries one distinct from the queue id. */ readonly hostTaskId: string | null; readonly reason: string | null }
 
 /** Accepts a bare array or `{ tasks: [...] }`; rows without an id are dropped. */
 const parseQueue = (stdout: string): readonly QueueRow[] => {
@@ -53,7 +60,11 @@ const parseQueue = (stdout: string): readonly QueueRow[] => {
     const record = typeof row === 'object' && row !== null ? row as Record<string, unknown> : {}
     const id = text(record['id']) ?? text(record['queueId'])
     const hostTaskId = text(record['hostTaskId']) ?? text(record['host_task_id']) ?? text(record['taskId']) ?? text(record['task_id'])
-    return id ? [{ id, state: foldState(record['state']), hostTaskId }] : []
+    // The reason class (`reasonClass`) and the free text both feed `isInfraFailure`; `abandoned` names its own reason.
+    const reasonClass = text(record['reasonClass']) ?? text(record['reason_class']) ?? text(record['failureClass'])
+    const why = text(record['reason']) ?? text(record['failureReason']) ?? text(record['failure_reason']) ?? text(record['error'])
+    const reason = [reasonClass, why].filter(Boolean).join(': ') || (String(record['state']).toLowerCase() === 'abandoned' ? 'abandoned by the fleet coordinator (infrastructure retries spent)' : null)
+    return id ? [{ id, state: foldState(record['state']), hostTaskId, reason }] : []
   })
 }
 
@@ -205,27 +216,40 @@ export const createFleetRunner = ({ loaded, runner }: RunnerInput): RunnerConnec
       const row = (await queue()).find((item) => item.id === queueId)
       const taskId = row?.hostTaskId ?? queueId
       const result = await run(['collect', taskId, '--json'])
-      if (result.code !== 0) fail(`fleet collect ${taskId} failed: ${result.stderr.trim() || `exit ${result.code ?? 'null'}`}`, 'HARNESS_ERROR')
+      // A task that ended with nothing is the attempt's outcome, not an error to retry: no commit, an empty ref, or an
+      // `incomplete` task that kept no WIP commit all collect as "nothing to deliver".
+      const nothing = (why: string) => ({ branch: null, detail: `fleet collect ${taskId}: ${why}; there is nothing to deliver.` })
+      if (result.code !== 0) {
+        if (/\bno commits?\b|\bnothing to collect\b/i.test(`${result.stderr}\n${result.stdout}`)) return nothing('the task made no commits')
+        fail(`fleet collect ${taskId} failed: ${result.stderr.trim() || `exit ${result.code ?? 'null'}`}`, 'HARNESS_ERROR')
+      }
       let raw: unknown
       try { raw = JSON.parse(result.stdout) } catch { fail(`fleet collect ${taskId} --json did not print JSON.`, 'HARNESS_ERROR') }
+      const fields = typeof raw === 'object' && raw !== null ? raw as Record<string, unknown> : {}
+      // fleet ≥ #232: a task stopped before finishing keeps its work as a WIP commit and says so.
+      const incomplete = fields['incomplete'] === true || ['status', 'outcome', 'result'].some((key) => String(fields[key]).toLowerCase() === 'incomplete')
+      if (fields['commits'] === 0 || fields['ref'] === '' || fields['headSha'] === '') return nothing(incomplete ? 'the task stopped before finishing and kept no WIP commit' : 'the task made no commits')
       const parsed = FleetCollectSchema.safeParse(raw)
       if (!parsed.success) return fail(`fleet collect ${taskId} --json: unexpected shape (${parsed.error.issues[0]?.message ?? 'invalid'}).`, 'HARNESS_ERROR')
       const { ref, headSha: head, baseSha: base, commits } = parsed.data
-      if (commits === 0) return { branch: null, detail: `fleet collect ${taskId}: the task made no commits; there is nothing to deliver.` }
       const git = (args: readonly string[]) => runner.run(['git', '-C', loaded.root, ...args], { timeoutMs: 15_000 })
       const reachable = await git(['merge-base', '--is-ancestor', head, ref])
       if (reachable.code !== 0) fail(`fleet collect ${taskId}: head ${head} is not reachable from ${ref} in the local clone.`, 'HARNESS_ERROR')
       const moved = await git(['branch', '-f', entry.branch, head])
       if (moved.code !== 0) fail(`git branch -f ${entry.branch} ${head} failed: ${moved.stderr.trim() || `exit ${moved.code ?? 'null'}`}`, 'HARNESS_ERROR')
-      return { branch: entry.branch, detail: `collected ${taskId} (${commits} commit${commits === 1 ? '' : 's'}) → ${entry.branch} at ${head.slice(0, 12)}`, head, ...(base ? { base } : {}) }
+      return { branch: entry.branch, detail: `collected ${taskId} (${commits} commit${commits === 1 ? '' : 's'}${incomplete ? ', incomplete: WIP' : ''}) → ${entry.branch} at ${head.slice(0, 12)}`, head, ...(base ? { base } : {}), ...(incomplete ? { incomplete } : {}) }
     },
     schedule: async () => ['the fleet coordinator owns scheduling'],
     // ponytail: a pull request is the SCM's to report, so `pullRequest` is always null; only the task state is the fleet's.
+    // A submitted task the queue no longer lists is reported `listed: false` (an orphan for deliver to reclaim).
     observeWorkspaces: async () => {
       const records = read().filter((entry) => entry.queueId)
       if (records.length === 0) return []
-      const rows = new Map((await queue()).map((row) => [row.id, row.state]))
-      return records.map((entry) => ({ id: entry.id, pullRequest: null, state: rows.get(entry.queueId ?? '') ?? 'unknown' }))
+      const rows = new Map((await queue()).map((row) => [row.id, row]))
+      return records.map((entry) => {
+        const row = rows.get(entry.queueId ?? '')
+        return { id: entry.id, pullRequest: null, state: row?.state ?? 'unknown', ...(row?.reason ? { reason: row.reason } : {}), ...(row ? {} : { listed: false }) }
+      })
     },
   }
 }

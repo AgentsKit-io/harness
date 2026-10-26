@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { assessObservability, renderObservabilityMarkdown } from '../src/index.js'
+import { silentStates } from '../src/loop/debrief.js'
 
 const base = {
   generatedAt: '2026-09-13T01:00:00.000Z', project: 'agentskit/os', person: 'victor', windowHours: 24, workerIdleTimeoutMin: 45,
@@ -28,6 +29,20 @@ describe('loop observability', () => {
     expect(report.status).toBe('healthy')
     expect(report.anomalies).toHaveLength(0)
     expect(renderObservabilityMarkdown(report)).toContain('## Metrics')
+  })
+
+  it('lists an issue in one loop state for over 2 h without an event as an anomaly', () => {
+    const now = new Date(base.generatedAt)
+    const rows = [
+      { issue: 'o/r#1', phase: 'waiting-for-pr', dispatchedAt: '2026-09-12T10:00:00.000Z' },
+      { issue: 'o/r#2', phase: 'waiting-for-pr', dispatchedAt: '2026-09-12T10:00:00.000Z' },
+      { issue: 'o/r#3', phase: 'fix-round', dispatchedAt: '2026-09-13T00:30:00.000Z' },
+    ]
+    // #1 last moved 14 h ago; #2 had an event 10 min ago; #3 was dispatched 30 min ago and has had none since.
+    const silent = silentStates(rows, [{ at: '2026-09-12T11:00:00.000Z', type: 'worker.dispatched', issue: 'o/r#1' }, { at: '2026-09-13T00:50:00.000Z', type: 'delivery.error', issue: 'o/r#2' }], now)
+    expect(silent).toEqual([{ issue: 'o/r#1', phase: 'waiting-for-pr', silentMin: 840 }])
+    const report = assessObservability({ ...base, queueReady: 0, silentStates: silent })
+    expect(report.anomalies).toEqual([expect.objectContaining({ id: 'silent-state', severity: 'action_required', issue: 'o/r#1', message: expect.stringMatching(/840 min without an event/) })])
   })
 
   it('does not report an idle queue while a scheduled stage owns the lock', () => {

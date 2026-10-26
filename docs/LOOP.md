@@ -517,7 +517,18 @@ Three interfaces, and the config picks the implementation:
 - `deliver` watches the task through `fleet queue --json`; while it is queued or running the issue just waits. When
   it ends `done`, deliver runs `fleet collect <host-task-id> --json` (the commits arrive at `ref`; collect never
   pushes), points a safe local branch (`login/repo-3`, no `#`) at `head`, pushes it, opens the pull request with `gh pr create`, and from then on handles the PR like any
-  other. A task that ends `failed` or `cancelled` is escalated as a stuck worker.
+  other. **No dead states** (2026-10-26: 0 todo, 14 blocked, 7 in progress for up to 14 h, 10 free fleet slots):
+  - a task that ends `failed`/`cancelled` before a PR, collects nothing (no commit, empty ref), or that the queue
+    stops listing (confirmed on a second pass) returns the issue to `loop:todo` for a fresh dispatch; the 3rd such
+    attempt in 24 h is a real block (`loop:blocked`, with the three reasons);
+  - a task that stopped before finishing but kept a WIP commit (`incomplete`, fleet ≥ #232) opens a **draft** PR
+    labelled `github.wipLabel` (`loop:wip`) and a continuation task finishes it; the draft is then made ready;
+  - a fix round whose task failed for an infrastructure reason (no-op, no eligible host, install failed, host down,
+    cancelled by the fleet) gives the round back and is resubmitted, up to 3 a day; only a fix task that itself failed
+    blocks for a person;
+  - every deliver pass reconciles the tracker's `loop:in-progress` issues held by this machine: one with no lease, no
+    unfinished dispatch and no PR behind it goes back to `loop:todo`;
+  - `loop debrief` / `observe` list an in-flight issue with no event for over 2 h as an anomaly (`silent-state`).
 - `loop doctor` probes the selected runner: `fleet doctor --json` and `fleet queue --json` for `fleet`; the Orca
   binary, runtime, accounts, worktrees and automations for `orca`.
 

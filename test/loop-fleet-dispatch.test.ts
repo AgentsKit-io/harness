@@ -46,6 +46,7 @@ const makeFleetEnv = (options: { readonly runner?: 'fleet' | 'orca'; readonly ta
         if (verb === 'api' && sub === 'user') return done(JSON.stringify({ login: 'person' }))
         if (verb === 'api') return done('')
         if (verb === 'auth') return done('token\n')
+        if (verb === 'label' && sub === 'list') return done('[]')
         if (verb === 'issue' && sub === 'list') return done(JSON.stringify([issue]))
         if (verb === 'issue' && sub === 'view') return done(JSON.stringify({ ...issue, body: 'Add the binding.\n\n## Acceptance\n- tests pass', comments: [] }))
         if (verb === 'pr' && sub === 'create') { prs.push({ number: 7, url: `https://github.com/${REPO}/pull/7`, title: argv[argv.indexOf('--title') + 1], state: 'OPEN', headRefName: argv[argv.indexOf('--head') + 1], headRefOid: 'abc123', baseRefName: 'main', mergeable: 'MERGEABLE', mergeStateStatus: 'CLEAN', labels: [], files: [], statusCheckRollup: [], updatedAt: '2026-10-20T11:00:00Z' }); return done(`https://github.com/${REPO}/pull/7\n`) }
@@ -131,20 +132,20 @@ describe('runner: fleet dispatches through the fleet', () => {
     await runTick({ ...env.base, maxDispatch: 1 })
     task = 'done'
     const report = await runDeliver({ ...env.base })
-    expect(report.results[0]).toMatchObject({ outcome: 'stuck', reason: expect.stringMatching(/no commits/) })
+    expect(report.results[0]).toMatchObject({ outcome: 'restarted', reason: expect.stringMatching(/no commits/) })
     expect(env.calls.some((argv) => argv[0] === 'git' && argv.includes('push'))).toBe(false)
     expect(env.calls.some((argv) => argv[0] === 'gh' && argv[1] === 'pr' && argv[2] === 'create')).toBe(false)
   })
 
-  it('deliver escalates a task that failed instead of collecting', async () => {
+  it('deliver returns a task that failed to Todo instead of collecting', async () => {
     let task = 'running'
     const env = makeFleetEnv({ taskState: () => task })
     await runTick({ ...env.base, maxDispatch: 1 })
     task = 'failed'
     const report = await runDeliver({ ...env.base })
-    expect(report.results[0]).toMatchObject({ outcome: 'stuck' })
+    expect(report.results[0]).toMatchObject({ outcome: 'restarted', reason: expect.stringMatching(/fleet task ended failed/) })
     expect(env.calls.some((argv) => argv[0] === 'fleet' && argv[1] === 'collect')).toBe(false)
-    expect(readDeliveryState(env.loaded().stateDir, `${REPO}#1`).finalOutcome).toBe('stuck')
+    expect(readDeliveryState(env.loaded().stateDir, `${REPO}#1`).finalOutcome).toBe('restarted')
     expect(orcaCalls(env.calls)).toEqual([])
   })
 })

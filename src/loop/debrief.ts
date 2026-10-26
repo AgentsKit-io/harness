@@ -65,7 +65,25 @@ export interface DebriefReport {
   readonly recentEscalations: readonly { readonly issue: string; readonly at: string; readonly reason: string }[]
   readonly cooldowns: readonly { readonly provider: string; readonly reason: string; readonly until: string }[]
   readonly recentEvents: readonly { readonly at: string; readonly type: string; readonly issue: string | null }[]
+  /** In-flight issues in one loop state for more than `SILENT_STATE_MIN` with no event: what a dead state looks like from here. */
+  readonly anomalies: readonly SilentState[]
   readonly headline: string
+}
+
+export interface SilentState { readonly issue: string; readonly phase: string; readonly silentMin: number }
+
+/** No event about an in-flight issue for this long is an anomaly: a live delivery emits one at every step it takes. */
+export const SILENT_STATE_MIN = 120
+
+/** In-flight rows whose last event (or, with none in the window, their dispatch) is older than `SILENT_STATE_MIN`. */
+export const silentStates = (rows: readonly Pick<DebriefIssueRow, 'issue' | 'phase' | 'dispatchedAt'>[], events: readonly LoopEvent[], now: Date): readonly SilentState[] => {
+  const last = new Map<string, number>()
+  for (const event of events) if (typeof event.issue === 'string') last.set(event.issue, Math.max(last.get(event.issue) ?? 0, Date.parse(event.at)))
+  return rows.flatMap((row) => {
+    const at = last.get(row.issue) ?? (row.dispatchedAt ? Date.parse(row.dispatchedAt) : Number.NaN)
+    const silentMin = Math.round((now.getTime() - at) / 60_000)
+    return Number.isFinite(silentMin) && silentMin > SILENT_STATE_MIN ? [{ issue: row.issue, phase: row.phase, silentMin }] : []
+  })
 }
 
 const minutesBetween = (later: Date, earlier: string | null): number | null => {
@@ -264,6 +282,7 @@ export const buildDebriefReport = (input: DebriefInput): DebriefReport => {
     recentEscalations,
     cooldowns,
     recentEvents,
+    anomalies: silentStates(inFlight, events, now),
     headline,
   }
 }
@@ -274,6 +293,7 @@ export const renderDebriefMarkdown = (report: DebriefReport): string => {
   lines.push(`_${report.headline}_ · generated ${report.generatedAt.slice(0, 19)}Z · last ${report.windowHours}h`, '')
   lines.push(`config: ${report.configSource}`, '')
   if (report.waiting.length) lines.push('## Waiting', '', ...report.waiting.map((item) => `- ${item.issue} — waiting for ${item.label}`), '')
+  if (report.anomalies.length) lines.push('## Anomalies', '', ...report.anomalies.map((item) => `- **${item.issue}** — ${item.phase} for ${item.silentMin} min without an event (over ${SILENT_STATE_MIN} min: a dead state?)`), '')
   if (report.inFlight.length === 0) {
     lines.push('## In flight', '', '_Nothing dispatched right now._', '')
   } else {

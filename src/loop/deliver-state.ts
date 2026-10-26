@@ -28,7 +28,7 @@ export interface DeliveryState {
   readonly prNumber: number | null
   readonly reviews: Readonly<Record<string, { readonly status: CodeReviewOutcome['status']; readonly at: string; readonly provider: string; readonly model: string | null; readonly blocking: number; readonly attempts: number; readonly reason?: string; /** ADR-0046 level of this review; filled from `status` when a stored state predates it. */ readonly verdict?: Verdict }>>
   readonly fixRounds: number
-  readonly nudges: readonly { readonly kind: 'idle' | 'conflict' | 'ci' | 'review' | 'handoff' | 'permission' | 'brief' | 'hitl'; readonly at: string; readonly head: string | null }[]
+  readonly nudges: readonly { readonly kind: 'idle' | 'conflict' | 'ci' | 'review' | 'continue' | 'handoff' | 'permission' | 'brief' | 'hitl'; readonly at: string; readonly head: string | null }[]
   readonly handoffs: readonly DeliveryHandoff[]
   readonly heldFor: string | null
   /** A person's attested approval of a PR held for protected paths — valid only for this exact head. */
@@ -47,8 +47,11 @@ export interface DeliveryState {
   readonly lostTrackSince?: string | null
   /** Passes in a row where a merge GitHub accepted could not be read back as merged at the reviewed head (ADR-0046). */
   readonly mergeUnconfirmed?: number
-  /** A fleet fix task in flight: cut from `head` (the PR head it was sent for), collected and pushed to the PR branch when done. */
-  readonly fleetFix?: { readonly workspaceId: string; readonly head: string; readonly kind: 'ci' | 'review' | 'conflict' } | null
+  /** A fleet fix task in flight: cut from `head` (the PR head it was sent for), collected and pushed to the PR branch when done.
+   * `continue`: a continuation of a worker's WIP commit, on a draft PR. `counted`: the round spent `maxFixRounds`. */
+  readonly fleetFix?: { readonly workspaceId: string; readonly head: string; readonly kind: 'ci' | 'review' | 'conflict' | 'continue'; readonly counted?: boolean } | null
+  /** The draft PR head a continuation finished (not incomplete) at: the next pass marks the PR ready and drops the WIP label. */
+  readonly wipComplete?: string | null
 }
 
 export const deliveryStatePath = (stateDir: string, identifier: string): string => join(stateDir, 'issues', identifier, 'delivery.json')
@@ -127,3 +130,30 @@ export const readRestarts = (stateDir: string, issue: string): readonly string[]
 
 /** A person's Retry starts the restart budget over: the cap counts automatic restarts since a human last looked. */
 export const clearRestarts = (stateDir: string, issue: string): void => rmSync(restartsPath(stateDir, issue), { force: true })
+
+/**
+ * Automatic retries the loop spent on an issue, per kind: `stuck` (a worker that ended with nothing to deliver, sent
+ * back to Todo) and `infra-fix` (a fleet fix round that failed for an infrastructure reason, resubmitted). Kept beside
+ * delivery.json, which a redispatch resets, so the cap holds across attempts.
+ */
+export type RetryKind = 'stuck' | 'infra-fix'
+export interface RetryEntry { readonly at: string; readonly reason: string }
+/** How many automatic retries of one kind an issue gets in `RETRY_WINDOW_MS` before it is a real block. */
+export const MAX_AUTOMATIC_RETRIES = 3
+export const RETRY_WINDOW_MS = 24 * 3_600_000
+const retriesPath = (stateDir: string, issue: string, kind: RetryKind): string => join(stateDir, 'issues', issue, `${kind}-retries.json`)
+
+/** windowed: only the entries inside `RETRY_WINDOW_MS` of `now`. */
+export const readRetries = (stateDir: string, issue: string, kind: RetryKind, now: Date): readonly RetryEntry[] =>
+  (readJsonFile(retriesPath(stateDir, issue, kind), z.object({ entries: z.array(z.object({ at: z.string(), reason: z.string() })) }))?.entries ?? [])
+    .filter((entry) => now.getTime() - Date.parse(entry.at) < RETRY_WINDOW_MS)
+
+/** Appends one retry and drops the ones outside the window; returns what is now on file. */
+export const recordRetry = (stateDir: string, issue: string, kind: RetryKind, reason: string, now: Date): readonly RetryEntry[] => {
+  const entries = [...readRetries(stateDir, issue, kind, now), { at: now.toISOString(), reason }]
+  writeJsonAtomic(retriesPath(stateDir, issue, kind), { entries })
+  return entries
+}
+
+/** Once the retries ended in a block, a person's resume starts the count over. */
+export const clearRetries = (stateDir: string, issue: string, kind: RetryKind): void => rmSync(retriesPath(stateDir, issue, kind), { force: true })

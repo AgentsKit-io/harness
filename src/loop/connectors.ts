@@ -34,6 +34,8 @@ export interface TrackerConnector {
   queue(input: { readonly assignee: string | null; readonly ownership?: 'person' | 'unassigned' | 'both'; readonly excludeLabels?: readonly string[] }): Promise<readonly LoopIssue[]>
   /** Issues the last `queue()` read dropped although they carry the todo lifecycle label, each with the filter that dropped it. */
   queueSkips?(): readonly { readonly identifier: string; readonly reason: string }[]
+  /** Open issues in the in-progress lifecycle state held by this machine (assigned to its queue owner, or to nobody). Deliver reconciles them against live work. */
+  inProgress?(): Promise<readonly LoopIssue[]>
   issue(identifier: string): Promise<TrackerIssueDetail>
   comment(input: { readonly issue: string; readonly body: string; readonly dedupeKey?: string }): Promise<void>
   addLabels(issue: string, labels: readonly string[]): Promise<void>
@@ -235,6 +237,16 @@ export const createGitHubTracker = (input: ConnectorInput): TrackerConnector => 
       return queue
     },
     queueSkips: () => skips,
+    inProgress: async () => {
+      const target = await defaultAssignee()
+      const issues = await githubOpenIssues(runner, { repo, limit: config.github.issues.maxIssues }, options)
+      return issues.filter((issue) => issue.labels.includes(config.github.issues.labels.inProgress) && (issue.assignees.length === 0 || issue.assignees.includes(target))).map((issue): LoopIssue => ({
+        id: issue.identifier, identifier: issue.identifier, title: issue.title, url: issue.url,
+        state: config.linear.inProgressState, stateType: 'started', assignee: issue.assignees[0] ?? null,
+        assigneeId: null, labels: issue.labels, priority: 0, priorityLabel: 'none', project: null, branchName: null,
+        createdAt: issue.createdAt, updatedAt: issue.updatedAt,
+      }))
+    },
     issue: readDetail,
     comment: async ({ issue, body, dedupeKey }) => {
       const marker = dedupeKey ? `<!-- harness:${dedupeKey} -->` : null

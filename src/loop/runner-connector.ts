@@ -20,6 +20,10 @@ export interface WorkspaceObservation {
   readonly pullRequest: { readonly number: number; readonly state: 'OPEN' | 'CLOSED' | 'MERGED' | null } | null
   /** Task state, for a runner whose work is a queued task rather than a live terminal (`fleet`). */
   readonly state?: 'queued' | 'running' | 'done' | 'failed' | 'cancelled' | 'unknown'
+  /** Why a queued task ended `failed`/`cancelled`, as the queue reported it (`fleet`). */
+  readonly reason?: string | null
+  /** False when the runner submitted the task but its queue no longer lists it (or it was never submitted): an orphan. */
+  readonly listed?: boolean
 }
 
 /**
@@ -44,7 +48,7 @@ export interface RunnerConnector {
    * work leaves no pull request behind implements it (`fleet`: `fleet collect`, which never pushes); for Orca the
    * worker pushes and opens its own PR, so there is nothing to collect.
    */
-  collect?(input: { readonly id: string }): Promise<{ /** Null when the task finished with no commits: nothing to push or open. */ readonly branch: string | null; readonly detail: string; /** The collected tip and the base it was cut from (`fleet collect --json`): what the definition of done is judged on. */ readonly head?: string; readonly base?: string }>
+  collect?(input: { readonly id: string }): Promise<{ /** Null when the task finished with no commits: nothing to push or open. */ readonly branch: string | null; readonly detail: string; /** The collected tip and the base it was cut from (`fleet collect --json`): what the definition of done is judged on. */ readonly head?: string; readonly base?: string; /** The task stopped before finishing and the runner kept its work as a WIP commit: deliver it as a draft and continue it. */ readonly incomplete?: boolean }>
 }
 
 export interface RunnerInput { readonly loaded: LoadedLoopConfig; readonly runner: CommandRunner }

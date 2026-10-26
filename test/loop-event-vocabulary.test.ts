@@ -26,7 +26,7 @@ const DELIVER_OUTCOMES = ['waiting', 'reviewed', 'fix-round', 'nudged', 'handed-
 const TEMPLATE_FAMILIES = [
   ...DELIVER_OUTCOMES.map((outcome) => `worker.${outcome}`),
   ...DELIVER_OUTCOMES.map((outcome) => `github-intake.${outcome}`),
-  ...['ci', 'review', 'conflict'].map((kind) => `worker.${kind}-round`),
+  ...['ci', 'review', 'conflict', 'continue'].map((kind) => `worker.${kind}-round`),
   'human.hitl-answered', 'human.hitl-batch-ready',
   ...['adopted', 'rejected', 'needs-human', 'reverted'].map((status) => `agent.${status}`),
   ...['cost-guard', 'max-duration'].map((kind) => `${kind}.tripped`),

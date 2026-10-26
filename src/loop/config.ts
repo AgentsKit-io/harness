@@ -644,6 +644,8 @@ export const LoopConfigSchema = z.object({
   github: z.object({
     /** A PR labeled with this on GitHub is picked up by deliver even though the loop never dispatched it. Set null to disable intake entirely. */
     intakeLabel: nonEmpty.nullable().default('loop:review'),
+    /** A draft PR the loop opened from a fleet task's WIP commit (the task stopped before finishing) while a continuation runs. */
+    wipLabel: nonEmpty.default('loop:wip'),
     /** Intake PRs are always review + comment only; this loop never merges a PR it did not dispatch, regardless of a clean review. */
     reviewOnly: z.literal(true).default(true),
     issues: z.object({

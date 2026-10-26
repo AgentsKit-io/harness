@@ -421,6 +421,7 @@ github:
   intakeLabel: loop:review           # a PR with this label is reviewed even though the loop never dispatched it;
                                       # null disables intake entirely
   reviewOnly: true                   # fixed: intake PRs are always review + comment, never auto-merged
+  wipLabel: loop:wip                 # draft PR opened from a fleet task's WIP commit while a continuation finishes it
   issues:
     state: open
     maxIssues: 500
