@@ -140,7 +140,7 @@
     "vitest": "^5.0.5"
   },
   "license": "MIT",
-  "packageManager": "pnpm@10.34.7",
+  "packageManager": "pnpm@10.34.8",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/AgentsKit-io/harness.git"
