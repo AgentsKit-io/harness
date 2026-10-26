@@ -87,7 +87,7 @@ export const requireWritableTracker = (config: LoopConfig): void => {
 }
 
 /** `config.linear` as the queue filter, with `TrackerConnector.queue`'s per-read ownership override and extra excluded labels. */
-const queueFilter = (config: LoopConfig, input: { readonly ownership?: 'person' | 'unassigned' | 'both' | undefined; readonly excludeLabels?: readonly string[] | undefined }): LoopConfig['linear'] => ({ ...config.linear, queueOwnership: input.ownership ?? config.linear.queueOwnership, excludeLabels: [...config.linear.excludeLabels, ...(input.excludeLabels ?? [])] })
+const queueFilter = (config: LoopConfig, input: { readonly ownership?: 'person' | 'unassigned' | 'both' | undefined; readonly excludeLabels?: readonly string[] | undefined }): LoopConfig['linear'] => ({ ...config.linear, queueOwnership: input.ownership ?? config.linear.queueOwnership, requireLabels: [...config.linear.requireLabels, ...(config.tracker.requireLabel ? [config.tracker.requireLabel] : [])], excludeLabels: [...config.linear.excludeLabels, ...(input.excludeLabels ?? [])] })
 
 // ponytail: both trackers get the body as one argv element and Windows caps a whole command line at 32,767 chars;
 // a body near the vendor limit (~65k) would fail to spawn there, so it is held well under that on win32.
@@ -171,6 +171,8 @@ const githubSkipReason = (issue: LoopIssue, input: { readonly effective: string;
   const excluded = issue.labels.find((label) => label === filter.outsideLabel || filter.excludeLabels.includes(label))
   if (excluded) return `label "${excluded}" is in linear.excludeLabels`
   if (!filter.states.includes(issue.state)) return `state "${issue.state}" is not in linear.states`
+  const missing = filter.requireLabels.find((label) => !issue.labels.includes(label))
+  if (missing) return `waiting for ${missing} (tracker.requireLabel)`
   if (filter.anyLabels?.length && !filter.anyLabels.some((label) => issue.labels.includes(label))) return `none of github.issues.anyLabels (${filter.anyLabels.join(', ')}) is on the issue`
   return `beyond linear.maxQueue (${filter.maxQueue})`
 }
@@ -225,7 +227,7 @@ export const createGitHubTracker = (input: ConnectorInput): TrackerConnector => 
       const owned = normalized.filter((issue) => (effective !== 'person' && issue.assignee === null) || (effective !== 'unassigned' && issue.assignee === target))
       // The Linear label/project filters (`linear.requireLabels`, `anyLabels`, `projects`) describe a Linear board; a
       // GitHub queue is narrowed by `github.issues.anyLabels` instead.
-      const filter = { ...queueFilter(config, { ownership, excludeLabels }), requireLabels: [], projects: [], anyLabels: config.github.issues.anyLabels }
+      const filter = { ...queueFilter(config, { ownership, excludeLabels }), requireLabels: config.tracker.requireLabel ? [config.tracker.requireLabel] : [], projects: [], anyLabels: config.github.issues.anyLabels }
       const queue = filterAndOrderQueue(owned, filter)
       const kept = new Set(queue.map((issue) => issue.identifier))
       skips = normalized.filter((issue) => issue.labels.includes(config.github.issues.labels.todo) && !kept.has(issue.identifier))

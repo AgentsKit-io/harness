@@ -102,6 +102,10 @@ linear:
     target: 4
     skipLabels: []                   # never auto-assigned, on top of excludeLabels (e.g. [QA, needs-info])
 
+# tracker:
+#   requireLabel: loop:pm-ok         # admit only issues carrying it (the fleet PM labels what it validated); the
+#                                    # rest are listed as "waiting for <label>" and not contracted. Unset = no gate.
+
 models:
   # routing.mode: tiers (default) | hybrid | dynamic | catalog
   # hybrid = keep quality tiers, pick highest remaining usage inside each tier

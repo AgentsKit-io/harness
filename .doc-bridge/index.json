@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
-  "contentHash": "ea58a36754865a347ada99fbb92deb379b189bbcb680e88a253bf1fc4b4af1d7",
+  "contentHash": "2a8f5758d6b85c7881af906fc02e19d37765d579b78fe1d3d95dd8ae2511e382",
   "contentHashAlgo": "sha256-semantic-v1",
-  "generatedAt": "2026-10-25T13:45:48.820Z",
+  "generatedAt": "2026-10-26T01:54:50.578Z",
   "project": {
     "name": "AgentsKit Harness",
     "root": "."
@@ -1001,7 +1001,7 @@
         "document",
         "human"
       ],
-      "contentHash": "703c0e76e6d690635f0605489b346dfeb060263951f75a783fb16c8ac2b709b5"
+      "contentHash": "1f5b8445c0190e8ada9c5e81a0cd501c4b18a5892f349f08f5299eb689e29167"
     },
     {
       "id": "document:docs/MODULE-BOUNDARIES.md",
@@ -4041,7 +4041,7 @@
         "ts",
         "loop"
       ],
-      "contentHash": "72d117685b87c3ff68ea0b228be890f3958b9231da8779b90b61ddacf5c7fe52"
+      "contentHash": "cca6590ba3a070cf1bfcee21e8185a2eb673fc60083875b54e31432e6225d2bb"
     },
     {
       "id": "module:src/loop/connectors.ts",
@@ -4063,7 +4063,7 @@
         "ts",
         "loop"
       ],
-      "contentHash": "d1f0dc3f5282c083591158fe62d6ea570f883edf457c0495871f454d875d713c"
+      "contentHash": "0747d7235f12bba40ba0154603d31e5b836be02c1fefb9e6d9cbff57869a7d02"
     },
     {
       "id": "module:src/loop/contract.ts",
@@ -4143,7 +4143,7 @@
         "ts",
         "loop"
       ],
-      "contentHash": "47091c7579e5558d3cfbf80076f6f6fbc0551ea360362734c3e0783eeade9c66"
+      "contentHash": "b72a6aa79d9e4283e77d5f585e456c8baf1d2adef50b0e6ea5aa43383e847723"
     },
     {
       "id": "module:src/loop/deliver-state.ts",
@@ -4359,7 +4359,7 @@
         "ts",
         "loop"
       ],
-      "contentHash": "b550435aae6b69568f4cf133d64c89117cd7830cc30923ad6de7565b3a1217cd"
+      "contentHash": "0e2b4444fea801809a3c000a39455b4e17630c2a575b7f865b36ba8841cbda3a"
     },
     {
       "id": "module:src/loop/evidence.ts",
@@ -5708,7 +5708,7 @@
         "ts",
         "loop"
       ],
-      "contentHash": "d55d40aacc5db5d5511d654e8a72eb0572fb6b430a59b566f5edc4d10b564f7a"
+      "contentHash": "de1b65ee07c97a3202f54c038b5d033ce6c242db65b62b62b52ce0bc6eef3420"
     },
     {
       "id": "module:src/loop/tracker-cooldown.ts",
@@ -7771,7 +7771,7 @@
         "ts",
         "test"
       ],
-      "contentHash": "23dd47e50fb821752fe09d6762e478cf8351c8e4d9b3f341e3a606a5c960ab50"
+      "contentHash": "1ebe07c395390bc0f0d3f464be9acf8e5b25593df3a4c45f648047d008095115"
     },
     {
       "id": "module:test/harness.test.ts",
@@ -8326,7 +8326,7 @@
         "ts",
         "test"
       ],
-      "contentHash": "d0ae2720c692cdfc03a8acccef869c24d9db2f586ede255867240ba20495c6d4"
+      "contentHash": "397d8dd3fdeda2a726e9b5ca98a9a1d8d2fd6bc35f5f42a1c64187a313f68ac7"
     },
     {
       "id": "module:test/loop-debrief.test.ts",
@@ -9698,7 +9698,7 @@
     }
   },
   "inputs": {
-    "hash": "3f759063d63a4b1b850c4dad81f6eb692ea37c7f992d0884aa32220370bfee08",
+    "hash": "98defc566d75b2a8c1d3bb14bdfbb30bb5dd3ddf90dad2baa1d59bc2450a9257",
     "fileCount": 616,
     "projectionVersion": 2
   },
@@ -9721,9 +9721,9 @@
   "projection": {
     "type": "retrieval-index",
     "schemaVersion": 1,
-    "contentHash": "c2121b93d5cb0fb1ba98c3fbc47013c505b90e3ef0fcd3d2095736f0ddf0552b",
+    "contentHash": "1999b3d03ba58acbc6876692131fc9282f4a8be15c423ee683b3cb83c598c828",
     "contentHashAlgo": "sha256-semantic-v1",
-    "snapshotHash": "9923fdb608ff505acec3ae43ed963b78e6014993dc3d68c8ba2e90be8ec85521",
+    "snapshotHash": "96f13f97e33218d34e2dfd9083db573f8ecdf1c08168f890840e64a08ecd3c9a",
     "overlayHash": "f99666ff9119084dd25c2974ae64eb6935ec2aa785ff5ad478fb9d541f7a5e94",
     "configurationHash": "497822431910cd9fa7d674a48a9f0b96fbbbf779f22a001de0b52252117fe3ab",
     "lexiconVersion": 1,
@@ -9755,8 +9755,8 @@
       ],
       "averageFieldLength": {
         "aliases": 2.926298157453936,
-        "body": 45.90619765494137,
-        "headings": 3.815745393634841,
+        "body": 45.90787269681742,
+        "headings": 3.8174204355108876,
         "path": 6.1289782244556115,
         "summary": 2.8509212730318256,
         "symbols": 13.941373534338359,
@@ -12115,11 +12115,11 @@
         ],
         "fields": {
           "title": "configuration",
-          "headings": "schemaVersion extends project orca linear queue knownFailures reviewOverrides models machine delivery contract memory agents rag mcp plugins github resilience brief security budget intake maintain connectors release worker layers documents dod verifier runs spec tuning flows notifications schedule",
+          "headings": "schemaVersion extends project orca linear queue knownFailures reviewOverrides models machine delivery contract memory agents rag mcp plugins github resilience brief security budget intake maintain tracker connectors release worker layers documents dod verifier runs spec tuning flows notifications schedule",
           "path": "apps/docs/content/docs/reference/configuration.mdx",
           "symbols": "",
           "summary": "{/* Generated by `pnpm docs:generate`. Do not edit by hand: edit `src/loop/config.ts` and regenerate. */}",
-          "body": "{/ Generated by pnpm docs:generate . Do not edit by hand: edit src/loop/config.ts and regenerate. /} The four layers that produce this configuration — the machine's global file, the project's, the team's and this machine's overlay — are described in . ak-harness loop validate prints the effective result, which is the only one that decides anything. 231 of 427 paths carry no description yet. schemaVersion Type: number · Default: 1 extends Defaults for this kind of project ( web-app , library , monorepo , data-pipeline , mobile ), merged below every other layer. Anything this file states wins over the preset; the preset only fills silence. Type: string project Path Type Default Description --- --- --- --- project.name string required project.repo string required project.baseBranch string \"main\" project.root string \".\" project.stateDir string \".ak-loop\" Where the loop keeps everything that is NOT the project's configuration: dispatch ledger, delivery state, contracts, events, agent memory, plans. Meant to be gitignored — the configuration lives at the repo root as loop.config.yaml , versioned; this directory is runtime state, per machine. project.team string Selects the loop.config.team.&lt;key&gt;.yaml layer. $AK LOOP TEAM overrides it; a declared team whose file is missing fails loudly. project.orchestratorView base · root \"base\" The tree the orchestrator's headless calls (contract, plan interview, architect, votes, decompose) read. base (default): a harness-owned detached worktree of origin/&lt;baseBranch&gt; , fetched before each use. root : project.root as it is — whatever branch and age the operator's checkout has. project.setup object {} project.setup.command string[] Argv (no shell — one element per arg, e.g. [pnpm, install, --frozen-lockfile] ) run once in a freshly created worktree before the worker terminal opens. Unset/empty = skip. project.setup.timeoutSec integer 600 project.setup.required boolean true When true, a failing/timing-out setup removes the worktree and counts as a dispatch failure instead of handing the worker a broken environment. orca Path Type Default Description --- --- --- --- orca.bin string \"orca\" orca.repoSelector string Orca repo selector for new worktrees: id:&lt;repoId&gt; , name:&lt;name&gt; or path:&lt;abs&gt; ; default path:&lt;project.root&gt; . orca.workspaceSelector string Existing worktree the automations run in; default: the enclosing worktree resolved by Orca. orca.host string orca.minVersion string \"1.4.200\" orca.timeoutMs integer 20000 linear Path Type Default Description --- --- --- --- linear.workspaceId string required linear.teamKey string required linear.person string required Linear display name of the person whose queue this machine drains. linear.people record&lt;string&gt; {} Display name → Linear user id, for assignee set and audit; the queue itself filters by display name. linear.rotation object {} Optional ordered handoff between owners after the current dispatchable queue drains. linear.rotation.enabled boolean false linear.rotation.owners string[] [] linear.rotation.advanceWhenEmpty boolean true linear.queueOwnership person · unassigned · both \"person\" Whose queue this machine drains. person (default) keeps the historical behaviour: the issues assigned to linear.person . unassigned drains the issues with NO assignee and turns the assignee into a transient claim — written on dispatch, cleared when the item returns — so several machines can share one priority-ordered queue without colliding. Note when switching to unassigned : clearing the assignees is then REQUIRED, not cosmetic. With person and an emptied backlog the queue comes back empty and the loop looks healthy while doing nothing. both drains the union of the two: issues with no assignee AND issues assigned to linear.person . Unassigned ones are claimed for person on dispatch; nothing is released on return (the issue stays the person's, which this queue still sees). linear.states string[] [\"Todo\",\"Ready\"] linear.",
+          "body": "{/ Generated by pnpm docs:generate . Do not edit by hand: edit src/loop/config.ts and regenerate. /} The four layers that produce this configuration — the machine's global file, the project's, the team's and this machine's overlay — are described in . ak-harness loop validate prints the effective result, which is the only one that decides anything. 231 of 429 paths carry no description yet. schemaVersion Type: number · Default: 1 extends Defaults for this kind of project ( web-app , library , monorepo , data-pipeline , mobile ), merged below every other layer. Anything this file states wins over the preset; the preset only fills silence. Type: string project Path Type Default Description --- --- --- --- project.name string required project.repo string required project.baseBranch string \"main\" project.root string \".\" project.stateDir string \".ak-loop\" Where the loop keeps everything that is NOT the project's configuration: dispatch ledger, delivery state, contracts, events, agent memory, plans. Meant to be gitignored — the configuration lives at the repo root as loop.config.yaml , versioned; this directory is runtime state, per machine. project.team string Selects the loop.config.team.&lt;key&gt;.yaml layer. $AK LOOP TEAM overrides it; a declared team whose file is missing fails loudly. project.orchestratorView base · root \"base\" The tree the orchestrator's headless calls (contract, plan interview, architect, votes, decompose) read. base (default): a harness-owned detached worktree of origin/&lt;baseBranch&gt; , fetched before each use. root : project.root as it is — whatever branch and age the operator's checkout has. project.setup object {} project.setup.command string[] Argv (no shell — one element per arg, e.g. [pnpm, install, --frozen-lockfile] ) run once in a freshly created worktree before the worker terminal opens. Unset/empty = skip. project.setup.timeoutSec integer 600 project.setup.required boolean true When true, a failing/timing-out setup removes the worktree and counts as a dispatch failure instead of handing the worker a broken environment. orca Path Type Default Description --- --- --- --- orca.bin string \"orca\" orca.repoSelector string Orca repo selector for new worktrees: id:&lt;repoId&gt; , name:&lt;name&gt; or path:&lt;abs&gt; ; default path:&lt;project.root&gt; . orca.workspaceSelector string Existing worktree the automations run in; default: the enclosing worktree resolved by Orca. orca.host string orca.minVersion string \"1.4.200\" orca.timeoutMs integer 20000 linear Path Type Default Description --- --- --- --- linear.workspaceId string required linear.teamKey string required linear.person string required Linear display name of the person whose queue this machine drains. linear.people record&lt;string&gt; {} Display name → Linear user id, for assignee set and audit; the queue itself filters by display name. linear.rotation object {} Optional ordered handoff between owners after the current dispatchable queue drains. linear.rotation.enabled boolean false linear.rotation.owners string[] [] linear.rotation.advanceWhenEmpty boolean true linear.queueOwnership person · unassigned · both \"person\" Whose queue this machine drains. person (default) keeps the historical behaviour: the issues assigned to linear.person . unassigned drains the issues with NO assignee and turns the assignee into a transient claim — written on dispatch, cleared when the item returns — so several machines can share one priority-ordered queue without colliding. Note when switching to unassigned : clearing the assignees is then REQUIRED, not cosmetic. With person and an emptied backlog the queue comes back empty and the loop looks healthy while doing nothing. both drains the union of the two: issues with no assignee AND issues assigned to linear.person . Unassigned ones are claimed for person on dispatch; nothing is released on return (the issue stays the person's, which this queue still sees). linear.states string[] [\"Todo\",\"Ready\"] linear.",
           "aliases": "configuration document human"
         },
         "graph": {
@@ -12171,7 +12171,7 @@
             }
           ]
         },
-        "contentHash": "8b8adaa3df9718d507b1cc83e0617d9ed7fdd6848a7327b144738a45c270e478",
+        "contentHash": "a063b45913922c7f7717699993bc0b7c0e55447ae2261248ffba34f66ff03298",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -12195,7 +12195,7 @@
           "path": "apps/docs/content/docs/reference/events.mdx",
           "symbols": "",
           "summary": "{/* Generated by `pnpm docs:generate`. Do not edit by hand: edit `src/loop/event-vocabulary.ts` and regenerate. */}",
-          "body": "{/ Generated by pnpm docs:generate . Do not edit by hand: edit src/loop/event-vocabulary.ts and regenerate. /} Every loop event is appended to <stateDir /events.ndjson and emitted on the plugin bus, with at (ISO timestamp) and type on top of the fields below. A plugin subscribes with bus.on('<type ' ' ', listener) ; a notification channel subscribes by listing types in notifications.events . The vocabulary is enforced by the compiler: appendLoopEvent accepts only these names, so an event that is not here cannot be emitted — and a name here that nothing emits fails the test suite. 100 loop events. contract. Event Carries What it means --- --- --- contract.escalated issue , reasons , digest A contract was frozen but is not dispatchable; a human was asked to settle it. contract.failed issue , error Contract generation failed on every candidate provider. contract.generated issue , provider , model , effort , digest A contract was frozen successfully. provider / model / effort are what actually produced it — the join key for comparing how different LLMs (at what reasoning effort) did on the same kind of issue. human. Event Carries What it means --- --- --- human.hitl-requested issue , requestId , batchId , role , stage , question , context , options , recommendedOptionId , digest A structured human decision was requested by an LLM stage. human.hitl-answered issue , requestId , batchId , role , stage , optionId , freeText , digest , actor A human answered one structured HITL request. human.hitl-batch-ready issue , batchId , requestId All requests in a structured HITL batch have answers and the stage may resume. plan. Event Carries What it means --- --- --- plan.voted issue , cycle , approvals , votes , voters One planning cycle finished: how many agents approved the plan, out of how many voted, and who each one was. plan.failed issue , error Planning failed on every candidate provider. plan.escalated issue , cycles , unresolved The cycles ran out without consensus; the unresolved objections are a human's to settle. worker. Event Carries What it means --- --- --- worker.dispatched issue , worktree , worktreeId , branch , terminal , provider , model , effort , contractDigest , briefDigest , command , briefAccepted , tuiIdle , workerGuardInstalled , maxFixRounds A worker was launched in its own worktree. Carries the whole dispatch record plus the command that ran. worker.dispatch-failed issue , error The dispatch itself failed — worktree, terminal or brief — before any work started. worker.dispatch-capacity issue , error , until orca terminal create timed out: the machine is out of room for another agent session. Not counted as a failure; the issue is re-queued and dispatch waits until until . worker.terminal-closed issue , terminal , reason , worktreeId The loop closed a worker terminal it created (finished issue, orphaned, superseded, or idle with a PR open). worker.setup issue , worktreeId , ok project.setup.command ran in the fresh worktree. worker.nudged issue , kind , reason , worktreeId An idle worker was nudged in its own terminal — and also the terminal outcome nudged , which ends a delivery pass on the same issue. Two emissions, one name: kind is present on the first, reason on the second. worker.permission-wait issue , terminal , reason The worker stopped at a tool-permission prompt: held for a person, never typed into. Once per idle window. worker.reactivated issue , terminal , previousTerminal A stale terminal was relaunched for a worker that was still supposed to be working. worker.hitl-resumed issue , requestIds A human answered a worker HITL request and the decision was sent back to the worker terminal. worker.reopened issue , pr , previousHead , head , previousOutcome A finished issue came back: a new head on a PR the loop had already closed out. worker.handed-off issue , from , to , worktreeId , branch , reason , briefAccepted The task was handed to another provider in the same worktree, on the same branch — and also ",
+          "body": "{/ Generated by pnpm docs:generate . Do not edit by hand: edit src/loop/event-vocabulary.ts and regenerate. /} Every loop event is appended to <stateDir /events.ndjson and emitted on the plugin bus, with at (ISO timestamp) and type on top of the fields below. A plugin subscribes with bus.on('<type ' ' ', listener) ; a notification channel subscribes by listing types in notifications.events . The vocabulary is enforced by the compiler: appendLoopEvent accepts only these names, so an event that is not here cannot be emitted — and a name here that nothing emits fails the test suite. 101 loop events, 1 of them still without a description. contract. Event Carries What it means --- --- --- contract.escalated issue , reasons , digest A contract was frozen but is not dispatchable; a human was asked to settle it. contract.failed issue , error Contract generation failed on every candidate provider. contract.generated issue , provider , model , effort , digest A contract was frozen successfully. provider / model / effort are what actually produced it — the join key for comparing how different LLMs (at what reasoning effort) did on the same kind of issue. human. Event Carries What it means --- --- --- human.hitl-requested issue , requestId , batchId , role , stage , question , context , options , recommendedOptionId , digest A structured human decision was requested by an LLM stage. human.hitl-answered issue , requestId , batchId , role , stage , optionId , freeText , digest , actor A human answered one structured HITL request. human.hitl-batch-ready issue , batchId , requestId All requests in a structured HITL batch have answers and the stage may resume. plan. Event Carries What it means --- --- --- plan.voted issue , cycle , approvals , votes , voters One planning cycle finished: how many agents approved the plan, out of how many voted, and who each one was. plan.failed issue , error Planning failed on every candidate provider. plan.escalated issue , cycles , unresolved The cycles ran out without consensus; the unresolved objections are a human's to settle. worker. Event Carries What it means --- --- --- worker.dispatched issue , worktree , worktreeId , branch , terminal , provider , model , effort , contractDigest , briefDigest , command , briefAccepted , tuiIdle , workerGuardInstalled , maxFixRounds A worker was launched in its own worktree. Carries the whole dispatch record plus the command that ran. worker.dispatch-failed issue , error The dispatch itself failed — worktree, terminal or brief — before any work started. worker.dispatch-capacity issue , error , until orca terminal create timed out: the machine is out of room for another agent session. Not counted as a failure; the issue is re-queued and dispatch waits until until . worker.terminal-closed issue , terminal , reason , worktreeId The loop closed a worker terminal it created (finished issue, orphaned, superseded, or idle with a PR open). worker.setup issue , worktreeId , ok project.setup.command ran in the fresh worktree. worker.nudged issue , kind , reason , worktreeId An idle worker was nudged in its own terminal — and also the terminal outcome nudged , which ends a delivery pass on the same issue. Two emissions, one name: kind is present on the first, reason on the second. worker.permission-wait issue , terminal , reason The worker stopped at a tool-permission prompt: held for a person, never typed into. Once per idle window. worker.reactivated issue , terminal , previousTerminal A stale terminal was relaunched for a worker that was still supposed to be working. worker.hitl-resumed issue , requestIds A human answered a worker HITL request and the decision was sent back to the worker terminal. worker.reopened issue , pr , previousHead , head , previousOutcome A finished issue came back: a new head on a PR the loop had already closed out. worker.handed-off issue , from , to , worktreeId , branch , reason , briefAccepted The task was handed to another provider in the same w",
           "aliases": "events document human"
         },
         "graph": {
@@ -12232,7 +12232,7 @@
             }
           ]
         },
-        "contentHash": "ec3841bb057796f8295fc51a60384be88fd5f0a5d626ed4fbdaf4ecec6bab9c2",
+        "contentHash": "08f5d230741524533ac6753cd3fea6d9fd3cf1f9b5b913f55d7640c0ee45df86",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -15868,7 +15868,7 @@
             }
           ]
         },
-        "contentHash": "703c0e76e6d690635f0605489b346dfeb060263951f75a783fb16c8ac2b709b5",
+        "contentHash": "1f5b8445c0190e8ada9c5e81a0cd501c4b18a5892f349f08f5299eb689e29167",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -28584,7 +28584,7 @@
             }
           ]
         },
-        "contentHash": "72d117685b87c3ff68ea0b228be890f3958b9231da8779b90b61ddacf5c7fe52",
+        "contentHash": "cca6590ba3a070cf1bfcee21e8185a2eb673fc60083875b54e31432e6225d2bb",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -28784,7 +28784,7 @@
             }
           ]
         },
-        "contentHash": "d1f0dc3f5282c083591158fe62d6ea570f883edf457c0495871f454d875d713c",
+        "contentHash": "0747d7235f12bba40ba0154603d31e5b836be02c1fefb9e6d9cbff57869a7d02",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -29328,7 +29328,7 @@
             }
           ]
         },
-        "contentHash": "47091c7579e5558d3cfbf80076f6f6fbc0551ea360362734c3e0783eeade9c66",
+        "contentHash": "b72a6aa79d9e4283e77d5f585e456c8baf1d2adef50b0e6ea5aa43383e847723",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -30720,7 +30720,7 @@
           ],
           "outbound": []
         },
-        "contentHash": "b550435aae6b69568f4cf133d64c89117cd7830cc30923ad6de7565b3a1217cd",
+        "contentHash": "0e2b4444fea801809a3c000a39455b4e17630c2a575b7f865b36ba8841cbda3a",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -36432,7 +36432,7 @@
             }
           ]
         },
-        "contentHash": "d55d40aacc5db5d5511d654e8a72eb0572fb6b430a59b566f5edc4d10b564f7a",
+        "contentHash": "de1b65ee07c97a3202f54c038b5d033ce6c242db65b62b62b52ce0bc6eef3420",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -44181,7 +44181,7 @@
             }
           ]
         },
-        "contentHash": "23dd47e50fb821752fe09d6762e478cf8351c8e4d9b3f341e3a606a5c960ab50",
+        "contentHash": "1ebe07c395390bc0f0d3f464be9acf8e5b25593df3a4c45f648047d008095115",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -46084,7 +46084,7 @@
             }
           ]
         },
-        "contentHash": "d0ae2720c692cdfc03a8acccef869c24d9db2f586ede255867240ba20495c6d4",
+        "contentHash": "397d8dd3fdeda2a726e9b5ca98a9a1d8d2fd6bc35f5f42a1c64187a313f68ac7",
         "provenance": "observed",
         "confidence": "observed"
       },

@@ -36,6 +36,16 @@ describe('buildDebriefReport phases and headline', () => {
     expect(report.held).toEqual([])
   })
 
+  it('lists issues waiting for tracker.requireLabel from the last tick, and drops one that was dispatched since', () => {
+    const env = setup()
+    appendLoopEvent(env.loaded.stateDir, { at: '2026-09-12T11:30:00.000Z', type: 'queue.waiting', issues: ['ENG-7', 'ENG-8'], label: 'loop:pm-ok' })
+    env.issue('ENG-8', { 'dispatch.json': dispatch('ENG-8') })
+    const report = buildDebriefReport({ loaded: env.loaded, now: () => NOW })
+    expect(report.waiting).toEqual([{ issue: 'ENG-7', label: 'loop:pm-ok' }])
+    expect(report.headline).toContain('1 waiting for loop:pm-ok')
+    expect(renderDebriefMarkdown(report)).toContain('- ENG-7 — waiting for loop:pm-ok')
+  })
+
   it('reports a merged final outcome and excludes it from inFlight', () => {
     const env = setup()
     env.issue('ENG-1', { 'dispatch.json': dispatch('ENG-1'), 'delivery.json': { issue: 'ENG-1', prNumber: 9, reviews: {}, fixRounds: 0, finalOutcome: 'merged' } })
