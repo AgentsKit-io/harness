@@ -528,6 +528,16 @@ local` is still rejected at config load (ADR-0039): `tick` and `deliver` do not 
 new factory in `resolveConnectors` and a new value in `connectors.tracker` — never a change in the stages. An
 unknown value fails with the name of the interface to implement.
 
+**`tracker.requireLabel`: admission waits for the PM.** Unset by default. Set it (`tracker: { requireLabel:
+loop:pm-ok }`, in the global default or a repo `loop.config.yaml`, which overrides) and the tick contracts only issues
+that carry the label. The fleet PM (AgentsKit-io/fleet, agent-to-agent channel) validates a `loop:todo` issue created
+directly on GitHub and labels it `loop:pm-ok` when it is ready; an issue the PM handed off itself already carries it.
+An issue labelled `loop:todo` without the label is never silently skipped and never contracted: `loop doctor` warns
+`<issue> is labelled loop:todo but skipped: waiting for loop:pm-ok`, the tick notes it and records a `queue.waiting`
+event, and `loop debrief` lists it under **Waiting**. Only admission is gated: removing the label from an issue
+already in flight cancels nothing. The GitHub tracker lists the waiting issues; on Linear the label is enforced the
+same way (added to `linear.requireLabels`) but waiting issues are not listed.
+
 The **`local` runner** is the second implementation, and it exists for a reason: an interface with one
 implementation is a guess. It is git worktree + tmux + the system crontab, no Orca and no daemon:
 

@@ -9,7 +9,7 @@ The four layers that produce this configuration — the machine's global file, t
 machine's overlay — are described in [ADR-0033](https://github.com/AgentsKit-io/harness/blob/main/docs/ADR-0033-four-config-layers-and-presets.md).
 `ak-harness loop validate` prints the effective result, which is the only one that decides anything.
 
-231 of 427 paths carry no description yet.
+231 of 429 paths carry no description yet.
 
 ## `schemaVersion`
 
@@ -409,6 +409,14 @@ Dependencies, security and licences, on a schedule — what a bot does from outs
 | `maintain.checks.title` | string | **required** |  |
 | `maintain.checks.labels` | string[] | `[]` |  |
 | `maintain.dedupeWindowHours` | number | `168` | How often the same unresolved finding may be filed again. |
+
+## `tracker`
+
+What the tracker must say before the tick contracts an issue.
+
+| Path | Type | Default | Description |
+|---|---|---|---|
+| `tracker.requireLabel` | string |  | Admit only issues carrying this label (e.g. `loop:pm-ok`, which the fleet PM sets once it validated the issue). An issue labelled todo without it is listed as "waiting for &lt;label&gt;", never contracted. Gates admission only: removing the label from an issue already in flight cancels nothing. |
 
 ## `connectors`
 

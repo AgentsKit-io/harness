@@ -763,6 +763,15 @@ export const LoopConfigSchema = z.object({
     /** How often the same unresolved finding may be filed again. */
     dedupeWindowHours: z.number().positive().default(168),
   }).prefault({}),
+  /** What the tracker must say before the tick contracts an issue. */
+  tracker: z.object({
+    /**
+     * Admit only issues carrying this label (e.g. `loop:pm-ok`, which the fleet PM sets once it validated the issue).
+     * An issue labelled todo without it is listed as "waiting for <label>", never contracted. Gates admission only:
+     * removing the label from an issue already in flight cancels nothing.
+     */
+    requireLabel: nonEmpty.optional(),
+  }).prefault({}),
   /**
    * Which implementation of each connector this project uses. The engine speaks only to the interfaces
    * (`TrackerConnector`, `ScmConnector`, `RunnerConnector`); adding Jira, GitLab or a cloud sandbox is a new

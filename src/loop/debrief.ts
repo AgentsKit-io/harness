@@ -60,6 +60,8 @@ export interface DebriefReport {
   readonly windowHours: number
   readonly inFlight: readonly DebriefIssueRow[]
   readonly held: readonly DebriefIssueRow[]
+  /** Todo issues `tracker.requireLabel` keeps out of the queue (from the last tick's `queue.waiting` event). */
+  readonly waiting: readonly { readonly issue: string; readonly label: string }[]
   readonly recentEscalations: readonly { readonly issue: string; readonly at: string; readonly reason: string }[]
   readonly cooldowns: readonly { readonly provider: string; readonly reason: string; readonly until: string }[]
   readonly recentEvents: readonly { readonly at: string; readonly type: string; readonly issue: string | null }[]
@@ -238,9 +240,16 @@ export const buildDebriefReport = (input: DebriefInput): DebriefReport => {
     type: event.type,
     issue: typeof event.issue === 'string' ? event.issue : null,
   }))
-  const headline = inFlight.length === 0 && held.length === 0
+  // The latest tick's list (windowed like every event); an issue that has since been dispatched is no longer waiting.
+  const lastWaiting = events.filter((event) => event.type === 'queue.waiting').at(-1)
+  const taken = new Set(rows.map((row) => row.issue))
+  const waiting = lastWaiting && Array.isArray(lastWaiting['issues'])
+    ? lastWaiting['issues'].map(String).filter((issue) => !taken.has(issue)).map((issue) => ({ issue, label: String(lastWaiting['label'] ?? config.tracker.requireLabel ?? '') }))
+    : []
+  const headline = (inFlight.length === 0 && held.length === 0
     ? `Loop idle for ${person} on ${config.project.name}`
-    : `Loop working ${inFlight.length} issue(s)` + (held.length ? `, ${held.length} held for a human` : '') + ` on ${config.project.name}`
+    : `Loop working ${inFlight.length} issue(s)` + (held.length ? `, ${held.length} held for a human` : '') + ` on ${config.project.name}`)
+    + (waiting.length ? `; ${waiting.length} waiting for ${waiting[0]!.label}` : '')
   return {
     generatedAt: now.toISOString(),
     project: config.project.name,
@@ -251,6 +260,7 @@ export const buildDebriefReport = (input: DebriefInput): DebriefReport => {
     windowHours,
     inFlight,
     held,
+    waiting,
     recentEscalations,
     cooldowns,
     recentEvents,
@@ -263,6 +273,7 @@ export const renderDebriefMarkdown = (report: DebriefReport): string => {
   lines.push(`# Loop debrief — ${report.project} · ${report.person}`, '')
   lines.push(`_${report.headline}_ · generated ${report.generatedAt.slice(0, 19)}Z · last ${report.windowHours}h`, '')
   lines.push(`config: ${report.configSource}`, '')
+  if (report.waiting.length) lines.push('## Waiting', '', ...report.waiting.map((item) => `- ${item.issue} — waiting for ${item.label}`), '')
   if (report.inFlight.length === 0) {
     lines.push('## In flight', '', '_Nothing dispatched right now._', '')
   } else {
