@@ -81,6 +81,14 @@ state, or residue from another task. Keep the subject and body terse and
 technical — see [caveman](https://github.com/JuliusBrussee/caveman)
 (`caveman-commit`) for the style this project follows.
 
+## Factory agent flow
+
+Work can reach this repository through the AgentsKit factory: the PM validates
+a request and labels the issue `agent:go`; the agent opens the PR; the merge
+gate merges it when every check is green; issues labelled `risco` wait for a
+human. See
+[docs/factory-agent.md](https://github.com/AgentsKit-io/.github/blob/main/docs/factory-agent.md).
+
 ## Pull requests
 
 PRs must state the contract change, affected states, evidence produced, exact
