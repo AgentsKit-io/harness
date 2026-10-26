@@ -1,0 +1,51 @@
+{
+  "project": [
+    {
+      "id": "test-for-new-code",
+      "status": "passed",
+      "evidence": "this branch changes test/toolchain-versions.test.ts (new file matching **/*.test.ts); it runs in the suite and passes (1/1 in its own run, included in 2077 passed)"
+    },
+    {
+      "id": "no-todo",
+      "status": "passed",
+      "evidence": "changed files vs origin/main: package.json, pnpm-lock.yaml, test/toolchain-versions.test.ts. None is under src/** and none contains TODO or FIXME"
+    }
+  ],
+  "outcomes": [
+    {
+      "id": "o1",
+      "status": "passed",
+      "evidence": "node .ak-loop/check-vitest.mjs -> 'vitest 5.0.5', exit 0; pnpm install --frozen-lockfile -> 'Lockfile is up to date, resolution step is skipped'"
+    },
+    {
+      "id": "o2",
+      "status": "passed",
+      "evidence": "root typescript held at 5.9.3 (tsup 9 DTS: 'rollup-plugin-dts requires the TypeScript compiler API ... typescript@7.0.2 does not provide it'); apps/docs typescript held at 6.0.3 (next 16.4.2 runTypeCheck uses ts.createProgram, undefined in 7.0.2); see plan.md"
+    },
+    {
+      "id": "o3",
+      "status": "passed",
+      "evidence": "pnpm run typecheck clean; pnpm run test: 2077 passed, 0 failed, 6 pending (as origin/main); pnpm run build: Build success, vite build ok"
+    },
+    {
+      "id": "o4",
+      "status": "failed",
+      "evidence": "ak-docs gate run index-freshness fails: 'Index is stale under sha256-semantic-v1' (pre-existing: no indexed source changed on this branch); next build killed with exit 137 under TS 6.0.3 and 7.0.2; the rest of the docs checks and coverage thresholds pass"
+    },
+    {
+      "id": "o5",
+      "status": "passed",
+      "evidence": "no added @ts-ignore, @ts-nocheck, any, as any, strict false, .skip( or .todo( in git diff origin/main excluding the lockfile"
+    },
+    {
+      "id": "o6",
+      "status": "passed",
+      "evidence": "versions before/after, breakages, hold-backs and verification output are in the final report of this run"
+    },
+    {
+      "id": "o7",
+      "status": "passed",
+      "evidence": "header lengths 21 and 42 (<=72); body lines under 80 (<=100); no changeset"
+    }
+  ]
+}
