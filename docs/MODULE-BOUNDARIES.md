@@ -14,6 +14,10 @@ does not claim that the proposed 0.4.0 boundary has already been accepted.
 | Adapter | Provider-specific or external-system integration | May depend on kernel contracts; must not be imported by kernel modules. |
 | Composition | Package and CLI entry points | May compose kernel, execution support, and adapters; consumers use `src/index.ts`. |
 
+The main source directories are `src/kernel` (kernel), `src/execution` (execution support), `src/adapters`
+(adapters), `src/loop`, `src/cli.ts` and `src/index.ts` (composition); the inventory below gives `src/delivery`
+(delivery gates), `src/profiles` and `src/context` their own Delivery, Profiles and Context rows.
+
 ## Complete source inventory
 
 Every current TypeScript module is listed below. Relative imports are the

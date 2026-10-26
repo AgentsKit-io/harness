@@ -1,5 +1,7 @@
 # ADR-0024: Measure escaped incomplete delivery with controlled baselines
 
+Code: `src/execution/metrics.ts` (`escapedIncomplete`).
+
 ## Status
 
 Accepted

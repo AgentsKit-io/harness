@@ -2005,7 +2005,7 @@ describe('no dead states: fix rounds retry infrastructure failures and block on 
     env.prs.push({ number: 7, url: `https://github.com/${FLEET_REPO}/pull/7`, title: 'Demo', state: 'OPEN', isDraft: false, headRefName: env.record()?.branch, headRefOid: 'abc123', baseRefName: 'main', mergeable: 'CONFLICTING', mergeStateStatus: 'DIRTY', labels: [], files: [], statusCheckRollup: [], updatedAt: '2026-10-20T11:00:00Z' })
     const submitted = await env.deliver(hoursAfter(1))
     expect(submitted.results[0]).toMatchObject({ outcome: 'fix-round' })
-    expect(env.record()?.fleetFix).toMatchObject({ kind: 'conflict', head: 'abc123' })
+    expect(readDeliveryState(env.loaded().stateDir, env.issue).fleetFix).toMatchObject({ kind: 'conflict', head: 'abc123' })
     expect(env.submits()).toHaveLength(2)
   }
 
@@ -2017,7 +2017,7 @@ describe('no dead states: fix rounds retry infrastructure failures and block on 
     const retried = await env.deliver(hoursAfter(2))
     expect(retried.results[0]).toMatchObject({ outcome: 'waiting', reason: expect.stringContaining('failed for infrastructure (no eligible host)') })
     expect(readFixRetries(env.loaded().stateDir, env.issue, hoursAfter(2))).toHaveLength(1)
-    expect(env.record()?.fleetFix).toBeUndefined()
+    expect(readDeliveryState(env.loaded().stateDir, env.issue).fleetFix ?? null).toBeNull()
     expect(env.labels.has(env.lifecycle.blocked)).toBe(false)
     expect(readDeliveryState(env.loaded().stateDir, env.issue)).toMatchObject({ finishedAt: null, nudges: [] })
     // The next pass sees the same conflict and submits the fix again.

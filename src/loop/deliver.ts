@@ -34,6 +34,7 @@ import { decideMerge, weakestVerdict, type MergePolicyInput } from './merge-poli
 import { isProven, migrateVerdict, patchIdOfPullRequest, readVerdictRecord, reviewLevel, verdictsHold, writeVerdictRecord, type RunFingerprint, type Verdict, type VerdictRecord } from './verdict.js'
 import { ciVerification, proveFleetDod } from './fleet-dod.js'
 import { handoffRoot, stripHandoff } from './fleet-handoff.js'
+import { classifyFixFailure, conflictingFiles, failedCheckLogs, renderFleetFixBrief, type FixFailure } from './fleet-fix.js'
 import { renderVerifierMarkdown, verifyIndependently } from './verifier.js'
 import { splitLines } from '@agentskit/cross-platform'
 import { ARTIFACT_DIR, artifactPath, missingArtifacts, readPhaseArtifacts, readVerifyArtifact, VerifyArtifactSchema, verifyProofs, type PhaseArtifactName } from './artifacts.js'
@@ -50,7 +51,6 @@ import { createIssueQueue } from './queue.js'
 import { createLifecycleStore, type LifecyclePullRequest } from './lifecycle.js'
 import { activeTrackerCooldown, guardTracker, TrackerCooldownError } from './tracker-cooldown.js'
 import { approveHeldDelivery, clearRestarts, deliveryStatePath, listDispatched, markDispatchCancelled, MAX_INFRA_FIX_RETRIES, MAX_LOST_TRACKING_RESTARTS, MAX_STUCK_DISPATCHES, readDeliveryState, readFixRetries, readRestarts, readStuck, recordFixRetry, recordStuck, restartsPath } from './deliver-state.js'
-import { classifyFixFailure, type FixFailure } from './fleet-fix.js'
 import type { RunnerConnector } from './runner-connector.js'
 import type { DeliveryHandoff, DeliveryState, DeliverOutcome } from './deliver-state.js'
 import { reapWorkerTerminals } from './terminal-reaper.js'
@@ -824,7 +824,7 @@ const handleFleetNoPullRequest = async (ctx: Context, record: DispatchRecordFile
   if (!pr) return { issue: record.issue, outcome: 'waiting', reason: `PR created from ${collected.branch}; not listed yet`, actions }
   actions.push(`opened ${wip ? 'draft ' : ''}PR #${pr.number}`)
   if (wip) {
-    const continued = await startFleetFix(ctx, delivered, pr.headSha, 'continuation', `Loop: the previous task on this issue ended incomplete; its WIP commit is the starting point of this branch. Continue the work from where it stopped, finish every outcome of the contract (digest \`${record.contractDigest.slice(0, 12)}\`), run the verification, and commit.`, state.fixRounds, actions)
+    const continued = await startContinuation(ctx, delivered, pr.headSha, 'continuation', `Loop: the previous task on this issue ended incomplete; its WIP commit is the starting point of this branch. Continue the work from where it stopped, finish every outcome of the contract (digest \`${record.contractDigest.slice(0, 12)}\`), run the verification, and commit.`, state.fixRounds, actions)
     return { issue: record.issue, outcome: 'waiting', reason: `draft PR #${pr.number} (${WIP_LABEL}) opened from the incomplete task's WIP commit; ${continued ? 'continuation dispatched' : 'continuation could not be dispatched'}`, pr: pr.number, head: pr.headSha, actions }
   }
   return { issue: record.issue, outcome: 'waiting', reason: `PR #${pr.number} opened from the collected branch ${collected.branch}; review starts next pass`, pr: pr.number, head: pr.headSha, actions }
@@ -834,7 +834,7 @@ const handleFleetNoPullRequest = async (ctx: Context, record: DispatchRecordFile
  * A fix (conflict/CI/review) or continuation for a fleet PR is a new fleet task cut from the PR branch: a queued task
  * cannot be messaged. Its result is collected by `handleFleetFix` on a later pass. False when the fleet refused it.
  */
-const startFleetFix = async (ctx: Context, record: DispatchRecordFile, head: string, kind: NonNullable<DispatchRecordFile['fleetFix']>['kind'], text: string, roundsBefore: number, actions: string[]): Promise<boolean> => {
+const startContinuation = async (ctx: Context, record: DispatchRecordFile, head: string, kind: NonNullable<DispatchRecordFile['fleetFix']>['kind'], text: string, roundsBefore: number, actions: string[]): Promise<boolean> => {
   if (ctx.dryRun) { actions.push(`would submit a fleet ${kind} task from ${record.branch}`); return true }
   const connector = createRunnerConnector({ loaded: ctx.loaded, runner: ctx.runner })
   try {
@@ -881,7 +881,7 @@ const fixTaskFailed = async (ctx: Context, record: DispatchRecordFile, lease: Di
 }
 
 /** The fleet fix or continuation task of an open PR: wait for it, push what it made onto the PR branch, or settle its failure. */
-const handleFleetFix = async (ctx: Context, record: DispatchRecordFile, lease: DispatchLease | undefined, state: DeliveryState, pr: PullRequestSnapshot, fix: NonNullable<DispatchRecordFile['fleetFix']>): Promise<DeliverResult> => {
+const handleContinuation = async (ctx: Context, record: DispatchRecordFile, lease: DispatchLease | undefined, state: DeliveryState, pr: PullRequestSnapshot, fix: NonNullable<DispatchRecordFile['fleetFix']>): Promise<DeliverResult> => {
   const actions: string[] = []
   const waiting = (reason: string): DeliverResult => ({ issue: record.issue, outcome: 'waiting', reason, pr: pr.number, head: pr.headSha, actions })
   const connector = createRunnerConnector({ loaded: ctx.loaded, runner: ctx.runner })
@@ -1167,6 +1167,92 @@ const discoveryOnly = (ctx: Context, record: DispatchRecordFile, state: Delivery
   return findings.every((finding) => !earlier.has(findingKey(finding)))
 }
 
+/**
+ * A fix round for a fleet PR: a new task whose base is the PR head, briefed with the frozen contract and the exact
+ * reason. Null when the fleet did not take it (the pass reports `waiting` and the next one tries again).
+ */
+const submitFleetFix = async (ctx: Context, record: DispatchRecordFile, state: DeliveryState, pr: PullRequestSnapshot, kind: 'ci' | 'review' | 'conflict', text: string, why: string, findings: readonly CodeReviewOutcome['blocking'][number][], actions: string[]): Promise<DeliveryState['fleetFix']> => {
+  const { config, runner } = ctx
+  const root = ctx.loaded.root
+  const parts = [`${why}.`]
+  if (kind === 'conflict') {
+    const files = await conflictingFiles({ runner, root, base: config.project.baseBranch, head: pr.headSha })
+    parts.push(files === null ? 'The conflicting files could not be computed here; the merge will show them.' : files.length ? `Conflicting files (from \`git merge-tree\`):\n${files.map((file) => `- ${file}`).join('\n')}` : '`git merge-tree` finds no conflicting file now (the base moved); merge anyway.')
+  } else {
+    const failing = assessChecks(pr.checks, config.delivery.requiredChecks, config.delivery.ignoreChecks).failing
+    const known = findings.length ? findings : readBlockingReviewFindings(ctx.loaded.stateDir, record.issue, pr.headSha, 'nit')
+    if (failing.length) parts.push(`Failing checks: ${failing.join(', ')}\n\n${await failedCheckLogs({ runner, root, repo: config.project.repo, checks: pr.checks.filter((check) => failing.includes(check.name)) })}`)
+    if (known.length) parts.push(`Review findings:\n${renderFindingsForWorker(known)}`)
+    if (!failing.length && !known.length) parts.push(`The loop's instruction (ignore its push / reply steps; you do not push):\n${text}`)
+  }
+  const connector = createRunnerConnector({ loaded: ctx.loaded, runner })
+  const round = state.nudges.length + 1
+  const workspace = await connector.createWorkspace({ name: `${record.issue}-fix-${round}`, branch: `${record.branch}-fix-${round}`, baseBranch: pr.headRef, issue: record.issue })
+  const brief = renderFleetFixBrief({ config, issue: record.issue, contract: readStoredContract(ctx.loaded.stateDir, record.issue), prNumber: pr.number, prUrl: pr.url, headRef: pr.headRef, baseRef: config.project.baseBranch, kind, reason: parts.join('\n\n') })
+  const terminal = await connector.launchAgent({ workspace, command: '', title: `${record.issue} fix ${round}` })
+  const receipt = await connector.send({ terminal, text: brief })
+  actions.push(receipt.detail)
+  if (!receipt.delivered) { await connector.removeWorkspace({ id: workspace.id }).catch(() => undefined); return null }
+  return { workspaceId: workspace.id, head: pr.headSha, kind }
+}
+
+/**
+ * A fleet fix task in flight. While it runs, wait. Done: collect it and push it to the PR branch — a fast-forward push,
+ * never forced: a moved head ends the round as a retry. A task that failed or
+ * made nothing is escalated, not retried. Null: the PR moved on without it, carry on with the PR as it is.
+ */
+const handleFleetFix = async (ctx: Context, record: DispatchRecordFile, lease: DispatchLease | undefined, state: DeliveryState, pr: PullRequestSnapshot, fix: NonNullable<DeliveryState['fleetFix']>, actions: string[]): Promise<DeliverResult | null> => {
+  const connector = createRunnerConnector({ loaded: ctx.loaded, runner: ctx.runner })
+  const waiting = (reason: string, head = pr.headSha): DeliverResult => ({ issue: record.issue, outcome: 'waiting', reason, pr: pr.number, head, actions })
+  const forget = async (): Promise<DeliveryState> => {
+    await connector.removeWorkspace({ id: fix.workspaceId }).catch(() => undefined)
+    const cleared: DeliveryState = { ...state, fleetFix: null }
+    saveState(ctx, cleared)
+    return cleared
+  }
+  if (pr.headSha !== fix.head) {
+    actions.push(`the PR head moved to ${pr.headSha.slice(0, 7)} while the fleet ${fix.kind} fix was cut from ${fix.head.slice(0, 7)}; dropping that task`)
+    if (!ctx.dryRun) await forget()
+    return null
+  }
+  if (ctx.dryRun) return waiting('fleet fix task in flight')
+  const task = (await connector.observeWorkspaces()).find((item) => item.id === fix.workspaceId)?.state ?? 'unknown'
+  if (task === 'queued' || task === 'running' || task === 'unknown') return waiting(`fleet fix task ${task === 'unknown' ? 'not reported by the queue yet' : task}`)
+  // An infrastructure failure is retried (up to MAX_INFRA_FIX_RETRIES per issue per day, no fix round spent); only a task that ran and failed blocks.
+  const failed = async (failure: FixFailure): Promise<DeliverResult> => {
+    const retries = readFixRetries(ctx.loaded.stateDir, record.issue, ctx.now())
+    const cleared = await forget()
+    if (failure.infrastructure && retries.length < MAX_INFRA_FIX_RETRIES) {
+      recordFixRetry(ctx.loaded.stateDir, record.issue, ctx.now(), failure.reason)
+      saveState(ctx, { ...cleared, fixRounds: fix.roundsBefore ?? cleared.fixRounds, nudges: cleared.nudges.filter((nudge) => !(nudge.kind === fix.kind && nudge.head === fix.head)) })
+      event(ctx, { type: 'worker.fix-retried', issue: record.issue, kind: fix.kind, reason: failure.reason, retry: retries.length + 1 })
+      actions.push(`${fix.kind} task failed for infrastructure (${failure.reason}); retrying (${retries.length + 1}/${MAX_INFRA_FIX_RETRIES} today)`)
+      return waiting(`${fix.kind} task failed for infrastructure (${failure.reason}); retry ${retries.length + 1}/${MAX_INFRA_FIX_RETRIES} today`)
+    }
+    const why = failure.infrastructure ? `the ${fix.kind} task failed for infrastructure (${failure.reason}) again after ${retries.length} retries today` : `the ${fix.kind} task itself failed: ${failure.reason}`
+    return blockAfterRounds(ctx, record, lease, cleared, pr, why, actions)
+  }
+  const tail = async (): Promise<string> => { try { return await connector.readScreen({ terminal: fix.workspaceId, lines: 40 }) } catch { return '' } }
+  if (task !== 'done') return failed(classifyFixFailure(task, await tail(), false))
+  const collect = connector.collect?.bind(connector) ?? fail(`runner "${connector.id}" cannot collect a finished task.`, 'HARNESS_ERROR')
+  const collected = await collect({ id: fix.workspaceId })
+  actions.push(collected.detail)
+  if (collected.branch === null || !collected.head) return failed(classifyFixFailure(task, await tail(), true))
+  const root = ctx.loaded.root
+  const git = (args: readonly string[]) => ctx.runner.run(['git', '-C', root, ...args], { timeoutMs: 120_000 })
+  // The worker may have committed handoff files again; they never belong on the PR branch.
+  const stripped = await stripHandoff({ runner: ctx.runner, root, stateDir: ctx.loaded.stateDir, issue: record.issue, rev: collected.head })
+  const head = stripped?.head ?? collected.head
+  const pushed = await git(['push', 'origin', `${head}:refs/heads/${pr.headRef}`])
+  // Never forced: a head that moved meanwhile (or history that does not descend from it) is rejected, and the round is retried.
+  if (pushed.code !== 0 && /non-fast-forward|\(fetch first\)|\[rejected\]/.test(pushed.stderr)) return waiting(`the push of the fleet ${fix.kind} fix to ${pr.headRef} was rejected (the PR head moved); retrying`)
+  if (pushed.timedOut || pushed.code !== 0) fail(`push of the fleet ${fix.kind} fix to ${pr.headRef} failed: ${(pushed.stderr || pushed.stdout).trim().slice(0, 300) || `exit ${pushed.code ?? 'null'}`}`, 'HARNESS_ERROR')
+  actions.push(`pushed the fleet ${fix.kind} fix to ${pr.headRef} at ${head.slice(0, 7)}`)
+  await git(['branch', '-D', collected.branch]).catch(() => undefined)
+  await forget()
+  return waiting(`fleet ${fix.kind} fix pushed to ${pr.headRef}; checks run again on the new head`, head)
+}
+
 const fixRound = async (ctx: Context, record: DispatchRecordFile, lease: DispatchLease | undefined, state: DeliveryState, pr: PullRequestSnapshot, kind: 'ci' | 'review' | 'conflict', text: string, why: string, actions: string[], findings: readonly CodeReviewOutcome['blocking'][number][] = []): Promise<DeliverResult> => {
   const already = state.nudges.some((nudge) => nudge.kind === kind && nudge.head === pr.headSha)
   if (already) return { issue: record.issue, outcome: 'waiting', reason: `${kind} nudge already sent for head ${pr.headSha.slice(0, 7)}; waiting for a new push`, pr: pr.number, head: pr.headSha, actions }
@@ -1174,14 +1260,18 @@ const fixRound = async (ctx: Context, record: DispatchRecordFile, lease: Dispatc
   const reviewRounds = state.nudges.filter((nudge) => nudge.kind === 'review').length
   const discovery = kind === 'review' && reviewRounds < limit * 2 && discoveryOnly(ctx, record, state, findings)
   if (discovery) actions.push(`review round ${reviewRounds + 1}: every finding is new at this head (discovery), not counted against maxFixRounds (${state.fixRounds}/${limit})`)
-  const counts = kind !== 'conflict' && !discovery
+  // A conflict round is free for a worker in a terminal; a fleet one is a whole task, so it spends the limit like any other.
+  const counts = (kind !== 'conflict' || record.runner === 'fleet') && !discovery
   if (kind === 'review' && reviewRounds >= limit * 2) return blockAfterRounds(ctx, record, lease, state, pr, `${why} — ${reviewRounds} review rounds, the ceiling of twice maxFixRounds`, actions)
   if (counts && state.fixRounds >= limit) return blockAfterRounds(ctx, record, lease, state, pr, why, actions)
   // The worker already has its brief; the round points back at it by digest instead of re-sending what it holds.
   // Delta, not repetition — and the anchor is what lets a worker that lost the thread find it again.
   const anchor = record.briefDigest ? `\n\nContext: contract \`${record.contractDigest.slice(0, 12)}\` · brief \`${record.briefDigest.slice(0, 12)}\`${record.skills?.length ? ` · pinned skills: ${record.skills.map((skill) => `\`${skill.path}\``).join(', ')} — re-read them in the worktree, they are unchanged for this run` : ''}.` : ''
-  const sent = record.runner === 'fleet' ? await startFleetFix(ctx, record, pr.headSha, kind, `${text}${anchor}`, state.fixRounds, actions) : await sendToWorker(ctx, record, `${text}${anchor}`, actions)
-  const next: DeliveryState = { ...state, prNumber: pr.number, fixRounds: sent && counts ? state.fixRounds + 1 : state.fixRounds, nudges: sent ? [...state.nudges, { kind, at: ctx.now().toISOString(), head: pr.headSha }] : state.nudges }
+  // A fleet task has no terminal: the round is a new task cut from the PR head, collected and pushed by a later pass.
+  const fleetFix = record.runner === 'fleet' && !ctx.dryRun ? await submitFleetFix(ctx, record, state, pr, kind, text, why, findings, actions) : null
+  if (record.runner === 'fleet' && ctx.dryRun) actions.push(`would submit a fleet fix task (${kind}) cut from ${pr.headRef}`)
+  const sent = record.runner === 'fleet' ? ctx.dryRun || fleetFix !== null : await sendToWorker(ctx, record, `${text}${anchor}`, actions)
+  const next: DeliveryState = { ...state, prNumber: pr.number, fixRounds: sent && counts ? state.fixRounds + 1 : state.fixRounds, nudges: sent ? [...state.nudges, { kind, at: ctx.now().toISOString(), head: pr.headSha }] : state.nudges, ...(fleetFix ? { fleetFix: { ...fleetFix, roundsBefore: state.fixRounds } } : {}) }
   saveState(ctx, next)
   if (sent) event(ctx, { type: `worker.${kind}-round`, issue: record.issue, pr: pr.number, head: pr.headSha, round: next.fixRounds })
   return { issue: record.issue, outcome: ctx.dryRun ? 'dry-run' : sent ? 'fix-round' : 'waiting', reason: why, pr: pr.number, head: pr.headSha, actions }
@@ -1291,6 +1381,11 @@ const handlePullRequest = async (ctx: Context, record: DispatchRecordFile, lease
   const closes = verifyCommandFor(config, record.labels ?? []).command
   if (flow.flow.name && flow.flow.source !== 'none') actions.push(`flow \`${flow.flow.name}\` (${flow.flow.source}${flow.flow.matched ? ` ${flow.flow.matched}` : ''})${flow.flow.profile?.reason ? `: ${flow.flow.profile.reason}` : ''}`)
   if (pr.isDraft) return { issue: record.issue, outcome: 'waiting', reason: 'PR is a draft', pr: pr.number, head: pr.headSha, actions }
+  if (record.runner === 'fleet' && state.fleetFix) {
+    const handled = await handleFleetFix(ctx, record, lease, state, pr, state.fleetFix, actions)
+    if (handled) return handled
+    state = { ...state, fleetFix: null }
+  }
   // A fleet PR opened before handoff files were kept out of it: remove them with one commit; the new head is judged next pass.
   if (record.runner === 'fleet' && !ctx.dryRun && pr.files.some((file) => file.startsWith(`${ARTIFACT_DIR}/`))) {
     const stripped = await stripHandoff({ runner: ctx.runner, root: ctx.loaded.root, stateDir: ctx.loaded.stateDir, issue: record.issue, rev: pr.headSha })
@@ -1880,7 +1975,7 @@ export const runDeliver = async (input: DeliverInput): Promise<DeliverReport> =>
       if (pr) {
         seenHead = pr.headSha
         // A fleet fix or continuation task is running or waiting to be collected: the PR is not judged until its result is in.
-        if (record.runner === 'fleet' && record.fleetFix && !state.finishedAt) { results.push(await handleFleetFix(ctx, record, lease, state, pr, record.fleetFix)); continue }
+        if (record.runner === 'fleet' && record.fleetFix && !state.finishedAt) { results.push(await handleContinuation(ctx, record, lease, state, pr, record.fleetFix)); continue }
         const wasFinished = Boolean(state.finishedAt)
         state = await reopenFinishedIssue(ctx, record, state, pr)
         if (wasFinished && state.finishedAt) continue

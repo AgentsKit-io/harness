@@ -175,6 +175,8 @@ export const LOOP_EVENT_TYPES = {
   /** The tracker refused the claim that reserves an issue for this loop. */
   'queue.claim-failed': ['issue', 'assignee', 'error'],
   /** `linear.refill` assigned unassigned issues to the person so their queue holds `target` again. */
+  /** Issues labelled todo that `tracker.requireLabel` keeps out of the queue: they wait for `label` and are not contracted. */
+  'queue.waiting': ['issues', 'label'],
   'queue.refilled': ['person', 'issues', 'held', 'target'],
   /** A `queue.yieldTo` sibling loop had dispatchable work, so this tick admitted nothing new. */
   'queue.yielded': ['to', 'candidates', 'reason'],

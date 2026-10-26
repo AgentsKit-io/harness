@@ -41,7 +41,7 @@
         "harness-site": {
           "path": "apps/docs",
           "purpose": "Public Fumadocs product site and its curated documentation.",
-          "agentDoc": "apps/docs/content/docs/index.mdx",
+          "agentDoc": "docs/for-agents/packages/harness-site.md",
           "humanDoc": "https://harness.agentskit.io/docs",
           "checks": [
             "pnpm docs:build"
@@ -50,7 +50,7 @@
         "ecosystem-manifest": {
           "path": "ecosystem.json",
           "purpose": "Shared product metadata and public ecosystem references.",
-          "agentDoc": "apps/docs/content/docs/index.mdx",
+          "agentDoc": "docs/for-agents/packages/ecosystem-manifest.md",
           "humanDoc": "https://harness.agentskit.io/docs",
           "checks": [
             "node scripts/verify-ecosystem-public-outputs.mjs"

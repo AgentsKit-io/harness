@@ -1,5 +1,7 @@
 # ADR-0014: Criterion-level benchmark evidence
 
+Code: `src/execution/metrics.ts` (`baselineEvidenceCoverageRate`).
+
 ## Context
 
 Scalar baseline numbers do not prove that a benchmark task exercised its

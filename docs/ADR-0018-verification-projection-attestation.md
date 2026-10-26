@@ -1,5 +1,7 @@
 # ADR-0018: Attest verification projections before approval
 
+Code: `src/execution/verification.ts` (`verificationDigest`, approval checks).
+
 ## Context
 
 `run.json` is a convenient projection of checks and outcomes, but it is not

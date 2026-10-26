@@ -162,6 +162,23 @@ describe('GitHub tracker adapter', () => {
       expect(tracker.queueSkips?.()).toEqual([{ identifier: 'acme/app#7', reason: expect.stringContaining('github.issues.anyLabels (ready)') }])
     })
 
+    describe('tracker.requireLabel', () => {
+      const gated = () => validateLoopConfig({ ...config(), tracker: { requireLabel: 'loop:pm-ok' } })
+      const approved = { ...detail([{ name: 'loop:todo' }, { name: 'loop:pm-ok' }]), number: 8, url: 'https://github.com/acme/app/issues/8' }
+
+      it('admits the issue that carries it and lists the one that does not as waiting', async () => {
+        const tracker = createGitHubTracker({ runner: runnerFor([detail(), approved]), config: gated() })
+        expect((await tracker.queue({ assignee: null })).map((issue) => issue.identifier)).toEqual(['acme/app#8'])
+        expect(tracker.queueSkips?.()).toEqual([{ identifier: 'acme/app#7', reason: 'waiting for loop:pm-ok (tracker.requireLabel)' }])
+      })
+
+      it('is today\'s behaviour when unset', async () => {
+        const tracker = createGitHubTracker({ runner: runnerFor([detail(), approved]), config: config() })
+        expect((await tracker.queue({ assignee: null })).map((issue) => issue.identifier).sort()).toEqual(['acme/app#7', 'acme/app#8'])
+        expect(tracker.queueSkips?.()).toEqual([])
+      })
+    })
+
     it('names the excluded label and the ownership that drop a loop:todo issue', async () => {
       const base = config()
       const excluded = validateLoopConfig({ ...base, linear: { ...base.linear, excludeLabels: ['wontfix'] } })

@@ -1,5 +1,7 @@
 # ADR-0002: Profiles and optional context providers
 
+Code: `src/profiles` (profile resolution), `src/context` (context providers).
+
 - Status: accepted
 - Date: 2026-08-29
 

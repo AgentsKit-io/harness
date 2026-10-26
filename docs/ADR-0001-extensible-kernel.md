@@ -1,5 +1,7 @@
 # ADR-0001: Extensible kernel with append-only run events
 
+Code: `src/kernel/plugins.ts` (plugin registry), `src/kernel/events.ts` (event log), `src/kernel`.
+
 - Status: accepted
 - Date: 2026-08-29
 

@@ -443,6 +443,8 @@ export interface LoopState {
   readonly candidates: readonly LoopIssue[]
   /** Todo-labelled issues the queue filters dropped, one line each naming the filter. */
   readonly skipped: readonly string[]
+  /** The part of `skipped` that only lacks `tracker.requireLabel`: identifiers waiting for the PM, not contracted. */
+  readonly waiting: readonly string[]
   /** Catalog-discovered candidates per role (`models.routing.mode: catalog`), already resolved for `routing` above — reused by `runTick` for `generateContract`'s candidate fallback so it isn't resolved twice per tick. */
   readonly extrasByRole: Partial<Record<ModelRole, readonly ModelReference[]>>
 }
@@ -529,7 +531,8 @@ export const gatherLoopState = async (input: { readonly loaded: LoadedLoopConfig
       ? (explicitRuns.find((run) => run.issue === left.identifier)?.sequence ?? Number.MAX_SAFE_INTEGER) - (explicitRuns.find((run) => run.issue === right.identifier)?.sequence ?? Number.MAX_SAFE_INTEGER)
       : 0)
   const skipped = (tracker.queueSkips?.() ?? []).map((skip) => `${skip.identifier} is labelled ${config.github.issues.labels.todo} but skipped: ${skip.reason}`)
-  return { person, providers, routing, worktrees, slots, queue, leases, busy, candidates, skipped, extrasByRole }
+  const waiting = (tracker.queueSkips?.() ?? []).filter((skip) => skip.reason.startsWith('waiting for ')).map((skip) => skip.identifier)
+  return { person, providers, routing, worktrees, slots, queue, leases, busy, candidates, skipped, waiting, extrasByRole }
 }
 
 /** Read-only: exit-0 semantics for Orca `--precheck`. Work exists when a builder is routable and a candidate waits; capacity is telemetry, not an enqueue or dispatch gate. */
@@ -705,6 +708,11 @@ export const runTick = async (input: TickInput): Promise<TickReport> => {
   const summary = { orchestrator: orchestrator.selected ? `${orchestrator.selected.provider}/${orchestrator.selected.model}` : null, builder: builder ? `${builder.provider}/${builder.model}` : null }
   const base = { generatedAt: now().toISOString(), dryRun, slots: { maxAgents: state.slots.maxAgents, running: state.slots.running, free: state.slots.free, reasons: state.slots.reasons }, routing: summary, queue: { total: state.queue.length, busy: [...state.busy], candidates: state.candidates.map((issue) => issue.identifier) } }
   notes.push(...state.skipped)
+  const requireLabel = config.tracker.requireLabel
+  if (requireLabel && !dryRun) {
+    const waiting = state.waiting
+    if (waiting.length) appendLoopEvent(loaded.stateDir, { at: now().toISOString(), type: 'queue.waiting', issues: waiting, label: requireLabel }, bus)
+  }
   if (!builder) { notes.push('no builder provider available; nothing dispatched'); await flushNotifications(); return { ...base, status: 'blocked', results, notes } }
   if (!state.candidates.length) {
     const rotation = dryRun ? { owner: state.person, advanced: false } : advanceQueueOwner(loaded, { queueEmpty: state.queue.length === 0, activeLeases: countRotationBlockingLeases(loaded, state.leases), now: now() })

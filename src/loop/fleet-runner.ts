@@ -96,11 +96,16 @@ export const probeFleet = async (input: RunnerInput): Promise<readonly FleetProb
   else {
     if (!record) probes.push({ id: 'fleet.doctor', status: 'warning', detail: `${label} exited 0 but printed no JSON summary` })
     else {
-      const checks = Array.isArray(record['checks']) ? record['checks'].filter((item): item is Record<string, unknown> => typeof item === 'object' && item !== null) : []
+      // `fleet doctor --json` nests checks per machine: `orchestrator.checks` and `hosts[].checks`; a top-level `checks` is still read.
+      const objects = (value: unknown): Record<string, unknown>[] => Array.isArray(value) ? value.filter((item): item is Record<string, unknown> => typeof item === 'object' && item !== null) : []
+      const orchestrator = typeof record['orchestrator'] === 'object' && record['orchestrator'] !== null ? record['orchestrator'] as Record<string, unknown> : {}
+      const hostOf = new Map<Record<string, unknown>, string>()
+      const hostChecks = objects(record['hosts']).flatMap((host) => objects(host['checks']).map((item) => { const id = text(host['id']) ?? text(host['name']); if (id) hostOf.set(item, id); return item }))
+      const checks = [...objects(record['checks']), ...objects(orchestrator['checks']), ...hostChecks]
       const failing = checks.filter((item) => ['failed', 'fail', 'error'].includes(String(item['status']).toLowerCase()) || item['ok'] === false)
       const overall = typeof record['status'] === 'string' ? record['status'].toLowerCase() : null
       const nameOf = (item: Record<string, unknown>) => text(item['id']) ?? text(item['name']) ?? 'check'
-      const describe = (item: Record<string, unknown>) => { const why = text(item['detail']) ?? text(item['message']) ?? text(item['error']); return why ? `${nameOf(item)} (${why.slice(0, 120)})` : nameOf(item) }
+      const describe = (item: Record<string, unknown>) => { const why = text(item['detail']) ?? text(item['message']) ?? text(item['error']); const host = hostOf.get(item); const name = host ? `${nameOf(item)} @${host}` : nameOf(item); return why ? `${name} (${why.slice(0, 120)})` : name }
       const blocking = failing.filter((item) => BLOCKING_CHECK.test(nameOf(item)))
       const warned = failing.filter((item) => !blocking.includes(item))
       // A failed summary that names no failing check cannot be shown harmless, so it blocks.
