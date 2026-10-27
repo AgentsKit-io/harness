@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
-  "contentHash": "6b69080045f460b78ee6c5f62853d53c8cfd28613eb1b6e1e435ee2bd3287d7c",
+  "contentHash": "ebfc9b75eee7f5d4dc5f6c9821b4071132349547b2714cde5694b3c0b0942ebb",
   "contentHashAlgo": "sha256-semantic-v1",
-  "generatedAt": "2026-10-26T23:17:59.233Z",
+  "generatedAt": "2026-10-27T00:28:01.659Z",
   "project": {
     "name": "AgentsKit Harness",
     "root": "."
@@ -9361,6 +9361,18 @@
       "contentHash": "3e05097dbc5355bd56f582ae3b52519713f6abf398ebc78c42bf26343aac1919"
     },
     {
+      "id": "module:test/toolchain-versions.test.ts",
+      "type": "module",
+      "title": "toolchain-versions.test.ts",
+      "path": "test/toolchain-versions.test.ts",
+      "tags": [
+        "module",
+        "ts",
+        "test"
+      ],
+      "contentHash": "a954b84f7d663f8efc287539b61eb36e1268bf0353cccf8f7a8c44bd7a6f151c"
+    },
+    {
       "id": "module:test/ui-actions.test.ts",
       "type": "module",
       "title": "ui-actions.test.ts",
@@ -9698,8 +9710,8 @@
     }
   },
   "inputs": {
-    "hash": "8c043fde4f0c0157326e26aa82f53f40a889420949ce80729cbb401b3698c4af",
-    "fileCount": 616,
+    "hash": "a82ae0df835ce7c573fdc8f0a6662f1255091b8b7c6b93a339be557d9c4dc957",
+    "fileCount": 617,
     "projectionVersion": 2
   },
   "retrieval": {
@@ -9721,9 +9733,9 @@
   "projection": {
     "type": "retrieval-index",
     "schemaVersion": 1,
-    "contentHash": "c4c181b5d79a0e1944bd7e34007b9feed6d4699311b004110ae9e92c93c4bdab",
+    "contentHash": "0e49eba69a107426843ca46f98f8cc58dd4f6b53a49851e778484c8020c4e766",
     "contentHashAlgo": "sha256-semantic-v1",
-    "snapshotHash": "6733ee938f322571fdbd4d622d6da40de0e124a24a68a21035645ec5ef040dfb",
+    "snapshotHash": "fcf9a5c6091a942d3fe372fbfacacd94abcf195d4f6b38cd80949840cca78711",
     "overlayHash": "f99666ff9119084dd25c2974ae64eb6935ec2aa785ff5ad478fb9d541f7a5e94",
     "configurationHash": "497822431910cd9fa7d674a48a9f0b96fbbbf779f22a001de0b52252117fe3ab",
     "lexiconVersion": 1,
@@ -9743,7 +9755,7 @@
     },
     "lexical": {
       "version": 1,
-      "documentCount": 597,
+      "documentCount": 598,
       "fieldNames": [
         "aliases",
         "body",
@@ -9754,13 +9766,13 @@
         "title"
       ],
       "averageFieldLength": {
-        "aliases": 2.926298157453936,
-        "body": 45.96147403685092,
-        "headings": 3.8224455611390287,
-        "path": 6.1289782244556115,
-        "summary": 2.8509212730318256,
-        "symbols": 13.941373534338359,
-        "title": 4.023450586264657
+        "aliases": 2.9264214046822743,
+        "body": 45.88461538461539,
+        "headings": 3.8160535117056855,
+        "path": 6.12876254180602,
+        "summary": 2.8461538461538463,
+        "symbols": 13.918060200668897,
+        "title": 4.025083612040134
       }
     },
     "entries": [
@@ -10565,7 +10577,7 @@
           ],
           "outbound": []
         },
-        "contentHash": "1f166fa61d9eb319699ef7e385ec205673f93b6e4601ec2dca00cc8e1c535300",
+        "contentHash": "77ee1cd6bf77250f906b41405b4d1a753275e4c0fca9c825d5cf6e5532bc484b",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -49764,6 +49776,40 @@
         "confidence": "observed"
       },
       {
+        "id": "module:test/toolchain-versions.test.ts",
+        "kind": "module",
+        "path": "test/toolchain-versions.test.ts",
+        "title": "toolchain-versions.test.ts",
+        "aliases": [],
+        "tags": [
+          "module",
+          "ts",
+          "test"
+        ],
+        "fields": {
+          "title": "toolchain-versions.test.ts",
+          "headings": "",
+          "path": "test/toolchain-versions.test.ts",
+          "symbols": "",
+          "summary": "",
+          "body": "",
+          "aliases": "module ts test"
+        },
+        "graph": {
+          "pagerank": 0,
+          "inboundLinks": 0,
+          "coveredBy": [],
+          "mentionedBy": [],
+          "areaId": "area:test",
+          "packageId": "package:@agentskit/harness",
+          "inbound": [],
+          "outbound": []
+        },
+        "contentHash": "a954b84f7d663f8efc287539b61eb36e1268bf0353cccf8f7a8c44bd7a6f151c",
+        "provenance": "observed",
+        "confidence": "observed"
+      },
+      {
         "id": "module:test/ui-actions.test.ts",
         "kind": "module",
         "path": "test/ui-actions.test.ts",
@@ -51087,7 +51133,7 @@
           ],
           "outbound": []
         },
-        "contentHash": "8c77716d949f2bc51e95cb93e58fe1c449d55ae62ff3cac7b2d423117c648abc",
+        "contentHash": "2d79e6e298711934eb7edba0aa6028ee3674c79414d4627e7e46ed15aa43ea3a",
         "provenance": "observed",
         "confidence": "observed"
       },
