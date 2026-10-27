@@ -959,6 +959,10 @@ the published dependency tree. `@agentskit/harness` stays dependency-light (`com
 | Provider/model | First available candidate from `models.reviewer` tiers |
 | Verdicts | exit `0` → clean (merge path); `1` → findings ≥ floor (fix round); `2` / timeout / incomplete → wait and retry |
 | Boundary | Argv + `--result` file only; the harness never embeds the review SDK. |
+| Failed files | An incomplete result names the files it could not cover (`incompleteFiles` / `gaps` / `failures` in the `--result` JSON) and why (`empty-output`, `limit`, `size`); the summary lists them. Each such file is retried alone (`--file <path>`), then with another reviewer model; files that failed on size/limit are reviewed in chunks (`--lines a-b`). |
+| Gaps | After the retries, an incomplete review on a green PR that named its uncovered files and has no blocking finding counts as **review ran with gaps**: the gaps are listed in a PR comment and it does not hold the PR. With no named file (provider down, no result) it stays incomplete. |
+| Stop rule | After 2 review fix rounds, with checks green and no open finding high, a blocker, or about correctness/security, the loop stops asking for rounds: the remaining findings go to one `loop:backlog` issue linked to the PR, the PR gets "ready to merge with leftovers (#N)", and the review counts as clean. Dispatched PRs then merge through the normal merge policy; PRs labelled `loop:risk` / `loop:review` stay for a person. |
+| Retry | `ak-harness loop retry-review <pr>` drops the incomplete review attempts and the hold of a PR (`pr-<n>` intake or dispatched) so the next deliver pass reviews it again. |
 
 ### Eval battery (package quality, not the live loop)
 

@@ -34,6 +34,22 @@ export interface ReviewUsage {
   readonly totalTokens: number | null
 }
 
+/** Why a file of the diff was not reviewed. */
+export type ReviewGapReason = 'empty-output' | 'limit' | 'size' | 'unknown'
+
+/** A file the review could not cover (a lens returned no JSON, ran out of tokens/time, or the file was too large). */
+export interface ReviewGap {
+  readonly file: string
+  readonly reason: ReviewGapReason
+  readonly detail: string
+}
+
+/** One slice of a file to review on its own: the whole file, or a 1-based inclusive line range of it. */
+export interface ReviewFileSlice {
+  readonly path: string
+  readonly range?: readonly [number, number]
+}
+
 export interface CodeReviewOutcome {
   /** `clean` = no finding at/above the floor; `findings` = blocking findings; `incomplete` = coverage/provider/tool failure. */
   readonly status: 'clean' | 'findings' | 'incomplete'
@@ -47,6 +63,8 @@ export interface CodeReviewOutcome {
   /** Last 800 chars of combined stderr+stdout, for callers that need to classify *why* a review was incomplete (auth/quota/timeout) beyond the truncated `summary`. */
   readonly rawTail: string
   readonly usage: ReviewUsage
+  /** Files the review named as not covered; empty when it did not say (or covered everything). */
+  readonly gaps: readonly ReviewGap[]
   readonly hitl?: readonly StructuredReviewHitl[]
 }
 
@@ -82,6 +100,8 @@ export interface CodeReviewInput {
   readonly analysisMaxTokens?: number
   readonly analysisGlobalMaxTokens?: number
   readonly maxCalls: number
+  /** Review only these slices (a retry of one failed file, or one chunk of a very large one); omitted = the whole PR. */
+  readonly files?: readonly ReviewFileSlice[]
   readonly post: boolean
   readonly resultFile: string
   readonly sarifFile?: string
@@ -127,6 +147,30 @@ export const parseReviewHitl = (value: unknown): readonly StructuredReviewHitl[]
   })
 }
 
+const gapReason = (text: string): ReviewGapReason => {
+  if (/too large|too big|\bsize\b|oversize|chunk|exceeds? .*(bytes|lines|characters)/i.test(text)) return 'size'
+  if (/token|limit|budget|quota|timed? ?out|timeout|deadline|rate/i.test(text)) return 'limit'
+  if (/empty|no output|no json|not json|unparseable|invalid json|no result/i.test(text)) return 'empty-output'
+  return 'unknown'
+}
+
+/** Files the review says it did not cover (`incompleteFiles` / `gaps` / `failures`), tolerating shape drift across CLI versions. */
+export const parseReviewGaps = (value: unknown): readonly ReviewGap[] => {
+  const record = isRecord(value) ? (isRecord(value['review']) ? value['review'] : value) : {}
+  const list = [record['incompleteFiles'], record['gaps'], record['failures']].find(Array.isArray) ?? []
+  const seen = new Set<string>()
+  return (list as unknown[]).flatMap((item) => {
+    const entry = typeof item === 'string' ? { file: item } : isRecord(item) ? item : null
+    const file = entry ? str(entry['file'], str(entry['path'])) : ''
+    if (!entry || !file || seen.has(file)) return []
+    seen.add(file)
+    const detail = str(entry['reason'], str(entry['error'], str(entry['message']))).trim()
+    return [{ file, reason: gapReason(detail), detail: detail.slice(0, 200) }]
+  })
+}
+
+export const describeGaps = (gaps: readonly ReviewGap[]): string => gaps.map((gap) => `${gap.file} (${gap.reason}${gap.detail ? `: ${gap.detail}` : ''})`).join(', ')
+
 const num = (value: unknown): number | null => typeof value === 'number' && Number.isFinite(value) ? value : null
 
 /** Read `ReviewResult.evidence`/`evidence.usage` out of the same `--result` JSON — agentskit-review already
@@ -148,7 +192,7 @@ export const parseReviewEvidence = (value: unknown): ReviewUsage => {
   }
 }
 
-export const buildReviewArgv = (input: CodeReviewInput): readonly string[] => [input.cli, '--pr', `${input.repo}#${input.number}`, '--provider', input.provider, ...(input.model ? ['--model', input.model] : []), ...(input.mode && input.mode !== 'isolated' ? ['--mode', input.mode] : []), ...(input.transport ? ['--transport', input.transport] : []), '--profile', input.profile, '--votes', String(input.votes), ...(input.concurrency ? ['--concurrency', String(input.concurrency)] : []), '--min-severity', 'nit', '--block', input.minSeverity, '--max-calls', String(input.maxCalls), '--deadline-ms', String(input.deadlineMs), '--result', input.resultFile, ...(input.sarifFile ? ['--sarif', input.sarifFile] : []), ...(input.post ? ['--post'] : [])]
+export const buildReviewArgv = (input: CodeReviewInput): readonly string[] => [input.cli, '--pr', `${input.repo}#${input.number}`, '--provider', input.provider, ...(input.model ? ['--model', input.model] : []), ...(input.mode && input.mode !== 'isolated' ? ['--mode', input.mode] : []), ...(input.transport ? ['--transport', input.transport] : []), '--profile', input.profile, '--votes', String(input.votes), ...(input.concurrency ? ['--concurrency', String(input.concurrency)] : []), '--min-severity', 'nit', '--block', input.minSeverity, '--max-calls', String(input.maxCalls), ...(input.files ?? []).flatMap((slice) => ['--file', slice.path, ...(slice.range ? ['--lines', `${slice.range[0]}-${slice.range[1]}`] : [])]), '--deadline-ms', String(input.deadlineMs), '--result', input.resultFile, ...(input.sarifFile ? ['--sarif', input.sarifFile] : []), ...(input.post ? ['--post'] : [])]
 
 /**
  * The `--config` document's own schema requires every top-level section present (`target` has no schema
@@ -184,12 +228,14 @@ const finishCodeReview = (input: CodeReviewInput, outcome: Awaited<ReturnType<Co
   let parsed: ReturnType<typeof parseReviewResult> | null = null
   let usage: ReviewUsage = { providerCalls: null, inputTokens: null, outputTokens: null, totalTokens: null }
   let hitl: readonly StructuredReviewHitl[] = []
+  let gaps: readonly ReviewGap[] = []
   if (existsSync(input.resultFile)) {
     try {
       const resultJson = JSON.parse(readFileSync(input.resultFile, 'utf8'))
       parsed = parseReviewResult(resultJson)
       usage = parseReviewEvidence(resultJson)
       hitl = parseReviewHitl(resultJson)
+      gaps = parseReviewGaps(resultJson)
     } catch { parsed = null }
   }
   const findings = parsed?.findings ?? []
@@ -200,8 +246,8 @@ const finishCodeReview = (input: CodeReviewInput, outcome: Awaited<ReturnType<Co
   // A reviewer that claims blocking but lists no finding at all is contradicting itself: not evidence either way.
   const selfContradicting = parsed !== null && parsed.blocking === true && findings.length === 0
   const status: CodeReviewOutcome['status'] = outcome.timedOut || outcome.code === 2 || outcome.code === null || (outcome.code !== 0 && outcome.code !== 1) || parsed === null || parsed.incomplete === true || selfContradicting ? 'incomplete' : blocking.length ? 'findings' : 'clean'
-  const summary = status === 'incomplete' ? `review incomplete (exit ${outcome.timedOut ? 'timeout' : outcome.code ?? 'null'}${parsed === null ? ', no parseable result file' : selfContradicting ? ', blocking reported with no findings' : ''}): ${tail.split('\n').slice(-3).join(' ').slice(0, 300)}` : status === 'findings' ? `${blocking.length || 'unknown number of'} finding(s) at/above ${input.minSeverity}` : `clean at/above ${input.minSeverity} (${findings.length} lower-severity note(s))`
-  return { status, exitCode: outcome.timedOut ? null : outcome.code, findings, blocking, summary, provider: input.provider, model: input.model ?? null, resultParsed: parsed !== null, rawTail: tail, usage, ...(hitl.length ? { hitl } : {}) }
+  const summary = status === 'incomplete' ? `review incomplete (exit ${outcome.timedOut ? 'timeout' : outcome.code ?? 'null'}${parsed === null ? ', no parseable result file' : selfContradicting ? ', blocking reported with no findings' : ''})${gaps.length ? ` — not reviewed: ${describeGaps(gaps)}` : ''}: ${tail.split('\n').slice(-3).join(' ').slice(0, 300)}` : status === 'findings' ? `${blocking.length || 'unknown number of'} finding(s) at/above ${input.minSeverity}` : `clean at/above ${input.minSeverity} (${findings.length} lower-severity note(s))`
+  return { status, exitCode: outcome.timedOut ? null : outcome.code, findings, blocking, summary, provider: input.provider, model: input.model ?? null, resultParsed: parsed !== null, rawTail: tail, usage, gaps, ...(hitl.length ? { hitl } : {}) }
 }
 
 /** Compact, worker-facing rendering of blocking findings for a fix round. */

@@ -1,7 +1,7 @@
 import { existsSync, readdirSync, rmSync } from 'node:fs'
 import { dirname, join, relative } from 'node:path'
 import { z } from 'zod'
-import { type CodeReviewOutcome } from '../adapters/code-review.js'
+import { type CodeReviewOutcome, type ReviewGap } from '../adapters/code-review.js'
 import { fail } from '../kernel/errors.js'
 import { readJsonFile } from '../kernel/json-file.js'
 import { toPosix } from '@agentskit/cross-platform'
@@ -26,7 +26,7 @@ export interface DeliveryHandoff {
 export interface DeliveryState {
   readonly issue: string
   readonly prNumber: number | null
-  readonly reviews: Readonly<Record<string, { readonly status: CodeReviewOutcome['status']; readonly at: string; readonly provider: string; readonly model: string | null; readonly blocking: number; readonly attempts: number; readonly reason?: string; /** ADR-0046 level of this review; filled from `status` when a stored state predates it. */ readonly verdict?: Verdict }>>
+  readonly reviews: Readonly<Record<string, { readonly status: CodeReviewOutcome['status']; readonly at: string; readonly provider: string; readonly model: string | null; readonly blocking: number; readonly attempts: number; readonly reason?: string; /** Files the review named as not covered (after its retries). */ readonly gaps?: readonly ReviewGap[]; /** ADR-0046 level of this review; filled from `status` when a stored state predates it. */ readonly verdict?: Verdict }>>
   readonly fixRounds: number
   readonly nudges: readonly { readonly kind: 'idle' | 'conflict' | 'ci' | 'review' | 'handoff' | 'permission' | 'brief' | 'hitl'; readonly at: string; readonly head: string | null }[]
   readonly handoffs: readonly DeliveryHandoff[]
@@ -47,6 +47,8 @@ export interface DeliveryState {
   readonly lostTrackSince?: string | null
   /** Passes in a row where a merge GitHub accepted could not be read back as merged at the reviewed head (ADR-0046). */
   readonly mergeUnconfirmed?: number
+  /** The stop rule fired at `head`: the remaining medium/low findings went to this `loop:backlog` issue and the PR stopped asking for rounds. */
+  readonly leftovers?: { readonly head: string; readonly issue: number | null; readonly at: string } | null
   /** A fleet fix task in flight: cut from `head` (the PR head it was sent for), collected and pushed to the PR branch when done. */
   readonly fleetFix?: { readonly workspaceId: string; readonly head: string; readonly kind: 'ci' | 'review' | 'conflict' } | null
 }
@@ -94,6 +96,25 @@ export const approveHeldDelivery = (loaded: LoadedLoopConfig, issue: string, inp
   writeJsonAtomic(deliveryStatePath(loaded.stateDir, issue), next)
   appendLoopEvent(loaded.stateDir, { at, type: 'pr.human-approved', issue, head: state.heldFor, by, pr: state.prNumber })
   return next
+}
+
+/**
+ * `ak-harness loop retry-review <pr>`: drop the incomplete review attempts of a PR (all heads) and the hold they caused,
+ * so the next deliver pass reviews it again — instead of editing `issues/pr-N/delivery.json` by hand. The PR is tracked
+ * as `pr-<n>` (intake) or by the issue whose delivery recorded it. Complete reviews are kept.
+ */
+export const retryReview = (loaded: LoadedLoopConfig, pr: number, now = new Date()): { readonly issue: string; readonly dropped: readonly string[] } => {
+  const stateDir = loaded.stateDir
+  const issue = [`pr-${pr}`, ...listDispatched(stateDir).map((record) => record.issue)].find((id) => existsSync(deliveryStatePath(stateDir, id)) && readDeliveryState(stateDir, id).prNumber === pr)
+  if (!issue) return fail(`No delivery recorded for PR #${pr}; nothing to retry.`, 'INVALID_STATE')
+  const state = readDeliveryState(stateDir, issue)
+  const dropped = Object.entries(state.reviews).filter(([, review]) => review.status === 'incomplete').map(([head]) => head)
+  if (!dropped.length && !state.heldFor && state.finalOutcome !== 'held') return fail(`PR #${pr} has no incomplete review or hold to retry.`, 'INVALID_STATE')
+  const reviews = Object.fromEntries(Object.entries(state.reviews).filter(([head]) => !dropped.includes(head)))
+  const next: DeliveryState = { ...state, reviews, heldFor: null, ...(state.finalOutcome === 'held' || (dropped.length && state.finalOutcome === 'blocked') ? { finishedAt: null, finalOutcome: null } : {}) }
+  writeJsonAtomic(deliveryStatePath(stateDir, issue), next)
+  appendLoopEvent(stateDir, { at: now.toISOString(), type: 'review.retry-requested', issue, pr, heads: dropped })
+  return { issue, dropped }
 }
 
 /** Every issue the loop ever dispatched (finished or not) — callers that only care about in-flight work must filter on `readDeliveryState(...).finishedAt` themselves. */
