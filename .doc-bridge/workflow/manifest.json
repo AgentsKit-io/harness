@@ -1,0 +1,113 @@
+{
+  "type": "workflow-run",
+  "schemaVersion": 1,
+  "contentHash": "d6c426389839c76ea74ce1444ec6bcb132374d377e24e81d6f0d170ae2c865a4",
+  "contentHashAlgo": "sha256-normalized-v1",
+  "project": {
+    "name": "fleet-t-20261025003139-dee55bf1",
+    "root": "."
+  },
+  "sourceRevision": "549770c066461b6a969ba10993f25f811c01b4ddc44595074d19873f709de27e",
+  "sourceRevisionKind": "content",
+  "configurationHash": "b9a1a057504b5b30d24fad1cfe41832afdf8f1ad36635614bcc990433061103e",
+  "pipelineVersion": "1.5.0",
+  "analyzerVersions": {
+    "repository": "1.3.0",
+    "js-ts": "1.7.0",
+    "markdown": "1.7.0",
+    "graph": "1.0.0",
+    "js-ts:cli": "1.1.0",
+    "js-ts:config-key": "1.2.0",
+    "js-ts:signature": "1.1.0",
+    "workflow": "2.4.2"
+  },
+  "runId": "1792889262514-1760030",
+  "state": "delivered",
+  "steps": [
+    {
+      "name": "collect",
+      "status": "completed",
+      "inputHash": "e5d352ecc8d77670d8e1f11d83e9cf6a964a584825044db916fea32bf495d62c",
+      "outputHash": "e9f62d16c1cd6c2f77c9ba3160770f2d9829bfb88460d2e5ef2bdbe0274e6eb6",
+      "artifactRefs": [
+        "artifacts/collect-e5d352ecc8d77670d8e1f11d83e9cf6a964a584825044db916fea32bf495d62c.json"
+      ]
+    },
+    {
+      "name": "normalize",
+      "status": "completed",
+      "inputHash": "c09f9e84ab15c83d12198c84cdfb0c659cc55715bf8bf74fda65b04b7527107d",
+      "outputHash": "e9f62d16c1cd6c2f77c9ba3160770f2d9829bfb88460d2e5ef2bdbe0274e6eb6",
+      "artifactRefs": [
+        "artifacts/normalize-c09f9e84ab15c83d12198c84cdfb0c659cc55715bf8bf74fda65b04b7527107d.json"
+      ]
+    },
+    {
+      "name": "reconcile",
+      "status": "completed",
+      "inputHash": "f3cb2efafd921233f43133968bc32d6747ad8ba1c6b8d1bd371d9f5cee25a9b8",
+      "outputHash": "db26dcdccb6545ddb2d38acf36d2a8ea8b965cfddffe70fb06e366f197cd15ea",
+      "artifactRefs": [
+        "artifacts/reconcile-f3cb2efafd921233f43133968bc32d6747ad8ba1c6b8d1bd371d9f5cee25a9b8.json"
+      ]
+    },
+    {
+      "name": "enrich",
+      "status": "pending",
+      "inputHash": "e32d413780f1bd53ba8ce6027d83917dfe08691c8eb6f1688c84d1b13e3bf2e4"
+    },
+    {
+      "name": "evaluate",
+      "status": "completed",
+      "inputHash": "e3d49e7afe8f477c9c581aa7673f5dd55671796eb5994f15714fb2b32006cb46",
+      "outputHash": "e3e01775ddfc4f437e843fadad093783bd12aa21e351f181a66762321bb1c8e0",
+      "artifactRefs": [
+        "artifacts/evaluate-e3d49e7afe8f477c9c581aa7673f5dd55671796eb5994f15714fb2b32006cb46.json"
+      ]
+    },
+    {
+      "name": "report",
+      "status": "completed",
+      "inputHash": "50d34ce55c6b6c28e57c257ab9b32d89246104d2e70b0a4cdf86dc5fbcb6648c",
+      "outputHash": "e3e01775ddfc4f437e843fadad093783bd12aa21e351f181a66762321bb1c8e0",
+      "artifactRefs": [
+        "artifacts/report-50d34ce55c6b6c28e57c257ab9b32d89246104d2e70b0a4cdf86dc5fbcb6648c.json"
+      ]
+    }
+  ],
+  "transitions": [
+    {
+      "from": null,
+      "to": "created",
+      "at": "2026-10-25T00:47:42.514Z"
+    },
+    {
+      "from": "created",
+      "to": "discovering",
+      "at": "2026-10-25T00:47:42.515Z"
+    },
+    {
+      "from": "discovering",
+      "to": "analyzed",
+      "at": "2026-10-25T00:47:42.728Z"
+    },
+    {
+      "from": "analyzed",
+      "to": "compared",
+      "at": "2026-10-25T00:47:43.224Z"
+    },
+    {
+      "from": "compared",
+      "to": "proposed",
+      "at": "2026-10-25T00:47:43.487Z"
+    },
+    {
+      "from": "proposed",
+      "to": "delivered",
+      "at": "2026-10-25T00:47:43.578Z"
+    }
+  ],
+  "artifactRefs": [
+    ".doc-bridge/workflow"
+  ]
+}
