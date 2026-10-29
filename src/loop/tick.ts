@@ -1,3 +1,4 @@
+import { commentWaiting } from './queue-waiting.js'
 import { appendFileSync, existsSync, mkdirSync, readdirSync, readFileSync, renameSync, statSync, unlinkSync, writeFileSync } from 'node:fs'
 import { dirname, join, resolve } from 'node:path'
 import { z } from 'zod'
@@ -710,6 +711,10 @@ export const runTick = async (input: TickInput): Promise<TickReport> => {
   if (requireLabel && !dryRun) {
     const waiting = state.waiting
     if (waiting.length) appendLoopEvent(loaded.stateDir, { at: now().toISOString(), type: 'queue.waiting', issues: waiting, label: requireLabel }, bus)
+    if (waiting.length) {
+      const waitTracker = guardTracker(resolveConnectors({ runner: input.runner, config, env: input.env }).tracker, { stateDir: loaded.stateDir, now, onRateLimited: trackerCooldownLogger(loaded.stateDir, now, bus) })
+      notes.push(...await commentWaiting(waitTracker, waiting, requireLabel))
+    }
   }
   if (!builder) { notes.push('no builder provider available; nothing dispatched'); await flushNotifications(); return { ...base, status: 'blocked', results, notes } }
   if (!state.candidates.length) {

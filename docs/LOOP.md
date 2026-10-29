@@ -533,7 +533,7 @@ loop:pm-ok }`, in the global default or a repo `loop.config.yaml`, which overrid
 that carry the label. The fleet PM (AgentsKit-io/fleet, agent-to-agent channel) validates a `loop:todo` issue created
 directly on GitHub and labels it `loop:pm-ok` when it is ready; an issue the PM handed off itself already carries it.
 An issue labelled `loop:todo` without the label is never silently skipped and never contracted: `loop doctor` warns
-`<issue> is labelled loop:todo but skipped: waiting for loop:pm-ok`, the tick notes it and records a `queue.waiting`
+`<issue> is labelled loop:todo but skipped: waiting for loop:pm-ok`, the tick notes it, comments on the issue that the PM has not checked it yet (once per issue), and records a `queue.waiting`
 event, and `loop debrief` lists it under **Waiting**. Only admission is gated: removing the label from an issue
 already in flight cancels nothing. The GitHub tracker lists the waiting issues; on Linear the label is enforced the
 same way (added to `linear.requireLabels`) but waiting issues are not listed.
