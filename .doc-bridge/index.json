@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
-  "contentHash": "ea2cb19a0cf88c5742208d7411609abe89da84d83c23975929612b9505e8a172",
+  "contentHash": "86dbadd6b61afd07ad9190d7aff75a4ee74ed2144fc16723b064f61f06cb2add",
   "contentHashAlgo": "sha256-semantic-v1",
-  "generatedAt": "2026-10-29T09:51:19.839Z",
+  "generatedAt": "2026-10-29T10:31:54.874Z",
   "project": {
     "name": "AgentsKit Harness",
     "root": "."
@@ -1001,7 +1001,7 @@
         "document",
         "human"
       ],
-      "contentHash": "1f5b8445c0190e8ada9c5e81a0cd501c4b18a5892f349f08f5299eb689e29167"
+      "contentHash": "d07d109a52eb86f086b8891976eb8b695eae224e7a9dd3bd8b17df36d3c301d6"
     },
     {
       "id": "document:docs/MODULE-BOUNDARIES.md",
@@ -5362,6 +5362,21 @@
       "contentHash": "0b5281a627958aa39e37b1864a180a052274065a238127cb42b7969cc2582612"
     },
     {
+      "id": "module:src/loop/queue-waiting.ts",
+      "type": "module",
+      "title": "queue-waiting.ts",
+      "path": "src/loop/queue-waiting.ts",
+      "symbols": [
+        "commentWaiting"
+      ],
+      "tags": [
+        "module",
+        "ts",
+        "loop"
+      ],
+      "contentHash": "05b72e8b42ed3db31d593c601a909c81a4a13f5355f7d9d2e8ebb1234e7f2f04"
+    },
+    {
       "id": "module:src/loop/queue.ts",
       "type": "module",
       "title": "queue.ts",
@@ -5708,7 +5723,7 @@
         "ts",
         "loop"
       ],
-      "contentHash": "de1b65ee07c97a3202f54c038b5d033ce6c242db65b62b62b52ce0bc6eef3420"
+      "contentHash": "96b765d6251ae7555df620c27b2b70785a653dced89b45c12a5ec7307ae224df"
     },
     {
       "id": "module:src/loop/tracker-cooldown.ts",
@@ -8869,6 +8884,18 @@
       "contentHash": "807d91dcf70e7496cd57e988db746a1650360bd9833051816de9ab750400f875"
     },
     {
+      "id": "module:test/loop-queue-waiting.test.ts",
+      "type": "module",
+      "title": "loop-queue-waiting.test.ts",
+      "path": "test/loop-queue-waiting.test.ts",
+      "tags": [
+        "module",
+        "ts",
+        "test"
+      ],
+      "contentHash": "2ea6f2942bec321ba383d93a30306066d5422a171544605d31c615be93ba035f"
+    },
+    {
       "id": "module:test/loop-refill-yield.test.ts",
       "type": "module",
       "title": "loop-refill-yield.test.ts",
@@ -9710,8 +9737,8 @@
     }
   },
   "inputs": {
-    "hash": "d6f27aef10581ec6ca2ee50f26a11f86a12b1a9028269d5d39b8b2e0805bceb8",
-    "fileCount": 617,
+    "hash": "00783ec93ae29cdfdda6fdc32db0aecec72b030ad98b7195c1978a372d646593",
+    "fileCount": 619,
     "projectionVersion": 2
   },
   "retrieval": {
@@ -9733,9 +9760,9 @@
   "projection": {
     "type": "retrieval-index",
     "schemaVersion": 1,
-    "contentHash": "19082821127073fd69d5142f31edd7db3a8f8d46ce7728020be9f1d1f6d0b15e",
+    "contentHash": "84c7aa493f50e7f7487b7cb07daacfe28bccdec0f4664b98eee9fe01f37d12b1",
     "contentHashAlgo": "sha256-semantic-v1",
-    "snapshotHash": "acf06c6295a0bf1b2b33a718401da83645df6da83a67e71fdfcc35d6fffecab9",
+    "snapshotHash": "d381331b3d861ad34c1464e3b01a34e314a41c7e48a3f197ff10cbe59971984d",
     "overlayHash": "f99666ff9119084dd25c2974ae64eb6935ec2aa785ff5ad478fb9d541f7a5e94",
     "configurationHash": "497822431910cd9fa7d674a48a9f0b96fbbbf779f22a001de0b52252117fe3ab",
     "lexiconVersion": 1,
@@ -9755,7 +9782,7 @@
     },
     "lexical": {
       "version": 1,
-      "documentCount": 598,
+      "documentCount": 600,
       "fieldNames": [
         "aliases",
         "body",
@@ -9766,13 +9793,13 @@
         "title"
       ],
       "averageFieldLength": {
-        "aliases": 2.9264214046822743,
-        "body": 45.88461538461539,
-        "headings": 3.8160535117056855,
-        "path": 6.12876254180602,
-        "summary": 2.8461538461538463,
-        "symbols": 13.918060200668897,
-        "title": 4.025083612040134
+        "aliases": 2.9266666666666667,
+        "body": 45.73166666666667,
+        "headings": 3.8033333333333332,
+        "path": 6.13,
+        "summary": 2.8366666666666664,
+        "symbols": 13.876666666666667,
+        "title": 4.028333333333333
       }
     },
     "entries": [
@@ -10430,7 +10457,7 @@
           ],
           "outbound": []
         },
-        "contentHash": "1f6382405776c56fb91e702284f20466c18d693f057dcbe571e016f823b94b40",
+        "contentHash": "384d912cbb0c2a4d7fbe661e0bde91d4be6eb844741e179942e2d1c7d88e5904",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -10577,7 +10604,7 @@
           ],
           "outbound": []
         },
-        "contentHash": "77ee1cd6bf77250f906b41405b4d1a753275e4c0fca9c825d5cf6e5532bc484b",
+        "contentHash": "d696e9c3982d7d019735422f7c4dcf0011e7a4181cb27e4d8688e724e86c3ac6",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -15880,7 +15907,7 @@
             }
           ]
         },
-        "contentHash": "1f5b8445c0190e8ada9c5e81a0cd501c4b18a5892f349f08f5299eb689e29167",
+        "contentHash": "d07d109a52eb86f086b8891976eb8b695eae224e7a9dd3bd8b17df36d3c301d6",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -28669,6 +28696,11 @@
             },
             {
               "kind": "imports",
+              "id": "module:src/loop/queue-waiting.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
               "id": "module:src/loop/refill.ts",
               "confidence": "observed"
             },
@@ -34379,6 +34411,60 @@
         "confidence": "observed"
       },
       {
+        "id": "module:src/loop/queue-waiting.ts",
+        "kind": "module",
+        "path": "src/loop/queue-waiting.ts",
+        "title": "queue-waiting.ts",
+        "aliases": [],
+        "symbols": [
+          "commentWaiting"
+        ],
+        "tags": [
+          "module",
+          "ts",
+          "loop"
+        ],
+        "fields": {
+          "title": "queue-waiting.ts",
+          "headings": "",
+          "path": "src/loop/queue-waiting.ts",
+          "symbols": "commentWaiting",
+          "summary": "",
+          "body": "",
+          "aliases": "module ts loop"
+        },
+        "graph": {
+          "pagerank": 0,
+          "inboundLinks": 0,
+          "coveredBy": [],
+          "mentionedBy": [],
+          "areaId": "area:src/loop",
+          "packageId": "package:@agentskit/harness",
+          "inbound": [
+            {
+              "kind": "imports",
+              "id": "module:src/loop/tick.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
+              "id": "module:test/loop-queue-waiting.test.ts",
+              "confidence": "observed"
+            }
+          ],
+          "outbound": [
+            {
+              "kind": "imports",
+              "id": "module:src/loop/connectors.ts",
+              "confidence": "observed"
+            }
+          ]
+        },
+        "contentHash": "05b72e8b42ed3db31d593c601a909c81a4a13f5355f7d9d2e8ebb1234e7f2f04",
+        "provenance": "observed",
+        "confidence": "observed"
+      },
+      {
         "id": "module:src/loop/queue.ts",
         "kind": "module",
         "path": "src/loop/queue.ts",
@@ -36379,6 +36465,11 @@
             },
             {
               "kind": "imports",
+              "id": "module:src/loop/queue-waiting.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
               "id": "module:src/loop/queue.ts",
               "confidence": "observed"
             },
@@ -36444,7 +36535,7 @@
             }
           ]
         },
-        "contentHash": "de1b65ee07c97a3202f54c038b5d033ce6c242db65b62b62b52ce0bc6eef3420",
+        "contentHash": "96b765d6251ae7555df620c27b2b70785a653dced89b45c12a5ec7307ae224df",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -48025,6 +48116,46 @@
           ]
         },
         "contentHash": "807d91dcf70e7496cd57e988db746a1650360bd9833051816de9ab750400f875",
+        "provenance": "observed",
+        "confidence": "observed"
+      },
+      {
+        "id": "module:test/loop-queue-waiting.test.ts",
+        "kind": "module",
+        "path": "test/loop-queue-waiting.test.ts",
+        "title": "loop-queue-waiting.test.ts",
+        "aliases": [],
+        "tags": [
+          "module",
+          "ts",
+          "test"
+        ],
+        "fields": {
+          "title": "loop-queue-waiting.test.ts",
+          "headings": "",
+          "path": "test/loop-queue-waiting.test.ts",
+          "symbols": "",
+          "summary": "",
+          "body": "",
+          "aliases": "module ts test"
+        },
+        "graph": {
+          "pagerank": 0,
+          "inboundLinks": 0,
+          "coveredBy": [],
+          "mentionedBy": [],
+          "areaId": "area:test",
+          "packageId": "package:@agentskit/harness",
+          "inbound": [],
+          "outbound": [
+            {
+              "kind": "imports",
+              "id": "module:src/loop/queue-waiting.ts",
+              "confidence": "observed"
+            }
+          ]
+        },
+        "contentHash": "2ea6f2942bec321ba383d93a30306066d5422a171544605d31c615be93ba035f",
         "provenance": "observed",
         "confidence": "observed"
       },
