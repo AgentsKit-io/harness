@@ -131,6 +131,13 @@ const relaxed = { sample: { at: '2026-09-11T12:00:00.000Z', cpus: 10, load1: 1, 
 const tickOptions = (env: Env) => ({ configPath: env.configPath, runner: env.runner, env: { PATH: env.bin, XAI_API_KEY: 'k' }, platform: 'darwin' as const, now: () => new Date('2026-09-11T12:00:00.000Z'), machine: relaxed })
 
 describe('contract', () => {
+  it('refuses at intake a contract whose expected change is none', () => {
+    const noop = assessContract(parseContractOutput(`${CONTRACT_OPEN}${JSON.stringify({ ...goodContract, expectedChange: { changes: false, summary: 'only asks a question' } })}${CONTRACT_CLOSE}`))
+    expect(noop.dispatchable).toBe(false)
+    expect(noop.reasons).toEqual(['the brief asks for no change to the repository: only asks a question'])
+    expect(assessContract({ ...goodContract, expectedChange: { changes: true, summary: 'edit x' } }).dispatchable).toBe(true)
+  })
+
   it('parses the marked JSON block, validates it, and assesses dispatchability', () => {
     const parsed = parseContractOutput(`preamble ${CONTRACT_OPEN}\n\`\`\`json\n${JSON.stringify(goodContract)}\n\`\`\`\n${CONTRACT_CLOSE} trailing`)
     expect(parsed.intent).toBe('Add the demo binding')
