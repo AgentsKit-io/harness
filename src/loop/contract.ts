@@ -102,6 +102,11 @@ export const CONTRACT_JSON_SCHEMA = {
         required: ['question', 'options', 'recommendedOptionId'],
       },
     },
+    expectedChange: {
+      type: 'object',
+      properties: { changes: { type: 'boolean' }, summary: { type: 'string' } },
+      required: ['changes', 'summary'],
+    },
     touchpoints: { type: 'array', items: { type: 'string' } },
     risks: { type: 'array', items: { type: 'string' } },
   },
@@ -122,6 +127,8 @@ export const TaskContractSchema = z.object({
   ambiguities: z.array(z.object({ question: nonEmpty, blocking: z.boolean().default(true) })).default([]),
   /** Structured human decisions emitted by the LLM; only these requests may enter the Control Plane Inbox. */
   hitl: z.array(z.object({ question: nonEmpty, context: z.string().trim().default(''), options: z.array(z.object({ id: nonEmpty, title: nonEmpty, description: nonEmpty })).min(3).max(4), recommendedOptionId: nonEmpty })).default([]),
+  /** The change the brief asks for. `changes: false` means the brief wants nothing modified, so a worker would exit 0 with an empty diff. Absent in contracts frozen before this field. */
+  expectedChange: z.object({ changes: z.boolean(), summary: z.string().trim().default('') }).optional(),
   /** Files or areas the orchestrator expects to change; advisory for the worker. */
   touchpoints: z.array(z.string().trim()).default([]),
   risks: z.array(z.string().trim()).default([]),
@@ -156,6 +163,7 @@ export const assessContract = (contract: TaskContract): ContractAssessment => {
   const reasons: string[] = []
   const executable = contract.outcomes.filter((outcome) => outcome.check.kind !== 'manual' && outcome.check.command?.trim())
   if (!executable.length) reasons.push('no outcome maps to an executable check (command or test)')
+  if (contract.expectedChange?.changes === false) reasons.push(`the brief asks for no change to the repository${contract.expectedChange.summary ? `: ${contract.expectedChange.summary}` : ''}`)
   const blocking = contract.ambiguities.filter((item) => item.blocking)
   if (blocking.length) reasons.push(`${blocking.length} blocking ambiguit${blocking.length === 1 ? 'y' : 'ies'}: ${blocking.map((item) => item.question).join(' | ')}`)
   return { dispatchable: reasons.length === 0, reasons }
@@ -232,6 +240,7 @@ Produce the contract as JSON between the exact markers ${CONTRACT_OPEN} and ${CO
   "scope": { "inScope": ["..."], "outOfScope": ["..."] },
   "outcomes": [ { "id": "o1", "description": "observable result", "check": { "kind": "command|test|manual", "command": "exact shell command that exits 0 when satisfied (omit for manual)", "note": "only for manual" } } ],
   "ambiguities": [ { "question": "what a human must answer before work can start", "blocking": true } ],
+  "expectedChange": { "changes": true, "summary": "the file-level change the brief asks for; changes=false when it asks for nothing to be modified (a question, a report, a no-op)" },
   "touchpoints": ["paths or packages likely to change"],
   "risks": ["..."]
 }
