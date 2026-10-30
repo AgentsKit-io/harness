@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
-  "contentHash": "86dbadd6b61afd07ad9190d7aff75a4ee74ed2144fc16723b064f61f06cb2add",
+  "contentHash": "5a6af5a01fee6bfb19bdb9a1a39ea379db39658db0fe6eefa426d55696e9156e",
   "contentHashAlgo": "sha256-semantic-v1",
-  "generatedAt": "2026-10-29T10:31:54.874Z",
+  "generatedAt": "2026-10-30T00:37:39.013Z",
   "project": {
     "name": "AgentsKit Harness",
     "root": "."
@@ -1085,7 +1085,7 @@
         "document",
         "project"
       ],
-      "contentHash": "2dcad6b70449e27294b048a92adc5d09ba00c7e8ab6dcacd8860715dcc5669ec"
+      "contentHash": "dcd598e0920dc57a23540c84a8a101d8b782c9c580a14f61ffd4047f5f667efd"
     },
     {
       "id": "document:release/notes.md",
@@ -9737,7 +9737,7 @@
     }
   },
   "inputs": {
-    "hash": "00783ec93ae29cdfdda6fdc32db0aecec72b030ad98b7195c1978a372d646593",
+    "hash": "d5ab200a15ccf7637ceaeb4e956f9e527528e647058fc44f0834d424ddff8595",
     "fileCount": 619,
     "projectionVersion": 2
   },
@@ -9760,9 +9760,9 @@
   "projection": {
     "type": "retrieval-index",
     "schemaVersion": 1,
-    "contentHash": "84c7aa493f50e7f7487b7cb07daacfe28bccdec0f4664b98eee9fe01f37d12b1",
+    "contentHash": "4fc01613ff6edeba4007336b957150aaab7041021bbd3c74f11e244a7bdc6e49",
     "contentHashAlgo": "sha256-semantic-v1",
-    "snapshotHash": "d381331b3d861ad34c1464e3b01a34e314a41c7e48a3f197ff10cbe59971984d",
+    "snapshotHash": "79cf94f0d2e3b4e60734ce6cf47ae742cd05cbf3cbf42b219da548f8dd2c26ab",
     "overlayHash": "f99666ff9119084dd25c2974ae64eb6935ec2aa785ff5ad478fb9d541f7a5e94",
     "configurationHash": "497822431910cd9fa7d674a48a9f0b96fbbbf779f22a001de0b52252117fe3ab",
     "lexiconVersion": 1,
@@ -9827,7 +9827,7 @@
           "aliases": "harness-site area ownership"
         },
         "graph": {
-          "pagerank": 0.040956,
+          "pagerank": 0.040092,
           "inboundLinks": 2,
           "coveredBy": [
             "document:docs/for-agents/packages/harness-site.md"
@@ -10694,7 +10694,7 @@
           "aliases": "document unclassified"
         },
         "graph": {
-          "pagerank": 0.040956,
+          "pagerank": 0.040092,
           "inboundLinks": 4,
           "coveredBy": [],
           "mentionedBy": [
@@ -12297,7 +12297,7 @@
           "aliases": "document project"
         },
         "graph": {
-          "pagerank": 0.023707,
+          "pagerank": 0.023088,
           "inboundLinks": 2,
           "coveredBy": [],
           "mentionedBy": [
@@ -12589,7 +12589,7 @@
           "aliases": "document unclassified"
         },
         "graph": {
-          "pagerank": 0.022139,
+          "pagerank": 0.021671,
           "inboundLinks": 1,
           "coveredBy": [],
           "mentionedBy": [
@@ -12672,7 +12672,7 @@
           "aliases": "document unclassified"
         },
         "graph": {
-          "pagerank": 0.031547,
+          "pagerank": 0.030882,
           "inboundLinks": 1,
           "coveredBy": [],
           "mentionedBy": [],
@@ -12716,7 +12716,7 @@
           "aliases": "document unclassified"
         },
         "graph": {
-          "pagerank": 0.022139,
+          "pagerank": 0.021671,
           "inboundLinks": 3,
           "coveredBy": [],
           "mentionedBy": [
@@ -12779,7 +12779,7 @@
           "aliases": "document unclassified"
         },
         "graph": {
-          "pagerank": 0.031547,
+          "pagerank": 0.030882,
           "inboundLinks": 1,
           "coveredBy": [],
           "mentionedBy": [],
@@ -12824,7 +12824,7 @@
           "aliases": "document project"
         },
         "graph": {
-          "pagerank": 0.023707,
+          "pagerank": 0.023088,
           "inboundLinks": 2,
           "coveredBy": [],
           "mentionedBy": [
@@ -13067,7 +13067,7 @@
           "aliases": "document human"
         },
         "graph": {
-          "pagerank": 0.032949,
+          "pagerank": 0.032213,
           "inboundLinks": 1,
           "coveredBy": [],
           "mentionedBy": [],
@@ -14055,7 +14055,7 @@
           "aliases": "document human"
         },
         "graph": {
-          "pagerank": 0.032949,
+          "pagerank": 0.032213,
           "inboundLinks": 1,
           "coveredBy": [],
           "mentionedBy": [],
@@ -14110,7 +14110,7 @@
           "aliases": "document human"
         },
         "graph": {
-          "pagerank": 0.034517,
+          "pagerank": 0.03363,
           "inboundLinks": 2,
           "coveredBy": [],
           "mentionedBy": [],
@@ -14165,7 +14165,7 @@
           "aliases": "document human"
         },
         "graph": {
-          "pagerank": 0.034426,
+          "pagerank": 0.033685,
           "inboundLinks": 2,
           "coveredBy": [],
           "mentionedBy": [],
@@ -14407,7 +14407,7 @@
           "aliases": "document human"
         },
         "graph": {
-          "pagerank": 0.026585,
+          "pagerank": 0.025892,
           "inboundLinks": 2,
           "coveredBy": [],
           "mentionedBy": [],
@@ -14457,7 +14457,7 @@
           "aliases": "document human"
         },
         "graph": {
-          "pagerank": 0.030055,
+          "pagerank": 0.029381,
           "inboundLinks": 2,
           "coveredBy": [],
           "mentionedBy": [],
@@ -14507,7 +14507,7 @@
           "aliases": "document human"
         },
         "graph": {
-          "pagerank": 0.025017,
+          "pagerank": 0.024475,
           "inboundLinks": 1,
           "coveredBy": [],
           "mentionedBy": [],
@@ -14557,7 +14557,7 @@
           "aliases": "document human"
         },
         "graph": {
-          "pagerank": 0.031623,
+          "pagerank": 0.030798,
           "inboundLinks": 3,
           "coveredBy": [],
           "mentionedBy": [],
@@ -14622,7 +14622,7 @@
           "aliases": "document human"
         },
         "graph": {
-          "pagerank": 0.025017,
+          "pagerank": 0.024475,
           "inboundLinks": 1,
           "coveredBy": [],
           "mentionedBy": [],
@@ -14677,7 +14677,7 @@
           "aliases": "document human"
         },
         "graph": {
-          "pagerank": 0.026585,
+          "pagerank": 0.025892,
           "inboundLinks": 2,
           "coveredBy": [],
           "mentionedBy": [],
@@ -14727,7 +14727,7 @@
           "aliases": "document human"
         },
         "graph": {
-          "pagerank": 0.022139,
+          "pagerank": 0.021671,
           "inboundLinks": 0,
           "coveredBy": [],
           "mentionedBy": [],
@@ -14776,7 +14776,7 @@
           "aliases": "document human"
         },
         "graph": {
-          "pagerank": 0.022139,
+          "pagerank": 0.021671,
           "inboundLinks": 0,
           "coveredBy": [],
           "mentionedBy": [],
@@ -15120,7 +15120,7 @@
           "aliases": "document human"
         },
         "graph": {
-          "pagerank": 0.022139,
+          "pagerank": 0.021671,
           "inboundLinks": 0,
           "coveredBy": [],
           "mentionedBy": [],
@@ -15199,7 +15199,7 @@
           "aliases": "document human"
         },
         "graph": {
-          "pagerank": 0.126735,
+          "pagerank": 0.123915,
           "inboundLinks": 5,
           "coveredBy": [],
           "mentionedBy": [],
@@ -15284,11 +15284,17 @@
           "aliases": "document human"
         },
         "graph": {
-          "pagerank": 0,
-          "inboundLinks": 0,
+          "pagerank": 0.023088,
+          "inboundLinks": 1,
           "coveredBy": [],
           "mentionedBy": [],
-          "inbound": [],
+          "inbound": [
+            {
+              "kind": "links-to",
+              "id": "document:README.md",
+              "confidence": "observed"
+            }
+          ],
           "outbound": [
             {
               "kind": "mentions",
@@ -15414,7 +15420,7 @@
           "aliases": "document agent package"
         },
         "graph": {
-          "pagerank": 0.022139,
+          "pagerank": 0.021671,
           "inboundLinks": 0,
           "coveredBy": [],
           "mentionedBy": [],
@@ -15518,7 +15524,7 @@
           "aliases": "document human"
         },
         "graph": {
-          "pagerank": 0.023707,
+          "pagerank": 0.023088,
           "inboundLinks": 2,
           "coveredBy": [],
           "mentionedBy": [
@@ -15646,7 +15652,7 @@
           "aliases": "document human"
         },
         "graph": {
-          "pagerank": 0.038153,
+          "pagerank": 0.037205,
           "inboundLinks": 3,
           "coveredBy": [],
           "mentionedBy": [
@@ -15933,7 +15939,7 @@
           "aliases": "document human"
         },
         "graph": {
-          "pagerank": 0.022139,
+          "pagerank": 0.021671,
           "inboundLinks": 2,
           "coveredBy": [],
           "mentionedBy": [
@@ -16301,7 +16307,7 @@
           "aliases": "document human"
         },
         "graph": {
-          "pagerank": 0.042289,
+          "pagerank": 0.041296,
           "inboundLinks": 1,
           "coveredBy": [],
           "mentionedBy": [
@@ -16417,7 +16423,7 @@
           "aliases": "document human"
         },
         "graph": {
-          "pagerank": 0.028744,
+          "pagerank": 0.027995,
           "inboundLinks": 2,
           "coveredBy": [],
           "mentionedBy": [
@@ -16516,7 +16522,7 @@
           "aliases": "document unclassified"
         },
         "graph": {
-          "pagerank": 0.023707,
+          "pagerank": 0.023088,
           "inboundLinks": 1,
           "coveredBy": [],
           "mentionedBy": [
@@ -16558,11 +16564,11 @@
           "path": "README.md",
           "symbols": "",
           "summary": "The keep-pushing loop for your SDLC. A vague objective becomes a PRD, the PRD becomes issues, each issue becomes a frozen contract, a worker in its own worktree, a reviewed pull request proven against a definition of done, a merge — and, behind a human gate, a release.",
-          "body": "@agentskit/harness The keep-pushing loop for your SDLC. A vague objective becomes a PRD, the PRD becomes issues, each issue becomes a frozen contract, a worker in its own worktree, a reviewed pull request proven against a definition of done, a merge — and, behind a human gate, a release. The local UI is optional and loopback-protected: it projects .ak-loop/ files and events and can start typed Harness jobs without adding a daemon or database. Its primary flow is issue-first: select an available issue, freeze its contract/profile/limits, enqueue it, and resolve only human decisions from the persistent Inbox. Docs: Install Node 22 or newer. Two binaries: ak-harness (everything) and ak-verify (the same binary under the common verification-protocol name). 60 seconds Then it runs without you: tick contracts and dispatches, deliver drives the pull request to merge. What a run looks like The worker leaves evidence, not promises Three files in .ak-loop/ at the root of its worktree. deliver reads them before the merge gate; a missing one comes back as a fix round naming the file . .ak-loop/plan.md is the third: the plan the worker actually followed, and where it departed from the approved one. Configuration, by example GitHub Issues as the configured tracker Set the tracker to GitHub when the UI and execution loop should operate on issues from project.repo : The Harness calls the existing gh CLI, sorts by most recently updated, and caches the board at .ak-loop/ui/github-issues.json . gh auth status and repository write permission are checked before a mutating job. Lifecycle labels are exclusive; done closes an issue and active states reopen it. Missing configured labels fail closed. The UI exposes typed, confirmed actions and jobs; only one tracker is selected per configuration. The Harness reads loop.config.yaml ; it does not consume a project's .github/ai-loop.yaml , whose schema belongs to a different executor. Commands Read-only --- --- loop doctor Providers, usage, routing, slots, selected tracker board, installed agents loop debrief What the loop is doing right now, per issue loop observe --since 24h Anomalies and metrics; --precheck gives a scheduler exit code loop retro --since 7d Digest, learnings and calibration suggestions loop status · loop watch --once · loop paused Schedule, in-flight phases, what it stopped on Acts --- --- loop tick · loop deliver One dispatch pass · one delivery pass (both take --dry-run ) loop plan start \\ answer \\ approve \\ architect \\ approve-design \\ decompose Objective → PRD → design → issues, two human gates loop release status \\ approve \\ run Promote a batch a human approved, bound to a head sha loop install · loop uninstall · loop resume Schedule, and clearing a pause As a library Also: the verification protocol The same binary runs the single-run protocol the loop is built on — a frozen contract, executable checks bound to the current revision, and an explicit human decision: Every check's final output line is JSON mapping to the outcome ids it proves. Evidence is bound to a committed Git HEAD ; any source, configuration or contract change moves the run to STALE . Runs append a hash-chained events.ndjson — verify one with ak-harness events verify [run-id] . Runnable example: (after pnpm build ). More - — concepts, guides, examples, and the generated reference for every config path, command and event. - · · - Decisions: (the loop) · (stages) · (definition of done) · (cost) - · · Release The publish job in publishes on a merge to main , through npm Trusted Publishing (GitHub OIDC) — no NPM TOKEN anywhere. It lives in the same workflow as the checks and needs every one of them, so a commit cannot publish past a red gate; a version not yet on the registry is the trigger. That file holds the checks as well as the publish: npm Trusted Publishing authorises by repository and workflow filename , so renaming it breaks releases until the npm setting matches. The candidate checklist and any open blocker l",
+          "body": "@agentskit/harness The keep-pushing loop for your SDLC. A vague objective becomes a PRD, the PRD becomes issues, each issue becomes a frozen contract, a worker in its own worktree, a reviewed pull request proven against a definition of done, a merge — and, behind a human gate, a release. The local UI is optional and loopback-protected: it projects .ak-loop/ files and events and can start typed Harness jobs without adding a daemon or database. Its primary flow is issue-first: select an available issue, freeze its contract/profile/limits, enqueue it, and resolve only human decisions from the persistent Inbox. Docs: Install Node 22 or newer. Two binaries: ak-harness (everything) and ak-verify (the same binary under the common verification-protocol name). 60 seconds Then it runs without you: tick contracts and dispatches, deliver drives the pull request to merge. What a run looks like The worker leaves evidence, not promises Three files in .ak-loop/ at the root of its worktree. deliver reads them before the merge gate; a missing one comes back as a fix round naming the file . .ak-loop/plan.md is the third: the plan the worker actually followed, and where it departed from the approved one. Configuration, by example GitHub Issues as the configured tracker Set the tracker to GitHub when the UI and execution loop should operate on issues from project.repo : The Harness calls the existing gh CLI, sorts by most recently updated, and caches the board at .ak-loop/ui/github-issues.json . gh auth status and repository write permission are checked before a mutating job. Lifecycle labels are exclusive; done closes an issue and active states reopen it. Missing configured labels fail closed. The UI exposes typed, confirmed actions and jobs; only one tracker is selected per configuration. The Harness reads loop.config.yaml ; it does not consume a project's .github/ai-loop.yaml , whose schema belongs to a different executor. Commands Read-only --- --- loop doctor Providers, usage, routing, slots, selected tracker board, installed agents loop debrief What the loop is doing right now, per issue loop observe --since 24h Anomalies and metrics; --precheck gives a scheduler exit code loop retro --since 7d Digest, learnings and calibration suggestions loop status · loop watch --once · loop paused Schedule, in-flight phases, what it stopped on Acts --- --- loop tick · loop deliver One dispatch pass · one delivery pass (both take --dry-run ) loop plan start \\ answer \\ approve \\ architect \\ approve-design \\ decompose Objective → PRD → design → issues, two human gates loop release status \\ approve \\ run Promote a batch a human approved, bound to a head sha loop install · loop uninstall · loop resume Schedule, and clearing a pause As a library Also: the verification protocol The same binary runs the single-run protocol the loop is built on — a frozen contract, executable checks bound to the current revision, and an explicit human decision: Every check's final output line is JSON mapping to the outcome ids it proves. Evidence is bound to a committed Git HEAD ; any source, configuration or contract change moves the run to STALE . Runs append a hash-chained events.ndjson — verify one with ak-harness events verify [run-id] . Runnable example: (after pnpm build ). More - — concepts, guides, examples, and the generated reference for every config path, command and event. - · · - Decisions: (the loop) · (stages) · (definition of done) · (cost) · (independent verifier) - · · Release The publish job in publishes on a merge to main , through npm Trusted Publishing (GitHub OIDC) — no NPM TOKEN anywhere. It lives in the same workflow as the checks and needs every one of them, so a commit cannot publish past a red gate; a version not yet on the registry is the trigger. That file holds the checks as well as the publish: npm Trusted Publishing authorises by repository and workflow filename , so renaming it breaks releases until the npm setting matches. The candidate checkli",
           "aliases": "document project"
         },
         "graph": {
-          "pagerank": 0.022139,
+          "pagerank": 0.021671,
           "inboundLinks": 0,
           "coveredBy": [],
           "mentionedBy": [],
@@ -16601,6 +16607,11 @@
             {
               "kind": "links-to",
               "id": "document:docs/ADR-0037-cost-policy-ceilings-and-levers.md",
+              "confidence": "observed"
+            },
+            {
+              "kind": "links-to",
+              "id": "document:docs/ADR-0047-independent-verifier-and-structured-lessons.md",
               "confidence": "observed"
             },
             {
@@ -16670,7 +16681,7 @@
             }
           ]
         },
-        "contentHash": "2dcad6b70449e27294b048a92adc5d09ba00c7e8ab6dcacd8860715dcc5669ec",
+        "contentHash": "dcd598e0920dc57a23540c84a8a101d8b782c9c580a14f61ffd4047f5f667efd",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -16695,7 +16706,7 @@
           "aliases": "document unclassified"
         },
         "graph": {
-          "pagerank": 0.023707,
+          "pagerank": 0.023088,
           "inboundLinks": 1,
           "coveredBy": [],
           "mentionedBy": [
@@ -51211,7 +51222,7 @@
           "aliases": "harness @agentskit/harness package"
         },
         "graph": {
-          "pagerank": 0.023707,
+          "pagerank": 0.023088,
           "inboundLinks": 7,
           "coveredBy": [
             "document:README.md"
