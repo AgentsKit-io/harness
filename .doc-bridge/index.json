@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
-  "contentHash": "cad3e74441deb4c9ca44bf0b82b1f1eba89dcfa96a7b1fd72167a54060b4c946",
+  "contentHash": "005c3371d248a78d63174e5a82887235d53bf5f9c9a12fd6bceb17702fadadb4",
   "contentHashAlgo": "sha256-semantic-v1",
-  "generatedAt": "2026-10-30T16:14:49.317Z",
+  "generatedAt": "2026-10-30T18:02:26.911Z",
   "project": {
     "name": "AgentsKit Harness",
     "root": "."
@@ -988,6 +988,18 @@
         "human"
       ],
       "contentHash": "63486d702dae13505345bc395f7452778983e5176a27d70e286cb2d6b0a6b3c0"
+    },
+    {
+      "id": "document:docs/fixtures/mvp/README.md",
+      "type": "document",
+      "title": "README.md",
+      "path": "docs/fixtures/mvp/README.md",
+      "description": "Referência para o #254: mvp_manifest.py é a fonte da fábrica (AgentsKit-io/factory, packages/factory-ops/projects/, origin/main de 30/10). exemplo-mvp.yaml é um manifesto sintético (produto fictício), no formato real; manifestos de produtos privados nunca entram neste repo público.",
+      "tags": [
+        "document",
+        "human"
+      ],
+      "contentHash": "bb9f9fc2938962d5e4e85cbaba0ba10f6360af1d577a82b16555539ce18f99f1"
     },
     {
       "id": "document:docs/for-agents/packages/ecosystem-manifest.md",
@@ -9833,8 +9845,8 @@
     }
   },
   "inputs": {
-    "hash": "a8e6f1afaaad4c10c2343daf3027adf52fc3c59a5fed23f7600bd1e93e2f6846",
-    "fileCount": 627,
+    "hash": "7d95f314feba644e0be19af2b6267a99010d781d385345761ed8c0e690570559",
+    "fileCount": 628,
     "projectionVersion": 2
   },
   "retrieval": {
@@ -9856,9 +9868,9 @@
   "projection": {
     "type": "retrieval-index",
     "schemaVersion": 1,
-    "contentHash": "52011f7ea7ac802cae3283aafdd23289049414aaca9d5642285eb948c3e8b48f",
+    "contentHash": "c4fbb04374df62ed05a434acadd65536e5128f143f714a5e83db8a4d7c1552ec",
     "contentHashAlgo": "sha256-semantic-v1",
-    "snapshotHash": "c06834ebe0e924d1e59afb6c05751ee59f04c62aaf4fc3c2c881c7042ff96b96",
+    "snapshotHash": "69b2885228256e8988821ff1c121da47057489e28bc0c0466c9afd703590957e",
     "overlayHash": "f99666ff9119084dd25c2974ae64eb6935ec2aa785ff5ad478fb9d541f7a5e94",
     "configurationHash": "497822431910cd9fa7d674a48a9f0b96fbbbf779f22a001de0b52252117fe3ab",
     "lexiconVersion": 1,
@@ -9878,7 +9890,7 @@
     },
     "lexical": {
       "version": 1,
-      "documentCount": 609,
+      "documentCount": 610,
       "fieldNames": [
         "aliases",
         "body",
@@ -9889,13 +9901,13 @@
         "title"
       ],
       "averageFieldLength": {
-        "aliases": 2.9178981937602626,
-        "body": 46.46141215106732,
-        "headings": 3.8686371100164205,
-        "path": 6.111658456486043,
-        "summary": 2.9244663382594416,
-        "symbols": 13.669950738916256,
-        "title": 4.0344827586206895
+        "aliases": 2.916393442622951,
+        "body": 46.472131147540985,
+        "headings": 3.862295081967213,
+        "path": 6.111475409836066,
+        "summary": 2.9885245901639346,
+        "symbols": 13.647540983606557,
+        "title": 4.031147540983606
       }
     },
     "entries": [
@@ -15597,6 +15609,39 @@
           "outbound": []
         },
         "contentHash": "63486d702dae13505345bc395f7452778983e5176a27d70e286cb2d6b0a6b3c0",
+        "provenance": "observed",
+        "confidence": "observed"
+      },
+      {
+        "id": "document:docs/fixtures/mvp/README.md",
+        "kind": "document",
+        "path": "docs/fixtures/mvp/README.md",
+        "title": "README.md",
+        "summary": "Referência para o #254: mvp_manifest.py é a fonte da fábrica (AgentsKit-io/factory, packages/factory-ops/projects/, origin/main de 30/10). exemplo-mvp.yaml é um manifesto sintético (produto fictício), no formato real; manifestos de produtos privados nunca entram neste repo público.",
+        "audience": "human",
+        "aliases": [],
+        "tags": [
+          "document",
+          "human"
+        ],
+        "fields": {
+          "title": "README.md",
+          "headings": "",
+          "path": "docs/fixtures/mvp/README.md",
+          "symbols": "",
+          "summary": "Referência para o #254: mvp_manifest.py é a fonte da fábrica (AgentsKit-io/factory, packages/factory-ops/projects/, origin/main de 30/10). exemplo-mvp.yaml é um manifesto sintético (produto fictício), no formato real; manifestos de produtos privados nunca entram neste repo público.",
+          "body": "Referência para o 254: mvp manifest.py é a fonte da fábrica (AgentsKit-io/factory, packages/factory-ops/projects/, origin/main de 30/10). exemplo-mvp.yaml é um manifesto sintético (produto fictício), no formato real; manifestos de produtos privados nunca entram neste repo público. Digest esperado ( python3 mvp manifest.py digest exemplo-mvp.yaml ): a5d6dbc14e5f9a24",
+          "aliases": "document human"
+        },
+        "graph": {
+          "pagerank": 0,
+          "inboundLinks": 0,
+          "coveredBy": [],
+          "mentionedBy": [],
+          "inbound": [],
+          "outbound": []
+        },
+        "contentHash": "bb9f9fc2938962d5e4e85cbaba0ba10f6360af1d577a82b16555539ce18f99f1",
         "provenance": "observed",
         "confidence": "observed"
       },
