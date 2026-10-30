@@ -77,7 +77,8 @@ No public export was removed or changed kind (`docs/stability/public-api-v1.json
   of CLI output (#153); UI: failed-before-dispatch runs show in Attention (#160), an archived attempt does not shadow
   the previous one (#158), Retry resumes on a PR opened after delivery stopped (#157).
 - **Release hygiene.** Exported TypeScript surface is snapshotted (`pnpm check:public-api`, #174); Trusted Publishing
-  hardened (#173).
+  hardened (#173). Every npm publish also creates the GitHub tag and release from this changelog, and
+  backfills the missing release for 0.22.3 (#256).
 - **Behaviour.** A repo `loop.config.yaml` is optional and a preset no longer creates a partial `linear` block on its
   own (#211); with `tracker.requireLabel` set, unlabelled issues are not contracted (#227); briefs with no expected
   change are refused (#249).

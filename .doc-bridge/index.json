@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
-  "contentHash": "af5aed2d966fc90329d8a680b9bc65ee54c5e60f60edf225529e2f0e261bfa96",
+  "contentHash": "9a9e2abdb325e731439058bfdebc5abffdb396ddf9fb86987ad7e3163520327a",
   "contentHashAlgo": "sha256-semantic-v1",
-  "generatedAt": "2026-10-30T05:37:01.541Z",
+  "generatedAt": "2026-10-30T08:34:03.468Z",
   "project": {
     "name": "AgentsKit Harness",
     "root": "."
@@ -294,18 +294,6 @@
       "contentHash": "26e91c1e01271df2c8e4a6290dc0e7d1047ce1b2e147c8a55a5eed756dded0ef"
     },
     {
-      "id": "document:changelog.d/255.md",
-      "type": "document",
-      "title": "255.md",
-      "path": "changelog.d/255.md",
-      "description": "feat: create a GitHub tag and release from the changelog on every npm publish",
-      "tags": [
-        "document",
-        "project"
-      ],
-      "contentHash": "652fc69f7e4cd4a74fb96745e9ad1d4d347655328d7e33e7e8804822b4656668"
-    },
-    {
       "id": "document:CHANGELOG.md",
       "type": "document",
       "title": "Changelog",
@@ -315,7 +303,7 @@
         "document",
         "project"
       ],
-      "contentHash": "eaac02bc8b764e4c78e375255ed3f6f3cf1252edbce259a2559483fa897f16c0"
+      "contentHash": "e4b269229b9095dd345d9d1840a4e2bb9f303c3f62e5bb8a8f97a61a65a601df"
     },
     {
       "id": "document:CLAUDE.md",
@@ -1109,7 +1097,7 @@
         "document",
         "unclassified"
       ],
-      "contentHash": "1a017ec45cdf85119054fed990c0f0d22700ee3cb606c037a4960fac6d7e939c"
+      "contentHash": "db336a2b4c7525d259edebe88d5a305a25041e2af2f6c9ebad8e894a3e6b8648"
     },
     {
       "id": "document:SECURITY.md",
@@ -9749,8 +9737,8 @@
     }
   },
   "inputs": {
-    "hash": "9d3e726b50fdd193d8e1171bfb5122711cb531c2010e41931dd25249944e1051",
-    "fileCount": 620,
+    "hash": "150e3e03feb83371da88149cc1e72295d24f3ff7e3881ced0abc8bd8bc4787fe",
+    "fileCount": 619,
     "projectionVersion": 2
   },
   "retrieval": {
@@ -9772,9 +9760,9 @@
   "projection": {
     "type": "retrieval-index",
     "schemaVersion": 1,
-    "contentHash": "755cf1746f10733762758d941724dbae6d3bc2f2c34ca588bd3b7691ef9be791",
+    "contentHash": "5af82e5d5ea82f44cd840c99b6d13f0f2181ac038d4fa7ce56fdb4421d983b20",
     "contentHashAlgo": "sha256-semantic-v1",
-    "snapshotHash": "b96e63a6f768e198115ed5fbb4288530cdd9306a7ad5b892d7dd59fb3174f1b6",
+    "snapshotHash": "9bc76b80f2eb3dfbbad9d09925ca7ad25ff4fde173195147fb5022555e449717",
     "overlayHash": "f99666ff9119084dd25c2974ae64eb6935ec2aa785ff5ad478fb9d541f7a5e94",
     "configurationHash": "497822431910cd9fa7d674a48a9f0b96fbbbf779f22a001de0b52252117fe3ab",
     "lexiconVersion": 1,
@@ -9794,7 +9782,7 @@
     },
     "lexical": {
       "version": 1,
-      "documentCount": 601,
+      "documentCount": 600,
       "fieldNames": [
         "aliases",
         "body",
@@ -9805,13 +9793,13 @@
         "title"
       ],
       "averageFieldLength": {
-        "aliases": 2.925124792013311,
-        "body": 45.770382695507486,
-        "headings": 3.798668885191348,
-        "path": 6.126455906821963,
-        "summary": 2.868552412645591,
-        "symbols": 13.853577371048253,
-        "title": 4.02495840266223
+        "aliases": 2.9266666666666667,
+        "body": 45.815,
+        "headings": 3.805,
+        "path": 6.13,
+        "summary": 2.855,
+        "symbols": 13.876666666666667,
+        "title": 4.028333333333333
       }
     },
     "entries": [
@@ -12288,39 +12276,6 @@
         "confidence": "observed"
       },
       {
-        "id": "document:changelog.d/255.md",
-        "kind": "document",
-        "path": "changelog.d/255.md",
-        "title": "255.md",
-        "summary": "feat: create a GitHub tag and release from the changelog on every npm publish",
-        "audience": "human",
-        "aliases": [],
-        "tags": [
-          "document",
-          "project"
-        ],
-        "fields": {
-          "title": "255.md",
-          "headings": "",
-          "path": "changelog.d/255.md",
-          "symbols": "",
-          "summary": "feat: create a GitHub tag and release from the changelog on every npm publish",
-          "body": "feat: create a GitHub tag and release from the changelog on every npm publish The publish job also backfills the release for a published version that has none (0.22.3).",
-          "aliases": "document project"
-        },
-        "graph": {
-          "pagerank": 0,
-          "inboundLinks": 0,
-          "coveredBy": [],
-          "mentionedBy": [],
-          "inbound": [],
-          "outbound": []
-        },
-        "contentHash": "652fc69f7e4cd4a74fb96745e9ad1d4d347655328d7e33e7e8804822b4656668",
-        "provenance": "observed",
-        "confidence": "observed"
-      },
-      {
         "id": "document:CHANGELOG.md",
         "kind": "document",
         "path": "CHANGELOG.md",
@@ -12604,7 +12559,7 @@
             }
           ]
         },
-        "contentHash": "eaac02bc8b764e4c78e375255ed3f6f3cf1252edbce259a2559483fa897f16c0",
+        "contentHash": "e4b269229b9095dd345d9d1840a4e2bb9f303c3f62e5bb8a8f97a61a65a601df",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -16777,7 +16732,7 @@
             }
           ]
         },
-        "contentHash": "1a017ec45cdf85119054fed990c0f0d22700ee3cb606c037a4960fac6d7e939c",
+        "contentHash": "db336a2b4c7525d259edebe88d5a305a25041e2af2f6c9ebad8e894a3e6b8648",
         "provenance": "observed",
         "confidence": "observed"
       },
