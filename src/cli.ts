@@ -61,7 +61,7 @@ mvp.command('check [file]').description('Parse and validate the MVP manifest (ex
   print({ status: 'ok', requirements: (doc['requirements'] as unknown[]).length, digest: mvpDigest(doc) })
 })
 mvp.command('digest [file]').description('Print the digest to write in approval.digest (the owner approves this exact list).').action((file?: string) => print(mvpDigest(mvpDoc(file))))
-mvp.command('report [file]').description('Product report: % by evidence level and requirement counts by state (pronto, em QA, bloqueado, sem começar).').option('--evidence <path>', 'JSON file with the checked evidence ({prs, ci, files, urls, runs}); without it every level is "sem evidência"').option('--approver <name...>', 'who may approve the list (default: anyone named in approval.by)').action((file: string | undefined, command: { readonly evidence?: string; readonly approver?: readonly string[] }) => {
+mvp.command('report [file]').description('Product report: % by evidence level and requirement counts by state (pronto, em QA, bloqueado, sem começar).').option('--evidence <path>', 'JSON file with the checked evidence (keys prs, ci, files, urls, runs); without it every level is "sem evidência"').option('--approver <name...>', 'who may approve the list (default: anyone named in approval.by)').action((file: string | undefined, command: { readonly evidence?: string; readonly approver?: readonly string[] }) => {
   const evidence = evidenceFromJson(command.evidence ? readJsonInput(command.evidence, 'MVP evidence') : {})
   const report = evaluateMvp(mvpDoc(file), evidence, command.approver ?? [])
   print(options().json ? report : formatMvpReport(report))
