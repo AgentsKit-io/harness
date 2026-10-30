@@ -2288,6 +2288,31 @@
           ]
         },
         {
+          "name": "MvpEvidence",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "MvpManifestError",
+          "kinds": [
+            "type",
+            "value"
+          ]
+        },
+        {
+          "name": "MvpReport",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
+          "name": "MvpState",
+          "kinds": [
+            "type"
+          ]
+        },
+        {
           "name": "NormalizedPhaseProfile",
           "kinds": [
             "type"
@@ -4827,7 +4852,19 @@
           ]
         },
         {
+          "name": "evaluateMvp",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
           "name": "evaluateWatchdog",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "evidenceFromJson",
           "kinds": [
             "value"
           ]
@@ -4918,6 +4955,12 @@
         },
         {
           "name": "formatDuration",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "formatMvpReport",
           "kinds": [
             "value"
           ]
@@ -5487,6 +5530,12 @@
           ]
         },
         {
+          "name": "loadMvp",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
           "name": "loadPinnedSkills",
           "kinds": [
             "value"
@@ -5554,6 +5603,18 @@
         },
         {
           "name": "modelForChange",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "mvpApprovalState",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "mvpDigest",
           "kinds": [
             "value"
           ]
@@ -5860,6 +5921,12 @@
         },
         {
           "name": "parseModelRef",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "parseMvpYaml",
           "kinds": [
             "value"
           ]
@@ -7252,6 +7319,12 @@
         },
         {
           "name": "validateMemoryRecord",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
+          "name": "validateMvp",
           "kinds": [
             "value"
           ]
