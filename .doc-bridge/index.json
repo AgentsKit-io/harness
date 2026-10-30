@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
-  "contentHash": "86dbadd6b61afd07ad9190d7aff75a4ee74ed2144fc16723b064f61f06cb2add",
+  "contentHash": "f0913a81aa64f8d3a07029b587de0c4963cf5ca25f0a5bcc55005a795e64baa9",
   "contentHashAlgo": "sha256-semantic-v1",
-  "generatedAt": "2026-10-29T10:31:54.874Z",
+  "generatedAt": "2026-10-30T01:20:10.874Z",
   "project": {
     "name": "AgentsKit Harness",
     "root": "."
@@ -292,6 +292,18 @@
         "unclassified"
       ],
       "contentHash": "26e91c1e01271df2c8e4a6290dc0e7d1047ce1b2e147c8a55a5eed756dded0ef"
+    },
+    {
+      "id": "document:changelog.d/253.md",
+      "type": "document",
+      "title": "253.md",
+      "path": "changelog.d/253.md",
+      "description": "chore: slim published package, add docs/INVENTARIO.md, mark loop tick/deliver legacy",
+      "tags": [
+        "document",
+        "project"
+      ],
+      "contentHash": "3e0a45fc57e64b099d537f4fd3869250a6ee7e4b2442a58376dcb5985f70e62b"
     },
     {
       "id": "document:CHANGELOG.md",
@@ -992,16 +1004,28 @@
       "contentHash": "05a7f2d7995fee72ea4becf27f70f7c5e76ab378ae9e7045f29818ab5e4b9d91"
     },
     {
-      "id": "document:docs/LOOP.md",
+      "id": "document:docs/INVENTARIO.md",
       "type": "document",
-      "title": "Keep-pushing loop (ak-harness loop)",
-      "path": "docs/LOOP.md",
-      "description": "The loop drains one person's Linear queue through Orca worktrees, 24/7, with role-based model routing and usage-aware fallback. The harness supplies the deterministic parts (claims, machine pressure, gates, evidence); Orca supplies scheduling, worktrees, terminals, Linear access and visibility.",
+      "title": "Inventário: comandos e módulos",
+      "path": "docs/INVENTARIO.md",
+      "description": "Gerado em 2026-10-30 (ticket #253). Os módulos abaixo vêm de src/; a coluna de testes é por referência estática (test/ importa o arquivo ou usa um símbolo exportado dele). \"Verde\" não foi medido aqui: o CI roda pnpm test a cada PR e só merge com tudo verde, então um módulo com testes referenciados está verde enquanto main está verde.",
       "tags": [
         "document",
         "human"
       ],
-      "contentHash": "d07d109a52eb86f086b8891976eb8b695eae224e7a9dd3bd8b17df36d3c301d6"
+      "contentHash": "737d019f25848fd5af33281a4dc9bb800b41df5c0335156ddc48a9e5b32194ef"
+    },
+    {
+      "id": "document:docs/LOOP.md",
+      "type": "document",
+      "title": "Keep-pushing loop (ak-harness loop)",
+      "path": "docs/LOOP.md",
+      "description": "Legado: loop tick / loop deliver (e workers) estão em modo legado: sem novas features, mantidos para repos que ainda usam loop.config.yaml (ex.: link-pay). Lista e contexto em INVENTARIO.md.",
+      "tags": [
+        "document",
+        "human"
+      ],
+      "contentHash": "e81e64edf154b0def4d5d40e8e7bea1853f42c9171f198e9f9920e4440a66be5"
     },
     {
       "id": "document:docs/MODULE-BOUNDARIES.md",
@@ -9737,8 +9761,8 @@
     }
   },
   "inputs": {
-    "hash": "00783ec93ae29cdfdda6fdc32db0aecec72b030ad98b7195c1978a372d646593",
-    "fileCount": 619,
+    "hash": "45226c90c3a81c93ee2e6a7c21a078176ae9cc98a3008872fab5ac926c97f002",
+    "fileCount": 621,
     "projectionVersion": 2
   },
   "retrieval": {
@@ -9760,9 +9784,9 @@
   "projection": {
     "type": "retrieval-index",
     "schemaVersion": 1,
-    "contentHash": "84c7aa493f50e7f7487b7cb07daacfe28bccdec0f4664b98eee9fe01f37d12b1",
+    "contentHash": "5119f08655fd533b20d4ae8b476a92b4cbef3fc30bbfe1a7bb8b50971960e60c",
     "contentHashAlgo": "sha256-semantic-v1",
-    "snapshotHash": "d381331b3d861ad34c1464e3b01a34e314a41c7e48a3f197ff10cbe59971984d",
+    "snapshotHash": "caf9249b7a04662ec3294a18dd2eac955669a26dfc62d6d433ca4df2699f95e6",
     "overlayHash": "f99666ff9119084dd25c2974ae64eb6935ec2aa785ff5ad478fb9d541f7a5e94",
     "configurationHash": "497822431910cd9fa7d674a48a9f0b96fbbbf779f22a001de0b52252117fe3ab",
     "lexiconVersion": 1,
@@ -9782,7 +9806,7 @@
     },
     "lexical": {
       "version": 1,
-      "documentCount": 600,
+      "documentCount": 602,
       "fieldNames": [
         "aliases",
         "body",
@@ -9793,13 +9817,13 @@
         "title"
       ],
       "averageFieldLength": {
-        "aliases": 2.9266666666666667,
-        "body": 45.73166666666667,
-        "headings": 3.8033333333333332,
-        "path": 6.13,
-        "summary": 2.8366666666666664,
-        "symbols": 13.876666666666667,
-        "title": 4.028333333333333
+        "aliases": 2.9235880398671097,
+        "body": 46.72591362126246,
+        "headings": 3.8272425249169437,
+        "path": 6.122923588039867,
+        "summary": 2.903654485049834,
+        "symbols": 13.830564784053156,
+        "title": 4.023255813953488
       }
     },
     "entries": [
@@ -9827,7 +9851,7 @@
           "aliases": "harness-site area ownership"
         },
         "graph": {
-          "pagerank": 0.040956,
+          "pagerank": 0.040069,
           "inboundLinks": 2,
           "coveredBy": [
             "document:docs/for-agents/packages/harness-site.md"
@@ -10526,16 +10550,22 @@
         },
         "graph": {
           "pagerank": 0,
-          "inboundLinks": 1,
+          "inboundLinks": 2,
           "coveredBy": [],
           "mentionedBy": [
-            "document:CONTRIBUTING.md"
+            "document:CONTRIBUTING.md",
+            "document:docs/INVENTARIO.md"
           ],
           "packageId": "package:@agentskit/harness",
           "inbound": [
             {
               "kind": "mentions",
               "id": "document:CONTRIBUTING.md",
+              "confidence": "fuzzy"
+            },
+            {
+              "kind": "mentions",
+              "id": "document:docs/INVENTARIO.md",
               "confidence": "fuzzy"
             }
           ],
@@ -10565,13 +10595,14 @@
         },
         "graph": {
           "pagerank": 0,
-          "inboundLinks": 5,
+          "inboundLinks": 6,
           "coveredBy": [],
           "mentionedBy": [
             "document:AGENTS.md",
             "document:CONTRIBUTING.md",
             "document:docs/ADR-0045-fleet-runner.md",
             "document:docs/ADR-0047-independent-verifier-and-structured-lessons.md",
+            "document:docs/INVENTARIO.md",
             "document:docs/LOOP.md"
           ],
           "packageId": "package:@agentskit/harness",
@@ -10595,6 +10626,11 @@
               "kind": "mentions",
               "id": "document:docs/ADR-0047-independent-verifier-and-structured-lessons.md",
               "confidence": "observed"
+            },
+            {
+              "kind": "mentions",
+              "id": "document:docs/INVENTARIO.md",
+              "confidence": "fuzzy"
             },
             {
               "kind": "mentions",
@@ -10694,7 +10730,7 @@
           "aliases": "document unclassified"
         },
         "graph": {
-          "pagerank": 0.040956,
+          "pagerank": 0.040069,
           "inboundLinks": 4,
           "coveredBy": [],
           "mentionedBy": [
@@ -12276,6 +12312,39 @@
         "confidence": "observed"
       },
       {
+        "id": "document:changelog.d/253.md",
+        "kind": "document",
+        "path": "changelog.d/253.md",
+        "title": "253.md",
+        "summary": "chore: slim published package, add docs/INVENTARIO.md, mark loop tick/deliver legacy",
+        "audience": "human",
+        "aliases": [],
+        "tags": [
+          "document",
+          "project"
+        ],
+        "fields": {
+          "title": "253.md",
+          "headings": "",
+          "path": "changelog.d/253.md",
+          "symbols": "",
+          "summary": "chore: slim published package, add docs/INVENTARIO.md, mark loop tick/deliver legacy",
+          "body": "chore: slim published package, add docs/INVENTARIO.md, mark loop tick/deliver legacy files ships only the four user-facing docs instead of all of docs/ (418 KB - 85 KB). No command or module removed: none lacks both consumer and test.",
+          "aliases": "document project"
+        },
+        "graph": {
+          "pagerank": 0,
+          "inboundLinks": 0,
+          "coveredBy": [],
+          "mentionedBy": [],
+          "inbound": [],
+          "outbound": []
+        },
+        "contentHash": "3e0a45fc57e64b099d537f4fd3869250a6ee7e4b2442a58376dcb5985f70e62b",
+        "provenance": "observed",
+        "confidence": "observed"
+      },
+      {
         "id": "document:CHANGELOG.md",
         "kind": "document",
         "path": "CHANGELOG.md",
@@ -12297,7 +12366,7 @@
           "aliases": "document project"
         },
         "graph": {
-          "pagerank": 0.023707,
+          "pagerank": 0.023193,
           "inboundLinks": 2,
           "coveredBy": [],
           "mentionedBy": [
@@ -12589,7 +12658,7 @@
           "aliases": "document unclassified"
         },
         "graph": {
-          "pagerank": 0.022139,
+          "pagerank": 0.021659,
           "inboundLinks": 1,
           "coveredBy": [],
           "mentionedBy": [
@@ -12672,7 +12741,7 @@
           "aliases": "document unclassified"
         },
         "graph": {
-          "pagerank": 0.031547,
+          "pagerank": 0.030864,
           "inboundLinks": 1,
           "coveredBy": [],
           "mentionedBy": [],
@@ -12716,7 +12785,7 @@
           "aliases": "document unclassified"
         },
         "graph": {
-          "pagerank": 0.022139,
+          "pagerank": 0.021659,
           "inboundLinks": 3,
           "coveredBy": [],
           "mentionedBy": [
@@ -12779,7 +12848,7 @@
           "aliases": "document unclassified"
         },
         "graph": {
-          "pagerank": 0.031547,
+          "pagerank": 0.030864,
           "inboundLinks": 1,
           "coveredBy": [],
           "mentionedBy": [],
@@ -12824,7 +12893,7 @@
           "aliases": "document project"
         },
         "graph": {
-          "pagerank": 0.023707,
+          "pagerank": 0.023193,
           "inboundLinks": 2,
           "coveredBy": [],
           "mentionedBy": [
@@ -13067,7 +13136,7 @@
           "aliases": "document human"
         },
         "graph": {
-          "pagerank": 0.032949,
+          "pagerank": 0.029591,
           "inboundLinks": 1,
           "coveredBy": [],
           "mentionedBy": [],
@@ -14055,7 +14124,7 @@
           "aliases": "document human"
         },
         "graph": {
-          "pagerank": 0.032949,
+          "pagerank": 0.029591,
           "inboundLinks": 1,
           "coveredBy": [],
           "mentionedBy": [],
@@ -14110,7 +14179,7 @@
           "aliases": "document human"
         },
         "graph": {
-          "pagerank": 0.034517,
+          "pagerank": 0.031125,
           "inboundLinks": 2,
           "coveredBy": [],
           "mentionedBy": [],
@@ -14165,7 +14234,7 @@
           "aliases": "document human"
         },
         "graph": {
-          "pagerank": 0.034426,
+          "pagerank": 0.03368,
           "inboundLinks": 2,
           "coveredBy": [],
           "mentionedBy": [],
@@ -14407,7 +14476,7 @@
           "aliases": "document human"
         },
         "graph": {
-          "pagerank": 0.026585,
+          "pagerank": 0.02601,
           "inboundLinks": 2,
           "coveredBy": [],
           "mentionedBy": [],
@@ -14457,7 +14526,7 @@
           "aliases": "document human"
         },
         "graph": {
-          "pagerank": 0.030055,
+          "pagerank": 0.029404,
           "inboundLinks": 2,
           "coveredBy": [],
           "mentionedBy": [],
@@ -14507,7 +14576,7 @@
           "aliases": "document human"
         },
         "graph": {
-          "pagerank": 0.025017,
+          "pagerank": 0.024475,
           "inboundLinks": 1,
           "coveredBy": [],
           "mentionedBy": [],
@@ -14557,7 +14626,7 @@
           "aliases": "document human"
         },
         "graph": {
-          "pagerank": 0.031623,
+          "pagerank": 0.030938,
           "inboundLinks": 3,
           "coveredBy": [],
           "mentionedBy": [],
@@ -14622,7 +14691,7 @@
           "aliases": "document human"
         },
         "graph": {
-          "pagerank": 0.025017,
+          "pagerank": 0.024475,
           "inboundLinks": 1,
           "coveredBy": [],
           "mentionedBy": [],
@@ -14677,7 +14746,7 @@
           "aliases": "document human"
         },
         "graph": {
-          "pagerank": 0.026585,
+          "pagerank": 0.02601,
           "inboundLinks": 2,
           "coveredBy": [],
           "mentionedBy": [],
@@ -14727,7 +14796,7 @@
           "aliases": "document human"
         },
         "graph": {
-          "pagerank": 0.022139,
+          "pagerank": 0.021659,
           "inboundLinks": 0,
           "coveredBy": [],
           "mentionedBy": [],
@@ -14776,7 +14845,7 @@
           "aliases": "document human"
         },
         "graph": {
-          "pagerank": 0.022139,
+          "pagerank": 0.021659,
           "inboundLinks": 0,
           "coveredBy": [],
           "mentionedBy": [],
@@ -15120,7 +15189,7 @@
           "aliases": "document human"
         },
         "graph": {
-          "pagerank": 0.022139,
+          "pagerank": 0.021659,
           "inboundLinks": 0,
           "coveredBy": [],
           "mentionedBy": [],
@@ -15199,7 +15268,7 @@
           "aliases": "document human"
         },
         "graph": {
-          "pagerank": 0.126735,
+          "pagerank": 0.12399,
           "inboundLinks": 5,
           "coveredBy": [],
           "mentionedBy": [],
@@ -15414,7 +15483,7 @@
           "aliases": "document agent package"
         },
         "graph": {
-          "pagerank": 0.022139,
+          "pagerank": 0.021659,
           "inboundLinks": 0,
           "coveredBy": [],
           "mentionedBy": [],
@@ -15518,7 +15587,7 @@
           "aliases": "document human"
         },
         "graph": {
-          "pagerank": 0.023707,
+          "pagerank": 0.023193,
           "inboundLinks": 2,
           "coveredBy": [],
           "mentionedBy": [
@@ -15625,11 +15694,81 @@
         "confidence": "observed"
       },
       {
+        "id": "document:docs/INVENTARIO.md",
+        "kind": "document",
+        "path": "docs/INVENTARIO.md",
+        "title": "Inventário: comandos e módulos",
+        "summary": "Gerado em 2026-10-30 (ticket #253). Os módulos abaixo vêm de src/; a coluna de testes é por referência estática (test/ importa o arquivo ou usa um símbolo exportado dele). \"Verde\" não foi medido aqui: o CI roda pnpm test a cada PR e só merge com tudo verde, então um módulo com testes referenciados está verde enquanto main está verde.",
+        "audience": "human",
+        "aliases": [],
+        "tags": [
+          "document",
+          "human"
+        ],
+        "fields": {
+          "title": "Inventário: comandos e módulos",
+          "headings": "Inventário: comandos e módulos Consumidores Comandos (98 declarados em src/cli.ts) Módulos Sem teste direto Pacote publicado: antes e depois Loop tick/deliver: legado",
+          "path": "docs/INVENTARIO.md",
+          "symbols": "",
+          "summary": "Gerado em 2026-10-30 (ticket #253). Os módulos abaixo vêm de src/; a coluna de testes é por referência estática (test/ importa o arquivo ou usa um símbolo exportado dele). \"Verde\" não foi medido aqui: o CI roda pnpm test a cada PR e só merge com tudo verde, então um módulo com testes referenciados está verde enquanto main está verde.",
+          "body": "Inventário: comandos e módulos Gerado em 2026-10-30 (ticket 253). Os módulos abaixo vêm de src/ ; a coluna de testes é por referência estática ( test/ importa o arquivo ou usa um símbolo exportado dele). \"Verde\" não foi medido aqui : o CI roda pnpm test a cada PR e só merge com tudo verde, então um módulo com testes referenciados está verde enquanto main está verde. Consumidores Fonte: este repositório ( README.md , ecosystem.json , docs/LOOP.md ). Consumo fora daqui (repos de produto, doc-bridge, playbook) não é visível a partir deste repo e precisa ser confirmado pelo dono antes de remover algo. Consumidor Usa --- --- factory-line ak-harness loop (stage/tick/deliver/plan/release), ak-verify run , adapters github-cli , orca produtos (ex.: link-pay) loop.config.yaml + loop tick/deliver ( legado , ver abaixo), ak-verify run doc-bridge context resolve , adapter doc-bridge , context/ playbook contratos/gates ( delivery , discovery , wip , cycle , block , snapshot ) como referência documental Comandos (98 declarados em src/cli.ts ) Grupo Comandos Consumidor Teste --- --- --- --- núcleo de execução start verify run approve authorize retry cancel status audit clean , events , benchmark baseline factory-line, produtos ( ak-verify ) sim ( harness , agent , lock , bundle , metrics ) contrato/diagnóstico doctor plan context resolve artifacts factory-line, doc-bridge sim avaliações do playbook discovery wip experiment delivery pilot cycle block preflight snapshot learning coordination playbook (referência) sim (um arquivo por capacidade) UI ui operadores sim ( ui- ) loop moderno loop stage <stage , plan , release , learning , observe , watch , retro , run , status , approve , resume , paused , worker-guard , doctor , validate , init , install , uninstall , precheck , contract , debrief , issue-timeline , hook factory-line sim ( loop- ) loop legado tick/deliver loop tick , loop deliver , loop tick-worker , loop deliver-worker produtos com loop.config.yaml sim ( loop-tick , loop-deliver ) Módulos Módulo Linhas Exportado em index.ts Testes --- --- --- --- kernel/adapter-contract.ts 45 sí 2 arquivo(s) kernel/artifacts.ts 230 sí 1 arquivo(s) kernel/block.ts 67 sí 2 arquivo(s) kernel/cache.ts 65 sí 4 arquivo(s) kernel/capabilities.ts 102 sí 2 arquivo(s) kernel/compatibility.ts 127 sí 2 arquivo(s) kernel/constants.ts 25 sí 1 arquivo(s) kernel/cycle.ts 111 sí 2 arquivo(s) kernel/discovery.ts 149 sí 3 arquivo(s) kernel/error-policy.ts 51 sí 2 arquivo(s) kernel/errors.ts 17 sí 27 arquivo(s) kernel/eval.ts 223 sí 4 arquivo(s) kernel/events.ts 298 sí 9 arquivo(s) kernel/experiment.ts 50 sí 1 arquivo(s) kernel/hash.ts 20 no 19 arquivo(s) kernel/json-file.ts 32 no nenhum kernel/learning.ts 107 sí 5 arquivo(s) kernel/memory.ts 131 sí 9 arquivo(s) kernel/model-policy.ts 37 sí 2 arquivo(s) kernel/optimization.ts 122 sí 2 arquivo(s) kernel/phase-executor.ts 338 sí 3 arquivo(s) kernel/pii.ts 68 sí 1 arquivo(s) kernel/pilot.ts 51 sí 2 arquivo(s) kernel/plugins.ts 162 sí 4 arquivo(s) kernel/policy.ts 54 sí 4 arquivo(s) kernel/preflight.ts 57 sí 2 arquivo(s) kernel/process-tree.ts 28 no nenhum kernel/quality.ts 138 sí 2 arquivo(s) kernel/resilience.ts 99 sí 1 arquivo(s) kernel/state-machine.ts 20 sí 8 arquivo(s) kernel/status.ts 55 sí 2 arquivo(s) kernel/tokens.ts 14 no 1 arquivo(s) kernel/types.ts 217 sí 1 arquivo(s) kernel/wip.ts 55 sí 2 arquivo(s) kernel/workflow.ts 66 sí 3 arquivo(s) execution/agent.ts 122 sí 2 arquivo(s) execution/bundle.ts 143 sí 2 arquivo(s) execution/config.ts 154 sí 22 arquivo(s) execution/coordination.ts 163 sí 9 arquivo(s) execution/evidence.ts 42 sí 2 arquivo(s) execution/files.ts 45 sí 3 arquivo(s) execution/machine.ts 115 sí 3 arquivo(s) execution/metrics.ts 368 sí 3 arquivo(s) execution/runs.ts 41 no 1 arquivo(s) execution/runtime.ts 330 sí 6 arquivo(s) execution/source.ts 43 no 1 arquivo(s) execution/verification.ts 273 sí 7 arquivo(s) adapters/agent.ts 95 sí 2 arquivo(s) adapters/code-review.ts 209 sí 2 arquivo(s) adapters/co",
+          "aliases": "document human"
+        },
+        "graph": {
+          "pagerank": 0.029591,
+          "inboundLinks": 1,
+          "coveredBy": [],
+          "mentionedBy": [],
+          "inbound": [
+            {
+              "kind": "links-to",
+              "id": "document:docs/LOOP.md",
+              "confidence": "observed"
+            }
+          ],
+          "outbound": [
+            {
+              "kind": "mentions",
+              "id": "area:src/ui",
+              "confidence": "fuzzy"
+            },
+            {
+              "kind": "mentions",
+              "id": "area:test",
+              "confidence": "fuzzy"
+            },
+            {
+              "kind": "mentions",
+              "id": "document:docs/LOOP.md",
+              "confidence": "observed"
+            },
+            {
+              "kind": "mentions",
+              "id": "document:README.md",
+              "confidence": "observed"
+            },
+            {
+              "kind": "mentions",
+              "id": "module:src/cli.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "mentions",
+              "id": "package:@agentskit/harness",
+              "confidence": "observed"
+            }
+          ]
+        },
+        "contentHash": "737d019f25848fd5af33281a4dc9bb800b41df5c0335156ddc48a9e5b32194ef",
+        "provenance": "observed",
+        "confidence": "observed"
+      },
+      {
         "id": "document:docs/LOOP.md",
         "kind": "document",
         "path": "docs/LOOP.md",
         "title": "Keep-pushing loop (ak-harness loop)",
-        "summary": "The loop drains one person's Linear queue through Orca worktrees, 24/7, with role-based model routing and usage-aware fallback. The harness supplies the deterministic parts (claims, machine pressure, gates, evidence); Orca supplies scheduling, worktrees, terminals, Linear access and visibility.",
+        "summary": "Legado: loop tick / loop deliver (e workers) estão em modo legado: sem novas features, mantidos para repos que ainda usam loop.config.yaml (ex.: link-pay). Lista e contexto em INVENTARIO.md.",
         "audience": "human",
         "aliases": [],
         "tags": [
@@ -15641,15 +15780,16 @@
           "headings": "Keep-pushing loop (ak-harness loop) Commands Debrief and watch The observe stage — the scan that knows what it already said Running 24/7 with Orca Worker handoff Deliver Worker terminals GitHub label intake: reviewing PRs the loop never dispatched Event bus and orchestration hooks Calling a human: notifications Presets and loop init A repository without loop.config.yaml What the orchestrator reads Configuration in four layers Flow profiles: one motor, several kinds of demand loop plan — a vague objective becomes issues The plan and its votes (worker.plan) intake and maintain — where work comes from when nobody typed it Cost: policy, ceilings, and the levers that are real Connectors: the engine names no vendor release — promotion and deploy, with a human in front Definition of Done: two lists, both proven Verdict levels, patch binding and the merge policy (ADR-0046) Runs: how an issue was built (ADR-0041) Rendered specs (spec.enabled) The roles are agents, and they can be improved The loop improving itself, within limits One tick Topping up a person queue (linear.refill) and yielding to another loop (queue.yieldTo) Resilience: auto-pause after repeated failures PII/secret scanning Cost/time circuit breakers Dynamic outcome progress Skills pinned into the worker brief Worktree setup command What the doctor checks Dynamic model routing Model routing Reasoning effort per role Machine slots Integrations used by the loop Doc Bridge (context for the orchestrator) Code Review (agentskit-review) Eval battery (package quality, not the live loop) AgentsKit ecosystem map (what the harness has vs what the loop uses) What can be added to help the SDLC Boundaries Security notes Continuous improvement: loop retro",
           "path": "docs/LOOP.md",
           "symbols": "",
-          "summary": "The loop drains one person's Linear queue through Orca worktrees, 24/7, with role-based model routing and usage-aware fallback. The harness supplies the deterministic parts (claims, machine pressure, gates, evidence); Orca supplies scheduling, worktrees, terminals, Linear access and visibility.",
-          "body": "Keep-pushing loop ( ak-harness loop ) The loop drains one person's Linear queue through Orca worktrees, 24/7, with role-based model routing and usage-aware fallback. The harness supplies the deterministic parts (claims, machine pressure, gates, evidence); Orca supplies scheduling, worktrees, terminals, Linear access and visibility. Everything project-specific lives in loop.config.yaml — switching project or person is a config change, never a code change. Status: complete (phases 1–5). Config, doctor, adapters, the dispatch tick, the deliver stage and the Orca automation installer are in place. See . Commands Debrief and watch loop debrief is the human companion to the automations: a read-only Markdown (or --json ) snapshot of in-flight dispatches, delivery phase (waiting for PR / review / fix round / ready to merge), holds that need a person, recent escalations and provider cooldowns. It does not call Orca or gh — only the loop state directory — so it is safe to run from a SessionStart hook or a chat agent that needs context before acting. loop watch polls delivery.json (and optionally the live PR via gh ) and prints line-oriented events: Event Meaning --- --- DONE Delivery finished as merged (or the PR is MERGED) FAILED stuck / abandoned / failed / PR closed without merge ACTION REQUIRED held for a human, incomplete review twice, or fix-round findings PROGRESS still moving (waiting for PR, review pending, …) Use --once for a single snapshot; omit it to block until a terminal outcome (or --timeout <seconds ). loop observe is the scheduler-friendly health view. It reuses the doctor, debrief and durable event log, then checks for a connected terminal with no output, an active claim without delivery.json , a finalized dirty worktree, a ready queue with an idle slot, and an in-flight review/worker past delivery.workerIdleTimeoutMin . It also reports machine pressure, provider headroom, delivery counts, fix rounds, memory recalls, cached contracts and observed token fields. It is read-only; --precheck uses exit 0 for an actionable anomaly and exit 1 when healthy. The observe stage — the scan that knows what it already said loop stage observe is loop observe plus everything only the scheduler cares about: the doctor checks that did not pass, automations that are missing, switched off, or whose last run is older than schedule.observer.schedulerStallMin (the scheduler itself stopped), and stage locks older than schedule.observer.staleLockMin (a killed precheck left its lock behind). Each problem gets a stable id; their sorted set is hashed into a signature kept in <stateDir /observer-state.json . It notifies — exit 0, which is how Orca decides to launch the observer agent — only when that signature is new, or when the same unresolved set has gone unmentioned for longer than schedule.observer.reminderHours . Otherwise it exits 1 and Orca records the run without opening a session. This is the one stage whose exit code is a decision rather than a convention, and the reason is measured: a previous version fired nine investigations in two hours over the same three unchanged facts. Declare it with schedule.observe: \" /15 \" and loop install owns the automation like any other. Running 24/7 with Orca loop install is guided and rendered with Ink when stdin/stdout are terminals (plain lines otherwise). When no loop.config.local.yaml exists next to the config it first offers to create one: it lists the Linear team members from Orca, asks whose queue this machine drains and, optionally, how much RAM to keep free and the worker ceiling, then writes the gitignored overlay and reloads. It then runs the doctor and the automation-environment checks (harness and review CLIs on PATH, gh auth status , checkout registered in Orca, queue owner), stops on any failed check unless --force , offers a dry-run tick rehearsal (one orchestrator call, nothing written), lists the exact automations it will create, and asks for confirmation before touching Orca. --yes ",
+          "summary": "Legado: loop tick / loop deliver (e workers) estão em modo legado: sem novas features, mantidos para repos que ainda usam loop.config.yaml (ex.: link-pay). Lista e contexto em INVENTARIO.md.",
+          "body": "Keep-pushing loop ( ak-harness loop ) Legado: loop tick / loop deliver (e workers) estão em modo legado: sem novas features, mantidos para repos que ainda usam loop.config.yaml (ex.: link-pay). Lista e contexto em . The loop drains one person's Linear queue through Orca worktrees, 24/7, with role-based model routing and usage-aware fallback. The harness supplies the deterministic parts (claims, machine pressure, gates, evidence); Orca supplies scheduling, worktrees, terminals, Linear access and visibility. Everything project-specific lives in loop.config.yaml — switching project or person is a config change, never a code change. Status: complete (phases 1–5). Config, doctor, adapters, the dispatch tick, the deliver stage and the Orca automation installer are in place. See . Commands Debrief and watch loop debrief is the human companion to the automations: a read-only Markdown (or --json ) snapshot of in-flight dispatches, delivery phase (waiting for PR / review / fix round / ready to merge), holds that need a person, recent escalations and provider cooldowns. It does not call Orca or gh — only the loop state directory — so it is safe to run from a SessionStart hook or a chat agent that needs context before acting. loop watch polls delivery.json (and optionally the live PR via gh ) and prints line-oriented events: Event Meaning --- --- DONE Delivery finished as merged (or the PR is MERGED) FAILED stuck / abandoned / failed / PR closed without merge ACTION REQUIRED held for a human, incomplete review twice, or fix-round findings PROGRESS still moving (waiting for PR, review pending, …) Use --once for a single snapshot; omit it to block until a terminal outcome (or --timeout <seconds ). loop observe is the scheduler-friendly health view. It reuses the doctor, debrief and durable event log, then checks for a connected terminal with no output, an active claim without delivery.json , a finalized dirty worktree, a ready queue with an idle slot, and an in-flight review/worker past delivery.workerIdleTimeoutMin . It also reports machine pressure, provider headroom, delivery counts, fix rounds, memory recalls, cached contracts and observed token fields. It is read-only; --precheck uses exit 0 for an actionable anomaly and exit 1 when healthy. The observe stage — the scan that knows what it already said loop stage observe is loop observe plus everything only the scheduler cares about: the doctor checks that did not pass, automations that are missing, switched off, or whose last run is older than schedule.observer.schedulerStallMin (the scheduler itself stopped), and stage locks older than schedule.observer.staleLockMin (a killed precheck left its lock behind). Each problem gets a stable id; their sorted set is hashed into a signature kept in <stateDir /observer-state.json . It notifies — exit 0, which is how Orca decides to launch the observer agent — only when that signature is new, or when the same unresolved set has gone unmentioned for longer than schedule.observer.reminderHours . Otherwise it exits 1 and Orca records the run without opening a session. This is the one stage whose exit code is a decision rather than a convention, and the reason is measured: a previous version fired nine investigations in two hours over the same three unchanged facts. Declare it with schedule.observe: \" /15 \" and loop install owns the automation like any other. Running 24/7 with Orca loop install is guided and rendered with Ink when stdin/stdout are terminals (plain lines otherwise). When no loop.config.local.yaml exists next to the config it first offers to create one: it lists the Linear team members from Orca, asks whose queue this machine drains and, optionally, how much RAM to keep free and the worker ceiling, then writes the gitignored overlay and reloads. It then runs the doctor and the automation-environment checks (harness and review CLIs on PATH, gh auth status , checkout registered in Orca, queue owner), stops on any failed check unless --fo",
           "aliases": "document human"
         },
         "graph": {
-          "pagerank": 0.038153,
-          "inboundLinks": 3,
+          "pagerank": 0.037327,
+          "inboundLinks": 4,
           "coveredBy": [],
           "mentionedBy": [
+            "document:docs/INVENTARIO.md",
             "document:README.md"
           ],
           "inbound": [
@@ -15666,6 +15806,11 @@
             {
               "kind": "links-to",
               "id": "document:README.md",
+              "confidence": "observed"
+            },
+            {
+              "kind": "mentions",
+              "id": "document:docs/INVENTARIO.md",
               "confidence": "observed"
             },
             {
@@ -15688,6 +15833,11 @@
             {
               "kind": "links-to",
               "id": "document:docs/ADR-0027-keep-pushing-loop.md",
+              "confidence": "observed"
+            },
+            {
+              "kind": "links-to",
+              "id": "document:docs/INVENTARIO.md",
               "confidence": "observed"
             },
             {
@@ -15907,7 +16057,7 @@
             }
           ]
         },
-        "contentHash": "d07d109a52eb86f086b8891976eb8b695eae224e7a9dd3bd8b17df36d3c301d6",
+        "contentHash": "e81e64edf154b0def4d5d40e8e7bea1853f42c9171f198e9f9920e4440a66be5",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -15933,7 +16083,7 @@
           "aliases": "document human"
         },
         "graph": {
-          "pagerank": 0.022139,
+          "pagerank": 0.021659,
           "inboundLinks": 2,
           "coveredBy": [],
           "mentionedBy": [
@@ -16301,7 +16451,7 @@
           "aliases": "document human"
         },
         "graph": {
-          "pagerank": 0.042289,
+          "pagerank": 0.041373,
           "inboundLinks": 1,
           "coveredBy": [],
           "mentionedBy": [
@@ -16417,7 +16567,7 @@
           "aliases": "document human"
         },
         "graph": {
-          "pagerank": 0.028744,
+          "pagerank": 0.028122,
           "inboundLinks": 2,
           "coveredBy": [],
           "mentionedBy": [
@@ -16516,7 +16666,7 @@
           "aliases": "document unclassified"
         },
         "graph": {
-          "pagerank": 0.023707,
+          "pagerank": 0.023193,
           "inboundLinks": 1,
           "coveredBy": [],
           "mentionedBy": [
@@ -16562,11 +16712,19 @@
           "aliases": "document project"
         },
         "graph": {
-          "pagerank": 0.022139,
-          "inboundLinks": 0,
+          "pagerank": 0.021659,
+          "inboundLinks": 1,
           "coveredBy": [],
-          "mentionedBy": [],
-          "inbound": [],
+          "mentionedBy": [
+            "document:docs/INVENTARIO.md"
+          ],
+          "inbound": [
+            {
+              "kind": "mentions",
+              "id": "document:docs/INVENTARIO.md",
+              "confidence": "observed"
+            }
+          ],
           "outbound": [
             {
               "kind": "covers",
@@ -16695,7 +16853,7 @@
           "aliases": "document unclassified"
         },
         "graph": {
-          "pagerank": 0.023707,
+          "pagerank": 0.023193,
           "inboundLinks": 1,
           "coveredBy": [],
           "mentionedBy": [
@@ -21026,7 +21184,7 @@
         },
         "graph": {
           "pagerank": 0,
-          "inboundLinks": 7,
+          "inboundLinks": 8,
           "coveredBy": [],
           "mentionedBy": [
             "document:AGENTS.md",
@@ -21034,6 +21192,7 @@
             "document:docs/ADR-0016-baseline-evidence-digests.md",
             "document:docs/ADR-0021-event-lock-recovery.md",
             "document:docs/ADR-0026-kernel-adapters-boundary.md",
+            "document:docs/INVENTARIO.md",
             "document:docs/MODULE-BOUNDARIES.md",
             "document:docs/PRD-0.4.0.md"
           ],
@@ -21067,6 +21226,11 @@
             {
               "kind": "mentions",
               "id": "document:docs/ADR-0026-kernel-adapters-boundary.md",
+              "confidence": "observed"
+            },
+            {
+              "kind": "mentions",
+              "id": "document:docs/INVENTARIO.md",
               "confidence": "observed"
             },
             {
@@ -51211,8 +51375,8 @@
           "aliases": "harness @agentskit/harness package"
         },
         "graph": {
-          "pagerank": 0.023707,
-          "inboundLinks": 7,
+          "pagerank": 0.023193,
+          "inboundLinks": 8,
           "coveredBy": [
             "document:README.md"
           ],
@@ -51221,6 +51385,7 @@
             "document:apps/docs/content/docs/index.mdx",
             "document:CHANGELOG.md",
             "document:CONTRIBUTING.md",
+            "document:docs/INVENTARIO.md",
             "document:docs/LOOP.md",
             "document:docs/PRD-0.4.0.md"
           ],
@@ -51253,6 +51418,11 @@
             },
             {
               "kind": "mentions",
+              "id": "document:docs/INVENTARIO.md",
+              "confidence": "observed"
+            },
+            {
+              "kind": "mentions",
               "id": "document:docs/LOOP.md",
               "confidence": "observed"
             },
@@ -51264,7 +51434,7 @@
           ],
           "outbound": []
         },
-        "contentHash": "2d79e6e298711934eb7edba0aa6028ee3674c79414d4627e7e46ed15aa43ea3a",
+        "contentHash": "197677ff9ae7ac0e606f4765986c46b3039a362ffd2e3203e01b1e665fb5cd86",
         "provenance": "observed",
         "confidence": "observed"
       },
