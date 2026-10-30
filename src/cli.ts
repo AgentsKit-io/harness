@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { readFileSync } from 'node:fs'
+import { existsSync, readFileSync } from 'node:fs'
 import { Command } from 'commander'
 import { approveRun, ARTIFACT_SCHEMA_VERSION, assessAcceptance, assessBlock, assessIntegration, assessPreflight, assessProduction, assessWip, assessWorktreeCleanup, authorizeRun, benchmarkRuns, cancelRun, cleanTaskArtifacts, composePullRequest, createDocBridgeContextProvider, exportEvidenceBundle, FileArtifactStore, loadBenchmarkManifest, loadConfig, loadLatestRun, planFilePreflight, planRun, readArtifactFile, readContextSnapshots, readEvidenceTrustStore, reconcileRun, recordBenchmarkObservation, renderArtifactMarkdown, retryRun, startRun, validateBlockManifest, verifyEvidenceBundle, verifyRun } from './index.js'
 import type { BenchmarkObservationEvidence } from './execution/metrics.js'
@@ -12,6 +12,7 @@ import { spawnDetachedWorker } from './loop/detached-worker.js'
 import { join } from 'node:path'
 import { startUiServer } from './ui/api/server.js'
 import { isRecord } from './record.js'
+import { evaluateMvp, evidenceFromJson, formatMvpReport, loadMvp, mvpDigest, MVP_FILES, MvpManifestError, parseMvpYaml, validateMvp } from './mvp.js'
 
 interface CliOptions { readonly config: string; readonly json: boolean }
 const packageJson = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8')) as { readonly version: string }
@@ -45,6 +46,26 @@ program.command('ui').description('Start the local Harness operational UI.').opt
   print({ status: 'listening', url: server.url, message: 'Press Ctrl-C to stop the Harness UI.' })
 })
 program.command('plan <decision>').description('Approve the frozen task contract and create a planned run.').option('--by <actor>', 'approval actor', 'human').option('--allow-dirty', 'allow a human-authorized dirty worktree').option('--context-file <path>', 'attach a context snapshot JSON file').action(async (decision: string, command: { readonly by: string; readonly allowDirty?: boolean; readonly contextFile?: string }) => print(await planRun({ configPath: options().config, decision, actor: command.by, allowDirty: command.allowDirty ?? false, contextSnapshots: command.contextFile ? readContextSnapshots(command.contextFile) : [] })))
+const mvp = program.command('mvp').description('Validate docs/mvp.yaml, compute its approval digest and report product progress by requirement.')
+const mvpText = (file: string | undefined): string => {
+  const path = file ?? MVP_FILES.find((candidate) => existsSync(candidate))
+  if (!path) return fail(`No MVP manifest found (${MVP_FILES.join(' or ')}).`, 'INVALID_INPUT')
+  try { return readFileSync(path, 'utf8') } catch (error) { return fail(`Cannot read ${path}: ${error instanceof Error ? error.message : String(error)}`, 'INVALID_INPUT') }
+}
+const mvpGuard = <T>(run: () => T): T => { try { return run() } catch (error) { if (error instanceof MvpManifestError) return fail(error.message, 'INVALID_CONFIG'); throw error } }
+const mvpDoc = (file: string | undefined): Record<string, unknown> => mvpGuard(() => loadMvp(mvpText(file)))
+mvp.command('check [file]').description('Parse and validate the MVP manifest (exit 1 on errors).').action((file?: string) => {
+  const errors = mvpGuard(() => validateMvp(parseMvpYaml(mvpText(file))))
+  if (errors.length) fail(errors.join('\n'), 'INVALID_CONFIG')
+  const doc = mvpDoc(file)
+  print({ status: 'ok', requirements: (doc['requirements'] as unknown[]).length, digest: mvpDigest(doc) })
+})
+mvp.command('digest [file]').description('Print the digest to write in approval.digest (the owner approves this exact list).').action((file?: string) => print(mvpDigest(mvpDoc(file))))
+mvp.command('report [file]').description('Product report: % by evidence level and requirement counts by state (pronto, em QA, bloqueado, sem começar).').option('--evidence <path>', 'JSON file with the checked evidence ({prs, ci, files, urls, runs}); without it every level is "sem evidência"').option('--approver <name...>', 'who may approve the list (default: anyone named in approval.by)').action((file: string | undefined, command: { readonly evidence?: string; readonly approver?: readonly string[] }) => {
+  const evidence = evidenceFromJson(command.evidence ? readJsonInput(command.evidence, 'MVP evidence') : {})
+  const report = evaluateMvp(mvpDoc(file), evidence, command.approver ?? [])
+  print(options().json ? report : formatMvpReport(report))
+})
 const context = program.command('context').description('Resolve portable, provenance-bearing context snapshots.')
 context.command('resolve <query>').description('Resolve a Doc Bridge snapshot from the local index.').option('--provider <provider>', 'context provider', 'doc-bridge').option('--scope <scope...>', 'optional search scopes').option('--index <path>', 'Doc Bridge index path', '.doc-bridge/index.json').action(async (query: string, command: { readonly provider: string; readonly scope?: readonly string[]; readonly index: string }) => {
   if (command.provider !== 'doc-bridge') fail(`Unsupported context provider: ${command.provider}`, 'INVALID_INPUT')

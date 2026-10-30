@@ -45,6 +45,43 @@ ak-harness plan [options] <decision>
 | `--allow-dirty` | allow a human-authorized dirty worktree |  |
 | `--context-file &lt;path&gt;` | attach a context snapshot JSON file |  |
 
+## `ak-harness mvp`
+
+Validate docs/mvp.yaml, compute its approval digest and report product progress by requirement.
+
+```bash
+ak-harness mvp [options] [command]
+```
+
+### `ak-harness mvp check`
+
+Parse and validate the MVP manifest (exit 1 on errors).
+
+```bash
+ak-harness mvp check [options] [file]
+```
+
+### `ak-harness mvp digest`
+
+Print the digest to write in approval.digest (the owner approves this exact list).
+
+```bash
+ak-harness mvp digest [options] [file]
+```
+
+### `ak-harness mvp report`
+
+Product report: % by evidence level and requirement counts by state (pronto, em QA, bloqueado, sem começar).
+
+```bash
+ak-harness mvp report [options] [file]
+```
+
+| Flag | What it does | Default |
+|---|---|---|
+| `--evidence &lt;path&gt;` | JSON file with the checked evidence ({prs, ci, files, urls, runs}); without it every level is "sem evidência" |  |
+| `--approver &lt;name...&gt;` | who may approve the list (default: anyone named in approval.by) |  |
+
 ## `ak-harness context`
 
 Resolve portable, provenance-bearing context snapshots.
