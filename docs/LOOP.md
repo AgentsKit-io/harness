@@ -1,5 +1,7 @@
 # Keep-pushing loop (`ak-harness loop`)
 
+> **Legado:** `loop tick` / `loop deliver` (e workers) estão em modo legado: sem novas features, mantidos para repos que ainda usam `loop.config.yaml` (ex.: link-pay). Lista e contexto em [INVENTARIO.md](INVENTARIO.md).
+
 The loop drains one person's Linear queue through Orca worktrees, 24/7, with role-based model routing and
 usage-aware fallback. The harness supplies the deterministic parts (claims, machine pressure, gates, evidence);
 Orca supplies scheduling, worktrees, terminals, Linear access and visibility. Everything project-specific lives in
