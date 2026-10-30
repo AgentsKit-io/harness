@@ -1,0 +1,149 @@
+product: AgentsKit Harness
+project: Harness
+version_url: null
+repos:
+  - name: AgentsKit-io/harness
+features:
+  # estado: publicada (npm @agentskit/harness 0.22.3 em 27/09; README "60 seconds", `loop tick`; ADR-0027)
+  - key: loop-issue-ate-pr
+    group: produto
+    phase: A
+    name: "Do issue ao PR sem acompanhar"
+    description: "O loop pega issues prontas, despacha um agente de código e entrega um PR verificado, repetindo sozinho."
+    milestone: null
+    tickets: []
+    acceptance: null
+    how_to_test: "`loop tick --dry-run` num repo com loop.config.yaml e um issue elegível."
+    blocked_reason: null
+  # estado: publicada no main, não lançada no npm (#227, #248 mergeados após 0.22.3; CHANGELOG [Unreleased])
+  - key: admissao-pelo-pm
+    group: produto
+    phase: A
+    name: "Só trabalhar no que o PM aprovou"
+    description: "O loop só aceita issues com o rótulo de aprovação do PM (loop:pm-ok) e respeita prioridade entre filas."
+    milestone: null
+    tickets: ["gh:#227", "gh:#248", "gh:#184", "gh:#187"]
+    acceptance: null
+    how_to_test: "Criar dois issues, rotular só um com loop:pm-ok e conferir em `loop debrief` que só ele é admitido."
+    blocked_reason: null
+  # estado: publicada no main, não lançada no npm (#194, #198, #222 mergeados; ADR-0045)
+  - key: executar-na-frota
+    group: produto
+    phase: A
+    name: "Rodar o trabalho na frota de máquinas"
+    description: "Despachar tarefas para a frota remota, coletar o branch e abrir rodada de correção quando há conflito ou CI vermelho."
+    milestone: null
+    tickets: ["gh:#194", "gh:#198", "gh:#222", "gh:#212", "gh:#214"]
+    acceptance: null
+    how_to_test: "Configurar `runner: fleet` e acompanhar uma tarefa até o PR com `loop debrief`."
+    blocked_reason: null
+  # estado: em andamento (PRs #224, #225, #226 abertos; #226 com check falhando)
+  - key: frota-resiliente
+    group: produto
+    phase: B
+    name: "Frota que não trava a fila"
+    description: "Verificações rodam na frota, revisões convergem em 2 rodadas e tarefas reenviadas com novo id continuam sendo seguidas."
+    milestone: null
+    tickets: ["gh:#224", "gh:#225", "gh:#226"]
+    acceptance: null
+    how_to_test: "Forçar retry de uma tarefa na frota e conferir que o loop segue o novo id."
+    blocked_reason: null
+  # estado: publicada no main, não lançada (#201, #202, #203; ADR-0035, ADR-0046, ADR-0047)
+  - key: prova-de-pronto
+    group: confianca
+    phase: A
+    name: "Prova de \"pronto\" antes do merge"
+    description: "Um verificador independente confere a definição de pronto no branch coletado; o merge segue uma política de veredito explícita."
+    milestone: null
+    tickets: ["gh:#201", "gh:#202", "gh:#203"]
+    acceptance: null
+    how_to_test: "Rodar `loop deliver --dry-run` e ler o veredito e a política de merge aplicada."
+    blocked_reason: null
+  # estado: publicada no main, não lançada (#188; CHANGELOG [Unreleased] "Delivery evidence"; ADR-0044)
+  - key: evidencia-no-issue
+    group: confianca
+    phase: A
+    name: "Evidência da entrega no próprio issue"
+    description: "Ao fazer merge, o issue recebe PR, commit, veredito, checks, DoD e custo, com dados pessoais redigidos."
+    milestone: null
+    tickets: ["gh:#188"]
+    acceptance: null
+    how_to_test: "Após um merge pelo loop, conferir o comentário de evidência no issue."
+    blocked_reason: null
+  # estado: publicada (ADR-0017/0019/0022: log de eventos íntegro, decisão humana atestada, pacote de evidência assinado)
+  - key: trilha-auditavel
+    group: confianca
+    phase: A
+    name: "Trilha de auditoria assinada"
+    description: "Cada execução gera log de eventos íntegro e pacote de evidência assinado, incluindo decisões humanas."
+    milestone: null
+    tickets: []
+    acceptance: null
+    how_to_test: "Executar uma corrida e verificar o pacote de evidência com o comando de verificação do README."
+    blocked_reason: null
+  # estado: publicada (ADR-0037 tetos de custo, #162, #164 cost-guard)
+  - key: teto-de-custo
+    group: confianca
+    phase: A
+    name: "Teto de custo e de uso por provedor"
+    description: "Limitar gasto por provedor e tentativa; o loop pausa quando a cota acaba e retoma depois."
+    milestone: null
+    tickets: ["gh:#162", "gh:#164"]
+    acceptance: null
+    how_to_test: "Definir um teto baixo e conferir a pausa em `loop paused`."
+    blocked_reason: null
+  # estado: publicada (README "Commands" read-only: doctor, debrief, observe, retro, status, watch; ADR-0031)
+  - key: ver-o-que-o-loop-faz
+    group: produto
+    phase: A
+    name: "Ver o que o loop está fazendo e aprender com isso"
+    description: "Status por issue, anomalias, métricas e retrospectiva semanal com sugestões de calibração."
+    milestone: null
+    tickets: ["gh:#249"]
+    acceptance: null
+    how_to_test: "`loop debrief` e `loop retro --since 7d`."
+    blocked_reason: null
+  # estado: publicada (README `loop plan start|answer|approve|architect|decompose`, dois gates humanos)
+  - key: objetivo-vira-issues
+    group: produto
+    phase: B
+    name: "Transformar um objetivo em issues"
+    description: "Partir de um objetivo, gerar PRD e design com duas aprovações humanas e quebrar em issues para o loop."
+    milestone: null
+    tickets: []
+    acceptance: null
+    how_to_test: "`loop plan start \"<objetivo>\"`, responder e aprovar até `decompose`."
+    blocked_reason: null
+  # estado: publicada (README `loop release status|approve|run`; pasta release/ com qualification.json)
+  - key: release-aprovada
+    group: produto
+    phase: B
+    name: "Liberar um lote aprovado por humano"
+    description: "Promover um conjunto de mudanças só depois de aprovação humana vinculada a um commit."
+    milestone: null
+    tickets: []
+    acceptance: null
+    how_to_test: "`loop release status` e depois `loop release approve` num head conhecido."
+    blocked_reason: null
+  # estado: bloqueada (último npm 0.22.3 em 27/09; nenhuma release no GitHub; ~40 PRs de funcionalidade só no main)
+  - key: publicar-versao
+    group: prontidao
+    phase: A
+    name: "Nova versão publicada com o que já está no main"
+    description: "Quem instala pelo npm recebe frota, admissão pelo PM, verificador independente e evidência no issue."
+    milestone: null
+    tickets: []
+    acceptance: null
+    how_to_test: "`npm view @agentskit/harness version` maior que 0.22.3 e notas de release no GitHub."
+    blocked_reason: "sem release desde 27/09; decisão de publicar e versão pendentes"
+  # estado: em andamento/travado (8 PRs de deps com check falhando: #240, #238, #236, #234, #232, #229, #228, #226)
+  - key: dependencias-em-dia
+    group: prontidao
+    phase: A
+    name: "Dependências atualizadas com CI verde"
+    description: "Atualizações de dependências (TypeScript 7, pnpm 12, commander 15, ink 8...) entram sem quebrar o CI."
+    milestone: null
+    tickets: ["gh:#240", "gh:#238", "gh:#236", "gh:#234", "gh:#232", "gh:#229", "gh:#228", "gh:#180"]
+    acceptance: null
+    how_to_test: "Conferir os PRs do Renovate verdes e mergeados."
+    blocked_reason: null
