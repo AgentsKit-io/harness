@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
-  "contentHash": "86dbadd6b61afd07ad9190d7aff75a4ee74ed2144fc16723b064f61f06cb2add",
+  "contentHash": "ec762712950d76d6445c6f98125200fc043e35ed9d2149e76043e9dc233cf71e",
   "contentHashAlgo": "sha256-semantic-v1",
-  "generatedAt": "2026-10-29T10:31:54.874Z",
+  "generatedAt": "2026-10-30T16:09:52.845Z",
   "project": {
     "name": "AgentsKit Harness",
     "root": "."
@@ -952,6 +952,18 @@
         "human"
       ],
       "contentHash": "ae4f2c724b484b01956de41f50c1cadcfa7115beda01faae345f8213da7c0a35"
+    },
+    {
+      "id": "document:docs/DIRECAO-2026-10-29.md",
+      "type": "document",
+      "title": "Direção do harness (decisão do dono, 2026-10-29)",
+      "path": "docs/DIRECAO-2026-10-29.md",
+      "description": "Grelha dos produtos de base. Vale sobre o que estiver diferente nos PRDs (o PRD-0.4.0 fica como histórico).",
+      "tags": [
+        "document",
+        "human"
+      ],
+      "contentHash": "63486d702dae13505345bc395f7452778983e5176a27d70e286cb2d6b0a6b3c0"
     },
     {
       "id": "document:docs/for-agents/packages/ecosystem-manifest.md",
@@ -9737,8 +9749,8 @@
     }
   },
   "inputs": {
-    "hash": "00783ec93ae29cdfdda6fdc32db0aecec72b030ad98b7195c1978a372d646593",
-    "fileCount": 619,
+    "hash": "c62a52cd2de18ae8ee5a45e036d9e07715a36c1fd581d65f7e401212be0244d7",
+    "fileCount": 620,
     "projectionVersion": 2
   },
   "retrieval": {
@@ -9760,9 +9772,9 @@
   "projection": {
     "type": "retrieval-index",
     "schemaVersion": 1,
-    "contentHash": "84c7aa493f50e7f7487b7cb07daacfe28bccdec0f4664b98eee9fe01f37d12b1",
+    "contentHash": "8a1e27b7fcfa185f26b4d96331b26d91a7ece1411b11493398a4361e0264567d",
     "contentHashAlgo": "sha256-semantic-v1",
-    "snapshotHash": "d381331b3d861ad34c1464e3b01a34e314a41c7e48a3f197ff10cbe59971984d",
+    "snapshotHash": "a5b129f1257359c18b0b73250a50403171f0e43563e091583412b7f3d9d26d87",
     "overlayHash": "f99666ff9119084dd25c2974ae64eb6935ec2aa785ff5ad478fb9d541f7a5e94",
     "configurationHash": "497822431910cd9fa7d674a48a9f0b96fbbbf779f22a001de0b52252117fe3ab",
     "lexiconVersion": 1,
@@ -9782,7 +9794,7 @@
     },
     "lexical": {
       "version": 1,
-      "documentCount": 600,
+      "documentCount": 601,
       "fieldNames": [
         "aliases",
         "body",
@@ -9793,13 +9805,13 @@
         "title"
       ],
       "averageFieldLength": {
-        "aliases": 2.9266666666666667,
-        "body": 45.73166666666667,
-        "headings": 3.8033333333333332,
-        "path": 6.13,
-        "summary": 2.8366666666666664,
-        "symbols": 13.876666666666667,
-        "title": 4.028333333333333
+        "aliases": 2.925124792013311,
+        "body": 45.876871880199666,
+        "headings": 3.8236272878535775,
+        "path": 6.131447587354409,
+        "summary": 2.8519134775374377,
+        "symbols": 13.853577371048253,
+        "title": 4.034941763727121
       }
     },
     "entries": [
@@ -15328,6 +15340,39 @@
           ]
         },
         "contentHash": "ae4f2c724b484b01956de41f50c1cadcfa7115beda01faae345f8213da7c0a35",
+        "provenance": "observed",
+        "confidence": "observed"
+      },
+      {
+        "id": "document:docs/DIRECAO-2026-10-29.md",
+        "kind": "document",
+        "path": "docs/DIRECAO-2026-10-29.md",
+        "title": "Direção do harness (decisão do dono, 2026-10-29)",
+        "summary": "Grelha dos produtos de base. Vale sobre o que estiver diferente nos PRDs (o PRD-0.4.0 fica como histórico).",
+        "audience": "human",
+        "aliases": [],
+        "tags": [
+          "document",
+          "human"
+        ],
+        "fields": {
+          "title": "Direção do harness (decisão do dono, 2026-10-29)",
+          "headings": "Direção do harness (decisão do dono, 2026-10-29) Papel: contrato e verificação, não esteira Mais enxuto Como ajuda os produtos Higiene",
+          "path": "docs/DIRECAO-2026-10-29.md",
+          "symbols": "",
+          "summary": "Grelha dos produtos de base. Vale sobre o que estiver diferente nos PRDs (o PRD-0.4.0 fica como histórico).",
+          "body": "Direção do harness (decisão do dono, 2026-10-29) Grelha dos produtos de base. Vale sobre o que estiver diferente nos PRDs (o PRD-0.4.0 fica como histórico). Papel: contrato e verificação, não esteira A esteira da fábrica é o factory-line (Hatchet). O harness é a peça reutilizável de objetivo → PRD → issues com \"pronto quando\" → verificação , usada pela linha e por qualquer time. O loop de execução próprio (tick/deliver) para de crescer e sai do caminho quando nenhum repo depender dele. Mais enxuto Fica no harness só o que funciona e é usado hoje. O resto é removido, ou movido para experimental/ e fora do pacote publicado. Critério: tem consumidor (factory-line, produtos, doc-bridge, playbook) e teste verde. Como ajuda os produtos 1. docs/mvp.yaml vira formato do harness: requisito, \"pronto quando\", peso e evidência (PR, teste no CI, homolog). O validador e o digest de aprovação ( mvp manifest.py , hoje na fábrica) passam para cá. 2. Relatório de progresso do produto gerado a partir do mvp.yaml : % por evidência real, o que está pronto, em QA, bloqueado e sem começar. É o mesmo número que o dono vê em qualquer produto. Higiene Cada publish no npm cria a release no GitHub com changelog.",
+          "aliases": "document human"
+        },
+        "graph": {
+          "pagerank": 0,
+          "inboundLinks": 0,
+          "coveredBy": [],
+          "mentionedBy": [],
+          "inbound": [],
+          "outbound": []
+        },
+        "contentHash": "63486d702dae13505345bc395f7452778983e5176a27d70e286cb2d6b0a6b3c0",
         "provenance": "observed",
         "confidence": "observed"
       },
