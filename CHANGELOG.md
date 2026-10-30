@@ -2,6 +2,36 @@
 
 ## [Unreleased]
 
+## [0.23.0] — 2026-10-30
+
+No public export was removed or changed kind (`docs/stability/public-api-v1.json`); new exports: `configSources`,
+`describeConfigSource`, `ConfigOrigin`, `githubUnresolvedReviewThreads`, the evidence document (`buildEvidenceDocument`,
+`formatDuration`, `reviewVerdict`) and the tracker comment format (`fitComment`, `renderComment`,
+`DEFAULT_COMMENT_OPTIONS`). Behaviour changes are listed under **Behaviour**.
+
+- **Fleet runner (ADR-0045).** `connectors.runner: fleet` dispatches through the fleet coordinator queue: tick submits
+  the brief, deliver observes the task, runs `fleet collect`, pushes the branch and opens the PR; Orca is not
+  contacted. `loop doctor` probes the selected runner (quick doctor, per-machine checks, blocks only on what makes the
+  fleet unusable). Conflicts, red checks and red reviews start a fix round as a new fleet task cut from the PR head;
+  pushes are fast-forward only. Fleet states `abandoned`, `stopped`, `dispatching`, `waiting-quota` are understood;
+  `.ak-loop/` handoff files are read into the state dir and never merged into the target repo (#194, #198, #199, #200,
+  #209, #212, #214, #216, #218, #222).
+- **Proof of done before merge.** The definition of done is proven on a local checkout of the collected branch (#201).
+  Proofs carry a verdict level (`failed < blocked < type-check-only < unit-verified < ci-verified < live-verified`)
+  bound to the patch (`git patch-id --stable`), `delivery.merge.minVerdict` (default `unit-verified`) is the merge
+  floor, one pure merge policy decides, and a merged PR is read back at the reviewed head (ADR-0046, #202). A green PR
+  CI proves the repository verification (`ci-verified`); local re-runs install first under the pinned Node and report
+  environment failures as `blocked` (#213).
+- **Independent verifier (ADR-0047).** With the verifier enabled, "proven" comes from a separate run that did not write
+  the code; lessons carry cue/lesson/evidence and propose checks (#203).
+- **PM-approved work only.** `tracker.requireLabel` (e.g. `loop:pm-ok`) gates admission: issues without it are listed
+  as waiting, commented on, and not contracted; in-flight issues are untouched (#227, #248). The contract declares
+  `expectedChange` and a brief that would change nothing is refused at intake (#249).
+- **Global default config.** A repo without `loop.config.yaml` runs on built-ins, preset, `~/.agentskit/harness.yaml`
+  and detection (origin, tracker, preset, verify command, DoD test glob); a repo file only overrides keys.
+  `validate`/`doctor` print per-key provenance (#211).
+- **Person-mode refill and cross-loop priority.** `linear.refill` keeps `target` issues assigned to the person;
+  `queue.yieldTo` makes a loop admit nothing while a higher-priority loop has work (#184).
 - **Delivery evidence on the tracker issue.** The merge comment now carries the audit trail: PR, merge commit and who
   merged (loop or outside), the reviewed head and verdict (APPROVE/COMMENT/REQUEST CHANGES/INCOMPLETE) with findings
   by severity and INCOMPLETE reasons, unresolved review threads, CI checks, the harness verify, the worker's
@@ -38,6 +68,19 @@
   path/line helpers now come from the shared package instead of hand-rolled copies; `cross-spawn` is no longer a
   direct dependency. `pnpm typecheck` runs `agentskit-cross-platform check` against `.cross-platform-baseline.json`,
   so a new Windows-hostile pattern fails CI.
+- **Fixes.** Brace globs match and Linear label filters no longer drop GitHub issues (#210); the workspace-trust
+  question of a fresh worktree is answered (#183); an issue with an open HITL request skips the tracker fetch (#182);
+  Orca terminal-send timeout is floored to `waitSubmitSeconds` (#181); cost-guard baseline per provider and attempt
+  (#162); a stale usage-limit banner no longer marks a provider exhausted (#164); a worker that exited to the shell
+  is idle (#161); findings never sent to the worker are replayed (#156); two incomplete reviews block instead of
+  holding silently (#155); worker JSON with a UTF-8 BOM is read (#154); provider failures are classified on the tail
+  of CLI output (#153); UI: failed-before-dispatch runs show in Attention (#160), an archived attempt does not shadow
+  the previous one (#158), Retry resumes on a PR opened after delivery stopped (#157).
+- **Release hygiene.** Exported TypeScript surface is snapshotted (`pnpm check:public-api`, #174); Trusted Publishing
+  hardened (#173).
+- **Behaviour.** A repo `loop.config.yaml` is optional and a preset no longer creates a partial `linear` block on its
+  own (#211); with `tracker.requireLabel` set, unlabelled issues are not contracted (#227); briefs with no expected
+  change are refused (#249).
 
 ## [0.22.3] — 2026-09-27
 

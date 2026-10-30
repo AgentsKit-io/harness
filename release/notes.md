@@ -1,4 +1,4 @@
-# 0.22.3 release candidate
+# 0.23.0 release candidate
 
 The control plane (`ak-harness ui`) becomes the operator's single place to see what needs them and act on it
 safely, plus the loop fixes found running it against a real repository since 0.19.0. `CHANGELOG.md` has the full
@@ -49,5 +49,13 @@ delivery on its open PR, and doctor accepts UI-pinned automations.
 unpushed or uncommitted work, never past a worker's declared blocker, never while the tracker is cooling down. A
 worker that declares itself blocked is escalated to a person; the loop never types into a bare shell or launches a
 second agent into a worktree; close-or-reopen decisions stick and free the issue.
+
+**0.23.0.** The loop runs on the fleet (`connectors.runner: fleet`, ADR-0045): dispatch, collect, PR and fix rounds
+go through the fleet coordinator queue. Nothing merges without proof: the definition of done is proven on a checkout of
+the collected branch, each proof carries a verdict level bound to the patch, a pure merge policy decides against
+`delivery.merge.minVerdict`, and the merge is read back (ADR-0046); an independent verifier, not the writer, decides
+"proven" (ADR-0047). `tracker.requireLabel` admits only PM-approved issues (`loop:pm-ok`). The merge comment on the
+tracker issue carries the delivery evidence and a RESOLVED / PARTIAL / NOT PROVEN verdict (ADR-0044). A repo
+`loop.config.yaml` is now optional over a global default. No public export was removed.
 
 The blockers in `release/manifest.json` (`ecosystem-compatibility`, `pilot-benchmark`) are unchanged.
