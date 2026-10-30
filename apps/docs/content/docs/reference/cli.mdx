@@ -67,22 +67,6 @@ ak-harness context resolve [options] <query>
 | `--scope &lt;scope...&gt;` | optional search scopes |  |
 | `--index &lt;path&gt;` | Doc Bridge index path | `".doc-bridge/index.json"` |
 
-## `ak-harness discovery`
-
-Assess a structured discovery result before implementation.
-
-```bash
-ak-harness discovery [options] [command]
-```
-
-### `ak-harness discovery assess`
-
-Emit Ready or a human decision packet from a discovery JSON file.
-
-```bash
-ak-harness discovery assess [options] <input>
-```
-
 ## `ak-harness wip`
 
 Assess deterministic WIP admission before starting work.
@@ -97,22 +81,6 @@ Emit an admission decision from WIP ledger JSON.
 
 ```bash
 ak-harness wip assess [options] <input>
-```
-
-## `ak-harness experiment`
-
-Select a runtime only from a controlled, comparable experiment.
-
-```bash
-ak-harness experiment [options] [command]
-```
-
-### `ak-harness experiment select`
-
-Select the eligible runtime from experiment JSON.
-
-```bash
-ak-harness experiment select [options] <input>
 ```
 
 ## `ak-harness delivery`
@@ -171,30 +139,6 @@ ak-harness delivery acceptance [options] <input>
 ak-harness delivery cleanup [options] <input>
 ```
 
-## `ak-harness pilot`
-
-Freeze and assess a ten-issue pilot cohort.
-
-```bash
-ak-harness pilot [options] <input>
-```
-
-## `ak-harness cycle`
-
-Run the five-step improvement cycle with explicit adjustment and bounded repetition.
-
-```bash
-ak-harness cycle [options] [command]
-```
-
-### `ak-harness cycle assess`
-
-Assess run → verify → adjust → repeat from a cycle JSON file.
-
-```bash
-ak-harness cycle assess [options] <input>
-```
-
 ## `ak-harness block`
 
 Validate and assess a portable execution block manifest.
@@ -237,58 +181,6 @@ ak-harness preflight [options] [command]
 
 ```bash
 ak-harness preflight files [options] <input>
-```
-
-## `ak-harness snapshot`
-
-Create or validate a deterministic status snapshot.
-
-```bash
-ak-harness snapshot [options] [command] <input>
-```
-
-### `ak-harness snapshot validate`
-
-
-
-```bash
-ak-harness snapshot validate [options] <input>
-```
-
-## `ak-harness learning`
-
-Parse retrospectives into proposed learnings.
-
-```bash
-ak-harness learning [options] [command]
-```
-
-### `ak-harness learning parse`
-
-
-
-```bash
-ak-harness learning parse [options] <input>
-```
-
-| Flag | What it does | Default |
-|---|---|---|
-| `--source &lt;source&gt;` |  |  |
-
-## `ak-harness coordination`
-
-Manage idempotent issue/worktree claims and dispatch records.
-
-```bash
-ak-harness coordination [options] [command]
-```
-
-### `ak-harness coordination claim`
-
-
-
-```bash
-ak-harness coordination claim [options] <input>
 ```
 
 ## `ak-harness artifacts`

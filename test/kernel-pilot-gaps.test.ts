@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { assessPilot } from '../src/index.js'
+import { assessPilot } from '../experimental/pilot.js'
 
 const base = { policyHash: 'policy-v1', baselineReference: 'baseline-2026-09-08' }
 const tenNormal = Array.from({ length: 10 }, (_, index) => ({ issueId: `AGE-${index}`, classification: 'normal' as const, status: 'included' as const }))

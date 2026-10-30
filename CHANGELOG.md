@@ -4,7 +4,11 @@
 
 ## [0.23.0] — 2026-10-30
 
-No public export was removed or changed kind (`docs/stability/public-api-v1.json`); new exports: `configSources`,
+**Breaking (#253):** `assessDiscovery`, `isDiscoveryCurrent`, `selectRuntime`, `assessPilot`,
+`assessImprovementCycle` and `IMPROVEMENT_CYCLE_STEPS` leave `src/index.ts`, and 13 playbook-evaluation CLI commands
+(`discovery`, `experiment`, `pilot`, `cycle`, `snapshot`, `learning parse`, `coordination claim`) are removed; none had a
+caller in any AgentsKit-io repo. No other export was removed or changed kind (`docs/stability/public-api-v1.json`);
+new exports: `configSources`,
 `describeConfigSource`, `ConfigOrigin`, `githubUnresolvedReviewThreads`, the evidence document (`buildEvidenceDocument`,
 `formatDuration`, `reviewVerdict`) and the tracker comment format (`fitComment`, `renderComment`,
 `DEFAULT_COMMENT_OPTIONS`). Behaviour changes are listed under **Behaviour**.
@@ -57,6 +61,9 @@ No public export was removed or changed kind (`docs/stability/public-api-v1.json
   10-minute cooldown, no failure counted) instead of tripping the pause. New events `worker.terminal-closed`,
   `terminals.reaped`, `worker.dispatch-capacity`.
 - **`linear.queueOwnership: both`.** The queue can now drain unassigned issues AND the ones assigned to `linear.person` (Linear: both listings per state, merged and deduped; GitHub: assignee empty or the person). A dispatched unassigned issue is assigned to the person; escalation/restart never release the assignee under `both`.
+- **Smaller package (#253).** discovery/experiment/pilot/cycle move to `experimental/` (unpublished); `files` ships
+  four user docs instead of all of `docs/` (tarball 2 588 560 B -> 2 493 755 B); `docs/INVENTARIO.md` lists every
+  module with its consumers; `loop tick/deliver` are marked legacy.
 - **Single test run in CI.** `pnpm test:coverage` now includes typecheck and the package criterion output, so the verify job runs the test suite once while retaining coverage thresholds.
 - **Docs artifact frontmatter.** Documentation metadata now uses shared frontmatter splitting and YAML parsing, including folded scalars, block lists, BOM and CRLF input.
 - **Coverage floor.** `pnpm test:coverage` now enforces ratcheted source coverage in CI.

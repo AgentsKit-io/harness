@@ -209,12 +209,6 @@
           ]
         },
         {
-          "name": "ApprovedAssumption",
-          "kinds": [
-            "type"
-          ]
-        },
-        {
           "name": "ArgvRagContextProviderOptions",
           "kinds": [
             "type"
@@ -803,30 +797,6 @@
           ]
         },
         {
-          "name": "CycleIterationMetrics",
-          "kinds": [
-            "type"
-          ]
-        },
-        {
-          "name": "CycleMatrixRow",
-          "kinds": [
-            "type"
-          ]
-        },
-        {
-          "name": "CycleStepResult",
-          "kinds": [
-            "type"
-          ]
-        },
-        {
-          "name": "CycleStepStatus",
-          "kinds": [
-            "type"
-          ]
-        },
-        {
           "name": "DEFAULT_COMMENT_OPTIONS",
           "kinds": [
             "value"
@@ -876,12 +846,6 @@
         },
         {
           "name": "DecisionOption",
-          "kinds": [
-            "type"
-          ]
-        },
-        {
-          "name": "DecisionPacket",
           "kinds": [
             "type"
           ]
@@ -942,48 +906,6 @@
         },
         {
           "name": "DiffStat",
-          "kinds": [
-            "type"
-          ]
-        },
-        {
-          "name": "DiscoveryAmbiguity",
-          "kinds": [
-            "type"
-          ]
-        },
-        {
-          "name": "DiscoveryCurrentInput",
-          "kinds": [
-            "type"
-          ]
-        },
-        {
-          "name": "DiscoveryCurrentResult",
-          "kinds": [
-            "type"
-          ]
-        },
-        {
-          "name": "DiscoveryDecisionLogEntry",
-          "kinds": [
-            "type"
-          ]
-        },
-        {
-          "name": "DiscoveryInput",
-          "kinds": [
-            "type"
-          ]
-        },
-        {
-          "name": "DiscoveryOption",
-          "kinds": [
-            "type"
-          ]
-        },
-        {
-          "name": "DiscoveryResult",
           "kinds": [
             "type"
           ]
@@ -1646,12 +1568,6 @@
           ]
         },
         {
-          "name": "IMPROVEMENT_CYCLE_STEPS",
-          "kinds": [
-            "value"
-          ]
-        },
-        {
           "name": "ISSUES_CLOSE",
           "kinds": [
             "value"
@@ -1685,30 +1601,6 @@
           "name": "ISSUE_QUEUE_SCHEMA_VERSION",
           "kinds": [
             "value"
-          ]
-        },
-        {
-          "name": "ImprovementCycleAssessment",
-          "kinds": [
-            "type"
-          ]
-        },
-        {
-          "name": "ImprovementCycleInput",
-          "kinds": [
-            "type"
-          ]
-        },
-        {
-          "name": "ImprovementCycleIteration",
-          "kinds": [
-            "type"
-          ]
-        },
-        {
-          "name": "ImprovementCycleStep",
-          "kinds": [
-            "type"
           ]
         },
         {
@@ -2852,24 +2744,6 @@
           ]
         },
         {
-          "name": "PilotAssessment",
-          "kinds": [
-            "type"
-          ]
-        },
-        {
-          "name": "PilotEntry",
-          "kinds": [
-            "type"
-          ]
-        },
-        {
-          "name": "PilotManifest",
-          "kinds": [
-            "type"
-          ]
-        },
-        {
           "name": "PinnedSkill",
           "kinds": [
             "type"
@@ -3399,18 +3273,6 @@
         },
         {
           "name": "RuntimeConfig",
-          "kinds": [
-            "type"
-          ]
-        },
-        {
-          "name": "RuntimeExperimentCandidate",
-          "kinds": [
-            "type"
-          ]
-        },
-        {
-          "name": "RuntimeExperimentResult",
           "kinds": [
             "type"
           ]
@@ -4197,19 +4059,7 @@
           ]
         },
         {
-          "name": "assessDiscovery",
-          "kinds": [
-            "value"
-          ]
-        },
-        {
           "name": "assessDod",
-          "kinds": [
-            "value"
-          ]
-        },
-        {
-          "name": "assessImprovementCycle",
           "kinds": [
             "value"
           ]
@@ -4228,12 +4078,6 @@
         },
         {
           "name": "assessObserveStage",
-          "kinds": [
-            "value"
-          ]
-        },
-        {
-          "name": "assessPilot",
           "kinds": [
             "value"
           ]
@@ -5374,12 +5218,6 @@
         },
         {
           "name": "interviewRound",
-          "kinds": [
-            "value"
-          ]
-        },
-        {
-          "name": "isDiscoveryCurrent",
           "kinds": [
             "value"
           ]
@@ -7150,12 +6988,6 @@
         },
         {
           "name": "selectModel",
-          "kinds": [
-            "value"
-          ]
-        },
-        {
-          "name": "selectRuntime",
           "kinds": [
             "value"
           ]

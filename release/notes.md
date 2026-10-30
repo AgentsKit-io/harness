@@ -56,6 +56,8 @@ the collected branch, each proof carries a verdict level bound to the patch, a p
 `delivery.merge.minVerdict`, and the merge is read back (ADR-0046); an independent verifier, not the writer, decides
 "proven" (ADR-0047). `tracker.requireLabel` admits only PM-approved issues (`loop:pm-ok`). The merge comment on the
 tracker issue carries the delivery evidence and a RESOLVED / PARTIAL / NOT PROVEN verdict (ADR-0044). A repo
-`loop.config.yaml` is now optional over a global default. No public export was removed. Each npm publish now also creates the GitHub tag and release (#256).
+`loop.config.yaml` is now optional over a global default. **Breaking (#253):** six exports (`assessDiscovery`,
+`isDiscoveryCurrent`, `selectRuntime`, `assessPilot`, `assessImprovementCycle`, `IMPROVEMENT_CYCLE_STEPS`) and 13
+playbook-evaluation CLI commands with no caller are removed; the package ships four user docs instead of all of `docs/`. Each npm publish now also creates the GitHub tag and release (#256).
 
 The blockers in `release/manifest.json` (`ecosystem-compatibility`, `pilot-benchmark`) are unchanged.

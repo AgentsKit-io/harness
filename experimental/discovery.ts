@@ -1,5 +1,5 @@
-import { fail } from './errors.js'
-import { hashJson } from './hash.js'
+import { fail } from '../src/kernel/errors.js'
+import { hashJson } from '../src/kernel/hash.js'
 
 export interface DiscoveryOption {
   readonly id: string

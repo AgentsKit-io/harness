@@ -31,12 +31,12 @@ modules, not a provider dependency.
 | `src/kernel/hash.ts` | Kernel | SHA-256 and JSON digests | stdlib | None |
 | `src/kernel/types.ts` | Kernel | Shared contract, run, evidence, and metric types | `context` (type-only) | None |
 | `src/kernel/state-machine.ts` | Kernel | Legal lifecycle transitions and human decisions | `constants`, `types` | None |
-| `src/kernel/discovery.ts` | Kernel | Discovery freshness, ambiguity, and decision packets | `errors`, `hash` | None |
+| `experimental/discovery.ts` | Experimental (unpublished) | Discovery freshness, ambiguity, and decision packets | `errors`, `hash` | None |
 | `src/kernel/wip.ts` | Kernel | WIP admission and capacity decisions | `errors` | None |
-| `src/kernel/experiment.ts` | Kernel | Comparable runtime/provider selection | `errors` | None |
+| `experimental/experiment.ts` | Experimental (unpublished) | Comparable runtime/provider selection | `errors` | None |
 | `src/delivery/index.ts` | Delivery | G2–G5 delivery gates and deterministic PR projection | `errors`, `hash` | None |
 | `src/delivery/review.ts` | Delivery | Bounded parallel adversarial review lenses and evidence verdicts | `errors`, `hash`, `workflow`, `delivery/index` (type-only) | Reviewer callback supplied by caller |
-| `src/kernel/cycle.ts` | Kernel | Bounded improvement-cycle assessment | stdlib, `errors` | None |
+| `experimental/cycle.ts` | Experimental (unpublished) | Bounded improvement-cycle assessment | stdlib, `errors` | None |
 | `src/kernel/eval.ts` | Kernel | Versioned eval manifest validation, deterministic battery runner, min/median/max aggregation, and fail-closed assessment | `errors`, `hash` | Grader callback supplied by caller |
 | `src/kernel/compatibility.ts` | Kernel | Pinned AgentsKit component manifest and evidence-bound compatibility assessment | `errors`, `hash` | Upstream commands and reports supplied by caller |
 | `src/kernel/cache.ts` | Kernel | Safe cache keys and in-memory LLM cache contract | `hash`, `errors` | Cache backend supplied by caller |
@@ -57,7 +57,7 @@ modules, not a provider dependency.
 | `src/kernel/artifacts.ts` | Kernel support | Versioned provenance-bound artifacts, Markdown rendering, and idempotent phase resume projection | stdlib, `errors`, `hash`, `events`, `phase-executor` (type-only) | Local state directory only |
 | `src/kernel/adapter-contract.ts` | Kernel | Shared assurance levels and bounded telemetry contract | `errors` | Provider measurements supplied by adapters |
 | `src/kernel/quality.ts` | Kernel | Phase telemetry validation, 0–100 quality matrix, baseline deltas, and watchdog blockers | `errors`, `hash` | Metrics supplied by phases/adapters |
-| `src/kernel/pilot.ts` | Kernel | Cohort freeze and pilot assessment | `errors`, `hash` | None |
+| `experimental/pilot.ts` | Experimental (unpublished) | Cohort freeze and pilot assessment | `errors`, `hash` | None |
 | `src/kernel/plugins.ts` | Kernel | Generic slots, dependency checks, and lifecycle listeners | `errors`, `events` (type-only) | Plugin implementation supplied by caller |
 | `src/context/index.ts` | Context | Context snapshot contract, hashing, and provider slot | stdlib, `plugins`, `hash`, `errors` | Provider implementation supplied by caller |
 | `src/execution/metrics.ts` | Execution support | Benchmark manifest validation, run projection, and comparison | stdlib, `errors`, `files`, `types` | Reads local state only |
@@ -147,14 +147,14 @@ are grouped below; the source file remains authoritative for exact signatures.
 | --- | --- |
 | Lifecycle/config | `STATES`, `LEGAL_TRANSITIONS`, `HarnessError`, `loadConfig`, `validateConfig`, `transition`, `assertHuman`, `approvedDecision`, `loadLatestRun`, `planRun`, `startRun`, `verifyRun`, `reconcileRun`, `approveRun`, `authorizeRun`, `retryRun`, `cancelRun`, `cleanTaskArtifacts` |
 | Events/plugins/context | `EVENT_LOG_GENESIS`, `FileEventStore`, `HARNESS_EVENT_SCHEMA_VERSION`, `HARNESS_EVENT_TYPES`, `inspectEventLogLock`, `recoverEventLogLock`, `createPluginRegistry`, `createPluginSlot`, `HARNESS_PLUGIN_API_VERSION`, `CONTEXT_PROVIDER_SLOT`, `hashContextSnapshot`, `hashContextSnapshots`, `readContextSnapshots`, `validateContextSnapshot`, `validateContextSnapshots` |
-| Discovery and delivery | `assessDiscovery`, `isDiscoveryCurrent`, `assessWip`, `WIP_STATES`, `selectRuntime`, `assessAcceptance`, `assessIntegration`, `assessPreflight`, `assessProduction`, `assessWorktreeCleanup`, `composePullRequest`, `assessPilot`, `IMPROVEMENT_CYCLE_STEPS`, `assessImprovementCycle` |
+| WIP and delivery | `assessWip`, `WIP_STATES`, `assessAcceptance`, `assessIntegration`, `assessPreflight`, `assessProduction`, `assessWorktreeCleanup`, `composePullRequest`, `assessPilot`, `IMPROVEMENT_CYCLE_STEPS`, `assessImprovementCycle` |
 | Eval and optimization | `assessAgentEval`, `runAgentEval`, `createLlmCache`, `createLlmCacheKey`, `validateCacheableOperation`, `compareOptimization`, `validateOptimizationObservation`, `MEMORY_SCOPES`, `createInMemoryMemoryAdapter`, `createKvMemoryAdapter`, `validateMemoryRecord`, `runWorkflow`, `BENCHMARK_SCHEMA_VERSION`, `benchmarkRuns`, `loadBenchmarkManifest`, `recordBenchmarkObservation`, `validateBenchmarkManifest` |
 | Agent/runtime controls | `createSessionRecorder`, `createCodingAgentAdapter`, `createPolicyGate`, `createConfiguredToolRuntime`, `createDockerToolRuntime`, `createProcessToolRuntime`, `createToolRuntime`, `adaptiveConcurrency`, `createMachineMonitor`, `sampleMachine`, `summarizeMachine`, `createDispatchLedger`, `classifyFailure`, `recoveryDelayMs`, `runWithRecovery`, `planFilePreflight`, `validateSafeCommand`, `BLOCK_STATUSES`, `assessBlock`, `validateBlockManifest`, `LEARNING_STATUSES`, `parseRetro`, `promoteLearnings`, `createStatusSnapshot`, `validateStatusSnapshot`, `MODEL_ROLES`, `createModelPolicy`, `modelFor`, `PHASE_MODES`, `createPhaseProfile`, `planPhaseProfile`, `executePhaseProfile`, `ARTIFACT_SCHEMA_VERSION`, `createArtifactEnvelope`, `FileArtifactStore`, `artifactIsFresh`, `resumeStateFromArtifacts`, `ASSURANCE_LEVELS`, `validateAdapterMetadata` |
 | Integrations and evidence | `createDocBridgeContextProvider`, `createOrcaDispatchPlan`, `createTrackingAdapter`, `createTrackingTransition`, `EVIDENCE_BUNDLE_SCHEMA_VERSION`, `exportEvidenceBundle`, `readEvidenceTrustStore`, `verifyEvidenceBundle` |
 
 The entry point also re-exports the public type surfaces from `types`,
-`events`, `plugins`, `context`, `discovery`, `wip`, `experiment`, `delivery`,
-`pilot`, `cycle`, `metrics`, `agent`, `policy`, `runtime`, `bundle`, and
+`events`, `plugins`, `context`, `wip`, `delivery`,
+`metrics`, `agent`, `policy`, `runtime`, `bundle`, and
 `machine`, `phase-executor`, `artifacts`, plus explicit type exports for cache, optimization, memory,
 coordination, resilience, preflight, block, learning, status, model policy,
 Orca, and tracking. No adapter implementation is re-exported wholesale.
