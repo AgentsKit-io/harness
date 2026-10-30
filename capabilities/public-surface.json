@@ -4,7 +4,7 @@
   "package": "@agentskit/harness",
   "packageVersion": "0.22.3",
   "entryPoint": "src/index.ts",
-  "sourceDigest": "7629c737acf8418660b67fd38c7a34c937af5400a57507279187d866968c33ec",
+  "sourceDigest": "6bf8031df340fb515ef117ffaaa470e6f50ed2898b38b3f7fb24072b8f5000cf",
   "capabilities": [
     {
       "id": "public-surface:adapters/agent",
@@ -560,28 +560,6 @@
       ]
     },
     {
-      "id": "public-surface:kernel/cycle",
-      "version": "0.22.3",
-      "kind": "kernel",
-      "entryPoint": "src/index.ts",
-      "exports": [
-        "*",
-        "IMPROVEMENT_CYCLE_STEPS",
-        "assessImprovementCycle"
-      ]
-    },
-    {
-      "id": "public-surface:kernel/discovery",
-      "version": "0.22.3",
-      "kind": "kernel",
-      "entryPoint": "src/index.ts",
-      "exports": [
-        "*",
-        "assessDiscovery",
-        "isDiscoveryCurrent"
-      ]
-    },
-    {
       "id": "public-surface:kernel/error-policy",
       "version": "0.22.3",
       "kind": "kernel",
@@ -651,16 +629,6 @@
         "inspectEventLogLock",
         "recoverEventLogLock",
         "validateHarnessEventEnvelope"
-      ]
-    },
-    {
-      "id": "public-surface:kernel/experiment",
-      "version": "0.22.3",
-      "kind": "kernel",
-      "entryPoint": "src/index.ts",
-      "exports": [
-        "*",
-        "selectRuntime"
       ]
     },
     {
@@ -772,16 +740,6 @@
         "PiiMatch",
         "PiiScanResult",
         "scanForPii"
-      ]
-    },
-    {
-      "id": "public-surface:kernel/pilot",
-      "version": "0.22.3",
-      "kind": "kernel",
-      "entryPoint": "src/index.ts",
-      "exports": [
-        "*",
-        "assessPilot"
       ]
     },
     {
@@ -2124,5 +2082,5 @@
       ]
     }
   ],
-  "digest": "be207417f75e1c7ff0d41b7c18eac99cabb372f3b989a5e45243fae0d877be9e"
+  "digest": "cfc812e2b64291b43c417c738a0beccaf7833d422926f069ce81bb787371be9c"
 }
