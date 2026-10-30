@@ -112,7 +112,7 @@ jobs:
     needs: [verify, docs, loop-cross-platform]
     runs-on: ubuntu-latest
     permissions:
-      contents: read
+      contents: write
       id-token: write
     # Serialize releases across concurrent pushes to main; never cancel one midway.
     concurrency:
@@ -122,6 +122,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
+          fetch-depth: 0
       - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
@@ -161,3 +162,25 @@ jobs:
           fi
           npm ping --registry=https://registry.npmjs.org
           npm publish --provenance --access public --ignore-scripts
+      # Runs on every push, not only after a publish: a version already on npm that has no release yet (0.22.3 at
+      # the time this step landed) gets one retroactively, tagged at the commit that introduced that version.
+      - name: Create GitHub release from the changelog
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          version=$(node -p "require('./package.json').version")
+          tag="v$version"
+          if gh release view "$tag" >/dev/null 2>&1; then
+            echo "release $tag already exists; nothing to do"
+            exit 0
+          fi
+          npm view "@agentskit/harness@$version" version >/dev/null
+          awk -v v="$version" '/^## /{p=index($0,"["v"]")>0; next} p' CHANGELOG.md > /tmp/notes.md
+          if [ ! -s /tmp/notes.md ]; then
+            echo "CHANGELOG.md has no section for $version" >&2
+            exit 1
+          fi
+          sha=$(git log -S"\"version\": \"$version\"" --reverse --format=%H -- package.json | head -1)
+          gh release create "$tag" --target "${sha:-$GITHUB_SHA}" --title "$tag" --notes-file /tmp/notes.md

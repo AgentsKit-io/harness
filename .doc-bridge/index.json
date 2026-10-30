@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
-  "contentHash": "86dbadd6b61afd07ad9190d7aff75a4ee74ed2144fc16723b064f61f06cb2add",
+  "contentHash": "d2e457d9a6f6943b2700201f678ee890084b9b212c02a924c321f0125c7a5f55",
   "contentHashAlgo": "sha256-semantic-v1",
-  "generatedAt": "2026-10-29T10:31:54.874Z",
+  "generatedAt": "2026-10-30T01:17:38.607Z",
   "project": {
     "name": "AgentsKit Harness",
     "root": "."
@@ -292,6 +292,18 @@
         "unclassified"
       ],
       "contentHash": "26e91c1e01271df2c8e4a6290dc0e7d1047ce1b2e147c8a55a5eed756dded0ef"
+    },
+    {
+      "id": "document:changelog.d/255.md",
+      "type": "document",
+      "title": "255.md",
+      "path": "changelog.d/255.md",
+      "description": "feat: create a GitHub tag and release from the changelog on every npm publish",
+      "tags": [
+        "document",
+        "project"
+      ],
+      "contentHash": "652fc69f7e4cd4a74fb96745e9ad1d4d347655328d7e33e7e8804822b4656668"
     },
     {
       "id": "document:CHANGELOG.md",
@@ -9737,8 +9749,8 @@
     }
   },
   "inputs": {
-    "hash": "00783ec93ae29cdfdda6fdc32db0aecec72b030ad98b7195c1978a372d646593",
-    "fileCount": 619,
+    "hash": "ae6fd610aee37d0e89714a5452801f49ec17d6ba2f8eb1a7ebd39e3340406556",
+    "fileCount": 620,
     "projectionVersion": 2
   },
   "retrieval": {
@@ -9760,9 +9772,9 @@
   "projection": {
     "type": "retrieval-index",
     "schemaVersion": 1,
-    "contentHash": "84c7aa493f50e7f7487b7cb07daacfe28bccdec0f4664b98eee9fe01f37d12b1",
+    "contentHash": "dec97207e2265cf36323df14bd644ca98b7745fb0973b59959f0e4c719c32c3d",
     "contentHashAlgo": "sha256-semantic-v1",
-    "snapshotHash": "d381331b3d861ad34c1464e3b01a34e314a41c7e48a3f197ff10cbe59971984d",
+    "snapshotHash": "de525f69a1aa4c871ba1f57073f925a2f494bf7724523a154314b641dbe0546a",
     "overlayHash": "f99666ff9119084dd25c2974ae64eb6935ec2aa785ff5ad478fb9d541f7a5e94",
     "configurationHash": "497822431910cd9fa7d674a48a9f0b96fbbbf779f22a001de0b52252117fe3ab",
     "lexiconVersion": 1,
@@ -9782,7 +9794,7 @@
     },
     "lexical": {
       "version": 1,
-      "documentCount": 600,
+      "documentCount": 601,
       "fieldNames": [
         "aliases",
         "body",
@@ -9793,13 +9805,13 @@
         "title"
       ],
       "averageFieldLength": {
-        "aliases": 2.9266666666666667,
-        "body": 45.73166666666667,
-        "headings": 3.8033333333333332,
-        "path": 6.13,
-        "summary": 2.8366666666666664,
-        "symbols": 13.876666666666667,
-        "title": 4.028333333333333
+        "aliases": 2.925124792013311,
+        "body": 45.68718801996672,
+        "headings": 3.7970049916805326,
+        "path": 6.126455906821963,
+        "summary": 2.8502495840266224,
+        "symbols": 13.853577371048253,
+        "title": 4.02495840266223
       }
     },
     "entries": [
@@ -12272,6 +12284,39 @@
           ]
         },
         "contentHash": "08f5d230741524533ac6753cd3fea6d9fd3cf1f9b5b913f55d7640c0ee45df86",
+        "provenance": "observed",
+        "confidence": "observed"
+      },
+      {
+        "id": "document:changelog.d/255.md",
+        "kind": "document",
+        "path": "changelog.d/255.md",
+        "title": "255.md",
+        "summary": "feat: create a GitHub tag and release from the changelog on every npm publish",
+        "audience": "human",
+        "aliases": [],
+        "tags": [
+          "document",
+          "project"
+        ],
+        "fields": {
+          "title": "255.md",
+          "headings": "",
+          "path": "changelog.d/255.md",
+          "symbols": "",
+          "summary": "feat: create a GitHub tag and release from the changelog on every npm publish",
+          "body": "feat: create a GitHub tag and release from the changelog on every npm publish The publish job also backfills the release for a published version that has none (0.22.3).",
+          "aliases": "document project"
+        },
+        "graph": {
+          "pagerank": 0,
+          "inboundLinks": 0,
+          "coveredBy": [],
+          "mentionedBy": [],
+          "inbound": [],
+          "outbound": []
+        },
+        "contentHash": "652fc69f7e4cd4a74fb96745e9ad1d4d347655328d7e33e7e8804822b4656668",
         "provenance": "observed",
         "confidence": "observed"
       },
