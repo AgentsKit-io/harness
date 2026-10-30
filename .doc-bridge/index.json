@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
-  "contentHash": "65ee304d020c6268b520a62ba3980701a5070510b7d005962b36781708a73a07",
+  "contentHash": "1664a1ff2777bb5724be259205ec4fc65c1bae42f07dc82a2c5e6ec53ba35431",
   "contentHashAlgo": "sha256-semantic-v1",
-  "generatedAt": "2026-10-30T06:18:33.667Z",
+  "generatedAt": "2026-10-30T07:46:46.716Z",
   "project": {
     "name": "AgentsKit Harness",
     "root": "."
@@ -1025,7 +1025,7 @@
         "document",
         "human"
       ],
-      "contentHash": "e62db2183d272e99a21914fb7a23c02cfd5439ce9535e2cece711925bfed11b4"
+      "contentHash": "4f1b795f2ebeb26d8afae762258610ad4830150e409b5caf6e425e479cb1b98f"
     },
     {
       "id": "document:docs/LOOP.md",
@@ -9445,7 +9445,7 @@
         "ts",
         "test"
       ],
-      "contentHash": "0cae7abe7cbef434422e628f9d3ef64c4a2d276efde78d38f27f28aba25f6511"
+      "contentHash": "a5b6adfb7d59c1a487f9c210618f5ec13c4e69b224c86d8c70405d9f1b6d0800"
     },
     {
       "id": "module:test/stage-lock.test.ts",
@@ -9821,7 +9821,7 @@
     }
   },
   "inputs": {
-    "hash": "d8f3a50c62ef49941982717ad4792582cce96f1260ada3427064007121b169d5",
+    "hash": "dbaf7c79163f2349d049f8df3bf38309f06434828d7e7d61a30d3c7276f1b935",
     "fileCount": 626,
     "projectionVersion": 2
   },
@@ -9844,9 +9844,9 @@
   "projection": {
     "type": "retrieval-index",
     "schemaVersion": 1,
-    "contentHash": "cea5f608274ccfb0489f0ec2b8d7c0edf911c8db8e83b4026ac201291bb89f0e",
+    "contentHash": "d558a6019cde0df84513dfdc6e785c87c969e2510a57b31e04967a9884c1f56c",
     "contentHashAlgo": "sha256-semantic-v1",
-    "snapshotHash": "ef692f885d2eae98a7b6010f0d5ad03ecd9abeccf86bce887c9cda5169df4af2",
+    "snapshotHash": "fb9568450b5aacb635543bd1cdf6701d7eed3d02b74c0161d8dca68a49fe641b",
     "overlayHash": "f99666ff9119084dd25c2974ae64eb6935ec2aa785ff5ad478fb9d541f7a5e94",
     "configurationHash": "497822431910cd9fa7d674a48a9f0b96fbbbf779f22a001de0b52252117fe3ab",
     "lexiconVersion": 1,
@@ -9878,7 +9878,7 @@
       ],
       "averageFieldLength": {
         "aliases": 2.919407894736842,
-        "body": 46.317434210526315,
+        "body": 46.31907894736842,
         "headings": 3.848684210526316,
         "path": 6.110197368421052,
         "summary": 2.9095394736842106,
@@ -15866,7 +15866,7 @@
           "path": "docs/INVENTARIO.md",
           "symbols": "",
           "summary": "Gerado em 2026-10-30 (ticket #253). Consumidores vêm de uma busca real em todos os repos da org AgentsKit-io (gh search code + clone raso e grep de ak-harness, ak-verify, @agentskit/harness, loop.config.yaml, loop tick|deliver e de cada subcomando). Testes: pnpm vitest run = 197 arquivos, todos verdes (2 087 testes, 6 skipped).",
-          "body": "Inventário: comandos e módulos Gerado em 2026-10-30 (ticket 253). Consumidores vêm de uma busca real em todos os repos da org AgentsKit-io ( gh search code + clone raso e grep de ak-harness , ak-verify , @agentskit/harness , loop.config.yaml , loop tick deliver e de cada subcomando). Testes: pnpm vitest run = 197 arquivos, todos verdes (2 087 testes, 6 skipped). Consumidores (busca na org) Repo O que usa --- --- factory (factory-line) loop.config.yaml com runner: fleet ; importa/chama @agentskit/harness (fixado 0.22.3, mínimo checado em setup-coordinator / work-source ); policy/agents.json law-os loop.config.yaml ( runner: fleet ); ak-harness -c .ak-harness/verification.json doctor , plan approved , start , verify ( law-local.mjs ); ak-verify run ; .ak-harness/verification.json marketing-os loop.config.yaml ( runner: fleet , delivery ); padrão EvalManifest do harness agents-playbook ak-harness doctor , ak-verify run (scripts harness:doctor / harness:verify ); dependência @agentskit/harness ^0.22.3 ; .ak-harness/verification.json agentskit-os ak-verify run ; .ak-harness/verification.json doc-bridge dependência @agentskit/harness 0.22.3 ; bin/ak-verify.js , scripts/verification-harness.mjs ( ak-verify run ); loop.config.example.yaml e docs/loop-workflow.md ( loop install , loop tick ) skills (plugin agentskit-pm) npx @agentskit/harness status --json ( product-status ) code-review, agentskit-registry só ak-verify transitivo (lockfile) brain documentação (cofre), não executa agentskit, agentskit-chat, ak-cloud, ak-admin, ak-desktop, broker-os, alexandria, infra, factory-sandbox, ecosystem-distribution-ops nenhum uso do harness além de .gitignore /docs Nenhum repo chama discovery , experiment , pilot , cycle , snapshot , learning parse nem coordination claim (zero ocorrências de código; só docs deste repo e do brain ). link-pay não está na org AgentsKit-io: não pôde ser consultado. Comandos (85 declarados em src/cli.ts ; eram 98) Grupo Comandos Consumidor Teste --- --- --- --- núcleo de execução start verify run approve authorize retry cancel status audit clean , events , benchmark baseline law-os, agents-playbook, skills, doc-bridge ( ak-verify ) harness , agent , lock , bundle , metrics contrato/diagnóstico doctor plan context resolve artifacts law-os, agents-playbook, factory sim gates do playbook mantidos wip delivery block preflight referência documental (sem chamador externo, mas pequenos e usados por loop ) sim UI ui operadores ui- loop moderno loop stage <stage , plan , release , learning , observe , watch , retro , run , status , approve , resume , paused , worker-guard , doctor , validate , init , install , uninstall , precheck , contract , debrief , issue-timeline , hook factory, law-os, marketing-os ( runner: fleet ) loop- loop legado tick/deliver loop tick , loop deliver , loop tick-worker , loop deliver-worker doc-bridge (exemplo/doc), link-pay (fora da org) loop-tick , loop-deliver removidos (-13) discovery assess , experiment select , pilot , cycle assess , snapshot (+ validate ), learning parse , coordination claim (e os grupos pai) nenhum — (módulos discovery/experiment/pilot/cycle em experimental/ ) Módulos Cobertura de linhas medida em pnpm vitest run --coverage (194 → 197 arquivos de teste, todos verdes , 2 081+ testes passando). \"Testes diretos\" são os arquivos de test/ que importam o módulo; \"só via index /chamadores\" quer dizer que os testes o exercitam pelo src/index.ts ou por quem o chama. Módulo Em index.ts Linhas cobertas Testes diretos --- --- --- --- kernel/adapter-contract.ts sí 100% só via index /chamadores kernel/artifacts.ts sí 100% só via index /chamadores kernel/block.ts sí 100% só via index /chamadores kernel/cache.ts sí 100% só via index /chamadores kernel/capabilities.ts sí 100% só via index /chamadores kernel/compatibility.ts sí 100% só via index /chamadores kernel/constants.ts sí 100% só via index /chamadores kernel/error-policy.ts sí 100% só via index /chamadores kernel/errors.ts sí 100% só",
+          "body": "Inventário: comandos e módulos Gerado em 2026-10-30 (ticket 253). Consumidores vêm de uma busca real em todos os repos da org AgentsKit-io ( gh search code + clone raso e grep de ak-harness , ak-verify , @agentskit/harness , loop.config.yaml , loop tick deliver e de cada subcomando). Testes: pnpm vitest run = 197 arquivos, todos verdes (2 087 testes, 6 skipped). Consumidores (busca na org) Repo O que usa --- --- factory (factory-line) loop.config.yaml com runner: fleet ; importa/chama @agentskit/harness (fixado 0.22.3, mínimo checado em setup-coordinator / work-source ); policy/agents.json law-os loop.config.yaml ( runner: fleet ); ak-harness -c .ak-harness/verification.json doctor , plan approved , start , verify ( law-local.mjs ); ak-verify run ; .ak-harness/verification.json marketing-os loop.config.yaml ( runner: fleet , delivery ); padrão EvalManifest do harness agents-playbook ak-harness doctor , ak-verify run (scripts harness:doctor / harness:verify ); dependência @agentskit/harness ^0.22.3 ; .ak-harness/verification.json doc-bridge dependência @agentskit/harness 0.22.3 ; bin/ak-verify.js , scripts/verification-harness.mjs ( ak-verify run ); loop.config.example.yaml e docs/loop-workflow.md ( loop install , loop tick ) skills (plugin agentskit-pm) npx @agentskit/harness status --json ( product-status ) code-review, agentskit-registry só ak-verify transitivo (lockfile) brain documentação (cofre), não executa agentskit, agentskit-chat, ak-cloud, ak-admin, ak-desktop, broker-os, alexandria, infra, factory-sandbox, ecosystem-distribution-ops nenhum uso do harness além de .gitignore /docs Nenhum repo chama discovery , experiment , pilot , cycle , snapshot , learning parse nem coordination claim (zero ocorrências de código; só docs deste repo e do brain ). link-pay não está na org AgentsKit-io: não pôde ser consultado. Comandos (85 declarados em src/cli.ts ; eram 98) Grupo Comandos Consumidor Teste --- --- --- --- núcleo de execução start verify run approve authorize retry cancel status audit clean , events , benchmark baseline law-os, agents-playbook, skills, doc-bridge ( ak-verify ) harness , agent , lock , bundle , metrics contrato/diagnóstico doctor plan context resolve artifacts law-os, agents-playbook, factory sim gates do playbook mantidos wip delivery block preflight referência documental (sem chamador externo, mas pequenos e usados por loop ) sim UI ui operadores ui- loop moderno loop stage <stage , plan , release , learning , observe , watch , retro , run , status , approve , resume , paused , worker-guard , doctor , validate , init , install , uninstall , precheck , contract , debrief , issue-timeline , hook factory, law-os, marketing-os ( runner: fleet ) loop- loop legado tick/deliver loop tick , loop deliver , loop tick-worker , loop deliver-worker doc-bridge (exemplo/doc), link-pay (fora da org) loop-tick , loop-deliver removidos (-13) discovery assess , experiment select , pilot , cycle assess , snapshot (+ validate ), learning parse , coordination claim (e os grupos pai) nenhum — (módulos discovery/experiment/pilot/cycle em experimental/ ) Módulos Cobertura de linhas medida em pnpm vitest run --coverage (194 → 197 arquivos de teste, todos verdes , 2 081+ testes passando). \"Testes diretos\" são os arquivos de test/ que importam o módulo; \"só via index /chamadores\" quer dizer que os testes o exercitam pelo src/index.ts ou por quem o chama. Módulo Em index.ts Linhas cobertas Testes diretos --- --- --- --- kernel/adapter-contract.ts sí 100% só via index /chamadores kernel/artifacts.ts sí 100% só via index /chamadores kernel/block.ts sí 100% só via index /chamadores kernel/cache.ts sí 100% só via index /chamadores kernel/capabilities.ts sí 100% só via index /chamadores kernel/compatibility.ts sí 100% só via index /chamadores kernel/constants.ts sí 100% só via index /chamadores kernel/error-policy.ts sí 100% só via index /chamadores kernel/errors.ts sí 100% só via index /chamadores kernel/eval.ts sí 100% só via index ",
           "aliases": "document human"
         },
         "graph": {
@@ -15931,7 +15931,7 @@
             }
           ]
         },
-        "contentHash": "e62db2183d272e99a21914fb7a23c02cfd5439ce9535e2cece711925bfed11b4",
+        "contentHash": "4f1b795f2ebeb26d8afae762258610ad4830150e409b5caf6e425e479cb1b98f",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -50398,7 +50398,7 @@
             }
           ]
         },
-        "contentHash": "0cae7abe7cbef434422e628f9d3ef64c4a2d276efde78d38f27f28aba25f6511",
+        "contentHash": "a5b6adfb7d59c1a487f9c210618f5ec13c4e69b224c86d8c70405d9f1b6d0800",
         "provenance": "observed",
         "confidence": "observed"
       },
