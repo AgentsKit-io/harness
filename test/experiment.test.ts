@@ -1,5 +1,5 @@
 import { expect, it } from 'vitest'
-import { selectRuntime } from '../src/index.js'
+import { selectRuntime } from '../experimental/experiment.js'
 
 const candidate = (runtime: string, overrides: Partial<Parameters<typeof selectRuntime>[0][number]> = {}) => ({ runtime, sourceRevision: 'abc', contractHash: 'contract', provider: 'openai', model: 'model', configurationHash: 'config', hardGatesPassed: true, humanMinutes: 10, durationMs: 100, cost: 1, ...overrides })
 

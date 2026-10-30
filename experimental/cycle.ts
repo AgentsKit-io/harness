@@ -1,5 +1,5 @@
-import { fail } from './errors.js'
-import { hashJson } from './hash.js'
+import { fail } from '../src/kernel/errors.js'
+import { hashJson } from '../src/kernel/hash.js'
 
 export const IMPROVEMENT_CYCLE_STEPS = ['adversarial-review', 'g2-preflight', 'baseline-record', 'pilot-execution', 'comparison'] as const
 export type ImprovementCycleStep = typeof IMPROVEMENT_CYCLE_STEPS[number]

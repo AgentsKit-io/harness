@@ -1,4 +1,4 @@
-import { fail } from './errors.js'
+import { fail } from '../src/kernel/errors.js'
 
 export interface RuntimeExperimentCandidate {
   readonly runtime: string

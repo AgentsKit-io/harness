@@ -1,5 +1,5 @@
 import { expect, it } from 'vitest'
-import { assessPilot } from '../src/index.js'
+import { assessPilot } from '../experimental/pilot.js'
 
 const base = { policyHash: 'policy-v1', baselineReference: 'baseline-2026-09-08' }
 
