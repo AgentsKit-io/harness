@@ -1,5 +1,5 @@
 import { expect, it } from 'vitest'
-import { assessDiscovery, isDiscoveryCurrent } from '../src/index.js'
+import { assessDiscovery, isDiscoveryCurrent } from '../experimental/discovery.js'
 
 const base = {
   issueId: 'ABC-123',

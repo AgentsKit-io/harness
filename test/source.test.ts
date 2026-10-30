@@ -25,7 +25,7 @@ it('changes the Git evidence fingerprint for committed, dirty, and untracked con
   expect(untracked.statusHash).not.toBe(dirty.statusHash)
   expect(stateOnly.statusHash).toBe(untracked.statusHash)
   expect(committed.revision).not.toBe(initial.revision)
-})
+}, 30_000) // many git spawns; slow on Windows runners
 
 it('blocks current-source evidence outside a committed Git repository', async () => {
   const root = mkdtempSync(join(tmpdir(), 'agentskit-harness-source-non-git-test-'))

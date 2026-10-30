@@ -1,5 +1,5 @@
 import { expect, it } from 'vitest'
-import { IMPROVEMENT_CYCLE_STEPS, assessImprovementCycle } from '../src/index.js'
+import { IMPROVEMENT_CYCLE_STEPS, assessImprovementCycle } from '../experimental/cycle.js'
 
 const steps = (statuses: readonly ('passed' | 'failed' | 'blocked' | 'pending')[]) => IMPROVEMENT_CYCLE_STEPS.map((step, index) => ({ step, status: statuses[index]!, ...(statuses[index] === 'passed' ? {} : { reason: 'needs adjustment' }) }))
 
