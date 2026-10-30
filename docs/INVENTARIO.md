@@ -12,7 +12,6 @@ Gerado em 2026-10-30 (ticket #253). Consumidores vêm de uma busca real em todos
 | law-os | `loop.config.yaml` (`runner: fleet`); `ak-harness -c .ak-harness/verification.json doctor`, `plan approved`, `start`, `verify` (`law-local.mjs`); `ak-verify run`; `.ak-harness/verification.json` |
 | marketing-os | `loop.config.yaml` (`runner: fleet`, `delivery`); padrão `EvalManifest` do harness |
 | agents-playbook | `ak-harness doctor`, `ak-verify run` (scripts `harness:doctor`/`harness:verify`); dependência `@agentskit/harness ^0.22.3`; `.ak-harness/verification.json` |
-| agentskit-os | `ak-verify run`; `.ak-harness/verification.json` |
 | doc-bridge | dependência `@agentskit/harness 0.22.3`; `bin/ak-verify.js`, `scripts/verification-harness.mjs` (`ak-verify run`); `loop.config.example.yaml` e `docs/loop-workflow.md` (`loop install`, **`loop tick`**) |
 | skills (plugin agentskit-pm) | `npx @agentskit/harness status --json` (`product-status`) |
 | code-review, agentskit-registry | só `ak-verify` transitivo (lockfile) |
