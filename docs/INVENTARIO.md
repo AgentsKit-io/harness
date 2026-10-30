@@ -1,198 +1,212 @@
 # Inventário: comandos e módulos
 
-Gerado em 2026-10-30 (ticket #253). Os módulos abaixo vêm de `src/`; a coluna de testes é por referência estática
-(`test/` importa o arquivo ou usa um símbolo exportado dele). **"Verde" não foi medido aqui**: o CI roda `pnpm test`
-a cada PR e só merge com tudo verde, então um módulo com testes referenciados está verde enquanto `main` está verde.
+Gerado em 2026-10-30 (ticket #253). Consumidores vêm de uma busca real em todos os repos da org AgentsKit-io
+(`gh search code` + clone raso e `grep` de `ak-harness`, `ak-verify`, `@agentskit/harness`, `loop.config.yaml`,
+`loop tick|deliver` e de cada subcomando). Testes: `pnpm vitest run` = **197 arquivos, todos verdes** (2 087 testes, 6 skipped).
 
-## Consumidores
+## Consumidores (busca na org)
 
-Fonte: este repositório (`README.md`, `ecosystem.json`, `docs/LOOP.md`). Consumo fora daqui (repos de produto, doc-bridge,
-playbook) não é visível a partir deste repo e precisa ser confirmado pelo dono antes de remover algo.
-
-| Consumidor | Usa |
+| Repo | O que usa |
 |---|---|
-| factory-line | `ak-harness loop` (stage/tick/deliver/plan/release), `ak-verify run`, adapters `github-cli`, `orca` |
-| produtos (ex.: link-pay) | `loop.config.yaml` + `loop tick/deliver` (**legado**, ver abaixo), `ak-verify run` |
-| doc-bridge | `context resolve`, adapter `doc-bridge`, `context/` |
-| playbook | contratos/gates (`delivery *`, `discovery`, `wip`, `cycle`, `block`, `snapshot`) como referência documental |
+| factory (factory-line) | `loop.config.yaml` com `runner: fleet`; importa/chama `@agentskit/harness` (fixado 0.22.3, mínimo checado em `setup-coordinator`/`work-source`); `policy/agents.json` |
+| law-os | `loop.config.yaml` (`runner: fleet`); `ak-harness -c .ak-harness/verification.json doctor`, `plan approved`, `start`, `verify` (`law-local.mjs`); `ak-verify run`; `.ak-harness/verification.json` |
+| marketing-os | `loop.config.yaml` (`runner: fleet`, `delivery`); padrão `EvalManifest` do harness |
+| agents-playbook | `ak-harness doctor`, `ak-verify run` (scripts `harness:doctor`/`harness:verify`); dependência `@agentskit/harness ^0.22.3`; `.ak-harness/verification.json` |
+| agentskit-os | `ak-verify run`; `.ak-harness/verification.json` |
+| doc-bridge | dependência `@agentskit/harness 0.22.3`; `bin/ak-verify.js`, `scripts/verification-harness.mjs` (`ak-verify run`); `loop.config.example.yaml` e `docs/loop-workflow.md` (`loop install`, **`loop tick`**) |
+| skills (plugin agentskit-pm) | `npx @agentskit/harness status --json` (`product-status`) |
+| code-review, agentskit-registry | só `ak-verify` transitivo (lockfile) |
+| brain | documentação (cofre), não executa |
+| agentskit, agentskit-chat, ak-cloud, ak-admin, ak-desktop, broker-os, alexandria, infra, factory-sandbox, ecosystem-distribution-ops | nenhum uso do harness além de `.gitignore`/docs |
 
-## Comandos (98 declarados em `src/cli.ts`)
+Nenhum repo chama `discovery`, `experiment`, `pilot`, `cycle`, `snapshot`, `learning parse` nem `coordination claim`
+(zero ocorrências de código; só docs deste repo e do `brain`). `link-pay` não está na org AgentsKit-io: não pôde ser consultado.
+
+## Comandos (85 declarados em `src/cli.ts`; eram 98)
 
 | Grupo | Comandos | Consumidor | Teste |
 |---|---|---|---|
-| núcleo de execução | `start verify run approve authorize retry cancel status audit clean`, `events *`, `benchmark baseline` | factory-line, produtos (`ak-verify`) | sim (`harness`, `agent`, `lock`, `bundle`, `metrics`) |
-| contrato/diagnóstico | `doctor plan context resolve artifacts *` | factory-line, doc-bridge | sim |
-| avaliações do playbook | `discovery wip experiment delivery * pilot cycle block * preflight snapshot learning coordination` | playbook (referência) | sim (um arquivo por capacidade) |
-| UI | `ui` | operadores | sim (`ui-*`) |
-| loop moderno | `loop stage <stage>`, `plan *`, `release *`, `learning *`, `observe`, `watch`, `retro`, `run *`, `status`, `approve`, `resume`, `paused`, `worker-guard`, `doctor`, `validate`, `init`, `install`, `uninstall`, `precheck`, `contract`, `debrief`, `issue-timeline`, `hook` | factory-line | sim (`loop-*`) |
-| **loop legado tick/deliver** | `loop tick`, `loop deliver`, `loop tick-worker`, `loop deliver-worker` | produtos com `loop.config.yaml` | sim (`loop-tick`, `loop-deliver`) |
+| núcleo de execução | `start verify run approve authorize retry cancel status audit clean`, `events *`, `benchmark baseline` | law-os, agents-playbook, skills, doc-bridge (`ak-verify`) | `harness`, `agent`, `lock`, `bundle`, `metrics` |
+| contrato/diagnóstico | `doctor plan context resolve artifacts *` | law-os, agents-playbook, factory | sim |
+| gates do playbook mantidos | `wip delivery * block * preflight` | referência documental (sem chamador externo, mas pequenos e usados por `loop`) | sim |
+| UI | `ui` | operadores | `ui-*` |
+| loop moderno | `loop stage <stage>`, `plan *`, `release *`, `learning *`, `observe`, `watch`, `retro`, `run *`, `status`, `approve`, `resume`, `paused`, `worker-guard`, `doctor`, `validate`, `init`, `install`, `uninstall`, `precheck`, `contract`, `debrief`, `issue-timeline`, `hook` | factory, law-os, marketing-os (`runner: fleet`) | `loop-*` |
+| **loop legado tick/deliver** | `loop tick`, `loop deliver`, `loop tick-worker`, `loop deliver-worker` | doc-bridge (exemplo/doc), link-pay (fora da org) | `loop-tick`, `loop-deliver` |
+| **removidos (-13)** | `discovery assess`, `experiment select`, `pilot`, `cycle assess`, `snapshot` (+`validate`), `learning parse`, `coordination claim` (e os grupos pai) | nenhum | — (módulos `discovery/experiment/pilot/cycle` em `experimental/`) |
 
 ## Módulos
 
-| Módulo | Linhas | Exportado em `index.ts` | Testes |
+Cobertura de linhas medida em `pnpm vitest run --coverage` (194 → 197 arquivos de teste, **todos verdes**, 2 081+ testes passando).
+"Testes diretos" são os arquivos de `test/` que importam o módulo; "só via `index`/chamadores" quer dizer que os testes
+o exercitam pelo `src/index.ts` ou por quem o chama.
+
+| Módulo | Em `index.ts` | Linhas cobertas | Testes diretos |
 |---|---|---|---|
-| `kernel/adapter-contract.ts` | 45 | sí | 2 arquivo(s) |
-| `kernel/artifacts.ts` | 230 | sí | 1 arquivo(s) |
-| `kernel/block.ts` | 67 | sí | 2 arquivo(s) |
-| `kernel/cache.ts` | 65 | sí | 4 arquivo(s) |
-| `kernel/capabilities.ts` | 102 | sí | 2 arquivo(s) |
-| `kernel/compatibility.ts` | 127 | sí | 2 arquivo(s) |
-| `kernel/constants.ts` | 25 | sí | 1 arquivo(s) |
-| `kernel/cycle.ts` | 111 | sí | 2 arquivo(s) |
-| `kernel/discovery.ts` | 149 | sí | 3 arquivo(s) |
-| `kernel/error-policy.ts` | 51 | sí | 2 arquivo(s) |
-| `kernel/errors.ts` | 17 | sí | 27 arquivo(s) |
-| `kernel/eval.ts` | 223 | sí | 4 arquivo(s) |
-| `kernel/events.ts` | 298 | sí | 9 arquivo(s) |
-| `kernel/experiment.ts` | 50 | sí | 1 arquivo(s) |
-| `kernel/hash.ts` | 20 | no | 19 arquivo(s) |
-| `kernel/json-file.ts` | 32 | no | **nenhum** |
-| `kernel/learning.ts` | 107 | sí | 5 arquivo(s) |
-| `kernel/memory.ts` | 131 | sí | 9 arquivo(s) |
-| `kernel/model-policy.ts` | 37 | sí | 2 arquivo(s) |
-| `kernel/optimization.ts` | 122 | sí | 2 arquivo(s) |
-| `kernel/phase-executor.ts` | 338 | sí | 3 arquivo(s) |
-| `kernel/pii.ts` | 68 | sí | 1 arquivo(s) |
-| `kernel/pilot.ts` | 51 | sí | 2 arquivo(s) |
-| `kernel/plugins.ts` | 162 | sí | 4 arquivo(s) |
-| `kernel/policy.ts` | 54 | sí | 4 arquivo(s) |
-| `kernel/preflight.ts` | 57 | sí | 2 arquivo(s) |
-| `kernel/process-tree.ts` | 28 | no | **nenhum** |
-| `kernel/quality.ts` | 138 | sí | 2 arquivo(s) |
-| `kernel/resilience.ts` | 99 | sí | 1 arquivo(s) |
-| `kernel/state-machine.ts` | 20 | sí | 8 arquivo(s) |
-| `kernel/status.ts` | 55 | sí | 2 arquivo(s) |
-| `kernel/tokens.ts` | 14 | no | 1 arquivo(s) |
-| `kernel/types.ts` | 217 | sí | 1 arquivo(s) |
-| `kernel/wip.ts` | 55 | sí | 2 arquivo(s) |
-| `kernel/workflow.ts` | 66 | sí | 3 arquivo(s) |
-| `execution/agent.ts` | 122 | sí | 2 arquivo(s) |
-| `execution/bundle.ts` | 143 | sí | 2 arquivo(s) |
-| `execution/config.ts` | 154 | sí | 22 arquivo(s) |
-| `execution/coordination.ts` | 163 | sí | 9 arquivo(s) |
-| `execution/evidence.ts` | 42 | sí | 2 arquivo(s) |
-| `execution/files.ts` | 45 | sí | 3 arquivo(s) |
-| `execution/machine.ts` | 115 | sí | 3 arquivo(s) |
-| `execution/metrics.ts` | 368 | sí | 3 arquivo(s) |
-| `execution/runs.ts` | 41 | no | 1 arquivo(s) |
-| `execution/runtime.ts` | 330 | sí | 6 arquivo(s) |
-| `execution/source.ts` | 43 | no | 1 arquivo(s) |
-| `execution/verification.ts` | 273 | sí | 7 arquivo(s) |
-| `adapters/agent.ts` | 95 | sí | 2 arquivo(s) |
-| `adapters/code-review.ts` | 209 | sí | 2 arquivo(s) |
-| `adapters/command.ts` | 73 | sí | 10 arquivo(s) |
-| `adapters/doc-bridge.ts` | 116 | sí | 3 arquivo(s) |
-| `adapters/github-cli.ts` | 389 | sí | 6 arquivo(s) |
-| `adapters/linear-orca.ts` | 222 | sí | 7 arquivo(s) |
-| `adapters/mcp.ts` | 71 | sí | 1 arquivo(s) |
-| `adapters/orca-cli.ts` | 421 | sí | 4 arquivo(s) |
-| `adapters/orca.ts` | 103 | sí | 4 arquivo(s) |
-| `adapters/providers.ts` | 201 | sí | 6 arquivo(s) |
-| `adapters/rag-context.ts` | 120 | sí | 1 arquivo(s) |
-| `adapters/tracking.ts` | 49 | sí | 3 arquivo(s) |
-| `delivery/index.ts` | 168 | sí | 154 arquivo(s) |
-| `delivery/review.ts` | 55 | sí | 1 arquivo(s) |
-| `context/index.ts` | 93 | sí | 154 arquivo(s) |
-| `profiles/index.ts` | 58 | sí | 154 arquivo(s) |
-| `loop/agent-improvement.ts` | 196 | sí | 1 arquivo(s) |
-| `loop/agent-registry.ts` | 83 | sí | 2 arquivo(s) |
-| `loop/agent-runs.ts` | 475 | sí | 3 arquivo(s) |
-| `loop/artifacts.ts` | 124 | sí | 2 arquivo(s) |
-| `loop/automations.ts` | 232 | sí | 6 arquivo(s) |
-| `loop/base-view.ts` | 68 | sí | 2 arquivo(s) |
-| `loop/brief.ts` | 191 | sí | 5 arquivo(s) |
-| `loop/budget.ts` | 124 | sí | 1 arquivo(s) |
-| `loop/comment-format.ts` | 118 | sí | 1 arquivo(s) |
-| `loop/config.ts` | 1499 | sí | 68 arquivo(s) |
-| `loop/connectors.ts` | 335 | sí | 3 arquivo(s) |
-| `loop/contract.ts` | 466 | sí | 19 arquivo(s) |
-| `loop/cooldown.ts` | 45 | sí | 4 arquivo(s) |
-| `loop/debrief.ts` | 325 | sí | 3 arquivo(s) |
-| `loop/deliver-state.ts` | 130 | no | 11 arquivo(s) |
-| `loop/deliver.ts` | 1970 | sí | 7 arquivo(s) |
-| `loop/detached-worker.ts` | 51 | no | 2 arquivo(s) |
-| `loop/detect.ts` | 275 | no | 2 arquivo(s) |
-| `loop/doctor.ts` | 329 | sí | 4 arquivo(s) |
-| `loop/documents.ts` | 136 | sí | 1 arquivo(s) |
-| `loop/dod.ts` | 188 | sí | 4 arquivo(s) |
-| `loop/event-bus.ts` | 107 | sí | 7 arquivo(s) |
-| `loop/event-vocabulary.ts` | 263 | sí | 1 arquivo(s) |
-| `loop/evidence.ts` | 327 | sí | 2 arquivo(s) |
-| `loop/fleet-dod.ts` | 211 | no | 2 arquivo(s) |
-| `loop/fleet-fix.ts` | 88 | no | **nenhum** |
-| `loop/fleet-handoff.ts` | 62 | no | 1 arquivo(s) |
-| `loop/fleet-runner.ts` | 232 | no | 1 arquivo(s) |
-| `loop/flows.ts` | 159 | sí | 1 arquivo(s) |
-| `loop/fs-atomic.ts` | 74 | no | 5 arquivo(s) |
-| `loop/github-intake.ts` | 63 | sí | 1 arquivo(s) |
-| `loop/guided-install.ts` | 157 | sí | 2 arquivo(s) |
-| `loop/hitl.ts` | 204 | sí | 5 arquivo(s) |
-| `loop/index.ts` | 122 | sí | 154 arquivo(s) |
-| `loop/init.ts` | 160 | sí | 1 arquivo(s) |
-| `loop/install.ts` | 127 | sí | 5 arquivo(s) |
-| `loop/intake.ts` | 206 | sí | 1 arquivo(s) |
-| `loop/issue-timeline.ts` | 123 | sí | 1 arquivo(s) |
-| `loop/layers.ts` | 57 | sí | 1 arquivo(s) |
-| `loop/lesson-checks.ts` | 66 | no | 1 arquivo(s) |
-| `loop/lifecycle.ts` | 183 | sí | 1 arquivo(s) |
-| `loop/local-config.ts` | 101 | sí | 3 arquivo(s) |
-| `loop/memory.ts` | 286 | sí | 6 arquivo(s) |
-| `loop/merge-policy.ts` | 85 | no | 1 arquivo(s) |
-| `loop/notify.ts` | 107 | sí | 2 arquivo(s) |
-| `loop/observability.ts` | 210 | sí | 2 arquivo(s) |
-| `loop/observe-stage.ts` | 143 | sí | 2 arquivo(s) |
-| `loop/output-block.ts` | 74 | sí | 1 arquivo(s) |
-| `loop/plan-stage.ts` | 440 | sí | 4 arquivo(s) |
-| `loop/plan-vote.ts` | 321 | sí | 2 arquivo(s) |
-| `loop/presets.ts` | 88 | sí | 2 arquivo(s) |
-| `loop/process.ts` | 100 | sí | 6 arquivo(s) |
-| `loop/progress.ts` | 27 | sí | 1 arquivo(s) |
-| `loop/queue-waiting.ts` | 11 | no | 1 arquivo(s) |
-| `loop/queue.ts` | 298 | sí | 8 arquivo(s) |
-| `loop/refill.ts` | 84 | no | **nenhum** |
-| `loop/release.ts` | 245 | sí | 3 arquivo(s) |
-| `loop/resilience-state.ts` | 220 | sí | 6 arquivo(s) |
-| `loop/retro.ts` | 386 | sí | 11 arquivo(s) |
-| `loop/rotation.ts` | 50 | sí | 2 arquivo(s) |
-| `loop/routing.ts` | 256 | sí | 5 arquivo(s) |
-| `loop/runner-connector.ts` | 157 | sí | 3 arquivo(s) |
-| `loop/skills.ts` | 77 | sí | 1 arquivo(s) |
-| `loop/slots.ts` | 92 | sí | 2 arquivo(s) |
-| `loop/spec.ts` | 145 | no | 2 arquivo(s) |
-| `loop/stage-lock.ts` | 91 | no | 2 arquivo(s) |
-| `loop/terminal-reaper.ts` | 191 | no | 2 arquivo(s) |
-| `loop/tick.ts` | 1274 | sí | 15 arquivo(s) |
-| `loop/tracker-cooldown.ts` | 79 | no | 1 arquivo(s) |
-| `loop/tracker.ts` | 31 | sí | 1 arquivo(s) |
-| `loop/tuning.ts` | 219 | sí | 2 arquivo(s) |
-| `loop/verdict.ts` | 100 | no | 1 arquivo(s) |
-| `loop/verifier.ts` | 190 | no | 1 arquivo(s) |
-| `loop/watch.ts` | 191 | sí | 1 arquivo(s) |
-| `loop/worker-guard.ts` | 173 | sí | 1 arquivo(s) |
+| `kernel/adapter-contract.ts` | sí | 100% | só via `index`/chamadores |
+| `kernel/artifacts.ts` | sí | 100% | só via `index`/chamadores |
+| `kernel/block.ts` | sí | 100% | só via `index`/chamadores |
+| `kernel/cache.ts` | sí | 100% | só via `index`/chamadores |
+| `kernel/capabilities.ts` | sí | 100% | só via `index`/chamadores |
+| `kernel/compatibility.ts` | sí | 100% | só via `index`/chamadores |
+| `kernel/constants.ts` | sí | 100% | só via `index`/chamadores |
+| `kernel/error-policy.ts` | sí | 100% | só via `index`/chamadores |
+| `kernel/errors.ts` | sí | 100% | só via `index`/chamadores |
+| `kernel/eval.ts` | sí | 100% | só via `index`/chamadores |
+| `kernel/events.ts` | sí | 100% | só via `index`/chamadores |
+| `kernel/hash.ts` | no | 100% | artifacts, eval-battery, execution-coordination (+6) |
+| `kernel/json-file.ts` | no | 100% | kernel-json-file |
+| `kernel/learning.ts` | sí | 100% | loop-lesson-checks, loop-memory-gaps, loop-memory |
+| `kernel/memory.ts` | sí | 100% | loop-memory-gaps |
+| `kernel/model-policy.ts` | sí | 100% | só via `index`/chamadores |
+| `kernel/optimization.ts` | sí | 100% | só via `index`/chamadores |
+| `kernel/phase-executor.ts` | sí | 97% | só via `index`/chamadores |
+| `kernel/pii.ts` | sí | 100% | só via `index`/chamadores |
+| `kernel/plugins.ts` | sí | 100% | só via `index`/chamadores |
+| `kernel/policy.ts` | sí | 100% | só via `index`/chamadores |
+| `kernel/preflight.ts` | sí | 100% | só via `index`/chamadores |
+| `kernel/process-tree.ts` | no | 100% | kernel-process-tree |
+| `kernel/quality.ts` | sí | 100% | só via `index`/chamadores |
+| `kernel/resilience.ts` | sí | 100% | só via `index`/chamadores |
+| `kernel/state-machine.ts` | sí | 100% | só via `index`/chamadores |
+| `kernel/status.ts` | sí | 100% | só via `index`/chamadores |
+| `kernel/tokens.ts` | no | 100% | token-estimate |
+| `kernel/types.ts` | sí | 100% | execution-evidence |
+| `kernel/wip.ts` | sí | 100% | só via `index`/chamadores |
+| `kernel/workflow.ts` | sí | 100% | só via `index`/chamadores |
+| `execution/agent.ts` | sí | 95% | só via `index`/chamadores |
+| `execution/bundle.ts` | sí | 100% | só via `index`/chamadores |
+| `execution/config.ts` | sí | 100% | só via `index`/chamadores |
+| `execution/coordination.ts` | sí | 100% | ui-api-actions, ui-core-reconcile, ui-core-server |
+| `execution/evidence.ts` | no | 100% | execution-evidence |
+| `execution/files.ts` | sí | 92% | só via `index`/chamadores |
+| `execution/machine.ts` | sí | 98% | execution-machine-linux-swap |
+| `execution/metrics.ts` | sí | 99% | execution-metrics-windows |
+| `execution/runs.ts` | no | 100% | só via `index`/chamadores |
+| `execution/runtime.ts` | sí | 100% | execution-runtime-windows |
+| `execution/source.ts` | no | 100% | source |
+| `execution/verification.ts` | sí | 98% | só via `index`/chamadores |
+| `adapters/agent.ts` | sí | 100% | só via `index`/chamadores |
+| `adapters/code-review.ts` | sí | 93% | só via `index`/chamadores |
+| `adapters/command.ts` | sí | 100% | loop-fleet-fix, loop-verdict, ui-actions (+6) |
+| `adapters/doc-bridge.ts` | sí | 100% | só via `index`/chamadores |
+| `adapters/github-cli.ts` | sí | 98% | só via `index`/chamadores |
+| `adapters/linear-orca.ts` | sí | 100% | só via `index`/chamadores |
+| `adapters/mcp.ts` | sí | 100% | só via `index`/chamadores |
+| `adapters/orca-cli.ts` | sí | 100% | loop-terminal-reaper |
+| `adapters/orca.ts` | sí | 100% | só via `index`/chamadores |
+| `adapters/providers.ts` | sí | 100% | adapters-providers-gaps, loop-routing-gaps, routing-dynamic |
+| `adapters/rag-context.ts` | sí | 100% | só via `index`/chamadores |
+| `adapters/tracking.ts` | sí | 100% | só via `index`/chamadores |
+| `delivery/index.ts` | sí | 100% | só via `index`/chamadores |
+| `delivery/review.ts` | no | 91% | só via `index`/chamadores |
+| `context/index.ts` | sí | 100% | context |
+| `profiles/index.ts` | no | 100% | só via `index`/chamadores |
+| `loop/agent-improvement.ts` | sí | 98% | só via `index`/chamadores |
+| `loop/agent-registry.ts` | sí | 100% | só via `index`/chamadores |
+| `loop/agent-runs.ts` | sí | 94% | loop-agent-runs, loop-deliver |
+| `loop/artifacts.ts` | sí | 100% | só via `index`/chamadores |
+| `loop/automations.ts` | sí | 100% | loop-doctor-gaps, ui-api-server, ui-system |
+| `loop/base-view.ts` | sí | 100% | só via `index`/chamadores |
+| `loop/brief.ts` | sí | 94% | loop-memory |
+| `loop/budget.ts` | sí | 100% | só via `index`/chamadores |
+| `loop/comment-format.ts` | sí | 100% | loop-evidence |
+| `loop/config.ts` | sí | 100% | loop-memory-gaps, loop-memory, loop-model-catalog (+10) |
+| `loop/connectors.ts` | sí | 88% | loop-refill |
+| `loop/contract.ts` | sí | 96% | loop-contract-failure, loop-memory, ui-core-server (+1) |
+| `loop/cooldown.ts` | sí | 100% | ui-system |
+| `loop/debrief.ts` | sí | 100% | só via `index`/chamadores |
+| `loop/deliver-state.ts` | no | 100% | loop-terminal-reaper, loop-verdict |
+| `loop/deliver.ts` | sí | 88% | loop-deliver, ui-actions, ui-api-actions (+2) |
+| `loop/detached-worker.ts` | no | 100% | cli-exit-codes, detached-worker |
+| `loop/detect.ts` | no | 96% | loop-config-detect |
+| `loop/doctor.ts` | sí | 97% | ui-system |
+| `loop/documents.ts` | sí | 98% | só via `index`/chamadores |
+| `loop/dod.ts` | sí | 98% | loop-verdict |
+| `loop/event-bus.ts` | sí | 100% | loop-agent-runs |
+| `loop/event-vocabulary.ts` | sí | 100% | só via `index`/chamadores |
+| `loop/evidence.ts` | sí | 99% | loop-evidence |
+| `loop/fleet-dod.ts` | no | 98% | loop-fleet-dod, loop-fleet-handoff |
+| `loop/fleet-fix.ts` | no | 89% | loop-fleet-fix-direct |
+| `loop/fleet-handoff.ts` | no | 100% | loop-fleet-handoff |
+| `loop/fleet-runner.ts` | no | 100% | loop-fleet-runner |
+| `loop/flows.ts` | sí | 100% | só via `index`/chamadores |
+| `loop/fs-atomic.ts` | no | 100% | fs-atomic, loop-fs-atomic, ui-actions (+2) |
+| `loop/github-intake.ts` | sí | 100% | só via `index`/chamadores |
+| `loop/guided-install.ts` | sí | 100% | só via `index`/chamadores |
+| `loop/hitl.ts` | sí | 84% | loop-hitl, ui-api-actions, ui-api-server (+1) |
+| `loop/index.ts` | no | 100% | só via `index`/chamadores |
+| `loop/init.ts` | sí | 82% | só via `index`/chamadores |
+| `loop/install.ts` | sí | 96% | ui-system |
+| `loop/intake.ts` | sí | 94% | só via `index`/chamadores |
+| `loop/issue-timeline.ts` | sí | 100% | só via `index`/chamadores |
+| `loop/layers.ts` | sí | 100% | só via `index`/chamadores |
+| `loop/lesson-checks.ts` | no | 100% | loop-lesson-checks |
+| `loop/lifecycle.ts` | sí | 90% | só via `index`/chamadores |
+| `loop/local-config.ts` | sí | 100% | ui-config |
+| `loop/memory.ts` | sí | 98% | loop-lesson-checks, loop-memory-gaps, loop-memory (+2) |
+| `loop/merge-policy.ts` | no | 100% | loop-merge-policy |
+| `loop/notify.ts` | sí | 100% | só via `index`/chamadores |
+| `loop/observability.ts` | sí | 96% | só via `index`/chamadores |
+| `loop/observe-stage.ts` | sí | 98% | só via `index`/chamadores |
+| `loop/output-block.ts` | sí | 100% | só via `index`/chamadores |
+| `loop/plan-stage.ts` | sí | 99% | ui-actions |
+| `loop/plan-vote.ts` | sí | 97% | loop-spec |
+| `loop/presets.ts` | sí | 100% | só via `index`/chamadores |
+| `loop/process.ts` | sí | 89% | loop-fleet-dod, loop-fleet-handoff, loop-verdict |
+| `loop/progress.ts` | sí | 100% | só via `index`/chamadores |
+| `loop/queue-waiting.ts` | no | 100% | loop-queue-waiting |
+| `loop/queue.ts` | sí | 89% | ui-actions, ui-api-actions, ui-config (+2) |
+| `loop/refill.ts` | no | 95% | loop-refill |
+| `loop/release.ts` | sí | 84% | ui-actions |
+| `loop/resilience-state.ts` | sí | 99% | ui-actions, ui-api-actions, ui-system |
+| `loop/retro.ts` | sí | 96% | ui-actions, ui-api-actions, ui-feed (+2) |
+| `loop/rotation.ts` | sí | 100% | só via `index`/chamadores |
+| `loop/routing.ts` | sí | 99% | loop-routing-gaps, routing-dynamic |
+| `loop/runner-connector.ts` | sí | 88% | loop-verifier |
+| `loop/skills.ts` | sí | 100% | só via `index`/chamadores |
+| `loop/slots.ts` | sí | 100% | só via `index`/chamadores |
+| `loop/spec.ts` | no | 100% | loop-deliver, loop-spec |
+| `loop/stage-lock.ts` | no | 95% | cli-exit-codes, stage-lock |
+| `loop/terminal-reaper.ts` | no | 100% | loop-terminal-reaper, loop-tick |
+| `loop/tick.ts` | sí | 89% | ui-api-actions, ui-core-server, ui-store (+1) |
+| `loop/tracker-cooldown.ts` | no | 100% | loop-deliver |
+| `loop/tracker.ts` | sí | 100% | loop-spec |
+| `loop/tuning.ts` | sí | 92% | ui-config |
+| `loop/verdict.ts` | no | 100% | loop-verdict |
+| `loop/verifier.ts` | no | 98% | loop-verifier |
+| `loop/watch.ts` | sí | 100% | só via `index`/chamadores |
+| `loop/worker-guard.ts` | sí | 100% | loop-worker-guard |
 
-## Sem teste direto
+### Movidos para `experimental/` (fora de `src/`, do pacote publicado, do `index.ts` e do `cli.ts`)
 
-`kernel/json-file`, `kernel/process-tree`, `loop/fleet-fix` e `loop/refill` não têm teste que os referencie, mas todos
-têm consumidor interno (`loop/*`, `ui/api/*`, `execution/verification`), cobertos indiretamente pelos testes dos chamadores.
-**Nenhum módulo ficou ao mesmo tempo sem consumidor e sem teste**, então nada foi removido nem movido para
-`experimental/` neste PR.
+`experimental/discovery.ts`, `experiment.ts`, `pilot.ts`, `cycle.ts`: avaliações do playbook sem nenhum chamador fora deste
+repo (ver Consumidores). Mantêm os testes (`test/discovery`, `experiment`, `pilot`, `cycle`, `kernel-cycle`,
+`kernel-pilot-gaps`), que continuam verdes; não são compilados pelo `tsup` nem tipados pelo `tsc` (`rootDir: src`).
+
+## Sem teste direto (resolvido)
+
+`kernel/json-file`, `kernel/process-tree`, `loop/fleet-fix` e `loop/refill` não tinham teste; agora têm
+(`kernel-json-file`, `kernel-process-tree`, `loop-fleet-fix-direct`, `loop-refill`).
 
 ## Pacote publicado: antes e depois
 
-Medido em bytes sobre os arquivos de `files` fora de `dist` (o build não roda sem dependências instaladas neste ambiente).
+Medido com `npm pack --dry-run --json` depois de `pnpm build` (inclui `dist`), antes = `ee0273b`, depois = este PR.
 
 | | Antes | Depois |
 |---|---|---|
-| `docs/` publicado | 418 382 B (ADRs, PRD, bench, stability, for-agents, …) | 84 933 B (`GETTING-STARTED`, `TROUBLESHOOTING`, `LOOP`, `INVENTARIO`) |
-| comandos CLI | 98 | 98 (nenhum sem consumidor/teste; ver acima) |
+| tarball | 2 588 560 B | 2 493 755 B (-94 805 B) |
+| descompactado | 10 699 836 B | 10 267 975 B (-431 861 B) |
+| arquivos no tarball | 86 | 33 |
+| comandos CLI (`.command(` em `cli.ts`) | 98 | 85 |
 
 ADRs e demais docs continuam no repositório, só deixam de ir no tarball.
 
 ## Loop tick/deliver: legado
 
 `loop tick` / `loop deliver` (e os workers) são o caminho antigo de despacho via Orca. A direção do dono (docs/DIRECAO-2026-10-29.md,
-**ausente deste repo**) é a factory-line; o loop é mantido sem novas features. Repos que ainda o usam, conforme conhecido:
+**ausente deste repo**) é a factory-line; o loop é mantido sem novas features. Quem ainda o usa, pela busca na org:
 
-- link-pay (`loop.config.yaml`)
+- doc-bridge: `loop.config.example.yaml` e `docs/loop-workflow.md` (`ak-harness loop tick --dry-run --max 1`)
+- link-pay (`loop.config.yaml`): fora da org AgentsKit-io, não verificável daqui
 
-Lista a completar pelo dono: este repo não enxerga os demais.
+factory, law-os e marketing-os têm `loop.config.yaml` mas com `runner: fleet` (factory-line), sem chamar `tick`/`deliver`.

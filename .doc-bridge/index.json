@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
-  "contentHash": "f0913a81aa64f8d3a07029b587de0c4963cf5ca25f0a5bcc55005a795e64baa9",
+  "contentHash": "a39bacc36c23f1257305332f53cea092dae759f765f150cf5843ac33a43842b2",
   "contentHashAlgo": "sha256-semantic-v1",
-  "generatedAt": "2026-10-30T01:20:10.874Z",
+  "generatedAt": "2026-10-30T01:56:42.995Z",
   "project": {
     "name": "AgentsKit Harness",
     "root": "."
@@ -298,12 +298,12 @@
       "type": "document",
       "title": "253.md",
       "path": "changelog.d/253.md",
-      "description": "chore: slim published package, add docs/INVENTARIO.md, mark loop tick/deliver legacy",
+      "description": "feat!: remove 13 playbook-evaluation CLI commands, move discovery/experiment/pilot/cycle to experimental/, add INVENTARIO",
       "tags": [
         "document",
         "project"
       ],
-      "contentHash": "3e0a45fc57e64b099d537f4fd3869250a6ee7e4b2442a58376dcb5985f70e62b"
+      "contentHash": "887b974cd13d2c2cec09594e4c453c6fe24813d576b7d5175e1fbe1b85b84aaf"
     },
     {
       "id": "document:CHANGELOG.md",
@@ -1008,12 +1008,12 @@
       "type": "document",
       "title": "Inventário: comandos e módulos",
       "path": "docs/INVENTARIO.md",
-      "description": "Gerado em 2026-10-30 (ticket #253). Os módulos abaixo vêm de src/; a coluna de testes é por referência estática (test/ importa o arquivo ou usa um símbolo exportado dele). \"Verde\" não foi medido aqui: o CI roda pnpm test a cada PR e só merge com tudo verde, então um módulo com testes referenciados está verde enquanto main está verde.",
+      "description": "Gerado em 2026-10-30 (ticket #253). Consumidores vêm de uma busca real em todos os repos da org AgentsKit-io (gh search code + clone raso e grep de ak-harness, ak-verify, @agentskit/harness, loop.config.yaml, loop tick|deliver e de cada subcomando). Testes: pnpm vitest run = 197 arquivos, todos verdes (2 087 testes, 6 skipped).",
       "tags": [
         "document",
         "human"
       ],
-      "contentHash": "737d019f25848fd5af33281a4dc9bb800b41df5c0335156ddc48a9e5b32194ef"
+      "contentHash": "e62db2183d272e99a21914fb7a23c02cfd5439ce9535e2cece711925bfed11b4"
     },
     {
       "id": "document:docs/LOOP.md",
@@ -1037,7 +1037,7 @@
         "document",
         "human"
       ],
-      "contentHash": "7b47c14a0c2b87b4e66e94bda27f0f7186b0da83abfd4667a7f6fa04b7d01adc"
+      "contentHash": "53578e62519b7223f3b8e0d1d9856a2c4629980b5ecc30a89b57fef3c6c5ff62"
     },
     {
       "id": "document:docs/ORGANIZATION.md",
@@ -1532,6 +1532,90 @@
         "examples"
       ],
       "contentHash": "1917b09f914fdab4bb31ada49b00cbdc72e396926c84b7b596b5afed58a3841e"
+    },
+    {
+      "id": "module:experimental/cycle.ts",
+      "type": "module",
+      "title": "cycle.ts",
+      "path": "experimental/cycle.ts",
+      "symbols": [
+        "CycleIterationMetrics",
+        "CycleMatrixRow",
+        "CycleStepResult",
+        "CycleStepStatus",
+        "IMPROVEMENT_CYCLE_STEPS",
+        "ImprovementCycleAssessment",
+        "ImprovementCycleInput",
+        "ImprovementCycleIteration",
+        "ImprovementCycleStep",
+        "assessImprovementCycle"
+      ],
+      "tags": [
+        "module",
+        "ts",
+        "experimental"
+      ],
+      "contentHash": "672bfee47a14f3020a29ba42a37845d7b43da24124ab65d65f0029f6e1a96916"
+    },
+    {
+      "id": "module:experimental/discovery.ts",
+      "type": "module",
+      "title": "discovery.ts",
+      "path": "experimental/discovery.ts",
+      "symbols": [
+        "ApprovedAssumption",
+        "DecisionPacket",
+        "DiscoveryAmbiguity",
+        "DiscoveryCurrentInput",
+        "DiscoveryCurrentResult",
+        "DiscoveryDecisionLogEntry",
+        "DiscoveryInput",
+        "DiscoveryOption",
+        "DiscoveryResult",
+        "assessDiscovery",
+        "isDiscoveryCurrent"
+      ],
+      "tags": [
+        "module",
+        "ts",
+        "experimental"
+      ],
+      "contentHash": "726de0ae841d861c107208a4932eacb987e28dae30f46e982081ac91a47b58d8"
+    },
+    {
+      "id": "module:experimental/experiment.ts",
+      "type": "module",
+      "title": "experiment.ts",
+      "path": "experimental/experiment.ts",
+      "symbols": [
+        "RuntimeExperimentCandidate",
+        "RuntimeExperimentResult",
+        "selectRuntime"
+      ],
+      "tags": [
+        "module",
+        "ts",
+        "experimental"
+      ],
+      "contentHash": "99a765a7b6e56c2bd2d2dd30282755707a48ae3b9ce713355f6f4b18a213d10a"
+    },
+    {
+      "id": "module:experimental/pilot.ts",
+      "type": "module",
+      "title": "pilot.ts",
+      "path": "experimental/pilot.ts",
+      "symbols": [
+        "PilotAssessment",
+        "PilotEntry",
+        "PilotManifest",
+        "assessPilot"
+      ],
+      "tags": [
+        "module",
+        "ts",
+        "experimental"
+      ],
+      "contentHash": "0d1acee44a011f45d093f8b1cc4c0450fa4207fed063ca622a2b431021518c0e"
     },
     {
       "id": "module:scripts/build-docs-artifacts.mjs",
@@ -2389,7 +2473,7 @@
         "ts",
         "src"
       ],
-      "contentHash": "029b80fa5ffdb0c7004e3fde09ddb44486a39079f55b4f7ced3c3fb39f2e5f5d"
+      "contentHash": "1f1d3dae74b3426d6395ab2ce913f746997653f8c6f6069d7daab57317609724"
     },
     {
       "id": "module:src/context/index.ts",
@@ -2943,7 +3027,6 @@
         "HitlRole",
         "HitlStatus",
         "HitlStore",
-        "IMPROVEMENT_CYCLE_STEPS",
         "ISSUES_CLOSE",
         "ISSUES_OPEN",
         "ISSUE_DETAIL_FIELDS",
@@ -2988,14 +3071,15 @@
         "IssueTimelineProblem",
         "IssueTimelineReport",
         "LEARNING_STATUSES",
-        "LEGACY_CONFIG_PATH"
+        "LEGACY_CONFIG_PATH",
+        "LEGAL_TRANSITIONS"
       ],
       "tags": [
         "module",
         "ts",
         "src"
       ],
-      "contentHash": "48dae4090d353047a34b10bfe52c50124c6e801b7fd41e15b132bd3a696137de"
+      "contentHash": "6d840a612eb9a1d5f8e015fd0dba7b39483d31941fc664a3f8aad70a8a0f567f"
     },
     {
       "id": "module:src/kernel/adapter-contract.ts",
@@ -3154,55 +3238,6 @@
       "contentHash": "ea563608b55f20081e7a366d266dc97dd6ca20b334e8a53dd011eb711295878b"
     },
     {
-      "id": "module:src/kernel/cycle.ts",
-      "type": "module",
-      "title": "cycle.ts",
-      "path": "src/kernel/cycle.ts",
-      "symbols": [
-        "CycleIterationMetrics",
-        "CycleMatrixRow",
-        "CycleStepResult",
-        "CycleStepStatus",
-        "IMPROVEMENT_CYCLE_STEPS",
-        "ImprovementCycleAssessment",
-        "ImprovementCycleInput",
-        "ImprovementCycleIteration",
-        "ImprovementCycleStep",
-        "assessImprovementCycle"
-      ],
-      "tags": [
-        "module",
-        "ts",
-        "kernel"
-      ],
-      "contentHash": "cda5da26f7bd0fa2bdfea84ff10bf33337b2fd9e1d8ead68243798ec415ab1cd"
-    },
-    {
-      "id": "module:src/kernel/discovery.ts",
-      "type": "module",
-      "title": "discovery.ts",
-      "path": "src/kernel/discovery.ts",
-      "symbols": [
-        "ApprovedAssumption",
-        "DecisionPacket",
-        "DiscoveryAmbiguity",
-        "DiscoveryCurrentInput",
-        "DiscoveryCurrentResult",
-        "DiscoveryDecisionLogEntry",
-        "DiscoveryInput",
-        "DiscoveryOption",
-        "DiscoveryResult",
-        "assessDiscovery",
-        "isDiscoveryCurrent"
-      ],
-      "tags": [
-        "module",
-        "ts",
-        "kernel"
-      ],
-      "contentHash": "e3e66bd0325a711bca11cbad8dee7b948c590c0d4b2d9b036d1446d6bcf89c2a"
-    },
-    {
       "id": "module:src/kernel/error-policy.ts",
       "type": "module",
       "title": "error-policy.ts",
@@ -3309,23 +3344,6 @@
         "kernel"
       ],
       "contentHash": "deb7ed6c21adb1706bb6d7e16764f29c4fef8cf1d853cfb79e75476426208cd5"
-    },
-    {
-      "id": "module:src/kernel/experiment.ts",
-      "type": "module",
-      "title": "experiment.ts",
-      "path": "src/kernel/experiment.ts",
-      "symbols": [
-        "RuntimeExperimentCandidate",
-        "RuntimeExperimentResult",
-        "selectRuntime"
-      ],
-      "tags": [
-        "module",
-        "ts",
-        "kernel"
-      ],
-      "contentHash": "fc49232274746187c9564cdbd21a83e51416941d14d15f68e1733ac40a3f404d"
     },
     {
       "id": "module:src/kernel/hash.ts",
@@ -3510,24 +3528,6 @@
         "kernel"
       ],
       "contentHash": "bca5001e5fbadd14b126dd6dc5ac49be862c4bf94bc464014fe9ac598aae156f"
-    },
-    {
-      "id": "module:src/kernel/pilot.ts",
-      "type": "module",
-      "title": "pilot.ts",
-      "path": "src/kernel/pilot.ts",
-      "symbols": [
-        "PilotAssessment",
-        "PilotEntry",
-        "PilotManifest",
-        "assessPilot"
-      ],
-      "tags": [
-        "module",
-        "ts",
-        "kernel"
-      ],
-      "contentHash": "ee54035f31bf7af96fc7899c8a7ce892602811243cf08dabcea117da0c3bd016"
     },
     {
       "id": "module:src/kernel/plugins.ts",
@@ -7555,7 +7555,7 @@
         "ts",
         "test"
       ],
-      "contentHash": "97351b69e6edba6e17556d62e187d07cafcac3f99d21e57258936c6be89aaf9c"
+      "contentHash": "a0c824c8d07b97d05460853ed0ac90cb425674e38ef40cd24a56dd79cc3464e7"
     },
     {
       "id": "module:test/delivery.test.ts",
@@ -7591,7 +7591,7 @@
         "ts",
         "test"
       ],
-      "contentHash": "68e352c6a7f75bed9e5eec8c0f3f6e453342ec58bafa59d1788d75976d8e5455"
+      "contentHash": "56c047fb41802017d14019a1fc4bc56402b9bd9a09517feba809bd527ac4784c"
     },
     {
       "id": "module:test/doc-bridge.test.ts",
@@ -7735,7 +7735,7 @@
         "ts",
         "test"
       ],
-      "contentHash": "9835c8143e6c3a11fe83196fbb275fc394e2f42192fa4bf543c7c4b27ebb53e9"
+      "contentHash": "89aaf671eccbb2b32ff20c6a40949dbbb587df668926902bd39e75c7d6ff82b5"
     },
     {
       "id": "module:test/extensibility.test.ts",
@@ -7933,7 +7933,7 @@
         "ts",
         "test"
       ],
-      "contentHash": "e8ed6fb7b6b13f5eac6808244bb8ba2bd85385c19daaf783c1d70640613d8867"
+      "contentHash": "1213dd4d62d702807e1d111b1a6486bea61aee887bdf7a08abaf658cc7d8c173"
     },
     {
       "id": "module:test/kernel-error-policy.test.ts",
@@ -7970,6 +7970,18 @@
         "test"
       ],
       "contentHash": "32d66a698e648b1c31ed869e97fe9d268ef1cb93ac636eea18b42b937ed42b03"
+    },
+    {
+      "id": "module:test/kernel-json-file.test.ts",
+      "type": "module",
+      "title": "kernel-json-file.test.ts",
+      "path": "test/kernel-json-file.test.ts",
+      "tags": [
+        "module",
+        "ts",
+        "test"
+      ],
+      "contentHash": "e12c80d374aee32f539d53dbb29bffebd1bce1ee9b42b1da50c8fec62dfc79a2"
     },
     {
       "id": "module:test/kernel-learning-memory-gaps.test.ts",
@@ -8029,7 +8041,7 @@
         "ts",
         "test"
       ],
-      "contentHash": "31060812cdfc4656604d24142256d378a4593ca2c753a15a3ce198d0c54e9978"
+      "contentHash": "e93c865800fc9a14347cbc00f47e544016fa0a63272a8cdb2546fc36a52548c1"
     },
     {
       "id": "module:test/kernel-plugins.test.ts",
@@ -8054,6 +8066,18 @@
         "test"
       ],
       "contentHash": "0369e6069e64fe1e231a4051e85ec2c3506a4b244a7cf3e47891f115aedc8637"
+    },
+    {
+      "id": "module:test/kernel-process-tree.test.ts",
+      "type": "module",
+      "title": "kernel-process-tree.test.ts",
+      "path": "test/kernel-process-tree.test.ts",
+      "tags": [
+        "module",
+        "ts",
+        "test"
+      ],
+      "contentHash": "7a67b51d81faa4fcb10b72f854ad474739ff2d52ebe274c138ac0834db432fa8"
     },
     {
       "id": "module:test/kernel-quality-gaps.test.ts",
@@ -8512,6 +8536,18 @@
       "contentHash": "7f3874216668f7eeda87d4297461107b5e4b2a17c05d0230c134bbae213cfa6d"
     },
     {
+      "id": "module:test/loop-fleet-fix-direct.test.ts",
+      "type": "module",
+      "title": "loop-fleet-fix-direct.test.ts",
+      "path": "test/loop-fleet-fix-direct.test.ts",
+      "tags": [
+        "module",
+        "ts",
+        "test"
+      ],
+      "contentHash": "65d5b689a60a87f01b2be06099b527521381fb041676cf7a02c8b6aeb51ea072"
+    },
+    {
       "id": "module:test/loop-fleet-fix.test.ts",
       "type": "module",
       "title": "loop-fleet-fix.test.ts",
@@ -8932,6 +8968,18 @@
       "contentHash": "dfeeab62487ffe6616c5685ab7aac6873a0d2124ca637b2794db1efeb7c3ffd6"
     },
     {
+      "id": "module:test/loop-refill.test.ts",
+      "type": "module",
+      "title": "loop-refill.test.ts",
+      "path": "test/loop-refill.test.ts",
+      "tags": [
+        "module",
+        "ts",
+        "test"
+      ],
+      "contentHash": "f20259b20c58e4358471d449bfae6003d2be756a2d920da332c45c84ba803928"
+    },
+    {
       "id": "module:test/loop-release.test.ts",
       "type": "module",
       "title": "loop-release.test.ts",
@@ -9253,7 +9301,7 @@
         "ts",
         "test"
       ],
-      "contentHash": "54988ffda8088aa5a617a039306399a8641c67341cc950a9a9d5048bfb63e5c6"
+      "contentHash": "9771e05b6fb7403ad3f741bb15a0ad8dacab93a3759be02d178f65e3cf6e87aa"
     },
     {
       "id": "module:test/policy.test.ts",
@@ -9761,8 +9809,8 @@
     }
   },
   "inputs": {
-    "hash": "45226c90c3a81c93ee2e6a7c21a078176ae9cc98a3008872fab5ac926c97f002",
-    "fileCount": 621,
+    "hash": "86ec74e2c7fbb744aa98f10232cbc6b6c58123230da73913e54e8a87a8e8320e",
+    "fileCount": 625,
     "projectionVersion": 2
   },
   "retrieval": {
@@ -9784,9 +9832,9 @@
   "projection": {
     "type": "retrieval-index",
     "schemaVersion": 1,
-    "contentHash": "5119f08655fd533b20d4ae8b476a92b4cbef3fc30bbfe1a7bb8b50971960e60c",
+    "contentHash": "b1c0c6b6fbfb2c9d4f9a2162b6a8c99b67b113aebfd96fc9b2a438e77f30f550",
     "contentHashAlgo": "sha256-semantic-v1",
-    "snapshotHash": "caf9249b7a04662ec3294a18dd2eac955669a26dfc62d6d433ca4df2699f95e6",
+    "snapshotHash": "2a257723dfef549c6f3729d4f08d9fb9648612e596d20cc9c6b3b263a8e83a19",
     "overlayHash": "f99666ff9119084dd25c2974ae64eb6935ec2aa785ff5ad478fb9d541f7a5e94",
     "configurationHash": "497822431910cd9fa7d674a48a9f0b96fbbbf779f22a001de0b52252117fe3ab",
     "lexiconVersion": 1,
@@ -9806,7 +9854,7 @@
     },
     "lexical": {
       "version": 1,
-      "documentCount": 602,
+      "documentCount": 607,
       "fieldNames": [
         "aliases",
         "body",
@@ -9817,13 +9865,13 @@
         "title"
       ],
       "averageFieldLength": {
-        "aliases": 2.9235880398671097,
-        "body": 46.72591362126246,
-        "headings": 3.8272425249169437,
-        "path": 6.122923588039867,
-        "summary": 2.903654485049834,
-        "symbols": 13.830564784053156,
-        "title": 4.023255813953488
+        "aliases": 2.9209225700164745,
+        "body": 46.370675453047774,
+        "headings": 3.8220757825370675,
+        "path": 6.113673805601318,
+        "summary": 2.896210873146623,
+        "symbols": 13.71499176276771,
+        "title": 4.031301482701812
       }
     },
     "entries": [
@@ -10165,6 +10213,37 @@
         "confidence": "observed"
       },
       {
+        "id": "area:experimental",
+        "kind": "area",
+        "path": "experimental",
+        "title": "experimental",
+        "aliases": [],
+        "tags": [
+          "area"
+        ],
+        "fields": {
+          "title": "experimental",
+          "headings": "",
+          "path": "experimental",
+          "symbols": "",
+          "summary": "",
+          "body": "",
+          "aliases": "area"
+        },
+        "graph": {
+          "pagerank": 0,
+          "inboundLinks": 0,
+          "coveredBy": [],
+          "mentionedBy": [],
+          "packageId": "package:@agentskit/harness",
+          "inbound": [],
+          "outbound": []
+        },
+        "contentHash": "752bd992c3fbd71e644ee682498d132533e9b99dfae6788caa11c06ad4c5a822",
+        "provenance": "observed",
+        "confidence": "observed"
+      },
+      {
         "id": "area:scripts",
         "kind": "area",
         "path": "scripts",
@@ -10418,7 +10497,7 @@
           ],
           "outbound": []
         },
-        "contentHash": "0138875e48471eda438113d7e95540d6b2f3fac3e03a359184c969f4cceaa59f",
+        "contentHash": "225e90d1da66c10296a2f83a08b580be99fd7be55e0b71a77c7bb1a274133ca2",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -10640,7 +10719,7 @@
           ],
           "outbound": []
         },
-        "contentHash": "d696e9c3982d7d019735422f7c4dcf0011e7a4181cb27e4d8688e724e86c3ac6",
+        "contentHash": "81d5ae8691295bf70541a84154546ece00efe95f70818e812686f080fbbd7b94",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -12316,7 +12395,7 @@
         "kind": "document",
         "path": "changelog.d/253.md",
         "title": "253.md",
-        "summary": "chore: slim published package, add docs/INVENTARIO.md, mark loop tick/deliver legacy",
+        "summary": "feat!: remove 13 playbook-evaluation CLI commands, move discovery/experiment/pilot/cycle to experimental/, add INVENTARIO",
         "audience": "human",
         "aliases": [],
         "tags": [
@@ -12328,8 +12407,8 @@
           "headings": "",
           "path": "changelog.d/253.md",
           "symbols": "",
-          "summary": "chore: slim published package, add docs/INVENTARIO.md, mark loop tick/deliver legacy",
-          "body": "chore: slim published package, add docs/INVENTARIO.md, mark loop tick/deliver legacy files ships only the four user-facing docs instead of all of docs/ (418 KB - 85 KB). No command or module removed: none lacks both consumer and test.",
+          "summary": "feat!: remove 13 playbook-evaluation CLI commands, move discovery/experiment/pilot/cycle to experimental/, add INVENTARIO",
+          "body": "feat!: remove 13 playbook-evaluation CLI commands, move discovery/experiment/pilot/cycle to experimental/, add INVENTARIO discovery , experiment , pilot , cycle , snapshot , learning parse , coordination claim had no caller in any AgentsKit-io repo: CLI commands 98 - 85. assessDiscovery , isDiscoveryCurrent , selectRuntime , assessPilot , assessImprovementCycle , IMPROVEMENT CYCLE STEPS leave src/index.ts (code now in experimental/ , unpublished). files ships four docs instead of all of docs/ : tarball 2 588 560 B - 2 493 755 B. Adds docs/INVENTARIO.md , marks loop tick/deliver legacy, adds tests for json-file, process-tree, fleet-fix, refill.",
           "aliases": "document project"
         },
         "graph": {
@@ -12338,9 +12417,40 @@
           "coveredBy": [],
           "mentionedBy": [],
           "inbound": [],
-          "outbound": []
+          "outbound": [
+            {
+              "kind": "mentions",
+              "id": "document:docs/INVENTARIO.md",
+              "confidence": "observed"
+            },
+            {
+              "kind": "mentions",
+              "id": "module:src/index.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "mentions-symbol",
+              "id": "module:experimental/cycle.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "mentions-symbol",
+              "id": "module:experimental/discovery.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "mentions-symbol",
+              "id": "module:experimental/experiment.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "mentions-symbol",
+              "id": "module:experimental/pilot.ts",
+              "confidence": "observed"
+            }
+          ]
         },
-        "contentHash": "3e0a45fc57e64b099d537f4fd3869250a6ee7e4b2442a58376dcb5985f70e62b",
+        "contentHash": "887b974cd13d2c2cec09594e4c453c6fe24813d576b7d5175e1fbe1b85b84aaf",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -15698,7 +15808,7 @@
         "kind": "document",
         "path": "docs/INVENTARIO.md",
         "title": "Inventário: comandos e módulos",
-        "summary": "Gerado em 2026-10-30 (ticket #253). Os módulos abaixo vêm de src/; a coluna de testes é por referência estática (test/ importa o arquivo ou usa um símbolo exportado dele). \"Verde\" não foi medido aqui: o CI roda pnpm test a cada PR e só merge com tudo verde, então um módulo com testes referenciados está verde enquanto main está verde.",
+        "summary": "Gerado em 2026-10-30 (ticket #253). Consumidores vêm de uma busca real em todos os repos da org AgentsKit-io (gh search code + clone raso e grep de ak-harness, ak-verify, @agentskit/harness, loop.config.yaml, loop tick|deliver e de cada subcomando). Testes: pnpm vitest run = 197 arquivos, todos verdes (2 087 testes, 6 skipped).",
         "audience": "human",
         "aliases": [],
         "tags": [
@@ -15707,22 +15817,29 @@
         ],
         "fields": {
           "title": "Inventário: comandos e módulos",
-          "headings": "Inventário: comandos e módulos Consumidores Comandos (98 declarados em src/cli.ts) Módulos Sem teste direto Pacote publicado: antes e depois Loop tick/deliver: legado",
+          "headings": "Inventário: comandos e módulos Consumidores (busca na org) Comandos (85 declarados em src/cli.ts; eram 98) Módulos Movidos para experimental/ (fora de src/, do pacote publicado, do index.ts e do cli.ts) Sem teste direto (resolvido) Pacote publicado: antes e depois Loop tick/deliver: legado",
           "path": "docs/INVENTARIO.md",
           "symbols": "",
-          "summary": "Gerado em 2026-10-30 (ticket #253). Os módulos abaixo vêm de src/; a coluna de testes é por referência estática (test/ importa o arquivo ou usa um símbolo exportado dele). \"Verde\" não foi medido aqui: o CI roda pnpm test a cada PR e só merge com tudo verde, então um módulo com testes referenciados está verde enquanto main está verde.",
-          "body": "Inventário: comandos e módulos Gerado em 2026-10-30 (ticket 253). Os módulos abaixo vêm de src/ ; a coluna de testes é por referência estática ( test/ importa o arquivo ou usa um símbolo exportado dele). \"Verde\" não foi medido aqui : o CI roda pnpm test a cada PR e só merge com tudo verde, então um módulo com testes referenciados está verde enquanto main está verde. Consumidores Fonte: este repositório ( README.md , ecosystem.json , docs/LOOP.md ). Consumo fora daqui (repos de produto, doc-bridge, playbook) não é visível a partir deste repo e precisa ser confirmado pelo dono antes de remover algo. Consumidor Usa --- --- factory-line ak-harness loop (stage/tick/deliver/plan/release), ak-verify run , adapters github-cli , orca produtos (ex.: link-pay) loop.config.yaml + loop tick/deliver ( legado , ver abaixo), ak-verify run doc-bridge context resolve , adapter doc-bridge , context/ playbook contratos/gates ( delivery , discovery , wip , cycle , block , snapshot ) como referência documental Comandos (98 declarados em src/cli.ts ) Grupo Comandos Consumidor Teste --- --- --- --- núcleo de execução start verify run approve authorize retry cancel status audit clean , events , benchmark baseline factory-line, produtos ( ak-verify ) sim ( harness , agent , lock , bundle , metrics ) contrato/diagnóstico doctor plan context resolve artifacts factory-line, doc-bridge sim avaliações do playbook discovery wip experiment delivery pilot cycle block preflight snapshot learning coordination playbook (referência) sim (um arquivo por capacidade) UI ui operadores sim ( ui- ) loop moderno loop stage <stage , plan , release , learning , observe , watch , retro , run , status , approve , resume , paused , worker-guard , doctor , validate , init , install , uninstall , precheck , contract , debrief , issue-timeline , hook factory-line sim ( loop- ) loop legado tick/deliver loop tick , loop deliver , loop tick-worker , loop deliver-worker produtos com loop.config.yaml sim ( loop-tick , loop-deliver ) Módulos Módulo Linhas Exportado em index.ts Testes --- --- --- --- kernel/adapter-contract.ts 45 sí 2 arquivo(s) kernel/artifacts.ts 230 sí 1 arquivo(s) kernel/block.ts 67 sí 2 arquivo(s) kernel/cache.ts 65 sí 4 arquivo(s) kernel/capabilities.ts 102 sí 2 arquivo(s) kernel/compatibility.ts 127 sí 2 arquivo(s) kernel/constants.ts 25 sí 1 arquivo(s) kernel/cycle.ts 111 sí 2 arquivo(s) kernel/discovery.ts 149 sí 3 arquivo(s) kernel/error-policy.ts 51 sí 2 arquivo(s) kernel/errors.ts 17 sí 27 arquivo(s) kernel/eval.ts 223 sí 4 arquivo(s) kernel/events.ts 298 sí 9 arquivo(s) kernel/experiment.ts 50 sí 1 arquivo(s) kernel/hash.ts 20 no 19 arquivo(s) kernel/json-file.ts 32 no nenhum kernel/learning.ts 107 sí 5 arquivo(s) kernel/memory.ts 131 sí 9 arquivo(s) kernel/model-policy.ts 37 sí 2 arquivo(s) kernel/optimization.ts 122 sí 2 arquivo(s) kernel/phase-executor.ts 338 sí 3 arquivo(s) kernel/pii.ts 68 sí 1 arquivo(s) kernel/pilot.ts 51 sí 2 arquivo(s) kernel/plugins.ts 162 sí 4 arquivo(s) kernel/policy.ts 54 sí 4 arquivo(s) kernel/preflight.ts 57 sí 2 arquivo(s) kernel/process-tree.ts 28 no nenhum kernel/quality.ts 138 sí 2 arquivo(s) kernel/resilience.ts 99 sí 1 arquivo(s) kernel/state-machine.ts 20 sí 8 arquivo(s) kernel/status.ts 55 sí 2 arquivo(s) kernel/tokens.ts 14 no 1 arquivo(s) kernel/types.ts 217 sí 1 arquivo(s) kernel/wip.ts 55 sí 2 arquivo(s) kernel/workflow.ts 66 sí 3 arquivo(s) execution/agent.ts 122 sí 2 arquivo(s) execution/bundle.ts 143 sí 2 arquivo(s) execution/config.ts 154 sí 22 arquivo(s) execution/coordination.ts 163 sí 9 arquivo(s) execution/evidence.ts 42 sí 2 arquivo(s) execution/files.ts 45 sí 3 arquivo(s) execution/machine.ts 115 sí 3 arquivo(s) execution/metrics.ts 368 sí 3 arquivo(s) execution/runs.ts 41 no 1 arquivo(s) execution/runtime.ts 330 sí 6 arquivo(s) execution/source.ts 43 no 1 arquivo(s) execution/verification.ts 273 sí 7 arquivo(s) adapters/agent.ts 95 sí 2 arquivo(s) adapters/code-review.ts 209 sí 2 arquivo(s) adapters/co",
+          "summary": "Gerado em 2026-10-30 (ticket #253). Consumidores vêm de uma busca real em todos os repos da org AgentsKit-io (gh search code + clone raso e grep de ak-harness, ak-verify, @agentskit/harness, loop.config.yaml, loop tick|deliver e de cada subcomando). Testes: pnpm vitest run = 197 arquivos, todos verdes (2 087 testes, 6 skipped).",
+          "body": "Inventário: comandos e módulos Gerado em 2026-10-30 (ticket 253). Consumidores vêm de uma busca real em todos os repos da org AgentsKit-io ( gh search code + clone raso e grep de ak-harness , ak-verify , @agentskit/harness , loop.config.yaml , loop tick deliver e de cada subcomando). Testes: pnpm vitest run = 197 arquivos, todos verdes (2 087 testes, 6 skipped). Consumidores (busca na org) Repo O que usa --- --- factory (factory-line) loop.config.yaml com runner: fleet ; importa/chama @agentskit/harness (fixado 0.22.3, mínimo checado em setup-coordinator / work-source ); policy/agents.json law-os loop.config.yaml ( runner: fleet ); ak-harness -c .ak-harness/verification.json doctor , plan approved , start , verify ( law-local.mjs ); ak-verify run ; .ak-harness/verification.json marketing-os loop.config.yaml ( runner: fleet , delivery ); padrão EvalManifest do harness agents-playbook ak-harness doctor , ak-verify run (scripts harness:doctor / harness:verify ); dependência @agentskit/harness ^0.22.3 ; .ak-harness/verification.json agentskit-os ak-verify run ; .ak-harness/verification.json doc-bridge dependência @agentskit/harness 0.22.3 ; bin/ak-verify.js , scripts/verification-harness.mjs ( ak-verify run ); loop.config.example.yaml e docs/loop-workflow.md ( loop install , loop tick ) skills (plugin agentskit-pm) npx @agentskit/harness status --json ( product-status ) code-review, agentskit-registry só ak-verify transitivo (lockfile) brain documentação (cofre), não executa agentskit, agentskit-chat, ak-cloud, ak-admin, ak-desktop, broker-os, alexandria, infra, factory-sandbox, ecosystem-distribution-ops nenhum uso do harness além de .gitignore /docs Nenhum repo chama discovery , experiment , pilot , cycle , snapshot , learning parse nem coordination claim (zero ocorrências de código; só docs deste repo e do brain ). link-pay não está na org AgentsKit-io: não pôde ser consultado. Comandos (85 declarados em src/cli.ts ; eram 98) Grupo Comandos Consumidor Teste --- --- --- --- núcleo de execução start verify run approve authorize retry cancel status audit clean , events , benchmark baseline law-os, agents-playbook, skills, doc-bridge ( ak-verify ) harness , agent , lock , bundle , metrics contrato/diagnóstico doctor plan context resolve artifacts law-os, agents-playbook, factory sim gates do playbook mantidos wip delivery block preflight referência documental (sem chamador externo, mas pequenos e usados por loop ) sim UI ui operadores ui- loop moderno loop stage <stage , plan , release , learning , observe , watch , retro , run , status , approve , resume , paused , worker-guard , doctor , validate , init , install , uninstall , precheck , contract , debrief , issue-timeline , hook factory, law-os, marketing-os ( runner: fleet ) loop- loop legado tick/deliver loop tick , loop deliver , loop tick-worker , loop deliver-worker doc-bridge (exemplo/doc), link-pay (fora da org) loop-tick , loop-deliver removidos (-13) discovery assess , experiment select , pilot , cycle assess , snapshot (+ validate ), learning parse , coordination claim (e os grupos pai) nenhum — (módulos discovery/experiment/pilot/cycle em experimental/ ) Módulos Cobertura de linhas medida em pnpm vitest run --coverage (194 → 197 arquivos de teste, todos verdes , 2 081+ testes passando). \"Testes diretos\" são os arquivos de test/ que importam o módulo; \"só via index /chamadores\" quer dizer que os testes o exercitam pelo src/index.ts ou por quem o chama. Módulo Em index.ts Linhas cobertas Testes diretos --- --- --- --- kernel/adapter-contract.ts sí 100% só via index /chamadores kernel/artifacts.ts sí 100% só via index /chamadores kernel/block.ts sí 100% só via index /chamadores kernel/cache.ts sí 100% só via index /chamadores kernel/capabilities.ts sí 100% só via index /chamadores kernel/compatibility.ts sí 100% só via index /chamadores kernel/constants.ts sí 100% só via index /chamadores kernel/error-policy.ts sí 100% só via index /chamadores kernel/errors.ts sí 100% só",
           "aliases": "document human"
         },
         "graph": {
           "pagerank": 0.029591,
-          "inboundLinks": 1,
+          "inboundLinks": 2,
           "coveredBy": [],
-          "mentionedBy": [],
+          "mentionedBy": [
+            "document:changelog.d/253.md"
+          ],
           "inbound": [
             {
               "kind": "links-to",
               "id": "document:docs/LOOP.md",
+              "confidence": "observed"
+            },
+            {
+              "kind": "mentions",
+              "id": "document:changelog.d/253.md",
               "confidence": "observed"
             }
           ],
@@ -15739,12 +15856,7 @@
             },
             {
               "kind": "mentions",
-              "id": "document:docs/LOOP.md",
-              "confidence": "observed"
-            },
-            {
-              "kind": "mentions",
-              "id": "document:README.md",
+              "id": "module:experimental/discovery.ts",
               "confidence": "observed"
             },
             {
@@ -15754,12 +15866,27 @@
             },
             {
               "kind": "mentions",
+              "id": "module:src/index.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "mentions",
+              "id": "module:test/discovery.test.ts",
+              "confidence": "fuzzy"
+            },
+            {
+              "kind": "mentions",
               "id": "package:@agentskit/harness",
+              "confidence": "observed"
+            },
+            {
+              "kind": "mentions-symbol",
+              "id": "module:src/kernel/eval.ts",
               "confidence": "observed"
             }
           ]
         },
-        "contentHash": "737d019f25848fd5af33281a4dc9bb800b41df5c0335156ddc48a9e5b32194ef",
+        "contentHash": "e62db2183d272e99a21914fb7a23c02cfd5439ce9535e2cece711925bfed11b4",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -15786,10 +15913,9 @@
         },
         "graph": {
           "pagerank": 0.037327,
-          "inboundLinks": 4,
+          "inboundLinks": 3,
           "coveredBy": [],
           "mentionedBy": [
-            "document:docs/INVENTARIO.md",
             "document:README.md"
           ],
           "inbound": [
@@ -15806,11 +15932,6 @@
             {
               "kind": "links-to",
               "id": "document:README.md",
-              "confidence": "observed"
-            },
-            {
-              "kind": "mentions",
-              "id": "document:docs/INVENTARIO.md",
               "confidence": "observed"
             },
             {
@@ -16079,7 +16200,7 @@
           "path": "docs/MODULE-BOUNDARIES.md",
           "symbols": "",
           "summary": "This document is the reviewed starting point for the 0.4.0 work. It describes the repository at revision f4b2b092af97d528bd5fe5955ed38f101521b98d (the main baseline captured on 2026-09-10) and is intentionally descriptive: it does not claim that the proposed 0.4.0 boundary has already been accepted.",
-          "body": "Module and boundary inventory (H-040) This document is the reviewed starting point for the 0.4.0 work. It describes the repository at revision f4b2b092af97d528bd5fe5955ed38f101521b98d (the main baseline captured on 2026-09-10) and is intentionally descriptive: it does not claim that the proposed 0.4.0 boundary has already been accepted. Classification Class Meaning Dependency rule --- --- --- Kernel Deterministic contracts, state transitions, policy and metric projections May use Node standard library and other kernel modules; must not import adapters, provider SDKs, CLI composition, credentials, or UI libraries ( ink / react are composition-only). Execution support Local process, filesystem, event, evidence, and run lifecycle plumbing May depend on the kernel; must expose provenance and fail closed at trust boundaries. Adapter Provider-specific or external-system integration May depend on kernel contracts; must not be imported by kernel modules. Composition Package and CLI entry points May compose kernel, execution support, and adapters; consumers use src/index.ts . The main source directories are src/kernel (kernel), src/execution (execution support), src/adapters (adapters), src/loop , src/cli.ts and src/index.ts (composition); the inventory below gives src/delivery (delivery gates), src/profiles and src/context their own Delivery, Profiles and Context rows. Complete source inventory Every current TypeScript module is listed below. Relative imports are the observed imports at the baseline revision; stdlib means Node's built-in modules, not a provider dependency. Module Class Responsibility Relative dependencies External boundary --- --- --- --- --- src/kernel/constants.ts Kernel State, decision, and surface constants types (type-only) None src/kernel/errors.ts Kernel Typed fail-closed errors None None src/kernel/hash.ts Kernel SHA-256 and JSON digests stdlib None src/kernel/types.ts Kernel Shared contract, run, evidence, and metric types context (type-only) None src/kernel/state-machine.ts Kernel Legal lifecycle transitions and human decisions constants , types None src/kernel/discovery.ts Kernel Discovery freshness, ambiguity, and decision packets errors , hash None src/kernel/wip.ts Kernel WIP admission and capacity decisions errors None src/kernel/experiment.ts Kernel Comparable runtime/provider selection errors None src/delivery/index.ts Delivery G2–G5 delivery gates and deterministic PR projection errors , hash None src/delivery/review.ts Delivery Bounded parallel adversarial review lenses and evidence verdicts errors , hash , workflow , delivery/index (type-only) Reviewer callback supplied by caller src/kernel/cycle.ts Kernel Bounded improvement-cycle assessment stdlib, errors None src/kernel/eval.ts Kernel Versioned eval manifest validation, deterministic battery runner, min/median/max aggregation, and fail-closed assessment errors , hash Grader callback supplied by caller src/kernel/compatibility.ts Kernel Pinned AgentsKit component manifest and evidence-bound compatibility assessment errors , hash Upstream commands and reports supplied by caller src/kernel/cache.ts Kernel Safe cache keys and in-memory LLM cache contract hash , errors Cache backend supplied by caller src/kernel/optimization.ts Kernel Token, memory, cache, parallelism comparisons hash , errors None src/kernel/memory.ts Kernel Memory record validation and memory adapter contract errors KV store supplied by caller src/kernel/policy.ts Kernel Tool/action policy gate errors None src/kernel/preflight.ts Kernel File-scoped checks and safe-command validation stdlib, errors Shell command is data, never executed here src/kernel/block.ts Kernel Portable execution block manifest and dependency admission errors , hash None src/kernel/learning.ts Kernel Retrospective parsing and human learning promotion stdlib, errors None src/kernel/status.ts Kernel Deterministic status snapshot and digest errors , hash , block , types (type-only) None src/kernel/model-policy.ts",
+          "body": "Module and boundary inventory (H-040) This document is the reviewed starting point for the 0.4.0 work. It describes the repository at revision f4b2b092af97d528bd5fe5955ed38f101521b98d (the main baseline captured on 2026-09-10) and is intentionally descriptive: it does not claim that the proposed 0.4.0 boundary has already been accepted. Classification Class Meaning Dependency rule --- --- --- Kernel Deterministic contracts, state transitions, policy and metric projections May use Node standard library and other kernel modules; must not import adapters, provider SDKs, CLI composition, credentials, or UI libraries ( ink / react are composition-only). Execution support Local process, filesystem, event, evidence, and run lifecycle plumbing May depend on the kernel; must expose provenance and fail closed at trust boundaries. Adapter Provider-specific or external-system integration May depend on kernel contracts; must not be imported by kernel modules. Composition Package and CLI entry points May compose kernel, execution support, and adapters; consumers use src/index.ts . The main source directories are src/kernel (kernel), src/execution (execution support), src/adapters (adapters), src/loop , src/cli.ts and src/index.ts (composition); the inventory below gives src/delivery (delivery gates), src/profiles and src/context their own Delivery, Profiles and Context rows. Complete source inventory Every current TypeScript module is listed below. Relative imports are the observed imports at the baseline revision; stdlib means Node's built-in modules, not a provider dependency. Module Class Responsibility Relative dependencies External boundary --- --- --- --- --- src/kernel/constants.ts Kernel State, decision, and surface constants types (type-only) None src/kernel/errors.ts Kernel Typed fail-closed errors None None src/kernel/hash.ts Kernel SHA-256 and JSON digests stdlib None src/kernel/types.ts Kernel Shared contract, run, evidence, and metric types context (type-only) None src/kernel/state-machine.ts Kernel Legal lifecycle transitions and human decisions constants , types None experimental/discovery.ts Experimental (unpublished) Discovery freshness, ambiguity, and decision packets errors , hash None src/kernel/wip.ts Kernel WIP admission and capacity decisions errors None experimental/experiment.ts Experimental (unpublished) Comparable runtime/provider selection errors None src/delivery/index.ts Delivery G2–G5 delivery gates and deterministic PR projection errors , hash None src/delivery/review.ts Delivery Bounded parallel adversarial review lenses and evidence verdicts errors , hash , workflow , delivery/index (type-only) Reviewer callback supplied by caller experimental/cycle.ts Experimental (unpublished) Bounded improvement-cycle assessment stdlib, errors None src/kernel/eval.ts Kernel Versioned eval manifest validation, deterministic battery runner, min/median/max aggregation, and fail-closed assessment errors , hash Grader callback supplied by caller src/kernel/compatibility.ts Kernel Pinned AgentsKit component manifest and evidence-bound compatibility assessment errors , hash Upstream commands and reports supplied by caller src/kernel/cache.ts Kernel Safe cache keys and in-memory LLM cache contract hash , errors Cache backend supplied by caller src/kernel/optimization.ts Kernel Token, memory, cache, parallelism comparisons hash , errors None src/kernel/memory.ts Kernel Memory record validation and memory adapter contract errors KV store supplied by caller src/kernel/policy.ts Kernel Tool/action policy gate errors None src/kernel/preflight.ts Kernel File-scoped checks and safe-command validation stdlib, errors Shell command is data, never executed here src/kernel/block.ts Kernel Portable execution block manifest and dependency admission errors , hash None src/kernel/learning.ts Kernel Retrospective parsing and human learning promotion stdlib, errors None src/kernel/status.ts Kernel Deterministic status snapshot and digest errors ",
           "aliases": "document human"
         },
         "graph": {
@@ -16146,6 +16267,26 @@
             {
               "kind": "mentions",
               "id": "area:src/profiles",
+              "confidence": "observed"
+            },
+            {
+              "kind": "mentions",
+              "id": "module:experimental/cycle.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "mentions",
+              "id": "module:experimental/discovery.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "mentions",
+              "id": "module:experimental/experiment.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "mentions",
+              "id": "module:experimental/pilot.ts",
               "confidence": "observed"
             },
             {
@@ -16295,16 +16436,6 @@
             },
             {
               "kind": "mentions",
-              "id": "module:src/kernel/cycle.ts",
-              "confidence": "observed"
-            },
-            {
-              "kind": "mentions",
-              "id": "module:src/kernel/discovery.ts",
-              "confidence": "observed"
-            },
-            {
-              "kind": "mentions",
               "id": "module:src/kernel/errors.ts",
               "confidence": "observed"
             },
@@ -16316,11 +16447,6 @@
             {
               "kind": "mentions",
               "id": "module:src/kernel/events.ts",
-              "confidence": "observed"
-            },
-            {
-              "kind": "mentions",
-              "id": "module:src/kernel/experiment.ts",
               "confidence": "observed"
             },
             {
@@ -16356,11 +16482,6 @@
             {
               "kind": "mentions",
               "id": "module:src/kernel/pii.ts",
-              "confidence": "observed"
-            },
-            {
-              "kind": "mentions",
-              "id": "module:src/kernel/pilot.ts",
               "confidence": "observed"
             },
             {
@@ -16425,7 +16546,7 @@
             }
           ]
         },
-        "contentHash": "7b47c14a0c2b87b4e66e94bda27f0f7186b0da83abfd4667a7f6fa04b7d01adc",
+        "contentHash": "53578e62519b7223f3b8e0d1d9856a2c4629980b5ecc30a89b57fef3c6c5ff62",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -16713,18 +16834,10 @@
         },
         "graph": {
           "pagerank": 0.021659,
-          "inboundLinks": 1,
+          "inboundLinks": 0,
           "coveredBy": [],
-          "mentionedBy": [
-            "document:docs/INVENTARIO.md"
-          ],
-          "inbound": [
-            {
-              "kind": "mentions",
-              "id": "document:docs/INVENTARIO.md",
-              "confidence": "observed"
-            }
-          ],
+          "mentionedBy": [],
+          "inbound": [],
           "outbound": [
             {
               "kind": "covers",
@@ -18009,6 +18122,309 @@
           "outbound": []
         },
         "contentHash": "1917b09f914fdab4bb31ada49b00cbdc72e396926c84b7b596b5afed58a3841e",
+        "provenance": "observed",
+        "confidence": "observed"
+      },
+      {
+        "id": "module:experimental/cycle.ts",
+        "kind": "module",
+        "path": "experimental/cycle.ts",
+        "title": "cycle.ts",
+        "aliases": [],
+        "symbols": [
+          "CycleIterationMetrics",
+          "CycleMatrixRow",
+          "CycleStepResult",
+          "CycleStepStatus",
+          "IMPROVEMENT_CYCLE_STEPS",
+          "ImprovementCycleAssessment",
+          "ImprovementCycleInput",
+          "ImprovementCycleIteration",
+          "ImprovementCycleStep",
+          "assessImprovementCycle"
+        ],
+        "tags": [
+          "module",
+          "ts",
+          "experimental"
+        ],
+        "fields": {
+          "title": "cycle.ts",
+          "headings": "",
+          "path": "experimental/cycle.ts",
+          "symbols": "CycleIterationMetrics CycleMatrixRow CycleStepResult CycleStepStatus IMPROVEMENT_CYCLE_STEPS ImprovementCycleAssessment ImprovementCycleInput ImprovementCycleIteration ImprovementCycleStep assessImprovementCycle",
+          "summary": "",
+          "body": "",
+          "aliases": "module ts experimental"
+        },
+        "graph": {
+          "pagerank": 0,
+          "inboundLinks": 2,
+          "coveredBy": [],
+          "mentionedBy": [
+            "document:docs/MODULE-BOUNDARIES.md",
+            "document:changelog.d/253.md"
+          ],
+          "areaId": "area:experimental",
+          "packageId": "package:@agentskit/harness",
+          "inbound": [
+            {
+              "kind": "imports",
+              "id": "module:test/cycle.test.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
+              "id": "module:test/kernel-cycle.test.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "mentions",
+              "id": "document:docs/MODULE-BOUNDARIES.md",
+              "confidence": "observed"
+            },
+            {
+              "kind": "mentions-symbol",
+              "id": "document:changelog.d/253.md",
+              "confidence": "observed"
+            }
+          ],
+          "outbound": [
+            {
+              "kind": "imports",
+              "id": "module:src/kernel/errors.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
+              "id": "module:src/kernel/hash.ts",
+              "confidence": "observed"
+            }
+          ]
+        },
+        "contentHash": "672bfee47a14f3020a29ba42a37845d7b43da24124ab65d65f0029f6e1a96916",
+        "provenance": "observed",
+        "confidence": "observed"
+      },
+      {
+        "id": "module:experimental/discovery.ts",
+        "kind": "module",
+        "path": "experimental/discovery.ts",
+        "title": "discovery.ts",
+        "aliases": [],
+        "symbols": [
+          "ApprovedAssumption",
+          "DecisionPacket",
+          "DiscoveryAmbiguity",
+          "DiscoveryCurrentInput",
+          "DiscoveryCurrentResult",
+          "DiscoveryDecisionLogEntry",
+          "DiscoveryInput",
+          "DiscoveryOption",
+          "DiscoveryResult",
+          "assessDiscovery",
+          "isDiscoveryCurrent"
+        ],
+        "tags": [
+          "module",
+          "ts",
+          "experimental"
+        ],
+        "fields": {
+          "title": "discovery.ts",
+          "headings": "",
+          "path": "experimental/discovery.ts",
+          "symbols": "ApprovedAssumption DecisionPacket DiscoveryAmbiguity DiscoveryCurrentInput DiscoveryCurrentResult DiscoveryDecisionLogEntry DiscoveryInput DiscoveryOption DiscoveryResult assessDiscovery isDiscoveryCurrent",
+          "summary": "",
+          "body": "",
+          "aliases": "module ts experimental"
+        },
+        "graph": {
+          "pagerank": 0,
+          "inboundLinks": 3,
+          "coveredBy": [],
+          "mentionedBy": [
+            "document:docs/INVENTARIO.md",
+            "document:docs/MODULE-BOUNDARIES.md",
+            "document:changelog.d/253.md"
+          ],
+          "areaId": "area:experimental",
+          "packageId": "package:@agentskit/harness",
+          "inbound": [
+            {
+              "kind": "imports",
+              "id": "module:test/discovery.test.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "mentions",
+              "id": "document:docs/INVENTARIO.md",
+              "confidence": "observed"
+            },
+            {
+              "kind": "mentions",
+              "id": "document:docs/MODULE-BOUNDARIES.md",
+              "confidence": "observed"
+            },
+            {
+              "kind": "mentions-symbol",
+              "id": "document:changelog.d/253.md",
+              "confidence": "observed"
+            }
+          ],
+          "outbound": [
+            {
+              "kind": "imports",
+              "id": "module:src/kernel/errors.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
+              "id": "module:src/kernel/hash.ts",
+              "confidence": "observed"
+            }
+          ]
+        },
+        "contentHash": "726de0ae841d861c107208a4932eacb987e28dae30f46e982081ac91a47b58d8",
+        "provenance": "observed",
+        "confidence": "observed"
+      },
+      {
+        "id": "module:experimental/experiment.ts",
+        "kind": "module",
+        "path": "experimental/experiment.ts",
+        "title": "experiment.ts",
+        "aliases": [],
+        "symbols": [
+          "RuntimeExperimentCandidate",
+          "RuntimeExperimentResult",
+          "selectRuntime"
+        ],
+        "tags": [
+          "module",
+          "ts",
+          "experimental"
+        ],
+        "fields": {
+          "title": "experiment.ts",
+          "headings": "",
+          "path": "experimental/experiment.ts",
+          "symbols": "RuntimeExperimentCandidate RuntimeExperimentResult selectRuntime",
+          "summary": "",
+          "body": "",
+          "aliases": "module ts experimental"
+        },
+        "graph": {
+          "pagerank": 0,
+          "inboundLinks": 2,
+          "coveredBy": [],
+          "mentionedBy": [
+            "document:docs/MODULE-BOUNDARIES.md",
+            "document:changelog.d/253.md"
+          ],
+          "areaId": "area:experimental",
+          "packageId": "package:@agentskit/harness",
+          "inbound": [
+            {
+              "kind": "imports",
+              "id": "module:test/experiment.test.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "mentions",
+              "id": "document:docs/MODULE-BOUNDARIES.md",
+              "confidence": "observed"
+            },
+            {
+              "kind": "mentions-symbol",
+              "id": "document:changelog.d/253.md",
+              "confidence": "observed"
+            }
+          ],
+          "outbound": [
+            {
+              "kind": "imports",
+              "id": "module:src/kernel/errors.ts",
+              "confidence": "observed"
+            }
+          ]
+        },
+        "contentHash": "99a765a7b6e56c2bd2d2dd30282755707a48ae3b9ce713355f6f4b18a213d10a",
+        "provenance": "observed",
+        "confidence": "observed"
+      },
+      {
+        "id": "module:experimental/pilot.ts",
+        "kind": "module",
+        "path": "experimental/pilot.ts",
+        "title": "pilot.ts",
+        "aliases": [],
+        "symbols": [
+          "PilotAssessment",
+          "PilotEntry",
+          "PilotManifest",
+          "assessPilot"
+        ],
+        "tags": [
+          "module",
+          "ts",
+          "experimental"
+        ],
+        "fields": {
+          "title": "pilot.ts",
+          "headings": "",
+          "path": "experimental/pilot.ts",
+          "symbols": "PilotAssessment PilotEntry PilotManifest assessPilot",
+          "summary": "",
+          "body": "",
+          "aliases": "module ts experimental"
+        },
+        "graph": {
+          "pagerank": 0,
+          "inboundLinks": 2,
+          "coveredBy": [],
+          "mentionedBy": [
+            "document:docs/MODULE-BOUNDARIES.md",
+            "document:changelog.d/253.md"
+          ],
+          "areaId": "area:experimental",
+          "packageId": "package:@agentskit/harness",
+          "inbound": [
+            {
+              "kind": "imports",
+              "id": "module:test/kernel-pilot-gaps.test.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
+              "id": "module:test/pilot.test.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "mentions",
+              "id": "document:docs/MODULE-BOUNDARIES.md",
+              "confidence": "observed"
+            },
+            {
+              "kind": "mentions-symbol",
+              "id": "document:changelog.d/253.md",
+              "confidence": "observed"
+            }
+          ],
+          "outbound": [
+            {
+              "kind": "imports",
+              "id": "module:src/kernel/errors.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
+              "id": "module:src/kernel/hash.ts",
+              "confidence": "observed"
+            }
+          ]
+        },
+        "contentHash": "0d1acee44a011f45d093f8b1cc4c0450fa4207fed063ca622a2b431021518c0e",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -19914,6 +20330,11 @@
             },
             {
               "kind": "imports",
+              "id": "module:test/loop-fleet-fix-direct.test.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
               "id": "module:test/loop-verdict.test.ts",
               "confidence": "observed"
             },
@@ -21292,7 +21713,7 @@
             }
           ]
         },
-        "contentHash": "029b80fa5ffdb0c7004e3fde09ddb44486a39079f55b4f7ced3c3fb39f2e5f5d",
+        "contentHash": "1f1d3dae74b3426d6395ab2ce913f746997653f8c6f6069d7daab57317609724",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -23120,7 +23541,6 @@
           "HitlRole",
           "HitlStatus",
           "HitlStore",
-          "IMPROVEMENT_CYCLE_STEPS",
           "ISSUES_CLOSE",
           "ISSUES_OPEN",
           "ISSUE_DETAIL_FIELDS",
@@ -23165,7 +23585,8 @@
           "IssueTimelineProblem",
           "IssueTimelineReport",
           "LEARNING_STATUSES",
-          "LEGACY_CONFIG_PATH"
+          "LEGACY_CONFIG_PATH",
+          "LEGAL_TRANSITIONS"
         ],
         "tags": [
           "module",
@@ -23176,7 +23597,7 @@
           "title": "index.ts",
           "headings": "",
           "path": "src/index.ts",
-          "symbols": "AGENT_REGISTRY_SCHEMA_VERSION ARTIFACT_DIR ARTIFACT_SCHEMA_VERSION ARTIFACT_TYPES ASSURANCE_LEVELS ActionContext AdapterMetadata AdapterTelemetry AdversarialReviewResult AgentEvalCase AgentEvalReport AgentEvalSuite AgentMemoryAdapter AgentMemoryHit AgentMemoryKvStore AgentMemoryRecord AgentProposal AgentRegistry AgentRegistryEntry AgentRegistryEntrySchema AgentRegistrySchema AgentRunEvidence AgentRunIoEntry AgentRunReport AgentRunStage AgentRunState AgentRunStatus AgentUsage Alert AlertSchema AnswerDecisionInput AnswerDecisionResult ArgvRagContextProviderOptions ArtifactBinding ArtifactEnvelope ArtifactEnvelopeInput ArtifactType ArtificialAnalysisModel AssuranceLevel AutomationDriftRow AutomationFields AutomationSpec AutomationStatus BENCHMARK_SCHEMA_VERSION BLOCK_STATUSES BRIEF_POINTER_PROMPT BaseView BlockAssessment BlockManifest BlockStatus BoardIssue BoardLane BoardProvider BoardReadResult BoardSnapshot BoardStatus BoundaryVerdict BudgetVerdict CAPABILITY_KINDS CAPABILITY_MANIFEST_SCHEMA_VERSION COMPATIBILITY_COMPONENTS COMPATIBILITY_SCHEMA_VERSION CONTEXT_PROVIDER_SLOT CONTRACT_CLOSE CONTRACT_JSON_SCHEMA CONTRACT_OPEN CONTRACT_SCHEMA_VERSION CRITICAL_ROLES CacheUsage CapabilityDescriptor CapabilityKind CapabilityManifest CapabilityManifestInput CastVote CatalogModel ChangedFile CheckOutcome CheckoutState ChecksAssessment ClaimResult CodeReviewInput CodeReviewOutcome CodingAgentAdapter CodingAgentHandlerResult CodingAgentRequest CodingAgentResult CommandResult CommandRunOptions CommandRunner CommentBlock CommentDocument CommentDrop CommentFormat CompatibilityComponent CompatibilityComponentId CompatibilityManifest CompatibilityObservation CompatibilityReport CompatibilityStatus ConfigOrigin ConnectorInput ContractAssessment ContractOutcomeSchema ContractResult CooldownEntry CooldownState CoordinationIdentity DEFAULT_COMMENT_OPTIONS DEFAULT_CONFIG_PATH DESIGN_CLOSE DESIGN_OPEN DebriefInput DebriefIssueRow DebriefReport Decision DecisionOption DeliverInput DeliverOutcome DeliverReport DeliverResult DeliveryEvidence DeliveryState Design DesignSchema DetectProvidersInput DiffStat DispatchLease DispatchLedger DispatchRecord DispatchRecordFile DispatchRef DocBridgeIndexInspection DoctorCheck DoctorCheckStatus DodAssessment DodEvidenceFile DodItem DodLine DodProof EVAL_COMPONENTS EVAL_LAYERS EVAL_MANIFEST_SCHEMA_VERSION EVENT_LOG_GENESIS EVIDENCE_BUNDLE_SCHEMA_VERSION EffectiveFlowSettings EffectiveReviewSettings EffortLevel EnqueueIssueRunInput EnqueueRunInput EvalBatteryReport EvalCaseDefinition EvalCaseReport EvalComponent EvalExpectation EvalGate EvalLayer EvalManifest EvalObservation EvalObservationStatus EvidenceOptions EvidenceProof EvidenceStatus ExecutePhaseProfileOptions FailureClass FailureClassification FetchQueueInput FileArtifactStore FileEventStore FilePreflightPlan FiledRecord FlowIssue FlowProfile FlowSource GLOBAL_CONFIG_FILE GateAssessment GateBinding GateCriterion GenerateContractInput GitHubCliOptions GitHubIssueComment GitHubIssueDetail GitHubIssueSnapshot GuidedInstallIO GuidedInstallInput GuidedInstallReport HARNESS_ERROR_CATALOG HARNESS_ERROR_CODES HARNESS_EVENT_ENVELOPE_SCHEMA_VERSION HARNESS_EVENT_SCHEMA_VERSION HARNESS_EVENT_TYPES HARNESS_PLUGIN_API_VERSION HARNESS_REPO_URL HITL_ANCHOR_ID HITL_ANCHOR_TITLE HITL_FREE_TEXT_MAX HITL_SCHEMA_VERSION HandoffBriefInput HarnessError HarnessErrorClassification HarnessErrorDisposition HarnessEventEnvelope HarnessEventEnvelopeInput HarnessEventProvenance HitlAnswer HitlOption HitlRequest HitlRequestInput HitlRole HitlStatus HitlStore IMPROVEMENT_CYCLE_STEPS ISSUES_CLOSE ISSUES_OPEN ISSUE_DETAIL_FIELDS ISSUE_FIELDS ISSUE_LIFECYCLE_SCHEMA_VERSION ISSUE_QUEUE_SCHEMA_VERSION ImprovementOutcome ImprovementRecord ImprovementState InitAnswers InitInput InitQuestion InitResult InstallAction InstallInput InstallReport IntakeRecord IntakeReport IntakeResult IntakeState InterviewQuestion IssueBoardCache IssueBoardCacheOptions IssueBoardReader IssueDecision IssueFailureRecord IssueFailureState IssueLifecycle IssuePhase IssueQueue IssueQueueOptions IssueQueueProjection IssueRecord IssueRun IssueRunConfigSnapshot IssueRunContractSnapshot IssueRunPatch IssueRunPreflightSnapshot IssueRunProjection IssueRunStatus IssueSpend IssueTimelineProblem IssueTimelineReport LEARNING_STATUSES LEGACY_CONFIG_PATH",
+          "symbols": "AGENT_REGISTRY_SCHEMA_VERSION ARTIFACT_DIR ARTIFACT_SCHEMA_VERSION ARTIFACT_TYPES ASSURANCE_LEVELS ActionContext AdapterMetadata AdapterTelemetry AdversarialReviewResult AgentEvalCase AgentEvalReport AgentEvalSuite AgentMemoryAdapter AgentMemoryHit AgentMemoryKvStore AgentMemoryRecord AgentProposal AgentRegistry AgentRegistryEntry AgentRegistryEntrySchema AgentRegistrySchema AgentRunEvidence AgentRunIoEntry AgentRunReport AgentRunStage AgentRunState AgentRunStatus AgentUsage Alert AlertSchema AnswerDecisionInput AnswerDecisionResult ArgvRagContextProviderOptions ArtifactBinding ArtifactEnvelope ArtifactEnvelopeInput ArtifactType ArtificialAnalysisModel AssuranceLevel AutomationDriftRow AutomationFields AutomationSpec AutomationStatus BENCHMARK_SCHEMA_VERSION BLOCK_STATUSES BRIEF_POINTER_PROMPT BaseView BlockAssessment BlockManifest BlockStatus BoardIssue BoardLane BoardProvider BoardReadResult BoardSnapshot BoardStatus BoundaryVerdict BudgetVerdict CAPABILITY_KINDS CAPABILITY_MANIFEST_SCHEMA_VERSION COMPATIBILITY_COMPONENTS COMPATIBILITY_SCHEMA_VERSION CONTEXT_PROVIDER_SLOT CONTRACT_CLOSE CONTRACT_JSON_SCHEMA CONTRACT_OPEN CONTRACT_SCHEMA_VERSION CRITICAL_ROLES CacheUsage CapabilityDescriptor CapabilityKind CapabilityManifest CapabilityManifestInput CastVote CatalogModel ChangedFile CheckOutcome CheckoutState ChecksAssessment ClaimResult CodeReviewInput CodeReviewOutcome CodingAgentAdapter CodingAgentHandlerResult CodingAgentRequest CodingAgentResult CommandResult CommandRunOptions CommandRunner CommentBlock CommentDocument CommentDrop CommentFormat CompatibilityComponent CompatibilityComponentId CompatibilityManifest CompatibilityObservation CompatibilityReport CompatibilityStatus ConfigOrigin ConnectorInput ContractAssessment ContractOutcomeSchema ContractResult CooldownEntry CooldownState CoordinationIdentity DEFAULT_COMMENT_OPTIONS DEFAULT_CONFIG_PATH DESIGN_CLOSE DESIGN_OPEN DebriefInput DebriefIssueRow DebriefReport Decision DecisionOption DeliverInput DeliverOutcome DeliverReport DeliverResult DeliveryEvidence DeliveryState Design DesignSchema DetectProvidersInput DiffStat DispatchLease DispatchLedger DispatchRecord DispatchRecordFile DispatchRef DocBridgeIndexInspection DoctorCheck DoctorCheckStatus DodAssessment DodEvidenceFile DodItem DodLine DodProof EVAL_COMPONENTS EVAL_LAYERS EVAL_MANIFEST_SCHEMA_VERSION EVENT_LOG_GENESIS EVIDENCE_BUNDLE_SCHEMA_VERSION EffectiveFlowSettings EffectiveReviewSettings EffortLevel EnqueueIssueRunInput EnqueueRunInput EvalBatteryReport EvalCaseDefinition EvalCaseReport EvalComponent EvalExpectation EvalGate EvalLayer EvalManifest EvalObservation EvalObservationStatus EvidenceOptions EvidenceProof EvidenceStatus ExecutePhaseProfileOptions FailureClass FailureClassification FetchQueueInput FileArtifactStore FileEventStore FilePreflightPlan FiledRecord FlowIssue FlowProfile FlowSource GLOBAL_CONFIG_FILE GateAssessment GateBinding GateCriterion GenerateContractInput GitHubCliOptions GitHubIssueComment GitHubIssueDetail GitHubIssueSnapshot GuidedInstallIO GuidedInstallInput GuidedInstallReport HARNESS_ERROR_CATALOG HARNESS_ERROR_CODES HARNESS_EVENT_ENVELOPE_SCHEMA_VERSION HARNESS_EVENT_SCHEMA_VERSION HARNESS_EVENT_TYPES HARNESS_PLUGIN_API_VERSION HARNESS_REPO_URL HITL_ANCHOR_ID HITL_ANCHOR_TITLE HITL_FREE_TEXT_MAX HITL_SCHEMA_VERSION HandoffBriefInput HarnessError HarnessErrorClassification HarnessErrorDisposition HarnessEventEnvelope HarnessEventEnvelopeInput HarnessEventProvenance HitlAnswer HitlOption HitlRequest HitlRequestInput HitlRole HitlStatus HitlStore ISSUES_CLOSE ISSUES_OPEN ISSUE_DETAIL_FIELDS ISSUE_FIELDS ISSUE_LIFECYCLE_SCHEMA_VERSION ISSUE_QUEUE_SCHEMA_VERSION ImprovementOutcome ImprovementRecord ImprovementState InitAnswers InitInput InitQuestion InitResult InstallAction InstallInput InstallReport IntakeRecord IntakeReport IntakeResult IntakeState InterviewQuestion IssueBoardCache IssueBoardCacheOptions IssueBoardReader IssueDecision IssueFailureRecord IssueFailureState IssueLifecycle IssuePhase IssueQueue IssueQueueOptions IssueQueueProjection IssueRecord IssueRun IssueRunConfigSnapshot IssueRunContractSnapshot IssueRunPatch IssueRunPreflightSnapshot IssueRunProjection IssueRunStatus IssueSpend IssueTimelineProblem IssueTimelineReport LEARNING_STATUSES LEGACY_CONFIG_PATH LEGAL_TRANSITIONS",
           "summary": "",
           "body": "",
           "aliases": "module ts src"
@@ -23305,17 +23726,7 @@
             },
             {
               "kind": "imports",
-              "id": "module:test/cycle.test.ts",
-              "confidence": "observed"
-            },
-            {
-              "kind": "imports",
               "id": "module:test/delivery.test.ts",
-              "confidence": "observed"
-            },
-            {
-              "kind": "imports",
-              "id": "module:test/discovery.test.ts",
               "confidence": "observed"
             },
             {
@@ -23356,11 +23767,6 @@
             {
               "kind": "imports",
               "id": "module:test/execution-runtime.test.ts",
-              "confidence": "observed"
-            },
-            {
-              "kind": "imports",
-              "id": "module:test/experiment.test.ts",
               "confidence": "observed"
             },
             {
@@ -23420,11 +23826,6 @@
             },
             {
               "kind": "imports",
-              "id": "module:test/kernel-cycle.test.ts",
-              "confidence": "observed"
-            },
-            {
-              "kind": "imports",
               "id": "module:test/kernel-error-policy.test.ts",
               "confidence": "observed"
             },
@@ -23456,11 +23857,6 @@
             {
               "kind": "imports",
               "id": "module:test/kernel-phase-executor-gaps.test.ts",
-              "confidence": "observed"
-            },
-            {
-              "kind": "imports",
-              "id": "module:test/kernel-pilot-gaps.test.ts",
               "confidence": "observed"
             },
             {
@@ -23506,6 +23902,31 @@
             {
               "kind": "imports",
               "id": "module:test/loop-adapters.test.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
+              "id": "module:test/loop-agent-improvement.test.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
+              "id": "module:test/loop-agent-registry-gaps.test.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
+              "id": "module:test/loop-agent-registry.test.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
+              "id": "module:test/loop-agent-runs.test.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
+              "id": "module:test/loop-artifacts-exclude.test.ts",
               "confidence": "observed"
             }
           ],
@@ -23662,16 +24083,6 @@
             },
             {
               "kind": "re-exports",
-              "id": "module:src/kernel/cycle.ts",
-              "confidence": "observed"
-            },
-            {
-              "kind": "re-exports",
-              "id": "module:src/kernel/discovery.ts",
-              "confidence": "observed"
-            },
-            {
-              "kind": "re-exports",
               "id": "module:src/kernel/error-policy.ts",
               "confidence": "observed"
             },
@@ -23688,11 +24099,6 @@
             {
               "kind": "re-exports",
               "id": "module:src/kernel/events.ts",
-              "confidence": "observed"
-            },
-            {
-              "kind": "re-exports",
-              "id": "module:src/kernel/experiment.ts",
               "confidence": "observed"
             },
             {
@@ -23723,11 +24129,6 @@
             {
               "kind": "re-exports",
               "id": "module:src/kernel/pii.ts",
-              "confidence": "observed"
-            },
-            {
-              "kind": "re-exports",
-              "id": "module:src/kernel/pilot.ts",
               "confidence": "observed"
             },
             {
@@ -23829,10 +24230,30 @@
               "kind": "re-exports",
               "id": "module:src/loop/config.ts",
               "confidence": "observed"
+            },
+            {
+              "kind": "re-exports",
+              "id": "module:src/loop/connectors.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "re-exports",
+              "id": "module:src/loop/contract.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "re-exports",
+              "id": "module:src/loop/cooldown.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "re-exports",
+              "id": "module:src/loop/debrief.ts",
+              "confidence": "observed"
             }
           ]
         },
-        "contentHash": "48dae4090d353047a34b10bfe52c50124c6e801b7fd41e15b132bd3a696137de",
+        "contentHash": "6d840a612eb9a1d5f8e015fd0dba7b39483d31941fc664a3f8aad70a8a0f567f",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -24396,147 +24817,6 @@
         "confidence": "observed"
       },
       {
-        "id": "module:src/kernel/cycle.ts",
-        "kind": "module",
-        "path": "src/kernel/cycle.ts",
-        "title": "cycle.ts",
-        "aliases": [],
-        "symbols": [
-          "CycleIterationMetrics",
-          "CycleMatrixRow",
-          "CycleStepResult",
-          "CycleStepStatus",
-          "IMPROVEMENT_CYCLE_STEPS",
-          "ImprovementCycleAssessment",
-          "ImprovementCycleInput",
-          "ImprovementCycleIteration",
-          "ImprovementCycleStep",
-          "assessImprovementCycle"
-        ],
-        "tags": [
-          "module",
-          "ts",
-          "kernel"
-        ],
-        "fields": {
-          "title": "cycle.ts",
-          "headings": "",
-          "path": "src/kernel/cycle.ts",
-          "symbols": "CycleIterationMetrics CycleMatrixRow CycleStepResult CycleStepStatus IMPROVEMENT_CYCLE_STEPS ImprovementCycleAssessment ImprovementCycleInput ImprovementCycleIteration ImprovementCycleStep assessImprovementCycle",
-          "summary": "",
-          "body": "",
-          "aliases": "module ts kernel"
-        },
-        "graph": {
-          "pagerank": 0,
-          "inboundLinks": 1,
-          "coveredBy": [],
-          "mentionedBy": [
-            "document:docs/MODULE-BOUNDARIES.md"
-          ],
-          "areaId": "area:src/kernel",
-          "packageId": "package:@agentskit/harness",
-          "inbound": [
-            {
-              "kind": "mentions",
-              "id": "document:docs/MODULE-BOUNDARIES.md",
-              "confidence": "observed"
-            },
-            {
-              "kind": "re-exports",
-              "id": "module:src/index.ts",
-              "confidence": "observed"
-            }
-          ],
-          "outbound": [
-            {
-              "kind": "imports",
-              "id": "module:src/kernel/errors.ts",
-              "confidence": "observed"
-            },
-            {
-              "kind": "imports",
-              "id": "module:src/kernel/hash.ts",
-              "confidence": "observed"
-            }
-          ]
-        },
-        "contentHash": "cda5da26f7bd0fa2bdfea84ff10bf33337b2fd9e1d8ead68243798ec415ab1cd",
-        "provenance": "observed",
-        "confidence": "observed"
-      },
-      {
-        "id": "module:src/kernel/discovery.ts",
-        "kind": "module",
-        "path": "src/kernel/discovery.ts",
-        "title": "discovery.ts",
-        "aliases": [],
-        "symbols": [
-          "ApprovedAssumption",
-          "DecisionPacket",
-          "DiscoveryAmbiguity",
-          "DiscoveryCurrentInput",
-          "DiscoveryCurrentResult",
-          "DiscoveryDecisionLogEntry",
-          "DiscoveryInput",
-          "DiscoveryOption",
-          "DiscoveryResult",
-          "assessDiscovery",
-          "isDiscoveryCurrent"
-        ],
-        "tags": [
-          "module",
-          "ts",
-          "kernel"
-        ],
-        "fields": {
-          "title": "discovery.ts",
-          "headings": "",
-          "path": "src/kernel/discovery.ts",
-          "symbols": "ApprovedAssumption DecisionPacket DiscoveryAmbiguity DiscoveryCurrentInput DiscoveryCurrentResult DiscoveryDecisionLogEntry DiscoveryInput DiscoveryOption DiscoveryResult assessDiscovery isDiscoveryCurrent",
-          "summary": "",
-          "body": "",
-          "aliases": "module ts kernel"
-        },
-        "graph": {
-          "pagerank": 0,
-          "inboundLinks": 1,
-          "coveredBy": [],
-          "mentionedBy": [
-            "document:docs/MODULE-BOUNDARIES.md"
-          ],
-          "areaId": "area:src/kernel",
-          "packageId": "package:@agentskit/harness",
-          "inbound": [
-            {
-              "kind": "mentions",
-              "id": "document:docs/MODULE-BOUNDARIES.md",
-              "confidence": "observed"
-            },
-            {
-              "kind": "re-exports",
-              "id": "module:src/index.ts",
-              "confidence": "observed"
-            }
-          ],
-          "outbound": [
-            {
-              "kind": "imports",
-              "id": "module:src/kernel/errors.ts",
-              "confidence": "observed"
-            },
-            {
-              "kind": "imports",
-              "id": "module:src/kernel/hash.ts",
-              "confidence": "observed"
-            }
-          ]
-        },
-        "contentHash": "e3e66bd0325a711bca11cbad8dee7b948c590c0d4b2d9b036d1446d6bcf89c2a",
-        "provenance": "observed",
-        "confidence": "observed"
-      },
-      {
         "id": "module:src/kernel/error-policy.ts",
         "kind": "module",
         "path": "src/kernel/error-policy.ts",
@@ -24623,6 +24903,26 @@
           "areaId": "area:src/kernel",
           "packageId": "package:@agentskit/harness",
           "inbound": [
+            {
+              "kind": "imports",
+              "id": "module:experimental/cycle.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
+              "id": "module:experimental/discovery.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
+              "id": "module:experimental/experiment.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
+              "id": "module:experimental/pilot.ts",
+              "confidence": "observed"
+            },
             {
               "kind": "imports",
               "id": "module:src/adapters/agent.ts",
@@ -24770,16 +25070,6 @@
             },
             {
               "kind": "imports",
-              "id": "module:src/kernel/cycle.ts",
-              "confidence": "observed"
-            },
-            {
-              "kind": "imports",
-              "id": "module:src/kernel/discovery.ts",
-              "confidence": "observed"
-            },
-            {
-              "kind": "imports",
               "id": "module:src/kernel/error-policy.ts",
               "confidence": "observed"
             },
@@ -24791,11 +25081,6 @@
             {
               "kind": "imports",
               "id": "module:src/kernel/events.ts",
-              "confidence": "observed"
-            },
-            {
-              "kind": "imports",
-              "id": "module:src/kernel/experiment.ts",
               "confidence": "observed"
             },
             {
@@ -24821,11 +25106,6 @@
             {
               "kind": "imports",
               "id": "module:src/kernel/phase-executor.ts",
-              "confidence": "observed"
-            },
-            {
-              "kind": "imports",
-              "id": "module:src/kernel/pilot.ts",
               "confidence": "observed"
             },
             {
@@ -24994,10 +25274,11 @@
         },
         "graph": {
           "pagerank": 0,
-          "inboundLinks": 2,
+          "inboundLinks": 3,
           "coveredBy": [],
           "mentionedBy": [
             "document:docs/MODULE-BOUNDARIES.md",
+            "document:docs/INVENTARIO.md",
             "document:docs/LOOP.md"
           ],
           "areaId": "area:src/kernel",
@@ -25006,6 +25287,11 @@
             {
               "kind": "mentions",
               "id": "document:docs/MODULE-BOUNDARIES.md",
+              "confidence": "observed"
+            },
+            {
+              "kind": "mentions-symbol",
+              "id": "document:docs/INVENTARIO.md",
               "confidence": "observed"
             },
             {
@@ -25222,64 +25508,6 @@
         "confidence": "observed"
       },
       {
-        "id": "module:src/kernel/experiment.ts",
-        "kind": "module",
-        "path": "src/kernel/experiment.ts",
-        "title": "experiment.ts",
-        "aliases": [],
-        "symbols": [
-          "RuntimeExperimentCandidate",
-          "RuntimeExperimentResult",
-          "selectRuntime"
-        ],
-        "tags": [
-          "module",
-          "ts",
-          "kernel"
-        ],
-        "fields": {
-          "title": "experiment.ts",
-          "headings": "",
-          "path": "src/kernel/experiment.ts",
-          "symbols": "RuntimeExperimentCandidate RuntimeExperimentResult selectRuntime",
-          "summary": "",
-          "body": "",
-          "aliases": "module ts kernel"
-        },
-        "graph": {
-          "pagerank": 0,
-          "inboundLinks": 1,
-          "coveredBy": [],
-          "mentionedBy": [
-            "document:docs/MODULE-BOUNDARIES.md"
-          ],
-          "areaId": "area:src/kernel",
-          "packageId": "package:@agentskit/harness",
-          "inbound": [
-            {
-              "kind": "mentions",
-              "id": "document:docs/MODULE-BOUNDARIES.md",
-              "confidence": "observed"
-            },
-            {
-              "kind": "re-exports",
-              "id": "module:src/index.ts",
-              "confidence": "observed"
-            }
-          ],
-          "outbound": [
-            {
-              "kind": "imports",
-              "id": "module:src/kernel/errors.ts",
-              "confidence": "observed"
-            }
-          ]
-        },
-        "contentHash": "fc49232274746187c9564cdbd21a83e51416941d14d15f68e1733ac40a3f404d",
-        "provenance": "observed",
-        "confidence": "observed"
-      },
-      {
         "id": "module:src/kernel/hash.ts",
         "kind": "module",
         "path": "src/kernel/hash.ts",
@@ -25315,6 +25543,21 @@
           "areaId": "area:src/kernel",
           "packageId": "package:@agentskit/harness",
           "inbound": [
+            {
+              "kind": "imports",
+              "id": "module:experimental/cycle.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
+              "id": "module:experimental/discovery.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
+              "id": "module:experimental/pilot.ts",
+              "confidence": "observed"
+            },
             {
               "kind": "imports",
               "id": "module:src/adapters/doc-bridge.ts",
@@ -25427,16 +25670,6 @@
             },
             {
               "kind": "imports",
-              "id": "module:src/kernel/cycle.ts",
-              "confidence": "observed"
-            },
-            {
-              "kind": "imports",
-              "id": "module:src/kernel/discovery.ts",
-              "confidence": "observed"
-            },
-            {
-              "kind": "imports",
               "id": "module:src/kernel/eval.ts",
               "confidence": "observed"
             },
@@ -25458,11 +25691,6 @@
             {
               "kind": "imports",
               "id": "module:src/kernel/optimization.ts",
-              "confidence": "observed"
-            },
-            {
-              "kind": "imports",
-              "id": "module:src/kernel/pilot.ts",
               "confidence": "observed"
             },
             {
@@ -25762,6 +25990,11 @@
             {
               "kind": "imports",
               "id": "module:src/ui/api/store.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
+              "id": "module:test/kernel-json-file.test.ts",
               "confidence": "observed"
             }
           ],
@@ -26351,70 +26584,6 @@
         "confidence": "observed"
       },
       {
-        "id": "module:src/kernel/pilot.ts",
-        "kind": "module",
-        "path": "src/kernel/pilot.ts",
-        "title": "pilot.ts",
-        "aliases": [],
-        "symbols": [
-          "PilotAssessment",
-          "PilotEntry",
-          "PilotManifest",
-          "assessPilot"
-        ],
-        "tags": [
-          "module",
-          "ts",
-          "kernel"
-        ],
-        "fields": {
-          "title": "pilot.ts",
-          "headings": "",
-          "path": "src/kernel/pilot.ts",
-          "symbols": "PilotAssessment PilotEntry PilotManifest assessPilot",
-          "summary": "",
-          "body": "",
-          "aliases": "module ts kernel"
-        },
-        "graph": {
-          "pagerank": 0,
-          "inboundLinks": 1,
-          "coveredBy": [],
-          "mentionedBy": [
-            "document:docs/MODULE-BOUNDARIES.md"
-          ],
-          "areaId": "area:src/kernel",
-          "packageId": "package:@agentskit/harness",
-          "inbound": [
-            {
-              "kind": "mentions",
-              "id": "document:docs/MODULE-BOUNDARIES.md",
-              "confidence": "observed"
-            },
-            {
-              "kind": "re-exports",
-              "id": "module:src/index.ts",
-              "confidence": "observed"
-            }
-          ],
-          "outbound": [
-            {
-              "kind": "imports",
-              "id": "module:src/kernel/errors.ts",
-              "confidence": "observed"
-            },
-            {
-              "kind": "imports",
-              "id": "module:src/kernel/hash.ts",
-              "confidence": "observed"
-            }
-          ]
-        },
-        "contentHash": "ee54035f31bf7af96fc7899c8a7ce892602811243cf08dabcea117da0c3bd016",
-        "provenance": "observed",
-        "confidence": "observed"
-      },
-      {
         "id": "module:src/kernel/plugins.ts",
         "kind": "module",
         "path": "src/kernel/plugins.ts",
@@ -26703,6 +26872,11 @@
             {
               "kind": "imports",
               "id": "module:src/loop/process.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
+              "id": "module:test/kernel-process-tree.test.ts",
               "confidence": "observed"
             }
           ],
@@ -28896,6 +29070,11 @@
             {
               "kind": "imports",
               "id": "module:src/ui/api/server.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
+              "id": "module:test/loop-refill.test.ts",
               "confidence": "observed"
             },
             {
@@ -31168,6 +31347,11 @@
             {
               "kind": "imports",
               "id": "module:src/loop/deliver.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
+              "id": "module:test/loop-fleet-fix-direct.test.ts",
               "confidence": "observed"
             }
           ],
@@ -34784,6 +34968,11 @@
             {
               "kind": "imports",
               "id": "module:src/loop/tick.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
+              "id": "module:test/loop-refill.test.ts",
               "confidence": "observed"
             }
           ],
@@ -43517,12 +43706,12 @@
           "outbound": [
             {
               "kind": "imports",
-              "id": "module:src/index.ts",
+              "id": "module:experimental/cycle.ts",
               "confidence": "observed"
             }
           ]
         },
-        "contentHash": "97351b69e6edba6e17556d62e187d07cafcac3f99d21e57258936c6be89aaf9c",
+        "contentHash": "a0c824c8d07b97d05460853ed0ac90cb425674e38ef40cd24a56dd79cc3464e7",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -43628,21 +43817,29 @@
         },
         "graph": {
           "pagerank": 0,
-          "inboundLinks": 0,
+          "inboundLinks": 1,
           "coveredBy": [],
-          "mentionedBy": [],
+          "mentionedBy": [
+            "document:docs/INVENTARIO.md"
+          ],
           "areaId": "area:test",
           "packageId": "package:@agentskit/harness",
-          "inbound": [],
+          "inbound": [
+            {
+              "kind": "mentions",
+              "id": "document:docs/INVENTARIO.md",
+              "confidence": "fuzzy"
+            }
+          ],
           "outbound": [
             {
               "kind": "imports",
-              "id": "module:src/index.ts",
+              "id": "module:experimental/discovery.ts",
               "confidence": "observed"
             }
           ]
         },
-        "contentHash": "68e352c6a7f75bed9e5eec8c0f3f6e453342ec58bafa59d1788d75976d8e5455",
+        "contentHash": "56c047fb41802017d14019a1fc4bc56402b9bd9a09517feba809bd527ac4784c",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -44155,12 +44352,12 @@
           "outbound": [
             {
               "kind": "imports",
-              "id": "module:src/index.ts",
+              "id": "module:experimental/experiment.ts",
               "confidence": "observed"
             }
           ]
         },
-        "contentHash": "9835c8143e6c3a11fe83196fbb275fc394e2f42192fa4bf543c7c4b27ebb53e9",
+        "contentHash": "89aaf671eccbb2b32ff20c6a40949dbbb587df668926902bd39e75c7d6ff82b5",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -44876,12 +45073,12 @@
           "outbound": [
             {
               "kind": "imports",
-              "id": "module:src/index.ts",
+              "id": "module:experimental/cycle.ts",
               "confidence": "observed"
             }
           ]
         },
-        "contentHash": "e8ed6fb7b6b13f5eac6808244bb8ba2bd85385c19daaf783c1d70640613d8867",
+        "contentHash": "1213dd4d62d702807e1d111b1a6486bea61aee887bdf7a08abaf658cc7d8c173",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -45007,6 +45204,46 @@
           ]
         },
         "contentHash": "32d66a698e648b1c31ed869e97fe9d268ef1cb93ac636eea18b42b937ed42b03",
+        "provenance": "observed",
+        "confidence": "observed"
+      },
+      {
+        "id": "module:test/kernel-json-file.test.ts",
+        "kind": "module",
+        "path": "test/kernel-json-file.test.ts",
+        "title": "kernel-json-file.test.ts",
+        "aliases": [],
+        "tags": [
+          "module",
+          "ts",
+          "test"
+        ],
+        "fields": {
+          "title": "kernel-json-file.test.ts",
+          "headings": "",
+          "path": "test/kernel-json-file.test.ts",
+          "symbols": "",
+          "summary": "",
+          "body": "",
+          "aliases": "module ts test"
+        },
+        "graph": {
+          "pagerank": 0,
+          "inboundLinks": 0,
+          "coveredBy": [],
+          "mentionedBy": [],
+          "areaId": "area:test",
+          "packageId": "package:@agentskit/harness",
+          "inbound": [],
+          "outbound": [
+            {
+              "kind": "imports",
+              "id": "module:src/kernel/json-file.ts",
+              "confidence": "observed"
+            }
+          ]
+        },
+        "contentHash": "e12c80d374aee32f539d53dbb29bffebd1bce1ee9b42b1da50c8fec62dfc79a2",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -45201,12 +45438,12 @@
           "outbound": [
             {
               "kind": "imports",
-              "id": "module:src/index.ts",
+              "id": "module:experimental/pilot.ts",
               "confidence": "observed"
             }
           ]
         },
-        "contentHash": "31060812cdfc4656604d24142256d378a4593ca2c753a15a3ce198d0c54e9978",
+        "contentHash": "e93c865800fc9a14347cbc00f47e544016fa0a63272a8cdb2546fc36a52548c1",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -45287,6 +45524,46 @@
           ]
         },
         "contentHash": "0369e6069e64fe1e231a4051e85ec2c3506a4b244a7cf3e47891f115aedc8637",
+        "provenance": "observed",
+        "confidence": "observed"
+      },
+      {
+        "id": "module:test/kernel-process-tree.test.ts",
+        "kind": "module",
+        "path": "test/kernel-process-tree.test.ts",
+        "title": "kernel-process-tree.test.ts",
+        "aliases": [],
+        "tags": [
+          "module",
+          "ts",
+          "test"
+        ],
+        "fields": {
+          "title": "kernel-process-tree.test.ts",
+          "headings": "",
+          "path": "test/kernel-process-tree.test.ts",
+          "symbols": "",
+          "summary": "",
+          "body": "",
+          "aliases": "module ts test"
+        },
+        "graph": {
+          "pagerank": 0,
+          "inboundLinks": 0,
+          "coveredBy": [],
+          "mentionedBy": [],
+          "areaId": "area:test",
+          "packageId": "package:@agentskit/harness",
+          "inbound": [],
+          "outbound": [
+            {
+              "kind": "imports",
+              "id": "module:src/kernel/process-tree.ts",
+              "confidence": "observed"
+            }
+          ]
+        },
+        "contentHash": "7a67b51d81faa4fcb10b72f854ad474739ff2d52ebe274c138ac0834db432fa8",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -46881,6 +47158,51 @@
         "confidence": "observed"
       },
       {
+        "id": "module:test/loop-fleet-fix-direct.test.ts",
+        "kind": "module",
+        "path": "test/loop-fleet-fix-direct.test.ts",
+        "title": "loop-fleet-fix-direct.test.ts",
+        "aliases": [],
+        "tags": [
+          "module",
+          "ts",
+          "test"
+        ],
+        "fields": {
+          "title": "loop-fleet-fix-direct.test.ts",
+          "headings": "",
+          "path": "test/loop-fleet-fix-direct.test.ts",
+          "symbols": "",
+          "summary": "",
+          "body": "",
+          "aliases": "module ts test"
+        },
+        "graph": {
+          "pagerank": 0,
+          "inboundLinks": 0,
+          "coveredBy": [],
+          "mentionedBy": [],
+          "areaId": "area:test",
+          "packageId": "package:@agentskit/harness",
+          "inbound": [],
+          "outbound": [
+            {
+              "kind": "imports",
+              "id": "module:src/adapters/command.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
+              "id": "module:src/loop/fleet-fix.ts",
+              "confidence": "observed"
+            }
+          ]
+        },
+        "contentHash": "65d5b689a60a87f01b2be06099b527521381fb041676cf7a02c8b6aeb51ea072",
+        "provenance": "observed",
+        "confidence": "observed"
+      },
+      {
         "id": "module:test/loop-fleet-fix.test.ts",
         "kind": "module",
         "path": "test/loop-fleet-fix.test.ts",
@@ -48364,6 +48686,51 @@
         "confidence": "observed"
       },
       {
+        "id": "module:test/loop-refill.test.ts",
+        "kind": "module",
+        "path": "test/loop-refill.test.ts",
+        "title": "loop-refill.test.ts",
+        "aliases": [],
+        "tags": [
+          "module",
+          "ts",
+          "test"
+        ],
+        "fields": {
+          "title": "loop-refill.test.ts",
+          "headings": "",
+          "path": "test/loop-refill.test.ts",
+          "symbols": "",
+          "summary": "",
+          "body": "",
+          "aliases": "module ts test"
+        },
+        "graph": {
+          "pagerank": 0,
+          "inboundLinks": 0,
+          "coveredBy": [],
+          "mentionedBy": [],
+          "areaId": "area:test",
+          "packageId": "package:@agentskit/harness",
+          "inbound": [],
+          "outbound": [
+            {
+              "kind": "imports",
+              "id": "module:src/loop/connectors.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
+              "id": "module:src/loop/refill.ts",
+              "confidence": "observed"
+            }
+          ]
+        },
+        "contentHash": "f20259b20c58e4358471d449bfae6003d2be756a2d920da332c45c84ba803928",
+        "provenance": "observed",
+        "confidence": "observed"
+      },
+      {
         "id": "module:test/loop-release.test.ts",
         "kind": "module",
         "path": "test/loop-release.test.ts",
@@ -49518,12 +49885,12 @@
           "outbound": [
             {
               "kind": "imports",
-              "id": "module:src/index.ts",
+              "id": "module:experimental/pilot.ts",
               "confidence": "observed"
             }
           ]
         },
-        "contentHash": "54988ffda8088aa5a617a039306399a8641c67341cc950a9a9d5048bfb63e5c6",
+        "contentHash": "9771e05b6fb7403ad3f741bb15a0ad8dacab93a3759be02d178f65e3cf6e87aa",
         "provenance": "observed",
         "confidence": "observed"
       },
