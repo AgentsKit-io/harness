@@ -1,0 +1,47 @@
+# Manifesto de MVP SINTÉTICO (produto fictício "exemplo"), no formato de docs/mvp.yaml usado pela fábrica.
+# Serve de fixture para mvp_manifest.py: validação e digest de aprovação. Nenhum dado de produto real.
+version: 1
+product: exemplo
+repo: AgentsKit-io/exemplo
+source: fixture sintética do harness
+approval:
+  by: exemplo-dono
+  at: "2026-10-30T00:00:00Z"
+  digest: a5d6dbc14e5f9a24
+homolog:
+  base_url: "https://homolog.exemplo.invalid"
+requirements:
+- id: RF-01
+  title: Cadastro por e-mail com verificação
+  done_when: >-
+    O cadastro cria o usuário não verificado e envia o e-mail; o link de verificação libera o login
+  weight: 1
+  acceptance: []
+  homolog: []
+  issues: []
+  prs: []
+- id: RF-02
+  title: Lista de itens com filtro
+  done_when: >-
+    A lista mostra os itens do usuário com filtro por status e paginação de 20 itens
+  weight: 2
+  acceptance:
+  - test: test/contract/items.ts
+    ci:
+      job: ci
+      step: test
+  homolog:
+  - url: /items
+    expect: 200
+    contains: "Itens"
+  issues: [1]
+  prs: [2]
+- id: RF-03
+  title: Exportação em CSV
+  done_when: >-
+    O usuário exporta a lista filtrada em CSV com as mesmas colunas da tela
+  weight: 1
+  acceptance: []
+  homolog: []
+  issues: []
+  prs: []

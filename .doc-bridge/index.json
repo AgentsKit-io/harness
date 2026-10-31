@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
-  "contentHash": "74dcb6504443eacc4e759b028ac2029fe715fcc4483e2d1f98f8d9f0f6c33246",
+  "contentHash": "44fff9635ac7232ce356b1035ba4b6564df9375bbebb54ffc599f6b54bbfd2a5",
   "contentHashAlgo": "sha256-semantic-v1",
-  "generatedAt": "2026-10-30T17:18:29.211Z",
+  "generatedAt": "2026-10-31T07:30:40.904Z",
   "project": {
     "name": "AgentsKit Harness",
     "root": "."
@@ -291,7 +291,7 @@
         "document",
         "unclassified"
       ],
-      "contentHash": "26e91c1e01271df2c8e4a6290dc0e7d1047ce1b2e147c8a55a5eed756dded0ef"
+      "contentHash": "2a9c6729475ccd1863d072eca3e2771a312cd401d2186d0732b4d92f0d5b915e"
     },
     {
       "id": "document:changelog.d/253.md",
@@ -1004,14 +1004,14 @@
     {
       "id": "document:docs/fixtures/mvp/README.md",
       "type": "document",
-      "title": "README.md",
+      "title": "Formato do manifesto de MVP e o digest (referência para o #254)",
       "path": "docs/fixtures/mvp/README.md",
-      "description": "Referência para o #254: mvp_manifest.py é a fonte da fábrica (AgentsKit-io/factory, packages/factory-ops/projects/, origin/main de 30/10). receipts-mvp.yaml é um manifesto aprovado de verdade.",
+      "description": "exemplo-mvp.yaml é um manifesto sintético (produto fictício) no formato real. Manifestos de produtos e código privado nunca entram neste repositório público.",
       "tags": [
         "document",
         "human"
       ],
-      "contentHash": "3bcd3803ad05b8b8dde674f59cc072604f2d45a1dc096a19e4ef79a29c154439"
+      "contentHash": "031fa35ee262fdd9b244b93835d185995e2e3c08443d460bbc86eb5df6c2ecf2"
     },
     {
       "id": "document:docs/for-agents/packages/ecosystem-manifest.md",
@@ -9795,7 +9795,7 @@
         "module",
         "ts"
       ],
-      "contentHash": "d5ab731b8d658feceb6e277d49cebd66705964869bb7a6631b9f17765fdf34e2"
+      "contentHash": "8ca8f55c7c72e64f756b1e063df967052c4dc3a3eb69617935c20967686eff93"
     }
   ],
   "handoffs": {
@@ -9903,7 +9903,7 @@
     }
   },
   "inputs": {
-    "hash": "3c6da4fd66927574889926c84d77330bf1cb60b21508fdf77278885717438a26",
+    "hash": "da5aaa8497473da31c5357a44bc10330e09e3fde056818d5972302e3c88e02e2",
     "fileCount": 631,
     "projectionVersion": 2
   },
@@ -9926,9 +9926,9 @@
   "projection": {
     "type": "retrieval-index",
     "schemaVersion": 1,
-    "contentHash": "0d3b9803152c1961a1474d080286ad5463db9341697864d41eb59405b28b0d69",
+    "contentHash": "ee9934ead0dc0637294fca1999124568f6d5dd190935f2624097a42b034a852c",
     "contentHashAlgo": "sha256-semantic-v1",
-    "snapshotHash": "3e9b812013f8e49d4dd30bafb8fb83c461307c0fe10a5ea34f535e52dc7125b3",
+    "snapshotHash": "de747331aa881a64ea4c98839b1c3c65093b9582064964f2a5e94329782d2872",
     "overlayHash": "f99666ff9119084dd25c2974ae64eb6935ec2aa785ff5ad478fb9d541f7a5e94",
     "configurationHash": "497822431910cd9fa7d674a48a9f0b96fbbbf779f22a001de0b52252117fe3ab",
     "lexiconVersion": 1,
@@ -9960,12 +9960,12 @@
       ],
       "averageFieldLength": {
         "aliases": 2.9151712887438825,
-        "body": 46.31810766721044,
-        "headings": 3.836867862969005,
+        "body": 46.49592169657423,
+        "headings": 3.8613376835236544,
         "path": 6.102773246329527,
-        "summary": 2.9869494290375203,
+        "summary": 2.967373572593801,
         "symbols": 13.68678629690049,
-        "title": 4.022838499184339
+        "title": 4.029363784665579
       }
     },
     "entries": [
@@ -10895,7 +10895,7 @@
         ],
         "fields": {
           "title": "AGENTS.md",
-          "headings": "AGENTS.md Mission Before changing code Coding style — ponytail Reuse first Output style — caveman Local tooling — rtk Boundaries Enforcement rules Verification contract House conventions",
+          "headings": "AGENTS.md Mission Before changing code Coding style — ponytail Reuse first Output style — caveman Local tooling — rtk Boundaries Enforcement rules Verification contract House conventions Confidencialidade (repositório PÚBLICO)",
           "path": "AGENTS.md",
           "symbols": "",
           "summary": "This repository owns the deterministic SDLC enforcement engine published as @agentskit/harness. The Playbook documents practices; the Harness enforces contracts, gates, state transitions, evidence, and recovery.",
@@ -10982,7 +10982,7 @@
             }
           ]
         },
-        "contentHash": "26e91c1e01271df2c8e4a6290dc0e7d1047ce1b2e147c8a55a5eed756dded0ef",
+        "contentHash": "2a9c6729475ccd1863d072eca3e2771a312cd401d2186d0732b4d92f0d5b915e",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -15707,8 +15707,8 @@
         "id": "document:docs/fixtures/mvp/README.md",
         "kind": "document",
         "path": "docs/fixtures/mvp/README.md",
-        "title": "README.md",
-        "summary": "Referência para o #254: mvp_manifest.py é a fonte da fábrica (AgentsKit-io/factory, packages/factory-ops/projects/, origin/main de 30/10). receipts-mvp.yaml é um manifesto aprovado de verdade.",
+        "title": "Formato do manifesto de MVP e o digest (referência para o #254)",
+        "summary": "exemplo-mvp.yaml é um manifesto sintético (produto fictício) no formato real. Manifestos de produtos e código privado nunca entram neste repositório público.",
         "audience": "human",
         "aliases": [],
         "tags": [
@@ -15716,12 +15716,12 @@
           "human"
         ],
         "fields": {
-          "title": "README.md",
-          "headings": "",
+          "title": "Formato do manifesto de MVP e o digest (referência para o #254)",
+          "headings": "Formato do manifesto de MVP e o digest (referência para o #254) Formato Digest (o que o dono aprova) Aprovação válida",
           "path": "docs/fixtures/mvp/README.md",
           "symbols": "",
-          "summary": "Referência para o #254: mvp_manifest.py é a fonte da fábrica (AgentsKit-io/factory, packages/factory-ops/projects/, origin/main de 30/10). receipts-mvp.yaml é um manifesto aprovado de verdade.",
-          "body": "Referência para o 254: mvp manifest.py é a fonte da fábrica (AgentsKit-io/factory, packages/factory-ops/projects/, origin/main de 30/10). receipts-mvp.yaml é um manifesto aprovado de verdade. Digest esperado ( python3 mvp manifest.py digest receipts-mvp.yaml ): d2b07457af8cefa1",
+          "summary": "exemplo-mvp.yaml é um manifesto sintético (produto fictício) no formato real. Manifestos de produtos e código privado nunca entram neste repositório público.",
+          "body": "Formato do manifesto de MVP e o digest (referência para o 254) exemplo-mvp.yaml é um manifesto sintético (produto fictício) no formato real. Manifestos de produtos e código privado nunca entram neste repositório público. Formato - version: 1 , product , repo , source - approval : by , at , digest - homolog.base url (opcional) - requirements : uma lista; cada item tem id (ex.: RF-01 ), title , done when (texto), weight (inteiro, padrão 1) e as listas de evidência acceptance , homolog , issues e prs . - É um subconjunto estrito de YAML: mapeamentos, listas com - , escalares simples ou entre aspas, e blocos - . Um : dentro de um texto sem aspas é erro. Digest (o que o dono aprova) 1. Para cada requisito, na ordem, monte {\"id\", \"title\", \"done when\", \"weight\"} : - title sem espaços nas pontas; - done when com todo espaço em branco (quebras de linha incluídas) colapsado num espaço só e sem espaços nas pontas; - weight com padrão 1. 2. Serialize a lista em JSON com chaves ordenadas, sem espaços ( , e : como separadores) e UTF-8 sem escapar ( ensure ascii=false ). 3. sha256 desse texto em hexadecimal; o digest são os 16 primeiros caracteres . As listas de evidência não entram no digest: links podem mudar sem nova aprovação. Digest esperado para exemplo-mvp.yaml : a5d6dbc14e5f9a24 . Uma implementação correta tem de reproduzir esse valor. Aprovação válida approval.by é um aprovador e approval.digest é igual ao digest da lista atual. Se não for igual, a lista mudou depois da aprovação e precisa de nova aprovação.",
           "aliases": "document human"
         },
         "graph": {
@@ -15730,9 +15730,20 @@
           "coveredBy": [],
           "mentionedBy": [],
           "inbound": [],
-          "outbound": []
+          "outbound": [
+            {
+              "kind": "mentions-symbol",
+              "id": "module:apps/docs/lib/source.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "mentions-symbol",
+              "id": "module:src/kernel/hash.ts",
+              "confidence": "observed"
+            }
+          ]
         },
-        "contentHash": "3bcd3803ad05b8b8dde674f59cc072604f2d45a1dc096a19e4ef79a29c154439",
+        "contentHash": "031fa35ee262fdd9b244b93835d185995e2e3c08443d460bbc86eb5df6c2ecf2",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -18035,10 +18046,11 @@
         },
         "graph": {
           "pagerank": 0,
-          "inboundLinks": 2,
+          "inboundLinks": 3,
           "coveredBy": [],
           "mentionedBy": [
             "document:apps/docs/content/docs/reference/events.mdx",
+            "document:docs/fixtures/mvp/README.md",
             "document:docs/MODULE-BOUNDARIES.md"
           ],
           "areaId": "area:apps/docs",
@@ -18047,6 +18059,11 @@
             {
               "kind": "mentions-symbol",
               "id": "document:apps/docs/content/docs/reference/events.mdx",
+              "confidence": "observed"
+            },
+            {
+              "kind": "mentions-symbol",
+              "id": "document:docs/fixtures/mvp/README.md",
               "confidence": "observed"
             },
             {
@@ -25766,10 +25783,11 @@
         },
         "graph": {
           "pagerank": 0,
-          "inboundLinks": 1,
+          "inboundLinks": 2,
           "coveredBy": [],
           "mentionedBy": [
-            "document:docs/MODULE-BOUNDARIES.md"
+            "document:docs/MODULE-BOUNDARIES.md",
+            "document:docs/fixtures/mvp/README.md"
           ],
           "areaId": "area:src/kernel",
           "packageId": "package:@agentskit/harness",
@@ -26052,6 +26070,11 @@
             {
               "kind": "mentions",
               "id": "document:docs/MODULE-BOUNDARIES.md",
+              "confidence": "observed"
+            },
+            {
+              "kind": "mentions-symbol",
+              "id": "document:docs/fixtures/mvp/README.md",
               "confidence": "observed"
             }
           ],
@@ -52032,7 +52055,7 @@
           ],
           "outbound": []
         },
-        "contentHash": "d5ab731b8d658feceb6e277d49cebd66705964869bb7a6631b9f17765fdf34e2",
+        "contentHash": "8ca8f55c7c72e64f756b1e063df967052c4dc3a3eb69617935c20967686eff93",
         "provenance": "observed",
         "confidence": "observed"
       },
