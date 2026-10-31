@@ -250,3 +250,5 @@ export type { MetricReading, TuningDecision, TuningKnob, TuningMetric, TuningRec
 export type { EffectiveFlowSettings, FlowIssue, FlowProfile, FlowSource, ResolvedFlow, RoleSettings } from './loop/flows.js'
 export type { Notification, NotifyInput, NotifyOutcome } from './loop/notify.js'
 export type { LoopEventBus, LoopEventListener, LoopEventPayload, LoopHookListener, LoopHookName, LoopHookPayload, LoopHookResult, LoopPluginModule } from './loop/event-bus.js'
+export { evaluateMvp, evidenceFromJson, formatMvpReport, loadMvp, mvpApprovalState, mvpDigest, MvpManifestError, parseMvpYaml, validateMvp } from './mvp.js'
+export type { MvpEvidence, MvpReport, MvpState } from './mvp.js'

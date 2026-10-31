@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
-  "contentHash": "005c3371d248a78d63174e5a82887235d53bf5f9c9a12fd6bceb17702fadadb4",
+  "contentHash": "44fff9635ac7232ce356b1035ba4b6564df9375bbebb54ffc599f6b54bbfd2a5",
   "contentHashAlgo": "sha256-semantic-v1",
-  "generatedAt": "2026-10-30T18:02:26.911Z",
+  "generatedAt": "2026-10-31T07:30:40.904Z",
   "project": {
     "name": "AgentsKit Harness",
     "root": "."
@@ -291,7 +291,7 @@
         "document",
         "unclassified"
       ],
-      "contentHash": "26e91c1e01271df2c8e4a6290dc0e7d1047ce1b2e147c8a55a5eed756dded0ef"
+      "contentHash": "2a9c6729475ccd1863d072eca3e2771a312cd401d2186d0732b4d92f0d5b915e"
     },
     {
       "id": "document:changelog.d/253.md",
@@ -304,6 +304,18 @@
         "project"
       ],
       "contentHash": "887b974cd13d2c2cec09594e4c453c6fe24813d576b7d5175e1fbe1b85b84aaf"
+    },
+    {
+      "id": "document:changelog.d/254.md",
+      "type": "document",
+      "title": "254.md",
+      "path": "changelog.d/254.md",
+      "description": "feat: ak-harness mvp check|digest|report — validate docs/mvp.yaml, compute the approval digest and report product progress",
+      "tags": [
+        "document",
+        "project"
+      ],
+      "contentHash": "019239fc6a783264ea93c72bea2e085446388a036bf158440fe32ba2ca50a7d3"
     },
     {
       "id": "document:changelog.d/255.md",
@@ -992,14 +1004,14 @@
     {
       "id": "document:docs/fixtures/mvp/README.md",
       "type": "document",
-      "title": "README.md",
+      "title": "Formato do manifesto de MVP e o digest (referência para o #254)",
       "path": "docs/fixtures/mvp/README.md",
-      "description": "Referência para o #254: mvp_manifest.py é a fonte da fábrica (AgentsKit-io/factory, packages/factory-ops/projects/, origin/main de 30/10). exemplo-mvp.yaml é um manifesto sintético (produto fictício), no formato real; manifestos de produtos privados nunca entram neste repo público.",
+      "description": "exemplo-mvp.yaml é um manifesto sintético (produto fictício) no formato real. Manifestos de produtos e código privado nunca entram neste repositório público.",
       "tags": [
         "document",
         "human"
       ],
-      "contentHash": "bb9f9fc2938962d5e4e85cbaba0ba10f6360af1d577a82b16555539ce18f99f1"
+      "contentHash": "031fa35ee262fdd9b244b93835d185995e2e3c08443d460bbc86eb5df6c2ecf2"
     },
     {
       "id": "document:docs/for-agents/packages/ecosystem-manifest.md",
@@ -2509,7 +2521,7 @@
         "ts",
         "src"
       ],
-      "contentHash": "1f1d3dae74b3426d6395ab2ce913f746997653f8c6f6069d7daab57317609724"
+      "contentHash": "77a1e94453814e2a568994ca242039c23eee3de42a4c6f3b94a7a5a824fb9fee"
     },
     {
       "id": "module:src/context/index.ts",
@@ -3115,7 +3127,7 @@
         "ts",
         "src"
       ],
-      "contentHash": "6d840a612eb9a1d5f8e015fd0dba7b39483d31941fc664a3f8aad70a8a0f567f"
+      "contentHash": "3b4c596f466bb58c111bf87960d3c0dcf7bd0fb184539fb85b1460f0fa835bd2"
     },
     {
       "id": "module:src/kernel/adapter-contract.ts",
@@ -5998,6 +6010,40 @@
         "loop"
       ],
       "contentHash": "0e00934721210a2e80710e53ba195185aa2234591a5be1f7a8fda5dd8dfe1bb4"
+    },
+    {
+      "id": "module:src/mvp.ts",
+      "type": "module",
+      "title": "mvp.ts",
+      "path": "src/mvp.ts",
+      "symbols": [
+        "MVP_FILES",
+        "MVP_LEVELS",
+        "MVP_STATES",
+        "MvpAnswer",
+        "MvpEvidence",
+        "MvpLaunch",
+        "MvpLevel",
+        "MvpManifestError",
+        "MvpReport",
+        "MvpRequirementReport",
+        "MvpState",
+        "evaluateMvp",
+        "evidenceFromJson",
+        "formatMvpReport",
+        "loadMvp",
+        "mvpApprovalState",
+        "mvpDigest",
+        "mvpLaunches",
+        "parseMvpYaml",
+        "validateMvp"
+      ],
+      "tags": [
+        "module",
+        "ts",
+        "src"
+      ],
+      "contentHash": "c5b43a8cdde2442bdfe696a71dc66bf7a08a059f391b69a4dea488b905ff7b35"
     },
     {
       "id": "module:src/profiles/index.ts",
@@ -9280,6 +9326,18 @@
       "contentHash": "bda17e22dc66bd490303f3ca1cc4ea2194086ae21f3b87e84b1f2dd58883b98f"
     },
     {
+      "id": "module:test/mvp.test.ts",
+      "type": "module",
+      "title": "mvp.test.ts",
+      "path": "test/mvp.test.ts",
+      "tags": [
+        "module",
+        "ts",
+        "test"
+      ],
+      "contentHash": "916bdf21016afe2a419ff5cf1b20538b51b8451a330c6b78825ca3f8e575fdc0"
+    },
+    {
       "id": "module:test/optimization.test.ts",
       "type": "module",
       "title": "optimization.test.ts",
@@ -9737,7 +9795,7 @@
         "module",
         "ts"
       ],
-      "contentHash": "d5ab731b8d658feceb6e277d49cebd66705964869bb7a6631b9f17765fdf34e2"
+      "contentHash": "8ca8f55c7c72e64f756b1e063df967052c4dc3a3eb69617935c20967686eff93"
     }
   ],
   "handoffs": {
@@ -9845,8 +9903,8 @@
     }
   },
   "inputs": {
-    "hash": "7d95f314feba644e0be19af2b6267a99010d781d385345761ed8c0e690570559",
-    "fileCount": 628,
+    "hash": "da5aaa8497473da31c5357a44bc10330e09e3fde056818d5972302e3c88e02e2",
+    "fileCount": 631,
     "projectionVersion": 2
   },
   "retrieval": {
@@ -9868,9 +9926,9 @@
   "projection": {
     "type": "retrieval-index",
     "schemaVersion": 1,
-    "contentHash": "c4fbb04374df62ed05a434acadd65536e5128f143f714a5e83db8a4d7c1552ec",
+    "contentHash": "ee9934ead0dc0637294fca1999124568f6d5dd190935f2624097a42b034a852c",
     "contentHashAlgo": "sha256-semantic-v1",
-    "snapshotHash": "69b2885228256e8988821ff1c121da47057489e28bc0c0466c9afd703590957e",
+    "snapshotHash": "de747331aa881a64ea4c98839b1c3c65093b9582064964f2a5e94329782d2872",
     "overlayHash": "f99666ff9119084dd25c2974ae64eb6935ec2aa785ff5ad478fb9d541f7a5e94",
     "configurationHash": "497822431910cd9fa7d674a48a9f0b96fbbbf779f22a001de0b52252117fe3ab",
     "lexiconVersion": 1,
@@ -9890,7 +9948,7 @@
     },
     "lexical": {
       "version": 1,
-      "documentCount": 610,
+      "documentCount": 613,
       "fieldNames": [
         "aliases",
         "body",
@@ -9901,13 +9959,13 @@
         "title"
       ],
       "averageFieldLength": {
-        "aliases": 2.916393442622951,
-        "body": 46.472131147540985,
-        "headings": 3.862295081967213,
-        "path": 6.111475409836066,
-        "summary": 2.9885245901639346,
-        "symbols": 13.647540983606557,
-        "title": 4.031147540983606
+        "aliases": 2.9151712887438825,
+        "body": 46.49592169657423,
+        "headings": 3.8613376835236544,
+        "path": 6.102773246329527,
+        "summary": 2.967373572593801,
+        "symbols": 13.68678629690049,
+        "title": 4.029363784665579
       }
     },
     "entries": [
@@ -10755,7 +10813,7 @@
           ],
           "outbound": []
         },
-        "contentHash": "81d5ae8691295bf70541a84154546ece00efe95f70818e812686f080fbbd7b94",
+        "contentHash": "1051e66dac901dae40c1d8bf762f2cb760fa88862eee2fced5f0954e68c103f6",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -10837,7 +10895,7 @@
         ],
         "fields": {
           "title": "AGENTS.md",
-          "headings": "AGENTS.md Mission Before changing code Coding style — ponytail Reuse first Output style — caveman Local tooling — rtk Boundaries Enforcement rules Verification contract House conventions",
+          "headings": "AGENTS.md Mission Before changing code Coding style — ponytail Reuse first Output style — caveman Local tooling — rtk Boundaries Enforcement rules Verification contract House conventions Confidencialidade (repositório PÚBLICO)",
           "path": "AGENTS.md",
           "symbols": "",
           "summary": "This repository owns the deterministic SDLC enforcement engine published as @agentskit/harness. The Playbook documents practices; the Harness enforces contracts, gates, state transitions, evidence, and recovery.",
@@ -10924,7 +10982,7 @@
             }
           ]
         },
-        "contentHash": "26e91c1e01271df2c8e4a6290dc0e7d1047ce1b2e147c8a55a5eed756dded0ef",
+        "contentHash": "2a9c6729475ccd1863d072eca3e2771a312cd401d2186d0732b4d92f0d5b915e",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -12264,11 +12322,11 @@
         ],
         "fields": {
           "title": "cli",
-          "headings": "ak-harness doctor ak-harness ui ak-harness plan ak-harness context ak-harness context resolve ak-harness wip ak-harness wip assess ak-harness delivery ak-harness delivery preflight ak-harness delivery pr ak-harness delivery integration ak-harness delivery production ak-harness delivery acceptance ak-harness delivery cleanup ak-harness block ak-harness block validate ak-harness block assess ak-harness preflight ak-harness preflight files ak-harness artifacts ak-harness artifacts inspect ak-harness artifacts list ak-harness artifacts schema ak-harness loop ak-harness loop validate ak-harness loop doctor ak-harness loop precheck ak-harness loop deliver ak-harness loop stage ak-harness loop tick-worker ak-harness loop deliver-worker ak-harness loop tick ak-harness loop contract ak-harness loop init ak-harness loop install ak-harness loop uninstall ak-harness loop status ak-harness loop approve ak-harness loop resume ak-harness loop paused ak-harness loop hook ak-harness loop debrief ak-harness loop issue-timeline ak-harness loop run ak-harness loop run list ak-harness loop run show ak-harness loop worker-guard ak-harness loop observe ak-harness loop watch ak-harness loop retro ak-harness loop plan ak-harness loop plan start ak-harness loop plan answer ak-harness loop plan show ak-harness loop plan approve ak-harness loop plan architect ak-harness loop plan approve-design ak-harness loop plan decompose ak-harness loop release ak-harness loop release status ak-harness loop release approve ak-harness loop release run ak-harness loop learning ak-harness loop learning list",
+          "headings": "ak-harness doctor ak-harness ui ak-harness plan ak-harness mvp ak-harness mvp check ak-harness mvp digest ak-harness mvp report ak-harness context ak-harness context resolve ak-harness wip ak-harness wip assess ak-harness delivery ak-harness delivery preflight ak-harness delivery pr ak-harness delivery integration ak-harness delivery production ak-harness delivery acceptance ak-harness delivery cleanup ak-harness block ak-harness block validate ak-harness block assess ak-harness preflight ak-harness preflight files ak-harness artifacts ak-harness artifacts inspect ak-harness artifacts list ak-harness artifacts schema ak-harness loop ak-harness loop validate ak-harness loop doctor ak-harness loop precheck ak-harness loop deliver ak-harness loop stage ak-harness loop tick-worker ak-harness loop deliver-worker ak-harness loop tick ak-harness loop contract ak-harness loop init ak-harness loop install ak-harness loop uninstall ak-harness loop status ak-harness loop approve ak-harness loop resume ak-harness loop paused ak-harness loop hook ak-harness loop debrief ak-harness loop issue-timeline ak-harness loop run ak-harness loop run list ak-harness loop run show ak-harness loop worker-guard ak-harness loop observe ak-harness loop watch ak-harness loop retro ak-harness loop plan ak-harness loop plan start ak-harness loop plan answer ak-harness loop plan show ak-harness loop plan approve ak-harness loop plan architect ak-harness loop plan approve-design ak-harness loop plan decompose ak-harness loop release ak-harness loop release status",
           "path": "apps/docs/content/docs/reference/cli.mdx",
           "symbols": "",
           "summary": "{/* Generated by `pnpm docs:generate`. Do not edit by hand: edit `src/cli.ts` and regenerate. */}",
-          "body": "{/ Generated by pnpm docs:generate . Do not edit by hand: edit src/cli.ts and regenerate. /} ak-harness is the harness; ak-verify is an alias of the same binary for the common verification protocol. Every loop command takes -f <path-to-loop.config.yaml and defaults to ./loop.config.yaml . ak-harness doctor Validate the contract without starting a run. ak-harness ui Start the local Harness operational UI. Flag What it does Default --- --- --- --loop-config &lt;path&gt; loop configuration path \"loop.config.yaml\" --host &lt;host&gt; loopback host to bind \"127.0.0.1\" --port &lt;port&gt; TCP port (0 selects a free port) 4321 --dev proxy the frontend to a Vite dev server (npm run ui:dev) instead of serving the built assets ak-harness plan Approve the frozen task contract and create a planned run. Flag What it does Default --- --- --- --by &lt;actor&gt; approval actor \"human\" --allow-dirty allow a human-authorized dirty worktree --context-file &lt;path&gt; attach a context snapshot JSON file ak-harness context Resolve portable, provenance-bearing context snapshots. ak-harness context resolve Resolve a Doc Bridge snapshot from the local index. Flag What it does Default --- --- --- --provider &lt;provider&gt; context provider \"doc-bridge\" --scope &lt;scope...&gt; optional search scopes --index &lt;path&gt; Doc Bridge index path \".doc-bridge/index.json\" ak-harness wip Assess deterministic WIP admission before starting work. ak-harness wip assess Emit an admission decision from WIP ledger JSON. ak-harness delivery Assess deterministic G2–G5 gates and prepare idempotent PR handoff. ak-harness delivery preflight ak-harness delivery pr ak-harness delivery integration ak-harness delivery production ak-harness delivery acceptance ak-harness delivery cleanup ak-harness block Validate and assess a portable execution block manifest. ak-harness block validate ak-harness block assess Flag What it does Default --- --- --- --completed &lt;ids...&gt; completed dependency IDs ak-harness preflight Plan safe, file-scoped validation before commit. ak-harness preflight files ak-harness artifacts Inspect versioned, provenance-bound run artifacts. ak-harness artifacts inspect Validate and print one artifact as JSON or Markdown. ak-harness artifacts list List artifacts for the latest or selected run. ak-harness artifacts schema Print the artifact schema version. ak-harness loop Keep-pushing SDLC loop: drain the configured issue tracker through worktrees with role-based model routing. Flag What it does Default --- --- --- -f, --file &lt;path&gt; loop config path \"loop.config.yaml\" ak-harness loop validate Validate loop.config.yaml and print the effective configuration. Reports keys the schema does not know — almost always a typo, which zod otherwise strips in silence. ak-harness loop doctor Check Orca, providers, usage, machine slots, routing, and the selected tracker board without dispatching. Flag What it does Default --- --- --- --no-probe skip provider probe commands ak-harness loop precheck Read-only Orca precheck: exit 0 when the stage (tick \\ deliver) has work. ak-harness loop deliver Drive dispatched workers to merge: PR detection, CI, review, fix rounds, squash-merge, tracker Done, cleanup. Flag What it does Default --- --- --- --dry-run decide only; no terminal input, no review, no merge, no tracker write --issue &lt;identifier&gt; restrict to one issue ak-harness loop stage Run one stage (tick \\ deliver \\ retro \\ observe \\ release \\ intake \\ maintain) as an Orca precheck: prints the JSON report and exits 1 so Orca records the run without launching an agent — except observe , which exits 0 when a human has to look. ak-harness loop tick-worker Internal: the detached background process loop stage tick spawns to run a real tick without Orca's precheck ceiling — not meant to be run by hand. Use loop tick for a foreground run, or loop stage tick for the scheduled entrypoint. ak-harness loop deliver-worker Internal: the detached background process loop st",
+          "body": "{/ Generated by pnpm docs:generate . Do not edit by hand: edit src/cli.ts and regenerate. /} ak-harness is the harness; ak-verify is an alias of the same binary for the common verification protocol. Every loop command takes -f <path-to-loop.config.yaml and defaults to ./loop.config.yaml . ak-harness doctor Validate the contract without starting a run. ak-harness ui Start the local Harness operational UI. Flag What it does Default --- --- --- --loop-config &lt;path&gt; loop configuration path \"loop.config.yaml\" --host &lt;host&gt; loopback host to bind \"127.0.0.1\" --port &lt;port&gt; TCP port (0 selects a free port) 4321 --dev proxy the frontend to a Vite dev server (npm run ui:dev) instead of serving the built assets ak-harness plan Approve the frozen task contract and create a planned run. Flag What it does Default --- --- --- --by &lt;actor&gt; approval actor \"human\" --allow-dirty allow a human-authorized dirty worktree --context-file &lt;path&gt; attach a context snapshot JSON file ak-harness mvp Validate docs/mvp.yaml, compute its approval digest and report product progress by requirement. ak-harness mvp check Parse and validate the MVP manifest (exit 1 on errors). ak-harness mvp digest Print the digest to write in approval.digest (the owner approves this exact list). ak-harness mvp report Product report: % by evidence level and requirement counts by state (pronto, em QA, bloqueado, sem começar). Flag What it does Default --- --- --- --evidence &lt;path&gt; JSON file with the checked evidence (keys prs, ci, files, urls, runs); without it every level is \"sem evidência\" --approver &lt;name...&gt; who may approve the list (default: anyone named in approval.by) ak-harness context Resolve portable, provenance-bearing context snapshots. ak-harness context resolve Resolve a Doc Bridge snapshot from the local index. Flag What it does Default --- --- --- --provider &lt;provider&gt; context provider \"doc-bridge\" --scope &lt;scope...&gt; optional search scopes --index &lt;path&gt; Doc Bridge index path \".doc-bridge/index.json\" ak-harness wip Assess deterministic WIP admission before starting work. ak-harness wip assess Emit an admission decision from WIP ledger JSON. ak-harness delivery Assess deterministic G2–G5 gates and prepare idempotent PR handoff. ak-harness delivery preflight ak-harness delivery pr ak-harness delivery integration ak-harness delivery production ak-harness delivery acceptance ak-harness delivery cleanup ak-harness block Validate and assess a portable execution block manifest. ak-harness block validate ak-harness block assess Flag What it does Default --- --- --- --completed &lt;ids...&gt; completed dependency IDs ak-harness preflight Plan safe, file-scoped validation before commit. ak-harness preflight files ak-harness artifacts Inspect versioned, provenance-bound run artifacts. ak-harness artifacts inspect Validate and print one artifact as JSON or Markdown. ak-harness artifacts list List artifacts for the latest or selected run. ak-harness artifacts schema Print the artifact schema version. ak-harness loop Keep-pushing SDLC loop: drain the configured issue tracker through worktrees with role-based model routing. Flag What it does Default --- --- --- -f, --file &lt;path&gt; loop config path \"loop.config.yaml\" ak-harness loop validate Validate loop.config.yaml and print the effective configuration. Reports keys the schema does not know — almost always a typo, which zod otherwise strips in silence. ak-harness loop doctor Check Orca, providers, usage, machine slots, routing, and the selected tracker board without dispatching. Flag What it does Default --- --- --- --no-probe skip provider probe commands ak-harness loop precheck Read-only Orca precheck: exit 0 when the stage (tick \\ deliver) has work. ak-harness loop deliver Drive dispatched workers to merge: PR detection, CI, review, fix rounds, squash-merge, tracker Done, cleanup. Flag What it does Default --- --- --- --dry-run decide only; no terminal input, no r",
           "aliases": "cli document human"
         },
         "graph": {
@@ -12285,7 +12343,7 @@
             }
           ]
         },
-        "contentHash": "4e87d59625a0265987ba8b5dbac56aa83e340dd204e2f28a172e3b02b941c09b",
+        "contentHash": "a70b4c1f2330a2f6ea0e7c4c914fb1c458d08cae0c231bb16f156ee0119fa58b",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -12487,6 +12545,39 @@
           ]
         },
         "contentHash": "887b974cd13d2c2cec09594e4c453c6fe24813d576b7d5175e1fbe1b85b84aaf",
+        "provenance": "observed",
+        "confidence": "observed"
+      },
+      {
+        "id": "document:changelog.d/254.md",
+        "kind": "document",
+        "path": "changelog.d/254.md",
+        "title": "254.md",
+        "summary": "feat: ak-harness mvp check|digest|report — validate docs/mvp.yaml, compute the approval digest and report product progress",
+        "audience": "human",
+        "aliases": [],
+        "tags": [
+          "document",
+          "project"
+        ],
+        "fields": {
+          "title": "254.md",
+          "headings": "",
+          "path": "changelog.d/254.md",
+          "symbols": "",
+          "summary": "feat: ak-harness mvp check|digest|report — validate docs/mvp.yaml, compute the approval digest and report product progress",
+          "body": "feat: ak-harness mvp check digest report — validate docs/mvp.yaml, compute the approval digest and report product progress Port of the factory mvp manifest.py (same digest, golden-tested against docs/fixtures/mvp). report gives % by evidence level (merged, accepted, proven) and a count per requirement state (pronto, em QA, bloqueado, sem começar); evidence comes from --evidence <json , absent evidence is \"sem evidência\".",
+          "aliases": "document project"
+        },
+        "graph": {
+          "pagerank": 0,
+          "inboundLinks": 0,
+          "coveredBy": [],
+          "mentionedBy": [],
+          "inbound": [],
+          "outbound": []
+        },
+        "contentHash": "019239fc6a783264ea93c72bea2e085446388a036bf158440fe32ba2ca50a7d3",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -15616,8 +15707,8 @@
         "id": "document:docs/fixtures/mvp/README.md",
         "kind": "document",
         "path": "docs/fixtures/mvp/README.md",
-        "title": "README.md",
-        "summary": "Referência para o #254: mvp_manifest.py é a fonte da fábrica (AgentsKit-io/factory, packages/factory-ops/projects/, origin/main de 30/10). exemplo-mvp.yaml é um manifesto sintético (produto fictício), no formato real; manifestos de produtos privados nunca entram neste repo público.",
+        "title": "Formato do manifesto de MVP e o digest (referência para o #254)",
+        "summary": "exemplo-mvp.yaml é um manifesto sintético (produto fictício) no formato real. Manifestos de produtos e código privado nunca entram neste repositório público.",
         "audience": "human",
         "aliases": [],
         "tags": [
@@ -15625,12 +15716,12 @@
           "human"
         ],
         "fields": {
-          "title": "README.md",
-          "headings": "",
+          "title": "Formato do manifesto de MVP e o digest (referência para o #254)",
+          "headings": "Formato do manifesto de MVP e o digest (referência para o #254) Formato Digest (o que o dono aprova) Aprovação válida",
           "path": "docs/fixtures/mvp/README.md",
           "symbols": "",
-          "summary": "Referência para o #254: mvp_manifest.py é a fonte da fábrica (AgentsKit-io/factory, packages/factory-ops/projects/, origin/main de 30/10). exemplo-mvp.yaml é um manifesto sintético (produto fictício), no formato real; manifestos de produtos privados nunca entram neste repo público.",
-          "body": "Referência para o 254: mvp manifest.py é a fonte da fábrica (AgentsKit-io/factory, packages/factory-ops/projects/, origin/main de 30/10). exemplo-mvp.yaml é um manifesto sintético (produto fictício), no formato real; manifestos de produtos privados nunca entram neste repo público. Digest esperado ( python3 mvp manifest.py digest exemplo-mvp.yaml ): a5d6dbc14e5f9a24",
+          "summary": "exemplo-mvp.yaml é um manifesto sintético (produto fictício) no formato real. Manifestos de produtos e código privado nunca entram neste repositório público.",
+          "body": "Formato do manifesto de MVP e o digest (referência para o 254) exemplo-mvp.yaml é um manifesto sintético (produto fictício) no formato real. Manifestos de produtos e código privado nunca entram neste repositório público. Formato - version: 1 , product , repo , source - approval : by , at , digest - homolog.base url (opcional) - requirements : uma lista; cada item tem id (ex.: RF-01 ), title , done when (texto), weight (inteiro, padrão 1) e as listas de evidência acceptance , homolog , issues e prs . - É um subconjunto estrito de YAML: mapeamentos, listas com - , escalares simples ou entre aspas, e blocos - . Um : dentro de um texto sem aspas é erro. Digest (o que o dono aprova) 1. Para cada requisito, na ordem, monte {\"id\", \"title\", \"done when\", \"weight\"} : - title sem espaços nas pontas; - done when com todo espaço em branco (quebras de linha incluídas) colapsado num espaço só e sem espaços nas pontas; - weight com padrão 1. 2. Serialize a lista em JSON com chaves ordenadas, sem espaços ( , e : como separadores) e UTF-8 sem escapar ( ensure ascii=false ). 3. sha256 desse texto em hexadecimal; o digest são os 16 primeiros caracteres . As listas de evidência não entram no digest: links podem mudar sem nova aprovação. Digest esperado para exemplo-mvp.yaml : a5d6dbc14e5f9a24 . Uma implementação correta tem de reproduzir esse valor. Aprovação válida approval.by é um aprovador e approval.digest é igual ao digest da lista atual. Se não for igual, a lista mudou depois da aprovação e precisa de nova aprovação.",
           "aliases": "document human"
         },
         "graph": {
@@ -15639,9 +15730,20 @@
           "coveredBy": [],
           "mentionedBy": [],
           "inbound": [],
-          "outbound": []
+          "outbound": [
+            {
+              "kind": "mentions-symbol",
+              "id": "module:apps/docs/lib/source.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "mentions-symbol",
+              "id": "module:src/kernel/hash.ts",
+              "confidence": "observed"
+            }
+          ]
         },
-        "contentHash": "bb9f9fc2938962d5e4e85cbaba0ba10f6360af1d577a82b16555539ce18f99f1",
+        "contentHash": "031fa35ee262fdd9b244b93835d185995e2e3c08443d460bbc86eb5df6c2ecf2",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -17944,10 +18046,11 @@
         },
         "graph": {
           "pagerank": 0,
-          "inboundLinks": 2,
+          "inboundLinks": 3,
           "coveredBy": [],
           "mentionedBy": [
             "document:apps/docs/content/docs/reference/events.mdx",
+            "document:docs/fixtures/mvp/README.md",
             "document:docs/MODULE-BOUNDARIES.md"
           ],
           "areaId": "area:apps/docs",
@@ -17956,6 +18059,11 @@
             {
               "kind": "mentions-symbol",
               "id": "document:apps/docs/content/docs/reference/events.mdx",
+              "confidence": "observed"
+            },
+            {
+              "kind": "mentions-symbol",
+              "id": "document:docs/fixtures/mvp/README.md",
               "confidence": "observed"
             },
             {
@@ -21838,6 +21946,11 @@
             },
             {
               "kind": "imports",
+              "id": "module:src/mvp.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
               "id": "module:src/record.ts",
               "confidence": "observed"
             },
@@ -21848,7 +21961,7 @@
             }
           ]
         },
-        "contentHash": "1f1d3dae74b3426d6395ab2ce913f746997653f8c6f6069d7daab57317609724",
+        "contentHash": "77a1e94453814e2a568994ca242039c23eee3de42a4c6f3b94a7a5a824fb9fee",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -24388,7 +24501,7 @@
             }
           ]
         },
-        "contentHash": "6d840a612eb9a1d5f8e015fd0dba7b39483d31941fc664a3f8aad70a8a0f567f",
+        "contentHash": "3b4c596f466bb58c111bf87960d3c0dcf7bd0fb184539fb85b1460f0fa835bd2",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -25670,10 +25783,11 @@
         },
         "graph": {
           "pagerank": 0,
-          "inboundLinks": 1,
+          "inboundLinks": 2,
           "coveredBy": [],
           "mentionedBy": [
-            "document:docs/MODULE-BOUNDARIES.md"
+            "document:docs/MODULE-BOUNDARIES.md",
+            "document:docs/fixtures/mvp/README.md"
           ],
           "areaId": "area:src/kernel",
           "packageId": "package:@agentskit/harness",
@@ -25956,6 +26070,11 @@
             {
               "kind": "mentions",
               "id": "document:docs/MODULE-BOUNDARIES.md",
+              "confidence": "observed"
+            },
+            {
+              "kind": "mentions-symbol",
+              "id": "document:docs/fixtures/mvp/README.md",
               "confidence": "observed"
             }
           ],
@@ -37857,6 +37976,83 @@
         "confidence": "observed"
       },
       {
+        "id": "module:src/mvp.ts",
+        "kind": "module",
+        "path": "src/mvp.ts",
+        "title": "mvp.ts",
+        "aliases": [],
+        "symbols": [
+          "MVP_FILES",
+          "MVP_LEVELS",
+          "MVP_STATES",
+          "MvpAnswer",
+          "MvpEvidence",
+          "MvpLaunch",
+          "MvpLevel",
+          "MvpManifestError",
+          "MvpReport",
+          "MvpRequirementReport",
+          "MvpState",
+          "evaluateMvp",
+          "evidenceFromJson",
+          "formatMvpReport",
+          "loadMvp",
+          "mvpApprovalState",
+          "mvpDigest",
+          "mvpLaunches",
+          "parseMvpYaml",
+          "validateMvp"
+        ],
+        "tags": [
+          "module",
+          "ts",
+          "src"
+        ],
+        "fields": {
+          "title": "mvp.ts",
+          "headings": "",
+          "path": "src/mvp.ts",
+          "symbols": "MVP_FILES MVP_LEVELS MVP_STATES MvpAnswer MvpEvidence MvpLaunch MvpLevel MvpManifestError MvpReport MvpRequirementReport MvpState evaluateMvp evidenceFromJson formatMvpReport loadMvp mvpApprovalState mvpDigest mvpLaunches parseMvpYaml validateMvp",
+          "summary": "",
+          "body": "",
+          "aliases": "module ts src"
+        },
+        "graph": {
+          "pagerank": 0,
+          "inboundLinks": 0,
+          "coveredBy": [],
+          "mentionedBy": [],
+          "packageId": "package:@agentskit/harness",
+          "inbound": [
+            {
+              "kind": "imports",
+              "id": "module:src/cli.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
+              "id": "module:test/mvp.test.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "re-exports",
+              "id": "module:src/index.ts",
+              "confidence": "observed"
+            }
+          ],
+          "outbound": [
+            {
+              "kind": "imports",
+              "id": "module:src/record.ts",
+              "confidence": "observed"
+            }
+          ]
+        },
+        "contentHash": "c5b43a8cdde2442bdfe696a71dc66bf7a08a059f391b69a4dea488b905ff7b35",
+        "provenance": "observed",
+        "confidence": "observed"
+      },
+      {
         "id": "module:src/profiles/index.ts",
         "kind": "module",
         "path": "src/profiles/index.ts",
@@ -38070,6 +38266,11 @@
             {
               "kind": "imports",
               "id": "module:src/loop/worker-guard.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
+              "id": "module:src/mvp.ts",
               "confidence": "observed"
             },
             {
@@ -49830,6 +50031,46 @@
         "confidence": "observed"
       },
       {
+        "id": "module:test/mvp.test.ts",
+        "kind": "module",
+        "path": "test/mvp.test.ts",
+        "title": "mvp.test.ts",
+        "aliases": [],
+        "tags": [
+          "module",
+          "ts",
+          "test"
+        ],
+        "fields": {
+          "title": "mvp.test.ts",
+          "headings": "",
+          "path": "test/mvp.test.ts",
+          "symbols": "",
+          "summary": "",
+          "body": "",
+          "aliases": "module ts test"
+        },
+        "graph": {
+          "pagerank": 0,
+          "inboundLinks": 0,
+          "coveredBy": [],
+          "mentionedBy": [],
+          "areaId": "area:test",
+          "packageId": "package:@agentskit/harness",
+          "inbound": [],
+          "outbound": [
+            {
+              "kind": "imports",
+              "id": "module:src/mvp.ts",
+              "confidence": "observed"
+            }
+          ]
+        },
+        "contentHash": "916bdf21016afe2a419ff5cf1b20538b51b8451a330c6b78825ca3f8e575fdc0",
+        "provenance": "observed",
+        "confidence": "observed"
+      },
+      {
         "id": "module:test/optimization.test.ts",
         "kind": "module",
         "path": "test/optimization.test.ts",
@@ -51814,7 +52055,7 @@
           ],
           "outbound": []
         },
-        "contentHash": "d5ab731b8d658feceb6e277d49cebd66705964869bb7a6631b9f17765fdf34e2",
+        "contentHash": "8ca8f55c7c72e64f756b1e063df967052c4dc3a3eb69617935c20967686eff93",
         "provenance": "observed",
         "confidence": "observed"
       },
