@@ -2,14 +2,14 @@ import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 import { evaluateMvp, evidenceFromJson, loadMvp, mvpDigest, parseMvpYaml, validateMvp } from '../src/mvp.js'
 
-const receipts = readFileSync(new URL('../docs/fixtures/mvp/receipts-mvp.yaml', import.meta.url), 'utf8')
+const receipts = readFileSync(new URL('../docs/fixtures/mvp/exemplo-mvp.yaml', import.meta.url), 'utf8')
 const base = (extra = ''): string => `version: 1\nrequirements:\n- id: RF-01\n  title: A\n  done_when: x\n${extra}`
 
 describe('mvp manifest (golden: docs/fixtures/mvp)', () => {
-  it('digest matches the factory script on the real receipts manifest', () => {
+  it('digest matches the factory script on the synthetic example manifest', () => {
     const doc = loadMvp(receipts)
-    expect(mvpDigest(doc)).toBe('d2b07457af8cefa1')
-    expect((doc['approval'] as { digest: string }).digest).toBe('d2b07457af8cefa1')
+    expect(mvpDigest(doc)).toBe('a5d6dbc14e5f9a24')
+    expect((doc['approval'] as { digest: string }).digest).toBe('a5d6dbc14e5f9a24')
   })
 
   it('digest matches mvp_manifest.py on block scalars, floats, unicode (digest taken from the script)', () => {
