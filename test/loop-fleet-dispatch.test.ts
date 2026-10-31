@@ -16,7 +16,7 @@ const REPO = 'my-org/my-project'
 const issueJson = { number: 1, url: `https://github.com/${REPO}/issues/1`, title: 'Demo issue', state: 'OPEN', labels: [], assignees: [], createdAt: '2026-10-20T10:00:00Z', updatedAt: '2026-10-20T10:00:00Z' }
 
 /** GitHub tracker + fleet runner, with a fake `gh`, `fleet` and `git`; any `orca` call is recorded and answers "not installed". */
-const makeFleetEnv = (options: { readonly runner?: 'fleet' | 'orca'; readonly taskState?: () => string; readonly fleetDoctor?: CommandResult; readonly quickDoctor?: boolean; readonly fleetQueue?: CommandResult; readonly commits?: number } = {}) => {
+const makeFleetEnv = (options: { readonly runner?: 'fleet' | 'orca'; readonly taskState?: () => string; readonly fleetDoctor?: CommandResult; readonly quickDoctor?: boolean; readonly fleetQueue?: CommandResult; readonly commits?: number; readonly queueRows?: () => readonly unknown[] } = {}) => {
   const dir = mkdtempSync(join(tmpdir(), 'agentskit-fleet-dispatch-')); cleanups.push(dir)
   const bin = mkdtempSync(join(tmpdir(), 'agentskit-fleet-dispatch-bin-')); cleanups.push(bin)
   for (const name of ['claude', 'codex', 'opencode', 'grok']) writeFileSync(join(bin, name), '#!/bin/sh\nexit 0\n', { mode: 0o755 })
@@ -36,7 +36,7 @@ const makeFleetEnv = (options: { readonly runner?: 'fleet' | 'orca'; readonly ta
       if (bin0 === 'orca') return { code: 127, stdout: '', stderr: 'orca: not installed', timedOut: false, durationMs: 1 }
       if (bin0 === 'fleet') {
         if (verb === 'submit') { prompts.push(readFileSync(argv[argv.indexOf('--prompt-file') + 1] ?? '', 'utf8')); queueId = 'q-0001'; return done('submitted q-0001\n') }
-        if (verb === 'queue') return options.fleetQueue ?? done(JSON.stringify(queueId ? [{ id: queueId, state: options.taskState?.() ?? 'running', hostTaskId: 'ht-77' }] : []))
+        if (verb === 'queue') return options.fleetQueue ?? done(JSON.stringify(queueId ? options.queueRows?.() ?? [{ id: queueId, state: options.taskState?.() ?? 'running', hostTaskId: 'ht-77' }] : []))
         if (verb === 'collect') return done(JSON.stringify({ ref: 'refs/remotes/fleet/h1/ht-77', headSha: 'a1b2c3d4e5f6', baseSha: 'b0b0b0b', commits: options.commits ?? 1 }))
         if (verb === 'doctor' && sub === '--help') return done(options.quickDoctor ? 'Usage: fleet doctor [--quick] [--json]\n' : 'Usage: fleet doctor [--json]\n')
         if (verb === 'doctor') return options.fleetDoctor ?? done(JSON.stringify({ status: 'ok', checks: [{ id: 'coordinator', ok: true }, { id: 'hosts', ok: true }] }))
@@ -146,6 +146,40 @@ describe('runner: fleet dispatches through the fleet', () => {
     expect(env.calls.some((argv) => argv[0] === 'fleet' && argv[1] === 'collect')).toBe(false)
     expect(readDeliveryState(env.loaded().stateDir, `${REPO}#1`).finalOutcome).toBe('stuck')
     expect(orcaCalls(env.calls)).toEqual([])
+  })
+
+  const stuckComments = (calls: readonly string[][]) => calls.filter((argv) => argv[0] === 'gh' && argv.join(' ').includes('Loop: worker stuck'))
+
+  it.each([
+    ['retriedAs on the stopped task', (retry: string) => [{ id: 'q-0001', state: 'stopped', hostTaskId: 'ht-77', retriedAs: 'q-0002' }, { id: 'q-0002', state: retry, hostTaskId: 'ht-88' }]],
+    ['retryOf on the new task', (retry: string) => [{ id: 'q-0001', state: 'cancelled', hostTaskId: 'ht-77' }, { id: 'q-0002', state: retry, hostTaskId: 'ht-88', retryOf: 'q-0001' }]],
+  ])('deliver follows a stopped task the coordinator retried (%s) instead of blocking the issue', async (_, rows) => {
+    let retry: string | null = null
+    const env = makeFleetEnv({ queueRows: () => retry ? rows(retry) : [{ id: 'q-0001', state: 'running', hostTaskId: 'ht-77' }] })
+    await runTick({ ...env.base, maxDispatch: 1 })
+    retry = 'running'
+    const waiting = await runDeliver({ ...env.base })
+    expect(waiting.results[0]).toMatchObject({ outcome: 'waiting', reason: 'fleet task running' })
+    expect(waiting.results[0]?.actions).toContain('fleet task q-0001 was retried as q-0002; following it')
+    expect(readDeliveryState(env.loaded().stateDir, `${REPO}#1`).finalOutcome).toBeNull()
+    expect(stuckComments(env.calls)).toEqual([])
+
+    retry = 'done'
+    const delivered = await runDeliver({ ...env.base })
+    // The workspace now names the retry, so collect reaches the retry's host task.
+    expect(env.calls.find((argv) => argv[0] === 'fleet' && argv[1] === 'collect')).toEqual(['fleet', 'collect', 'ht-88', '--json'])
+    expect(delivered.results[0]).toMatchObject({ outcome: 'waiting', pr: 7 })
+  })
+
+  it('deliver still blocks a stopped task that was not retried', async () => {
+    let task = 'running'
+    const env = makeFleetEnv({ taskState: () => task })
+    await runTick({ ...env.base, maxDispatch: 1 })
+    task = 'stopped'
+    const report = await runDeliver({ ...env.base })
+    expect(report.results[0]).toMatchObject({ outcome: 'stuck', reason: 'fleet task cancelled before a PR was opened' })
+    expect(readDeliveryState(env.loaded().stateDir, `${REPO}#1`).finalOutcome).toBe('stuck')
+    expect(stuckComments(env.calls)).not.toEqual([])
   })
 })
 
