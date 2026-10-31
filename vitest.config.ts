@@ -11,6 +11,8 @@ export default defineConfig({
     ],
   },
   test: {
+    // Windows runners spawn git/worktrees slowly; the 5s default flakes the loop suites there.
+    testTimeout: 20_000,
     // `apps/**` is the documentation site: its own package, its own dependencies, and Next ships test files
     // of its own inside them. The harness suite has no business running those.
     // `apps/**` is the documentation site (its own package; Next ships test files inside its dependencies) and
