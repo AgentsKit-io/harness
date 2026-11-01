@@ -1,0 +1,9 @@
+version: 1
+requirements:
+- id: RF-01
+  title: Notas e decisão
+  done_when: x
+  notes: "texto livre que não entra no digest"
+  decision: "o dono decide"
+  source: "issue sintética"
+  size: M

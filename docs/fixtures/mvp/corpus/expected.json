@@ -1,0 +1,22 @@
+{
+  "launch-lista.yaml": { "digest": "a52e2863e6b56d8a", "launches": ["2026-11-15", "2026-12-01"] },
+  "erro-mapa-em-linha.yaml": { "throws": "mapas em { } não são aceitos" },
+  "blocos-quebra.yaml": { "digest": "2983ce17dbe78789" },
+  "peso-decimal.yaml": { "digest": "a7be5cd56d0d65a2" },
+  "notes-decision.yaml": { "digest": "1c340e45b1464269" },
+  "acentos.yaml": { "digest": "e1c454f20c89dbcd" },
+  "erro-mapa-chaves.yaml": { "throws": "mapas em { } não são aceitos" },
+  "erro-chave-repetida.yaml": { "throws": "linha 2: chave repetida \"version\"" },
+  "erro-validacao.yaml": {
+    "errors": [
+      "launch[1].date: data no formato AAAA-MM-DD",
+      "launch[1].label: piloto ou público (ou sem rótulo)",
+      "launch[2].date: data no formato AAAA-MM-DD",
+      "launch: datas repetidas",
+      "requirements[1]: id \"rf1\" fora do formato (ex.: RF-01)",
+      "RF-02: title vazio",
+      "RF-02: weight deve ser um número > 0",
+      "RF-02: chaves desconhecidas [\"surpresa\"]"
+    ]
+  }
+}

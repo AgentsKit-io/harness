@@ -1,0 +1,5 @@
+version: 1
+requirements:
+- id: RF-01
+  title: Ação — prévia "ç" ü 日本
+  done_when: Olá, mundão; não escapa

@@ -1,0 +1,14 @@
+version: 1
+requirements:
+- id: RF-01
+  title: "  Blocos com quebra  "
+  done_when: |
+    primeira   linha
+      segunda linha
+
+    terceira
+- id: RF-02
+  title: Dobrado
+  done_when: >-
+    texto dobrado
+    em duas linhas

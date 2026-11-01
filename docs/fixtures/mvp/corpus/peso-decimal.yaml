@@ -1,0 +1,13 @@
+version: 1
+requirements:
+- id: RF-01
+  title: Peso decimal
+  done_when: x
+  weight: 1.5
+- id: RF-02
+  title: Peso inteiro como decimal
+  done_when: x
+  weight: 2.0
+- id: RF-03
+  title: Peso padrão
+  done_when: x

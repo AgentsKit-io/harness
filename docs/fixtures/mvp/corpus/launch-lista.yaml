@@ -1,0 +1,10 @@
+version: 1
+launch:
+- date: 2026-12-01
+  label: público
+- date: 2026-11-15
+  label: piloto
+requirements:
+- id: RF-01
+  title: Lançamento em lista
+  done_when: duas datas, a mais cedo primeiro
