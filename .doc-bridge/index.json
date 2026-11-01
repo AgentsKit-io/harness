@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
-  "contentHash": "101bccf21b43223f8c0eb224295c1f6219333c70fd3d78878d06a4d8da61e48b",
+  "contentHash": "f7fbe06e7b565cae43f636dbeea55fe084e9ff98e9a6c3f976041358c86a2793",
   "contentHashAlgo": "sha256-semantic-v1",
-  "generatedAt": "2026-11-01T07:31:06.633Z",
+  "generatedAt": "2026-11-01T11:32:33.219Z",
   "project": {
     "name": "AgentsKit Harness",
     "root": "."
@@ -328,6 +328,18 @@
         "project"
       ],
       "contentHash": "652fc69f7e4cd4a74fb96745e9ad1d4d347655328d7e33e7e8804822b4656668"
+    },
+    {
+      "id": "document:changelog.d/270.md",
+      "type": "document",
+      "title": "270.md",
+      "path": "changelog.d/270.md",
+      "description": "fix: regenerate the stale Doc Bridge index so Verify harness passes on main",
+      "tags": [
+        "document",
+        "project"
+      ],
+      "contentHash": "07c45733fd484da53f09ff4c89a05a3a4aa1a9a023cb191e3b9205a795ddcb12"
     },
     {
       "id": "document:CHANGELOG.md",
@@ -9903,8 +9915,8 @@
     }
   },
   "inputs": {
-    "hash": "600f52870ad47f5d2f72e91f9eaaefef7ad0d9c844eaf00cc0f4b7c053a97fc9",
-    "fileCount": 631,
+    "hash": "115f054b051d6adb96b52c90851bf4f29e626b1567686518b1ad40e0790149b7",
+    "fileCount": 632,
     "projectionVersion": 2
   },
   "retrieval": {
@@ -9926,9 +9938,9 @@
   "projection": {
     "type": "retrieval-index",
     "schemaVersion": 1,
-    "contentHash": "37ce3ea598a74838c045f34b8fdf2e77384b9b74c7b86538c1c7e51b2498874a",
+    "contentHash": "d0f78afb16f50f450adb1ef60a71288942685e590b0ffe7dc24212a4df2840d5",
     "contentHashAlgo": "sha256-semantic-v1",
-    "snapshotHash": "335d3fd7cafe686a29559ffb1db66d9bd871daf232d906f5bb6f4879f293cdf7",
+    "snapshotHash": "14ced0e3249155964847e45fa56c0c84b749d25a826234e6e469cea4059e44a0",
     "overlayHash": "f99666ff9119084dd25c2974ae64eb6935ec2aa785ff5ad478fb9d541f7a5e94",
     "configurationHash": "497822431910cd9fa7d674a48a9f0b96fbbbf779f22a001de0b52252117fe3ab",
     "lexiconVersion": 1,
@@ -9948,7 +9960,7 @@
     },
     "lexical": {
       "version": 1,
-      "documentCount": 613,
+      "documentCount": 614,
       "fieldNames": [
         "aliases",
         "body",
@@ -9959,13 +9971,13 @@
         "title"
       ],
       "averageFieldLength": {
-        "aliases": 2.9151712887438825,
-        "body": 46.49592169657423,
-        "headings": 3.8613376835236544,
-        "path": 6.102773246329527,
-        "summary": 2.967373572593801,
-        "symbols": 13.68678629690049,
-        "title": 4.029363784665579
+        "aliases": 2.913680781758958,
+        "body": 46.47557003257329,
+        "headings": 3.8550488599348536,
+        "path": 6.099348534201955,
+        "summary": 2.978827361563518,
+        "symbols": 13.664495114006515,
+        "title": 4.026058631921824
       }
     },
     "entries": [
@@ -12611,6 +12623,39 @@
           "outbound": []
         },
         "contentHash": "652fc69f7e4cd4a74fb96745e9ad1d4d347655328d7e33e7e8804822b4656668",
+        "provenance": "observed",
+        "confidence": "observed"
+      },
+      {
+        "id": "document:changelog.d/270.md",
+        "kind": "document",
+        "path": "changelog.d/270.md",
+        "title": "270.md",
+        "summary": "fix: regenerate the stale Doc Bridge index so Verify harness passes on main",
+        "audience": "human",
+        "aliases": [],
+        "tags": [
+          "document",
+          "project"
+        ],
+        "fields": {
+          "title": "270.md",
+          "headings": "",
+          "path": "changelog.d/270.md",
+          "symbols": "",
+          "summary": "fix: regenerate the stale Doc Bridge index so Verify harness passes on main",
+          "body": "fix: regenerate the stale Doc Bridge index so Verify harness passes on main ak-docs gate run index-freshness failed in the docs job after the docs/mvp.yaml changes; .doc-bridge/ is rebuilt with ak-docs index .",
+          "aliases": "document project"
+        },
+        "graph": {
+          "pagerank": 0,
+          "inboundLinks": 0,
+          "coveredBy": [],
+          "mentionedBy": [],
+          "inbound": [],
+          "outbound": []
+        },
+        "contentHash": "07c45733fd484da53f09ff4c89a05a3a4aa1a9a023cb191e3b9205a795ddcb12",
         "provenance": "observed",
         "confidence": "observed"
       },
