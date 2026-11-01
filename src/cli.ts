@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { existsSync, readFileSync } from 'node:fs'
+import { existsSync, readFileSync, writeFileSync } from 'node:fs'
 import { Command } from 'commander'
 import { approveRun, ARTIFACT_SCHEMA_VERSION, assessAcceptance, assessBlock, assessIntegration, assessPreflight, assessProduction, assessWip, assessWorktreeCleanup, authorizeRun, benchmarkRuns, cancelRun, cleanTaskArtifacts, composePullRequest, createDocBridgeContextProvider, exportEvidenceBundle, FileArtifactStore, loadBenchmarkManifest, loadConfig, loadLatestRun, planFilePreflight, planRun, readArtifactFile, readContextSnapshots, readEvidenceTrustStore, reconcileRun, recordBenchmarkObservation, renderArtifactMarkdown, retryRun, startRun, validateBlockManifest, verifyEvidenceBundle, verifyRun } from './index.js'
 import type { BenchmarkObservationEvidence } from './execution/metrics.js'
@@ -12,6 +12,7 @@ import { spawnDetachedWorker } from './loop/detached-worker.js'
 import { join } from 'node:path'
 import { startUiServer } from './ui/api/server.js'
 import { isRecord } from './record.js'
+import { collectMvpEvidence, fetchProbe, ghApiGet } from './adapters/github-mvp-evidence.js'
 import { evaluateMvp, evidenceFromJson, formatMvpReport, loadMvp, mvpDigest, MVP_FILES, MvpManifestError, parseMvpYaml, validateMvp } from './mvp.js'
 
 interface CliOptions { readonly config: string; readonly json: boolean }
@@ -61,6 +62,11 @@ mvp.command('check [file]').description('Parse and validate the MVP manifest (ex
   print({ status: 'ok', requirements: (doc['requirements'] as unknown[]).length, digest: mvpDigest(doc) })
 })
 mvp.command('digest [file]').description('Print the digest to write in approval.digest (the owner approves this exact list).').action((file?: string) => print(mvpDigest(mvpDoc(file))))
+mvp.command('evidence [file]').description('Collect the evidence JSON from GitHub (merged PR + green CI, job/step on the default branch, file, URL, recorded run); feed it to `mvp report --evidence`.').option('--out <path>', 'write the JSON here instead of stdout').action(async (file: string | undefined, command: { readonly out?: string }) => {
+  const table = await collectMvpEvidence(mvpDoc(file), { get: ghApiGet(createProcessRunner()), probe: fetchProbe, now: new Date() })
+  if (command.out) writeFileSync(command.out, `${JSON.stringify(table, null, 2)}\n`)
+  else console.log(JSON.stringify(table, null, 2))
+})
 mvp.command('report [file]').description('Product report: % by evidence level and requirement counts by state (pronto, em QA, bloqueado, sem começar).').option('--evidence <path>', 'JSON file with the checked evidence (keys prs, ci, files, urls, runs); without it every level is "sem evidência"').option('--approver <name...>', 'who may approve the list (default: anyone named in approval.by)').action((file: string | undefined, command: { readonly evidence?: string; readonly approver?: readonly string[] }) => {
   const evidence = evidenceFromJson(command.evidence ? readJsonInput(command.evidence, 'MVP evidence') : {})
   const report = evaluateMvp(mvpDoc(file), evidence, command.approver ?? [])
