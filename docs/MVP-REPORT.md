@@ -29,3 +29,16 @@ ak-harness mvp report [file] --json [--evidence evidence.json] [--approver <name
 | `2` | `INVALID_INPUT`: no manifest found, unreadable manifest, or unreadable/invalid `--evidence` JSON. |
 
 `ak-harness mvp check` uses the same codes (`1` for manifest errors).
+
+## Using it from a pipeline (pinned version)
+
+A pipeline that validates, approves and measures products calls the published CLI at an **exact** version, never a range, so a harness release cannot change the digest or the report under it. `mvp` ships from the first release after 0.22.3.
+
+```bash
+H="npx -y -p @agentskit/harness@<exact-version>"
+$H ak-harness mvp check docs/mvp.yaml                 # exit 1: manifest invalid
+$H ak-harness mvp digest docs/mvp.yaml                # value the owner writes in approval.digest
+$H ak-harness --json mvp report docs/mvp.yaml --evidence evidence.json > report.json
+```
+
+An older in-house manifest script either goes away or becomes a thin wrapper that forwards its arguments to the commands above and keeps their exit codes; it must not re-implement the digest. `scripts/verify-harness-consumer.mjs` runs these three commands from the packed tarball on every package check.
