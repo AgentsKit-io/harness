@@ -389,7 +389,10 @@ export interface MvpRequirementReport {
   readonly state: MvpState
   readonly levels: Record<MvpLevel, { readonly ok: boolean | null; readonly detail: string }>
 }
+/** Version of the `mvp report --json` shape (docs/MVP-REPORT.md); bump on a breaking change. */
+export const MVP_REPORT_SCHEMA_VERSION = 1
 export interface MvpReport {
+  readonly schemaVersion: typeof MVP_REPORT_SCHEMA_VERSION
   readonly approved: boolean; readonly approval: string; readonly digest: string
   readonly launch: MvpLaunch | null; readonly launches: readonly MvpLaunch[]
   readonly levels: Record<MvpLevel, { readonly count: number; readonly pct: number }>
@@ -435,7 +438,7 @@ export const evaluateMvp = (doc: Record<string, unknown>, evidence: MvpEvidence,
   const { approved, why } = mvpApprovalState(doc, approvers)
   const launches = mvpLaunches(doc)
   return {
-    approved, approval: why, digest: mvpDigest(doc), launch: launches[0] ?? null, launches,
+    schemaVersion: MVP_REPORT_SCHEMA_VERSION, approved, approval: why, digest: mvpDigest(doc), launch: launches[0] ?? null, launches,
     levels: { merged: { count: count.merged, pct: pct('merged') }, accepted: { count: count.accepted, pct: pct('accepted') }, proven: { count: count.proven, pct: pct('proven') } },
     states, total: reqs.length, weight: totalWeight, noEvidence, pct: approved ? pct('proven') : null, requirements: reqs,
   }
