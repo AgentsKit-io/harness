@@ -1,0 +1,90 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/AgentsKit-io/harness/blob/main/docs/schemas/mvp-report.schema.json",
+  "title": "ak-harness mvp report --json",
+  "description": "Output of `ak-harness mvp report --json`, schemaVersion 1. See docs/MVP-REPORT.md.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "approved", "approval", "digest", "launch", "launches", "levels", "states", "total", "weight", "noEvidence", "pct", "requirements"],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "approved": { "type": "boolean" },
+    "approval": { "type": "string" },
+    "digest": { "type": "string", "pattern": "^[0-9a-f]{16}$" },
+    "launch": { "oneOf": [{ "$ref": "#/$defs/launch" }, { "type": "null" }] },
+    "launches": { "type": "array", "items": { "$ref": "#/$defs/launch" } },
+    "levels": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["merged", "accepted", "proven"],
+      "properties": {
+        "merged": { "$ref": "#/$defs/levelTotal" },
+        "accepted": { "$ref": "#/$defs/levelTotal" },
+        "proven": { "$ref": "#/$defs/levelTotal" }
+      }
+    },
+    "states": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["pronto", "qa", "bloqueado", "sem-comecar"],
+      "properties": {
+        "pronto": { "type": "integer", "minimum": 0 },
+        "qa": { "type": "integer", "minimum": 0 },
+        "bloqueado": { "type": "integer", "minimum": 0 },
+        "sem-comecar": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "total": { "type": "integer", "minimum": 0 },
+    "weight": { "type": "number", "minimum": 0 },
+    "noEvidence": { "type": "integer", "minimum": 0 },
+    "pct": { "oneOf": [{ "type": "integer", "minimum": 0, "maximum": 100 }, { "type": "null" }] },
+    "requirements": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "title", "doneWhen", "weight", "state", "levels"],
+        "properties": {
+          "id": { "type": "string" },
+          "title": { "type": "string" },
+          "doneWhen": { "type": "string" },
+          "weight": { "type": "number", "exclusiveMinimum": 0 },
+          "state": { "enum": ["pronto", "qa", "bloqueado", "sem-comecar"] },
+          "levels": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["merged", "accepted", "proven"],
+            "properties": {
+              "merged": { "$ref": "#/$defs/levelResult" },
+              "accepted": { "$ref": "#/$defs/levelResult" },
+              "proven": { "$ref": "#/$defs/levelResult" }
+            }
+          }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "launch": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["date", "label"],
+      "properties": {
+        "date": { "type": "string", "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$" },
+        "label": { "oneOf": [{ "enum": ["piloto", "público"] }, { "type": "null" }] }
+      }
+    },
+    "levelTotal": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["count", "pct"],
+      "properties": { "count": { "type": "integer", "minimum": 0 }, "pct": { "type": "integer", "minimum": 0, "maximum": 100 } }
+    },
+    "levelResult": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["ok", "detail"],
+      "properties": { "ok": { "oneOf": [{ "type": "boolean" }, { "type": "null" }] }, "detail": { "type": "string" } }
+    }
+  }
+}
