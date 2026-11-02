@@ -21,6 +21,13 @@ try {
   run(process.execPath, ['--input-type=module', '-e', probe], consumerRoot)
   run(join(consumerRoot, 'node_modules/.bin/ak-harness'), ['--version'], consumerRoot)
   run(join(consumerRoot, 'node_modules/.bin/ak-verify'), ['--help'], consumerRoot)
+  // RF-09: the consumer pipeline validates, approves and measures products with the pinned, installed `ak-harness mvp`.
+  const manifest = join(packageRoot, 'docs/fixtures/mvp/exemplo-mvp.yaml')
+  const akHarness = join(consumerRoot, 'node_modules/.bin/ak-harness')
+  if (JSON.parse(run(akHarness, ['mvp', 'check', manifest], consumerRoot)).digest !== 'a5d6dbc14e5f9a24') throw new Error('mvp check: wrong digest')
+  if (run(akHarness, ['mvp', 'digest', manifest], consumerRoot) !== 'a5d6dbc14e5f9a24') throw new Error('mvp digest: wrong digest')
+  const report = JSON.parse(run(akHarness, ['--json', 'mvp', 'report', manifest], consumerRoot))
+  if (report.schemaVersion !== 1 || report.approved !== true || report.total !== 3) throw new Error(`mvp report: unexpected ${JSON.stringify(report).slice(0, 200)}`)
   console.log(JSON.stringify({ status: 'passed', criteria: ['package'] }))
 } catch (error) {
   console.log(JSON.stringify({ status: 'failed', criteria: ['package'], failures: [error instanceof Error ? error.message : String(error)] }))
