@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
-  "contentHash": "e0fa1f584cf2d3005d69e46cb5e784bc2392ba23e3b7d15fbd20a2819e63f270",
+  "contentHash": "7f80862d738e0ddf1d5f43b46db573c65cbf7b99c3d187f2c57c760f6b80743a",
   "contentHashAlgo": "sha256-semantic-v1",
-  "generatedAt": "2026-11-03T12:33:04.019Z",
+  "generatedAt": "2026-11-03T23:49:10.694Z",
   "project": {
     "name": "AgentsKit Harness",
     "root": "."
@@ -292,6 +292,18 @@
         "unclassified"
       ],
       "contentHash": "2a9c6729475ccd1863d072eca3e2771a312cd401d2186d0732b4d92f0d5b915e"
+    },
+    {
+      "id": "document:changelog.d/265.md",
+      "type": "document",
+      "title": "265.md",
+      "path": "changelog.d/265.md",
+      "description": "test: synthetic parity corpus for the mvp format (launch list, inline maps, line-broken blocks, decimal weight, notes, decision, accents) with expected digests and errors, checked in CI (#265)",
+      "tags": [
+        "document",
+        "project"
+      ],
+      "contentHash": "cdbf72734086392a8b19716c0b072d3345fde15c9e91b9bd332b28757e85fb8b"
     },
     {
       "id": "document:changelog.d/266.md",
@@ -9349,6 +9361,18 @@
       "contentHash": "bda17e22dc66bd490303f3ca1cc4ea2194086ae21f3b87e84b1f2dd58883b98f"
     },
     {
+      "id": "module:test/mvp-corpus.test.ts",
+      "type": "module",
+      "title": "mvp-corpus.test.ts",
+      "path": "test/mvp-corpus.test.ts",
+      "tags": [
+        "module",
+        "ts",
+        "test"
+      ],
+      "contentHash": "38dc751e2efe3bb7b80a8d640e5d4180fc538032c7e59aa03f2db8c39eca8bf7"
+    },
+    {
       "id": "module:test/mvp-report-schema.test.ts",
       "type": "module",
       "title": "mvp-report-schema.test.ts",
@@ -9938,8 +9962,8 @@
     }
   },
   "inputs": {
-    "hash": "9a3eeb562bb3b9c84f34ed68a99a2ec6216dfcd5214b0fbb81f631db9b54d761",
-    "fileCount": 634,
+    "hash": "9b885c0b97387cf78c9065bebbfbd47843c6fe7ef4750098b25e583d8e426c61",
+    "fileCount": 637,
     "projectionVersion": 2
   },
   "retrieval": {
@@ -9961,9 +9985,9 @@
   "projection": {
     "type": "retrieval-index",
     "schemaVersion": 1,
-    "contentHash": "637ce1ef78289760183e34ef7e7bd2de6b62afd56af1d48398717e57ed279972",
+    "contentHash": "58a7b2d3fdd7efd92984cde0769a15dd725797b18c1515bccecd08dcf61720d2",
     "contentHashAlgo": "sha256-semantic-v1",
-    "snapshotHash": "57a8cc682820c55ff61948e40598090ab32c5c1e2370f69d5333c492f2efb7c0",
+    "snapshotHash": "f4eecf739e9314ebfda3495c215fc302c75f751a7361f875242fdb0735d48f73",
     "overlayHash": "f99666ff9119084dd25c2974ae64eb6935ec2aa785ff5ad478fb9d541f7a5e94",
     "configurationHash": "497822431910cd9fa7d674a48a9f0b96fbbbf779f22a001de0b52252117fe3ab",
     "lexiconVersion": 1,
@@ -9983,7 +10007,7 @@
     },
     "lexical": {
       "version": 1,
-      "documentCount": 615,
+      "documentCount": 617,
       "fieldNames": [
         "aliases",
         "body",
@@ -9994,13 +10018,13 @@
         "title"
       ],
       "averageFieldLength": {
-        "aliases": 2.9170731707317072,
-        "body": 46.73170731707317,
-        "headings": 3.8764227642276423,
-        "path": 6.11219512195122,
-        "summary": 2.975609756097561,
-        "symbols": 13.699186991869919,
-        "title": 4.048780487804878
+        "aliases": 2.9157212317666126,
+        "body": 46.620745542949756,
+        "headings": 3.86385737439222,
+        "path": 6.108589951377634,
+        "summary": 3.006482982171799,
+        "symbols": 13.654781199351701,
+        "title": 4.047001620745543
       }
     },
     "entries": [
@@ -10848,7 +10872,7 @@
           ],
           "outbound": []
         },
-        "contentHash": "b0b8208cb7aeb551f3387e98e6ac304f033adadcc5315014958c57667f3f94a1",
+        "contentHash": "4340de02c320faaa91ae09188e0cea12fa70640c22753b145faa8cef53fb056d",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -12516,6 +12540,39 @@
           ]
         },
         "contentHash": "08f5d230741524533ac6753cd3fea6d9fd3cf1f9b5b913f55d7640c0ee45df86",
+        "provenance": "observed",
+        "confidence": "observed"
+      },
+      {
+        "id": "document:changelog.d/265.md",
+        "kind": "document",
+        "path": "changelog.d/265.md",
+        "title": "265.md",
+        "summary": "test: synthetic parity corpus for the mvp format (launch list, inline maps, line-broken blocks, decimal weight, notes, decision, accents) with expected digests and errors, checked in CI (#265)",
+        "audience": "human",
+        "aliases": [],
+        "tags": [
+          "document",
+          "project"
+        ],
+        "fields": {
+          "title": "265.md",
+          "headings": "",
+          "path": "changelog.d/265.md",
+          "symbols": "",
+          "summary": "test: synthetic parity corpus for the mvp format (launch list, inline maps, line-broken blocks, decimal weight, notes, decision, accents) with expected digests and errors, checked in CI (#265)",
+          "body": "test: synthetic parity corpus for the mvp format (launch list, inline maps, line-broken blocks, decimal weight, notes, decision, accents) with expected digests and errors, checked in CI ( 265)",
+          "aliases": "document project"
+        },
+        "graph": {
+          "pagerank": 0,
+          "inboundLinks": 0,
+          "coveredBy": [],
+          "mentionedBy": [],
+          "inbound": [],
+          "outbound": []
+        },
+        "contentHash": "cdbf72734086392a8b19716c0b072d3345fde15c9e91b9bd332b28757e85fb8b",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -38126,6 +38183,11 @@
             },
             {
               "kind": "imports",
+              "id": "module:test/mvp-corpus.test.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "imports",
               "id": "module:test/mvp-report-schema.test.ts",
               "confidence": "observed"
             },
@@ -50187,6 +50249,46 @@
           ]
         },
         "contentHash": "bda17e22dc66bd490303f3ca1cc4ea2194086ae21f3b87e84b1f2dd58883b98f",
+        "provenance": "observed",
+        "confidence": "observed"
+      },
+      {
+        "id": "module:test/mvp-corpus.test.ts",
+        "kind": "module",
+        "path": "test/mvp-corpus.test.ts",
+        "title": "mvp-corpus.test.ts",
+        "aliases": [],
+        "tags": [
+          "module",
+          "ts",
+          "test"
+        ],
+        "fields": {
+          "title": "mvp-corpus.test.ts",
+          "headings": "",
+          "path": "test/mvp-corpus.test.ts",
+          "symbols": "",
+          "summary": "",
+          "body": "",
+          "aliases": "module ts test"
+        },
+        "graph": {
+          "pagerank": 0,
+          "inboundLinks": 0,
+          "coveredBy": [],
+          "mentionedBy": [],
+          "areaId": "area:test",
+          "packageId": "package:@agentskit/harness",
+          "inbound": [],
+          "outbound": [
+            {
+              "kind": "imports",
+              "id": "module:src/mvp.ts",
+              "confidence": "observed"
+            }
+          ]
+        },
+        "contentHash": "38dc751e2efe3bb7b80a8d640e5d4180fc538032c7e59aa03f2db8c39eca8bf7",
         "provenance": "observed",
         "confidence": "observed"
       },
