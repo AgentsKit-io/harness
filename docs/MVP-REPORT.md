@@ -18,7 +18,7 @@ ak-harness mvp report [file] --json [--evidence evidence.json] [--approver <name
 | `states` | Requirement counts: `pronto` (proven), `qa` (merged, not yet proven), `bloqueado` (a level failed), `sem-comecar`. |
 | `total`, `weight`, `noEvidence` | Requirements, summed weight, requirements with no evidence at any level. |
 | `pct` | Official % proven; `null` until the approval matches the list. |
-| `requirements[]` | Per requirement: `id`, `title`, `doneWhen`, `weight`, `state` and `levels.{merged,accepted,proven}` = `{ok, detail}`. `ok` is `true`, `false`, or `null` (sem evidência — missing evidence is never success). |
+| `requirements[]` | Per requirement: `id`, `title`, `doneWhen`, `weight`, `state`, `issues`, `prs` (numbers listed in the manifest plus issues/PRs labeled `mvp:<id>`, see `--labels <path>`: recorded GitHub list-issues JSON) and `levels.{merged,accepted,proven}` = `{ok, detail}`. `ok` is `true`, `false`, or `null` (sem evidência — missing evidence is never success). |
 
 ## Exit codes
 

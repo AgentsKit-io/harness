@@ -1,0 +1,113 @@
+# MVP do harness (lista aprovada pelo dono em 01/11/2026): lista curta, só o que a esteira consumidora precisa para medir os
+# produtos pelo docs/mvp.yaml. Não é a lista da 1.0.
+# Decisão do dono: o harness é o contrato e a verificação da esteira; o validador, o digest e o relatório de
+# progresso do mvp.yaml passam a morar aqui (docs/DIRECAO-2026-10-29.md, #254). Cada biblioteca lista de 5 a 12 itens.
+# Base: o porte já mergeado (src/mvp.ts, #259) comparado com a implementação de referência que a esteira usa hoje.
+# Fora da lista (um por linha):
+#   - loop próprio de execução (tick/deliver), que deixa de crescer;
+#   - benchmark, atestados e pacotes de evidência assinados;
+#   - atualizações de dependências major (ink 8, commander 15, mermaid 12, motion 14);
+#   - comando para aprovar a lista (o dono preenche approval à mão).
+# Aprovação: approval.digest é o digest desta lista (ak-harness mvp digest / mvp_manifest.py digest); mudou a lista, precisa aprovar de novo.
+version: 1
+product: harness
+repo: AgentsKit-io/harness
+source: docs/DIRECAO-2026-10-29.md + #254 + decisão do dono (lista curta por biblioteca)
+approval:
+  by: EmersonBraun
+  at: "2026-11-01T02:00:00Z"
+  digest: 2fb83bda992e0ad4
+requirements:
+- id: RF-01
+  title: Validar o mvp.yaml e calcular o digest
+  done_when: >-
+    ak-harness mvp check aponta os erros do manifesto e ak-harness mvp digest reproduz o digest da especificação
+    (docs/fixtures/mvp) byte a byte
+  # já pronto: src/mvp.ts e o teste mvp (PR #259); fica para registrar a evidência
+  weight: 2
+  acceptance: []
+  homolog: []
+  issues: [254]
+  prs: []
+- id: RF-02
+  title: Ler mapas em linha simples
+  done_when: >-
+    O leitor aceita mapas em linha sem aninhamento, como ci com job e step entre chaves, com o mesmo resultado da
+    implementação de referência; hoje eles são recusados e manifestos já aprovados usam esse formato
+  weight: 2
+  acceptance: []
+  homolog: []
+  issues: []
+  prs: []
+- id: RF-03
+  title: Paridade com a referência num corpus sintético
+  done_when: >-
+    Fixtures sintéticas cobrem cada recurso do formato (launch em lista, mapas em linha, blocos com quebra, peso
+    decimal, notes, decision, acentos) com o digest e os erros esperados da implementação de referência, e um teste
+    no CI confere todas
+  weight: 1
+  acceptance: []
+  homolog: []
+  issues: []
+  prs: []
+- id: RF-04
+  title: Coletar a evidência no GitHub
+  done_when: >-
+    ak-harness mvp evidence monta o JSON de evidência a partir do GitHub com as regras da referência (PR mergeado com
+    CI verde no commit de merge, job e step na última execução da branch padrão sem contar step com
+    continue-on-error, arquivo na branch padrão, URL com status e texto, execução gravada dentro da validade);
+    testes com respostas gravadas
+  weight: 2
+  acceptance: []
+  homolog: []
+  issues: []
+  prs: []
+- id: RF-05
+  title: Relatório em JSON com esquema estável
+  done_when: >-
+    ak-harness mvp report --json segue um esquema versionado e documentado (porcentagem por nível de evidência,
+    estado por requisito, lançamento) e os códigos de saída estão documentados; teste de esquema no CI
+  # já pronto em parte: o relatório existe (PR #259); faltam o esquema versionado e a doc
+  weight: 1
+  acceptance: []
+  homolog: []
+  issues: []
+  prs: []
+- id: RF-06
+  title: Ligar issues e PRs aos requisitos pelo rótulo
+  done_when: >-
+    Issues e PRs com o rótulo mvp seguido do id do requisito entram em issues e prs do requisito no relatório, como na
+    referência; teste com respostas gravadas
+  weight: 1
+  acceptance: []
+  homolog: []
+  issues: []
+  prs: []
+- id: RF-07
+  title: Versão publicada no npm com o comando mvp
+  done_when: >-
+    O npm tem uma versão acima de 0.22.3 com o comando mvp, e a release no GitHub sai com o changelog
+  weight: 2
+  acceptance: []
+  homolog: []
+  issues: [250]
+  prs: []
+- id: RF-08
+  title: Main verde
+  done_when: >-
+    O workflow Verify harness passa na main (hoje falha por índice de docs desatualizado)
+  weight: 1
+  acceptance: []
+  homolog: []
+  issues: []
+  prs: []
+- id: RF-09
+  title: A esteira usa o harness no lugar do script antigo
+  done_when: >-
+    A esteira consumidora chama ak-harness mvp com versão fixa para validar, aprovar e medir os produtos, e o script
+    antigo vira um wrapper ou sai
+  weight: 2
+  acceptance: []
+  homolog: []
+  issues: [254]
+  prs: []

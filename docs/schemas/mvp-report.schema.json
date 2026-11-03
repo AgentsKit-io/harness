@@ -43,13 +43,15 @@
       "items": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["id", "title", "doneWhen", "weight", "state", "levels"],
+        "required": ["id", "title", "doneWhen", "weight", "state", "issues", "prs", "levels"],
         "properties": {
           "id": { "type": "string" },
           "title": { "type": "string" },
           "doneWhen": { "type": "string" },
           "weight": { "type": "number", "exclusiveMinimum": 0 },
           "state": { "enum": ["pronto", "qa", "bloqueado", "sem-comecar"] },
+          "issues": { "type": "array", "items": { "type": "integer", "minimum": 1 } },
+          "prs": { "type": "array", "items": { "type": "integer", "minimum": 1 } },
           "levels": {
             "type": "object",
             "additionalProperties": false,

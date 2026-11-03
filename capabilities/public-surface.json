@@ -4,7 +4,7 @@
   "package": "@agentskit/harness",
   "packageVersion": "0.22.3",
   "entryPoint": "src/index.ts",
-  "sourceDigest": "5c495726346e8388e5a0906695901a30a22111bdd4469f7242ccaccb7d952ec4",
+  "sourceDigest": "6530aee5f51074164e1045aabf26d2c392814dc0c7a316658bcc567fe90f3bd5",
   "capabilities": [
     {
       "id": "public-surface:adapters/agent",
@@ -1975,6 +1975,7 @@
         "evaluateMvp",
         "evidenceFromJson",
         "formatMvpReport",
+        "linkMvpLabels",
         "loadMvp",
         "mvpApprovalState",
         "mvpDigest",
@@ -2102,5 +2103,5 @@
       ]
     }
   ],
-  "digest": "66a89797dcce1d44490a998a3a378436f775b367bb1bf3d2528e557b3582cf01"
+  "digest": "b593521a09f0c9a3f0bc8cfad1a662b3a822b76cebdaad9c04becbee50a5e2b5"
 }
