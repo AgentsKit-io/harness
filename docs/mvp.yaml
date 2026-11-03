@@ -46,7 +46,8 @@ requirements:
     decimal, notes, decision, acentos) com o digest e os erros esperados da implementação de referência, e um teste
     no CI confere todas
   weight: 1
-  acceptance: []
+  acceptance:
+  - test: test/mvp-corpus.test.ts
   homolog: []
   issues: []
   prs: []
