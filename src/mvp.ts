@@ -398,6 +398,8 @@ export const MVP_STATES: readonly MvpState[] = ['pronto', 'qa', 'bloqueado', 'se
 export interface MvpRequirementReport {
   readonly id: string; readonly title: string; readonly doneWhen: string; readonly weight: number
   readonly state: MvpState
+  /** Issue and PR numbers linked to the requirement (manifest lists plus `mvp:<id>` labels). */
+  readonly issues: readonly number[]; readonly prs: readonly number[]
   readonly levels: Record<MvpLevel, { readonly ok: boolean | null; readonly detail: string }>
 }
 /** Version of the `mvp report --json` shape (docs/MVP-REPORT.md); bump on a breaking change. */
@@ -442,7 +444,7 @@ export const evaluateMvp = (doc: Record<string, unknown>, evidence: MvpEvidence,
     if (MVP_LEVELS.every((k) => lv[k][0] === null)) noEvidence += 1
     const state: MvpState = MVP_LEVELS.some((k) => lv[k][0] === false) ? 'bloqueado' : lv.proven[0] ? 'pronto' : lv.merged[0] ? 'qa' : 'sem-comecar'
     states[state] += 1
-    return { id: rid, title: r['title'] as string, doneWhen: (r['done_when'] as string).split(/\s+/).filter(Boolean).join(' '), weight: w, state, levels: { merged: { ok: lv.merged[0], detail: lv.merged[1] }, accepted: { ok: lv.accepted[0], detail: lv.accepted[1] }, proven: { ok: lv.proven[0], detail: lv.proven[1] } } }
+    return { id: rid, title: r['title'] as string, doneWhen: (r['done_when'] as string).split(/\s+/).filter(Boolean).join(' '), weight: w, state, issues: normList(r['issues']) as number[], prs: normList(r['prs']) as number[], levels: { merged: { ok: lv.merged[0], detail: lv.merged[1] }, accepted: { ok: lv.accepted[0], detail: lv.accepted[1] }, proven: { ok: lv.proven[0], detail: lv.proven[1] } } }
   })
   // Python's round() is half-to-even; JS Math.round is half-up. Differs only at exact .5 of a percent.
   const pct = (k: MvpLevel): number => { if (!totalWeight) return 0; const x = 100 * weightOf[k] / totalWeight; const r = Math.round(x); return Math.abs(x % 1) === 0.5 && r % 2 ? r - 1 : r }
@@ -453,6 +455,27 @@ export const evaluateMvp = (doc: Record<string, unknown>, evidence: MvpEvidence,
     levels: { merged: { count: count.merged, pct: pct('merged') }, accepted: { count: count.accepted, pct: pct('accepted') }, proven: { count: count.proven, pct: pct('proven') } },
     states, total: reqs.length, weight: totalWeight, noEvidence, pct: approved ? pct('proven') : null, requirements: reqs,
   }
+}
+
+/** A GitHub issue/PR as the list-issues API returns it (labels as objects or names; `pull_request` present on PRs). */
+export interface MvpLabeledItem { readonly number: number; readonly labels?: readonly (string | { readonly name?: string })[]; readonly pull_request?: unknown }
+
+/** Adds the issues and PRs labeled `mvp:<id>` to that requirement's issues/prs (deduped, sorted); other labels and unknown ids are ignored. */
+export const linkMvpLabels = (doc: Record<string, unknown>, items: readonly MvpLabeledItem[]): Record<string, unknown> => {
+  const extra = new Map<string, { issues: Set<number>; prs: Set<number> }>()
+  for (const it of items) {
+    if (!isIntPos(it?.number)) continue
+    for (const l of it.labels ?? []) {
+      const name = typeof l === 'string' ? l : l?.name
+      const m = typeof name === 'string' ? /^mvp:(.+)$/.exec(name.trim()) : null
+      if (!m) continue
+      const e = extra.get(m[1]!) ?? { issues: new Set<number>(), prs: new Set<number>() }
+      e[it.pull_request ? 'prs' : 'issues'].add(it.number)
+      extra.set(m[1]!, e)
+    }
+  }
+  const merge = (cur: unknown, add: Set<number>): number[] => [...new Set([...(normList(cur) as number[]), ...add])].sort((a, b) => a - b)
+  return { ...doc, requirements: (doc['requirements'] as Record<string, unknown>[]).map((r) => { const e = extra.get(r['id'] as string); return e ? { ...r, issues: merge(r['issues'], e.issues), prs: merge(r['prs'], e.prs) } : r }) }
 }
 
 /** Evidence from a JSON file: `{prs: {"12": true}, ci: {"job": true, "job/step": false}, files: {...}, urls: {...}, runs: {...}}`; absent keys are sem evidência. */

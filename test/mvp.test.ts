@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
-import { evaluateMvp, evidenceFromJson, loadMvp, mvpDigest, parseMvpYaml, validateMvp } from '../src/mvp.js'
+import { evaluateMvp, evidenceFromJson, linkMvpLabels, loadMvp, mvpDigest, parseMvpYaml, validateMvp } from '../src/mvp.js'
 
 const receipts = readFileSync(new URL('../docs/fixtures/mvp/exemplo-mvp.yaml', import.meta.url), 'utf8')
 const base = (extra = ''): string => `version: 1\nrequirements:\n- id: RF-01\n  title: A\n  done_when: x\n${extra}`
@@ -77,5 +77,29 @@ requirements:
     const approved = { ...doc, approval: { by: 'dono', digest: mvpDigest(doc) } }
     expect(evaluateMvp(approved, evidence).pct).toBe(25)
     expect(evaluateMvp(approved, evidence, ['outro']).approved).toBe(false)
+  })
+})
+
+describe('linkMvpLabels (label mvp:<id> → issues and prs)', () => {
+  const doc = loadMvp(`version: 1
+requirements:
+- id: RF-06
+  title: Ligar
+  done_when: x
+  issues: [5]
+- id: RF-07
+  title: Outro
+  done_when: x
+`)
+  // recorded GitHub list-issues response (trimmed)
+  const recorded = [
+    { number: 10, labels: [{ name: 'mvp:RF-06' }, { name: 'bug' }] },
+    { number: 11, labels: [{ name: 'mvp:RF-06' }], pull_request: { url: 'x' } },
+    { number: 12, labels: [{ name: 'mvp:RF-99' }, { name: 'mvp' }] },
+    { number: 5, labels: ['mvp:RF-06'] },
+  ]
+  it('links issues and PRs by label, deduped, ignoring unknown ids', () => {
+    const r = evaluateMvp(linkMvpLabels(doc, recorded), evidenceFromJson({ prs: { 11: true } }))
+    expect(r.requirements.map((q) => [q.issues, q.prs, q.state])).toEqual([[[5, 10], [11], 'qa'], [[], [], 'sem-comecar']])
   })
 })
