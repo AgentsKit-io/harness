@@ -69,6 +69,18 @@ Print the digest to write in approval.digest (the owner approves this exact list
 ak-harness mvp digest [options] [file]
 ```
 
+### `ak-harness mvp evidence`
+
+Collect the evidence JSON from GitHub (merged PR + green CI, job/step on the default branch, file, URL, recorded run); feed it to `mvp report --evidence`.
+
+```bash
+ak-harness mvp evidence [options] [file]
+```
+
+| Flag | What it does | Default |
+|---|---|---|
+| `--out &lt;path&gt;` | write the JSON here instead of stdout |  |
+
 ### `ak-harness mvp report`
 
 Product report: % by evidence level and requirement counts by state (pronto, em QA, bloqueado, sem começar).
