@@ -2,6 +2,29 @@
 
 ## [Unreleased]
 
+## [0.23.0] — 2026-11-03
+
+- **`ak-harness mvp check|digest|report`.** Validates `docs/mvp.yaml`, computes the
+  approval digest (same digest as the factory manifest script, golden-tested against `docs/fixtures/mvp`) and reports
+  product progress: % by evidence level (merged, accepted, proven) and a count per requirement state (pronto, em QA,
+  bloqueado, sem começar). Evidence comes from `--evidence <json>`; absent evidence is "sem evidência" (#254).
+- **Versioned `mvp report --json`.** The report carries `schemaVersion: 1`, described by
+  `docs/schemas/mvp-report.schema.json`; `docs/MVP-REPORT.md` documents the fields and exit codes (#267).
+- **Issues and PRs labeled `mvp:<id>`** are linked to their requirement: `linkMvpLabels` and
+  `mvp report --labels <recorded list-issues JSON>` add `issues` and `prs` per requirement (additive schema fields) (#268).
+- **Pinned pipeline use.** The package check runs `ak-harness mvp check|digest|report` from the installed tarball;
+  pipelines pin `@agentskit/harness@<exact>` instead of an in-house manifest script (#271).
+- **GitHub release on publish.** The publish job creates the `v<version>` tag and GitHub release from this changelog,
+  and backfills a release for a published version that has none (#255).
+- **Breaking: 13 playbook-evaluation CLI commands removed.** `discovery`, `experiment`, `pilot`, `cycle`, `snapshot`,
+  `learning parse`, `coordination claim` had no caller in any AgentsKit-io repo (CLI commands 98 → 85).
+  `assessDiscovery`, `isDiscoveryCurrent`, `selectRuntime`, `assessPilot`, `assessImprovementCycle` and
+  `IMPROVEMENT_CYCLE_STEPS` leave `src/index.ts` (code moved to the unpublished `experimental/`). The tarball ships four
+  docs instead of all of `docs/` (2 588 560 B → 2 493 755 B); adds `docs/INVENTARIO.md` and marks `loop tick/deliver`
+  legacy (#253).
+- **Main green.** The stale Doc Bridge index is regenerated, and the insights search builds its event docs in one loop
+  (a cold 30-day, 20k-event search drops from ~500 ms to ~210 ms) so its budget holds under a loaded test run (#270).
+
 - **Delivery evidence on the tracker issue.** The merge comment now carries the audit trail: PR, merge commit and who
   merged (loop or outside), the reviewed head and verdict (APPROVE/COMMENT/REQUEST CHANGES/INCOMPLETE) with findings
   by severity and INCOMPLETE reasons, unresolved review threads, CI checks, the harness verify, the worker's
