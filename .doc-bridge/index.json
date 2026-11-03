@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
-  "contentHash": "d4546d413ceaf1056d0f89933dad3aab66947d417e72160f248a51dc3066bcb0",
+  "contentHash": "1338270142f073decba48a8e5f57d7786bf797df9fc99991fc438b94f87dbe19",
   "contentHashAlgo": "sha256-semantic-v1",
-  "generatedAt": "2026-11-03T04:11:07.718Z",
+  "generatedAt": "2026-11-03T08:12:52.737Z",
   "project": {
     "name": "AgentsKit Harness",
     "root": "."
@@ -352,6 +352,18 @@
         "project"
       ],
       "contentHash": "d1cf19e5fddc443c50f058a2d9c94aa852969270e9a63fc5d36cae035c8c4985"
+    },
+    {
+      "id": "document:changelog.d/270.md",
+      "type": "document",
+      "title": "270.md",
+      "path": "changelog.d/270.md",
+      "description": "fix: regenerate the stale Doc Bridge index so Verify harness passes on main",
+      "tags": [
+        "document",
+        "project"
+      ],
+      "contentHash": "1c93f80c9cf1e6fce4f2d6f1ee9134653942afa4a0a4db2ed7fe45d79e3fc40b"
     },
     {
       "id": "document:changelog.d/271.md",
@@ -6605,7 +6617,7 @@
         "ts",
         "api"
       ],
-      "contentHash": "aa7d085ee8399cf920dff0451210aacc994ed8876a185892c2c7d2f0124e4b25"
+      "contentHash": "5e2f7aeb98bb38b49b5e503799ad7242dae958e716e95ef21a256a8c296ef386"
     },
     {
       "id": "module:src/ui/api/server.ts",
@@ -9966,8 +9978,8 @@
     }
   },
   "inputs": {
-    "hash": "01ae039a6bbf7cd95f97dfaa8e204d2055f55aef61ba061e7140e42e33ce803c",
-    "fileCount": 637,
+    "hash": "11661aad225e36d9a7dc57fa7a090650c0425d1759e3f480b04833d7987608e0",
+    "fileCount": 638,
     "projectionVersion": 2
   },
   "retrieval": {
@@ -9989,9 +10001,9 @@
   "projection": {
     "type": "retrieval-index",
     "schemaVersion": 1,
-    "contentHash": "92cbf80b478f1f30bf67c06ef0868916253444fc52aae0e975e9c9aca13697e6",
+    "contentHash": "98134eba563fc4ebf6aa999aab81569991158406c706359621d9d2850d90dbe1",
     "contentHashAlgo": "sha256-semantic-v1",
-    "snapshotHash": "348cfd3343b8adbd27266c72a34b9a4f1611a567ff84a8e44aa3d45791ca9908",
+    "snapshotHash": "56c0073ce1273e1d9d30a86cdb60b7ea7941de099ead1ad08629335766923b10",
     "overlayHash": "f99666ff9119084dd25c2974ae64eb6935ec2aa785ff5ad478fb9d541f7a5e94",
     "configurationHash": "497822431910cd9fa7d674a48a9f0b96fbbbf779f22a001de0b52252117fe3ab",
     "lexiconVersion": 1,
@@ -10011,7 +10023,7 @@
     },
     "lexical": {
       "version": 1,
-      "documentCount": 618,
+      "documentCount": 619,
       "fieldNames": [
         "aliases",
         "body",
@@ -10022,13 +10034,13 @@
         "title"
       ],
       "averageFieldLength": {
-        "aliases": 2.9093851132686086,
-        "body": 46.81715210355987,
-        "headings": 3.8576051779935274,
-        "path": 6.092233009708738,
-        "summary": 3.0647249190938513,
-        "symbols": 13.597087378640778,
-        "title": 4.027508090614886
+        "aliases": 2.9079159935379644,
+        "body": 46.8562197092084,
+        "headings": 3.851373182552504,
+        "path": 6.088852988691438,
+        "summary": 3.0759289176090467,
+        "symbols": 13.575121163166397,
+        "title": 4.024232633279483
       }
     },
     "entries": [
@@ -12740,6 +12752,39 @@
           "outbound": []
         },
         "contentHash": "d1cf19e5fddc443c50f058a2d9c94aa852969270e9a63fc5d36cae035c8c4985",
+        "provenance": "observed",
+        "confidence": "observed"
+      },
+      {
+        "id": "document:changelog.d/270.md",
+        "kind": "document",
+        "path": "changelog.d/270.md",
+        "title": "270.md",
+        "summary": "fix: regenerate the stale Doc Bridge index so Verify harness passes on main",
+        "audience": "human",
+        "aliases": [],
+        "tags": [
+          "document",
+          "project"
+        ],
+        "fields": {
+          "title": "270.md",
+          "headings": "",
+          "path": "changelog.d/270.md",
+          "symbols": "",
+          "summary": "fix: regenerate the stale Doc Bridge index so Verify harness passes on main",
+          "body": "fix: regenerate the stale Doc Bridge index so Verify harness passes on main ak-docs gate run index-freshness failed in the docs job after the docs/mvp.yaml changes; .doc-bridge/ is rebuilt with ak-docs index . The insights search builds its event docs in one plain loop (no entries/filter/map/join or double spread per event): a cold 30-day, 20k-event search drops from ~500 ms to ~210 ms, so its 500 ms budget holds under a loaded full test run.",
+          "aliases": "document project"
+        },
+        "graph": {
+          "pagerank": 0,
+          "inboundLinks": 0,
+          "coveredBy": [],
+          "mentionedBy": [],
+          "inbound": [],
+          "outbound": []
+        },
+        "contentHash": "1c93f80c9cf1e6fce4f2d6f1ee9134653942afa4a0a4db2ed7fe45d79e3fc40b",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -40997,7 +41042,7 @@
             }
           ]
         },
-        "contentHash": "aa7d085ee8399cf920dff0451210aacc994ed8876a185892c2c7d2f0124e4b25",
+        "contentHash": "5e2f7aeb98bb38b49b5e503799ad7242dae958e716e95ef21a256a8c296ef386",
         "provenance": "observed",
         "confidence": "observed"
       },

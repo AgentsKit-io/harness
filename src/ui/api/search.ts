@@ -34,8 +34,16 @@ interface Doc { readonly type: SearchType; readonly issue: string | null; readon
 const doc = (fields: Omit<Doc, 'text' | 'lower'>, text: string): Doc => ({ ...fields, text, lower: text.toLowerCase() })
 
 /** Readable one-line text for a record: `key: value` pairs, nested values as JSON. */
-const flatten = (record: Readonly<Record<string, unknown>>): string =>
-  Object.entries(record).filter(([key]) => key !== 'at').map(([key, value]) => `${key}: ${typeof value === 'string' ? value : JSON.stringify(value)}`).join(' · ')
+// A plain loop: this runs once per event on a cold read (20k+), where entries/filter/map/join cost ~2x.
+const flatten = (record: Readonly<Record<string, unknown>>): string => {
+  let out = ''
+  for (const key in record) {
+    if (key === 'at') continue
+    const value = record[key]
+    out += `${out ? ' · ' : ''}${key}: ${typeof value === 'string' ? value : JSON.stringify(value)}`
+  }
+  return out
+}
 
 const signature = (path: string): string | null => { try { const stat = statSync(path); return `${stat.mtimeMs}:${stat.size}` } catch { return null } }
 
@@ -62,13 +70,14 @@ const eventDocs = (stateDir: string, sinceMs: number, now: Date): readonly (Doc 
   const hit = eventCache.get(stateDir)
   if (hit && hit.signature === sig && hit.readFromMs <= sinceMs) return hit.docs
   const readFromMs = now.getTime() - MAX_WINDOW_MS
-  const docs = readLoopEvents(stateDir, readFromMs).flatMap((event: LoopEvent) => {
+  const docs: (Doc & { readonly ms: number })[] = []
+  for (const event of readLoopEvents(stateDir, readFromMs) as readonly LoopEvent[]) {
     const ms = Date.parse(event.at)
-    if (!Number.isFinite(ms) || ms < readFromMs) return []
+    if (!Number.isFinite(ms) || ms < readFromMs) continue
     const evidence = event.type === 'dod.assessed'
-    const issue = typeof event.issue === 'string' ? event.issue : null
-    return [{ ...doc({ type: evidence ? 'evidence' : 'event', issue, title: evidence ? `DoD assessed${event['pr'] ? ` on PR #${String(event['pr'])}` : ''}` : event.type, at: event.at, source: 'events.ndjson', body: event }, `${event.type} · ${flatten(event)}`), ms }]
-  })
+    const text = `${event.type} · ${flatten(event)}`
+    docs.push({ type: evidence ? 'evidence' : 'event', issue: typeof event.issue === 'string' ? event.issue : null, title: evidence ? `DoD assessed${event['pr'] ? ` on PR #${String(event['pr'])}` : ''}` : event.type, at: event.at, source: 'events.ndjson', body: event, text, lower: text.toLowerCase(), ms })
+  }
   eventCache.set(stateDir, { signature: sig, readFromMs, docs })
   return docs
 }
