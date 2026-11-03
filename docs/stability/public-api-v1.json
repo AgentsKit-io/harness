@@ -5440,6 +5440,12 @@
           ]
         },
         {
+          "name": "linkMvpLabels",
+          "kinds": [
+            "value"
+          ]
+        },
+        {
           "name": "listAgentRuns",
           "kinds": [
             "value"
