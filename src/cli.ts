@@ -12,7 +12,7 @@ import { spawnDetachedWorker } from './loop/detached-worker.js'
 import { join } from 'node:path'
 import { startUiServer } from './ui/api/server.js'
 import { isRecord } from './record.js'
-import { evaluateMvp, evidenceFromJson, formatMvpReport, loadMvp, mvpDigest, MVP_FILES, MvpManifestError, parseMvpYaml, validateMvp } from './mvp.js'
+import { evaluateMvp, evidenceFromJson, formatMvpReport, linkMvpLabels, loadMvp, mvpDigest, MVP_FILES, MvpManifestError, parseMvpYaml, validateMvp } from './mvp.js'
 
 interface CliOptions { readonly config: string; readonly json: boolean }
 const packageJson = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8')) as { readonly version: string }
@@ -61,9 +61,11 @@ mvp.command('check [file]').description('Parse and validate the MVP manifest (ex
   print({ status: 'ok', requirements: (doc['requirements'] as unknown[]).length, digest: mvpDigest(doc) })
 })
 mvp.command('digest [file]').description('Print the digest to write in approval.digest (the owner approves this exact list).').action((file?: string) => print(mvpDigest(mvpDoc(file))))
-mvp.command('report [file]').description('Product report: % by evidence level and requirement counts by state (pronto, em QA, bloqueado, sem começar).').option('--evidence <path>', 'JSON file with the checked evidence (keys prs, ci, files, urls, runs); without it every level is "sem evidência"').option('--approver <name...>', 'who may approve the list (default: anyone named in approval.by)').action((file: string | undefined, command: { readonly evidence?: string; readonly approver?: readonly string[] }) => {
+mvp.command('report [file]').description('Product report: % by evidence level and requirement counts by state (pronto, em QA, bloqueado, sem começar).').option('--evidence <path>', 'JSON file with the checked evidence (keys prs, ci, files, urls, runs); without it every level is "sem evidência"').option('--labels <path>', 'JSON file with recorded GitHub issues/PRs; those labeled mvp:<id> are linked to that requirement').option('--approver <name...>', 'who may approve the list (default: anyone named in approval.by)').action((file: string | undefined, command: { readonly evidence?: string; readonly labels?: string; readonly approver?: readonly string[] }) => {
   const evidence = evidenceFromJson(command.evidence ? readJsonInput(command.evidence, 'MVP evidence') : {})
-  const report = evaluateMvp(mvpDoc(file), evidence, command.approver ?? [])
+  const labeled = command.labels ? readJsonInput(command.labels, 'MVP labeled issues') : []
+  const doc = mvpDoc(file)
+  const report = evaluateMvp(Array.isArray(labeled) ? linkMvpLabels(doc, labeled as Parameters<typeof linkMvpLabels>[1]) : doc, evidence, command.approver ?? [])
   print(options().json ? report : formatMvpReport(report))
 })
 const context = program.command('context').description('Resolve portable, provenance-bearing context snapshots.')
