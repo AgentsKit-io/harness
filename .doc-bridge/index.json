@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
-  "contentHash": "1338270142f073decba48a8e5f57d7786bf797df9fc99991fc438b94f87dbe19",
+  "contentHash": "7e665f1273495a346817b389b271582096b5e7720a7895e982d8296689789900",
   "contentHashAlgo": "sha256-semantic-v1",
-  "generatedAt": "2026-11-03T08:12:52.737Z",
+  "generatedAt": "2026-11-03T08:58:32.141Z",
   "project": {
     "name": "AgentsKit Harness",
     "root": "."
@@ -294,100 +294,16 @@
       "contentHash": "2a9c6729475ccd1863d072eca3e2771a312cd401d2186d0732b4d92f0d5b915e"
     },
     {
-      "id": "document:changelog.d/253.md",
-      "type": "document",
-      "title": "253.md",
-      "path": "changelog.d/253.md",
-      "description": "feat!: remove 13 playbook-evaluation CLI commands, move discovery/experiment/pilot/cycle to experimental/, add INVENTARIO",
-      "tags": [
-        "document",
-        "project"
-      ],
-      "contentHash": "887b974cd13d2c2cec09594e4c453c6fe24813d576b7d5175e1fbe1b85b84aaf"
-    },
-    {
-      "id": "document:changelog.d/254.md",
-      "type": "document",
-      "title": "254.md",
-      "path": "changelog.d/254.md",
-      "description": "feat: ak-harness mvp check|digest|report — validate docs/mvp.yaml, compute the approval digest and report product progress",
-      "tags": [
-        "document",
-        "project"
-      ],
-      "contentHash": "019239fc6a783264ea93c72bea2e085446388a036bf158440fe32ba2ca50a7d3"
-    },
-    {
-      "id": "document:changelog.d/255.md",
-      "type": "document",
-      "title": "255.md",
-      "path": "changelog.d/255.md",
-      "description": "feat: create a GitHub tag and release from the changelog on every npm publish",
-      "tags": [
-        "document",
-        "project"
-      ],
-      "contentHash": "652fc69f7e4cd4a74fb96745e9ad1d4d347655328d7e33e7e8804822b4656668"
-    },
-    {
-      "id": "document:changelog.d/267.md",
-      "type": "document",
-      "title": "267.md",
-      "path": "changelog.d/267.md",
-      "description": "feat: ak-harness mvp report --json has a versioned schema (schemaVersion 1)",
-      "tags": [
-        "document",
-        "project"
-      ],
-      "contentHash": "d93cff273f2ed36741b4ff9dffd6212cf5299ca13289aee41a7994b6772841fa"
-    },
-    {
-      "id": "document:changelog.d/268.md",
-      "type": "document",
-      "title": "268.md",
-      "path": "changelog.d/268.md",
-      "description": "feat: ak-harness mvp report links issues and PRs labeled mvp:<id> to the requirement",
-      "tags": [
-        "document",
-        "project"
-      ],
-      "contentHash": "d1cf19e5fddc443c50f058a2d9c94aa852969270e9a63fc5d36cae035c8c4985"
-    },
-    {
-      "id": "document:changelog.d/270.md",
-      "type": "document",
-      "title": "270.md",
-      "path": "changelog.d/270.md",
-      "description": "fix: regenerate the stale Doc Bridge index so Verify harness passes on main",
-      "tags": [
-        "document",
-        "project"
-      ],
-      "contentHash": "1c93f80c9cf1e6fce4f2d6f1ee9134653942afa4a0a4db2ed7fe45d79e3fc40b"
-    },
-    {
-      "id": "document:changelog.d/271.md",
-      "type": "document",
-      "title": "271.md",
-      "path": "changelog.d/271.md",
-      "description": "test: package check runs ak-harness mvp check|digest|report from the installed tarball",
-      "tags": [
-        "document",
-        "project"
-      ],
-      "contentHash": "93719d4406547aa53360715e22d4ffd7eade17c257697d544a4a7f9b7c0b8f84"
-    },
-    {
       "id": "document:CHANGELOG.md",
       "type": "document",
       "title": "Changelog",
       "path": "CHANGELOG.md",
-      "description": "Delivery evidence on the tracker issue. The merge comment now carries the audit trail: PR, merge commit and who merged (loop or outside), the reviewed head and verdict (APPROVE/COMMENT/REQUEST CHANGES/INCOMPLETE) with findings by severity and INCOMPLETE reasons, unresolved review threads, CI checks, the harness verify, the worker's verify.json, DoD lines (plus negative/recovery proofs when",
+      "description": "ak-harness mvp check|digest|report. Validates docs/mvp.yaml, computes the approval digest (same digest as the factory manifest script, golden-tested against docs/fixtures/mvp) and reports product progress: % by evidence level (merged, accepted, proven) and a count per requirement state (pronto, em QA, bloqueado, sem começar).",
       "tags": [
         "document",
         "project"
       ],
-      "contentHash": "1e0a7b251af3f7c83d505634db46db4aa119fd57bc429e67928407aac4060340"
+      "contentHash": "6cb7ce43d410f85f182b3e6001b42dc1989214c05580cae9e34dea9107243c3c"
     },
     {
       "id": "document:CLAUDE.md",
@@ -1222,14 +1138,14 @@
     {
       "id": "document:release/notes.md",
       "type": "document",
-      "title": "0.22.3 release candidate",
+      "title": "0.23.0 release candidate",
       "path": "release/notes.md",
       "description": "The control plane (ak-harness ui) becomes the operator's single place to see what needs them and act on it safely, plus the loop fixes found running it against a real repository since 0.19.0. CHANGELOG.md has the full list; docs/ADR-0040 records the decisions.",
       "tags": [
         "document",
         "unclassified"
       ],
-      "contentHash": "f06c62a2c75a5eb3420056f6c63c55b3fdb44fdab94f950e1aa985fa10d3ef3e"
+      "contentHash": "0212f2189daee5c951bb717dd0bbe0f81ac8cb7d9c2872b7629265fe74c46251"
     },
     {
       "id": "document:SECURITY.md",
@@ -9978,8 +9894,8 @@
     }
   },
   "inputs": {
-    "hash": "11661aad225e36d9a7dc57fa7a090650c0425d1759e3f480b04833d7987608e0",
-    "fileCount": 638,
+    "hash": "60db16a7dbbb7b28edfa91d64f4a6438a7728230d348bf8bf26c934572315882",
+    "fileCount": 631,
     "projectionVersion": 2
   },
   "retrieval": {
@@ -10001,9 +9917,9 @@
   "projection": {
     "type": "retrieval-index",
     "schemaVersion": 1,
-    "contentHash": "98134eba563fc4ebf6aa999aab81569991158406c706359621d9d2850d90dbe1",
+    "contentHash": "ad1e437426beeec2e4176416a34bacf4ff8de9babbf3634c2a90feeb55eb56a2",
     "contentHashAlgo": "sha256-semantic-v1",
-    "snapshotHash": "56c0073ce1273e1d9d30a86cdb60b7ea7941de099ead1ad08629335766923b10",
+    "snapshotHash": "729b23712a217181d063f9d59cc4fcaab89d05eed9a828c0b1eb00a2098035d4",
     "overlayHash": "f99666ff9119084dd25c2974ae64eb6935ec2aa785ff5ad478fb9d541f7a5e94",
     "configurationHash": "497822431910cd9fa7d674a48a9f0b96fbbbf779f22a001de0b52252117fe3ab",
     "lexiconVersion": 1,
@@ -10023,7 +9939,7 @@
     },
     "lexical": {
       "version": 1,
-      "documentCount": 619,
+      "documentCount": 612,
       "fieldNames": [
         "aliases",
         "body",
@@ -10034,13 +9950,13 @@
         "title"
       ],
       "averageFieldLength": {
-        "aliases": 2.9079159935379644,
-        "body": 46.8562197092084,
-        "headings": 3.851373182552504,
-        "path": 6.088852988691438,
-        "summary": 3.0759289176090467,
-        "symbols": 13.575121163166397,
-        "title": 4.024232633279483
+        "aliases": 2.918300653594771,
+        "body": 46.88562091503268,
+        "headings": 3.8970588235294117,
+        "path": 6.112745098039215,
+        "summary": 2.94281045751634,
+        "symbols": 13.730392156862745,
+        "title": 4.0473856209150325
       }
     },
     "entries": [
@@ -12560,273 +12476,11 @@
         "confidence": "observed"
       },
       {
-        "id": "document:changelog.d/253.md",
-        "kind": "document",
-        "path": "changelog.d/253.md",
-        "title": "253.md",
-        "summary": "feat!: remove 13 playbook-evaluation CLI commands, move discovery/experiment/pilot/cycle to experimental/, add INVENTARIO",
-        "audience": "human",
-        "aliases": [],
-        "tags": [
-          "document",
-          "project"
-        ],
-        "fields": {
-          "title": "253.md",
-          "headings": "",
-          "path": "changelog.d/253.md",
-          "symbols": "",
-          "summary": "feat!: remove 13 playbook-evaluation CLI commands, move discovery/experiment/pilot/cycle to experimental/, add INVENTARIO",
-          "body": "feat!: remove 13 playbook-evaluation CLI commands, move discovery/experiment/pilot/cycle to experimental/, add INVENTARIO discovery , experiment , pilot , cycle , snapshot , learning parse , coordination claim had no caller in any AgentsKit-io repo: CLI commands 98 - 85. assessDiscovery , isDiscoveryCurrent , selectRuntime , assessPilot , assessImprovementCycle , IMPROVEMENT CYCLE STEPS leave src/index.ts (code now in experimental/ , unpublished). files ships four docs instead of all of docs/ : tarball 2 588 560 B - 2 493 755 B. Adds docs/INVENTARIO.md , marks loop tick/deliver legacy, adds tests for json-file, process-tree, fleet-fix, refill.",
-          "aliases": "document project"
-        },
-        "graph": {
-          "pagerank": 0,
-          "inboundLinks": 0,
-          "coveredBy": [],
-          "mentionedBy": [],
-          "inbound": [],
-          "outbound": [
-            {
-              "kind": "mentions",
-              "id": "document:docs/INVENTARIO.md",
-              "confidence": "observed"
-            },
-            {
-              "kind": "mentions",
-              "id": "module:src/index.ts",
-              "confidence": "observed"
-            },
-            {
-              "kind": "mentions-symbol",
-              "id": "module:experimental/cycle.ts",
-              "confidence": "observed"
-            },
-            {
-              "kind": "mentions-symbol",
-              "id": "module:experimental/discovery.ts",
-              "confidence": "observed"
-            },
-            {
-              "kind": "mentions-symbol",
-              "id": "module:experimental/experiment.ts",
-              "confidence": "observed"
-            },
-            {
-              "kind": "mentions-symbol",
-              "id": "module:experimental/pilot.ts",
-              "confidence": "observed"
-            }
-          ]
-        },
-        "contentHash": "887b974cd13d2c2cec09594e4c453c6fe24813d576b7d5175e1fbe1b85b84aaf",
-        "provenance": "observed",
-        "confidence": "observed"
-      },
-      {
-        "id": "document:changelog.d/254.md",
-        "kind": "document",
-        "path": "changelog.d/254.md",
-        "title": "254.md",
-        "summary": "feat: ak-harness mvp check|digest|report — validate docs/mvp.yaml, compute the approval digest and report product progress",
-        "audience": "human",
-        "aliases": [],
-        "tags": [
-          "document",
-          "project"
-        ],
-        "fields": {
-          "title": "254.md",
-          "headings": "",
-          "path": "changelog.d/254.md",
-          "symbols": "",
-          "summary": "feat: ak-harness mvp check|digest|report — validate docs/mvp.yaml, compute the approval digest and report product progress",
-          "body": "feat: ak-harness mvp check digest report — validate docs/mvp.yaml, compute the approval digest and report product progress Port of the factory mvp manifest.py (same digest, golden-tested against docs/fixtures/mvp). report gives % by evidence level (merged, accepted, proven) and a count per requirement state (pronto, em QA, bloqueado, sem começar); evidence comes from --evidence <json , absent evidence is \"sem evidência\".",
-          "aliases": "document project"
-        },
-        "graph": {
-          "pagerank": 0,
-          "inboundLinks": 0,
-          "coveredBy": [],
-          "mentionedBy": [],
-          "inbound": [],
-          "outbound": []
-        },
-        "contentHash": "019239fc6a783264ea93c72bea2e085446388a036bf158440fe32ba2ca50a7d3",
-        "provenance": "observed",
-        "confidence": "observed"
-      },
-      {
-        "id": "document:changelog.d/255.md",
-        "kind": "document",
-        "path": "changelog.d/255.md",
-        "title": "255.md",
-        "summary": "feat: create a GitHub tag and release from the changelog on every npm publish",
-        "audience": "human",
-        "aliases": [],
-        "tags": [
-          "document",
-          "project"
-        ],
-        "fields": {
-          "title": "255.md",
-          "headings": "",
-          "path": "changelog.d/255.md",
-          "symbols": "",
-          "summary": "feat: create a GitHub tag and release from the changelog on every npm publish",
-          "body": "feat: create a GitHub tag and release from the changelog on every npm publish The publish job also backfills the release for a published version that has none (0.22.3).",
-          "aliases": "document project"
-        },
-        "graph": {
-          "pagerank": 0,
-          "inboundLinks": 0,
-          "coveredBy": [],
-          "mentionedBy": [],
-          "inbound": [],
-          "outbound": []
-        },
-        "contentHash": "652fc69f7e4cd4a74fb96745e9ad1d4d347655328d7e33e7e8804822b4656668",
-        "provenance": "observed",
-        "confidence": "observed"
-      },
-      {
-        "id": "document:changelog.d/267.md",
-        "kind": "document",
-        "path": "changelog.d/267.md",
-        "title": "267.md",
-        "summary": "feat: ak-harness mvp report --json has a versioned schema (schemaVersion 1)",
-        "audience": "human",
-        "aliases": [],
-        "tags": [
-          "document",
-          "project"
-        ],
-        "fields": {
-          "title": "267.md",
-          "headings": "",
-          "path": "changelog.d/267.md",
-          "symbols": "",
-          "summary": "feat: ak-harness mvp report --json has a versioned schema (schemaVersion 1)",
-          "body": "feat: ak-harness mvp report --json has a versioned schema (schemaVersion 1) Adds schemaVersion to the report, docs/schemas/mvp-report.schema.json, docs/MVP-REPORT.md (fields and exit codes) and a schema test. Closes 267.",
-          "aliases": "document project"
-        },
-        "graph": {
-          "pagerank": 0,
-          "inboundLinks": 0,
-          "coveredBy": [],
-          "mentionedBy": [],
-          "inbound": [],
-          "outbound": []
-        },
-        "contentHash": "d93cff273f2ed36741b4ff9dffd6212cf5299ca13289aee41a7994b6772841fa",
-        "provenance": "observed",
-        "confidence": "observed"
-      },
-      {
-        "id": "document:changelog.d/268.md",
-        "kind": "document",
-        "path": "changelog.d/268.md",
-        "title": "268.md",
-        "summary": "feat: ak-harness mvp report links issues and PRs labeled mvp:<id> to the requirement",
-        "audience": "human",
-        "aliases": [],
-        "tags": [
-          "document",
-          "project"
-        ],
-        "fields": {
-          "title": "268.md",
-          "headings": "",
-          "path": "changelog.d/268.md",
-          "symbols": "",
-          "summary": "feat: ak-harness mvp report links issues and PRs labeled mvp:<id> to the requirement",
-          "body": "feat: ak-harness mvp report links issues and PRs labeled mvp:<id to the requirement New linkMvpLabels and mvp report --labels <recorded list-issues JSON ; the report lists issues and prs per requirement (additive schema fields). Closes 268.",
-          "aliases": "document project"
-        },
-        "graph": {
-          "pagerank": 0,
-          "inboundLinks": 0,
-          "coveredBy": [],
-          "mentionedBy": [],
-          "inbound": [],
-          "outbound": []
-        },
-        "contentHash": "d1cf19e5fddc443c50f058a2d9c94aa852969270e9a63fc5d36cae035c8c4985",
-        "provenance": "observed",
-        "confidence": "observed"
-      },
-      {
-        "id": "document:changelog.d/270.md",
-        "kind": "document",
-        "path": "changelog.d/270.md",
-        "title": "270.md",
-        "summary": "fix: regenerate the stale Doc Bridge index so Verify harness passes on main",
-        "audience": "human",
-        "aliases": [],
-        "tags": [
-          "document",
-          "project"
-        ],
-        "fields": {
-          "title": "270.md",
-          "headings": "",
-          "path": "changelog.d/270.md",
-          "symbols": "",
-          "summary": "fix: regenerate the stale Doc Bridge index so Verify harness passes on main",
-          "body": "fix: regenerate the stale Doc Bridge index so Verify harness passes on main ak-docs gate run index-freshness failed in the docs job after the docs/mvp.yaml changes; .doc-bridge/ is rebuilt with ak-docs index . The insights search builds its event docs in one plain loop (no entries/filter/map/join or double spread per event): a cold 30-day, 20k-event search drops from ~500 ms to ~210 ms, so its 500 ms budget holds under a loaded full test run.",
-          "aliases": "document project"
-        },
-        "graph": {
-          "pagerank": 0,
-          "inboundLinks": 0,
-          "coveredBy": [],
-          "mentionedBy": [],
-          "inbound": [],
-          "outbound": []
-        },
-        "contentHash": "1c93f80c9cf1e6fce4f2d6f1ee9134653942afa4a0a4db2ed7fe45d79e3fc40b",
-        "provenance": "observed",
-        "confidence": "observed"
-      },
-      {
-        "id": "document:changelog.d/271.md",
-        "kind": "document",
-        "path": "changelog.d/271.md",
-        "title": "271.md",
-        "summary": "test: package check runs ak-harness mvp check|digest|report from the installed tarball",
-        "audience": "human",
-        "aliases": [],
-        "tags": [
-          "document",
-          "project"
-        ],
-        "fields": {
-          "title": "271.md",
-          "headings": "",
-          "path": "changelog.d/271.md",
-          "symbols": "",
-          "summary": "test: package check runs ak-harness mvp check|digest|report from the installed tarball",
-          "body": "test: package check runs ak-harness mvp check digest report from the installed tarball Pipelines pin @agentskit/harness@<exact and call ak-harness mvp instead of an in-house manifest script; docs/MVP-REPORT.md shows the pinned calls and the wrapper rule. Refs 271 (mvp:RF-09).",
-          "aliases": "document project"
-        },
-        "graph": {
-          "pagerank": 0,
-          "inboundLinks": 0,
-          "coveredBy": [],
-          "mentionedBy": [],
-          "inbound": [],
-          "outbound": []
-        },
-        "contentHash": "93719d4406547aa53360715e22d4ffd7eade17c257697d544a4a7f9b7c0b8f84",
-        "provenance": "observed",
-        "confidence": "observed"
-      },
-      {
         "id": "document:CHANGELOG.md",
         "kind": "document",
         "path": "CHANGELOG.md",
         "title": "Changelog",
-        "summary": "Delivery evidence on the tracker issue. The merge comment now carries the audit trail: PR, merge commit and who merged (loop or outside), the reviewed head and verdict (APPROVE/COMMENT/REQUEST CHANGES/INCOMPLETE) with findings by severity and INCOMPLETE reasons, unresolved review threads, CI checks, the harness verify, the worker's verify.json, DoD lines (plus negative/recovery proofs when",
+        "summary": "ak-harness mvp check|digest|report. Validates docs/mvp.yaml, computes the approval digest (same digest as the factory manifest script, golden-tested against docs/fixtures/mvp) and reports product progress: % by evidence level (merged, accepted, proven) and a count per requirement state (pronto, em QA, bloqueado, sem começar).",
         "audience": "human",
         "aliases": [],
         "tags": [
@@ -12835,11 +12489,11 @@
         ],
         "fields": {
           "title": "Changelog",
-          "headings": "Changelog [Unreleased] [0.22.3] — 2026-09-27 [0.22.2] — 2026-09-27 [0.22.1] — 2026-09-27 [0.22.0] — 2026-09-27 [0.21.0] — 2026-09-26 [0.20.0] — 2026-09-25 [0.19.0] — 2026-09-23 [0.18.0] - 2026-09-22 Release Hygiene Boundaries Token and time economy Breaking Gates [0.17.0] - 2026-09-22 Worker guard Release can no longer publish past a red gate [0.16.0] - 2026-09-22 Verification and token waste Observability: every deterministic phase, timestamped and attributed Event bus, unified House conventions [0.15.0] - 2026-09-20 The phases of an issue leave evidence behind layers: and documents: — where the work belongs, and where the decisions live Per-role settings, and which phases run at all The four cost levers, finished release.waiting, once per head The event vocabulary, and the compiler that guards it The installed agent is code, not a markdown file to append to Documentation Windows stops being a second-class platform The licence, and a surface for the numbers The harness has a folder of its own The documentation site The twelve steps of the roadmap, in the order they landed loop install reconciles instead of rewriting loop stage observe — the health scan comes into the repository Configuration in four layers, and the loop learns to call a human The roles become installed agents, and the retro can improve them Presets and a grilled loop init intake, maintain, and release notes — the cycle closes Cost: a routing policy, two ceilings, and two of the four levers Connectors: the engine stops naming vendors release — promotion and deploy, with a human in front loop plan — a vague objective becomes issues A plan, voted on, before any worker starts The Definition of Done becomes two lists, both proven on the PR The retro starts improving the loop, within declared limits [0.14.0] - 2026-09-19 The queue stops being \"my issues\" Review strictness that matches the risk Telling the worker the truth about the base branch Memory: recurrence instead of guesswork One human approval covers the goal's own effects Fixes that had never shipped [0.13.0] - 2026-09-14 [0.12.0] - 2026-09-13 [0.11.0] - 2026-09-13 [0.10.0] - 2026-09-12 [0.9.0] - 2026-09-12 [0.8.0] - 2026-09-12",
+          "headings": "Changelog [Unreleased] [0.23.0] — 2026-11-03 [0.22.3] — 2026-09-27 [0.22.2] — 2026-09-27 [0.22.1] — 2026-09-27 [0.22.0] — 2026-09-27 [0.21.0] — 2026-09-26 [0.20.0] — 2026-09-25 [0.19.0] — 2026-09-23 [0.18.0] - 2026-09-22 Release Hygiene Boundaries Token and time economy Breaking Gates [0.17.0] - 2026-09-22 Worker guard Release can no longer publish past a red gate [0.16.0] - 2026-09-22 Verification and token waste Observability: every deterministic phase, timestamped and attributed Event bus, unified House conventions [0.15.0] - 2026-09-20 The phases of an issue leave evidence behind layers: and documents: — where the work belongs, and where the decisions live Per-role settings, and which phases run at all The four cost levers, finished release.waiting, once per head The event vocabulary, and the compiler that guards it The installed agent is code, not a markdown file to append to Documentation Windows stops being a second-class platform The licence, and a surface for the numbers The harness has a folder of its own The documentation site The twelve steps of the roadmap, in the order they landed loop install reconciles instead of rewriting loop stage observe — the health scan comes into the repository Configuration in four layers, and the loop learns to call a human The roles become installed agents, and the retro can improve them Presets and a grilled loop init intake, maintain, and release notes — the cycle closes Cost: a routing policy, two ceilings, and two of the four levers Connectors: the engine stops naming vendors release — promotion and deploy, with a human in front loop plan — a vague objective becomes issues A plan, voted on, before any worker starts The Definition of Done becomes two lists, both proven on the PR The retro starts improving the loop, within declared limits [0.14.0] - 2026-09-19 The queue stops being \"my issues\" Review strictness that matches the risk Telling the worker the truth about the base branch Memory: recurrence instead of guesswork One human approval covers the goal's own effects Fixes that had never shipped [0.13.0] - 2026-09-14 [0.12.0] - 2026-09-13 [0.11.0] - 2026-09-13 [0.10.0] - 2026-09-12 [0.9.0] - 2026-09-12",
           "path": "CHANGELOG.md",
           "symbols": "",
-          "summary": "Delivery evidence on the tracker issue. The merge comment now carries the audit trail: PR, merge commit and who merged (loop or outside), the reviewed head and verdict (APPROVE/COMMENT/REQUEST CHANGES/INCOMPLETE) with findings by severity and INCOMPLETE reasons, unresolved review threads, CI checks, the harness verify, the worker's verify.json, DoD lines (plus negative/recovery proofs when",
-          "body": "Changelog [Unreleased] - Delivery evidence on the tracker issue. The merge comment now carries the audit trail: PR, merge commit and who merged (loop or outside), the reviewed head and verdict (APPROVE/COMMENT/REQUEST CHANGES/INCOMPLETE) with findings by severity and INCOMPLETE reasons, unresolved review threads, CI checks, the harness verify, the worker's verify.json , DoD lines (plus negative/recovery proofs when recorded), fix rounds, elapsed time and loop-side tokens. Absent parts are named, skipped/blocked items are never shown as passed, free text is PII-redacted, and the body fits the tracker's ceiling with a note of what was cut. Same dedupe key and marker as before; also posted for merges outside the loop, and a brief version is appended to blocked-after-fix-rounds escalations. Trackers declare their comment format and size through TrackerConnector.comments ; ADR-0044 sketches a Jira connector against it. - Resolution verdict and bug fix proof in the evidence comment. The tracker comment opens with RESOLVED / PARTIAL / NOT PROVEN , computed only from recorded evidence (a merge alone is never RESOLVED), followed by the PR, merge sha, files changed and the issue's checklist state, and an acceptance-criteria table mapping each contract outcome id to its text, status (unproven ones listed) and evidence. Issues with a delivery.evidence.bugLabels label (default Bug , type:bug , type:fix ) also get a \"Bug fix proof\" block: reproduction steps from the issue and the regression tests in the PR, stating that failing-before-the-fix was not demonstrated. One extra tracker read per merge; nothing is posted on the GitHub PR. - Worker terminals are closed. Deliver closes the worker terminal on every finished outcome, not only when a merge removes the worktree, and reaps terminals of finished/lease-less issues and idle workers whose PR only waits ( delivery.closeTerminalOnFinish , delivery.reapIdleTerminalsMinutes: 90 ); worktrees are kept. A fix round for a worker whose terminal is gone relaunches it in the same worktree. tick stops dispatching at machine.maxLiveTerminals (12) live loop terminals, and an orca terminal create timeout is capacity (re-queued, 10-minute cooldown, no failure counted) instead of tripping the pause. New events worker.terminal-closed , terminals.reaped , worker.dispatch-capacity . - linear.queueOwnership: both . The queue can now drain unassigned issues AND the ones assigned to linear.person (Linear: both listings per state, merged and deduped; GitHub: assignee empty or the person). A dispatched unassigned issue is assigned to the person; escalation/restart never release the assignee under both . - Single test run in CI. pnpm test:coverage now includes typecheck and the package criterion output, so the verify job runs the test suite once while retaining coverage thresholds. - Docs artifact frontmatter. Documentation metadata now uses shared frontmatter splitting and YAML parsing, including folded scalars, block lists, BOM and CRLF input. - Coverage floor. pnpm test:coverage now enforces ratcheted source coverage in CI. - Shared record guard. Harness internals now reuse one non-null, non-array object check while preserving caller-specific errors and fallbacks. - Cryptographic run IDs. Verification runs retain their timestamp and PID prefix while using a cryptographic random suffix. - Bounded model catalog refresh. Artificial Analysis refreshes use @agentskit/net deadlines and a 2 MiB JSON body cap; a failed refresh keeps the existing catalog cache. - Canonical shared hashes. New artifacts, event-chain entries, manifests, verification digests and cache keys use @agentskit/core/hash ; readers still accept existing persisted hashes, and stable IDs keep their legacy format. - Portability via @agentskit/cross-platform . Process spawning ( .cmd shim resolution), process-tree kill and path/line helpers now come from the shared package instead of hand-rolled copies; cross-spawn is no longer a direct dependency. pnpm ",
+          "summary": "ak-harness mvp check|digest|report. Validates docs/mvp.yaml, computes the approval digest (same digest as the factory manifest script, golden-tested against docs/fixtures/mvp) and reports product progress: % by evidence level (merged, accepted, proven) and a count per requirement state (pronto, em QA, bloqueado, sem começar).",
+          "body": "Changelog [Unreleased] [0.23.0] — 2026-11-03 - ak-harness mvp check digest report . Validates docs/mvp.yaml , computes the approval digest (same digest as the factory manifest script, golden-tested against docs/fixtures/mvp ) and reports product progress: % by evidence level (merged, accepted, proven) and a count per requirement state (pronto, em QA, bloqueado, sem começar). Evidence comes from --evidence <json ; absent evidence is \"sem evidência\" ( 254). - Versioned mvp report --json . The report carries schemaVersion: 1 , described by docs/schemas/mvp-report.schema.json ; docs/MVP-REPORT.md documents the fields and exit codes ( 267). - Issues and PRs labeled mvp:<id are linked to their requirement: linkMvpLabels and mvp report --labels <recorded list-issues JSON add issues and prs per requirement (additive schema fields) ( 268). - Pinned pipeline use. The package check runs ak-harness mvp check digest report from the installed tarball; pipelines pin @agentskit/harness@<exact instead of an in-house manifest script ( 271). - GitHub release on publish. The publish job creates the v<version tag and GitHub release from this changelog, and backfills a release for a published version that has none ( 255). - Breaking: 13 playbook-evaluation CLI commands removed. discovery , experiment , pilot , cycle , snapshot , learning parse , coordination claim had no caller in any AgentsKit-io repo (CLI commands 98 → 85). assessDiscovery , isDiscoveryCurrent , selectRuntime , assessPilot , assessImprovementCycle and IMPROVEMENT CYCLE STEPS leave src/index.ts (code moved to the unpublished experimental/ ). The tarball ships four docs instead of all of docs/ (2 588 560 B → 2 493 755 B); adds docs/INVENTARIO.md and marks loop tick/deliver legacy ( 253). - Main green. The stale Doc Bridge index is regenerated, and the insights search builds its event docs in one loop (a cold 30-day, 20k-event search drops from ~500 ms to ~210 ms) so its budget holds under a loaded test run ( 270). - Delivery evidence on the tracker issue. The merge comment now carries the audit trail: PR, merge commit and who merged (loop or outside), the reviewed head and verdict (APPROVE/COMMENT/REQUEST CHANGES/INCOMPLETE) with findings by severity and INCOMPLETE reasons, unresolved review threads, CI checks, the harness verify, the worker's verify.json , DoD lines (plus negative/recovery proofs when recorded), fix rounds, elapsed time and loop-side tokens. Absent parts are named, skipped/blocked items are never shown as passed, free text is PII-redacted, and the body fits the tracker's ceiling with a note of what was cut. Same dedupe key and marker as before; also posted for merges outside the loop, and a brief version is appended to blocked-after-fix-rounds escalations. Trackers declare their comment format and size through TrackerConnector.comments ; ADR-0044 sketches a Jira connector against it. - Resolution verdict and bug fix proof in the evidence comment. The tracker comment opens with RESOLVED / PARTIAL / NOT PROVEN , computed only from recorded evidence (a merge alone is never RESOLVED), followed by the PR, merge sha, files changed and the issue's checklist state, and an acceptance-criteria table mapping each contract outcome id to its text, status (unproven ones listed) and evidence. Issues with a delivery.evidence.bugLabels label (default Bug , type:bug , type:fix ) also get a \"Bug fix proof\" block: reproduction steps from the issue and the regression tests in the PR, stating that failing-before-the-fix was not demonstrated. One extra tracker read per merge; nothing is posted on the GitHub PR. - Worker terminals are closed. Deliver closes the worker terminal on every finished outcome, not only when a merge removes the worktree, and reaps terminals of finished/lease-less issues and idle workers whose PR only waits ( delivery.closeTerminalOnFinish , delivery.reapIdleTerminalsMinutes: 90 ); worktrees are kept. A fix round for a worker whose terminal is gone relaunches it ",
           "aliases": "document project"
         },
         "graph": {
@@ -12930,7 +12584,22 @@
             },
             {
               "kind": "mentions",
+              "id": "document:docs/fixtures/mvp/README.md",
+              "confidence": "fuzzy"
+            },
+            {
+              "kind": "mentions",
               "id": "document:docs/GETTING-STARTED.md",
+              "confidence": "observed"
+            },
+            {
+              "kind": "mentions",
+              "id": "document:docs/INVENTARIO.md",
+              "confidence": "observed"
+            },
+            {
+              "kind": "mentions",
+              "id": "document:docs/MVP-REPORT.md",
               "confidence": "observed"
             },
             {
@@ -12955,6 +12624,11 @@
             },
             {
               "kind": "mentions",
+              "id": "module:src/index.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "mentions",
               "id": "module:src/loop/event-bus.ts",
               "confidence": "observed"
             },
@@ -12969,18 +12643,28 @@
               "confidence": "observed"
             },
             {
-              "kind": "mentions",
-              "id": "package:@agentskit/harness",
-              "confidence": "observed"
-            },
-            {
-              "kind": "mentions-symbol",
-              "id": "module:apps/docs/app/api/search/route.ts",
-              "confidence": "observed"
-            },
-            {
               "kind": "mentions-symbol",
               "id": "module:apps/docs/source.config.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "mentions-symbol",
+              "id": "module:experimental/cycle.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "mentions-symbol",
+              "id": "module:experimental/discovery.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "mentions-symbol",
+              "id": "module:experimental/experiment.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "mentions-symbol",
+              "id": "module:experimental/pilot.ts",
               "confidence": "observed"
             },
             {
@@ -13005,16 +12689,6 @@
             },
             {
               "kind": "mentions-symbol",
-              "id": "module:src/adapters/tracking.ts",
-              "confidence": "observed"
-            },
-            {
-              "kind": "mentions-symbol",
-              "id": "module:src/context/index.ts",
-              "confidence": "observed"
-            },
-            {
-              "kind": "mentions-symbol",
               "id": "module:src/execution/config.ts",
               "confidence": "observed"
             },
@@ -13025,17 +12699,7 @@
             },
             {
               "kind": "mentions-symbol",
-              "id": "module:src/execution/metrics.ts",
-              "confidence": "observed"
-            },
-            {
-              "kind": "mentions-symbol",
               "id": "module:src/kernel/errors.ts",
-              "confidence": "observed"
-            },
-            {
-              "kind": "mentions-symbol",
-              "id": "module:src/kernel/learning.ts",
               "confidence": "observed"
             },
             {
@@ -13100,6 +12764,11 @@
             },
             {
               "kind": "mentions-symbol",
+              "id": "module:src/mvp.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "mentions-symbol",
               "id": "module:src/ui/api/config-view.ts",
               "confidence": "observed"
             },
@@ -13110,7 +12779,7 @@
             }
           ]
         },
-        "contentHash": "1e0a7b251af3f7c83d505634db46db4aa119fd57bc429e67928407aac4060340",
+        "contentHash": "6cb7ce43d410f85f182b3e6001b42dc1989214c05580cae9e34dea9107243c3c",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -15933,10 +15602,18 @@
         },
         "graph": {
           "pagerank": 0,
-          "inboundLinks": 0,
+          "inboundLinks": 1,
           "coveredBy": [],
-          "mentionedBy": [],
-          "inbound": [],
+          "mentionedBy": [
+            "document:CHANGELOG.md"
+          ],
+          "inbound": [
+            {
+              "kind": "mentions",
+              "id": "document:CHANGELOG.md",
+              "confidence": "fuzzy"
+            }
+          ],
           "outbound": [
             {
               "kind": "mentions-symbol",
@@ -16273,7 +15950,7 @@
           "inboundLinks": 2,
           "coveredBy": [],
           "mentionedBy": [
-            "document:changelog.d/253.md"
+            "document:CHANGELOG.md"
           ],
           "inbound": [
             {
@@ -16283,7 +15960,7 @@
             },
             {
               "kind": "mentions",
-              "id": "document:changelog.d/253.md",
+              "id": "document:CHANGELOG.md",
               "confidence": "observed"
             }
           ],
@@ -17017,10 +16694,18 @@
         },
         "graph": {
           "pagerank": 0,
-          "inboundLinks": 0,
+          "inboundLinks": 1,
           "coveredBy": [],
-          "mentionedBy": [],
-          "inbound": [],
+          "mentionedBy": [
+            "document:CHANGELOG.md"
+          ],
+          "inbound": [
+            {
+              "kind": "mentions",
+              "id": "document:CHANGELOG.md",
+              "confidence": "observed"
+            }
+          ],
           "outbound": [
             {
               "kind": "mentions",
@@ -17437,7 +17122,7 @@
         "id": "document:release/notes.md",
         "kind": "document",
         "path": "release/notes.md",
-        "title": "0.22.3 release candidate",
+        "title": "0.23.0 release candidate",
         "summary": "The control plane (ak-harness ui) becomes the operator's single place to see what needs them and act on it safely, plus the loop fixes found running it against a real repository since 0.19.0. CHANGELOG.md has the full list; docs/ADR-0040 records the decisions.",
         "aliases": [],
         "tags": [
@@ -17445,12 +17130,12 @@
           "unclassified"
         ],
         "fields": {
-          "title": "0.22.3 release candidate",
-          "headings": "0.22.3 release candidate",
+          "title": "0.23.0 release candidate",
+          "headings": "0.23.0 release candidate",
           "path": "release/notes.md",
           "symbols": "",
           "summary": "The control plane (ak-harness ui) becomes the operator's single place to see what needs them and act on it safely, plus the loop fixes found running it against a real repository since 0.19.0. CHANGELOG.md has the full list; docs/ADR-0040 records the decisions.",
-          "body": "0.22.3 release candidate The control plane ( ak-harness ui ) becomes the operator's single place to see what needs them and act on it safely, plus the loop fixes found running it against a real repository since 0.19.0. CHANGELOG.md has the full list; docs/ADR-0040 records the decisions. Attention first. The home page is a queue of what needs a person — decisions, stuck or failed runs, state out of sync, system problems — each with its reason and next action. Empty means nothing does. Reconciled, then locked. Every refresh compares the loop with the tracker and Orca, including issues the board does not list. Drift is shown and reconciled explicitly; destructive actions refuse (409) while their issue is out of sync or its data is stale. On a real loop, 24 \"blocked\" issues were 4 once cancelled work was recognised. Every operator action, same kernel. Held-PR approval (pinned to the head), plan, design and release approval, learnings, stage pause and resume, tick/deliver/doctor, automation reinstall and batch enqueue call the functions the CLI calls. There is no deploy from the UI. Insights and configuration. Trends, Costs (tokens and plan usage, no dollar figures) and Explore read at most 30 days of events. Settings shows each value's layer, writes only the personal overlay, returns team changes as a diff, and records every run queued under a weakened gate. Loop. A worktree kept for inspection no longer blocks its issue forever ( 112); scheduled stages run the harness that installed them and a crashed precheck is reported ( 114). Behaviour change. The UI no longer installs Orca automations when it starts; missing or drifted automations appear as system items and reinstall on request. 0.21.0. Runs shows fix rounds used and real time in phase; the home event stream reads the loop's event log ( GET /api/v1/events/recent ); New batch shows which issues already have a fresh contract ( GET /api/v1/contracts ); tracker titles and states survive a UI restart. 0.22.0. Every issue gets a run under <stateDir /runs/<issue -<n / — projected state, redacted inputs and outputs, machine-written handoffs and evidence by hash — reconstructable with ak-harness loop run show (ADR-0041). spec.enabled renders specs/<issue / (requirements, design, tasks) from the frozen contract and plan and holds a PR whose copy drifted; runs.prSummary keeps one edited comment with the run on the PR. ScmConnector gains upsertComment . 0.22.1. Fixes for failures that were silent. The control plane no longer keeps a tracker rate-limited (it backed off nothing and re-fetched every closed issue forever); the loop gets a tracker cooldown instead of a permanent stage pause. ak-verify run exits non-zero on a blocked run; git errors, missing review results, a verify run outside the PR worktree and failing plugins now fail closed. One transient error no longer ends a delivery for good, and an Orca outage is not a dead worker. 0.22.2. Operational fixes: a nit-only review no longer leaves delivery waiting forever, answered contract questions regenerate the contract, an open question no longer re-escalates every tick, Retry resumes a blocked delivery on its open PR, and doctor accepts UI-pinned automations. 0.22.3. A run that loses track is restarted from scratch — only after two consecutive observations, never over unpushed or uncommitted work, never past a worker's declared blocker, never while the tracker is cooling down. A worker that declares itself blocked is escalated to a person; the loop never types into a bare shell or launches a second agent into a worktree; close-or-reopen decisions stick and free the issue. The blockers in release/manifest.json ( ecosystem-compatibility , pilot-benchmark ) are unchanged.",
+          "body": "0.23.0 release candidate The control plane ( ak-harness ui ) becomes the operator's single place to see what needs them and act on it safely, plus the loop fixes found running it against a real repository since 0.19.0. CHANGELOG.md has the full list; docs/ADR-0040 records the decisions. Attention first. The home page is a queue of what needs a person — decisions, stuck or failed runs, state out of sync, system problems — each with its reason and next action. Empty means nothing does. Reconciled, then locked. Every refresh compares the loop with the tracker and Orca, including issues the board does not list. Drift is shown and reconciled explicitly; destructive actions refuse (409) while their issue is out of sync or its data is stale. On a real loop, 24 \"blocked\" issues were 4 once cancelled work was recognised. Every operator action, same kernel. Held-PR approval (pinned to the head), plan, design and release approval, learnings, stage pause and resume, tick/deliver/doctor, automation reinstall and batch enqueue call the functions the CLI calls. There is no deploy from the UI. Insights and configuration. Trends, Costs (tokens and plan usage, no dollar figures) and Explore read at most 30 days of events. Settings shows each value's layer, writes only the personal overlay, returns team changes as a diff, and records every run queued under a weakened gate. Loop. A worktree kept for inspection no longer blocks its issue forever ( 112); scheduled stages run the harness that installed them and a crashed precheck is reported ( 114). Behaviour change. The UI no longer installs Orca automations when it starts; missing or drifted automations appear as system items and reinstall on request. 0.21.0. Runs shows fix rounds used and real time in phase; the home event stream reads the loop's event log ( GET /api/v1/events/recent ); New batch shows which issues already have a fresh contract ( GET /api/v1/contracts ); tracker titles and states survive a UI restart. 0.22.0. Every issue gets a run under <stateDir /runs/<issue -<n / — projected state, redacted inputs and outputs, machine-written handoffs and evidence by hash — reconstructable with ak-harness loop run show (ADR-0041). spec.enabled renders specs/<issue / (requirements, design, tasks) from the frozen contract and plan and holds a PR whose copy drifted; runs.prSummary keeps one edited comment with the run on the PR. ScmConnector gains upsertComment . 0.22.1. Fixes for failures that were silent. The control plane no longer keeps a tracker rate-limited (it backed off nothing and re-fetched every closed issue forever); the loop gets a tracker cooldown instead of a permanent stage pause. ak-verify run exits non-zero on a blocked run; git errors, missing review results, a verify run outside the PR worktree and failing plugins now fail closed. One transient error no longer ends a delivery for good, and an Orca outage is not a dead worker. 0.22.2. Operational fixes: a nit-only review no longer leaves delivery waiting forever, answered contract questions regenerate the contract, an open question no longer re-escalates every tick, Retry resumes a blocked delivery on its open PR, and doctor accepts UI-pinned automations. 0.22.3. A run that loses track is restarted from scratch — only after two consecutive observations, never over unpushed or uncommitted work, never past a worker's declared blocker, never while the tracker is cooling down. A worker that declares itself blocked is escalated to a person; the loop never types into a bare shell or launches a second agent into a worktree; close-or-reopen decisions stick and free the issue. 0.23.0. ak-harness mvp check digest report validates a product's docs/mvp.yaml , computes its approval digest and reports progress by evidence level and requirement state, with a versioned --json schema and issues/PRs linked by their mvp:<id label; pipelines pin the exact version and call it from the installed package. Every publish now creates its GitHub release ",
           "aliases": "document unclassified"
         },
         "graph": {
@@ -17485,7 +17170,7 @@
             }
           ]
         },
-        "contentHash": "f06c62a2c75a5eb3420056f6c63c55b3fdb44fdab94f950e1aa985fa10d3ef3e",
+        "contentHash": "0212f2189daee5c951bb717dd0bbe0f81ac8cb7d9c2872b7629265fe74c46251",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -17634,13 +17319,12 @@
         },
         "graph": {
           "pagerank": 0,
-          "inboundLinks": 5,
+          "inboundLinks": 4,
           "coveredBy": [],
           "mentionedBy": [
             "document:docs/for-agents/packages/harness-site.md",
             "document:apps/docs/content/docs/configuration/models.mdx",
             "document:apps/docs/content/docs/reference/configuration.mdx",
-            "document:CHANGELOG.md",
             "document:docs/LOOP.md"
           ],
           "areaId": "area:apps/docs/app/api",
@@ -17659,11 +17343,6 @@
             {
               "kind": "mentions-symbol",
               "id": "document:apps/docs/content/docs/reference/configuration.mdx",
-              "confidence": "observed"
-            },
-            {
-              "kind": "mentions-symbol",
-              "id": "document:CHANGELOG.md",
               "confidence": "observed"
             },
             {
@@ -18657,7 +18336,7 @@
           "coveredBy": [],
           "mentionedBy": [
             "document:docs/MODULE-BOUNDARIES.md",
-            "document:changelog.d/253.md"
+            "document:CHANGELOG.md"
           ],
           "areaId": "area:experimental",
           "packageId": "package:@agentskit/harness",
@@ -18679,7 +18358,7 @@
             },
             {
               "kind": "mentions-symbol",
-              "id": "document:changelog.d/253.md",
+              "id": "document:CHANGELOG.md",
               "confidence": "observed"
             }
           ],
@@ -18740,7 +18419,7 @@
           "mentionedBy": [
             "document:docs/INVENTARIO.md",
             "document:docs/MODULE-BOUNDARIES.md",
-            "document:changelog.d/253.md"
+            "document:CHANGELOG.md"
           ],
           "areaId": "area:experimental",
           "packageId": "package:@agentskit/harness",
@@ -18762,7 +18441,7 @@
             },
             {
               "kind": "mentions-symbol",
-              "id": "document:changelog.d/253.md",
+              "id": "document:CHANGELOG.md",
               "confidence": "observed"
             }
           ],
@@ -18814,7 +18493,7 @@
           "coveredBy": [],
           "mentionedBy": [
             "document:docs/MODULE-BOUNDARIES.md",
-            "document:changelog.d/253.md"
+            "document:CHANGELOG.md"
           ],
           "areaId": "area:experimental",
           "packageId": "package:@agentskit/harness",
@@ -18831,7 +18510,7 @@
             },
             {
               "kind": "mentions-symbol",
-              "id": "document:changelog.d/253.md",
+              "id": "document:CHANGELOG.md",
               "confidence": "observed"
             }
           ],
@@ -18879,7 +18558,7 @@
           "coveredBy": [],
           "mentionedBy": [
             "document:docs/MODULE-BOUNDARIES.md",
-            "document:changelog.d/253.md"
+            "document:CHANGELOG.md"
           ],
           "areaId": "area:experimental",
           "packageId": "package:@agentskit/harness",
@@ -18901,7 +18580,7 @@
             },
             {
               "kind": "mentions-symbol",
-              "id": "document:changelog.d/253.md",
+              "id": "document:CHANGELOG.md",
               "confidence": "observed"
             }
           ],
@@ -22025,11 +21704,10 @@
         },
         "graph": {
           "pagerank": 0,
-          "inboundLinks": 2,
+          "inboundLinks": 1,
           "coveredBy": [],
           "mentionedBy": [
-            "document:docs/MODULE-BOUNDARIES.md",
-            "document:CHANGELOG.md"
+            "document:docs/MODULE-BOUNDARIES.md"
           ],
           "areaId": "area:src/adapters",
           "packageId": "package:@agentskit/harness",
@@ -22047,11 +21725,6 @@
             {
               "kind": "mentions",
               "id": "document:docs/MODULE-BOUNDARIES.md",
-              "confidence": "observed"
-            },
-            {
-              "kind": "mentions-symbol",
-              "id": "document:CHANGELOG.md",
               "confidence": "observed"
             },
             {
@@ -22258,11 +21931,10 @@
         },
         "graph": {
           "pagerank": 0,
-          "inboundLinks": 3,
+          "inboundLinks": 2,
           "coveredBy": [],
           "mentionedBy": [
             "document:docs/MODULE-BOUNDARIES.md",
-            "document:CHANGELOG.md",
             "document:docs/LOOP.md"
           ],
           "areaId": "area:src/context",
@@ -22321,11 +21993,6 @@
             {
               "kind": "mentions",
               "id": "document:docs/MODULE-BOUNDARIES.md",
-              "confidence": "observed"
-            },
-            {
-              "kind": "mentions-symbol",
-              "id": "document:CHANGELOG.md",
               "confidence": "observed"
             },
             {
@@ -23278,7 +22945,7 @@
         },
         "graph": {
           "pagerank": 0,
-          "inboundLinks": 10,
+          "inboundLinks": 9,
           "coveredBy": [],
           "mentionedBy": [
             "document:docs/ADR-0004-run-metrics.md",
@@ -23288,7 +22955,6 @@
             "document:docs/ADR-0016-baseline-evidence-digests.md",
             "document:docs/ADR-0024-controlled-completion-metrics.md",
             "document:docs/MODULE-BOUNDARIES.md",
-            "document:CHANGELOG.md",
             "document:docs/ADR-0012-controlled-baseline-observations.md",
             "document:docs/ADR-0013-honest-benchmark-comparability.md"
           ],
@@ -23338,11 +23004,6 @@
             {
               "kind": "mentions",
               "id": "document:docs/MODULE-BOUNDARIES.md",
-              "confidence": "observed"
-            },
-            {
-              "kind": "mentions-symbol",
-              "id": "document:CHANGELOG.md",
               "confidence": "observed"
             },
             {
@@ -26550,12 +26211,11 @@
         },
         "graph": {
           "pagerank": 0,
-          "inboundLinks": 5,
+          "inboundLinks": 4,
           "coveredBy": [],
           "mentionedBy": [
             "document:docs/ADR-0025-portable-orchestration-controls.md",
             "document:docs/MODULE-BOUNDARIES.md",
-            "document:CHANGELOG.md",
             "document:docs/ADR-0047-independent-verifier-and-structured-lessons.md",
             "document:docs/LOOP.md"
           ],
@@ -26605,11 +26265,6 @@
             {
               "kind": "mentions",
               "id": "document:docs/MODULE-BOUNDARIES.md",
-              "confidence": "observed"
-            },
-            {
-              "kind": "mentions-symbol",
-              "id": "document:CHANGELOG.md",
               "confidence": "observed"
             },
             {
@@ -38281,9 +37936,11 @@
         },
         "graph": {
           "pagerank": 0,
-          "inboundLinks": 0,
+          "inboundLinks": 1,
           "coveredBy": [],
-          "mentionedBy": [],
+          "mentionedBy": [
+            "document:CHANGELOG.md"
+          ],
           "packageId": "package:@agentskit/harness",
           "inbound": [
             {
@@ -38299,6 +37956,11 @@
             {
               "kind": "imports",
               "id": "module:test/mvp.test.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "mentions-symbol",
+              "id": "document:CHANGELOG.md",
               "confidence": "observed"
             },
             {
@@ -52434,14 +52096,13 @@
         },
         "graph": {
           "pagerank": 0.023193,
-          "inboundLinks": 8,
+          "inboundLinks": 7,
           "coveredBy": [
             "document:README.md"
           ],
           "mentionedBy": [
             "document:AGENTS.md",
             "document:apps/docs/content/docs/index.mdx",
-            "document:CHANGELOG.md",
             "document:CONTRIBUTING.md",
             "document:docs/INVENTARIO.md",
             "document:docs/LOOP.md",
@@ -52462,11 +52123,6 @@
             {
               "kind": "mentions",
               "id": "document:apps/docs/content/docs/index.mdx",
-              "confidence": "observed"
-            },
-            {
-              "kind": "mentions",
-              "id": "document:CHANGELOG.md",
               "confidence": "observed"
             },
             {
@@ -52492,7 +52148,7 @@
           ],
           "outbound": []
         },
-        "contentHash": "197677ff9ae7ac0e606f4765986c46b3039a362ffd2e3203e01b1e665fb5cd86",
+        "contentHash": "7c0f3bdc6a83f14cdcb303d647b482ab18c2e0bbfae812cff4027c4666bd3d3b",
         "provenance": "observed",
         "confidence": "observed"
       },

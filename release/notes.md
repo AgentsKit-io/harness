@@ -1,4 +1,4 @@
-# 0.22.3 release candidate
+# 0.23.0 release candidate
 
 The control plane (`ak-harness ui`) becomes the operator's single place to see what needs them and act on it
 safely, plus the loop fixes found running it against a real repository since 0.19.0. `CHANGELOG.md` has the full
@@ -49,5 +49,11 @@ delivery on its open PR, and doctor accepts UI-pinned automations.
 unpushed or uncommitted work, never past a worker's declared blocker, never while the tracker is cooling down. A
 worker that declares itself blocked is escalated to a person; the loop never types into a bare shell or launches a
 second agent into a worktree; close-or-reopen decisions stick and free the issue.
+
+**0.23.0.** `ak-harness mvp check|digest|report` validates a product's `docs/mvp.yaml`, computes its approval digest
+and reports progress by evidence level and requirement state, with a versioned `--json` schema and issues/PRs linked
+by their `mvp:<id>` label; pipelines pin the exact version and call it from the installed package. Every publish now
+creates its GitHub release from `CHANGELOG.md`. Breaking: 13 playbook-evaluation commands and their exports are
+removed and the tarball ships four docs instead of all of `docs/`.
 
 The blockers in `release/manifest.json` (`ecosystem-compatibility`, `pilot-benchmark`) are unchanged.
