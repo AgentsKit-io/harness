@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
-  "contentHash": "a613b6ad8e8a02920a96fc94320deed001abfbaa382d7aaaefa5440a62b274c6",
+  "contentHash": "636d93ce33cbf421891bd9f27871065509bbec86bf4ea90c8eba404a06abd590",
   "contentHashAlgo": "sha256-semantic-v1",
-  "generatedAt": "2026-11-04T19:32:56.750Z",
+  "generatedAt": "2026-11-04T23:35:49.554Z",
   "project": {
     "name": "AgentsKit Harness",
     "root": "."
@@ -306,76 +306,16 @@
       "contentHash": "2a9c6729475ccd1863d072eca3e2771a312cd401d2186d0732b4d92f0d5b915e"
     },
     {
-      "id": "document:changelog.d/264.md",
-      "type": "document",
-      "title": "264.md",
-      "path": "changelog.d/264.md",
-      "description": "feat: mvp reader accepts flat inline maps like ci: {job: build, step: 2}",
-      "tags": [
-        "document",
-        "project"
-      ],
-      "contentHash": "8f824a72dd3634b010404b848d7d5d07b277d24072b85e61b0877215040fb94b"
-    },
-    {
-      "id": "document:changelog.d/265.md",
-      "type": "document",
-      "title": "265.md",
-      "path": "changelog.d/265.md",
-      "description": "test: synthetic parity corpus for the mvp format (launch list, inline maps, line-broken blocks, decimal weight, notes, decision, accents) with expected digests and errors, checked in CI (#265)",
-      "tags": [
-        "document",
-        "project"
-      ],
-      "contentHash": "cdbf72734086392a8b19716c0b072d3345fde15c9e91b9bd332b28757e85fb8b"
-    },
-    {
-      "id": "document:changelog.d/266.md",
-      "type": "document",
-      "title": "266.md",
-      "path": "changelog.d/266.md",
-      "description": "feat: ak-harness mvp evidence collects the MVP evidence JSON from GitHub (merged PR + green CI, workflow job/step, file, URL, recorded run) for mvp report --evidence",
-      "tags": [
-        "document",
-        "project"
-      ],
-      "contentHash": "370f79d4dca03c4efcdf458b05ce243d8fc31ccaabbffdcc30b24ce80c57168e"
-    },
-    {
-      "id": "document:changelog.d/275.md",
-      "type": "document",
-      "title": "275.md",
-      "path": "changelog.d/275.md",
-      "description": "fix: corpus de paridade do mvp passa a esperar mapas em linha simples",
-      "tags": [
-        "document",
-        "project"
-      ],
-      "contentHash": "88de81c45bc7ee1bc0121d72d21dcaf94446c819dfa5fe78ba942839a2f77fad"
-    },
-    {
-      "id": "document:changelog.d/283.md",
-      "type": "document",
-      "title": "283.md",
-      "path": "changelog.d/283.md",
-      "description": "fix: make load-sensitive tests (events lock staleness, 20k-event search timing) deterministic under parallel runs",
-      "tags": [
-        "document",
-        "project"
-      ],
-      "contentHash": "de26ac98e53cf13e5c1b5d16cb314ad8ce7912f9f54caf154f98b132708775ee"
-    },
-    {
       "id": "document:CHANGELOG.md",
       "type": "document",
       "title": "Changelog",
       "path": "CHANGELOG.md",
-      "description": "ak-harness mvp check|digest|report. Validates docs/mvp.yaml, computes the approval digest (same digest as the factory manifest script, golden-tested against docs/fixtures/mvp) and reports product progress: % by evidence level (merged, accepted, proven) and a count per requirement state (pronto, em QA, bloqueado, sem começar).",
+      "description": "0.23.0 never reached npm (its publish was rejected by the registry, E404), so 0.24.0 is the first published version since 0.22.3 and also carries everything listed under 0.23.0.",
       "tags": [
         "document",
         "project"
       ],
-      "contentHash": "6cb7ce43d410f85f182b3e6001b42dc1989214c05580cae9e34dea9107243c3c"
+      "contentHash": "925cf258fa165f4dc53c75264ba037ce16c08c23a6b07e934b4cae46e9283d36"
     },
     {
       "id": "document:CLAUDE.md",
@@ -1205,19 +1145,19 @@
         "document",
         "project"
       ],
-      "contentHash": "2dcad6b70449e27294b048a92adc5d09ba00c7e8ab6dcacd8860715dcc5669ec"
+      "contentHash": "dcd598e0920dc57a23540c84a8a101d8b782c9c580a14f61ffd4047f5f667efd"
     },
     {
       "id": "document:release/notes.md",
       "type": "document",
-      "title": "0.23.0 release candidate",
+      "title": "0.24.0 release candidate",
       "path": "release/notes.md",
-      "description": "The control plane (ak-harness ui) becomes the operator's single place to see what needs them and act on it safely, plus the loop fixes found running it against a real repository since 0.19.0. CHANGELOG.md has the full list; docs/ADR-0040 records the decisions.",
+      "description": "0.24.0. ak-harness mvp evidence collects a product's MVP evidence from GitHub for mvp report --evidence, and docs/mvp.yaml accepts flat inline maps, checked against a synthetic parity corpus. 0.23.0 was never published, so this is the first npm release since 0.22.3 and includes the 0.23.0 notes below.",
       "tags": [
         "document",
         "unclassified"
       ],
-      "contentHash": "0212f2189daee5c951bb717dd0bbe0f81ac8cb7d9c2872b7629265fe74c46251"
+      "contentHash": "25d85893ab061cf9da1754dcbbce0ec2b4027ca0008e654201abcdf409e33f3b"
     },
     {
       "id": "document:SECURITY.md",
@@ -10010,8 +9950,8 @@
     }
   },
   "inputs": {
-    "hash": "570e514f25e90e007e65db34b914be400b75c8915d6260cf587c89945b76ab21",
-    "fileCount": 642,
+    "hash": "1782cbe400498e4f863abf4b383858c704cf2e7c11b9b9e84212fc2a43f6fde7",
+    "fileCount": 637,
     "projectionVersion": 2
   },
   "retrieval": {
@@ -10033,9 +9973,9 @@
   "projection": {
     "type": "retrieval-index",
     "schemaVersion": 1,
-    "contentHash": "50eb8e866d2c8ef28fe280b18638f61a79c38c82389e47a5d20afa67447046b7",
+    "contentHash": "58452b4e09eb61162ba77bb5cbf3a6452305e9a9ce8e96579d66553a6131c342",
     "contentHashAlgo": "sha256-semantic-v1",
-    "snapshotHash": "6b02914510f52f468b1f79c62dfc4223245f60141c8cbdb2a5bfcc85342a36ee",
+    "snapshotHash": "e60cee14d43afa1b2dee1f9228fed4d1eaebaa5da5d66cb737044edf7f67c46c",
     "overlayHash": "f99666ff9119084dd25c2974ae64eb6935ec2aa785ff5ad478fb9d541f7a5e94",
     "configurationHash": "497822431910cd9fa7d674a48a9f0b96fbbbf779f22a001de0b52252117fe3ab",
     "lexiconVersion": 1,
@@ -10055,7 +9995,7 @@
     },
     "lexical": {
       "version": 1,
-      "documentCount": 621,
+      "documentCount": 616,
       "fieldNames": [
         "aliases",
         "body",
@@ -10066,13 +10006,13 @@
         "title"
       ],
       "averageFieldLength": {
-        "aliases": 2.9098228663446055,
-        "body": 47.331723027375205,
-        "headings": 3.896940418679549,
-        "path": 6.096618357487923,
-        "summary": 3.072463768115942,
-        "symbols": 13.56682769726248,
-        "title": 4.041867954911433
+        "aliases": 2.917207792207792,
+        "body": 47.54220779220779,
+        "headings": 3.9301948051948052,
+        "path": 6.113636363636363,
+        "summary": 2.9220779220779223,
+        "symbols": 13.676948051948052,
+        "title": 4.058441558441558
       }
     },
     "entries": [
@@ -10100,7 +10040,7 @@
           "aliases": "harness-site area ownership"
         },
         "graph": {
-          "pagerank": 0.040069,
+          "pagerank": 0.039241,
           "inboundLinks": 2,
           "coveredBy": [
             "document:docs/for-agents/packages/harness-site.md"
@@ -11088,7 +11028,7 @@
           "aliases": "document unclassified"
         },
         "graph": {
-          "pagerank": 0.040069,
+          "pagerank": 0.039241,
           "inboundLinks": 4,
           "coveredBy": [],
           "mentionedBy": [
@@ -12676,176 +12616,11 @@
         "confidence": "observed"
       },
       {
-        "id": "document:changelog.d/264.md",
-        "kind": "document",
-        "path": "changelog.d/264.md",
-        "title": "264.md",
-        "summary": "feat: mvp reader accepts flat inline maps like ci: {job: build, step: 2}",
-        "audience": "human",
-        "aliases": [],
-        "tags": [
-          "document",
-          "project"
-        ],
-        "fields": {
-          "title": "264.md",
-          "headings": "",
-          "path": "changelog.d/264.md",
-          "symbols": "",
-          "summary": "feat: mvp reader accepts flat inline maps like ci: {job: build, step: 2}",
-          "body": "feat: mvp reader accepts flat inline maps like ci: {job: build, step: 2} Single-level { k: v } maps (scalar values, no nesting) parse to the same result as block maps; nested { } / [ ] stay rejected. Refs 264 (mvp:RF-02).",
-          "aliases": "document project"
-        },
-        "graph": {
-          "pagerank": 0,
-          "inboundLinks": 0,
-          "coveredBy": [],
-          "mentionedBy": [],
-          "inbound": [],
-          "outbound": []
-        },
-        "contentHash": "8f824a72dd3634b010404b848d7d5d07b277d24072b85e61b0877215040fb94b",
-        "provenance": "observed",
-        "confidence": "observed"
-      },
-      {
-        "id": "document:changelog.d/265.md",
-        "kind": "document",
-        "path": "changelog.d/265.md",
-        "title": "265.md",
-        "summary": "test: synthetic parity corpus for the mvp format (launch list, inline maps, line-broken blocks, decimal weight, notes, decision, accents) with expected digests and errors, checked in CI (#265)",
-        "audience": "human",
-        "aliases": [],
-        "tags": [
-          "document",
-          "project"
-        ],
-        "fields": {
-          "title": "265.md",
-          "headings": "",
-          "path": "changelog.d/265.md",
-          "symbols": "",
-          "summary": "test: synthetic parity corpus for the mvp format (launch list, inline maps, line-broken blocks, decimal weight, notes, decision, accents) with expected digests and errors, checked in CI (#265)",
-          "body": "test: synthetic parity corpus for the mvp format (launch list, inline maps, line-broken blocks, decimal weight, notes, decision, accents) with expected digests and errors, checked in CI ( 265)",
-          "aliases": "document project"
-        },
-        "graph": {
-          "pagerank": 0,
-          "inboundLinks": 0,
-          "coveredBy": [],
-          "mentionedBy": [],
-          "inbound": [],
-          "outbound": []
-        },
-        "contentHash": "cdbf72734086392a8b19716c0b072d3345fde15c9e91b9bd332b28757e85fb8b",
-        "provenance": "observed",
-        "confidence": "observed"
-      },
-      {
-        "id": "document:changelog.d/266.md",
-        "kind": "document",
-        "path": "changelog.d/266.md",
-        "title": "266.md",
-        "summary": "feat: ak-harness mvp evidence collects the MVP evidence JSON from GitHub (merged PR + green CI, workflow job/step, file, URL, recorded run) for mvp report --evidence",
-        "audience": "human",
-        "aliases": [],
-        "tags": [
-          "document",
-          "project"
-        ],
-        "fields": {
-          "title": "266.md",
-          "headings": "",
-          "path": "changelog.d/266.md",
-          "symbols": "",
-          "summary": "feat: ak-harness mvp evidence collects the MVP evidence JSON from GitHub (merged PR + green CI, workflow job/step, file, URL, recorded run) for mvp report --evidence",
-          "body": "feat: ak-harness mvp evidence collects the MVP evidence JSON from GitHub (merged PR + green CI, workflow job/step, file, URL, recorded run) for mvp report --evidence Rules follow the reference: continue-on-error steps never count, recorded runs expire. Tested with recorded responses.",
-          "aliases": "document project"
-        },
-        "graph": {
-          "pagerank": 0,
-          "inboundLinks": 0,
-          "coveredBy": [],
-          "mentionedBy": [],
-          "inbound": [],
-          "outbound": []
-        },
-        "contentHash": "370f79d4dca03c4efcdf458b05ce243d8fc31ccaabbffdcc30b24ce80c57168e",
-        "provenance": "observed",
-        "confidence": "observed"
-      },
-      {
-        "id": "document:changelog.d/275.md",
-        "kind": "document",
-        "path": "changelog.d/275.md",
-        "title": "275.md",
-        "summary": "fix: corpus de paridade do mvp passa a esperar mapas em linha simples",
-        "audience": "human",
-        "aliases": [],
-        "tags": [
-          "document",
-          "project"
-        ],
-        "fields": {
-          "title": "275.md",
-          "headings": "",
-          "path": "changelog.d/275.md",
-          "symbols": "",
-          "summary": "fix: corpus de paridade do mvp passa a esperar mapas em linha simples",
-          "body": "fix: corpus de paridade do mvp passa a esperar mapas em linha simples",
-          "aliases": "document project"
-        },
-        "graph": {
-          "pagerank": 0,
-          "inboundLinks": 0,
-          "coveredBy": [],
-          "mentionedBy": [],
-          "inbound": [],
-          "outbound": []
-        },
-        "contentHash": "88de81c45bc7ee1bc0121d72d21dcaf94446c819dfa5fe78ba942839a2f77fad",
-        "provenance": "observed",
-        "confidence": "observed"
-      },
-      {
-        "id": "document:changelog.d/283.md",
-        "kind": "document",
-        "path": "changelog.d/283.md",
-        "title": "283.md",
-        "summary": "fix: make load-sensitive tests (events lock staleness, 20k-event search timing) deterministic under parallel runs",
-        "audience": "human",
-        "aliases": [],
-        "tags": [
-          "document",
-          "project"
-        ],
-        "fields": {
-          "title": "283.md",
-          "headings": "",
-          "path": "changelog.d/283.md",
-          "symbols": "",
-          "summary": "fix: make load-sensitive tests (events lock staleness, 20k-event search timing) deterministic under parallel runs",
-          "body": "fix: make load-sensitive tests (events lock staleness, 20k-event search timing) deterministic under parallel runs",
-          "aliases": "document project"
-        },
-        "graph": {
-          "pagerank": 0,
-          "inboundLinks": 0,
-          "coveredBy": [],
-          "mentionedBy": [],
-          "inbound": [],
-          "outbound": []
-        },
-        "contentHash": "de26ac98e53cf13e5c1b5d16cb314ad8ce7912f9f54caf154f98b132708775ee",
-        "provenance": "observed",
-        "confidence": "observed"
-      },
-      {
         "id": "document:CHANGELOG.md",
         "kind": "document",
         "path": "CHANGELOG.md",
         "title": "Changelog",
-        "summary": "ak-harness mvp check|digest|report. Validates docs/mvp.yaml, computes the approval digest (same digest as the factory manifest script, golden-tested against docs/fixtures/mvp) and reports product progress: % by evidence level (merged, accepted, proven) and a count per requirement state (pronto, em QA, bloqueado, sem começar).",
+        "summary": "0.23.0 never reached npm (its publish was rejected by the registry, E404), so 0.24.0 is the first published version since 0.22.3 and also carries everything listed under 0.23.0.",
         "audience": "human",
         "aliases": [],
         "tags": [
@@ -12854,15 +12629,15 @@
         ],
         "fields": {
           "title": "Changelog",
-          "headings": "Changelog [Unreleased] [0.23.0] — 2026-11-03 [0.22.3] — 2026-09-27 [0.22.2] — 2026-09-27 [0.22.1] — 2026-09-27 [0.22.0] — 2026-09-27 [0.21.0] — 2026-09-26 [0.20.0] — 2026-09-25 [0.19.0] — 2026-09-23 [0.18.0] - 2026-09-22 Release Hygiene Boundaries Token and time economy Breaking Gates [0.17.0] - 2026-09-22 Worker guard Release can no longer publish past a red gate [0.16.0] - 2026-09-22 Verification and token waste Observability: every deterministic phase, timestamped and attributed Event bus, unified House conventions [0.15.0] - 2026-09-20 The phases of an issue leave evidence behind layers: and documents: — where the work belongs, and where the decisions live Per-role settings, and which phases run at all The four cost levers, finished release.waiting, once per head The event vocabulary, and the compiler that guards it The installed agent is code, not a markdown file to append to Documentation Windows stops being a second-class platform The licence, and a surface for the numbers The harness has a folder of its own The documentation site The twelve steps of the roadmap, in the order they landed loop install reconciles instead of rewriting loop stage observe — the health scan comes into the repository Configuration in four layers, and the loop learns to call a human The roles become installed agents, and the retro can improve them Presets and a grilled loop init intake, maintain, and release notes — the cycle closes Cost: a routing policy, two ceilings, and two of the four levers Connectors: the engine stops naming vendors release — promotion and deploy, with a human in front loop plan — a vague objective becomes issues A plan, voted on, before any worker starts The Definition of Done becomes two lists, both proven on the PR The retro starts improving the loop, within declared limits [0.14.0] - 2026-09-19 The queue stops being \"my issues\" Review strictness that matches the risk Telling the worker the truth about the base branch Memory: recurrence instead of guesswork One human approval covers the goal's own effects Fixes that had never shipped [0.13.0] - 2026-09-14 [0.12.0] - 2026-09-13 [0.11.0] - 2026-09-13 [0.10.0] - 2026-09-12 [0.9.0] - 2026-09-12",
+          "headings": "Changelog [Unreleased] [0.24.0] — 2026-11-04 [0.23.0] — 2026-11-03 [0.22.3] — 2026-09-27 [0.22.2] — 2026-09-27 [0.22.1] — 2026-09-27 [0.22.0] — 2026-09-27 [0.21.0] — 2026-09-26 [0.20.0] — 2026-09-25 [0.19.0] — 2026-09-23 [0.18.0] - 2026-09-22 Release Hygiene Boundaries Token and time economy Breaking Gates [0.17.0] - 2026-09-22 Worker guard Release can no longer publish past a red gate [0.16.0] - 2026-09-22 Verification and token waste Observability: every deterministic phase, timestamped and attributed Event bus, unified House conventions [0.15.0] - 2026-09-20 The phases of an issue leave evidence behind layers: and documents: — where the work belongs, and where the decisions live Per-role settings, and which phases run at all The four cost levers, finished release.waiting, once per head The event vocabulary, and the compiler that guards it The installed agent is code, not a markdown file to append to Documentation Windows stops being a second-class platform The licence, and a surface for the numbers The harness has a folder of its own The documentation site The twelve steps of the roadmap, in the order they landed loop install reconciles instead of rewriting loop stage observe — the health scan comes into the repository Configuration in four layers, and the loop learns to call a human The roles become installed agents, and the retro can improve them Presets and a grilled loop init intake, maintain, and release notes — the cycle closes Cost: a routing policy, two ceilings, and two of the four levers Connectors: the engine stops naming vendors release — promotion and deploy, with a human in front loop plan — a vague objective becomes issues A plan, voted on, before any worker starts The Definition of Done becomes two lists, both proven on the PR The retro starts improving the loop, within declared limits [0.14.0] - 2026-09-19 The queue stops being \"my issues\" Review strictness that matches the risk Telling the worker the truth about the base branch Memory: recurrence instead of guesswork One human approval covers the goal's own effects Fixes that had never shipped [0.13.0] - 2026-09-14 [0.12.0] - 2026-09-13 [0.11.0] - 2026-09-13 [0.10.0] - 2026-09-12",
           "path": "CHANGELOG.md",
           "symbols": "",
-          "summary": "ak-harness mvp check|digest|report. Validates docs/mvp.yaml, computes the approval digest (same digest as the factory manifest script, golden-tested against docs/fixtures/mvp) and reports product progress: % by evidence level (merged, accepted, proven) and a count per requirement state (pronto, em QA, bloqueado, sem começar).",
-          "body": "Changelog [Unreleased] [0.23.0] — 2026-11-03 - ak-harness mvp check digest report . Validates docs/mvp.yaml , computes the approval digest (same digest as the factory manifest script, golden-tested against docs/fixtures/mvp ) and reports product progress: % by evidence level (merged, accepted, proven) and a count per requirement state (pronto, em QA, bloqueado, sem começar). Evidence comes from --evidence <json ; absent evidence is \"sem evidência\" ( 254). - Versioned mvp report --json . The report carries schemaVersion: 1 , described by docs/schemas/mvp-report.schema.json ; docs/MVP-REPORT.md documents the fields and exit codes ( 267). - Issues and PRs labeled mvp:<id are linked to their requirement: linkMvpLabels and mvp report --labels <recorded list-issues JSON add issues and prs per requirement (additive schema fields) ( 268). - Pinned pipeline use. The package check runs ak-harness mvp check digest report from the installed tarball; pipelines pin @agentskit/harness@<exact instead of an in-house manifest script ( 271). - GitHub release on publish. The publish job creates the v<version tag and GitHub release from this changelog, and backfills a release for a published version that has none ( 255). - Breaking: 13 playbook-evaluation CLI commands removed. discovery , experiment , pilot , cycle , snapshot , learning parse , coordination claim had no caller in any AgentsKit-io repo (CLI commands 98 → 85). assessDiscovery , isDiscoveryCurrent , selectRuntime , assessPilot , assessImprovementCycle and IMPROVEMENT CYCLE STEPS leave src/index.ts (code moved to the unpublished experimental/ ). The tarball ships four docs instead of all of docs/ (2 588 560 B → 2 493 755 B); adds docs/INVENTARIO.md and marks loop tick/deliver legacy ( 253). - Main green. The stale Doc Bridge index is regenerated, and the insights search builds its event docs in one loop (a cold 30-day, 20k-event search drops from ~500 ms to ~210 ms) so its budget holds under a loaded test run ( 270). - Delivery evidence on the tracker issue. The merge comment now carries the audit trail: PR, merge commit and who merged (loop or outside), the reviewed head and verdict (APPROVE/COMMENT/REQUEST CHANGES/INCOMPLETE) with findings by severity and INCOMPLETE reasons, unresolved review threads, CI checks, the harness verify, the worker's verify.json , DoD lines (plus negative/recovery proofs when recorded), fix rounds, elapsed time and loop-side tokens. Absent parts are named, skipped/blocked items are never shown as passed, free text is PII-redacted, and the body fits the tracker's ceiling with a note of what was cut. Same dedupe key and marker as before; also posted for merges outside the loop, and a brief version is appended to blocked-after-fix-rounds escalations. Trackers declare their comment format and size through TrackerConnector.comments ; ADR-0044 sketches a Jira connector against it. - Resolution verdict and bug fix proof in the evidence comment. The tracker comment opens with RESOLVED / PARTIAL / NOT PROVEN , computed only from recorded evidence (a merge alone is never RESOLVED), followed by the PR, merge sha, files changed and the issue's checklist state, and an acceptance-criteria table mapping each contract outcome id to its text, status (unproven ones listed) and evidence. Issues with a delivery.evidence.bugLabels label (default Bug , type:bug , type:fix ) also get a \"Bug fix proof\" block: reproduction steps from the issue and the regression tests in the PR, stating that failing-before-the-fix was not demonstrated. One extra tracker read per merge; nothing is posted on the GitHub PR. - Worker terminals are closed. Deliver closes the worker terminal on every finished outcome, not only when a merge removes the worktree, and reaps terminals of finished/lease-less issues and idle workers whose PR only waits ( delivery.closeTerminalOnFinish , delivery.reapIdleTerminalsMinutes: 90 ); worktrees are kept. A fix round for a worker whose terminal is gone relaunches it ",
+          "summary": "0.23.0 never reached npm (its publish was rejected by the registry, E404), so 0.24.0 is the first published version since 0.22.3 and also carries everything listed under 0.23.0.",
+          "body": "Changelog [Unreleased] [0.24.0] — 2026-11-04 0.23.0 never reached npm (its publish was rejected by the registry, E404), so 0.24.0 is the first published version since 0.22.3 and also carries everything listed under 0.23.0. - ak-harness mvp evidence . Collects the MVP evidence JSON from GitHub (merged PR + green CI, workflow job/step, file, URL, recorded run) for mvp report --evidence ; continue-on-error steps never count and recorded runs expire. Tested with recorded responses ( 266). - Flat inline maps in docs/mvp.yaml . Single-level { k: v } maps with scalar values parse like block maps; nested { } / [ ] stay rejected ( 264). - Synthetic parity corpus for the mvp format (launch list, inline maps, line-broken blocks, decimal weight, notes, decision, accents) with expected digests and errors, checked in CI; it now expects flat inline maps ( 265, 275). - Deterministic load-sensitive tests. Events lock staleness and the 20k-event search timing no longer flake under parallel runs ( 283). [0.23.0] — 2026-11-03 - ak-harness mvp check digest report . Validates docs/mvp.yaml , computes the approval digest (same digest as the factory manifest script, golden-tested against docs/fixtures/mvp ) and reports product progress: % by evidence level (merged, accepted, proven) and a count per requirement state (pronto, em QA, bloqueado, sem começar). Evidence comes from --evidence <json ; absent evidence is \"sem evidência\" ( 254). - Versioned mvp report --json . The report carries schemaVersion: 1 , described by docs/schemas/mvp-report.schema.json ; docs/MVP-REPORT.md documents the fields and exit codes ( 267). - Issues and PRs labeled mvp:<id are linked to their requirement: linkMvpLabels and mvp report --labels <recorded list-issues JSON add issues and prs per requirement (additive schema fields) ( 268). - Pinned pipeline use. The package check runs ak-harness mvp check digest report from the installed tarball; pipelines pin @agentskit/harness@<exact instead of an in-house manifest script ( 271). - GitHub release on publish. The publish job creates the v<version tag and GitHub release from this changelog, and backfills a release for a published version that has none ( 255). - Breaking: 13 playbook-evaluation CLI commands removed. discovery , experiment , pilot , cycle , snapshot , learning parse , coordination claim had no caller in any AgentsKit-io repo (CLI commands 98 → 85). assessDiscovery , isDiscoveryCurrent , selectRuntime , assessPilot , assessImprovementCycle and IMPROVEMENT CYCLE STEPS leave src/index.ts (code moved to the unpublished experimental/ ). The tarball ships four docs instead of all of docs/ (2 588 560 B → 2 493 755 B); adds docs/INVENTARIO.md and marks loop tick/deliver legacy ( 253). - Main green. The stale Doc Bridge index is regenerated, and the insights search builds its event docs in one loop (a cold 30-day, 20k-event search drops from ~500 ms to ~210 ms) so its budget holds under a loaded test run ( 270). - Delivery evidence on the tracker issue. The merge comment now carries the audit trail: PR, merge commit and who merged (loop or outside), the reviewed head and verdict (APPROVE/COMMENT/REQUEST CHANGES/INCOMPLETE) with findings by severity and INCOMPLETE reasons, unresolved review threads, CI checks, the harness verify, the worker's verify.json , DoD lines (plus negative/recovery proofs when recorded), fix rounds, elapsed time and loop-side tokens. Absent parts are named, skipped/blocked items are never shown as passed, free text is PII-redacted, and the body fits the tracker's ceiling with a note of what was cut. Same dedupe key and marker as before; also posted for merges outside the loop, and a brief version is appended to blocked-after-fix-rounds escalations. Trackers declare their comment format and size through TrackerConnector.comments ; ADR-0044 sketches a Jira connector against it. - Resolution verdict and bug fix proof in the evidence comment. The tracker comment opens with RESOLVED / PARTIAL / NOT PROV",
           "aliases": "document project"
         },
         "graph": {
-          "pagerank": 0.023193,
+          "pagerank": 0.022599,
           "inboundLinks": 3,
           "coveredBy": [],
           "mentionedBy": [
@@ -13150,7 +12925,7 @@
             }
           ]
         },
-        "contentHash": "6cb7ce43d410f85f182b3e6001b42dc1989214c05580cae9e34dea9107243c3c",
+        "contentHash": "925cf258fa165f4dc53c75264ba037ce16c08c23a6b07e934b4cae46e9283d36",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -13175,7 +12950,7 @@
           "aliases": "document unclassified"
         },
         "graph": {
-          "pagerank": 0.021659,
+          "pagerank": 0.021212,
           "inboundLinks": 1,
           "coveredBy": [],
           "mentionedBy": [
@@ -13258,7 +13033,7 @@
           "aliases": "document unclassified"
         },
         "graph": {
-          "pagerank": 0.030864,
+          "pagerank": 0.030227,
           "inboundLinks": 1,
           "coveredBy": [],
           "mentionedBy": [],
@@ -13302,7 +13077,7 @@
           "aliases": "document unclassified"
         },
         "graph": {
-          "pagerank": 0.021659,
+          "pagerank": 0.021212,
           "inboundLinks": 3,
           "coveredBy": [],
           "mentionedBy": [
@@ -13365,7 +13140,7 @@
           "aliases": "document unclassified"
         },
         "graph": {
-          "pagerank": 0.030864,
+          "pagerank": 0.030227,
           "inboundLinks": 1,
           "coveredBy": [],
           "mentionedBy": [],
@@ -13410,7 +13185,7 @@
           "aliases": "document project"
         },
         "graph": {
-          "pagerank": 0.023193,
+          "pagerank": 0.022599,
           "inboundLinks": 2,
           "coveredBy": [],
           "mentionedBy": [
@@ -13653,7 +13428,7 @@
           "aliases": "document human"
         },
         "graph": {
-          "pagerank": 0.029591,
+          "pagerank": 0.02895,
           "inboundLinks": 1,
           "coveredBy": [],
           "mentionedBy": [],
@@ -14641,7 +14416,7 @@
           "aliases": "document human"
         },
         "graph": {
-          "pagerank": 0.029591,
+          "pagerank": 0.02895,
           "inboundLinks": 1,
           "coveredBy": [],
           "mentionedBy": [],
@@ -14696,7 +14471,7 @@
           "aliases": "document human"
         },
         "graph": {
-          "pagerank": 0.031125,
+          "pagerank": 0.030337,
           "inboundLinks": 2,
           "coveredBy": [],
           "mentionedBy": [],
@@ -14751,7 +14526,7 @@
           "aliases": "document human"
         },
         "graph": {
-          "pagerank": 0.03368,
+          "pagerank": 0.032971,
           "inboundLinks": 2,
           "coveredBy": [],
           "mentionedBy": [],
@@ -14993,7 +14768,7 @@
           "aliases": "document human"
         },
         "graph": {
-          "pagerank": 0.02601,
+          "pagerank": 0.025343,
           "inboundLinks": 2,
           "coveredBy": [],
           "mentionedBy": [],
@@ -15043,7 +14818,7 @@
           "aliases": "document human"
         },
         "graph": {
-          "pagerank": 0.029404,
+          "pagerank": 0.028758,
           "inboundLinks": 2,
           "coveredBy": [],
           "mentionedBy": [],
@@ -15093,7 +14868,7 @@
           "aliases": "document human"
         },
         "graph": {
-          "pagerank": 0.024475,
+          "pagerank": 0.023956,
           "inboundLinks": 1,
           "coveredBy": [],
           "mentionedBy": [],
@@ -15143,7 +14918,7 @@
           "aliases": "document human"
         },
         "graph": {
-          "pagerank": 0.030938,
+          "pagerank": 0.030145,
           "inboundLinks": 3,
           "coveredBy": [],
           "mentionedBy": [],
@@ -15208,7 +14983,7 @@
           "aliases": "document human"
         },
         "graph": {
-          "pagerank": 0.024475,
+          "pagerank": 0.023956,
           "inboundLinks": 1,
           "coveredBy": [],
           "mentionedBy": [],
@@ -15263,7 +15038,7 @@
           "aliases": "document human"
         },
         "graph": {
-          "pagerank": 0.02601,
+          "pagerank": 0.025343,
           "inboundLinks": 2,
           "coveredBy": [],
           "mentionedBy": [],
@@ -15313,7 +15088,7 @@
           "aliases": "document human"
         },
         "graph": {
-          "pagerank": 0.021659,
+          "pagerank": 0.021212,
           "inboundLinks": 0,
           "coveredBy": [],
           "mentionedBy": [],
@@ -15362,7 +15137,7 @@
           "aliases": "document human"
         },
         "graph": {
-          "pagerank": 0.021659,
+          "pagerank": 0.021212,
           "inboundLinks": 0,
           "coveredBy": [],
           "mentionedBy": [],
@@ -15706,7 +15481,7 @@
           "aliases": "document human"
         },
         "graph": {
-          "pagerank": 0.021659,
+          "pagerank": 0.021212,
           "inboundLinks": 0,
           "coveredBy": [],
           "mentionedBy": [],
@@ -15785,7 +15560,7 @@
           "aliases": "document human"
         },
         "graph": {
-          "pagerank": 0.12399,
+          "pagerank": 0.121286,
           "inboundLinks": 5,
           "coveredBy": [],
           "mentionedBy": [],
@@ -15870,11 +15645,17 @@
           "aliases": "document human"
         },
         "graph": {
-          "pagerank": 0,
-          "inboundLinks": 0,
+          "pagerank": 0.022599,
+          "inboundLinks": 1,
           "coveredBy": [],
           "mentionedBy": [],
-          "inbound": [],
+          "inbound": [
+            {
+              "kind": "links-to",
+              "id": "document:README.md",
+              "confidence": "observed"
+            }
+          ],
           "outbound": [
             {
               "kind": "mentions",
@@ -16085,7 +15866,7 @@
           "aliases": "document agent package"
         },
         "graph": {
-          "pagerank": 0.021659,
+          "pagerank": 0.021212,
           "inboundLinks": 0,
           "coveredBy": [],
           "mentionedBy": [],
@@ -16189,7 +15970,7 @@
           "aliases": "document human"
         },
         "graph": {
-          "pagerank": 0.023193,
+          "pagerank": 0.022599,
           "inboundLinks": 2,
           "coveredBy": [],
           "mentionedBy": [
@@ -16317,7 +16098,7 @@
           "aliases": "document human"
         },
         "graph": {
-          "pagerank": 0.029591,
+          "pagerank": 0.02895,
           "inboundLinks": 2,
           "coveredBy": [],
           "mentionedBy": [
@@ -16404,7 +16185,7 @@
           "aliases": "document human"
         },
         "graph": {
-          "pagerank": 0.037327,
+          "pagerank": 0.036416,
           "inboundLinks": 3,
           "coveredBy": [],
           "mentionedBy": [
@@ -16696,7 +16477,7 @@
           "aliases": "document human"
         },
         "graph": {
-          "pagerank": 0.021659,
+          "pagerank": 0.021212,
           "inboundLinks": 2,
           "coveredBy": [],
           "mentionedBy": [
@@ -17116,7 +16897,7 @@
           "aliases": "document human"
         },
         "graph": {
-          "pagerank": 0.041373,
+          "pagerank": 0.04042,
           "inboundLinks": 1,
           "coveredBy": [],
           "mentionedBy": [
@@ -17232,7 +17013,7 @@
           "aliases": "document human"
         },
         "graph": {
-          "pagerank": 0.028122,
+          "pagerank": 0.027401,
           "inboundLinks": 2,
           "coveredBy": [],
           "mentionedBy": [
@@ -17331,7 +17112,7 @@
           "aliases": "document unclassified"
         },
         "graph": {
-          "pagerank": 0.023193,
+          "pagerank": 0.022599,
           "inboundLinks": 1,
           "coveredBy": [],
           "mentionedBy": [
@@ -17373,11 +17154,11 @@
           "path": "README.md",
           "symbols": "",
           "summary": "The keep-pushing loop for your SDLC. A vague objective becomes a PRD, the PRD becomes issues, each issue becomes a frozen contract, a worker in its own worktree, a reviewed pull request proven against a definition of done, a merge — and, behind a human gate, a release.",
-          "body": "@agentskit/harness The keep-pushing loop for your SDLC. A vague objective becomes a PRD, the PRD becomes issues, each issue becomes a frozen contract, a worker in its own worktree, a reviewed pull request proven against a definition of done, a merge — and, behind a human gate, a release. The local UI is optional and loopback-protected: it projects .ak-loop/ files and events and can start typed Harness jobs without adding a daemon or database. Its primary flow is issue-first: select an available issue, freeze its contract/profile/limits, enqueue it, and resolve only human decisions from the persistent Inbox. Docs: Install Node 22 or newer. Two binaries: ak-harness (everything) and ak-verify (the same binary under the common verification-protocol name). 60 seconds Then it runs without you: tick contracts and dispatches, deliver drives the pull request to merge. What a run looks like The worker leaves evidence, not promises Three files in .ak-loop/ at the root of its worktree. deliver reads them before the merge gate; a missing one comes back as a fix round naming the file . .ak-loop/plan.md is the third: the plan the worker actually followed, and where it departed from the approved one. Configuration, by example GitHub Issues as the configured tracker Set the tracker to GitHub when the UI and execution loop should operate on issues from project.repo : The Harness calls the existing gh CLI, sorts by most recently updated, and caches the board at .ak-loop/ui/github-issues.json . gh auth status and repository write permission are checked before a mutating job. Lifecycle labels are exclusive; done closes an issue and active states reopen it. Missing configured labels fail closed. The UI exposes typed, confirmed actions and jobs; only one tracker is selected per configuration. The Harness reads loop.config.yaml ; it does not consume a project's .github/ai-loop.yaml , whose schema belongs to a different executor. Commands Read-only --- --- loop doctor Providers, usage, routing, slots, selected tracker board, installed agents loop debrief What the loop is doing right now, per issue loop observe --since 24h Anomalies and metrics; --precheck gives a scheduler exit code loop retro --since 7d Digest, learnings and calibration suggestions loop status · loop watch --once · loop paused Schedule, in-flight phases, what it stopped on Acts --- --- loop tick · loop deliver One dispatch pass · one delivery pass (both take --dry-run ) loop plan start \\ answer \\ approve \\ architect \\ approve-design \\ decompose Objective → PRD → design → issues, two human gates loop release status \\ approve \\ run Promote a batch a human approved, bound to a head sha loop install · loop uninstall · loop resume Schedule, and clearing a pause As a library Also: the verification protocol The same binary runs the single-run protocol the loop is built on — a frozen contract, executable checks bound to the current revision, and an explicit human decision: Every check's final output line is JSON mapping to the outcome ids it proves. Evidence is bound to a committed Git HEAD ; any source, configuration or contract change moves the run to STALE . Runs append a hash-chained events.ndjson — verify one with ak-harness events verify [run-id] . Runnable example: (after pnpm build ). More - — concepts, guides, examples, and the generated reference for every config path, command and event. - · · - Decisions: (the loop) · (stages) · (definition of done) · (cost) - · · Release The publish job in publishes on a merge to main , through npm Trusted Publishing (GitHub OIDC) — no NPM TOKEN anywhere. It lives in the same workflow as the checks and needs every one of them, so a commit cannot publish past a red gate; a version not yet on the registry is the trigger. That file holds the checks as well as the publish: npm Trusted Publishing authorises by repository and workflow filename , so renaming it breaks releases until the npm setting matches. The candidate checklist and any open blocker l",
+          "body": "@agentskit/harness The keep-pushing loop for your SDLC. A vague objective becomes a PRD, the PRD becomes issues, each issue becomes a frozen contract, a worker in its own worktree, a reviewed pull request proven against a definition of done, a merge — and, behind a human gate, a release. The local UI is optional and loopback-protected: it projects .ak-loop/ files and events and can start typed Harness jobs without adding a daemon or database. Its primary flow is issue-first: select an available issue, freeze its contract/profile/limits, enqueue it, and resolve only human decisions from the persistent Inbox. Docs: Install Node 22 or newer. Two binaries: ak-harness (everything) and ak-verify (the same binary under the common verification-protocol name). 60 seconds Then it runs without you: tick contracts and dispatches, deliver drives the pull request to merge. What a run looks like The worker leaves evidence, not promises Three files in .ak-loop/ at the root of its worktree. deliver reads them before the merge gate; a missing one comes back as a fix round naming the file . .ak-loop/plan.md is the third: the plan the worker actually followed, and where it departed from the approved one. Configuration, by example GitHub Issues as the configured tracker Set the tracker to GitHub when the UI and execution loop should operate on issues from project.repo : The Harness calls the existing gh CLI, sorts by most recently updated, and caches the board at .ak-loop/ui/github-issues.json . gh auth status and repository write permission are checked before a mutating job. Lifecycle labels are exclusive; done closes an issue and active states reopen it. Missing configured labels fail closed. The UI exposes typed, confirmed actions and jobs; only one tracker is selected per configuration. The Harness reads loop.config.yaml ; it does not consume a project's .github/ai-loop.yaml , whose schema belongs to a different executor. Commands Read-only --- --- loop doctor Providers, usage, routing, slots, selected tracker board, installed agents loop debrief What the loop is doing right now, per issue loop observe --since 24h Anomalies and metrics; --precheck gives a scheduler exit code loop retro --since 7d Digest, learnings and calibration suggestions loop status · loop watch --once · loop paused Schedule, in-flight phases, what it stopped on Acts --- --- loop tick · loop deliver One dispatch pass · one delivery pass (both take --dry-run ) loop plan start \\ answer \\ approve \\ architect \\ approve-design \\ decompose Objective → PRD → design → issues, two human gates loop release status \\ approve \\ run Promote a batch a human approved, bound to a head sha loop install · loop uninstall · loop resume Schedule, and clearing a pause As a library Also: the verification protocol The same binary runs the single-run protocol the loop is built on — a frozen contract, executable checks bound to the current revision, and an explicit human decision: Every check's final output line is JSON mapping to the outcome ids it proves. Evidence is bound to a committed Git HEAD ; any source, configuration or contract change moves the run to STALE . Runs append a hash-chained events.ndjson — verify one with ak-harness events verify [run-id] . Runnable example: (after pnpm build ). More - — concepts, guides, examples, and the generated reference for every config path, command and event. - · · - Decisions: (the loop) · (stages) · (definition of done) · (cost) · (independent verifier) - · · Release The publish job in publishes on a merge to main , through npm Trusted Publishing (GitHub OIDC) — no NPM TOKEN anywhere. It lives in the same workflow as the checks and needs every one of them, so a commit cannot publish past a red gate; a version not yet on the registry is the trigger. That file holds the checks as well as the publish: npm Trusted Publishing authorises by repository and workflow filename , so renaming it breaks releases until the npm setting matches. The candidate checkli",
           "aliases": "document project"
         },
         "graph": {
-          "pagerank": 0.021659,
+          "pagerank": 0.021212,
           "inboundLinks": 0,
           "coveredBy": [],
           "mentionedBy": [],
@@ -17416,6 +17197,11 @@
             {
               "kind": "links-to",
               "id": "document:docs/ADR-0037-cost-policy-ceilings-and-levers.md",
+              "confidence": "observed"
+            },
+            {
+              "kind": "links-to",
+              "id": "document:docs/ADR-0047-independent-verifier-and-structured-lessons.md",
               "confidence": "observed"
             },
             {
@@ -17485,7 +17271,7 @@
             }
           ]
         },
-        "contentHash": "2dcad6b70449e27294b048a92adc5d09ba00c7e8ab6dcacd8860715dcc5669ec",
+        "contentHash": "dcd598e0920dc57a23540c84a8a101d8b782c9c580a14f61ffd4047f5f667efd",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -17493,24 +17279,24 @@
         "id": "document:release/notes.md",
         "kind": "document",
         "path": "release/notes.md",
-        "title": "0.23.0 release candidate",
-        "summary": "The control plane (ak-harness ui) becomes the operator's single place to see what needs them and act on it safely, plus the loop fixes found running it against a real repository since 0.19.0. CHANGELOG.md has the full list; docs/ADR-0040 records the decisions.",
+        "title": "0.24.0 release candidate",
+        "summary": "0.24.0. ak-harness mvp evidence collects a product's MVP evidence from GitHub for mvp report --evidence, and docs/mvp.yaml accepts flat inline maps, checked against a synthetic parity corpus. 0.23.0 was never published, so this is the first npm release since 0.22.3 and includes the 0.23.0 notes below.",
         "aliases": [],
         "tags": [
           "document",
           "unclassified"
         ],
         "fields": {
-          "title": "0.23.0 release candidate",
-          "headings": "0.23.0 release candidate",
+          "title": "0.24.0 release candidate",
+          "headings": "0.24.0 release candidate",
           "path": "release/notes.md",
           "symbols": "",
-          "summary": "The control plane (ak-harness ui) becomes the operator's single place to see what needs them and act on it safely, plus the loop fixes found running it against a real repository since 0.19.0. CHANGELOG.md has the full list; docs/ADR-0040 records the decisions.",
-          "body": "0.23.0 release candidate The control plane ( ak-harness ui ) becomes the operator's single place to see what needs them and act on it safely, plus the loop fixes found running it against a real repository since 0.19.0. CHANGELOG.md has the full list; docs/ADR-0040 records the decisions. Attention first. The home page is a queue of what needs a person — decisions, stuck or failed runs, state out of sync, system problems — each with its reason and next action. Empty means nothing does. Reconciled, then locked. Every refresh compares the loop with the tracker and Orca, including issues the board does not list. Drift is shown and reconciled explicitly; destructive actions refuse (409) while their issue is out of sync or its data is stale. On a real loop, 24 \"blocked\" issues were 4 once cancelled work was recognised. Every operator action, same kernel. Held-PR approval (pinned to the head), plan, design and release approval, learnings, stage pause and resume, tick/deliver/doctor, automation reinstall and batch enqueue call the functions the CLI calls. There is no deploy from the UI. Insights and configuration. Trends, Costs (tokens and plan usage, no dollar figures) and Explore read at most 30 days of events. Settings shows each value's layer, writes only the personal overlay, returns team changes as a diff, and records every run queued under a weakened gate. Loop. A worktree kept for inspection no longer blocks its issue forever ( 112); scheduled stages run the harness that installed them and a crashed precheck is reported ( 114). Behaviour change. The UI no longer installs Orca automations when it starts; missing or drifted automations appear as system items and reinstall on request. 0.21.0. Runs shows fix rounds used and real time in phase; the home event stream reads the loop's event log ( GET /api/v1/events/recent ); New batch shows which issues already have a fresh contract ( GET /api/v1/contracts ); tracker titles and states survive a UI restart. 0.22.0. Every issue gets a run under <stateDir /runs/<issue -<n / — projected state, redacted inputs and outputs, machine-written handoffs and evidence by hash — reconstructable with ak-harness loop run show (ADR-0041). spec.enabled renders specs/<issue / (requirements, design, tasks) from the frozen contract and plan and holds a PR whose copy drifted; runs.prSummary keeps one edited comment with the run on the PR. ScmConnector gains upsertComment . 0.22.1. Fixes for failures that were silent. The control plane no longer keeps a tracker rate-limited (it backed off nothing and re-fetched every closed issue forever); the loop gets a tracker cooldown instead of a permanent stage pause. ak-verify run exits non-zero on a blocked run; git errors, missing review results, a verify run outside the PR worktree and failing plugins now fail closed. One transient error no longer ends a delivery for good, and an Orca outage is not a dead worker. 0.22.2. Operational fixes: a nit-only review no longer leaves delivery waiting forever, answered contract questions regenerate the contract, an open question no longer re-escalates every tick, Retry resumes a blocked delivery on its open PR, and doctor accepts UI-pinned automations. 0.22.3. A run that loses track is restarted from scratch — only after two consecutive observations, never over unpushed or uncommitted work, never past a worker's declared blocker, never while the tracker is cooling down. A worker that declares itself blocked is escalated to a person; the loop never types into a bare shell or launches a second agent into a worktree; close-or-reopen decisions stick and free the issue. 0.23.0. ak-harness mvp check digest report validates a product's docs/mvp.yaml , computes its approval digest and reports progress by evidence level and requirement state, with a versioned --json schema and issues/PRs linked by their mvp:<id label; pipelines pin the exact version and call it from the installed package. Every publish now creates its GitHub release ",
+          "summary": "0.24.0. ak-harness mvp evidence collects a product's MVP evidence from GitHub for mvp report --evidence, and docs/mvp.yaml accepts flat inline maps, checked against a synthetic parity corpus. 0.23.0 was never published, so this is the first npm release since 0.22.3 and includes the 0.23.0 notes below.",
+          "body": "0.24.0 release candidate 0.24.0. ak-harness mvp evidence collects a product's MVP evidence from GitHub for mvp report --evidence , and docs/mvp.yaml accepts flat inline maps, checked against a synthetic parity corpus. 0.23.0 was never published, so this is the first npm release since 0.22.3 and includes the 0.23.0 notes below. The control plane ( ak-harness ui ) becomes the operator's single place to see what needs them and act on it safely, plus the loop fixes found running it against a real repository since 0.19.0. CHANGELOG.md has the full list; docs/ADR-0040 records the decisions. Attention first. The home page is a queue of what needs a person — decisions, stuck or failed runs, state out of sync, system problems — each with its reason and next action. Empty means nothing does. Reconciled, then locked. Every refresh compares the loop with the tracker and Orca, including issues the board does not list. Drift is shown and reconciled explicitly; destructive actions refuse (409) while their issue is out of sync or its data is stale. On a real loop, 24 \"blocked\" issues were 4 once cancelled work was recognised. Every operator action, same kernel. Held-PR approval (pinned to the head), plan, design and release approval, learnings, stage pause and resume, tick/deliver/doctor, automation reinstall and batch enqueue call the functions the CLI calls. There is no deploy from the UI. Insights and configuration. Trends, Costs (tokens and plan usage, no dollar figures) and Explore read at most 30 days of events. Settings shows each value's layer, writes only the personal overlay, returns team changes as a diff, and records every run queued under a weakened gate. Loop. A worktree kept for inspection no longer blocks its issue forever ( 112); scheduled stages run the harness that installed them and a crashed precheck is reported ( 114). Behaviour change. The UI no longer installs Orca automations when it starts; missing or drifted automations appear as system items and reinstall on request. 0.21.0. Runs shows fix rounds used and real time in phase; the home event stream reads the loop's event log ( GET /api/v1/events/recent ); New batch shows which issues already have a fresh contract ( GET /api/v1/contracts ); tracker titles and states survive a UI restart. 0.22.0. Every issue gets a run under <stateDir /runs/<issue -<n / — projected state, redacted inputs and outputs, machine-written handoffs and evidence by hash — reconstructable with ak-harness loop run show (ADR-0041). spec.enabled renders specs/<issue / (requirements, design, tasks) from the frozen contract and plan and holds a PR whose copy drifted; runs.prSummary keeps one edited comment with the run on the PR. ScmConnector gains upsertComment . 0.22.1. Fixes for failures that were silent. The control plane no longer keeps a tracker rate-limited (it backed off nothing and re-fetched every closed issue forever); the loop gets a tracker cooldown instead of a permanent stage pause. ak-verify run exits non-zero on a blocked run; git errors, missing review results, a verify run outside the PR worktree and failing plugins now fail closed. One transient error no longer ends a delivery for good, and an Orca outage is not a dead worker. 0.22.2. Operational fixes: a nit-only review no longer leaves delivery waiting forever, answered contract questions regenerate the contract, an open question no longer re-escalates every tick, Retry resumes a blocked delivery on its open PR, and doctor accepts UI-pinned automations. 0.22.3. A run that loses track is restarted from scratch — only after two consecutive observations, never over unpushed or uncommitted work, never past a worker's declared blocker, never while the tracker is cooling down. A worker that declares itself blocked is escalated to a person; the loop never types into a bare shell or launches a second agent into a worktree; close-or-reopen decisions stick and free the issue. 0.23.0. ak-harness mvp check digest report validates a product",
           "aliases": "document unclassified"
         },
         "graph": {
-          "pagerank": 0.023193,
+          "pagerank": 0.022599,
           "inboundLinks": 1,
           "coveredBy": [],
           "mentionedBy": [
@@ -17541,7 +17327,7 @@
             }
           ]
         },
-        "contentHash": "0212f2189daee5c951bb717dd0bbe0f81ac8cb7d9c2872b7629265fe74c46251",
+        "contentHash": "25d85893ab061cf9da1754dcbbce0ec2b4027ca0008e654201abcdf409e33f3b",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -52696,7 +52482,7 @@
           "aliases": "harness @agentskit/harness package"
         },
         "graph": {
-          "pagerank": 0.023193,
+          "pagerank": 0.022599,
           "inboundLinks": 8,
           "coveredBy": [
             "document:README.md"
@@ -52755,7 +52541,7 @@
           ],
           "outbound": []
         },
-        "contentHash": "7c0f3bdc6a83f14cdcb303d647b482ab18c2e0bbfae812cff4027c4666bd3d3b",
+        "contentHash": "d97bc46e5d806bd12f696281238dbc3722a98fd2985b3bf75281b0659bed19d5",
         "provenance": "observed",
         "confidence": "observed"
       },

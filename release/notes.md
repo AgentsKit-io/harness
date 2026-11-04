@@ -1,4 +1,8 @@
-# 0.23.0 release candidate
+# 0.24.0 release candidate
+
+**0.24.0.** `ak-harness mvp evidence` collects a product's MVP evidence from GitHub for `mvp report --evidence`, and
+`docs/mvp.yaml` accepts flat inline maps, checked against a synthetic parity corpus. 0.23.0 was never published, so
+this is the first npm release since 0.22.3 and includes the 0.23.0 notes below.
 
 The control plane (`ak-harness ui`) becomes the operator's single place to see what needs them and act on it
 safely, plus the loop fixes found running it against a real repository since 0.19.0. `CHANGELOG.md` has the full

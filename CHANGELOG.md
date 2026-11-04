@@ -2,6 +2,21 @@
 
 ## [Unreleased]
 
+## [0.24.0] — 2026-11-04
+
+0.23.0 never reached npm (its publish was rejected by the registry, E404), so 0.24.0 is the first published version
+since 0.22.3 and also carries everything listed under 0.23.0.
+
+- **`ak-harness mvp evidence`.** Collects the MVP evidence JSON from GitHub (merged PR + green CI, workflow job/step,
+  file, URL, recorded run) for `mvp report --evidence`; continue-on-error steps never count and recorded runs expire.
+  Tested with recorded responses (#266).
+- **Flat inline maps in `docs/mvp.yaml`.** Single-level `{ k: v }` maps with scalar values parse like block maps;
+  nested `{ }`/`[ ]` stay rejected (#264).
+- **Synthetic parity corpus for the mvp format** (launch list, inline maps, line-broken blocks, decimal weight, notes,
+  decision, accents) with expected digests and errors, checked in CI; it now expects flat inline maps (#265, #275).
+- **Deterministic load-sensitive tests.** Events lock staleness and the 20k-event search timing no longer flake under
+  parallel runs (#283).
+
 ## [0.23.0] — 2026-11-03
 
 - **`ak-harness mvp check|digest|report`.** Validates `docs/mvp.yaml`, computes the
