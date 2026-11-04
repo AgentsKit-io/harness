@@ -27,6 +27,9 @@ describe('events.ndjson rotation', () => {
     writeFileSync(join(stateDir, 'events.ndjson'), `${'x'.repeat(11 * 1024 * 1024)}\n`, 'utf8')
     const lockPath = join(stateDir, 'events.ndjson.lock')
     const held = openSync(lockPath, 'wx') // simulate another process mid-rotation, lock freshly taken
+    // Pin the mtime in the future so a stalled, heavily loaded test run can never age the lock past the staleness threshold.
+    const future = new Date(Date.now() + 3_600_000)
+    utimesSync(lockPath, future, future)
     try {
       appendLoopEvent(stateDir, { at: '2026-09-13T00:00:00.000Z', type: 'worker.dispatched', issue: 'ENG-1' }, undefined, () => new Date('2026-09-13T00:00:00.000Z'))
     } finally { closeSync(held) }
