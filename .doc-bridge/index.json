@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
-  "contentHash": "38ec6371507df28613fedd2387e667543ad0147449020a119c57df5145b61516",
+  "contentHash": "a613b6ad8e8a02920a96fc94320deed001abfbaa382d7aaaefa5440a62b274c6",
   "contentHashAlgo": "sha256-semantic-v1",
-  "generatedAt": "2026-11-04T19:31:57.002Z",
+  "generatedAt": "2026-11-04T19:32:56.750Z",
   "project": {
     "name": "AgentsKit Harness",
     "root": "."
@@ -358,12 +358,12 @@
       "type": "document",
       "title": "283.md",
       "path": "changelog.d/283.md",
-      "description": "docs: add factory playbook and factory.json install/verify (#283)",
+      "description": "fix: make load-sensitive tests (events lock staleness, 20k-event search timing) deterministic under parallel runs",
       "tags": [
         "document",
         "project"
       ],
-      "contentHash": "73744b3065222718762dace07e79e65ae931ca3ea9e4520be8609ece4aa6d4b8"
+      "contentHash": "de26ac98e53cf13e5c1b5d16cb314ad8ce7912f9f54caf154f98b132708775ee"
     },
     {
       "id": "document:CHANGELOG.md",
@@ -10010,7 +10010,7 @@
     }
   },
   "inputs": {
-    "hash": "d500845812f05ca25a1faf86377b1010fa1fb130701fdcfdde93817f5fb3376a",
+    "hash": "570e514f25e90e007e65db34b914be400b75c8915d6260cf587c89945b76ab21",
     "fileCount": 642,
     "projectionVersion": 2
   },
@@ -10033,9 +10033,9 @@
   "projection": {
     "type": "retrieval-index",
     "schemaVersion": 1,
-    "contentHash": "9814fdfbda3ee57ddf913da3ee7b663015980bccd4e220fc961d5a65244b0710",
+    "contentHash": "50eb8e866d2c8ef28fe280b18638f61a79c38c82389e47a5d20afa67447046b7",
     "contentHashAlgo": "sha256-semantic-v1",
-    "snapshotHash": "3bd0f6b99ab0ad758cf8c8c7a8b4f2ea5a37f7fa5e57e50538b425a140e5c89a",
+    "snapshotHash": "6b02914510f52f468b1f79c62dfc4223245f60141c8cbdb2a5bfcc85342a36ee",
     "overlayHash": "f99666ff9119084dd25c2974ae64eb6935ec2aa785ff5ad478fb9d541f7a5e94",
     "configurationHash": "497822431910cd9fa7d674a48a9f0b96fbbbf779f22a001de0b52252117fe3ab",
     "lexiconVersion": 1,
@@ -10067,10 +10067,10 @@
       ],
       "averageFieldLength": {
         "aliases": 2.9098228663446055,
-        "body": 47.32045088566828,
+        "body": 47.331723027375205,
         "headings": 3.896940418679549,
         "path": 6.096618357487923,
-        "summary": 3.0611916264090175,
+        "summary": 3.072463768115942,
         "symbols": 13.56682769726248,
         "title": 4.041867954911433
       }
@@ -12812,7 +12812,7 @@
         "kind": "document",
         "path": "changelog.d/283.md",
         "title": "283.md",
-        "summary": "docs: add factory playbook and factory.json install/verify (#283)",
+        "summary": "fix: make load-sensitive tests (events lock staleness, 20k-event search timing) deterministic under parallel runs",
         "audience": "human",
         "aliases": [],
         "tags": [
@@ -12824,8 +12824,8 @@
           "headings": "",
           "path": "changelog.d/283.md",
           "symbols": "",
-          "summary": "docs: add factory playbook and factory.json install/verify (#283)",
-          "body": "docs: add factory playbook and factory.json install/verify ( 283)",
+          "summary": "fix: make load-sensitive tests (events lock staleness, 20k-event search timing) deterministic under parallel runs",
+          "body": "fix: make load-sensitive tests (events lock staleness, 20k-event search timing) deterministic under parallel runs",
           "aliases": "document project"
         },
         "graph": {
@@ -12836,7 +12836,7 @@
           "inbound": [],
           "outbound": []
         },
-        "contentHash": "73744b3065222718762dace07e79e65ae931ca3ea9e4520be8609ece4aa6d4b8",
+        "contentHash": "de26ac98e53cf13e5c1b5d16cb314ad8ce7912f9f54caf154f98b132708775ee",
         "provenance": "observed",
         "confidence": "observed"
       },
