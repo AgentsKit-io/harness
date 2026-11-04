@@ -1,0 +1,14 @@
+version: 1
+launch:
+- date: 2026-02-30
+  label: beta
+- date: 2026-02-30
+requirements:
+- id: rf1
+  title: A
+  done_when: x
+- id: RF-02
+  title: ""
+  done_when: x
+  weight: 0
+  surpresa: 1

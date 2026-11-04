@@ -1,0 +1,7 @@
+version: 1
+requirements:
+- id: RF-01
+  title: Mapa aninhado
+  done_when: x
+  acceptance:
+  - {test: a.ts, ci: {job: b}}
