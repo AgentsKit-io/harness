@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
-  "contentHash": "7f80862d738e0ddf1d5f43b46db573c65cbf7b99c3d187f2c57c760f6b80743a",
+  "contentHash": "e339e84c763e5a0c3404fcffcc5012ff40ac306710812f1f170598438dab6477",
   "contentHashAlgo": "sha256-semantic-v1",
-  "generatedAt": "2026-11-03T23:49:10.694Z",
+  "generatedAt": "2026-11-03T23:48:11.350Z",
   "project": {
     "name": "AgentsKit Harness",
     "root": "."
@@ -294,16 +294,16 @@
       "contentHash": "2a9c6729475ccd1863d072eca3e2771a312cd401d2186d0732b4d92f0d5b915e"
     },
     {
-      "id": "document:changelog.d/265.md",
+      "id": "document:changelog.d/264.md",
       "type": "document",
-      "title": "265.md",
-      "path": "changelog.d/265.md",
-      "description": "test: synthetic parity corpus for the mvp format (launch list, inline maps, line-broken blocks, decimal weight, notes, decision, accents) with expected digests and errors, checked in CI (#265)",
+      "title": "264.md",
+      "path": "changelog.d/264.md",
+      "description": "feat: mvp reader accepts flat inline maps like ci: {job: build, step: 2}",
       "tags": [
         "document",
         "project"
       ],
-      "contentHash": "cdbf72734086392a8b19716c0b072d3345fde15c9e91b9bd332b28757e85fb8b"
+      "contentHash": "8f824a72dd3634b010404b848d7d5d07b277d24072b85e61b0877215040fb94b"
     },
     {
       "id": "document:changelog.d/266.md",
@@ -6066,7 +6066,7 @@
         "ts",
         "src"
       ],
-      "contentHash": "09df3a1b838c06d6420e002d18ea9bcbc4f28d1e3411ab5b5dec76d544df3378"
+      "contentHash": "b45dff7e6d0bcd04667855d64190c3674fdc33782735ddcc068e085e53bc46c8"
     },
     {
       "id": "module:src/profiles/index.ts",
@@ -9361,18 +9361,6 @@
       "contentHash": "bda17e22dc66bd490303f3ca1cc4ea2194086ae21f3b87e84b1f2dd58883b98f"
     },
     {
-      "id": "module:test/mvp-corpus.test.ts",
-      "type": "module",
-      "title": "mvp-corpus.test.ts",
-      "path": "test/mvp-corpus.test.ts",
-      "tags": [
-        "module",
-        "ts",
-        "test"
-      ],
-      "contentHash": "38dc751e2efe3bb7b80a8d640e5d4180fc538032c7e59aa03f2db8c39eca8bf7"
-    },
-    {
       "id": "module:test/mvp-report-schema.test.ts",
       "type": "module",
       "title": "mvp-report-schema.test.ts",
@@ -9394,7 +9382,7 @@
         "ts",
         "test"
       ],
-      "contentHash": "d111ca317f495f6e6611d0ce3e8ceb7b6850bbaa7f0d9b59e032a1096f1faeac"
+      "contentHash": "b69f5249d929290ec5a9512ae0ec84aa50f3d6b1db47868417a833447f327716"
     },
     {
       "id": "module:test/optimization.test.ts",
@@ -9962,8 +9950,8 @@
     }
   },
   "inputs": {
-    "hash": "9b885c0b97387cf78c9065bebbfbd47843c6fe7ef4750098b25e583d8e426c61",
-    "fileCount": 637,
+    "hash": "7ba29928c4dac59a80250eabbfc93280fb04721c493ef42a11a4a5d01a2b493c",
+    "fileCount": 635,
     "projectionVersion": 2
   },
   "retrieval": {
@@ -9985,9 +9973,9 @@
   "projection": {
     "type": "retrieval-index",
     "schemaVersion": 1,
-    "contentHash": "58a7b2d3fdd7efd92984cde0769a15dd725797b18c1515bccecd08dcf61720d2",
+    "contentHash": "7f2738be34f7944cf4108228444f7da60ba6b6a430c7aff6ff9ce71ce6af6683",
     "contentHashAlgo": "sha256-semantic-v1",
-    "snapshotHash": "f4eecf739e9314ebfda3495c215fc302c75f751a7361f875242fdb0735d48f73",
+    "snapshotHash": "d3f152c3d3ed74d31b841a61d105d041e305e61ad3df6951c9af0184d0b290ed",
     "overlayHash": "f99666ff9119084dd25c2974ae64eb6935ec2aa785ff5ad478fb9d541f7a5e94",
     "configurationHash": "497822431910cd9fa7d674a48a9f0b96fbbbf779f22a001de0b52252117fe3ab",
     "lexiconVersion": 1,
@@ -10007,7 +9995,7 @@
     },
     "lexical": {
       "version": 1,
-      "documentCount": 617,
+      "documentCount": 616,
       "fieldNames": [
         "aliases",
         "body",
@@ -10018,13 +10006,13 @@
         "title"
       ],
       "averageFieldLength": {
-        "aliases": 2.9157212317666126,
-        "body": 46.620745542949756,
-        "headings": 3.86385737439222,
-        "path": 6.108589951377634,
-        "summary": 3.006482982171799,
-        "symbols": 13.654781199351701,
-        "title": 4.047001620745543
+        "aliases": 2.9155844155844157,
+        "body": 46.70779220779221,
+        "headings": 3.8701298701298703,
+        "path": 6.108766233766234,
+        "summary": 2.99025974025974,
+        "symbols": 13.676948051948052,
+        "title": 4.045454545454546
       }
     },
     "entries": [
@@ -10872,7 +10860,7 @@
           ],
           "outbound": []
         },
-        "contentHash": "4340de02c320faaa91ae09188e0cea12fa70640c22753b145faa8cef53fb056d",
+        "contentHash": "b0b8208cb7aeb551f3387e98e6ac304f033adadcc5315014958c57667f3f94a1",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -12544,11 +12532,11 @@
         "confidence": "observed"
       },
       {
-        "id": "document:changelog.d/265.md",
+        "id": "document:changelog.d/264.md",
         "kind": "document",
-        "path": "changelog.d/265.md",
-        "title": "265.md",
-        "summary": "test: synthetic parity corpus for the mvp format (launch list, inline maps, line-broken blocks, decimal weight, notes, decision, accents) with expected digests and errors, checked in CI (#265)",
+        "path": "changelog.d/264.md",
+        "title": "264.md",
+        "summary": "feat: mvp reader accepts flat inline maps like ci: {job: build, step: 2}",
         "audience": "human",
         "aliases": [],
         "tags": [
@@ -12556,12 +12544,12 @@
           "project"
         ],
         "fields": {
-          "title": "265.md",
+          "title": "264.md",
           "headings": "",
-          "path": "changelog.d/265.md",
+          "path": "changelog.d/264.md",
           "symbols": "",
-          "summary": "test: synthetic parity corpus for the mvp format (launch list, inline maps, line-broken blocks, decimal weight, notes, decision, accents) with expected digests and errors, checked in CI (#265)",
-          "body": "test: synthetic parity corpus for the mvp format (launch list, inline maps, line-broken blocks, decimal weight, notes, decision, accents) with expected digests and errors, checked in CI ( 265)",
+          "summary": "feat: mvp reader accepts flat inline maps like ci: {job: build, step: 2}",
+          "body": "feat: mvp reader accepts flat inline maps like ci: {job: build, step: 2} Single-level { k: v } maps (scalar values, no nesting) parse to the same result as block maps; nested { } / [ ] stay rejected. Refs 264 (mvp:RF-02).",
           "aliases": "document project"
         },
         "graph": {
@@ -12572,7 +12560,7 @@
           "inbound": [],
           "outbound": []
         },
-        "contentHash": "cdbf72734086392a8b19716c0b072d3345fde15c9e91b9bd332b28757e85fb8b",
+        "contentHash": "8f824a72dd3634b010404b848d7d5d07b277d24072b85e61b0877215040fb94b",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -38183,11 +38171,6 @@
             },
             {
               "kind": "imports",
-              "id": "module:test/mvp-corpus.test.ts",
-              "confidence": "observed"
-            },
-            {
-              "kind": "imports",
               "id": "module:test/mvp-report-schema.test.ts",
               "confidence": "observed"
             },
@@ -38215,7 +38198,7 @@
             }
           ]
         },
-        "contentHash": "09df3a1b838c06d6420e002d18ea9bcbc4f28d1e3411ab5b5dec76d544df3378",
+        "contentHash": "b45dff7e6d0bcd04667855d64190c3674fdc33782735ddcc068e085e53bc46c8",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -50253,46 +50236,6 @@
         "confidence": "observed"
       },
       {
-        "id": "module:test/mvp-corpus.test.ts",
-        "kind": "module",
-        "path": "test/mvp-corpus.test.ts",
-        "title": "mvp-corpus.test.ts",
-        "aliases": [],
-        "tags": [
-          "module",
-          "ts",
-          "test"
-        ],
-        "fields": {
-          "title": "mvp-corpus.test.ts",
-          "headings": "",
-          "path": "test/mvp-corpus.test.ts",
-          "symbols": "",
-          "summary": "",
-          "body": "",
-          "aliases": "module ts test"
-        },
-        "graph": {
-          "pagerank": 0,
-          "inboundLinks": 0,
-          "coveredBy": [],
-          "mentionedBy": [],
-          "areaId": "area:test",
-          "packageId": "package:@agentskit/harness",
-          "inbound": [],
-          "outbound": [
-            {
-              "kind": "imports",
-              "id": "module:src/mvp.ts",
-              "confidence": "observed"
-            }
-          ]
-        },
-        "contentHash": "38dc751e2efe3bb7b80a8d640e5d4180fc538032c7e59aa03f2db8c39eca8bf7",
-        "provenance": "observed",
-        "confidence": "observed"
-      },
-      {
         "id": "module:test/mvp-report-schema.test.ts",
         "kind": "module",
         "path": "test/mvp-report-schema.test.ts",
@@ -50376,7 +50319,7 @@
             }
           ]
         },
-        "contentHash": "d111ca317f495f6e6611d0ce3e8ceb7b6850bbaa7f0d9b59e032a1096f1faeac",
+        "contentHash": "b69f5249d929290ec5a9512ae0ec84aa50f3d6b1db47868417a833447f327716",
         "provenance": "observed",
         "confidence": "observed"
       },
