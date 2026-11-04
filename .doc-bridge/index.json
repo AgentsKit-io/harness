@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
-  "contentHash": "e0fa1f584cf2d3005d69e46cb5e784bc2392ba23e3b7d15fbd20a2819e63f270",
+  "contentHash": "e339e84c763e5a0c3404fcffcc5012ff40ac306710812f1f170598438dab6477",
   "contentHashAlgo": "sha256-semantic-v1",
-  "generatedAt": "2026-11-03T12:33:04.019Z",
+  "generatedAt": "2026-11-03T23:48:11.350Z",
   "project": {
     "name": "AgentsKit Harness",
     "root": "."
@@ -292,6 +292,18 @@
         "unclassified"
       ],
       "contentHash": "2a9c6729475ccd1863d072eca3e2771a312cd401d2186d0732b4d92f0d5b915e"
+    },
+    {
+      "id": "document:changelog.d/264.md",
+      "type": "document",
+      "title": "264.md",
+      "path": "changelog.d/264.md",
+      "description": "feat: mvp reader accepts flat inline maps like ci: {job: build, step: 2}",
+      "tags": [
+        "document",
+        "project"
+      ],
+      "contentHash": "8f824a72dd3634b010404b848d7d5d07b277d24072b85e61b0877215040fb94b"
     },
     {
       "id": "document:changelog.d/266.md",
@@ -6054,7 +6066,7 @@
         "ts",
         "src"
       ],
-      "contentHash": "09df3a1b838c06d6420e002d18ea9bcbc4f28d1e3411ab5b5dec76d544df3378"
+      "contentHash": "b45dff7e6d0bcd04667855d64190c3674fdc33782735ddcc068e085e53bc46c8"
     },
     {
       "id": "module:src/profiles/index.ts",
@@ -9370,7 +9382,7 @@
         "ts",
         "test"
       ],
-      "contentHash": "d111ca317f495f6e6611d0ce3e8ceb7b6850bbaa7f0d9b59e032a1096f1faeac"
+      "contentHash": "b69f5249d929290ec5a9512ae0ec84aa50f3d6b1db47868417a833447f327716"
     },
     {
       "id": "module:test/optimization.test.ts",
@@ -9938,8 +9950,8 @@
     }
   },
   "inputs": {
-    "hash": "9a3eeb562bb3b9c84f34ed68a99a2ec6216dfcd5214b0fbb81f631db9b54d761",
-    "fileCount": 634,
+    "hash": "7ba29928c4dac59a80250eabbfc93280fb04721c493ef42a11a4a5d01a2b493c",
+    "fileCount": 635,
     "projectionVersion": 2
   },
   "retrieval": {
@@ -9961,9 +9973,9 @@
   "projection": {
     "type": "retrieval-index",
     "schemaVersion": 1,
-    "contentHash": "637ce1ef78289760183e34ef7e7bd2de6b62afd56af1d48398717e57ed279972",
+    "contentHash": "7f2738be34f7944cf4108228444f7da60ba6b6a430c7aff6ff9ce71ce6af6683",
     "contentHashAlgo": "sha256-semantic-v1",
-    "snapshotHash": "57a8cc682820c55ff61948e40598090ab32c5c1e2370f69d5333c492f2efb7c0",
+    "snapshotHash": "d3f152c3d3ed74d31b841a61d105d041e305e61ad3df6951c9af0184d0b290ed",
     "overlayHash": "f99666ff9119084dd25c2974ae64eb6935ec2aa785ff5ad478fb9d541f7a5e94",
     "configurationHash": "497822431910cd9fa7d674a48a9f0b96fbbbf779f22a001de0b52252117fe3ab",
     "lexiconVersion": 1,
@@ -9983,7 +9995,7 @@
     },
     "lexical": {
       "version": 1,
-      "documentCount": 615,
+      "documentCount": 616,
       "fieldNames": [
         "aliases",
         "body",
@@ -9994,13 +10006,13 @@
         "title"
       ],
       "averageFieldLength": {
-        "aliases": 2.9170731707317072,
-        "body": 46.73170731707317,
-        "headings": 3.8764227642276423,
-        "path": 6.11219512195122,
-        "summary": 2.975609756097561,
-        "symbols": 13.699186991869919,
-        "title": 4.048780487804878
+        "aliases": 2.9155844155844157,
+        "body": 46.70779220779221,
+        "headings": 3.8701298701298703,
+        "path": 6.108766233766234,
+        "summary": 2.99025974025974,
+        "symbols": 13.676948051948052,
+        "title": 4.045454545454546
       }
     },
     "entries": [
@@ -12516,6 +12528,39 @@
           ]
         },
         "contentHash": "08f5d230741524533ac6753cd3fea6d9fd3cf1f9b5b913f55d7640c0ee45df86",
+        "provenance": "observed",
+        "confidence": "observed"
+      },
+      {
+        "id": "document:changelog.d/264.md",
+        "kind": "document",
+        "path": "changelog.d/264.md",
+        "title": "264.md",
+        "summary": "feat: mvp reader accepts flat inline maps like ci: {job: build, step: 2}",
+        "audience": "human",
+        "aliases": [],
+        "tags": [
+          "document",
+          "project"
+        ],
+        "fields": {
+          "title": "264.md",
+          "headings": "",
+          "path": "changelog.d/264.md",
+          "symbols": "",
+          "summary": "feat: mvp reader accepts flat inline maps like ci: {job: build, step: 2}",
+          "body": "feat: mvp reader accepts flat inline maps like ci: {job: build, step: 2} Single-level { k: v } maps (scalar values, no nesting) parse to the same result as block maps; nested { } / [ ] stay rejected. Refs 264 (mvp:RF-02).",
+          "aliases": "document project"
+        },
+        "graph": {
+          "pagerank": 0,
+          "inboundLinks": 0,
+          "coveredBy": [],
+          "mentionedBy": [],
+          "inbound": [],
+          "outbound": []
+        },
+        "contentHash": "8f824a72dd3634b010404b848d7d5d07b277d24072b85e61b0877215040fb94b",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -38153,7 +38198,7 @@
             }
           ]
         },
-        "contentHash": "09df3a1b838c06d6420e002d18ea9bcbc4f28d1e3411ab5b5dec76d544df3378",
+        "contentHash": "b45dff7e6d0bcd04667855d64190c3674fdc33782735ddcc068e085e53bc46c8",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -50274,7 +50319,7 @@
             }
           ]
         },
-        "contentHash": "d111ca317f495f6e6611d0ce3e8ceb7b6850bbaa7f0d9b59e032a1096f1faeac",
+        "contentHash": "b69f5249d929290ec5a9512ae0ec84aa50f3d6b1db47868417a833447f327716",
         "provenance": "observed",
         "confidence": "observed"
       },
