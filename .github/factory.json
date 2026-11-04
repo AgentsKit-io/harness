@@ -1,0 +1,4 @@
+{
+  "install": "pnpm install --frozen-lockfile",
+  "verify": "pnpm typecheck && pnpm test:coverage && pnpm build && pnpm check:public-api && pnpm docs:bridge:config:check && pnpm exec ak-docs gate run index-freshness && pnpm docs:generate --check && pnpm test:capabilities"
+}

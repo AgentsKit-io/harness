@@ -22,7 +22,9 @@ describe('loop ui components', () => {
     const { lastFrame, unmount } = render(<Spinner label="working" />)
     expect(lastFrame()).toContain('working')
     const first = lastFrame()
-    await flush(120)
+    // Poll (not a fixed sleep): under parallel load timers can be delayed well past one frame.
+    const deadline = Date.now() + 5000
+    while (lastFrame() === first && Date.now() < deadline) await flush(40)
     expect(lastFrame()).not.toBe(first)
     unmount()
   })
