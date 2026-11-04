@@ -52,7 +52,7 @@ const splitFlow = (s: string, lineno: number): string[] => {
       if (q === '"' && c === '\\' && i + 1 < s.length) { cur.push(s[i + 1]!); i += 2; continue }
       if (c === q) q = null
     } else if (c === '"' || c === "'") { q = c; cur.push(c) }
-    else if ('[]{}'.includes(c)) bad(`linha ${lineno}: listas aninhadas em [ ] não são aceitas`)
+    else if ('[]{}'.includes(c)) bad(`linha ${lineno}: coleções aninhadas em [ ] ou { } não são aceitas`)
     else if (c === ',') { items.push(cur.join('').trim()); cur = [] }
     else cur.push(c)
     i += 1
@@ -80,7 +80,18 @@ const scalar = (raw: string, lineno: number): unknown => {
     return splitFlow(s.slice(1, -1), lineno).map((x) => scalar(x, lineno))
   }
   if (s === '{}') return {}
-  if (s.startsWith('{')) bad(`linha ${lineno}: mapas em { } não são aceitos; use um bloco indentado`)
+  if (s.startsWith('{')) {
+    if (!s.endsWith('}')) bad(`linha ${lineno}: { sem fechar`)
+    const out: Record<string, unknown> = {}
+    for (const item of splitFlow(s.slice(1, -1), lineno)) {
+      const m = KEY_RE.exec(item)
+      if (!m) bad(`linha ${lineno}: esperava "chave: valor" em { }`)
+      const k = /^["']/.test(m![1]!) ? String(scalar(m![1]!, lineno)) : m![1]!
+      if (Object.hasOwn(out, k)) bad(`linha ${lineno}: chave repetida "${k}"`)
+      out[k] = scalar(m![3] ?? '', lineno)
+    }
+    return out
+  }
   if ('&*!|>%@`'.includes(s[0]!)) bad(`linha ${lineno}: "${s[0]}" não é aceito aqui (use aspas)`)
   if (['true', 'True', 'TRUE'].includes(s)) return true
   if (['false', 'False', 'FALSE'].includes(s)) return false
