@@ -1,11 +1,12 @@
 {
   "launch-lista.yaml": { "digest": "a52e2863e6b56d8a", "launches": ["2026-11-15", "2026-12-01"] },
-  "erro-mapa-em-linha.yaml": { "throws": "mapas em { } não são aceitos" },
+  "mapa-em-linha.yaml": { "digest": "fa10724d3b47bbbd" },
   "blocos-quebra.yaml": { "digest": "2983ce17dbe78789" },
   "peso-decimal.yaml": { "digest": "a7be5cd56d0d65a2" },
   "notes-decision.yaml": { "digest": "1c340e45b1464269" },
   "acentos.yaml": { "digest": "e1c454f20c89dbcd" },
-  "erro-mapa-chaves.yaml": { "throws": "mapas em { } não são aceitos" },
+  "mapa-em-linha-homolog.yaml": { "digest": "c7a5c485f2715ecc" },
+  "erro-mapa-aninhado.yaml": { "throws": "coleções aninhadas em [ ] ou { } não são aceitas" },
   "erro-chave-repetida.yaml": { "throws": "linha 2: chave repetida \"version\"" },
   "erro-validacao.yaml": {
     "errors": [
