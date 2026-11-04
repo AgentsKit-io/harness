@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
-  "contentHash": "67415e85d6601064aecfc8aca35656f8d4ab7a143cd2995bbd5d1a055ae173f1",
+  "contentHash": "38ec6371507df28613fedd2387e667543ad0147449020a119c57df5145b61516",
   "contentHashAlgo": "sha256-semantic-v1",
-  "generatedAt": "2026-11-04T16:34:38.410Z",
+  "generatedAt": "2026-11-04T19:31:57.002Z",
   "project": {
     "name": "AgentsKit Harness",
     "root": "."
@@ -358,12 +358,12 @@
       "type": "document",
       "title": "283.md",
       "path": "changelog.d/283.md",
-      "description": "docs: playbook da fábrica e factory.json com install/verify",
+      "description": "docs: add factory playbook and factory.json install/verify (#283)",
       "tags": [
         "document",
         "project"
       ],
-      "contentHash": "a8b325378fdf0de9b9456ec215bbd5bc84923f8fed56ec4e61561000b409030e"
+      "contentHash": "73744b3065222718762dace07e79e65ae931ca3ea9e4520be8609ece4aa6d4b8"
     },
     {
       "id": "document:CHANGELOG.md",
@@ -8662,7 +8662,7 @@
         "ts",
         "test"
       ],
-      "contentHash": "0b5111ee54e24a4c608d2631b8ebec815ab68feb4ee68a8d1be5e4cd68ecdd57"
+      "contentHash": "b7c7d51bc8170e048f30faea3b89247cefd1677b77454936c44af11757d74535"
     },
     {
       "id": "module:test/loop-evidence.test.ts",
@@ -9298,7 +9298,7 @@
         "tsx",
         "test"
       ],
-      "contentHash": "0c289b915ca7ef6e21548510497dfac61e4b5de14fa46de8f09bd1375f5d62e3"
+      "contentHash": "9648f374215ac288ab7e8c41e99efbed672cf9a313fcc3759d92b4e92512fc5e"
     },
     {
       "id": "module:test/loop-ui-terminal.test.ts",
@@ -9802,7 +9802,7 @@
         "ts",
         "test"
       ],
-      "contentHash": "2a1c33360fde4f938788fbd615d16a07a6849cdf60e988c902b8430a669477f7"
+      "contentHash": "79cd34465fdd2dc54c0c22f19783cf91c9ecbbc333086554e15d8d46b968dde6"
     },
     {
       "id": "module:test/ui-insights.test.tsx",
@@ -10010,7 +10010,7 @@
     }
   },
   "inputs": {
-    "hash": "354f20edc0210cd768e278de67a3bf9bbc04d207c09224d5454d0ada6e11f955",
+    "hash": "d500845812f05ca25a1faf86377b1010fa1fb130701fdcfdde93817f5fb3376a",
     "fileCount": 642,
     "projectionVersion": 2
   },
@@ -10033,9 +10033,9 @@
   "projection": {
     "type": "retrieval-index",
     "schemaVersion": 1,
-    "contentHash": "245e210f514692734233ba3ee6271062dcc34d77000438d18adb8aa0da43d416",
+    "contentHash": "9814fdfbda3ee57ddf913da3ee7b663015980bccd4e220fc961d5a65244b0710",
     "contentHashAlgo": "sha256-semantic-v1",
-    "snapshotHash": "d81e87bdd7657fb2c6b6830a814bb373d1e058493f8fc586b0719bb82f63b5c8",
+    "snapshotHash": "3bd0f6b99ab0ad758cf8c8c7a8b4f2ea5a37f7fa5e57e50538b425a140e5c89a",
     "overlayHash": "f99666ff9119084dd25c2974ae64eb6935ec2aa785ff5ad478fb9d541f7a5e94",
     "configurationHash": "497822431910cd9fa7d674a48a9f0b96fbbbf779f22a001de0b52252117fe3ab",
     "lexiconVersion": 1,
@@ -10067,10 +10067,10 @@
       ],
       "averageFieldLength": {
         "aliases": 2.9098228663446055,
-        "body": 47.31723027375201,
+        "body": 47.32045088566828,
         "headings": 3.896940418679549,
         "path": 6.096618357487923,
-        "summary": 3.0579710144927534,
+        "summary": 3.0611916264090175,
         "symbols": 13.56682769726248,
         "title": 4.041867954911433
       }
@@ -12812,7 +12812,7 @@
         "kind": "document",
         "path": "changelog.d/283.md",
         "title": "283.md",
-        "summary": "docs: playbook da fábrica e factory.json com install/verify",
+        "summary": "docs: add factory playbook and factory.json install/verify (#283)",
         "audience": "human",
         "aliases": [],
         "tags": [
@@ -12824,8 +12824,8 @@
           "headings": "",
           "path": "changelog.d/283.md",
           "symbols": "",
-          "summary": "docs: playbook da fábrica e factory.json com install/verify",
-          "body": "docs: playbook da fábrica e factory.json com install/verify",
+          "summary": "docs: add factory playbook and factory.json install/verify (#283)",
+          "body": "docs: add factory playbook and factory.json install/verify ( 283)",
           "aliases": "document project"
         },
         "graph": {
@@ -12836,7 +12836,7 @@
           "inbound": [],
           "outbound": []
         },
-        "contentHash": "a8b325378fdf0de9b9456ec215bbd5bc84923f8fed56ec4e61561000b409030e",
+        "contentHash": "73744b3065222718762dace07e79e65ae931ca3ea9e4520be8609ece4aa6d4b8",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -47833,7 +47833,7 @@
             }
           ]
         },
-        "contentHash": "0b5111ee54e24a4c608d2631b8ebec815ab68feb4ee68a8d1be5e4cd68ecdd57",
+        "contentHash": "b7c7d51bc8170e048f30faea3b89247cefd1677b77454936c44af11757d74535",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -50110,7 +50110,7 @@
             }
           ]
         },
-        "contentHash": "0c289b915ca7ef6e21548510497dfac61e4b5de14fa46de8f09bd1375f5d62e3",
+        "contentHash": "9648f374215ac288ab7e8c41e99efbed672cf9a313fcc3759d92b4e92512fc5e",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -52199,7 +52199,7 @@
             }
           ]
         },
-        "contentHash": "2a1c33360fde4f938788fbd615d16a07a6849cdf60e988c902b8430a669477f7",
+        "contentHash": "79cd34465fdd2dc54c0c22f19783cf91c9ecbbc333086554e15d8d46b968dde6",
         "provenance": "observed",
         "confidence": "observed"
       },
