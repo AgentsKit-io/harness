@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
-  "contentHash": "38d39d54f98d3e9acc91b8d3fdb3be7078b1343f08c0e04a4030e2c5c419a0a5",
+  "contentHash": "96abdff958c20614790a007b9820e31aa167bd3716c272f672f729c8543e9593",
   "contentHashAlgo": "sha256-semantic-v1",
-  "generatedAt": "2026-11-05T00:19:58.225Z",
+  "generatedAt": "2026-11-05T18:11:21.646Z",
   "project": {
     "name": "AgentsKit Harness",
     "root": "."
@@ -304,6 +304,18 @@
         "unclassified"
       ],
       "contentHash": "2a9c6729475ccd1863d072eca3e2771a312cd401d2186d0732b4d92f0d5b915e"
+    },
+    {
+      "id": "document:changelog.d/287.md",
+      "type": "document",
+      "title": "287.md",
+      "path": "changelog.d/287.md",
+      "description": "fix: scan for secrets with gitleaks in CI on every pull request and push to main",
+      "tags": [
+        "document",
+        "project"
+      ],
+      "contentHash": "935ef48c84a72bd73cba5acd9f34260a028cfa3b648b53d41903ae87ee6a25b8"
     },
     {
       "id": "document:CHANGELOG.md",
@@ -9950,8 +9962,8 @@
     }
   },
   "inputs": {
-    "hash": "b8e303678a0749728e896402d0eee7cdea8b192fc0c3b5dd392dc9d1719cf994",
-    "fileCount": 637,
+    "hash": "5d02c8b41348f95dd549427b4f92281b524e5b6d47656655d0f13f33bd44a841",
+    "fileCount": 638,
     "projectionVersion": 2
   },
   "retrieval": {
@@ -9973,9 +9985,9 @@
   "projection": {
     "type": "retrieval-index",
     "schemaVersion": 1,
-    "contentHash": "152d8ef12e81bf1ed86674bb4b200596fd25885f979e28462bc9462165de4d7d",
+    "contentHash": "9f6f553bb93e5ffb69e5618827949af29caad43021e973aca25afb5ec0e00f57",
     "contentHashAlgo": "sha256-semantic-v1",
-    "snapshotHash": "2174f7991e1edb53cdf092f7c55645be25db28eb7af053c40356aa04e83f2ea5",
+    "snapshotHash": "e879eb95c6e0b4a5355e47a832f2326c535dd57b5a346638bfd3e2292695c579",
     "overlayHash": "f99666ff9119084dd25c2974ae64eb6935ec2aa785ff5ad478fb9d541f7a5e94",
     "configurationHash": "497822431910cd9fa7d674a48a9f0b96fbbbf779f22a001de0b52252117fe3ab",
     "lexiconVersion": 1,
@@ -9995,7 +10007,7 @@
     },
     "lexical": {
       "version": 1,
-      "documentCount": 616,
+      "documentCount": 617,
       "fieldNames": [
         "aliases",
         "body",
@@ -10006,13 +10018,13 @@
         "title"
       ],
       "averageFieldLength": {
-        "aliases": 2.917207792207792,
-        "body": 47.54220779220779,
-        "headings": 3.9301948051948052,
-        "path": 6.113636363636363,
-        "summary": 2.9220779220779223,
-        "symbols": 13.676948051948052,
-        "title": 4.058441558441558
+        "aliases": 2.9157212317666126,
+        "body": 47.499189627228525,
+        "headings": 3.9238249594813612,
+        "path": 6.110210696920584,
+        "summary": 2.93354943273906,
+        "symbols": 13.654781199351701,
+        "title": 4.055105348460292
       }
     },
     "entries": [
@@ -12612,6 +12624,39 @@
           ]
         },
         "contentHash": "08f5d230741524533ac6753cd3fea6d9fd3cf1f9b5b913f55d7640c0ee45df86",
+        "provenance": "observed",
+        "confidence": "observed"
+      },
+      {
+        "id": "document:changelog.d/287.md",
+        "kind": "document",
+        "path": "changelog.d/287.md",
+        "title": "287.md",
+        "summary": "fix: scan for secrets with gitleaks in CI on every pull request and push to main",
+        "audience": "human",
+        "aliases": [],
+        "tags": [
+          "document",
+          "project"
+        ],
+        "fields": {
+          "title": "287.md",
+          "headings": "",
+          "path": "changelog.d/287.md",
+          "symbols": "",
+          "summary": "fix: scan for secrets with gitleaks in CI on every pull request and push to main",
+          "body": "fix: scan for secrets with gitleaks in CI on every pull request and push to main Pinned binary (version + SHA-256), minimal .gitleaks.toml, publish waits on it.",
+          "aliases": "document project"
+        },
+        "graph": {
+          "pagerank": 0,
+          "inboundLinks": 0,
+          "coveredBy": [],
+          "mentionedBy": [],
+          "inbound": [],
+          "outbound": []
+        },
+        "contentHash": "935ef48c84a72bd73cba5acd9f34260a028cfa3b648b53d41903ae87ee6a25b8",
         "provenance": "observed",
         "confidence": "observed"
       },
