@@ -213,7 +213,8 @@ Runnable example: [`examples/minimum-profile.mjs`](examples/minimum-profile.mjs)
 - Decisions: [ADR-0027](docs/ADR-0027-keep-pushing-loop.md) (the loop) ·
   [ADR-0032](docs/ADR-0032-loop-stages-as-state-machines.md) (stages) ·
   [ADR-0035](docs/ADR-0035-definition-of-done-two-lists.md) (definition of done) ·
-  [ADR-0037](docs/ADR-0037-cost-policy-ceilings-and-levers.md) (cost)
+  [ADR-0037](docs/ADR-0037-cost-policy-ceilings-and-levers.md) (cost) ·
+  [ADR-0047](docs/ADR-0047-independent-verifier-and-structured-lessons.md) (independent verifier)
 - [CONTRIBUTING.md](./CONTRIBUTING.md) · [CHANGELOG.md](./CHANGELOG.md) · [MANIFESTO.md](./MANIFESTO.md)
 
 ## Release
