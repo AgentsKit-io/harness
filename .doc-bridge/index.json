@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
-  "contentHash": "8f49d1724b7bb94b308ddf8e42ffff940d81ff6f8f54e10ff57875633c0c80e7",
+  "contentHash": "1e7b467b8bf9c6e92d6ad89e9cb29367d396792a7bfdaf892eb58724c9bdd54e",
   "contentHashAlgo": "sha256-semantic-v1",
-  "generatedAt": "2026-11-05T18:30:00.515Z",
+  "generatedAt": "2026-11-05T18:44:00.445Z",
   "project": {
     "name": "AgentsKit Harness",
     "root": "."
@@ -328,6 +328,18 @@
         "unclassified"
       ],
       "contentHash": "8d74bb41a5477502f03f9df4ea442a5093ee4ac2cb1d8f4ec16ad7dbb53d675a"
+    },
+    {
+      "id": "document:changelog.d/286.md",
+      "type": "document",
+      "title": "286.md",
+      "path": "changelog.d/286.md",
+      "description": "feat: ci: Ubuntu-only pull requests, Windows/macOS Loop on main/nightly/release (failures open an issue), pnpm cache saved only from main",
+      "tags": [
+        "document",
+        "project"
+      ],
+      "contentHash": "3ec123a8f667ba0fefd0b4e6c0dcf5df55c1c75184b4873d1be4893dea8f9540"
     },
     {
       "id": "document:changelog.d/287.md",
@@ -10022,8 +10034,8 @@
     }
   },
   "inputs": {
-    "hash": "3271689cdc0a2bc26a0ee6d999868cb6e513b99ad4326d253182b251b2e888d0",
-    "fileCount": 643,
+    "hash": "39874cc999294927bbaeddd235d52be0d34dc3d1de0e23e54841250face3a01a",
+    "fileCount": 644,
     "projectionVersion": 2
   },
   "retrieval": {
@@ -10045,9 +10057,9 @@
   "projection": {
     "type": "retrieval-index",
     "schemaVersion": 1,
-    "contentHash": "8b894e9bc08eaf68c3bd721fc9ae1b5aaf316ccbe8e25226447a9292e15d125e",
+    "contentHash": "39573edc7e96056c253ce835d97d304e6d00c90cce141c121142e753105cf819",
     "contentHashAlgo": "sha256-semantic-v1",
-    "snapshotHash": "574812a9aabc052c538aadd55626e8ee447444895f8bcc210bdf13ff85d8995f",
+    "snapshotHash": "7f446d26cc63c0afe6a32005b6eeb82229437577c8e2c9f8244cad842c082999",
     "overlayHash": "f99666ff9119084dd25c2974ae64eb6935ec2aa785ff5ad478fb9d541f7a5e94",
     "configurationHash": "497822431910cd9fa7d674a48a9f0b96fbbbf779f22a001de0b52252117fe3ab",
     "lexiconVersion": 1,
@@ -10067,7 +10079,7 @@
     },
     "lexical": {
       "version": 1,
-      "documentCount": 622,
+      "documentCount": 623,
       "fieldNames": [
         "aliases",
         "body",
@@ -10078,13 +10090,13 @@
         "title"
       ],
       "averageFieldLength": {
-        "aliases": 2.9083601286173635,
-        "body": 47.532154340836016,
-        "headings": 3.927652733118971,
-        "path": 6.104501607717042,
-        "summary": 2.9935691318327975,
-        "symbols": 13.545016077170418,
-        "title": 4.051446945337621
+        "aliases": 2.9069020866773676,
+        "body": 47.48956661316212,
+        "headings": 3.9213483146067416,
+        "path": 6.101123595505618,
+        "summary": 3.0224719101123596,
+        "symbols": 13.523274478330658,
+        "title": 4.048154093097914
       }
     },
     "entries": [
@@ -12779,6 +12791,39 @@
           ]
         },
         "contentHash": "08f5d230741524533ac6753cd3fea6d9fd3cf1f9b5b913f55d7640c0ee45df86",
+        "provenance": "observed",
+        "confidence": "observed"
+      },
+      {
+        "id": "document:changelog.d/286.md",
+        "kind": "document",
+        "path": "changelog.d/286.md",
+        "title": "286.md",
+        "summary": "feat: ci: Ubuntu-only pull requests, Windows/macOS Loop on main/nightly/release (failures open an issue), pnpm cache saved only from main",
+        "audience": "human",
+        "aliases": [],
+        "tags": [
+          "document",
+          "project"
+        ],
+        "fields": {
+          "title": "286.md",
+          "headings": "",
+          "path": "changelog.d/286.md",
+          "symbols": "",
+          "summary": "feat: ci: Ubuntu-only pull requests, Windows/macOS Loop on main/nightly/release (failures open an issue), pnpm cache saved only from main",
+          "body": "feat: ci: Ubuntu-only pull requests, Windows/macOS Loop on main/nightly/release (failures open an issue), pnpm cache saved only from main",
+          "aliases": "document project"
+        },
+        "graph": {
+          "pagerank": 0,
+          "inboundLinks": 0,
+          "coveredBy": [],
+          "mentionedBy": [],
+          "inbound": [],
+          "outbound": []
+        },
+        "contentHash": "3ec123a8f667ba0fefd0b4e6c0dcf5df55c1c75184b4873d1be4893dea8f9540",
         "provenance": "observed",
         "confidence": "observed"
       },
