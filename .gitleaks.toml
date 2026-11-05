@@ -1,0 +1,9 @@
+title = "harness gitleaks config"
+
+[extend]
+useDefault = true
+
+# Allowlist only test fixtures, one entry per reason.
+[[allowlists]]
+description = "test/pii.test.ts feeds deliberately fake provider-key shapes to the PII scanner under test (synthetic, not real credentials)"
+paths = ['''^test/pii\.test\.ts$''']
