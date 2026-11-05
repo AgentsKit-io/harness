@@ -58,6 +58,15 @@ second agent into a worktree; close-or-reopen decisions stick and free the issue
 and reports progress by evidence level and requirement state, with a versioned `--json` schema and issues/PRs linked
 by their `mvp:<id>` label; pipelines pin the exact version and call it from the installed package. Every publish now
 creates its GitHub release from `CHANGELOG.md`. Breaking: 13 playbook-evaluation commands and their exports are
-removed and the tarball ships four docs instead of all of `docs/`.
+removed and the tarball ships four docs instead of all of `docs/`. The loop only contracts PM-approved issues
+(`loop:pm-ok`); the fleet runner dispatches through the fleet coordinator queue (ADR-0045) and runs fix rounds there;
+the definition of done is proven on a local checkout before merge, with an independent verifier deciding "proven"
+(ADR-0047); and the merge comment on the tracker issue carries the delivery evidence and a RESOLVED / PARTIAL /
+NOT PROVEN verdict (ADR-0044).
+
+**Publishing.** 0.24.0 is minor: new features, and the only API break since 0.22.3 is the 0.23.0 removal above
+(the package is still 0.x). It is published by `release-harness.yml` through npm Trusted Publishing once the
+registry accepts that workflow again: every publish since 0.23.0 was rejected with E404 on
+`PUT @agentskit/harness`, which is fixed on npmjs.com, not in this repository.
 
 The blockers in `release/manifest.json` (`ecosystem-compatibility`, `pilot-benchmark`) are unchanged.
