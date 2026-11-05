@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
-  "contentHash": "c5f7a9e96e235f3ffed11cc699836c1fe6ff46907a886bbf9c3d4d6c76810e02",
+  "contentHash": "72433205933973f8625146babedf259317c2a0be0baf6998fc1c67a9592d35ed",
   "contentHashAlgo": "sha256-semantic-v1",
-  "generatedAt": "2026-11-05T18:11:03.599Z",
+  "generatedAt": "2026-11-05T18:28:52.951Z",
   "project": {
     "name": "AgentsKit Harness",
     "root": "."
@@ -274,12 +274,12 @@
       "type": "document",
       "title": "CI rules",
       "path": ".claude/rules/ci.md",
-      "description": "Pre-push hook runs checks only for changed files (pnpm vitest run <changed tests>), not the full contract. See docs/adr/0001-scoped-verification.md.",
+      "description": "Before pushing, run only the tests/scripts for changed files (pnpm vitest run <changed tests>), not the full contract. See docs/adr/0048-scoped-verification.md.",
       "tags": [
         "document",
         "unclassified"
       ],
-      "contentHash": "30ab8677707a29a3c3aabd5af6de7df8a0108be5b41a82b77e38b28f02f78e37"
+      "contentHash": "9ad63d4c85d6670930f9a36598187a949142496cf3878170655e4498227ecb36"
     },
     {
       "id": "document:.claude/rules/security.md",
@@ -1011,31 +1011,19 @@
         "document",
         "human"
       ],
-      "contentHash": "e1b059eab9e2a0f96996ffb67c55099968aa29e790ffa7eaaaaf9a078f6dfe05"
+      "contentHash": "b276629f1766f0b8d496d31d0d00c9e8135f418c782fbcdf186e607791866dc1"
     },
     {
-      "id": "document:docs/adr/0001-scoped-verification.md",
+      "id": "document:docs/adr/0048-scoped-verification.md",
       "type": "document",
-      "title": "ADR-0001: Verify the criterion touched, not the whole contract",
-      "path": "docs/adr/0001-scoped-verification.md",
+      "title": "ADR-0048: Verify the criterion touched, not the whole contract",
+      "path": "docs/adr/0048-scoped-verification.md",
       "description": "Status: accepted",
       "tags": [
         "document",
         "human"
       ],
-      "contentHash": "a848a8515978326ff277501c6b7cf7e26350b156532b9f012a41ad39bde2207c"
-    },
-    {
-      "id": "document:docs/adr/0002-provider-neutral-kernel.md",
-      "type": "document",
-      "title": "ADR-0002: Kernel stays provider-neutral",
-      "path": "docs/adr/0002-provider-neutral-kernel.md",
-      "description": "Status: accepted",
-      "tags": [
-        "document",
-        "human"
-      ],
-      "contentHash": "ce9a69f27d7571f8b668d4da71643e87b5a8fd9c62ff0962832d30a3f00c6974"
+      "contentHash": "5bc72a50ada683f499694b406ee8f50d842d553f9ad8f0595b9f9ea6051b30b3"
     },
     {
       "id": "document:docs/DIRECAO-2026-10-29.md",
@@ -10022,8 +10010,8 @@
     }
   },
   "inputs": {
-    "hash": "a63c8455b0e869a581ba06da6a4a564a5a0d0d74d667e167f0888fc750683396",
-    "fileCount": 643,
+    "hash": "02081ef243b25fd8f5a807b5dc609b5cfcecfd5047f770e47b18ced80e7fef06",
+    "fileCount": 642,
     "projectionVersion": 2
   },
   "retrieval": {
@@ -10045,9 +10033,9 @@
   "projection": {
     "type": "retrieval-index",
     "schemaVersion": 1,
-    "contentHash": "79ce36667a69a2688c7691dfc032dfd596f237d036a902df26b70868b2bc1486",
+    "contentHash": "faf20f91ce44cd49e1bbf8c2c0451710f75caab077973256f61d3d26552f13fc",
     "contentHashAlgo": "sha256-semantic-v1",
-    "snapshotHash": "b34b30eeace44ffdc07bb0a985f9ce3041fb1d6c94cb2ad59fb803185f35be1a",
+    "snapshotHash": "90b638cca96ab24212bfe1557dccfbdf3b69bb6b65ba25e6f94b57e20d1c8ec3",
     "overlayHash": "f99666ff9119084dd25c2974ae64eb6935ec2aa785ff5ad478fb9d541f7a5e94",
     "configurationHash": "497822431910cd9fa7d674a48a9f0b96fbbbf779f22a001de0b52252117fe3ab",
     "lexiconVersion": 1,
@@ -10067,7 +10055,7 @@
     },
     "lexical": {
       "version": 1,
-      "documentCount": 622,
+      "documentCount": 621,
       "fieldNames": [
         "aliases",
         "body",
@@ -10078,13 +10066,13 @@
         "title"
       ],
       "averageFieldLength": {
-        "aliases": 2.9083601286173635,
-        "body": 47.61093247588425,
-        "headings": 3.945337620578778,
-        "path": 6.110932475884244,
-        "summary": 2.982315112540193,
-        "symbols": 13.545016077170418,
-        "title": 4.061093247588424
+        "aliases": 2.9098228663446055,
+        "body": 47.57487922705314,
+        "headings": 3.9339774557165863,
+        "path": 6.107890499194847,
+        "summary": 2.9822866344605474,
+        "symbols": 13.56682769726248,
+        "title": 4.05475040257649
       }
     },
     "entries": [
@@ -10974,7 +10962,7 @@
         "kind": "document",
         "path": ".claude/rules/ci.md",
         "title": "CI rules",
-        "summary": "Pre-push hook runs checks only for changed files (pnpm vitest run <changed tests>), not the full contract. See docs/adr/0001-scoped-verification.md.",
+        "summary": "Before pushing, run only the tests/scripts for changed files (pnpm vitest run <changed tests>), not the full contract. See docs/adr/0048-scoped-verification.md.",
         "aliases": [],
         "tags": [
           "document",
@@ -10985,8 +10973,8 @@
           "headings": "CI rules",
           "path": ".claude/rules/ci.md",
           "symbols": "",
-          "summary": "Pre-push hook runs checks only for changed files (pnpm vitest run <changed tests>), not the full contract. See docs/adr/0001-scoped-verification.md.",
-          "body": "CI rules - Pre-push hook runs checks only for changed files ( pnpm vitest run <changed tests ), not the full contract. See docs/adr/0001-scoped-verification.md . - Tests use no fixed ports (bind to port 0) and no hard-coded dates (inject a clock or use relative times). - Tests never use the real HOME; use temp directories. - Generated artifacts (docs, capability manifest, Doc Bridge index) are regenerated, never hand-edited.",
+          "summary": "Before pushing, run only the tests/scripts for changed files (pnpm vitest run <changed tests>), not the full contract. See docs/adr/0048-scoped-verification.md.",
+          "body": "CI rules - Before pushing, run only the tests/scripts for changed files ( pnpm vitest run <changed tests ), not the full contract. See docs/adr/0048-scoped-verification.md . - Tests use no fixed ports (bind to port 0) and no hard-coded dates (inject a clock or use relative times). - Tests never use the real HOME; use temp directories. - Generated artifacts (docs, capability manifest, Doc Bridge index) are regenerated, never hand-edited.",
           "aliases": "document unclassified"
         },
         "graph": {
@@ -11006,12 +10994,12 @@
           "outbound": [
             {
               "kind": "mentions",
-              "id": "document:docs/adr/0001-scoped-verification.md",
+              "id": "document:docs/adr/0048-scoped-verification.md",
               "confidence": "observed"
             }
           ]
         },
-        "contentHash": "30ab8677707a29a3c3aabd5af6de7df8a0108be5b41a82b77e38b28f02f78e37",
+        "contentHash": "9ad63d4c85d6670930f9a36598187a949142496cf3878170655e4498227ecb36",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -11180,14 +11168,13 @@
         },
         "graph": {
           "pagerank": 0.039241,
-          "inboundLinks": 6,
+          "inboundLinks": 5,
           "coveredBy": [],
           "mentionedBy": [
             "document:apps/docs/content/docs/guides/agents.mdx",
             "document:CHANGELOG.md",
             "document:CLAUDE.md",
-            "document:docs/adr/0001-scoped-verification.md",
-            "document:docs/adr/0002-provider-neutral-kernel.md",
+            "document:docs/adr/0048-scoped-verification.md",
             "document:docs/LOOP.md"
           ],
           "inbound": [
@@ -11213,12 +11200,7 @@
             },
             {
               "kind": "mentions",
-              "id": "document:docs/adr/0001-scoped-verification.md",
-              "confidence": "observed"
-            },
-            {
-              "kind": "mentions",
-              "id": "document:docs/adr/0002-provider-neutral-kernel.md",
+              "id": "document:docs/adr/0048-scoped-verification.md",
               "confidence": "observed"
             },
             {
@@ -14623,20 +14605,13 @@
         },
         "graph": {
           "pagerank": 0.02895,
-          "inboundLinks": 2,
+          "inboundLinks": 1,
           "coveredBy": [],
-          "mentionedBy": [
-            "document:docs/adr/0002-provider-neutral-kernel.md"
-          ],
+          "mentionedBy": [],
           "inbound": [
             {
               "kind": "links-to",
               "id": "document:docs/LOOP.md",
-              "confidence": "observed"
-            },
-            {
-              "kind": "mentions",
-              "id": "document:docs/adr/0002-provider-neutral-kernel.md",
               "confidence": "observed"
             }
           ],
@@ -15929,7 +15904,7 @@
           "path": "docs/adr/0000-template.md",
           "symbols": "",
           "summary": "Status: proposed | accepted | superseded by ADR-NNNN",
-          "body": "ADR-NNNN: Title - Status: proposed accepted superseded by ADR-NNNN - Date: YYYY-MM-DD - Source: where the decision came from (file, issue, PR) Context What forced the decision. Decision What we do. Consequences What gets easier, what gets harder.",
+          "body": "ADR-NNNN: Title <!-- Number: continue after the highest docs/ADR- .md or docs/adr/NNNN- .md (currently 0048). -- - Status: proposed accepted superseded by ADR-NNNN - Date: YYYY-MM-DD - Source: where the decision came from (file, issue, PR) Context What forced the decision. Decision What we do. Consequences What gets easier, what gets harder.",
           "aliases": "document human"
         },
         "graph": {
@@ -15948,15 +15923,15 @@
           ],
           "outbound": []
         },
-        "contentHash": "e1b059eab9e2a0f96996ffb67c55099968aa29e790ffa7eaaaaf9a078f6dfe05",
+        "contentHash": "b276629f1766f0b8d496d31d0d00c9e8135f418c782fbcdf186e607791866dc1",
         "provenance": "observed",
         "confidence": "observed"
       },
       {
-        "id": "document:docs/adr/0001-scoped-verification.md",
+        "id": "document:docs/adr/0048-scoped-verification.md",
         "kind": "document",
-        "path": "docs/adr/0001-scoped-verification.md",
-        "title": "ADR-0001: Verify the criterion touched, not the whole contract",
+        "path": "docs/adr/0048-scoped-verification.md",
+        "title": "ADR-0048: Verify the criterion touched, not the whole contract",
         "summary": "Status: accepted",
         "audience": "human",
         "aliases": [],
@@ -15965,12 +15940,12 @@
           "human"
         ],
         "fields": {
-          "title": "ADR-0001: Verify the criterion touched, not the whole contract",
-          "headings": "ADR-0001: Verify the criterion touched, not the whole contract Context Decision Consequences",
-          "path": "docs/adr/0001-scoped-verification.md",
+          "title": "ADR-0048: Verify the criterion touched, not the whole contract",
+          "headings": "ADR-0048: Verify the criterion touched, not the whole contract Context Decision Consequences",
+          "path": "docs/adr/0048-scoped-verification.md",
           "symbols": "",
           "summary": "Status: accepted",
-          "body": "ADR-0001: Verify the criterion touched, not the whole contract - Status: accepted - Date: 2026-11-05 - Source: AGENTS.md , section \"Verification contract\" ( scope: house convention) Context .ak-harness/verification.json has 22 checks. Running all of them on every edit was the largest source of wasted time and tokens in this repository. The test: scripts and the contract's criteria are not one-to-one. Decision A task carries an explicit scope and runs the narrow script or test that covers what it touched. Only the PR that closes an issue runs the complete contract ( ak-verify run --config .ak-harness/verification.json --json ). Consequences Faster iteration. Picking the script is a judgement call. A failed, stale, blocked or approval-pending full run still means the work is not complete.",
+          "body": "ADR-0048: Verify the criterion touched, not the whole contract - Status: accepted - Date: 2026-11-05 - Source: AGENTS.md , section \"Verification contract\" ( scope: house convention) Context .ak-harness/verification.json has 22 checks. Running all of them on every edit was the largest source of wasted time and tokens in this repository. The test: scripts and the contract's criteria are not one-to-one. Decision A task carries an explicit scope and runs the narrow script or test that covers what it touched. Only the PR that closes an issue runs the complete contract ( ak-verify run --config .ak-harness/verification.json --json ). Consequences Faster iteration. Picking the script is a judgement call. A failed, stale, blocked or approval-pending full run still means the work is not complete.",
           "aliases": "document human"
         },
         "graph": {
@@ -15995,51 +15970,7 @@
             }
           ]
         },
-        "contentHash": "a848a8515978326ff277501c6b7cf7e26350b156532b9f012a41ad39bde2207c",
-        "provenance": "observed",
-        "confidence": "observed"
-      },
-      {
-        "id": "document:docs/adr/0002-provider-neutral-kernel.md",
-        "kind": "document",
-        "path": "docs/adr/0002-provider-neutral-kernel.md",
-        "title": "ADR-0002: Kernel stays provider-neutral",
-        "summary": "Status: accepted",
-        "audience": "human",
-        "aliases": [],
-        "tags": [
-          "document",
-          "human"
-        ],
-        "fields": {
-          "title": "ADR-0002: Kernel stays provider-neutral",
-          "headings": "ADR-0002: Kernel stays provider-neutral Context Decision Consequences",
-          "path": "docs/adr/0002-provider-neutral-kernel.md",
-          "symbols": "",
-          "summary": "Status: accepted",
-          "body": "ADR-0002: Kernel stays provider-neutral - Status: accepted - Date: 2026-11-05 - Source: AGENTS.md , section \"Boundaries\"; related: docs/ADR-0026-kernel-adapters-boundary.md Context The package enforces SDLC contracts. Coupling it to a tracker, SCM or model provider would make gates depend on external services. Decision The kernel takes no direct dependency on Linear, GitHub, Orca, Doc Bridge or a model provider. Integrations live in src/adapters/ and must not weaken kernel gates. Required gates fail closed; missing evidence is not success. Consequences Providers are swappable and gates are deterministic. Integrations need an adapter, which costs a little extra code.",
-          "aliases": "document human"
-        },
-        "graph": {
-          "pagerank": 0,
-          "inboundLinks": 0,
-          "coveredBy": [],
-          "mentionedBy": [],
-          "inbound": [],
-          "outbound": [
-            {
-              "kind": "mentions",
-              "id": "document:AGENTS.md",
-              "confidence": "observed"
-            },
-            {
-              "kind": "mentions",
-              "id": "document:docs/ADR-0026-kernel-adapters-boundary.md",
-              "confidence": "observed"
-            }
-          ]
-        },
-        "contentHash": "ce9a69f27d7571f8b668d4da71643e87b5a8fd9c62ff0962832d30a3f00c6974",
+        "contentHash": "5bc72a50ada683f499694b406ee8f50d842d553f9ad8f0595b9f9ea6051b30b3",
         "provenance": "observed",
         "confidence": "observed"
       },

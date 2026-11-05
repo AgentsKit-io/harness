@@ -1,4 +1,4 @@
-# ADR-0001: Verify the criterion touched, not the whole contract
+# ADR-0048: Verify the criterion touched, not the whole contract
 
 - Status: accepted
 - Date: 2026-11-05
