@@ -56,7 +56,10 @@ makes long sessions in a large monorepo cheaper.
   optimization, and metrics. Keep modules small and capability-oriented.
 - `test/`: deterministic unit and contract tests; real CLI checks live in
   `scripts/`.
-- `docs/`: ADRs and protocol decisions.
+- `docs/`: ADRs and protocol decisions. New ADRs go in `docs/adr/` (start from
+  `docs/adr/0000-template.md`; older ones are `docs/ADR-*.md`).
+- `.claude/rules/`: short, checkable rules for agents (CI, security). Read them
+  before changing code.
 
 The package is provider-neutral. Do not add direct dependencies on Linear,
 GitHub, Orca, Doc Bridge, or a model provider to the kernel.
