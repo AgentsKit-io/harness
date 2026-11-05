@@ -1,0 +1,32 @@
+name: Setup Node + pnpm with main-only cache
+description: >
+  Installs Node and dependencies. The pnpm store cache is restored everywhere but saved only from pushes to
+  main, so pull requests never add entries (they used to push the Actions cache over its 10 GB limit).
+inputs:
+  registry-url:
+    description: npm registry URL passed to setup-node
+    required: false
+    default: ''
+runs:
+  using: composite
+  steps:
+    - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+      with:
+        node-version: 22
+        registry-url: ${{ inputs.registry-url }}
+    - id: store
+      shell: bash
+      run: echo "path=$(pnpm store path --silent)" >> "$GITHUB_OUTPUT"
+    - id: restore
+      uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      with:
+        path: ${{ steps.store.outputs.path }}
+        key: pnpm-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
+        restore-keys: pnpm-${{ runner.os }}-
+    - run: pnpm install --frozen-lockfile
+      shell: bash
+    - if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' && steps.restore.outputs.cache-hit != 'true' }}
+      uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      with:
+        path: ${{ steps.store.outputs.path }}
+        key: pnpm-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
