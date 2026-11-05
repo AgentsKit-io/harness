@@ -119,13 +119,15 @@ jobs:
   # A failure on a non-PR run (main, nightly, release) opens or updates one issue instead of going unseen.
   loop-failure-issue:
     name: Report Loop failure
-    if: ${{ failure() && github.event_name != 'pull_request' }}
+    # Always runs on non-PR events (so publish can depend on it without being skipped); it only acts on failure.
+    if: ${{ always() && github.event_name != 'pull_request' }}
     needs: [loop-cross-platform]
     runs-on: ubuntu-latest
     permissions:
       issues: write
     steps:
       - name: Open or update the tracking issue
+        if: ${{ needs.loop-cross-platform.result == 'failure' }}
         env:
           GH_TOKEN: ${{ github.token }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
@@ -147,7 +149,7 @@ jobs:
   publish:
     name: Publish to npm
     if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' && github.repository == 'AgentsKit-io/harness' }}
-    needs: [verify, docs, loop-cross-platform, gitleaks]
+    needs: [verify, docs, loop-cross-platform, loop-failure-issue, gitleaks]
     runs-on: ubuntu-latest
     permissions:
       contents: write
