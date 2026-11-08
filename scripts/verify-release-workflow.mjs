@@ -26,5 +26,10 @@ else {
   if (publish.concurrency?.['cancel-in-progress'] !== false) failures.push('a publish in flight must never be cancelled')
 }
 
+// A transient 504 on the gitleaks download turned main red (#270): the install must retry, not fail on one blip.
+const gitleaksInstall = (jobs['gitleaks']?.steps ?? []).find((step) => /gitleaks/i.test(String(step?.name ?? '')) && /curl /.test(String(step?.run ?? '')))
+if (!gitleaksInstall) failures.push('gitleaks job must install the pinned binary with curl')
+else if (!/curl [^\n]*--retry \d+[^\n]*--retry-all-errors/.test(String(gitleaksInstall.run))) failures.push('gitleaks download must retry (--retry N --retry-all-errors)')
+
 console.log(JSON.stringify(failures.length ? { status: 'failed', criteria: ['governance'], failures } : { status: 'passed', criteria: ['governance'] }))
 process.exitCode = failures.length ? 1 : 0

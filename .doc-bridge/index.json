@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
-  "contentHash": "1e7b467b8bf9c6e92d6ad89e9cb29367d396792a7bfdaf892eb58724c9bdd54e",
+  "contentHash": "803c91cab0e04415aa4e9cd4b1427f6a95a0a822710a51a3ed1f2fc02730e0f0",
   "contentHashAlgo": "sha256-semantic-v1",
-  "generatedAt": "2026-11-05T18:44:00.445Z",
+  "generatedAt": "2026-11-08T23:09:50.272Z",
   "project": {
     "name": "AgentsKit Harness",
     "root": "."
@@ -328,6 +328,18 @@
         "unclassified"
       ],
       "contentHash": "8d74bb41a5477502f03f9df4ea442a5093ee4ac2cb1d8f4ec16ad7dbb53d675a"
+    },
+    {
+      "id": "document:changelog.d/270.md",
+      "type": "document",
+      "title": "270.md",
+      "path": "changelog.d/270.md",
+      "description": "fix(ci): retry the gitleaks binary download so a transient 504 no longer turns main red",
+      "tags": [
+        "document",
+        "project"
+      ],
+      "contentHash": "9acbaba2a53adac2c48609f66ff41a626f8ae38cfa130d7e1420dabe8af32892"
     },
     {
       "id": "document:changelog.d/286.md",
@@ -2189,7 +2201,7 @@
         "mjs",
         "scripts"
       ],
-      "contentHash": "a01a7b3c77a9d359c6180389a80f69cc924fe4cd516bb61ce3b427f0dab83fb4"
+      "contentHash": "2d573193068acacaf13f9dbb6264ddf64f3715f93d858d17f93ed4bdb41c1ab4"
     },
     {
       "id": "module:scripts/verify-repository-docs.mjs",
@@ -10034,8 +10046,8 @@
     }
   },
   "inputs": {
-    "hash": "39874cc999294927bbaeddd235d52be0d34dc3d1de0e23e54841250face3a01a",
-    "fileCount": 644,
+    "hash": "759de374452ee46132b2287d071048897b996ef05281ed14bb659420d4e92932",
+    "fileCount": 645,
     "projectionVersion": 2
   },
   "retrieval": {
@@ -10057,9 +10069,9 @@
   "projection": {
     "type": "retrieval-index",
     "schemaVersion": 1,
-    "contentHash": "39573edc7e96056c253ce835d97d304e6d00c90cce141c121142e753105cf819",
+    "contentHash": "eb2b96b855716be4fbc9b3b23cb11fd4ab85c7ba542a718b1ab7e2c84013f951",
     "contentHashAlgo": "sha256-semantic-v1",
-    "snapshotHash": "7f446d26cc63c0afe6a32005b6eeb82229437577c8e2c9f8244cad842c082999",
+    "snapshotHash": "31498d14405e3215cd647954fe6fa0a5af232e767c9bb1b01434bb78f888cc18",
     "overlayHash": "f99666ff9119084dd25c2974ae64eb6935ec2aa785ff5ad478fb9d541f7a5e94",
     "configurationHash": "497822431910cd9fa7d674a48a9f0b96fbbbf779f22a001de0b52252117fe3ab",
     "lexiconVersion": 1,
@@ -10079,7 +10091,7 @@
     },
     "lexical": {
       "version": 1,
-      "documentCount": 623,
+      "documentCount": 624,
       "fieldNames": [
         "aliases",
         "body",
@@ -10090,13 +10102,13 @@
         "title"
       ],
       "averageFieldLength": {
-        "aliases": 2.9069020866773676,
-        "body": 47.48956661316212,
-        "headings": 3.9213483146067416,
-        "path": 6.101123595505618,
-        "summary": 3.0224719101123596,
-        "symbols": 13.523274478330658,
-        "title": 4.048154093097914
+        "aliases": 2.905448717948718,
+        "body": 47.45352564102564,
+        "headings": 3.9150641025641026,
+        "path": 6.097756410256411,
+        "summary": 3.0368589743589745,
+        "symbols": 13.501602564102564,
+        "title": 4.044871794871795
       }
     },
     "entries": [
@@ -12791,6 +12803,45 @@
           ]
         },
         "contentHash": "08f5d230741524533ac6753cd3fea6d9fd3cf1f9b5b913f55d7640c0ee45df86",
+        "provenance": "observed",
+        "confidence": "observed"
+      },
+      {
+        "id": "document:changelog.d/270.md",
+        "kind": "document",
+        "path": "changelog.d/270.md",
+        "title": "270.md",
+        "summary": "fix(ci): retry the gitleaks binary download so a transient 504 no longer turns main red",
+        "audience": "human",
+        "aliases": [],
+        "tags": [
+          "document",
+          "project"
+        ],
+        "fields": {
+          "title": "270.md",
+          "headings": "",
+          "path": "changelog.d/270.md",
+          "symbols": "",
+          "summary": "fix(ci): retry the gitleaks binary download so a transient 504 no longer turns main red",
+          "body": "fix(ci): retry the gitleaks binary download so a transient 504 no longer turns main red The release workflow gate ( scripts/verify-release-workflow.mjs ) now fails when the download has no retry.",
+          "aliases": "document project"
+        },
+        "graph": {
+          "pagerank": 0,
+          "inboundLinks": 0,
+          "coveredBy": [],
+          "mentionedBy": [],
+          "inbound": [],
+          "outbound": [
+            {
+              "kind": "mentions",
+              "id": "module:scripts/verify-release-workflow.mjs",
+              "confidence": "observed"
+            }
+          ]
+        },
+        "contentHash": "9acbaba2a53adac2c48609f66ff41a626f8ae38cfa130d7e1420dabe8af32892",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -20518,14 +20569,20 @@
         },
         "graph": {
           "pagerank": 0,
-          "inboundLinks": 1,
+          "inboundLinks": 2,
           "coveredBy": [],
           "mentionedBy": [
+            "document:changelog.d/270.md",
             "document:CHANGELOG.md"
           ],
           "areaId": "area:scripts",
           "packageId": "package:@agentskit/harness",
           "inbound": [
+            {
+              "kind": "mentions",
+              "id": "document:changelog.d/270.md",
+              "confidence": "observed"
+            },
             {
               "kind": "mentions",
               "id": "document:CHANGELOG.md",
@@ -20534,7 +20591,7 @@
           ],
           "outbound": []
         },
-        "contentHash": "a01a7b3c77a9d359c6180389a80f69cc924fe4cd516bb61ce3b427f0dab83fb4",
+        "contentHash": "2d573193068acacaf13f9dbb6264ddf64f3715f93d858d17f93ed4bdb41c1ab4",
         "provenance": "observed",
         "confidence": "observed"
       },
