@@ -80,7 +80,8 @@ requirements:
     Issues e PRs com o rótulo mvp seguido do id do requisito entram em issues e prs do requisito no relatório, como na
     referência; teste com respostas gravadas
   weight: 1
-  acceptance: []
+  acceptance:
+    - test: test/mvp.test.ts
   homolog: []
   issues: []
   prs: []
