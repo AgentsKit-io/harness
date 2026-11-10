@@ -7,7 +7,7 @@ const text = readFileSync(path, 'utf8')
 const workflow = parse(text)
 const failures = []
 
-for (const needle of ['id-token: write', 'npm publish --provenance', 'npm view']) if (!text.includes(needle)) failures.push(`${path} missing ${needle}`)
+for (const needle of ['id-token: write', 'npm publish --provenance', 'npm view', 'node scripts/check-npm-trusted-publisher.mjs']) if (!text.includes(needle)) failures.push(`${path} missing ${needle}`)
 if (text.includes('NPM_TOKEN')) failures.push('workflow must not use NPM_TOKEN')
 
 const jobs = workflow?.jobs ?? {}

@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
-  "contentHash": "8204b1188add3638b976175a1882fbe3df23ad2638a52a0d5e19c2fc7bb82db0",
+  "contentHash": "864fcdfc023340c56c9fa0ec17fb3cc411906ee8d6897a2fe8ab1df4a24e33cc",
   "contentHashAlgo": "sha256-semantic-v1",
-  "generatedAt": "2026-11-10T04:39:56.283Z",
+  "generatedAt": "2026-11-10T06:24:33.586Z",
   "project": {
     "name": "AgentsKit Harness",
     "root": "."
@@ -340,6 +340,18 @@
         "project"
       ],
       "contentHash": "c9a29acb83b34b68b3a9ba41145c20f4f43578e859ff9787afbf8e32a72394a0"
+    },
+    {
+      "id": "document:changelog.d/269.md",
+      "type": "document",
+      "title": "269.md",
+      "path": "changelog.d/269.md",
+      "description": "fix: the publish job checks npm Trusted Publishing before publishing",
+      "tags": [
+        "document",
+        "project"
+      ],
+      "contentHash": "a832ab7921b7d382d1d1fcbd1d1e2ac369f8583da347cb9ee591808cb6a7f540"
     },
     {
       "id": "document:changelog.d/286.md",
@@ -1774,6 +1786,24 @@
       "contentHash": "afc175685831a39a4439965587b6968ee395de31ecdaa8a674b246e35539f459"
     },
     {
+      "id": "module:scripts/check-npm-trusted-publisher.mjs",
+      "type": "module",
+      "title": "check-npm-trusted-publisher.mjs",
+      "path": "scripts/check-npm-trusted-publisher.mjs",
+      "symbols": [
+        "NPM_AUDIENCE",
+        "decodeClaims",
+        "diagnose",
+        "expectedPublisher"
+      ],
+      "tags": [
+        "module",
+        "mjs",
+        "scripts"
+      ],
+      "contentHash": "a6c745251bbdf25a2b2f4d8330115a0320ad77d6e7bd7cd047e33c7e5398cfb0"
+    },
+    {
       "id": "module:scripts/check-public-api.mjs",
       "type": "module",
       "title": "check-public-api.mjs",
@@ -2213,7 +2243,7 @@
         "mjs",
         "scripts"
       ],
-      "contentHash": "a01a7b3c77a9d359c6180389a80f69cc924fe4cd516bb61ce3b427f0dab83fb4"
+      "contentHash": "24ab134fbe8b1a0ef40e796f57580c6990530983c290f820a738ec5b6b752a04"
     },
     {
       "id": "module:scripts/verify-repository-docs.mjs",
@@ -7663,6 +7693,18 @@
       "contentHash": "c335801192ad5f12714410f2379d2f9d21680d8baf1263ae3a0a3fe7c5c53114"
     },
     {
+      "id": "module:test/check-npm-trusted-publisher.test.ts",
+      "type": "module",
+      "title": "check-npm-trusted-publisher.test.ts",
+      "path": "test/check-npm-trusted-publisher.test.ts",
+      "tags": [
+        "module",
+        "ts",
+        "test"
+      ],
+      "contentHash": "489febfc401f66974203adc47b85ccea3191498d44d093109ce566c296c65a3b"
+    },
+    {
       "id": "module:test/cli-exit-codes.test.ts",
       "type": "module",
       "title": "cli-exit-codes.test.ts",
@@ -10058,8 +10100,8 @@
     }
   },
   "inputs": {
-    "hash": "a5722d0f694619665351581a1c56395a3f4ffad6282ca9adc0e7b389a5b25b6f",
-    "fileCount": 646,
+    "hash": "d6c2e22c6d8ce04bdcb38ed8231333364f4eac3fdf41ef39aebebdc586406172",
+    "fileCount": 649,
     "projectionVersion": 2
   },
   "retrieval": {
@@ -10081,9 +10123,9 @@
   "projection": {
     "type": "retrieval-index",
     "schemaVersion": 1,
-    "contentHash": "dde2e1d27248b38f9fc45791225d1060d94448d7f377f37c75650b1914a78ec9",
+    "contentHash": "0202928daf6e3e79710970c07b030c787e8abf94f9935fabb59f45e68c2dc72f",
     "contentHashAlgo": "sha256-semantic-v1",
-    "snapshotHash": "3fd83ce16a152f89ffe5aca01230e4f3f14638c702c63386d3254aaecf306524",
+    "snapshotHash": "f0b07d3eaafa7ee31b1a3c55f2312684aed5779fc1c603d9c4d9b92a1e78685c",
     "overlayHash": "f99666ff9119084dd25c2974ae64eb6935ec2aa785ff5ad478fb9d541f7a5e94",
     "configurationHash": "497822431910cd9fa7d674a48a9f0b96fbbbf779f22a001de0b52252117fe3ab",
     "lexiconVersion": 1,
@@ -10103,7 +10145,7 @@
     },
     "lexical": {
       "version": 1,
-      "documentCount": 625,
+      "documentCount": 628,
       "fieldNames": [
         "aliases",
         "body",
@@ -10114,13 +10156,13 @@
         "title"
       ],
       "averageFieldLength": {
-        "aliases": 2.904,
-        "body": 47.3792,
-        "headings": 3.9088,
-        "path": 6.0944,
-        "summary": 3.0544,
-        "symbols": 13.48,
-        "title": 4.0416
+        "aliases": 2.9028662420382165,
+        "body": 47.20700636942675,
+        "headings": 3.890127388535032,
+        "path": 6.095541401273885,
+        "summary": 3.0525477707006368,
+        "symbols": 13.431528662420382,
+        "title": 4.046178343949045
       }
     },
     "entries": [
@@ -10533,7 +10575,7 @@
           ],
           "outbound": []
         },
-        "contentHash": "5ff0c36767c533f35dd89f3de9b34c9e6f3514dc69d65bcfc5a88ccaeb50683d",
+        "contentHash": "986b3db98546c1c94677cc7926b8f01b1eb2f8e8f18022cee19cea8cd7b16594",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -10968,7 +11010,7 @@
           ],
           "outbound": []
         },
-        "contentHash": "4340de02c320faaa91ae09188e0cea12fa70640c22753b145faa8cef53fb056d",
+        "contentHash": "97a75850ba16c8b54b55aa5f3ea13007f8fcd2029a8e058665e74842a8b3738b",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -12848,6 +12890,39 @@
           "outbound": []
         },
         "contentHash": "c9a29acb83b34b68b3a9ba41145c20f4f43578e859ff9787afbf8e32a72394a0",
+        "provenance": "observed",
+        "confidence": "observed"
+      },
+      {
+        "id": "document:changelog.d/269.md",
+        "kind": "document",
+        "path": "changelog.d/269.md",
+        "title": "269.md",
+        "summary": "fix: the publish job checks npm Trusted Publishing before publishing",
+        "audience": "human",
+        "aliases": [],
+        "tags": [
+          "document",
+          "project"
+        ],
+        "fields": {
+          "title": "269.md",
+          "headings": "",
+          "path": "changelog.d/269.md",
+          "symbols": "",
+          "summary": "fix: the publish job checks npm Trusted Publishing before publishing",
+          "body": "fix: the publish job checks npm Trusted Publishing before publishing When npm refuses the OIDC exchange, the job now prints npm's reason and the exact trusted-publisher values to register on npmjs.com (owner, repository, release-harness.yml , environment) instead of an opaque E404.",
+          "aliases": "document project"
+        },
+        "graph": {
+          "pagerank": 0,
+          "inboundLinks": 0,
+          "coveredBy": [],
+          "mentionedBy": [],
+          "inbound": [],
+          "outbound": []
+        },
+        "contentHash": "a832ab7921b7d382d1d1fcbd1d1e2ac369f8583da347cb9ee591808cb6a7f540",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -19274,6 +19349,52 @@
         "confidence": "observed"
       },
       {
+        "id": "module:scripts/check-npm-trusted-publisher.mjs",
+        "kind": "module",
+        "path": "scripts/check-npm-trusted-publisher.mjs",
+        "title": "check-npm-trusted-publisher.mjs",
+        "aliases": [],
+        "symbols": [
+          "NPM_AUDIENCE",
+          "decodeClaims",
+          "diagnose",
+          "expectedPublisher"
+        ],
+        "tags": [
+          "module",
+          "mjs",
+          "scripts"
+        ],
+        "fields": {
+          "title": "check-npm-trusted-publisher.mjs",
+          "headings": "",
+          "path": "scripts/check-npm-trusted-publisher.mjs",
+          "symbols": "NPM_AUDIENCE decodeClaims diagnose expectedPublisher",
+          "summary": "",
+          "body": "",
+          "aliases": "module mjs scripts"
+        },
+        "graph": {
+          "pagerank": 0,
+          "inboundLinks": 0,
+          "coveredBy": [],
+          "mentionedBy": [],
+          "areaId": "area:scripts",
+          "packageId": "package:@agentskit/harness",
+          "inbound": [
+            {
+              "kind": "imports",
+              "id": "module:test/check-npm-trusted-publisher.test.ts",
+              "confidence": "observed"
+            }
+          ],
+          "outbound": []
+        },
+        "contentHash": "a6c745251bbdf25a2b2f4d8330115a0320ad77d6e7bd7cd047e33c7e5398cfb0",
+        "provenance": "observed",
+        "confidence": "observed"
+      },
+      {
         "id": "module:scripts/check-public-api.mjs",
         "kind": "module",
         "path": "scripts/check-public-api.mjs",
@@ -20624,7 +20745,7 @@
           ],
           "outbound": []
         },
-        "contentHash": "a01a7b3c77a9d359c6180389a80f69cc924fe4cd516bb61ce3b427f0dab83fb4",
+        "contentHash": "24ab134fbe8b1a0ef40e796f57580c6990530983c290f820a738ec5b6b752a04",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -44384,6 +44505,46 @@
           ]
         },
         "contentHash": "c335801192ad5f12714410f2379d2f9d21680d8baf1263ae3a0a3fe7c5c53114",
+        "provenance": "observed",
+        "confidence": "observed"
+      },
+      {
+        "id": "module:test/check-npm-trusted-publisher.test.ts",
+        "kind": "module",
+        "path": "test/check-npm-trusted-publisher.test.ts",
+        "title": "check-npm-trusted-publisher.test.ts",
+        "aliases": [],
+        "tags": [
+          "module",
+          "ts",
+          "test"
+        ],
+        "fields": {
+          "title": "check-npm-trusted-publisher.test.ts",
+          "headings": "",
+          "path": "test/check-npm-trusted-publisher.test.ts",
+          "symbols": "",
+          "summary": "",
+          "body": "",
+          "aliases": "module ts test"
+        },
+        "graph": {
+          "pagerank": 0,
+          "inboundLinks": 0,
+          "coveredBy": [],
+          "mentionedBy": [],
+          "areaId": "area:test",
+          "packageId": "package:@agentskit/harness",
+          "inbound": [],
+          "outbound": [
+            {
+              "kind": "imports",
+              "id": "module:scripts/check-npm-trusted-publisher.mjs",
+              "confidence": "observed"
+            }
+          ]
+        },
+        "contentHash": "489febfc401f66974203adc47b85ccea3191498d44d093109ce566c296c65a3b",
         "provenance": "observed",
         "confidence": "observed"
       },
