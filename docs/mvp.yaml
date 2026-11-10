@@ -112,7 +112,13 @@ requirements:
     A esteira consumidora chama ak-harness mvp com versão fixa para validar, aprovar e medir os produtos, e o script
     antigo vira um wrapper ou sai
   weight: 2
-  acceptance: []
+  # lado do harness pronto (PR #276): o pacote instalado roda mvp check|digest|report; falta a troca na esteira
+  # consumidora, que depende da versão publicada no npm
+  acceptance:
+    - test: scripts/verify-harness-consumer.mjs
+      ci:
+        job: verify
+        workflow: release-harness.yml
   homolog: []
-  issues: [254]
+  issues: [254, 271]
   prs: []
