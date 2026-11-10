@@ -35,7 +35,8 @@ requirements:
     O leitor aceita mapas em linha sem aninhamento, como ci com job e step entre chaves, com o mesmo resultado da
     implementação de referência; hoje eles são recusados e manifestos já aprovados usam esse formato
   weight: 2
-  acceptance: []
+  acceptance:
+    - test: test/mvp.test.ts
   homolog: []
   issues: []
   prs: []
