@@ -70,7 +70,8 @@ requirements:
     estado por requisito, lançamento) e os códigos de saída estão documentados; teste de esquema no CI
   # já pronto em parte: o relatório existe (PR #259); faltam o esquema versionado e a doc
   weight: 1
-  acceptance: []
+  acceptance:
+    - test: test/mvp-report-schema.test.ts
   homolog: []
   issues: []
   prs: []
