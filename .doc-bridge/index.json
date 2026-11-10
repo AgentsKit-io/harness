@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
-  "contentHash": "4a249382ac1fd51bc35bd8ede8cabdbad74dc1de0f4bd1c740edaabeb698c50e",
+  "contentHash": "8204b1188add3638b976175a1882fbe3df23ad2638a52a0d5e19c2fc7bb82db0",
   "contentHashAlgo": "sha256-semantic-v1",
-  "generatedAt": "2026-11-10T01:36:30.839Z",
+  "generatedAt": "2026-11-10T04:39:56.283Z",
   "project": {
     "name": "AgentsKit Harness",
     "root": "."
@@ -328,6 +328,18 @@
         "unclassified"
       ],
       "contentHash": "8d74bb41a5477502f03f9df4ea442a5093ee4ac2cb1d8f4ec16ad7dbb53d675a"
+    },
+    {
+      "id": "document:changelog.d/266.md",
+      "type": "document",
+      "title": "266.md",
+      "path": "changelog.d/266.md",
+      "description": "chore: register RF-04 acceptance evidence (mvp evidence collector already shipped in #279)",
+      "tags": [
+        "document",
+        "project"
+      ],
+      "contentHash": "c9a29acb83b34b68b3a9ba41145c20f4f43578e859ff9787afbf8e32a72394a0"
     },
     {
       "id": "document:changelog.d/286.md",
@@ -10046,8 +10058,8 @@
     }
   },
   "inputs": {
-    "hash": "640807e1a31925bd9817e5ef7ff08255ea74a3b2bb32970dc07cf2d086b3eec0",
-    "fileCount": 645,
+    "hash": "a5722d0f694619665351581a1c56395a3f4ffad6282ca9adc0e7b389a5b25b6f",
+    "fileCount": 646,
     "projectionVersion": 2
   },
   "retrieval": {
@@ -10069,9 +10081,9 @@
   "projection": {
     "type": "retrieval-index",
     "schemaVersion": 1,
-    "contentHash": "0b4e98cdf0c05b87b055c6e82c826c4a6c259a5b1e9bd566be1dd2babf1b6b68",
+    "contentHash": "dde2e1d27248b38f9fc45791225d1060d94448d7f377f37c75650b1914a78ec9",
     "contentHashAlgo": "sha256-semantic-v1",
-    "snapshotHash": "fa36f97ac818a9cc16ac88e3a51200538eafc38ea647d585c621a5232815410f",
+    "snapshotHash": "3fd83ce16a152f89ffe5aca01230e4f3f14638c702c63386d3254aaecf306524",
     "overlayHash": "f99666ff9119084dd25c2974ae64eb6935ec2aa785ff5ad478fb9d541f7a5e94",
     "configurationHash": "497822431910cd9fa7d674a48a9f0b96fbbbf779f22a001de0b52252117fe3ab",
     "lexiconVersion": 1,
@@ -10091,7 +10103,7 @@
     },
     "lexical": {
       "version": 1,
-      "documentCount": 624,
+      "documentCount": 625,
       "fieldNames": [
         "aliases",
         "body",
@@ -10102,13 +10114,13 @@
         "title"
       ],
       "averageFieldLength": {
-        "aliases": 2.905448717948718,
-        "body": 47.43429487179487,
-        "headings": 3.9150641025641026,
-        "path": 6.097756410256411,
-        "summary": 3.0384615384615383,
-        "symbols": 13.501602564102564,
-        "title": 4.044871794871795
+        "aliases": 2.904,
+        "body": 47.3792,
+        "headings": 3.9088,
+        "path": 6.0944,
+        "summary": 3.0544,
+        "symbols": 13.48,
+        "title": 4.0416
       }
     },
     "entries": [
@@ -12803,6 +12815,39 @@
           ]
         },
         "contentHash": "08f5d230741524533ac6753cd3fea6d9fd3cf1f9b5b913f55d7640c0ee45df86",
+        "provenance": "observed",
+        "confidence": "observed"
+      },
+      {
+        "id": "document:changelog.d/266.md",
+        "kind": "document",
+        "path": "changelog.d/266.md",
+        "title": "266.md",
+        "summary": "chore: register RF-04 acceptance evidence (mvp evidence collector already shipped in #279)",
+        "audience": "human",
+        "aliases": [],
+        "tags": [
+          "document",
+          "project"
+        ],
+        "fields": {
+          "title": "266.md",
+          "headings": "",
+          "path": "changelog.d/266.md",
+          "symbols": "",
+          "summary": "chore: register RF-04 acceptance evidence (mvp evidence collector already shipped in #279)",
+          "body": "chore: register RF-04 acceptance evidence (mvp evidence collector already shipped in 279)",
+          "aliases": "document project"
+        },
+        "graph": {
+          "pagerank": 0,
+          "inboundLinks": 0,
+          "coveredBy": [],
+          "mentionedBy": [],
+          "inbound": [],
+          "outbound": []
+        },
+        "contentHash": "c9a29acb83b34b68b3a9ba41145c20f4f43578e859ff9787afbf8e32a72394a0",
         "provenance": "observed",
         "confidence": "observed"
       },
