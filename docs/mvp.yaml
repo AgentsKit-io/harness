@@ -59,7 +59,8 @@ requirements:
     continue-on-error, arquivo na branch padrão, URL com status e texto, execução gravada dentro da validade);
     testes com respostas gravadas
   weight: 2
-  acceptance: []
+  acceptance:
+  - test: test/github-mvp-evidence.test.ts
   homolog: []
   issues: []
   prs: []
