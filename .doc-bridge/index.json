@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
-  "contentHash": "1e7b467b8bf9c6e92d6ad89e9cb29367d396792a7bfdaf892eb58724c9bdd54e",
+  "contentHash": "4a249382ac1fd51bc35bd8ede8cabdbad74dc1de0f4bd1c740edaabeb698c50e",
   "contentHashAlgo": "sha256-semantic-v1",
-  "generatedAt": "2026-11-05T18:44:00.445Z",
+  "generatedAt": "2026-11-10T01:36:30.839Z",
   "project": {
     "name": "AgentsKit Harness",
     "root": "."
@@ -364,6 +364,18 @@
         "project"
       ],
       "contentHash": "291481555456ebf3d70b7fff4fc1e5ad516bc754f49fd5c8cd2b7829bc97154b"
+    },
+    {
+      "id": "document:changelog.d/293.md",
+      "type": "document",
+      "title": "293.md",
+      "path": "changelog.d/293.md",
+      "description": "ci: add the standard CI workflow (ci-standard.yml) required by the factory repo standard",
+      "tags": [
+        "document",
+        "project"
+      ],
+      "contentHash": "1375135a5706e3b6693a035b74348ed40a503cf19c6166a7aa4c588c9520c620"
     },
     {
       "id": "document:CHANGELOG.md",
@@ -10034,8 +10046,8 @@
     }
   },
   "inputs": {
-    "hash": "39874cc999294927bbaeddd235d52be0d34dc3d1de0e23e54841250face3a01a",
-    "fileCount": 644,
+    "hash": "640807e1a31925bd9817e5ef7ff08255ea74a3b2bb32970dc07cf2d086b3eec0",
+    "fileCount": 645,
     "projectionVersion": 2
   },
   "retrieval": {
@@ -10057,9 +10069,9 @@
   "projection": {
     "type": "retrieval-index",
     "schemaVersion": 1,
-    "contentHash": "39573edc7e96056c253ce835d97d304e6d00c90cce141c121142e753105cf819",
+    "contentHash": "0b4e98cdf0c05b87b055c6e82c826c4a6c259a5b1e9bd566be1dd2babf1b6b68",
     "contentHashAlgo": "sha256-semantic-v1",
-    "snapshotHash": "7f446d26cc63c0afe6a32005b6eeb82229437577c8e2c9f8244cad842c082999",
+    "snapshotHash": "fa36f97ac818a9cc16ac88e3a51200538eafc38ea647d585c621a5232815410f",
     "overlayHash": "f99666ff9119084dd25c2974ae64eb6935ec2aa785ff5ad478fb9d541f7a5e94",
     "configurationHash": "497822431910cd9fa7d674a48a9f0b96fbbbf779f22a001de0b52252117fe3ab",
     "lexiconVersion": 1,
@@ -10079,7 +10091,7 @@
     },
     "lexical": {
       "version": 1,
-      "documentCount": 623,
+      "documentCount": 624,
       "fieldNames": [
         "aliases",
         "body",
@@ -10090,13 +10102,13 @@
         "title"
       ],
       "averageFieldLength": {
-        "aliases": 2.9069020866773676,
-        "body": 47.48956661316212,
-        "headings": 3.9213483146067416,
-        "path": 6.101123595505618,
-        "summary": 3.0224719101123596,
-        "symbols": 13.523274478330658,
-        "title": 4.048154093097914
+        "aliases": 2.905448717948718,
+        "body": 47.43429487179487,
+        "headings": 3.9150641025641026,
+        "path": 6.097756410256411,
+        "summary": 3.0384615384615383,
+        "symbols": 13.501602564102564,
+        "title": 4.044871794871795
       }
     },
     "entries": [
@@ -12890,6 +12902,39 @@
           "outbound": []
         },
         "contentHash": "291481555456ebf3d70b7fff4fc1e5ad516bc754f49fd5c8cd2b7829bc97154b",
+        "provenance": "observed",
+        "confidence": "observed"
+      },
+      {
+        "id": "document:changelog.d/293.md",
+        "kind": "document",
+        "path": "changelog.d/293.md",
+        "title": "293.md",
+        "summary": "ci: add the standard CI workflow (ci-standard.yml) required by the factory repo standard",
+        "audience": "human",
+        "aliases": [],
+        "tags": [
+          "document",
+          "project"
+        ],
+        "fields": {
+          "title": "293.md",
+          "headings": "",
+          "path": "changelog.d/293.md",
+          "symbols": "",
+          "summary": "ci: add the standard CI workflow (ci-standard.yml) required by the factory repo standard",
+          "body": "ci: add the standard CI workflow (ci-standard.yml) required by the factory repo standard",
+          "aliases": "document project"
+        },
+        "graph": {
+          "pagerank": 0,
+          "inboundLinks": 0,
+          "coveredBy": [],
+          "mentionedBy": [],
+          "inbound": [],
+          "outbound": []
+        },
+        "contentHash": "1375135a5706e3b6693a035b74348ed40a503cf19c6166a7aa4c588c9520c620",
         "provenance": "observed",
         "confidence": "observed"
       },
