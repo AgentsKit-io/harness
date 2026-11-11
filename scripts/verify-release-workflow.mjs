@@ -16,7 +16,13 @@ if (!publish) failures.push('no `publish` job')
 else {
   // The invariant this file exists for: publishing cannot outrun the gate. A separate release workflow ran in
   // parallel with CI, so a commit could fail `ak-verify`, the docs check or the Windows matrix and ship anyway.
-  const gates = Object.keys(jobs).filter((name) => name !== 'publish')
+  // `pipeline`, `coverage` and `verify` run only on pull requests (the org pipeline merely seeds its cache on push);
+  // `verify-push` is the real verification on main and must gate publish.
+  const prOnly = ['pipeline', 'coverage', 'verify']
+  const gates = Object.keys(jobs).filter((name) => name !== 'publish' && !prOnly.includes(name))
+  if (!jobs['verify-push']) failures.push('no `verify-push` job: main would publish without a real verification')
+  if (!String(jobs['verify']?.if ?? '').includes('always()')) failures.push('`verify` must be an always() gate over the pipeline (required status check)')
+  if (!String(jobs['pipeline']?.uses ?? '').endsWith('ci-standard.yml')) failures.push('pipeline must call ci-standard.yml')
   const needs = Array.isArray(publish.needs) ? publish.needs : publish.needs ? [publish.needs] : []
   const ungated = gates.filter((name) => !needs.includes(name))
   if (ungated.length) failures.push(`publish does not depend on: ${ungated.join(', ')}`)
