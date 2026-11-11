@@ -119,7 +119,7 @@ requirements:
   acceptance:
     - test: scripts/verify-harness-consumer.mjs
       ci:
-        job: verify
+        job: verify-push
         workflow: release-harness.yml
   homolog: []
   issues: [254, 271]
