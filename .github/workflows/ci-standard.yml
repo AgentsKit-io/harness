@@ -20,7 +20,7 @@ jobs:
       actions: write
       contents: read
     with:
-      installer: auto
+      installer: native
       typecheck-command: bash scripts/ci/check.sh
       test-command: pnpm vitest run --config vitest.config.ts test
       affected-test-command: pnpm vitest run --config vitest.config.ts --changed "$BASE_REF" test
