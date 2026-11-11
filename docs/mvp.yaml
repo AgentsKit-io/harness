@@ -78,7 +78,7 @@ requirements:
   acceptance:
     - test: test/mvp-report-schema.test.ts
   homolog: []
-  issues: []
+  issues: [267]
   prs: []
 - id: RF-06
   title: Ligar issues e PRs aos requisitos pelo rótulo
