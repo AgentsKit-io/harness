@@ -38,7 +38,7 @@ requirements:
   acceptance:
     - test: test/mvp.test.ts
   homolog: []
-  issues: []
+  issues: [264]
   prs: []
 - id: RF-03
   title: Paridade com a referência num corpus sintético
