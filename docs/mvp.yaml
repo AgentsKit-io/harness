@@ -39,6 +39,7 @@ requirements:
   weight: 2
   acceptance:
     - test: test/mvp.test.ts
+    - test: test/mvp-corpus.test.ts
   homolog: []
   issues: [264]
   prs: []
