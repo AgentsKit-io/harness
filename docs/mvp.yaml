@@ -23,9 +23,11 @@ requirements:
   done_when: >-
     ak-harness mvp check aponta os erros do manifesto e ak-harness mvp digest reproduz o digest da especificação
     (docs/fixtures/mvp) byte a byte
-  # já pronto: src/mvp.ts e o teste mvp (PR #259); fica para registrar a evidência
+  # já pronto: src/mvp.ts e o teste mvp (PR #259)
   weight: 2
-  acceptance: []
+  acceptance:
+    - test: test/mvp.test.ts
+    - test: test/mvp-corpus.test.ts
   homolog: []
   issues: [254]
   prs: []
