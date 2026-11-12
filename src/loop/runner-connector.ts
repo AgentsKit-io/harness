@@ -20,6 +20,9 @@ export interface WorkspaceObservation {
   readonly pullRequest: { readonly number: number; readonly state: 'OPEN' | 'CLOSED' | 'MERGED' | null } | null
   /** Task state, for a runner whose work is a queued task rather than a live terminal (`fleet`). */
   readonly state?: 'queued' | 'running' | 'done' | 'failed' | 'cancelled' | 'unknown'
+  /** Set when the runner switched the workspace to a retry of its task: the id it left and the id it now follows. */
+  readonly retriedFrom?: string
+  readonly task?: string
 }
 
 /**

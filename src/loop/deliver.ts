@@ -757,7 +757,7 @@ const performHandoff = async (
 
 /**
  * A worker dispatched through the fleet queue has no terminal to inspect and never opens its own PR: the task state is
- * what there is to read. While it runs, wait. When it ends `done`, `fleet collect` brings its branch into the local
+ * what there is to read (following the coordinator's retry of a stopped task to its new id). While it runs, wait. When it ends `done`, `fleet collect` brings its branch into the local
  * clone (it never pushes), then the harness pushes that branch and opens the pull request — from there the PR is
  * handled like any other. A task that failed or was cancelled is a stuck worker for a person.
  */
@@ -766,6 +766,8 @@ const handleFleetNoPullRequest = async (ctx: Context, record: DispatchRecordFile
   const connector = createRunnerConnector({ loaded: ctx.loaded, runner: ctx.runner })
   const observed = (await connector.observeWorkspaces()).find((item) => item.id === record.worktreeId)
   const task = observed?.state ?? 'unknown'
+  // A stopped task the coordinator retried is not a stuck worker: the runner already follows the retry's id.
+  if (observed?.retriedFrom) actions.push(`fleet task ${observed.retriedFrom} was retried as ${observed.task ?? 'a new task'}; following it`)
   if (task === 'queued' || task === 'running' || task === 'unknown') return { issue: record.issue, outcome: 'waiting', reason: `fleet task ${task === 'unknown' ? 'not reported by the queue yet' : task}`, actions }
   if (task !== 'done') {
     await escalateTracker(ctx, record, 'stuck', `**Loop: worker stuck** — the fleet task for \`${record.worktree}\` ended ${task} without a branch to deliver. The slot was released and the issue returned to ${ctx.config.delivery.returnState}.`, actions)
