@@ -23,9 +23,11 @@ requirements:
   done_when: >-
     ak-harness mvp check aponta os erros do manifesto e ak-harness mvp digest reproduz o digest da especificação
     (docs/fixtures/mvp) byte a byte
-  # já pronto: src/mvp.ts e o teste mvp (PR #259); fica para registrar a evidência
+  # já pronto: src/mvp.ts e o teste mvp (PR #259)
   weight: 2
-  acceptance: []
+  acceptance:
+    - test: test/mvp.test.ts
+    - test: test/mvp-corpus.test.ts
   homolog: []
   issues: [254]
   prs: []
@@ -37,8 +39,9 @@ requirements:
   weight: 2
   acceptance:
     - test: test/mvp.test.ts
+    - test: test/mvp-corpus.test.ts
   homolog: []
-  issues: []
+  issues: [264]
   prs: []
 - id: RF-03
   title: Paridade com a referência num corpus sintético
@@ -75,7 +78,7 @@ requirements:
   acceptance:
     - test: test/mvp-report-schema.test.ts
   homolog: []
-  issues: []
+  issues: [267]
   prs: []
 - id: RF-06
   title: Ligar issues e PRs aos requisitos pelo rótulo
@@ -112,7 +115,13 @@ requirements:
     A esteira consumidora chama ak-harness mvp com versão fixa para validar, aprovar e medir os produtos, e o script
     antigo vira um wrapper ou sai
   weight: 2
-  acceptance: []
+  # lado do harness pronto (PR #276): o pacote instalado roda mvp check|digest|report; falta a troca na esteira
+  # consumidora, que depende da versão publicada no npm
+  acceptance:
+    - test: scripts/verify-harness-consumer.mjs
+      ci:
+        job: verify
+        workflow: release-harness.yml
   homolog: []
-  issues: [254]
+  issues: [254, 271]
   prs: []

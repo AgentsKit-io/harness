@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
-  "contentHash": "864fcdfc023340c56c9fa0ec17fb3cc411906ee8d6897a2fe8ab1df4a24e33cc",
+  "contentHash": "a970203f1526922115733c9d1ba589050dd36089a39e014d9249601173df8622",
   "contentHashAlgo": "sha256-semantic-v1",
-  "generatedAt": "2026-11-10T06:24:33.586Z",
+  "generatedAt": "2026-11-13T05:04:09.342Z",
   "project": {
     "name": "AgentsKit Harness",
     "root": "."
@@ -400,6 +400,18 @@
         "project"
       ],
       "contentHash": "1375135a5706e3b6693a035b74348ed40a503cf19c6166a7aa4c588c9520c620"
+    },
+    {
+      "id": "document:changelog.d/305.md",
+      "type": "document",
+      "title": "305.md",
+      "path": "changelog.d/305.md",
+      "description": "ci: run pull-request CI through the organization's reusable fail-fast pipeline",
+      "tags": [
+        "document",
+        "project"
+      ],
+      "contentHash": "a095375eb37cce3f119a33d684cb27267d1601d3c065311909e5e6bf9354abaa"
     },
     {
       "id": "document:CHANGELOG.md",
@@ -2243,7 +2255,7 @@
         "mjs",
         "scripts"
       ],
-      "contentHash": "24ab134fbe8b1a0ef40e796f57580c6990530983c290f820a738ec5b6b752a04"
+      "contentHash": "0914ae6736f894c9529b2a463fdadee91759a5684463d0d69e3a1ac5b1dfbcc0"
     },
     {
       "id": "module:scripts/verify-repository-docs.mjs",
@@ -9992,7 +10004,7 @@
         "module",
         "ts"
       ],
-      "contentHash": "8ca8f55c7c72e64f756b1e063df967052c4dc3a3eb69617935c20967686eff93"
+      "contentHash": "c8e37a66fe9c18b0be1d264fba223bf6914a571bfc2033d05ed5eda0c614f926"
     }
   ],
   "handoffs": {
@@ -10100,8 +10112,8 @@
     }
   },
   "inputs": {
-    "hash": "d6c2e22c6d8ce04bdcb38ed8231333364f4eac3fdf41ef39aebebdc586406172",
-    "fileCount": 649,
+    "hash": "6c185a203efc6d9c3b8af80f8c80845cace16874a39aef4323191d572365d965",
+    "fileCount": 651,
     "projectionVersion": 2
   },
   "retrieval": {
@@ -10123,9 +10135,9 @@
   "projection": {
     "type": "retrieval-index",
     "schemaVersion": 1,
-    "contentHash": "0202928daf6e3e79710970c07b030c787e8abf94f9935fabb59f45e68c2dc72f",
+    "contentHash": "e44b851c6f5f127403dfb0db4b3d9215549a7ab7a95fb9a7f2ec1c4e522d8c09",
     "contentHashAlgo": "sha256-semantic-v1",
-    "snapshotHash": "f0b07d3eaafa7ee31b1a3c55f2312684aed5779fc1c603d9c4d9b92a1e78685c",
+    "snapshotHash": "741a17c337e56fe3bd5666d0303314669c0f4cb86c9b7cbad840e94c587d2df7",
     "overlayHash": "f99666ff9119084dd25c2974ae64eb6935ec2aa785ff5ad478fb9d541f7a5e94",
     "configurationHash": "497822431910cd9fa7d674a48a9f0b96fbbbf779f22a001de0b52252117fe3ab",
     "lexiconVersion": 1,
@@ -10145,7 +10157,7 @@
     },
     "lexical": {
       "version": 1,
-      "documentCount": 628,
+      "documentCount": 629,
       "fieldNames": [
         "aliases",
         "body",
@@ -10156,13 +10168,13 @@
         "title"
       ],
       "averageFieldLength": {
-        "aliases": 2.9028662420382165,
-        "body": 47.20700636942675,
-        "headings": 3.890127388535032,
-        "path": 6.095541401273885,
-        "summary": 3.0525477707006368,
-        "symbols": 13.431528662420382,
-        "title": 4.046178343949045
+        "aliases": 2.901430842607313,
+        "body": 47.20826709062003,
+        "headings": 3.8839427662957076,
+        "path": 6.09220985691574,
+        "summary": 3.066772655007949,
+        "symbols": 13.410174880763115,
+        "title": 4.042925278219396
       }
     },
     "entries": [
@@ -10554,10 +10566,11 @@
         },
         "graph": {
           "pagerank": 0,
-          "inboundLinks": 2,
+          "inboundLinks": 3,
           "coveredBy": [],
           "mentionedBy": [
             "document:AGENTS.md",
+            "document:changelog.d/305.md",
             "document:CONTRIBUTING.md"
           ],
           "packageId": "package:@agentskit/harness",
@@ -10565,6 +10578,11 @@
             {
               "kind": "mentions",
               "id": "document:AGENTS.md",
+              "confidence": "fuzzy"
+            },
+            {
+              "kind": "mentions",
+              "id": "document:changelog.d/305.md",
               "confidence": "fuzzy"
             },
             {
@@ -13055,6 +13073,45 @@
           "outbound": []
         },
         "contentHash": "1375135a5706e3b6693a035b74348ed40a503cf19c6166a7aa4c588c9520c620",
+        "provenance": "observed",
+        "confidence": "observed"
+      },
+      {
+        "id": "document:changelog.d/305.md",
+        "kind": "document",
+        "path": "changelog.d/305.md",
+        "title": "305.md",
+        "summary": "ci: run pull-request CI through the organization's reusable fail-fast pipeline",
+        "audience": "human",
+        "aliases": [],
+        "tags": [
+          "document",
+          "project"
+        ],
+        "fields": {
+          "title": "305.md",
+          "headings": "",
+          "path": "changelog.d/305.md",
+          "symbols": "",
+          "summary": "ci: run pull-request CI through the organization's reusable fail-fast pipeline",
+          "body": "ci: run pull-request CI through the organization's reusable fail-fast pipeline release-harness.yml now calls ci-standard.yml (pinned org pipeline); verify is a gate job on pull requests, verify-push is the real verification on main and gates publish . Adds biome.json , a Vitest PR time budget and scripts/ci/ .",
+          "aliases": "document project"
+        },
+        "graph": {
+          "pagerank": 0,
+          "inboundLinks": 0,
+          "coveredBy": [],
+          "mentionedBy": [],
+          "inbound": [],
+          "outbound": [
+            {
+              "kind": "mentions",
+              "id": "area:scripts",
+              "confidence": "fuzzy"
+            }
+          ]
+        },
+        "contentHash": "a095375eb37cce3f119a33d684cb27267d1601d3c065311909e5e6bf9354abaa",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -20745,7 +20802,7 @@
           ],
           "outbound": []
         },
-        "contentHash": "24ab134fbe8b1a0ef40e796f57580c6990530983c290f820a738ec5b6b752a04",
+        "contentHash": "0914ae6736f894c9529b2a463fdadee91759a5684463d0d69e3a1ac5b1dfbcc0",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -53036,7 +53093,7 @@
           ],
           "outbound": []
         },
-        "contentHash": "8ca8f55c7c72e64f756b1e063df967052c4dc3a3eb69617935c20967686eff93",
+        "contentHash": "c8e37a66fe9c18b0be1d264fba223bf6914a571bfc2033d05ed5eda0c614f926",
         "provenance": "observed",
         "confidence": "observed"
       },

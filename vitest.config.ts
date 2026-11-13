@@ -1,5 +1,7 @@
-import { defineConfig } from 'vitest/config'
+import { configDefaults, defineConfig } from 'vitest/config'
 import { fileURLToPath } from 'node:url'
+
+const isPr = process.env.CI_TEST_PROFILE === 'pr'
 
 export default defineConfig({
   resolve: {
@@ -12,7 +14,8 @@ export default defineConfig({
   },
   test: {
     // Windows runners spawn git/worktrees slowly; the 5s default flakes the loop suites there.
-    testTimeout: 20_000,
+    testTimeout: isPr ? Math.min(10_000, 20_000) : 20_000,
+    slowTestThreshold: 2_000,
     // `apps/**` is the documentation site: its own package, its own dependencies, and Next ships test files
     // of its own inside them. The harness suite has no business running those.
     // `apps/**` is the documentation site (its own package; Next ships test files inside its dependencies) and
@@ -20,7 +23,7 @@ export default defineConfig({
     // `.ak-loop/**` is a gitignored, runtime-generated directory (base-view snapshots, dispatch state) this
     // repo's own loop tooling creates when dogfooding itself — its `base-view` can carry its own nested
     // `test/*.test.ts` files from whatever commit it snapshotted, unrelated to the current source tree.
-    exclude: ['tests/e2e/**', 'packages/playbook/test/**', 'node_modules/**', '**/node_modules/**', 'apps/**', 'scripts/**', '.next/**', '.ak-loop/**'],
+    exclude: [...(isPr ? ['**/*.slow.test.*'] : []), ...configDefaults.exclude, 'tests/e2e/**', 'packages/playbook/test/**', 'node_modules/**', '**/node_modules/**', 'apps/**', 'scripts/**', '.next/**', '.ak-loop/**'],
     coverage: {
       include: ['src/**/*.{ts,tsx}'],
       exclude: ['src/ui/app/**', 'apps/**', 'scripts/**', 'test/**'],
