@@ -142,6 +142,9 @@ jobs:
       - run: pnpm test:docs-artifacts
 
   loop-cross-platform:
+    # A run cancelled by the concurrency group before `pipeline` finishes never expands this matrix, so its check
+    # keeps the literal name `Loop (${{ matrix.os }})` with a cancelled (red) conclusion on that head SHA. A later
+    # run of the same SHA reports `Loop (ubuntu-latest)` instead and cannot supersede it; push a new commit to clear it.
     name: Loop (${{ matrix.os }})
     needs: pipeline
     if: ${{ !cancelled() && (github.event_name != 'pull_request' || (needs.pipeline.result == 'success' && contains(fromJSON('["pr","full"]'), needs.pipeline.outputs.mode))) }}
