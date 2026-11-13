@@ -26,14 +26,24 @@ export function expectedPublisher(claims) {
   const repository = String(claims.repository ?? '')
   const [owner = '', repo = ''] = repository.split('/')
   const file = workflowPath.split('/.github/workflows/')[1] ?? ''
-  return { provider: 'GitHub Actions', organizationOrUser: owner, repository: repo, workflowFilename: file, environment: claims.environment ?? '' }
+  return {
+    provider: 'GitHub Actions',
+    organizationOrUser: owner,
+    repository: repo,
+    workflowFilename: file,
+    environment: claims.environment ?? '',
+  }
 }
 
 /** Turns the exchange response into a pass/fail verdict with a readable message (never the token). */
 export function diagnose({ pkg, status, body, claims }) {
-  if (status >= 200 && status < 300) return { ok: true, message: `npm Trusted Publishing accepted this workflow for ${pkg}` }
+  if (status >= 200 && status < 300)
+    return { ok: true, message: `npm Trusted Publishing accepted this workflow for ${pkg}` }
   const publisher = expectedPublisher(claims ?? {})
-  const reason = typeof body === 'object' && body ? (body.message ?? body.error ?? JSON.stringify(body)) : String(body ?? '').slice(0, 500)
+  const reason =
+    typeof body === 'object' && body
+      ? (body.message ?? body.error ?? JSON.stringify(body))
+      : String(body ?? '').slice(0, 500)
   const lines = [
     `npm refused the Trusted Publishing exchange for ${pkg} (HTTP ${status}): ${reason || 'no reason given'}`,
     'npm publish would fail with E404. On npmjs.com, package settings > Trusted Publisher, register:',
@@ -53,22 +63,32 @@ async function main(pkg) {
     console.error('No GitHub OIDC token available: the publish job needs `permissions: id-token: write`.')
     return 1
   }
-  const idResponse = await fetch(`${url}&audience=${encodeURIComponent(NPM_AUDIENCE)}`, { headers: { Authorization: `Bearer ${requestToken}` } })
+  const idResponse = await fetch(`${url}&audience=${encodeURIComponent(NPM_AUDIENCE)}`, {
+    headers: { Authorization: `Bearer ${requestToken}` },
+  })
   if (!idResponse.ok) {
     console.error(`GitHub refused the OIDC token request (HTTP ${idResponse.status}).`)
     return 1
   }
   const idToken = (await idResponse.json()).value
-  const exchange = await fetch(`https://registry.npmjs.org/-/npm/v1/oidc/token/exchange/package/${encodeURIComponent(pkg)}`, {
-    method: 'POST',
-    headers: { Authorization: `Bearer ${idToken}` },
-  })
+  const exchange = await fetch(
+    `https://registry.npmjs.org/-/npm/v1/oidc/token/exchange/package/${encodeURIComponent(pkg)}`,
+    {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${idToken}` },
+    },
+  )
   const text = await exchange.text()
   let body = text
   try {
     body = JSON.parse(text)
   } catch {}
-  const verdict = diagnose({ pkg, status: exchange.status, body: exchange.ok ? null : body, claims: decodeClaims(idToken) })
+  const verdict = diagnose({
+    pkg,
+    status: exchange.status,
+    body: exchange.ok ? null : body,
+    claims: decodeClaims(idToken),
+  })
   ;(verdict.ok ? console.log : console.error)(verdict.message)
   return verdict.ok ? 0 : 1
 }

@@ -30,7 +30,12 @@ describe('check-npm-trusted-publisher', () => {
   })
 
   it('fails with npm reason and the values to register when npm refuses', () => {
-    const verdict = diagnose({ pkg: '@agentskit/harness', status: 404, body: { message: 'No trusted publisher configured' }, claims })
+    const verdict = diagnose({
+      pkg: '@agentskit/harness',
+      status: 404,
+      body: { message: 'No trusted publisher configured' },
+      claims,
+    })
     expect(verdict.ok).toBe(false)
     expect(verdict.message).toContain('HTTP 404): No trusted publisher configured')
     expect(verdict.message).toContain('workflow filename: release-harness.yml')
