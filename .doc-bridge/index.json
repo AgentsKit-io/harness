@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
-  "contentHash": "803c91cab0e04415aa4e9cd4b1427f6a95a0a822710a51a3ed1f2fc02730e0f0",
+  "contentHash": "141778a141927912aceab11eefbd29e8d357050ceb4bcd3429fbb8e2443bcd12",
   "contentHashAlgo": "sha256-semantic-v1",
-  "generatedAt": "2026-11-08T23:09:50.272Z",
+  "generatedAt": "2026-11-13T05:01:19.548Z",
   "project": {
     "name": "AgentsKit Harness",
     "root": "."
@@ -330,6 +330,18 @@
       "contentHash": "8d74bb41a5477502f03f9df4ea442a5093ee4ac2cb1d8f4ec16ad7dbb53d675a"
     },
     {
+      "id": "document:changelog.d/266.md",
+      "type": "document",
+      "title": "266.md",
+      "path": "changelog.d/266.md",
+      "description": "chore: register RF-04 acceptance evidence (mvp evidence collector already shipped in #279)",
+      "tags": [
+        "document",
+        "project"
+      ],
+      "contentHash": "c9a29acb83b34b68b3a9ba41145c20f4f43578e859ff9787afbf8e32a72394a0"
+    },
+    {
       "id": "document:changelog.d/270.md",
       "type": "document",
       "title": "270.md",
@@ -376,6 +388,30 @@
         "project"
       ],
       "contentHash": "291481555456ebf3d70b7fff4fc1e5ad516bc754f49fd5c8cd2b7829bc97154b"
+    },
+    {
+      "id": "document:changelog.d/293.md",
+      "type": "document",
+      "title": "293.md",
+      "path": "changelog.d/293.md",
+      "description": "ci: add the standard CI workflow (ci-standard.yml) required by the factory repo standard",
+      "tags": [
+        "document",
+        "project"
+      ],
+      "contentHash": "1375135a5706e3b6693a035b74348ed40a503cf19c6166a7aa4c588c9520c620"
+    },
+    {
+      "id": "document:changelog.d/305.md",
+      "type": "document",
+      "title": "305.md",
+      "path": "changelog.d/305.md",
+      "description": "ci: run pull-request CI through the organization's reusable fail-fast pipeline",
+      "tags": [
+        "document",
+        "project"
+      ],
+      "contentHash": "a095375eb37cce3f119a33d684cb27267d1601d3c065311909e5e6bf9354abaa"
     },
     {
       "id": "document:CHANGELOG.md",
@@ -2201,7 +2237,7 @@
         "mjs",
         "scripts"
       ],
-      "contentHash": "2d573193068acacaf13f9dbb6264ddf64f3715f93d858d17f93ed4bdb41c1ab4"
+      "contentHash": "127057908d2225fad74a8fe59710afe5d06d95f72895dfe3a061a98fe0dd34b9"
     },
     {
       "id": "module:scripts/verify-repository-docs.mjs",
@@ -9938,7 +9974,7 @@
         "module",
         "ts"
       ],
-      "contentHash": "8ca8f55c7c72e64f756b1e063df967052c4dc3a3eb69617935c20967686eff93"
+      "contentHash": "c8e37a66fe9c18b0be1d264fba223bf6914a571bfc2033d05ed5eda0c614f926"
     }
   ],
   "handoffs": {
@@ -10046,8 +10082,8 @@
     }
   },
   "inputs": {
-    "hash": "759de374452ee46132b2287d071048897b996ef05281ed14bb659420d4e92932",
-    "fileCount": 645,
+    "hash": "11386820ec2e7aa381a6044486fc3a492b7d027ba908bac85ae366e76b474f22",
+    "fileCount": 649,
     "projectionVersion": 2
   },
   "retrieval": {
@@ -10069,9 +10105,9 @@
   "projection": {
     "type": "retrieval-index",
     "schemaVersion": 1,
-    "contentHash": "eb2b96b855716be4fbc9b3b23cb11fd4ab85c7ba542a718b1ab7e2c84013f951",
+    "contentHash": "dbdb8756780b18dc840aa87acece41c349abe9feaf016509d29a860382690874",
     "contentHashAlgo": "sha256-semantic-v1",
-    "snapshotHash": "31498d14405e3215cd647954fe6fa0a5af232e767c9bb1b01434bb78f888cc18",
+    "snapshotHash": "04562bc7c868ed5f57f319216f715a000605c4c4c7d128b94a17108cc5b323f3",
     "overlayHash": "f99666ff9119084dd25c2974ae64eb6935ec2aa785ff5ad478fb9d541f7a5e94",
     "configurationHash": "497822431910cd9fa7d674a48a9f0b96fbbbf779f22a001de0b52252117fe3ab",
     "lexiconVersion": 1,
@@ -10091,7 +10127,7 @@
     },
     "lexical": {
       "version": 1,
-      "documentCount": 624,
+      "documentCount": 627,
       "fieldNames": [
         "aliases",
         "body",
@@ -10102,13 +10138,13 @@
         "title"
       ],
       "averageFieldLength": {
-        "aliases": 2.905448717948718,
-        "body": 47.45352564102564,
-        "headings": 3.9150641025641026,
-        "path": 6.097756410256411,
-        "summary": 3.0368589743589745,
-        "symbols": 13.501602564102564,
-        "title": 4.044871794871795
+        "aliases": 2.9011164274322168,
+        "body": 47.344497607655505,
+        "headings": 3.8963317384370018,
+        "path": 6.087719298245614,
+        "summary": 3.082934609250399,
+        "symbols": 13.437001594896332,
+        "title": 4.035087719298246
       }
     },
     "entries": [
@@ -10500,10 +10536,11 @@
         },
         "graph": {
           "pagerank": 0,
-          "inboundLinks": 2,
+          "inboundLinks": 3,
           "coveredBy": [],
           "mentionedBy": [
             "document:AGENTS.md",
+            "document:changelog.d/305.md",
             "document:CONTRIBUTING.md"
           ],
           "packageId": "package:@agentskit/harness",
@@ -10511,6 +10548,11 @@
             {
               "kind": "mentions",
               "id": "document:AGENTS.md",
+              "confidence": "fuzzy"
+            },
+            {
+              "kind": "mentions",
+              "id": "document:changelog.d/305.md",
               "confidence": "fuzzy"
             },
             {
@@ -12807,6 +12849,39 @@
         "confidence": "observed"
       },
       {
+        "id": "document:changelog.d/266.md",
+        "kind": "document",
+        "path": "changelog.d/266.md",
+        "title": "266.md",
+        "summary": "chore: register RF-04 acceptance evidence (mvp evidence collector already shipped in #279)",
+        "audience": "human",
+        "aliases": [],
+        "tags": [
+          "document",
+          "project"
+        ],
+        "fields": {
+          "title": "266.md",
+          "headings": "",
+          "path": "changelog.d/266.md",
+          "symbols": "",
+          "summary": "chore: register RF-04 acceptance evidence (mvp evidence collector already shipped in #279)",
+          "body": "chore: register RF-04 acceptance evidence (mvp evidence collector already shipped in 279)",
+          "aliases": "document project"
+        },
+        "graph": {
+          "pagerank": 0,
+          "inboundLinks": 0,
+          "coveredBy": [],
+          "mentionedBy": [],
+          "inbound": [],
+          "outbound": []
+        },
+        "contentHash": "c9a29acb83b34b68b3a9ba41145c20f4f43578e859ff9787afbf8e32a72394a0",
+        "provenance": "observed",
+        "confidence": "observed"
+      },
+      {
         "id": "document:changelog.d/270.md",
         "kind": "document",
         "path": "changelog.d/270.md",
@@ -12941,6 +13016,78 @@
           "outbound": []
         },
         "contentHash": "291481555456ebf3d70b7fff4fc1e5ad516bc754f49fd5c8cd2b7829bc97154b",
+        "provenance": "observed",
+        "confidence": "observed"
+      },
+      {
+        "id": "document:changelog.d/293.md",
+        "kind": "document",
+        "path": "changelog.d/293.md",
+        "title": "293.md",
+        "summary": "ci: add the standard CI workflow (ci-standard.yml) required by the factory repo standard",
+        "audience": "human",
+        "aliases": [],
+        "tags": [
+          "document",
+          "project"
+        ],
+        "fields": {
+          "title": "293.md",
+          "headings": "",
+          "path": "changelog.d/293.md",
+          "symbols": "",
+          "summary": "ci: add the standard CI workflow (ci-standard.yml) required by the factory repo standard",
+          "body": "ci: add the standard CI workflow (ci-standard.yml) required by the factory repo standard",
+          "aliases": "document project"
+        },
+        "graph": {
+          "pagerank": 0,
+          "inboundLinks": 0,
+          "coveredBy": [],
+          "mentionedBy": [],
+          "inbound": [],
+          "outbound": []
+        },
+        "contentHash": "1375135a5706e3b6693a035b74348ed40a503cf19c6166a7aa4c588c9520c620",
+        "provenance": "observed",
+        "confidence": "observed"
+      },
+      {
+        "id": "document:changelog.d/305.md",
+        "kind": "document",
+        "path": "changelog.d/305.md",
+        "title": "305.md",
+        "summary": "ci: run pull-request CI through the organization's reusable fail-fast pipeline",
+        "audience": "human",
+        "aliases": [],
+        "tags": [
+          "document",
+          "project"
+        ],
+        "fields": {
+          "title": "305.md",
+          "headings": "",
+          "path": "changelog.d/305.md",
+          "symbols": "",
+          "summary": "ci: run pull-request CI through the organization's reusable fail-fast pipeline",
+          "body": "ci: run pull-request CI through the organization's reusable fail-fast pipeline release-harness.yml now calls ci-standard.yml (pinned org pipeline); verify is a gate job on pull requests, verify-push is the real verification on main and gates publish . Adds biome.json , a Vitest PR time budget and scripts/ci/ .",
+          "aliases": "document project"
+        },
+        "graph": {
+          "pagerank": 0,
+          "inboundLinks": 0,
+          "coveredBy": [],
+          "mentionedBy": [],
+          "inbound": [],
+          "outbound": [
+            {
+              "kind": "mentions",
+              "id": "area:scripts",
+              "confidence": "fuzzy"
+            }
+          ]
+        },
+        "contentHash": "a095375eb37cce3f119a33d684cb27267d1601d3c065311909e5e6bf9354abaa",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -20591,7 +20738,7 @@
           ],
           "outbound": []
         },
-        "contentHash": "2d573193068acacaf13f9dbb6264ddf64f3715f93d858d17f93ed4bdb41c1ab4",
+        "contentHash": "127057908d2225fad74a8fe59710afe5d06d95f72895dfe3a061a98fe0dd34b9",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -52842,7 +52989,7 @@
           ],
           "outbound": []
         },
-        "contentHash": "8ca8f55c7c72e64f756b1e063df967052c4dc3a3eb69617935c20967686eff93",
+        "contentHash": "c8e37a66fe9c18b0be1d264fba223bf6914a571bfc2033d05ed5eda0c614f926",
         "provenance": "observed",
         "confidence": "observed"
       },
