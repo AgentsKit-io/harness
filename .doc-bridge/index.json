@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
-  "contentHash": "b41ab4e429c52ca3858ea63362e56da0e232861129cd2870d37ad27afb9a0297",
+  "contentHash": "aa5b0d86a9e62688aae21ecffaf52776f0ac5aba66926925dc93b0df2ace4533",
   "contentHashAlgo": "sha256-semantic-v1",
-  "generatedAt": "2026-11-11T03:17:32.312Z",
+  "generatedAt": "2026-11-11T11:58:38.007Z",
   "project": {
     "name": "AgentsKit Harness",
     "root": "."
@@ -340,6 +340,18 @@
         "project"
       ],
       "contentHash": "c9a29acb83b34b68b3a9ba41145c20f4f43578e859ff9787afbf8e32a72394a0"
+    },
+    {
+      "id": "document:changelog.d/271.md",
+      "type": "document",
+      "title": "271.md",
+      "path": "changelog.d/271.md",
+      "description": "docs: point the RF-09 acceptance evidence at the verify-push job",
+      "tags": [
+        "document",
+        "project"
+      ],
+      "contentHash": "30106ff05f92610400cd92aa68d20650283a111e0b89092f841b4a553e230017"
     },
     {
       "id": "document:changelog.d/286.md",
@@ -10070,8 +10082,8 @@
     }
   },
   "inputs": {
-    "hash": "a5fde05b66524d84795937964aaf9847d6e272b24770c2ff8b751400050d04cf",
-    "fileCount": 648,
+    "hash": "962dfc5777c3156648156c9d4227164be9ea5b6330b2bc1b1613d59a117b56ed",
+    "fileCount": 649,
     "projectionVersion": 2
   },
   "retrieval": {
@@ -10093,9 +10105,9 @@
   "projection": {
     "type": "retrieval-index",
     "schemaVersion": 1,
-    "contentHash": "b82087fe91c7efce1b531bd35ea308bfa94d545a86086881fc1a521ec1774c80",
+    "contentHash": "dae1ab95231b3ca3c9016fb3f2c3f4b95d1a9bcd0fc610a2533c995a2f7604aa",
     "contentHashAlgo": "sha256-semantic-v1",
-    "snapshotHash": "71bebe16487ca80a04998375a80b03bee8938fdd183bf46b29b173232a47e61a",
+    "snapshotHash": "4f8023314f488e9f9d31cd4df62a8191259cab4622d385642a401c8054a9a7f6",
     "overlayHash": "f99666ff9119084dd25c2974ae64eb6935ec2aa785ff5ad478fb9d541f7a5e94",
     "configurationHash": "497822431910cd9fa7d674a48a9f0b96fbbbf779f22a001de0b52252117fe3ab",
     "lexiconVersion": 1,
@@ -10115,7 +10127,7 @@
     },
     "lexical": {
       "version": 1,
-      "documentCount": 626,
+      "documentCount": 627,
       "fieldNames": [
         "aliases",
         "body",
@@ -10126,13 +10138,13 @@
         "title"
       ],
       "averageFieldLength": {
-        "aliases": 2.902555910543131,
-        "body": 47.38019169329073,
-        "headings": 3.902555910543131,
-        "path": 6.0910543130990416,
-        "summary": 3.0686900958466454,
-        "symbols": 13.458466453674122,
-        "title": 4.038338658146965
+        "aliases": 2.9011164274322168,
+        "body": 47.36363636363637,
+        "headings": 3.8963317384370018,
+        "path": 6.087719298245614,
+        "summary": 3.0813397129186604,
+        "symbols": 13.437001594896332,
+        "title": 4.035087719298246
       }
     },
     "entries": [
@@ -12866,6 +12878,45 @@
           "outbound": []
         },
         "contentHash": "c9a29acb83b34b68b3a9ba41145c20f4f43578e859ff9787afbf8e32a72394a0",
+        "provenance": "observed",
+        "confidence": "observed"
+      },
+      {
+        "id": "document:changelog.d/271.md",
+        "kind": "document",
+        "path": "changelog.d/271.md",
+        "title": "271.md",
+        "summary": "docs: point the RF-09 acceptance evidence at the verify-push job",
+        "audience": "human",
+        "aliases": [],
+        "tags": [
+          "document",
+          "project"
+        ],
+        "fields": {
+          "title": "271.md",
+          "headings": "",
+          "path": "changelog.d/271.md",
+          "symbols": "",
+          "summary": "docs: point the RF-09 acceptance evidence at the verify-push job",
+          "body": "docs: point the RF-09 acceptance evidence at the verify-push job Since the CI moved to the reusable pipeline ( 306), the contract that runs scripts/verify-harness-consumer.mjs on main is the verify-push job; verify is only a pull-request gate and is skipped on main.",
+          "aliases": "document project"
+        },
+        "graph": {
+          "pagerank": 0,
+          "inboundLinks": 0,
+          "coveredBy": [],
+          "mentionedBy": [],
+          "inbound": [],
+          "outbound": [
+            {
+              "kind": "mentions",
+              "id": "module:scripts/verify-harness-consumer.mjs",
+              "confidence": "observed"
+            }
+          ]
+        },
+        "contentHash": "30106ff05f92610400cd92aa68d20650283a111e0b89092f841b4a553e230017",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -20301,14 +20352,20 @@
         },
         "graph": {
           "pagerank": 0,
-          "inboundLinks": 1,
+          "inboundLinks": 2,
           "coveredBy": [],
           "mentionedBy": [
+            "document:changelog.d/271.md",
             "document:docs/MVP-REPORT.md"
           ],
           "areaId": "area:scripts",
           "packageId": "package:@agentskit/harness",
           "inbound": [
+            {
+              "kind": "mentions",
+              "id": "document:changelog.d/271.md",
+              "confidence": "observed"
+            },
             {
               "kind": "mentions",
               "id": "document:docs/MVP-REPORT.md",
