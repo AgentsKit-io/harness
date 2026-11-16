@@ -246,6 +246,8 @@ jobs:
             exit 0
           fi
           npm ping --registry=https://registry.npmjs.org
+          # Fails with npm's reason and the trusted-publisher values to register instead of an opaque E404.
+          node scripts/check-npm-trusted-publisher.mjs "$package"
           npm publish --provenance --access public --ignore-scripts
       # Runs on every push, not only after a publish: a version already on npm that has no release yet (0.22.3 at
       # the time this step landed) gets one retroactively, tagged at the commit that introduced that version.
