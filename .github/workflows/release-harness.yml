@@ -58,7 +58,7 @@ jobs:
   # Real verification on push to main (the pipeline only seeds its cache there); `publish` needs it.
   verify-push:
     if: ${{ github.event_name == 'push' }}
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     timeout-minutes: 30
     permissions:
       contents: read
@@ -76,7 +76,7 @@ jobs:
   coverage:
     needs: pipeline
     if: ${{ !cancelled() && needs.pipeline.result == 'success' && contains(fromJSON('["pr","full"]'), needs.pipeline.outputs.mode) }}
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     timeout-minutes: 30
     permissions:
       contents: read
@@ -92,7 +92,7 @@ jobs:
   verify:
     if: ${{ always() && github.event_name == 'pull_request' }}
     needs: [pipeline, coverage, docs, loop-cross-platform]
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     timeout-minutes: 3
     permissions: {}
     steps:
@@ -108,7 +108,7 @@ jobs:
     name: Docs (generated reference + site)
     needs: pipeline
     if: ${{ !cancelled() && (github.event_name == 'push' || (needs.pipeline.result == 'success' && contains(fromJSON('["pr","full"]'), needs.pipeline.outputs.mode) && github.event_name == 'pull_request')) }}
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     timeout-minutes: 30
     permissions:
       contents: read
