@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
-  "contentHash": "55298fdddf824d246c28024d7419942a282a63cd4f065b2429727b13d88c3b82",
+  "contentHash": "95aa8e87d33fe3034656c254d5cff85a23ebb4c5e5ba54048e41c8fd41ba7e14",
   "contentHashAlgo": "sha256-semantic-v1",
-  "generatedAt": "2026-11-17T12:59:58.379Z",
+  "generatedAt": "2026-11-17T13:01:47.118Z",
   "project": {
     "name": "AgentsKit Harness",
     "root": "."
@@ -418,12 +418,12 @@
       "type": "document",
       "title": "319.md",
       "path": "changelog.d/319.md",
-      "description": "fix: install pre-push hook, pin TypeScript 7.0.2, adopt the standard CI and security rules",
+      "description": "fix: install the standard pre-push hook (husky), pin TypeScript 7.0.2 (declarations via native tsc --emitDeclarationOnly, compiler-API scripts on @typescript/typescript6), adopt the standard CI and security rules",
       "tags": [
         "document",
         "project"
       ],
-      "contentHash": "ee41630edd709b4e968843750e16d95d707a9f0cc9ec957758e40ee3574584d2"
+      "contentHash": "13c26c170a3b42b241163fd8389024488a688e53dcb8057c3209f20938bd735a"
     },
     {
       "id": "document:changelog.d/321.md",
@@ -10780,7 +10780,7 @@
     }
   },
   "inputs": {
-    "hash": "edae268ce6a01e73d038c668670a3ccd44fc5a50bae0241ddb6ad4bb2d993ce0",
+    "hash": "98fbb024fc6fe99f44629f91aad3562a5084452d57f7c07e645d707806ebe948",
     "fileCount": 666,
     "projectionVersion": 2
   },
@@ -10803,9 +10803,9 @@
   "projection": {
     "type": "retrieval-index",
     "schemaVersion": 1,
-    "contentHash": "b625c7a42d15dfb2384ebafb3d41a3a18a3464e691a726031b92ee50a6b17570",
+    "contentHash": "ab7b9e3edb35fc7a018f3e3826b612c222c44a7df01ab1573b8137e61d61cfd8",
     "contentHashAlgo": "sha256-semantic-v1",
-    "snapshotHash": "4f229ddb7d94c314848b0e4ebf965d92069425e4eef04982d3cd3a31cc5a3dee",
+    "snapshotHash": "8266d92a385669c7c638d280f2e8a96e33ce6d9f4da6f970365610025c73ec89",
     "overlayHash": "f99666ff9119084dd25c2974ae64eb6935ec2aa785ff5ad478fb9d541f7a5e94",
     "configurationHash": "9d991c87366c55866fb598cfa41b6312c6be8636b05097dbf856448e5315df19",
     "lexiconVersion": 1,
@@ -10837,10 +10837,10 @@
       ],
       "averageFieldLength": {
         "aliases": 3.0949464012251147,
-        "body": 48.00765696784074,
+        "body": 48.03215926493109,
         "headings": 3.908116385911179,
         "path": 6.027565084226646,
-        "summary": 3.2833078101071975,
+        "summary": 3.30781010719755,
         "symbols": 12.90199081163859,
         "title": 4.003062787136294
       }
@@ -14046,7 +14046,7 @@
         "kind": "document",
         "path": "changelog.d/319.md",
         "title": "319.md",
-        "summary": "fix: install pre-push hook, pin TypeScript 7.0.2, adopt the standard CI and security rules",
+        "summary": "fix: install the standard pre-push hook (husky), pin TypeScript 7.0.2 (declarations via native tsc --emitDeclarationOnly, compiler-API scripts on @typescript/typescript6), adopt the standard CI and security rules",
         "audience": "human",
         "aliases": [],
         "tags": [
@@ -14058,8 +14058,8 @@
           "headings": "",
           "path": "changelog.d/319.md",
           "symbols": "",
-          "summary": "fix: install pre-push hook, pin TypeScript 7.0.2, adopt the standard CI and security rules",
-          "body": "fix: install pre-push hook, pin TypeScript 7.0.2, adopt the standard CI and security rules",
+          "summary": "fix: install the standard pre-push hook (husky), pin TypeScript 7.0.2 (declarations via native tsc --emitDeclarationOnly, compiler-API scripts on @typescript/typescript6), adopt the standard CI and security rules",
+          "body": "fix: install the standard pre-push hook (husky), pin TypeScript 7.0.2 (declarations via native tsc --emitDeclarationOnly , compiler-API scripts on @typescript/typescript6 ), adopt the standard CI and security rules",
           "aliases": "document project"
         },
         "graph": {
@@ -14070,7 +14070,7 @@
           "inbound": [],
           "outbound": []
         },
-        "contentHash": "ee41630edd709b4e968843750e16d95d707a9f0cc9ec957758e40ee3574584d2",
+        "contentHash": "13c26c170a3b42b241163fd8389024488a688e53dcb8057c3209f20938bd735a",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -55321,7 +55321,7 @@
           ],
           "outbound": []
         },
-        "contentHash": "774844a4bf592a9afc1e7d6452a65fad845b3421103aa9d03093c2645bf0b438",
+        "contentHash": "b371fe3024930b7cba01c1b7e9373c351619583cdc867a73534252006200d38c",
         "provenance": "observed",
         "confidence": "observed"
       },

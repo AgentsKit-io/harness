@@ -38,7 +38,7 @@
     "node": ">=22"
   },
   "scripts": {
-    "build": "tsup && tsc -p tsconfig.json --emitDeclarationOnly && pnpm ui:build && node -e \"console.log(JSON.stringify({status:'passed',criteria:['package']}))\"",
+    "build": "tsup && tsc -p tsconfig.json --emitDeclarationOnly --declarationMap false && pnpm ui:build && node -e \"console.log(JSON.stringify({status:'passed',criteria:['package']}))\"",
     "prepack": "node -e \"require('node:fs').writeFileSync('dist/.npmignore', '.tsbuildinfo')\"",
     "prepare": "husky",
     "typecheck": "pnpm check:cross-platform && tsc -p tsconfig.json --noEmit && tsc -p src/ui/app/tsconfig.json --noEmit",
