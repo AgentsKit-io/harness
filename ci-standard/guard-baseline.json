@@ -1,0 +1,5 @@
+{
+  "cache-guard": [
+    ".github/actions/setup-pnpm/action.yml"
+  ]
+}

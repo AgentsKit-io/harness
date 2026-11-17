@@ -1,0 +1,128 @@
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "plugins": ["typescript", "unicorn", "oxc", "import"],
+  "categories": {
+    "correctness": "error"
+  },
+  "rules": {
+    "no-unused-vars": [
+      "error",
+      {
+        "ignoreRestSiblings": true,
+        "argsIgnorePattern": "^_",
+        "varsIgnorePattern": "^_",
+        "caughtErrorsIgnorePattern": "^_",
+        "destructuredArrayIgnorePattern": "^_"
+      }
+    ],
+    "prefer-const": "error",
+    "prefer-template": "error",
+    "typescript/no-explicit-any": "error",
+    "typescript/no-non-null-assertion": "error",
+    "typescript/consistent-type-imports": [
+      "error",
+      {
+        "disallowTypeAnnotations": false
+      }
+    ],
+    "import/namespace": "off"
+  },
+  "ignorePatterns": [
+    "docs/openapi.json",
+    "**/migrations/**",
+    "docs/qa/**",
+    "apps/api/test/fixtures/**",
+    ".changeset/**",
+    "dist/**",
+    // Adoption baseline (ci-standard/scripts/oxlint-baseline.mjs): files that failed oxlint when the repo moved its lint
+    // to oxlint. Generated, only shrinks; a new file is linted strict.
+    // baseline:start
+    "apps/docs/components/home/harness-home.tsx",
+    "experimental/cycle.ts",
+    "experimental/discovery.ts",
+    "experimental/experiment.ts",
+    "scripts/lib/jsdoc-paths.mjs",
+    "scripts/verify-harness-context-cli.mjs",
+    "scripts/verify-site-shell-ui.mjs",
+    "src/adapters/agent.ts",
+    "src/adapters/linear-orca.ts",
+    "src/cli.ts",
+    "src/execution/bundle.ts",
+    "src/execution/verification.ts",
+    "src/kernel/eval.ts",
+    "src/kernel/learning.ts",
+    "src/kernel/memory.ts",
+    "src/kernel/optimization.ts",
+    "src/kernel/phase-executor.ts",
+    "src/kernel/pii.ts",
+    "src/kernel/plugins.ts",
+    "src/kernel/quality.ts",
+    "src/kernel/workflow.ts",
+    "src/loop/comment-format.ts",
+    "src/loop/connectors.ts",
+    "src/loop/contract.ts",
+    "src/loop/debrief.ts",
+    "src/loop/deliver.ts",
+    "src/loop/detect.ts",
+    "src/loop/doctor.ts",
+    "src/loop/dod.ts",
+    "src/loop/evidence.ts",
+    "src/loop/fleet-runner.ts",
+    "src/loop/flows.ts",
+    "src/loop/github-intake.ts",
+    "src/loop/install.ts",
+    "src/loop/intake.ts",
+    "src/loop/issue-timeline.ts",
+    "src/loop/memory.ts",
+    "src/loop/notify.ts",
+    "src/loop/observability.ts",
+    "src/loop/observe-stage.ts",
+    "src/loop/plan-stage.ts",
+    "src/loop/plan-vote.ts",
+    "src/loop/retro.ts",
+    "src/loop/rotation.ts",
+    "src/loop/routing.ts",
+    "src/loop/stage-lock.ts",
+    "src/loop/tick.ts",
+    "src/mvp.ts",
+    "src/ui/api/attention.ts",
+    "src/ui/api/config-view.ts",
+    "src/ui/api/extras.ts",
+    "src/ui/api/metrics.ts",
+    "src/ui/api/routes-actions.ts",
+    "src/ui/api/routes-core.ts",
+    "src/ui/api/search.ts",
+    "src/ui/api/server.ts",
+    "src/ui/app/src/pages/Attention.tsx",
+    "test/adapters-github-cli-gaps.test.ts",
+    "test/context.test.ts",
+    "test/loop-agent-improvement.test.ts",
+    "test/loop-agent-registry.test.ts",
+    "test/loop-guided-install.test.ts",
+    "test/loop-launch-worker.test.ts",
+    "test/loop-memory-gaps.test.ts",
+    "test/loop-plan-vote.test.ts",
+    "test/loop-tick.test.ts",
+    "test/loop.test.ts",
+    "test/ui-core-attention.test.ts"
+    // baseline:end
+  ],
+  "overrides": [
+    {
+      "files": [
+        "**/test/**",
+        "**/tests/**",
+        "**/__tests__/**",
+        "**/*.test.*",
+        "**/*.spec.*",
+        "**/fixtures/**",
+        "**/vitest.setup.*"
+      ],
+      "rules": {
+        "typescript/no-explicit-any": "off",
+        "typescript/no-non-null-assertion": "off",
+        "no-unsafe-optional-chaining": "off"
+      }
+    }
+  ]
+}
