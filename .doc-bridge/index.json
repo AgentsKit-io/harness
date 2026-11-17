@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
-  "contentHash": "b41ab4e429c52ca3858ea63362e56da0e232861129cd2870d37ad27afb9a0297",
+  "contentHash": "965d17baca84590e74cf74122ab48f673c340f54668e99e8a298c7138027b090",
   "contentHashAlgo": "sha256-semantic-v1",
-  "generatedAt": "2026-11-11T03:17:32.312Z",
+  "generatedAt": "2026-11-17T07:05:25.645Z",
   "project": {
     "name": "AgentsKit Harness",
     "root": "."
@@ -400,6 +400,18 @@
         "project"
       ],
       "contentHash": "a095375eb37cce3f119a33d684cb27267d1601d3c065311909e5e6bf9354abaa"
+    },
+    {
+      "id": "document:changelog.d/318.md",
+      "type": "document",
+      "title": "318.md",
+      "path": "changelog.d/318.md",
+      "description": "fix: declare every edit root (src, scripts, test) in doc-bridge config with for-agents handoff docs",
+      "tags": [
+        "document",
+        "project"
+      ],
+      "contentHash": "9c6b7bc2f1b0339be32276eb7230cf99cb3de07609618c76e97f4365aed40b3e"
     },
     {
       "id": "document:CHANGELOG.md",
@@ -1123,6 +1135,32 @@
       "contentHash": "ab9b2824d111c1f4c7885059fa73d22c35b4d9053317b6f102fb32d51c5c6fc0"
     },
     {
+      "id": "document:docs/for-agents/packages/harness-core.md",
+      "type": "document",
+      "title": "Harness core",
+      "path": "docs/for-agents/packages/harness-core.md",
+      "description": "src is the @agentskit/harness package: the CLI, the loop, the verification kernel and its adapters.",
+      "tags": [
+        "document",
+        "agent",
+        "package"
+      ],
+      "contentHash": "7d882bd5f901ca701e5a03c7149e7ebe739c2dbf0bd0d3c8925d7f56ed40251f"
+    },
+    {
+      "id": "document:docs/for-agents/packages/harness-scripts.md",
+      "type": "document",
+      "title": "Harness scripts",
+      "path": "docs/for-agents/packages/harness-scripts.md",
+      "description": "scripts holds the repository generators and verifiers that the CI runs; none of it ships in the npm package.",
+      "tags": [
+        "document",
+        "agent",
+        "package"
+      ],
+      "contentHash": "13f8a9f678dc0c11027fd5a3c2362f8beb3dedcc277b3da9698de887d95d0d7b"
+    },
+    {
       "id": "document:docs/for-agents/packages/harness-site.md",
       "type": "document",
       "title": "Harness documentation site",
@@ -1134,6 +1172,19 @@
         "package"
       ],
       "contentHash": "ee0168ef6e1b96a00252fb6750e8a529ee76543a33bda97982f2d9e249ccedc0"
+    },
+    {
+      "id": "document:docs/for-agents/packages/harness-tests.md",
+      "type": "document",
+      "title": "Harness tests",
+      "path": "docs/for-agents/packages/harness-tests.md",
+      "description": "test holds the vitest suites of the @agentskit/harness package, with their fixtures and helpers.",
+      "tags": [
+        "document",
+        "agent",
+        "package"
+      ],
+      "contentHash": "02327e054b8f1d88fd2392b39973e100761678cc2648d1946c0aac2a1b00a4bc"
     },
     {
       "id": "document:docs/GETTING-STARTED.md",
@@ -1922,7 +1973,7 @@
         "mjs",
         "scripts"
       ],
-      "contentHash": "fc7b6491c45bcf701f81ea90edfd813b8ee8b87792b261233dc62c54c06cc2cb"
+      "contentHash": "156b003f14d7653a632cb18432086bb9147ac1720e65dea3130d542d481080e5"
     },
     {
       "id": "module:scripts/lib/frontmatter.mjs",
@@ -9994,6 +10045,63 @@
         "Shared product metadata and public ecosystem references."
       ]
     },
+    "harness-core": {
+      "type": "agent-handoff",
+      "schemaVersion": 1,
+      "source": ".doc-bridge/index.json",
+      "target": {
+        "type": "package",
+        "id": "harness-core",
+        "path": "src"
+      },
+      "startHere": "docs/for-agents/packages/harness-core.md",
+      "readBeforeEditing": [
+        "docs/for-agents/packages/harness-core.md",
+        "AGENTS.md"
+      ],
+      "editRoots": [
+        "src"
+      ],
+      "checks": [
+        "pnpm typecheck",
+        "pnpm test"
+      ],
+      "humanDoc": "https://harness.agentskit.io/docs",
+      "bridge": {
+        "humanDoc": "external"
+      },
+      "notes": [
+        "The @agentskit/harness CLI, loop, verification kernel and adapters."
+      ]
+    },
+    "harness-scripts": {
+      "type": "agent-handoff",
+      "schemaVersion": 1,
+      "source": ".doc-bridge/index.json",
+      "target": {
+        "type": "package",
+        "id": "harness-scripts",
+        "path": "scripts"
+      },
+      "startHere": "docs/for-agents/packages/harness-scripts.md",
+      "readBeforeEditing": [
+        "docs/for-agents/packages/harness-scripts.md",
+        "AGENTS.md"
+      ],
+      "editRoots": [
+        "scripts"
+      ],
+      "checks": [
+        "pnpm test:docs-artifacts"
+      ],
+      "humanDoc": "https://harness.agentskit.io/docs",
+      "bridge": {
+        "humanDoc": "external"
+      },
+      "notes": [
+        "Repository generators, verifiers and node --test suites run by the CI."
+      ]
+    },
     "harness-site": {
       "type": "agent-handoff",
       "schemaVersion": 1,
@@ -10021,12 +10129,43 @@
       "notes": [
         "Public Fumadocs product site and its curated documentation."
       ]
+    },
+    "harness-tests": {
+      "type": "agent-handoff",
+      "schemaVersion": 1,
+      "source": ".doc-bridge/index.json",
+      "target": {
+        "type": "package",
+        "id": "harness-tests",
+        "path": "test"
+      },
+      "startHere": "docs/for-agents/packages/harness-tests.md",
+      "readBeforeEditing": [
+        "docs/for-agents/packages/harness-tests.md",
+        "AGENTS.md"
+      ],
+      "editRoots": [
+        "test"
+      ],
+      "checks": [
+        "pnpm test"
+      ],
+      "humanDoc": "https://harness.agentskit.io/docs",
+      "bridge": {
+        "humanDoc": "external"
+      },
+      "notes": [
+        "Vitest suites, fixtures and helpers for the @agentskit/harness package."
+      ]
     }
   },
   "lookup": {
     "packages": [
       "ecosystem-manifest",
-      "harness-site"
+      "harness-core",
+      "harness-scripts",
+      "harness-site",
+      "harness-tests"
     ],
     "ownership": {
       "ecosystem-manifest": {
@@ -10040,6 +10179,29 @@
         "humanDoc": "https://harness.agentskit.io/docs",
         "agentDoc": "docs/for-agents/packages/ecosystem-manifest.md"
       },
+      "harness-core": {
+        "id": "harness-core",
+        "path": "src",
+        "checks": [
+          "pnpm typecheck",
+          "pnpm test"
+        ],
+        "checksSource": "ownership",
+        "purpose": "The @agentskit/harness CLI, loop, verification kernel and adapters.",
+        "humanDoc": "https://harness.agentskit.io/docs",
+        "agentDoc": "docs/for-agents/packages/harness-core.md"
+      },
+      "harness-scripts": {
+        "id": "harness-scripts",
+        "path": "scripts",
+        "checks": [
+          "pnpm test:docs-artifacts"
+        ],
+        "checksSource": "ownership",
+        "purpose": "Repository generators, verifiers and node --test suites run by the CI.",
+        "humanDoc": "https://harness.agentskit.io/docs",
+        "agentDoc": "docs/for-agents/packages/harness-scripts.md"
+      },
       "harness-site": {
         "id": "harness-site",
         "path": "apps/docs",
@@ -10050,6 +10212,17 @@
         "purpose": "Public Fumadocs product site and its curated documentation.",
         "humanDoc": "https://harness.agentskit.io/docs",
         "agentDoc": "docs/for-agents/packages/harness-site.md"
+      },
+      "harness-tests": {
+        "id": "harness-tests",
+        "path": "test",
+        "checks": [
+          "pnpm test"
+        ],
+        "checksSource": "ownership",
+        "purpose": "Vitest suites, fixtures and helpers for the @agentskit/harness package.",
+        "humanDoc": "https://harness.agentskit.io/docs",
+        "agentDoc": "docs/for-agents/packages/harness-tests.md"
       }
     },
     "intents": {
@@ -10070,8 +10243,8 @@
     }
   },
   "inputs": {
-    "hash": "a5fde05b66524d84795937964aaf9847d6e272b24770c2ff8b751400050d04cf",
-    "fileCount": 648,
+    "hash": "4b9ee9862a3955d78d11d6e8a2bbbc1baf69a132a02bfdd1aaa7eb1a79411846",
+    "fileCount": 652,
     "projectionVersion": 2
   },
   "retrieval": {
@@ -10093,11 +10266,11 @@
   "projection": {
     "type": "retrieval-index",
     "schemaVersion": 1,
-    "contentHash": "b82087fe91c7efce1b531bd35ea308bfa94d545a86086881fc1a521ec1774c80",
+    "contentHash": "41e791e2914b6aee9570b2cf93c39b4ab3283cf9007dc8e77968bc7c9b8fc643",
     "contentHashAlgo": "sha256-semantic-v1",
-    "snapshotHash": "71bebe16487ca80a04998375a80b03bee8938fdd183bf46b29b173232a47e61a",
+    "snapshotHash": "363c3dc294b76621c40662cd14231bacd740232c2c1e9d9907358e8b22ea841c",
     "overlayHash": "f99666ff9119084dd25c2974ae64eb6935ec2aa785ff5ad478fb9d541f7a5e94",
-    "configurationHash": "497822431910cd9fa7d674a48a9f0b96fbbbf779f22a001de0b52252117fe3ab",
+    "configurationHash": "d6c4e68f71427643d7f7520e45c24fe66032d201d997bdb1ac2a758fdb9e7194",
     "lexiconVersion": 1,
     "graphMetricsVersion": "1.0.0",
     "weights": {
@@ -10115,7 +10288,7 @@
     },
     "lexical": {
       "version": 1,
-      "documentCount": 626,
+      "documentCount": 631,
       "fieldNames": [
         "aliases",
         "body",
@@ -10126,13 +10299,13 @@
         "title"
       ],
       "averageFieldLength": {
-        "aliases": 2.902555910543131,
-        "body": 47.38019169329073,
-        "headings": 3.902555910543131,
-        "path": 6.0910543130990416,
-        "summary": 3.0686900958466454,
-        "symbols": 13.458466453674122,
-        "title": 4.038338658146965
+        "aliases": 2.9175911251980984,
+        "body": 48.35816164817749,
+        "headings": 3.928684627575277,
+        "path": 6.083993660855785,
+        "summary": 3.1584786053882725,
+        "symbols": 13.351822503961966,
+        "title": 4.025356576862124
       }
     },
     "entries": [
@@ -10160,7 +10333,7 @@
           "aliases": "harness-site area ownership"
         },
         "graph": {
-          "pagerank": 0.039241,
+          "pagerank": 0.033217,
           "inboundLinks": 2,
           "coveredBy": [
             "document:docs/for-agents/packages/harness-site.md"
@@ -10508,31 +10681,44 @@
         "id": "area:scripts",
         "kind": "area",
         "path": "scripts",
-        "title": "scripts",
-        "aliases": [],
+        "title": "Harness scripts",
+        "summary": "Repository generators, verifiers and node --test suites run by the CI.",
+        "audience": "agent",
+        "aliases": [
+          "harness-scripts"
+        ],
         "tags": [
-          "area"
+          "area",
+          "ownership"
         ],
         "fields": {
-          "title": "scripts",
-          "headings": "",
+          "title": "Harness scripts",
+          "headings": "Harness scripts Layout Change rules Check",
           "path": "scripts",
           "symbols": "",
-          "summary": "",
-          "body": "",
-          "aliases": "area"
+          "summary": "Repository generators, verifiers and node --test suites run by the CI.",
+          "body": "Harness scripts scripts holds the repository generators and verifiers that the CI runs; none of it ships in the npm package. Layout - scripts/gen- -reference.mjs , scripts/build-docs-artifacts.mjs — generated reference docs ( pnpm docs:generate ). - scripts/generate-doc-bridge-config.mjs — writes doc-bridge.config.json ( pnpm docs:bridge:config ). - scripts/generate-capability-manifest.mjs — writes capabilities/public-surface.json ( pnpm test:capabilities ). - scripts/check-public-api.mjs — guards docs/stability/public-api-v1.json . - scripts/verify- .mjs — release, docs, dependency-direction and package verifiers. - scripts/ .test.mjs — node --test suites, run by pnpm test:docs-artifacts (outside vitest). - scripts/lib , scripts/ci — shared helpers and CI-only scripts. Change rules - Changing a generator means running it again and committing its output in the same change. - Keep scripts free of tracker or provider dependencies ( scripts/verify-dependency-directions.mjs ). - Add a changelog.d/<ticket .md fragment instead of editing CHANGELOG.md . Check pnpm test:docs-artifacts , plus the --check mode of the generator you changed.",
+          "aliases": "harness-scripts area ownership"
         },
         "graph": {
-          "pagerank": 0,
-          "inboundLinks": 3,
-          "coveredBy": [],
+          "pagerank": 0.033217,
+          "inboundLinks": 4,
+          "coveredBy": [
+            "document:docs/for-agents/packages/harness-scripts.md"
+          ],
           "mentionedBy": [
             "document:AGENTS.md",
             "document:changelog.d/305.md",
-            "document:CONTRIBUTING.md"
+            "document:CONTRIBUTING.md",
+            "document:docs/for-agents/packages/harness-scripts.md"
           ],
           "packageId": "package:@agentskit/harness",
           "inbound": [
+            {
+              "kind": "covers",
+              "id": "document:docs/for-agents/packages/harness-scripts.md",
+              "confidence": "declared"
+            },
             {
               "kind": "mentions",
               "id": "document:AGENTS.md",
@@ -10547,13 +10733,77 @@
               "kind": "mentions",
               "id": "document:CONTRIBUTING.md",
               "confidence": "fuzzy"
+            },
+            {
+              "kind": "mentions",
+              "id": "document:docs/for-agents/packages/harness-scripts.md",
+              "confidence": "observed"
             }
           ],
           "outbound": []
         },
-        "contentHash": "5ff0c36767c533f35dd89f3de9b34c9e6f3514dc69d65bcfc5a88ccaeb50683d",
+        "contentHash": "a25d918646d90547fa2146ea264d490d9d41561e4a898bf2f0f7e67f42e77397",
         "provenance": "observed",
-        "confidence": "observed"
+        "confidence": "observed",
+        "ownershipId": "harness-scripts"
+      },
+      {
+        "id": "area:src",
+        "kind": "area",
+        "path": "src",
+        "title": "Harness core",
+        "summary": "The @agentskit/harness CLI, loop, verification kernel and adapters.",
+        "audience": "agent",
+        "aliases": [
+          "harness-core"
+        ],
+        "tags": [
+          "area",
+          "ownership"
+        ],
+        "fields": {
+          "title": "Harness core",
+          "headings": "Harness core Layout Change rules Check",
+          "path": "src",
+          "symbols": "",
+          "summary": "The @agentskit/harness CLI, loop, verification kernel and adapters.",
+          "body": "Harness core src is the @agentskit/harness package: the CLI, the loop, the verification kernel and its adapters. Layout - src/cli.ts — the ak-harness / ak-verify entrypoint; changing it means regenerating the reference docs. - src/kernel — contract, verification and event vocabulary; no provider or tracker dependency here. - src/loop , src/execution , src/delivery — the issue-to-release loop and its delivery steps. - src/adapters — provider, agent, code-review and doc-bridge adapters. - src/profiles , src/context , src/record.ts , src/mvp.ts , src/ui — profiles, context, run records, the mvp command and the terminal UI. - src/index.ts — the public API; changes need pnpm check:public-api:update . Change rules - Keep files small and per capability (see AGENTS.md ). - New code needs a test under test/ ; coverage floors live in vitest.config.ts . - Add a changelog.d/<ticket .md fragment instead of editing CHANGELOG.md . Check pnpm typecheck and pnpm vitest run test/<file .test.ts ; the full suite is pnpm test:coverage .",
+          "aliases": "harness-core area ownership"
+        },
+        "graph": {
+          "pagerank": 0.033217,
+          "inboundLinks": 2,
+          "coveredBy": [
+            "document:docs/for-agents/packages/harness-core.md"
+          ],
+          "mentionedBy": [
+            "document:docs/for-agents/packages/harness-core.md",
+            "document:docs/for-agents/packages/harness-tests.md"
+          ],
+          "packageId": "package:@agentskit/harness",
+          "inbound": [
+            {
+              "kind": "covers",
+              "id": "document:docs/for-agents/packages/harness-core.md",
+              "confidence": "declared"
+            },
+            {
+              "kind": "mentions",
+              "id": "document:docs/for-agents/packages/harness-core.md",
+              "confidence": "observed"
+            },
+            {
+              "kind": "mentions",
+              "id": "document:docs/for-agents/packages/harness-tests.md",
+              "confidence": "observed"
+            }
+          ],
+          "outbound": []
+        },
+        "contentHash": "da8ccfd37484bb4a7ae07bd4229b67e91a2e725bb0d45339211b5b3ec233ae45",
+        "provenance": "observed",
+        "confidence": "observed",
+        "ownershipId": "harness-core"
       },
       {
         "id": "area:src/adapters",
@@ -10575,13 +10825,20 @@
         },
         "graph": {
           "pagerank": 0,
-          "inboundLinks": 1,
+          "inboundLinks": 2,
           "coveredBy": [],
           "mentionedBy": [
+            "document:docs/for-agents/packages/harness-core.md",
             "document:docs/MODULE-BOUNDARIES.md"
           ],
+          "areaId": "area:src",
           "packageId": "package:@agentskit/harness",
           "inbound": [
+            {
+              "kind": "mentions",
+              "id": "document:docs/for-agents/packages/harness-core.md",
+              "confidence": "observed"
+            },
             {
               "kind": "mentions",
               "id": "document:docs/MODULE-BOUNDARIES.md",
@@ -10614,17 +10871,24 @@
         },
         "graph": {
           "pagerank": 0,
-          "inboundLinks": 2,
+          "inboundLinks": 3,
           "coveredBy": [],
           "mentionedBy": [
             "document:docs/ADR-0002-profiles-and-context.md",
+            "document:docs/for-agents/packages/harness-core.md",
             "document:docs/MODULE-BOUNDARIES.md"
           ],
+          "areaId": "area:src",
           "packageId": "package:@agentskit/harness",
           "inbound": [
             {
               "kind": "mentions",
               "id": "document:docs/ADR-0002-profiles-and-context.md",
+              "confidence": "observed"
+            },
+            {
+              "kind": "mentions",
+              "id": "document:docs/for-agents/packages/harness-core.md",
               "confidence": "observed"
             },
             {
@@ -10659,13 +10923,20 @@
         },
         "graph": {
           "pagerank": 0,
-          "inboundLinks": 1,
+          "inboundLinks": 2,
           "coveredBy": [],
           "mentionedBy": [
+            "document:docs/for-agents/packages/harness-core.md",
             "document:docs/MODULE-BOUNDARIES.md"
           ],
+          "areaId": "area:src",
           "packageId": "package:@agentskit/harness",
           "inbound": [
+            {
+              "kind": "mentions",
+              "id": "document:docs/for-agents/packages/harness-core.md",
+              "confidence": "observed"
+            },
             {
               "kind": "mentions",
               "id": "document:docs/MODULE-BOUNDARIES.md",
@@ -10698,17 +10969,24 @@
         },
         "graph": {
           "pagerank": 0,
-          "inboundLinks": 2,
+          "inboundLinks": 3,
           "coveredBy": [],
           "mentionedBy": [
             "document:docs/ADR-0004-run-metrics.md",
+            "document:docs/for-agents/packages/harness-core.md",
             "document:docs/MODULE-BOUNDARIES.md"
           ],
+          "areaId": "area:src",
           "packageId": "package:@agentskit/harness",
           "inbound": [
             {
               "kind": "mentions",
               "id": "document:docs/ADR-0004-run-metrics.md",
+              "confidence": "observed"
+            },
+            {
+              "kind": "mentions",
+              "id": "document:docs/for-agents/packages/harness-core.md",
               "confidence": "observed"
             },
             {
@@ -10743,17 +11021,24 @@
         },
         "graph": {
           "pagerank": 0,
-          "inboundLinks": 2,
+          "inboundLinks": 3,
           "coveredBy": [],
           "mentionedBy": [
             "document:docs/ADR-0001-extensible-kernel.md",
+            "document:docs/for-agents/packages/harness-core.md",
             "document:docs/MODULE-BOUNDARIES.md"
           ],
+          "areaId": "area:src",
           "packageId": "package:@agentskit/harness",
           "inbound": [
             {
               "kind": "mentions",
               "id": "document:docs/ADR-0001-extensible-kernel.md",
+              "confidence": "observed"
+            },
+            {
+              "kind": "mentions",
+              "id": "document:docs/for-agents/packages/harness-core.md",
               "confidence": "observed"
             },
             {
@@ -10788,15 +11073,17 @@
         },
         "graph": {
           "pagerank": 0,
-          "inboundLinks": 5,
+          "inboundLinks": 6,
           "coveredBy": [],
           "mentionedBy": [
             "document:CHANGELOG.md",
             "document:docs/ADR-0027-keep-pushing-loop.md",
             "document:docs/ADR-0029-loop-resilience-pinning-intake.md",
+            "document:docs/for-agents/packages/harness-core.md",
             "document:docs/LOOP.md",
             "document:docs/MODULE-BOUNDARIES.md"
           ],
+          "areaId": "area:src",
           "packageId": "package:@agentskit/harness",
           "inbound": [
             {
@@ -10813,6 +11100,11 @@
               "kind": "mentions",
               "id": "document:docs/ADR-0029-loop-resilience-pinning-intake.md",
               "confidence": "fuzzy"
+            },
+            {
+              "kind": "mentions",
+              "id": "document:docs/for-agents/packages/harness-core.md",
+              "confidence": "observed"
             },
             {
               "kind": "mentions",
@@ -10851,17 +11143,24 @@
         },
         "graph": {
           "pagerank": 0,
-          "inboundLinks": 2,
+          "inboundLinks": 3,
           "coveredBy": [],
           "mentionedBy": [
             "document:docs/ADR-0002-profiles-and-context.md",
+            "document:docs/for-agents/packages/harness-core.md",
             "document:docs/MODULE-BOUNDARIES.md"
           ],
+          "areaId": "area:src",
           "packageId": "package:@agentskit/harness",
           "inbound": [
             {
               "kind": "mentions",
               "id": "document:docs/ADR-0002-profiles-and-context.md",
+              "confidence": "observed"
+            },
+            {
+              "kind": "mentions",
+              "id": "document:docs/for-agents/packages/harness-core.md",
               "confidence": "observed"
             },
             {
@@ -10896,23 +11195,18 @@
         },
         "graph": {
           "pagerank": 0,
-          "inboundLinks": 2,
+          "inboundLinks": 1,
           "coveredBy": [],
           "mentionedBy": [
-            "document:CONTRIBUTING.md",
-            "document:docs/INVENTARIO.md"
+            "document:docs/for-agents/packages/harness-core.md"
           ],
+          "areaId": "area:src",
           "packageId": "package:@agentskit/harness",
           "inbound": [
             {
               "kind": "mentions",
-              "id": "document:CONTRIBUTING.md",
-              "confidence": "fuzzy"
-            },
-            {
-              "kind": "mentions",
-              "id": "document:docs/INVENTARIO.md",
-              "confidence": "fuzzy"
+              "id": "document:docs/for-agents/packages/harness-core.md",
+              "confidence": "observed"
             }
           ],
           "outbound": []
@@ -10925,34 +11219,48 @@
         "id": "area:test",
         "kind": "area",
         "path": "test",
-        "title": "test",
-        "aliases": [],
+        "title": "Harness tests",
+        "summary": "Vitest suites, fixtures and helpers for the @agentskit/harness package.",
+        "audience": "agent",
+        "aliases": [
+          "harness-tests"
+        ],
         "tags": [
-          "area"
+          "area",
+          "ownership"
         ],
         "fields": {
-          "title": "test",
-          "headings": "",
+          "title": "Harness tests",
+          "headings": "Harness tests Layout Change rules Check",
           "path": "test",
           "symbols": "",
-          "summary": "",
-          "body": "",
-          "aliases": "area"
+          "summary": "Vitest suites, fixtures and helpers for the @agentskit/harness package.",
+          "body": "Harness tests test holds the vitest suites of the @agentskit/harness package, with their fixtures and helpers. Layout - test/ .test.ts , test/ .test.tsx — one suite per capability of src . - test/fixtures — static inputs used by the suites; changing an existing fixture needs a note in the PR. - test/helpers , test/git.ts — shared helpers (temporary repositories, git setup). Change rules - Tests never use the real HOME; create temporary directories. - Coverage floors for src/ live in vitest.config.ts ; new code needs a test here. - The loop-cross-platform CI job runs test/loop .test.ts on Linux, macOS and Windows: avoid timing and path assumptions. Check pnpm vitest run test/<file .test.ts for one suite; pnpm test for the whole package.",
+          "aliases": "harness-tests area ownership"
         },
         "graph": {
-          "pagerank": 0,
-          "inboundLinks": 6,
-          "coveredBy": [],
+          "pagerank": 0.033217,
+          "inboundLinks": 8,
+          "coveredBy": [
+            "document:docs/for-agents/packages/harness-tests.md"
+          ],
           "mentionedBy": [
             "document:AGENTS.md",
             "document:CONTRIBUTING.md",
             "document:docs/ADR-0045-fleet-runner.md",
             "document:docs/ADR-0047-independent-verifier-and-structured-lessons.md",
+            "document:docs/for-agents/packages/harness-core.md",
+            "document:docs/for-agents/packages/harness-tests.md",
             "document:docs/INVENTARIO.md",
             "document:docs/LOOP.md"
           ],
           "packageId": "package:@agentskit/harness",
           "inbound": [
+            {
+              "kind": "covers",
+              "id": "document:docs/for-agents/packages/harness-tests.md",
+              "confidence": "declared"
+            },
             {
               "kind": "mentions",
               "id": "document:AGENTS.md",
@@ -10975,6 +11283,16 @@
             },
             {
               "kind": "mentions",
+              "id": "document:docs/for-agents/packages/harness-core.md",
+              "confidence": "fuzzy"
+            },
+            {
+              "kind": "mentions",
+              "id": "document:docs/for-agents/packages/harness-tests.md",
+              "confidence": "observed"
+            },
+            {
+              "kind": "mentions",
               "id": "document:docs/INVENTARIO.md",
               "confidence": "fuzzy"
             },
@@ -10986,9 +11304,10 @@
           ],
           "outbound": []
         },
-        "contentHash": "4340de02c320faaa91ae09188e0cea12fa70640c22753b145faa8cef53fb056d",
+        "contentHash": "6dbb1aef75069d9417f8ad309b1f6eca6b58a6cd75bd8a09fc0cfa7da5122821",
         "provenance": "observed",
-        "confidence": "observed"
+        "confidence": "observed",
+        "ownershipId": "harness-tests"
       },
       {
         "id": "change-harness-docs",
@@ -11233,14 +11552,15 @@
           "aliases": "document unclassified"
         },
         "graph": {
-          "pagerank": 0.039241,
-          "inboundLinks": 5,
+          "pagerank": 0.033217,
+          "inboundLinks": 6,
           "coveredBy": [],
           "mentionedBy": [
             "document:apps/docs/content/docs/guides/agents.mdx",
             "document:CHANGELOG.md",
             "document:CLAUDE.md",
             "document:docs/adr/0048-scoped-verification.md",
+            "document:docs/for-agents/packages/harness-core.md",
             "document:docs/LOOP.md"
           ],
           "inbound": [
@@ -11267,6 +11587,11 @@
             {
               "kind": "mentions",
               "id": "document:docs/adr/0048-scoped-verification.md",
+              "confidence": "observed"
+            },
+            {
+              "kind": "mentions",
+              "id": "document:docs/for-agents/packages/harness-core.md",
               "confidence": "observed"
             },
             {
@@ -13041,6 +13366,39 @@
         "confidence": "observed"
       },
       {
+        "id": "document:changelog.d/318.md",
+        "kind": "document",
+        "path": "changelog.d/318.md",
+        "title": "318.md",
+        "summary": "fix: declare every edit root (src, scripts, test) in doc-bridge config with for-agents handoff docs",
+        "audience": "human",
+        "aliases": [],
+        "tags": [
+          "document",
+          "project"
+        ],
+        "fields": {
+          "title": "318.md",
+          "headings": "",
+          "path": "changelog.d/318.md",
+          "symbols": "",
+          "summary": "fix: declare every edit root (src, scripts, test) in doc-bridge config with for-agents handoff docs",
+          "body": "fix: declare every edit root (src, scripts, test) in doc-bridge config with for-agents handoff docs",
+          "aliases": "document project"
+        },
+        "graph": {
+          "pagerank": 0,
+          "inboundLinks": 0,
+          "coveredBy": [],
+          "mentionedBy": [],
+          "inbound": [],
+          "outbound": []
+        },
+        "contentHash": "9c6b7bc2f1b0339be32276eb7230cf99cb3de07609618c76e97f4365aed40b3e",
+        "provenance": "observed",
+        "confidence": "observed"
+      },
+      {
         "id": "document:CHANGELOG.md",
         "kind": "document",
         "path": "CHANGELOG.md",
@@ -13062,11 +13420,13 @@
           "aliases": "document project"
         },
         "graph": {
-          "pagerank": 0.022599,
-          "inboundLinks": 3,
+          "pagerank": 0.019129,
+          "inboundLinks": 5,
           "coveredBy": [],
           "mentionedBy": [
             "document:.github/factory-playbook.md",
+            "document:docs/for-agents/packages/harness-core.md",
+            "document:docs/for-agents/packages/harness-scripts.md",
             "document:README.md",
             "document:release/notes.md"
           ],
@@ -13079,6 +13439,16 @@
             {
               "kind": "mentions",
               "id": "document:.github/factory-playbook.md",
+              "confidence": "observed"
+            },
+            {
+              "kind": "mentions",
+              "id": "document:docs/for-agents/packages/harness-core.md",
+              "confidence": "observed"
+            },
+            {
+              "kind": "mentions",
+              "id": "document:docs/for-agents/packages/harness-scripts.md",
               "confidence": "observed"
             },
             {
@@ -13375,7 +13745,7 @@
           "aliases": "document unclassified"
         },
         "graph": {
-          "pagerank": 0.021212,
+          "pagerank": 0.017955,
           "inboundLinks": 1,
           "coveredBy": [],
           "mentionedBy": [
@@ -13458,7 +13828,7 @@
           "aliases": "document unclassified"
         },
         "graph": {
-          "pagerank": 0.030227,
+          "pagerank": 0.025586,
           "inboundLinks": 1,
           "coveredBy": [],
           "mentionedBy": [],
@@ -13502,7 +13872,7 @@
           "aliases": "document unclassified"
         },
         "graph": {
-          "pagerank": 0.021212,
+          "pagerank": 0.017955,
           "inboundLinks": 3,
           "coveredBy": [],
           "mentionedBy": [
@@ -13565,7 +13935,7 @@
           "aliases": "document unclassified"
         },
         "graph": {
-          "pagerank": 0.030227,
+          "pagerank": 0.025586,
           "inboundLinks": 1,
           "coveredBy": [],
           "mentionedBy": [],
@@ -13610,7 +13980,7 @@
           "aliases": "document project"
         },
         "graph": {
-          "pagerank": 0.022599,
+          "pagerank": 0.019129,
           "inboundLinks": 2,
           "coveredBy": [],
           "mentionedBy": [
@@ -13643,11 +14013,6 @@
             {
               "kind": "mentions",
               "id": "area:scripts",
-              "confidence": "fuzzy"
-            },
-            {
-              "kind": "mentions",
-              "id": "area:src/ui",
               "confidence": "fuzzy"
             },
             {
@@ -13853,7 +14218,7 @@
           "aliases": "document human"
         },
         "graph": {
-          "pagerank": 0.02895,
+          "pagerank": 0.024506,
           "inboundLinks": 1,
           "coveredBy": [],
           "mentionedBy": [],
@@ -14841,7 +15206,7 @@
           "aliases": "document human"
         },
         "graph": {
-          "pagerank": 0.02895,
+          "pagerank": 0.024506,
           "inboundLinks": 1,
           "coveredBy": [],
           "mentionedBy": [],
@@ -14896,7 +15261,7 @@
           "aliases": "document human"
         },
         "graph": {
-          "pagerank": 0.030337,
+          "pagerank": 0.02568,
           "inboundLinks": 2,
           "coveredBy": [],
           "mentionedBy": [],
@@ -14951,7 +15316,7 @@
           "aliases": "document human"
         },
         "graph": {
-          "pagerank": 0.032971,
+          "pagerank": 0.027909,
           "inboundLinks": 2,
           "coveredBy": [],
           "mentionedBy": [],
@@ -15193,7 +15558,7 @@
           "aliases": "document human"
         },
         "graph": {
-          "pagerank": 0.025343,
+          "pagerank": 0.021452,
           "inboundLinks": 2,
           "coveredBy": [],
           "mentionedBy": [],
@@ -15243,7 +15608,7 @@
           "aliases": "document human"
         },
         "graph": {
-          "pagerank": 0.028758,
+          "pagerank": 0.024343,
           "inboundLinks": 2,
           "coveredBy": [],
           "mentionedBy": [],
@@ -15293,7 +15658,7 @@
           "aliases": "document human"
         },
         "graph": {
-          "pagerank": 0.023956,
+          "pagerank": 0.020278,
           "inboundLinks": 1,
           "coveredBy": [],
           "mentionedBy": [],
@@ -15343,7 +15708,7 @@
           "aliases": "document human"
         },
         "graph": {
-          "pagerank": 0.030145,
+          "pagerank": 0.025517,
           "inboundLinks": 3,
           "coveredBy": [],
           "mentionedBy": [],
@@ -15408,7 +15773,7 @@
           "aliases": "document human"
         },
         "graph": {
-          "pagerank": 0.023956,
+          "pagerank": 0.020278,
           "inboundLinks": 1,
           "coveredBy": [],
           "mentionedBy": [],
@@ -15463,7 +15828,7 @@
           "aliases": "document human"
         },
         "graph": {
-          "pagerank": 0.025343,
+          "pagerank": 0.021452,
           "inboundLinks": 2,
           "coveredBy": [],
           "mentionedBy": [],
@@ -15513,7 +15878,7 @@
           "aliases": "document human"
         },
         "graph": {
-          "pagerank": 0.021212,
+          "pagerank": 0.017955,
           "inboundLinks": 0,
           "coveredBy": [],
           "mentionedBy": [],
@@ -15562,7 +15927,7 @@
           "aliases": "document human"
         },
         "graph": {
-          "pagerank": 0.021212,
+          "pagerank": 0.017955,
           "inboundLinks": 0,
           "coveredBy": [],
           "mentionedBy": [],
@@ -15906,7 +16271,7 @@
           "aliases": "document human"
         },
         "graph": {
-          "pagerank": 0.021212,
+          "pagerank": 0.017955,
           "inboundLinks": 0,
           "coveredBy": [],
           "mentionedBy": [],
@@ -15985,7 +16350,7 @@
           "aliases": "document human"
         },
         "graph": {
-          "pagerank": 0.121286,
+          "pagerank": 0.102668,
           "inboundLinks": 5,
           "coveredBy": [],
           "mentionedBy": [],
@@ -16070,7 +16435,7 @@
           "aliases": "document human"
         },
         "graph": {
-          "pagerank": 0.022599,
+          "pagerank": 0.019129,
           "inboundLinks": 1,
           "coveredBy": [],
           "mentionedBy": [],
@@ -16357,6 +16722,211 @@
         "confidence": "observed"
       },
       {
+        "id": "document:docs/for-agents/packages/harness-core.md",
+        "kind": "document",
+        "path": "docs/for-agents/packages/harness-core.md",
+        "title": "Harness core",
+        "summary": "src is the @agentskit/harness package: the CLI, the loop, the verification kernel and its adapters.",
+        "audience": "agent",
+        "aliases": [],
+        "tags": [
+          "document",
+          "agent",
+          "package"
+        ],
+        "fields": {
+          "title": "Harness core",
+          "headings": "Harness core Layout Change rules Check",
+          "path": "docs/for-agents/packages/harness-core.md",
+          "symbols": "",
+          "summary": "src is the @agentskit/harness package: the CLI, the loop, the verification kernel and its adapters.",
+          "body": "Harness core src is the @agentskit/harness package: the CLI, the loop, the verification kernel and its adapters. Layout - src/cli.ts — the ak-harness / ak-verify entrypoint; changing it means regenerating the reference docs. - src/kernel — contract, verification and event vocabulary; no provider or tracker dependency here. - src/loop , src/execution , src/delivery — the issue-to-release loop and its delivery steps. - src/adapters — provider, agent, code-review and doc-bridge adapters. - src/profiles , src/context , src/record.ts , src/mvp.ts , src/ui — profiles, context, run records, the mvp command and the terminal UI. - src/index.ts — the public API; changes need pnpm check:public-api:update . Change rules - Keep files small and per capability (see AGENTS.md ). - New code needs a test under test/ ; coverage floors live in vitest.config.ts . - Add a changelog.d/<ticket .md fragment instead of editing CHANGELOG.md . Check pnpm typecheck and pnpm vitest run test/<file .test.ts ; the full suite is pnpm test:coverage .",
+          "aliases": "document agent package"
+        },
+        "graph": {
+          "pagerank": 0.017955,
+          "inboundLinks": 0,
+          "coveredBy": [],
+          "mentionedBy": [],
+          "inbound": [],
+          "outbound": [
+            {
+              "kind": "covers",
+              "id": "area:src",
+              "confidence": "declared"
+            },
+            {
+              "kind": "mentions",
+              "id": "area:src",
+              "confidence": "observed"
+            },
+            {
+              "kind": "mentions",
+              "id": "area:src/adapters",
+              "confidence": "observed"
+            },
+            {
+              "kind": "mentions",
+              "id": "area:src/context",
+              "confidence": "observed"
+            },
+            {
+              "kind": "mentions",
+              "id": "area:src/delivery",
+              "confidence": "observed"
+            },
+            {
+              "kind": "mentions",
+              "id": "area:src/execution",
+              "confidence": "observed"
+            },
+            {
+              "kind": "mentions",
+              "id": "area:src/kernel",
+              "confidence": "observed"
+            },
+            {
+              "kind": "mentions",
+              "id": "area:src/loop",
+              "confidence": "observed"
+            },
+            {
+              "kind": "mentions",
+              "id": "area:src/profiles",
+              "confidence": "observed"
+            },
+            {
+              "kind": "mentions",
+              "id": "area:src/ui",
+              "confidence": "observed"
+            },
+            {
+              "kind": "mentions",
+              "id": "area:test",
+              "confidence": "fuzzy"
+            },
+            {
+              "kind": "mentions",
+              "id": "document:AGENTS.md",
+              "confidence": "observed"
+            },
+            {
+              "kind": "mentions",
+              "id": "document:CHANGELOG.md",
+              "confidence": "observed"
+            },
+            {
+              "kind": "mentions",
+              "id": "module:src/cli.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "mentions",
+              "id": "module:src/index.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "mentions",
+              "id": "module:src/mvp.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "mentions",
+              "id": "module:src/record.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "mentions",
+              "id": "module:vitest.config.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "mentions",
+              "id": "package:@agentskit/harness",
+              "confidence": "observed"
+            }
+          ]
+        },
+        "contentHash": "7d882bd5f901ca701e5a03c7149e7ebe739c2dbf0bd0d3c8925d7f56ed40251f",
+        "provenance": "observed",
+        "confidence": "observed"
+      },
+      {
+        "id": "document:docs/for-agents/packages/harness-scripts.md",
+        "kind": "document",
+        "path": "docs/for-agents/packages/harness-scripts.md",
+        "title": "Harness scripts",
+        "summary": "scripts holds the repository generators and verifiers that the CI runs; none of it ships in the npm package.",
+        "audience": "agent",
+        "aliases": [],
+        "tags": [
+          "document",
+          "agent",
+          "package"
+        ],
+        "fields": {
+          "title": "Harness scripts",
+          "headings": "Harness scripts Layout Change rules Check",
+          "path": "docs/for-agents/packages/harness-scripts.md",
+          "symbols": "",
+          "summary": "scripts holds the repository generators and verifiers that the CI runs; none of it ships in the npm package.",
+          "body": "Harness scripts scripts holds the repository generators and verifiers that the CI runs; none of it ships in the npm package. Layout - scripts/gen- -reference.mjs , scripts/build-docs-artifacts.mjs — generated reference docs ( pnpm docs:generate ). - scripts/generate-doc-bridge-config.mjs — writes doc-bridge.config.json ( pnpm docs:bridge:config ). - scripts/generate-capability-manifest.mjs — writes capabilities/public-surface.json ( pnpm test:capabilities ). - scripts/check-public-api.mjs — guards docs/stability/public-api-v1.json . - scripts/verify- .mjs — release, docs, dependency-direction and package verifiers. - scripts/ .test.mjs — node --test suites, run by pnpm test:docs-artifacts (outside vitest). - scripts/lib , scripts/ci — shared helpers and CI-only scripts. Change rules - Changing a generator means running it again and committing its output in the same change. - Keep scripts free of tracker or provider dependencies ( scripts/verify-dependency-directions.mjs ). - Add a changelog.d/<ticket .md fragment instead of editing CHANGELOG.md . Check pnpm test:docs-artifacts , plus the --check mode of the generator you changed.",
+          "aliases": "document agent package"
+        },
+        "graph": {
+          "pagerank": 0.017955,
+          "inboundLinks": 0,
+          "coveredBy": [],
+          "mentionedBy": [],
+          "inbound": [],
+          "outbound": [
+            {
+              "kind": "covers",
+              "id": "area:scripts",
+              "confidence": "declared"
+            },
+            {
+              "kind": "mentions",
+              "id": "area:scripts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "mentions",
+              "id": "document:CHANGELOG.md",
+              "confidence": "observed"
+            },
+            {
+              "kind": "mentions",
+              "id": "module:scripts/build-docs-artifacts.mjs",
+              "confidence": "observed"
+            },
+            {
+              "kind": "mentions",
+              "id": "module:scripts/check-public-api.mjs",
+              "confidence": "observed"
+            },
+            {
+              "kind": "mentions",
+              "id": "module:scripts/generate-capability-manifest.mjs",
+              "confidence": "observed"
+            },
+            {
+              "kind": "mentions",
+              "id": "module:scripts/generate-doc-bridge-config.mjs",
+              "confidence": "observed"
+            },
+            {
+              "kind": "mentions",
+              "id": "module:scripts/verify-dependency-directions.mjs",
+              "confidence": "observed"
+            }
+          ]
+        },
+        "contentHash": "13f8a9f678dc0c11027fd5a3c2362f8beb3dedcc277b3da9698de887d95d0d7b",
+        "provenance": "observed",
+        "confidence": "observed"
+      },
+      {
         "id": "document:docs/for-agents/packages/harness-site.md",
         "kind": "document",
         "path": "docs/for-agents/packages/harness-site.md",
@@ -16379,7 +16949,7 @@
           "aliases": "document agent package"
         },
         "graph": {
-          "pagerank": 0.021212,
+          "pagerank": 0.017955,
           "inboundLinks": 0,
           "coveredBy": [],
           "mentionedBy": [],
@@ -16462,6 +17032,71 @@
         "confidence": "observed"
       },
       {
+        "id": "document:docs/for-agents/packages/harness-tests.md",
+        "kind": "document",
+        "path": "docs/for-agents/packages/harness-tests.md",
+        "title": "Harness tests",
+        "summary": "test holds the vitest suites of the @agentskit/harness package, with their fixtures and helpers.",
+        "audience": "agent",
+        "aliases": [],
+        "tags": [
+          "document",
+          "agent",
+          "package"
+        ],
+        "fields": {
+          "title": "Harness tests",
+          "headings": "Harness tests Layout Change rules Check",
+          "path": "docs/for-agents/packages/harness-tests.md",
+          "symbols": "",
+          "summary": "test holds the vitest suites of the @agentskit/harness package, with their fixtures and helpers.",
+          "body": "Harness tests test holds the vitest suites of the @agentskit/harness package, with their fixtures and helpers. Layout - test/ .test.ts , test/ .test.tsx — one suite per capability of src . - test/fixtures — static inputs used by the suites; changing an existing fixture needs a note in the PR. - test/helpers , test/git.ts — shared helpers (temporary repositories, git setup). Change rules - Tests never use the real HOME; create temporary directories. - Coverage floors for src/ live in vitest.config.ts ; new code needs a test here. - The loop-cross-platform CI job runs test/loop .test.ts on Linux, macOS and Windows: avoid timing and path assumptions. Check pnpm vitest run test/<file .test.ts for one suite; pnpm test for the whole package.",
+          "aliases": "document agent package"
+        },
+        "graph": {
+          "pagerank": 0.017955,
+          "inboundLinks": 0,
+          "coveredBy": [],
+          "mentionedBy": [],
+          "inbound": [],
+          "outbound": [
+            {
+              "kind": "covers",
+              "id": "area:test",
+              "confidence": "declared"
+            },
+            {
+              "kind": "mentions",
+              "id": "area:src",
+              "confidence": "observed"
+            },
+            {
+              "kind": "mentions",
+              "id": "area:test",
+              "confidence": "observed"
+            },
+            {
+              "kind": "mentions",
+              "id": "module:test/git.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "mentions",
+              "id": "module:vitest.config.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "mentions",
+              "id": "package:@agentskit/harness",
+              "confidence": "observed"
+            }
+          ]
+        },
+        "contentHash": "02327e054b8f1d88fd2392b39973e100761678cc2648d1946c0aac2a1b00a4bc",
+        "provenance": "observed",
+        "confidence": "observed"
+      },
+      {
         "id": "document:docs/GETTING-STARTED.md",
         "kind": "document",
         "path": "docs/GETTING-STARTED.md",
@@ -16483,7 +17118,7 @@
           "aliases": "document human"
         },
         "graph": {
-          "pagerank": 0.022599,
+          "pagerank": 0.019129,
           "inboundLinks": 2,
           "coveredBy": [],
           "mentionedBy": [
@@ -16611,7 +17246,7 @@
           "aliases": "document human"
         },
         "graph": {
-          "pagerank": 0.02895,
+          "pagerank": 0.024506,
           "inboundLinks": 2,
           "coveredBy": [],
           "mentionedBy": [
@@ -16630,11 +17265,6 @@
             }
           ],
           "outbound": [
-            {
-              "kind": "mentions",
-              "id": "area:src/ui",
-              "confidence": "fuzzy"
-            },
             {
               "kind": "mentions",
               "id": "area:test",
@@ -16698,7 +17328,7 @@
           "aliases": "document human"
         },
         "graph": {
-          "pagerank": 0.036416,
+          "pagerank": 0.030825,
           "inboundLinks": 3,
           "coveredBy": [],
           "mentionedBy": [
@@ -16990,7 +17620,7 @@
           "aliases": "document human"
         },
         "graph": {
-          "pagerank": 0.021212,
+          "pagerank": 0.017955,
           "inboundLinks": 2,
           "coveredBy": [],
           "mentionedBy": [
@@ -17410,7 +18040,7 @@
           "aliases": "document human"
         },
         "graph": {
-          "pagerank": 0.04042,
+          "pagerank": 0.034215,
           "inboundLinks": 1,
           "coveredBy": [],
           "mentionedBy": [
@@ -17526,7 +18156,7 @@
           "aliases": "document human"
         },
         "graph": {
-          "pagerank": 0.027401,
+          "pagerank": 0.023194,
           "inboundLinks": 2,
           "coveredBy": [],
           "mentionedBy": [
@@ -17625,7 +18255,7 @@
           "aliases": "document unclassified"
         },
         "graph": {
-          "pagerank": 0.022599,
+          "pagerank": 0.019129,
           "inboundLinks": 1,
           "coveredBy": [],
           "mentionedBy": [
@@ -17671,7 +18301,7 @@
           "aliases": "document project"
         },
         "graph": {
-          "pagerank": 0.021212,
+          "pagerank": 0.017955,
           "inboundLinks": 0,
           "coveredBy": [],
           "mentionedBy": [],
@@ -17809,7 +18439,7 @@
           "aliases": "document unclassified"
         },
         "graph": {
-          "pagerank": 0.022599,
+          "pagerank": 0.019129,
           "inboundLinks": 1,
           "coveredBy": [],
           "mentionedBy": [
@@ -19293,10 +19923,11 @@
         },
         "graph": {
           "pagerank": 0,
-          "inboundLinks": 2,
+          "inboundLinks": 3,
           "coveredBy": [],
           "mentionedBy": [
             "document:docs/for-agents/packages/ecosystem-manifest.md",
+            "document:docs/for-agents/packages/harness-scripts.md",
             "document:docs/for-agents/packages/harness-site.md"
           ],
           "areaId": "area:scripts",
@@ -19305,6 +19936,11 @@
             {
               "kind": "mentions",
               "id": "document:docs/for-agents/packages/ecosystem-manifest.md",
+              "confidence": "observed"
+            },
+            {
+              "kind": "mentions",
+              "id": "document:docs/for-agents/packages/harness-scripts.md",
               "confidence": "observed"
             },
             {
@@ -19352,12 +19988,20 @@
         },
         "graph": {
           "pagerank": 0,
-          "inboundLinks": 0,
+          "inboundLinks": 1,
           "coveredBy": [],
-          "mentionedBy": [],
+          "mentionedBy": [
+            "document:docs/for-agents/packages/harness-scripts.md"
+          ],
           "areaId": "area:scripts",
           "packageId": "package:@agentskit/harness",
-          "inbound": [],
+          "inbound": [
+            {
+              "kind": "mentions",
+              "id": "document:docs/for-agents/packages/harness-scripts.md",
+              "confidence": "observed"
+            }
+          ],
           "outbound": []
         },
         "contentHash": "32ab05cceb913a33ef8c26eba6ceed0a49b48d14b0124394060152403b5f0a38",
@@ -19714,12 +20358,20 @@
         },
         "graph": {
           "pagerank": 0,
-          "inboundLinks": 0,
+          "inboundLinks": 1,
           "coveredBy": [],
-          "mentionedBy": [],
+          "mentionedBy": [
+            "document:docs/for-agents/packages/harness-scripts.md"
+          ],
           "areaId": "area:scripts",
           "packageId": "package:@agentskit/harness",
-          "inbound": [],
+          "inbound": [
+            {
+              "kind": "mentions",
+              "id": "document:docs/for-agents/packages/harness-scripts.md",
+              "confidence": "observed"
+            }
+          ],
           "outbound": []
         },
         "contentHash": "c00d05208b4e13c0aa3a11c513a1b8c3c0590578b83df44a1012801517e6c0c2",
@@ -19748,11 +20400,12 @@
         },
         "graph": {
           "pagerank": 0,
-          "inboundLinks": 2,
+          "inboundLinks": 3,
           "coveredBy": [],
           "mentionedBy": [
             "document:.github/factory-playbook.md",
-            "document:docs/for-agents/packages/ecosystem-manifest.md"
+            "document:docs/for-agents/packages/ecosystem-manifest.md",
+            "document:docs/for-agents/packages/harness-scripts.md"
           ],
           "areaId": "area:scripts",
           "packageId": "package:@agentskit/harness",
@@ -19766,11 +20419,16 @@
               "kind": "mentions",
               "id": "document:docs/for-agents/packages/ecosystem-manifest.md",
               "confidence": "observed"
+            },
+            {
+              "kind": "mentions",
+              "id": "document:docs/for-agents/packages/harness-scripts.md",
+              "confidence": "observed"
             }
           ],
           "outbound": []
         },
-        "contentHash": "fc7b6491c45bcf701f81ea90edfd813b8ee8b87792b261233dc62c54c06cc2cb",
+        "contentHash": "156b003f14d7653a632cb18432086bb9147ac1720e65dea3130d542d481080e5",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -20084,10 +20742,11 @@
         },
         "graph": {
           "pagerank": 0,
-          "inboundLinks": 1,
+          "inboundLinks": 2,
           "coveredBy": [],
           "mentionedBy": [
-            "document:.github/factory-playbook.md"
+            "document:.github/factory-playbook.md",
+            "document:docs/for-agents/packages/harness-scripts.md"
           ],
           "areaId": "area:scripts",
           "packageId": "package:@agentskit/harness",
@@ -20100,6 +20759,11 @@
             {
               "kind": "mentions",
               "id": "document:.github/factory-playbook.md",
+              "confidence": "observed"
+            },
+            {
+              "kind": "mentions",
+              "id": "document:docs/for-agents/packages/harness-scripts.md",
               "confidence": "observed"
             }
           ],
@@ -22547,7 +23211,7 @@
         },
         "graph": {
           "pagerank": 0,
-          "inboundLinks": 9,
+          "inboundLinks": 10,
           "coveredBy": [],
           "mentionedBy": [
             "document:.github/factory-playbook.md",
@@ -22556,10 +23220,12 @@
             "document:docs/ADR-0016-baseline-evidence-digests.md",
             "document:docs/ADR-0021-event-lock-recovery.md",
             "document:docs/ADR-0026-kernel-adapters-boundary.md",
+            "document:docs/for-agents/packages/harness-core.md",
             "document:docs/INVENTARIO.md",
             "document:docs/MODULE-BOUNDARIES.md",
             "document:docs/PRD-0.4.0.md"
           ],
+          "areaId": "area:src",
           "packageId": "package:@agentskit/harness",
           "inbound": [
             {
@@ -22595,6 +23261,11 @@
             {
               "kind": "mentions",
               "id": "document:docs/ADR-0026-kernel-adapters-boundary.md",
+              "confidence": "observed"
+            },
+            {
+              "kind": "mentions",
+              "id": "document:docs/for-agents/packages/harness-core.md",
               "confidence": "observed"
             },
             {
@@ -24553,6 +25224,7 @@
           "inboundLinks": 0,
           "coveredBy": [],
           "mentionedBy": [],
+          "areaId": "area:src",
           "packageId": "package:@agentskit/harness",
           "inbound": [
             {
@@ -38720,11 +39392,13 @@
         },
         "graph": {
           "pagerank": 0,
-          "inboundLinks": 1,
+          "inboundLinks": 2,
           "coveredBy": [],
           "mentionedBy": [
+            "document:docs/for-agents/packages/harness-core.md",
             "document:CHANGELOG.md"
           ],
+          "areaId": "area:src",
           "packageId": "package:@agentskit/harness",
           "inbound": [
             {
@@ -38755,6 +39429,11 @@
             {
               "kind": "imports",
               "id": "module:test/mvp.test.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "mentions",
+              "id": "document:docs/for-agents/packages/harness-core.md",
               "confidence": "observed"
             },
             {
@@ -38866,9 +39545,12 @@
         },
         "graph": {
           "pagerank": 0,
-          "inboundLinks": 0,
+          "inboundLinks": 1,
           "coveredBy": [],
-          "mentionedBy": [],
+          "mentionedBy": [
+            "document:docs/for-agents/packages/harness-core.md"
+          ],
+          "areaId": "area:src",
           "packageId": "package:@agentskit/harness",
           "inbound": [
             {
@@ -39034,6 +39716,11 @@
             {
               "kind": "imports",
               "id": "module:test/record.test.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "mentions",
+              "id": "document:docs/for-agents/packages/harness-core.md",
               "confidence": "observed"
             }
           ],
@@ -45585,9 +46272,11 @@
         },
         "graph": {
           "pagerank": 0,
-          "inboundLinks": 0,
+          "inboundLinks": 1,
           "coveredBy": [],
-          "mentionedBy": [],
+          "mentionedBy": [
+            "document:docs/for-agents/packages/harness-tests.md"
+          ],
           "areaId": "area:test",
           "packageId": "package:@agentskit/harness",
           "inbound": [
@@ -45629,6 +46318,11 @@
             {
               "kind": "imports",
               "id": "module:test/loop-fleet-handoff.test.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "mentions",
+              "id": "document:docs/for-agents/packages/harness-tests.md",
               "confidence": "observed"
             }
           ],
@@ -52911,11 +53605,13 @@
         },
         "graph": {
           "pagerank": 0,
-          "inboundLinks": 2,
+          "inboundLinks": 4,
           "coveredBy": [],
           "mentionedBy": [
             "document:.github/factory-playbook.md",
-            "document:CONTRIBUTING.md"
+            "document:CONTRIBUTING.md",
+            "document:docs/for-agents/packages/harness-core.md",
+            "document:docs/for-agents/packages/harness-tests.md"
           ],
           "packageId": "package:@agentskit/harness",
           "inbound": [
@@ -52927,6 +53623,16 @@
             {
               "kind": "mentions",
               "id": "document:CONTRIBUTING.md",
+              "confidence": "observed"
+            },
+            {
+              "kind": "mentions",
+              "id": "document:docs/for-agents/packages/harness-core.md",
+              "confidence": "observed"
+            },
+            {
+              "kind": "mentions",
+              "id": "document:docs/for-agents/packages/harness-tests.md",
               "confidence": "observed"
             }
           ],
@@ -52995,8 +53701,8 @@
           "aliases": "harness @agentskit/harness package"
         },
         "graph": {
-          "pagerank": 0.022599,
-          "inboundLinks": 8,
+          "pagerank": 0.019129,
+          "inboundLinks": 10,
           "coveredBy": [
             "document:README.md"
           ],
@@ -53005,6 +53711,8 @@
             "document:AGENTS.md",
             "document:apps/docs/content/docs/index.mdx",
             "document:CONTRIBUTING.md",
+            "document:docs/for-agents/packages/harness-core.md",
+            "document:docs/for-agents/packages/harness-tests.md",
             "document:docs/INVENTARIO.md",
             "document:docs/LOOP.md",
             "document:docs/PRD-0.4.0.md"
@@ -53034,6 +53742,16 @@
             {
               "kind": "mentions",
               "id": "document:CONTRIBUTING.md",
+              "confidence": "observed"
+            },
+            {
+              "kind": "mentions",
+              "id": "document:docs/for-agents/packages/harness-core.md",
+              "confidence": "observed"
+            },
+            {
+              "kind": "mentions",
+              "id": "document:docs/for-agents/packages/harness-tests.md",
               "confidence": "observed"
             },
             {

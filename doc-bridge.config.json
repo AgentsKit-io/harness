@@ -55,6 +55,34 @@
           "checks": [
             "node scripts/verify-ecosystem-public-outputs.mjs"
           ]
+        },
+        "harness-core": {
+          "path": "src",
+          "purpose": "The @agentskit/harness CLI, loop, verification kernel and adapters.",
+          "agentDoc": "docs/for-agents/packages/harness-core.md",
+          "humanDoc": "https://harness.agentskit.io/docs",
+          "checks": [
+            "pnpm typecheck",
+            "pnpm test"
+          ]
+        },
+        "harness-scripts": {
+          "path": "scripts",
+          "purpose": "Repository generators, verifiers and node --test suites run by the CI.",
+          "agentDoc": "docs/for-agents/packages/harness-scripts.md",
+          "humanDoc": "https://harness.agentskit.io/docs",
+          "checks": [
+            "pnpm test:docs-artifacts"
+          ]
+        },
+        "harness-tests": {
+          "path": "test",
+          "purpose": "Vitest suites, fixtures and helpers for the @agentskit/harness package.",
+          "agentDoc": "docs/for-agents/packages/harness-tests.md",
+          "humanDoc": "https://harness.agentskit.io/docs",
+          "checks": [
+            "pnpm test"
+          ]
         }
       },
       "intents": [
