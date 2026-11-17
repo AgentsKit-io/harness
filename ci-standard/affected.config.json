@@ -1,0 +1,43 @@
+{
+  "baseBranch": "main",
+  "workspaces": [
+    "apps/docs"
+  ],
+  "global": [
+    "package.json",
+    "tsconfig.json",
+    "biome.json",
+    "vitest.config.ts",
+    ".oxlintrc.json",
+    ".github/**",
+    ".husky/**",
+    "ci-standard/**",
+    "deploy/**",
+    "e2e-kit/**",
+    ".npmrc",
+    ".changeset/config.json",
+    "pnpm-lock.yaml",
+    "pnpm-workspace.yaml",
+    "tsup.config.ts"
+  ],
+  "ignore": [
+    "docs/**",
+    "*.md",
+    "changelog.d/**",
+    ".gitignore",
+    "doc-bridge.config.json",
+    ".dockerignore",
+    ".gitleaks.toml",
+    "knip.jsonc",
+    ".claude/**",
+    ".changeset/*.md",
+    ".doc-bridge/**"
+  ],
+  "contractGlobs": [
+    "**/test/contract/**",
+    "**/e2e/**",
+    "e2e-kit/**",
+    "deploy/portability.ts",
+    "ci-standard/scripts/test-env.mjs"
+  ]
+}

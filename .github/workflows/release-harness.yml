@@ -35,6 +35,15 @@ jobs:
     permissions:
       actions: write
       contents: read
+    with:
+      base-branch: main
+      package-manager: pnpm
+      installer: native
+      typecheck-command: bash scripts/ci/check.sh
+      build-command: bash scripts/ci/build.sh
+      test-command: pnpm vitest run --config vitest.config.ts test
+      affected-test-command: pnpm vitest run --config vitest.config.ts --changed "$BASE_REF" test
+      job-timeout-minutes: 20
 
   gitleaks:
     permissions:

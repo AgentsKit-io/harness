@@ -23,7 +23,7 @@ export default defineConfig({
     // `.ak-loop/**` is a gitignored, runtime-generated directory (base-view snapshots, dispatch state) this
     // repo's own loop tooling creates when dogfooding itself — its `base-view` can carry its own nested
     // `test/*.test.ts` files from whatever commit it snapshotted, unrelated to the current source tree.
-    exclude: [...(isPr ? ['**/*.slow.test.*'] : []), ...configDefaults.exclude, 'tests/e2e/**', 'packages/playbook/test/**', 'node_modules/**', '**/node_modules/**', 'apps/**', 'scripts/**', '.next/**', '.ak-loop/**'],
+    exclude: [...(isPr ? ['**/*.slow.test.*'] : []), ...configDefaults.exclude, 'tests/e2e/**', 'packages/playbook/test/**', 'node_modules/**', '**/node_modules/**', 'apps/**', 'scripts/**', 'ci-standard/**', '.next/**', '.ak-loop/**'],
     coverage: {
       include: ['src/**/*.{ts,tsx}'],
       exclude: ['src/ui/app/**', 'apps/**', 'scripts/**', 'test/**'],
