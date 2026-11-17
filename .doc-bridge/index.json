@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
-  "contentHash": "88719c48362d8d7856696d7a564767e1df8eac8935db0a9a7242db4fc3d1c5ed",
+  "contentHash": "98219bf3fdeea6ecc79866db26ca682ea6ef89c3b22421674f53e283ab9dfbac",
   "contentHashAlgo": "sha256-semantic-v1",
-  "generatedAt": "2026-11-17T12:03:07.436Z",
+  "generatedAt": "2026-11-17T12:04:34.248Z",
   "project": {
     "name": "AgentsKit Harness",
     "root": "."
@@ -7689,6 +7689,18 @@
       "contentHash": "454e840bc0ccb00f408a68a756fb971bfb76ac850d073eae0a93c5547ef5a590"
     },
     {
+      "id": "module:src/ui/app/src/css.d.ts",
+      "type": "module",
+      "title": "css.d.ts",
+      "path": "src/ui/app/src/css.d.ts",
+      "tags": [
+        "module",
+        "ts",
+        "src"
+      ],
+      "contentHash": "262a5f47f4b50abd662b94a11a73af8452bd0ce10187ca064ec81dbc7e3fffd2"
+    },
+    {
       "id": "module:src/ui/app/src/lib/actions.tsx",
       "type": "module",
       "title": "actions.tsx",
@@ -11149,8 +11161,8 @@
     }
   },
   "inputs": {
-    "hash": "8ef656222e5e7314292582118e88e4529b5f3847c1a07a7eccb3461e076055c5",
-    "fileCount": 690,
+    "hash": "4e67b2a4ea51190b5a94b49e099a4b0e3f1b52dbbc34046cc50eb9c0608911fd",
+    "fileCount": 691,
     "projectionVersion": 2
   },
   "retrieval": {
@@ -11172,9 +11184,9 @@
   "projection": {
     "type": "retrieval-index",
     "schemaVersion": 1,
-    "contentHash": "cf0940e484c96c1c539ebf1040ab108b393be1344f006fa6e696bfcef7f33478",
+    "contentHash": "c01435f94ea6f5d3d4c977f8a40b4bf1d420831e8b24aea2cfe96a1eb7be6ea9",
     "contentHashAlgo": "sha256-semantic-v1",
-    "snapshotHash": "e53d09488a382f33316825e3f23145eee74aac05dc66daccb9ff3a02073859b5",
+    "snapshotHash": "2a36f01aaa0541a1734ab28bd39f9cb8ceaf8d93e6c6253477dc5941b8cf16d4",
     "overlayHash": "f99666ff9119084dd25c2974ae64eb6935ec2aa785ff5ad478fb9d541f7a5e94",
     "configurationHash": "9d991c87366c55866fb598cfa41b6312c6be8636b05097dbf856448e5315df19",
     "lexiconVersion": 1,
@@ -11194,7 +11206,7 @@
     },
     "lexical": {
       "version": 1,
-      "documentCount": 674,
+      "documentCount": 675,
       "fieldNames": [
         "aliases",
         "body",
@@ -11205,13 +11217,13 @@
         "title"
       ],
       "averageFieldLength": {
-        "aliases": 3.0905044510385755,
-        "body": 46.19436201780415,
-        "headings": 3.77893175074184,
-        "path": 6.063798219584569,
-        "summary": 3.228486646884273,
-        "symbols": 12.887240356083087,
-        "title": 3.9985163204747773
+        "aliases": 3.0903703703703704,
+        "body": 46.12592592592593,
+        "headings": 3.7733333333333334,
+        "path": 6.063703703703704,
+        "summary": 3.2237037037037037,
+        "symbols": 12.868148148148148,
+        "title": 3.9955555555555557
       }
     },
     "entries": [
@@ -12202,7 +12214,7 @@
           ],
           "outbound": []
         },
-        "contentHash": "7c21fdf59e1bddbf6718549ad0d6032cce95fee559059a66b3d25c3d2d717021",
+        "contentHash": "ee5a38d994de118ab70a4e302907a03c2e80e105a72aa39305394a73a1ccaac9",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -46172,6 +46184,40 @@
           "outbound": []
         },
         "contentHash": "454e840bc0ccb00f408a68a756fb971bfb76ac850d073eae0a93c5547ef5a590",
+        "provenance": "observed",
+        "confidence": "observed"
+      },
+      {
+        "id": "module:src/ui/app/src/css.d.ts",
+        "kind": "module",
+        "path": "src/ui/app/src/css.d.ts",
+        "title": "css.d.ts",
+        "aliases": [],
+        "tags": [
+          "module",
+          "ts",
+          "src"
+        ],
+        "fields": {
+          "title": "css.d.ts",
+          "headings": "",
+          "path": "src/ui/app/src/css.d.ts",
+          "symbols": "",
+          "summary": "",
+          "body": "",
+          "aliases": "module ts src"
+        },
+        "graph": {
+          "pagerank": 0,
+          "inboundLinks": 0,
+          "coveredBy": [],
+          "mentionedBy": [],
+          "areaId": "area:src/ui",
+          "packageId": "package:@agentskit/harness",
+          "inbound": [],
+          "outbound": []
+        },
+        "contentHash": "262a5f47f4b50abd662b94a11a73af8452bd0ce10187ca064ec81dbc7e3fffd2",
         "provenance": "observed",
         "confidence": "observed"
       },
