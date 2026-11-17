@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
-  "contentHash": "992d89379a0a996675483c27eadaa99bad295836372fb6924f0448b5fc3ea235",
+  "contentHash": "55298fdddf824d246c28024d7419942a282a63cd4f065b2429727b13d88c3b82",
   "contentHashAlgo": "sha256-semantic-v1",
-  "generatedAt": "2026-11-17T12:48:43.907Z",
+  "generatedAt": "2026-11-17T12:59:58.379Z",
   "project": {
     "name": "AgentsKit Harness",
     "root": "."
@@ -412,6 +412,18 @@
         "project"
       ],
       "contentHash": "9c6b7bc2f1b0339be32276eb7230cf99cb3de07609618c76e97f4365aed40b3e"
+    },
+    {
+      "id": "document:changelog.d/319.md",
+      "type": "document",
+      "title": "319.md",
+      "path": "changelog.d/319.md",
+      "description": "fix: install pre-push hook, pin TypeScript 7.0.2, adopt the standard CI and security rules",
+      "tags": [
+        "document",
+        "project"
+      ],
+      "contentHash": "ee41630edd709b4e968843750e16d95d707a9f0cc9ec957758e40ee3574584d2"
     },
     {
       "id": "document:changelog.d/321.md",
@@ -1870,6 +1882,18 @@
       "contentHash": "83bddde23ba0d46c7d15b4840232691d4c74ac94d6c8971f91e52a3b5e869cfa"
     },
     {
+      "id": "module:ci-standard/scripts/pre-push.mjs",
+      "type": "module",
+      "title": "pre-push.mjs",
+      "path": "ci-standard/scripts/pre-push.mjs",
+      "tags": [
+        "module",
+        "mjs",
+        "scripts"
+      ],
+      "contentHash": "ea2349c1c8df348020de2a8fc7e776618a45f09c64bb4d3403760e7559ee32a5"
+    },
+    {
       "id": "module:examples/minimum-profile.mjs",
       "type": "module",
       "title": "minimum-profile.mjs",
@@ -1987,7 +2011,7 @@
         "mjs",
         "scripts"
       ],
-      "contentHash": "32ab05cceb913a33ef8c26eba6ceed0a49b48d14b0124394060152403b5f0a38"
+      "contentHash": "471816e53672a221202f5968831c649af1026427cd61114d3019e7fadc417fac"
     },
     {
       "id": "module:scripts/cloudflare-headers.config.mjs",
@@ -2146,7 +2170,7 @@
         "mjs",
         "lib"
       ],
-      "contentHash": "1e444ab875579916d0c53c0392f41de7b0810c56c39e04dbf9edc8f1b14277ef"
+      "contentHash": "976ec41f7135b07ae51f5ca6f800d54b70f29716532e89532df737665820afff"
     },
     {
       "id": "module:scripts/lib/stats.mjs",
@@ -10152,7 +10176,7 @@
         "module",
         "ts"
       ],
-      "contentHash": "25d52c13329d39e7031a2f9a339f9faf1ee3ca3f67bcbbf17bb5fa3dc52bf89b"
+      "contentHash": "4ce196400f20448f61510b2474650eb4d0187f0633a9bb7f9112d7cd0babb83c"
     },
     {
       "id": "module:vitest.config.ts",
@@ -10756,8 +10780,8 @@
     }
   },
   "inputs": {
-    "hash": "d96018b02c4c25e19792f6919100f7d3cd06c7cf238477c1fe06f3b43f5a6ad9",
-    "fileCount": 664,
+    "hash": "edae268ce6a01e73d038c668670a3ccd44fc5a50bae0241ddb6ad4bb2d993ce0",
+    "fileCount": 666,
     "projectionVersion": 2
   },
   "retrieval": {
@@ -10779,9 +10803,9 @@
   "projection": {
     "type": "retrieval-index",
     "schemaVersion": 1,
-    "contentHash": "0f824f1fc7750d5b96454ffd520e9e1dc93958b1d6d96a8e2fef2997c0e76e03",
+    "contentHash": "b625c7a42d15dfb2384ebafb3d41a3a18a3464e691a726031b92ee50a6b17570",
     "contentHashAlgo": "sha256-semantic-v1",
-    "snapshotHash": "ccd5617f880a32dd2ea9b9dcb61f94a8286dd41ac0dbe7e8e85cc64ef31e135a",
+    "snapshotHash": "4f229ddb7d94c314848b0e4ebf965d92069425e4eef04982d3cd3a31cc5a3dee",
     "overlayHash": "f99666ff9119084dd25c2974ae64eb6935ec2aa785ff5ad478fb9d541f7a5e94",
     "configurationHash": "9d991c87366c55866fb598cfa41b6312c6be8636b05097dbf856448e5315df19",
     "lexiconVersion": 1,
@@ -10801,7 +10825,7 @@
     },
     "lexical": {
       "version": 1,
-      "documentCount": 650,
+      "documentCount": 653,
       "fieldNames": [
         "aliases",
         "body",
@@ -10812,13 +10836,13 @@
         "title"
       ],
       "averageFieldLength": {
-        "aliases": 3.1,
-        "body": 48.206153846153846,
-        "headings": 3.9261538461538463,
-        "path": 6.033846153846154,
-        "summary": 3.2753846153846156,
-        "symbols": 12.961538461538462,
-        "title": 4.007692307692308
+        "aliases": 3.0949464012251147,
+        "body": 48.00765696784074,
+        "headings": 3.908116385911179,
+        "path": 6.027565084226646,
+        "summary": 3.2833078101071975,
+        "symbols": 12.90199081163859,
+        "title": 4.003062787136294
       }
     },
     "entries": [
@@ -11117,6 +11141,57 @@
           "outbound": []
         },
         "contentHash": "a9222c597da887fdf351994ec2d2b6cafacbf0ff695261b6cf4f4dcb855bf724",
+        "provenance": "observed",
+        "confidence": "observed"
+      },
+      {
+        "id": "area:ci-standard",
+        "kind": "area",
+        "path": "ci-standard",
+        "title": "ci-standard",
+        "aliases": [],
+        "tags": [
+          "area"
+        ],
+        "fields": {
+          "title": "ci-standard",
+          "headings": "",
+          "path": "ci-standard",
+          "symbols": "",
+          "summary": "",
+          "body": "",
+          "aliases": "area"
+        },
+        "graph": {
+          "pagerank": 0,
+          "inboundLinks": 3,
+          "coveredBy": [],
+          "mentionedBy": [
+            "document:.claude/rules/ci.md",
+            "document:.claude/rules/seguranca.md",
+            "document:changelog.d/305.md"
+          ],
+          "packageId": "package:@agentskit/harness",
+          "inbound": [
+            {
+              "kind": "mentions",
+              "id": "document:.claude/rules/ci.md",
+              "confidence": "fuzzy"
+            },
+            {
+              "kind": "mentions",
+              "id": "document:.claude/rules/seguranca.md",
+              "confidence": "fuzzy"
+            },
+            {
+              "kind": "mentions",
+              "id": "document:changelog.d/305.md",
+              "confidence": "fuzzy"
+            }
+          ],
+          "outbound": []
+        },
+        "contentHash": "00840de24ad5b4fd0f4307a906146a8de871c82930a62fdd352f9b543333345b",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -11929,7 +12004,18 @@
               "confidence": "fuzzy"
             }
           ],
-          "outbound": []
+          "outbound": [
+            {
+              "kind": "mentions",
+              "id": "area:ci-standard",
+              "confidence": "fuzzy"
+            },
+            {
+              "kind": "mentions",
+              "id": "module:ci-standard/scripts/pre-push.mjs",
+              "confidence": "observed"
+            }
+          ]
         },
         "contentHash": "e6650fca0293da0d4e4a3b62e2b506e1ab5f5af475e63831fb2893cb37c3778e",
         "provenance": "observed",
@@ -11961,7 +12047,13 @@
           "coveredBy": [],
           "mentionedBy": [],
           "inbound": [],
-          "outbound": []
+          "outbound": [
+            {
+              "kind": "mentions",
+              "id": "area:ci-standard",
+              "confidence": "fuzzy"
+            }
+          ]
         },
         "contentHash": "7fb9819aca4a68e8cf1b61557da584d2fba8e765be931cc83120b3df04abe1f1",
         "provenance": "observed",
@@ -13902,6 +13994,11 @@
           "outbound": [
             {
               "kind": "mentions",
+              "id": "area:ci-standard",
+              "confidence": "fuzzy"
+            },
+            {
+              "kind": "mentions",
               "id": "area:scripts",
               "confidence": "fuzzy"
             }
@@ -13941,6 +14038,39 @@
           "outbound": []
         },
         "contentHash": "9c6b7bc2f1b0339be32276eb7230cf99cb3de07609618c76e97f4365aed40b3e",
+        "provenance": "observed",
+        "confidence": "observed"
+      },
+      {
+        "id": "document:changelog.d/319.md",
+        "kind": "document",
+        "path": "changelog.d/319.md",
+        "title": "319.md",
+        "summary": "fix: install pre-push hook, pin TypeScript 7.0.2, adopt the standard CI and security rules",
+        "audience": "human",
+        "aliases": [],
+        "tags": [
+          "document",
+          "project"
+        ],
+        "fields": {
+          "title": "319.md",
+          "headings": "",
+          "path": "changelog.d/319.md",
+          "symbols": "",
+          "summary": "fix: install pre-push hook, pin TypeScript 7.0.2, adopt the standard CI and security rules",
+          "body": "fix: install pre-push hook, pin TypeScript 7.0.2, adopt the standard CI and security rules",
+          "aliases": "document project"
+        },
+        "graph": {
+          "pagerank": 0,
+          "inboundLinks": 0,
+          "coveredBy": [],
+          "mentionedBy": [],
+          "inbound": [],
+          "outbound": []
+        },
+        "contentHash": "ee41630edd709b4e968843750e16d95d707a9f0cc9ec957758e40ee3574584d2",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -20635,6 +20765,48 @@
         "confidence": "observed"
       },
       {
+        "id": "module:ci-standard/scripts/pre-push.mjs",
+        "kind": "module",
+        "path": "ci-standard/scripts/pre-push.mjs",
+        "title": "pre-push.mjs",
+        "aliases": [],
+        "tags": [
+          "module",
+          "mjs",
+          "scripts"
+        ],
+        "fields": {
+          "title": "pre-push.mjs",
+          "headings": "",
+          "path": "ci-standard/scripts/pre-push.mjs",
+          "symbols": "",
+          "summary": "",
+          "body": "",
+          "aliases": "module mjs scripts"
+        },
+        "graph": {
+          "pagerank": 0,
+          "inboundLinks": 1,
+          "coveredBy": [],
+          "mentionedBy": [
+            "document:.claude/rules/ci.md"
+          ],
+          "areaId": "area:ci-standard",
+          "packageId": "package:@agentskit/harness",
+          "inbound": [
+            {
+              "kind": "mentions",
+              "id": "document:.claude/rules/ci.md",
+              "confidence": "observed"
+            }
+          ],
+          "outbound": []
+        },
+        "contentHash": "ea2349c1c8df348020de2a8fc7e776618a45f09c64bb4d3403760e7559ee32a5",
+        "provenance": "observed",
+        "confidence": "observed"
+      },
+      {
         "id": "module:examples/minimum-profile.mjs",
         "kind": "module",
         "path": "examples/minimum-profile.mjs",
@@ -21088,7 +21260,7 @@
           ],
           "outbound": []
         },
-        "contentHash": "32ab05cceb913a33ef8c26eba6ceed0a49b48d14b0124394060152403b5f0a38",
+        "contentHash": "471816e53672a221202f5968831c649af1026427cd61114d3019e7fadc417fac",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -21610,7 +21782,7 @@
           ],
           "outbound": []
         },
-        "contentHash": "1e444ab875579916d0c53c0392f41de7b0810c56c39e04dbf9edc8f1b14277ef",
+        "contentHash": "976ec41f7135b07ae51f5ca6f800d54b70f29716532e89532df737665820afff",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -54695,7 +54867,7 @@
           "inbound": [],
           "outbound": []
         },
-        "contentHash": "25d52c13329d39e7031a2f9a339f9faf1ee3ca3f67bcbbf17bb5fa3dc52bf89b",
+        "contentHash": "4ce196400f20448f61510b2474650eb4d0187f0633a9bb7f9112d7cd0babb83c",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -55149,7 +55321,7 @@
           ],
           "outbound": []
         },
-        "contentHash": "952ee584ce96fd131caec2e9c7cee25b7cdfa6e32fee01fcd94ae5530aa91496",
+        "contentHash": "774844a4bf592a9afc1e7d6452a65fad845b3421103aa9d03093c2645bf0b438",
         "provenance": "observed",
         "confidence": "observed"
       },

@@ -4,7 +4,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { toPosix } from '@agentskit/cross-platform/pure'
-import ts from 'typescript'
+import ts from '@typescript/typescript6'
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 const snapshotPath = path.join(root, 'docs/stability/public-api-v1.json')

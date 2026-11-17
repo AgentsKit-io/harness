@@ -6,7 +6,7 @@
  * reference generators read both and join them on the dotted path this module produces.
  */
 import { readFileSync } from 'node:fs'
-import ts from 'typescript'
+import ts from '@typescript/typescript6'
 
 const sourceFileOf = (path) => ts.createSourceFile(path, readFileSync(path, 'utf8'), ts.ScriptTarget.Latest, true)
 
