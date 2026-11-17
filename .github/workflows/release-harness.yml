@@ -39,6 +39,8 @@ jobs:
       base-branch: main
       package-manager: pnpm
       installer: native
+      # Biome is not a dependency of this repo; formatting is not enforced (typecheck is the lint).
+      format-command: none
       typecheck-command: bash scripts/ci/check.sh
       build-command: bash scripts/ci/build.sh
       test-command: pnpm vitest run --config vitest.config.ts test

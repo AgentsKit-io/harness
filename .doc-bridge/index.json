@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
-  "contentHash": "98219bf3fdeea6ecc79866db26ca682ea6ef89c3b22421674f53e283ab9dfbac",
+  "contentHash": "906f0f78746261ba61e46475a477ffabe1b06533b4df30c4a09bfd8859f7d380",
   "contentHashAlgo": "sha256-semantic-v1",
-  "generatedAt": "2026-11-17T12:04:34.248Z",
+  "generatedAt": "2026-11-17T12:14:04.315Z",
   "project": {
     "name": "AgentsKit Harness",
     "root": "."
@@ -418,12 +418,12 @@
       "type": "document",
       "title": "317.md",
       "path": "changelog.d/317.md",
-      "description": "ci: adopt the CI standard v3 template (ci-standard.yml, setup-deps, ci-mode, ci-standard scripts and baselines) and call it from release-harness.yml",
+      "description": "fix: make the UI tsconfig valid under TypeScript 7 (drop baseUrl, declare CSS side-effect imports)",
       "tags": [
         "document",
         "project"
       ],
-      "contentHash": "47c44a452c42ec612f803e7e2933767a0ce5c70b76e612ddf28d1c04317bea46"
+      "contentHash": "1cc81c386f6d7fe34b6bd1d0606ffa54b3ce8fc5d90e3aa71e2770c6f1b4a6e6"
     },
     {
       "id": "document:changelog.d/318.md",
@@ -11161,7 +11161,7 @@
     }
   },
   "inputs": {
-    "hash": "4e67b2a4ea51190b5a94b49e099a4b0e3f1b52dbbc34046cc50eb9c0608911fd",
+    "hash": "f4e4123e1c38bf572b8a21bd1a9244eb3340b4b3a157ee456133e2db4147981b",
     "fileCount": 691,
     "projectionVersion": 2
   },
@@ -11184,9 +11184,9 @@
   "projection": {
     "type": "retrieval-index",
     "schemaVersion": 1,
-    "contentHash": "c01435f94ea6f5d3d4c977f8a40b4bf1d420831e8b24aea2cfe96a1eb7be6ea9",
+    "contentHash": "14a2969927f15a17ca9b4a80a08dd547e7ad0fc79c67afb58a6813a3f20fb5ea",
     "contentHashAlgo": "sha256-semantic-v1",
-    "snapshotHash": "2a36f01aaa0541a1734ab28bd39f9cb8ceaf8d93e6c6253477dc5941b8cf16d4",
+    "snapshotHash": "aa7a2db9dcdb97f76f17a0146284de7c7149e1cbbeb3368ec560f8289300e708",
     "overlayHash": "f99666ff9119084dd25c2974ae64eb6935ec2aa785ff5ad478fb9d541f7a5e94",
     "configurationHash": "9d991c87366c55866fb598cfa41b6312c6be8636b05097dbf856448e5315df19",
     "lexiconVersion": 1,
@@ -11218,10 +11218,10 @@
       ],
       "averageFieldLength": {
         "aliases": 3.0903703703703704,
-        "body": 46.12592592592593,
+        "body": 46.114074074074075,
         "headings": 3.7733333333333334,
         "path": 6.063703703703704,
-        "summary": 3.2237037037037037,
+        "summary": 3.211851851851852,
         "symbols": 12.868148148148148,
         "title": 3.9955555555555557
       }
@@ -14422,7 +14422,7 @@
         "kind": "document",
         "path": "changelog.d/317.md",
         "title": "317.md",
-        "summary": "ci: adopt the CI standard v3 template (ci-standard.yml, setup-deps, ci-mode, ci-standard scripts and baselines) and call it from release-harness.yml",
+        "summary": "fix: make the UI tsconfig valid under TypeScript 7 (drop baseUrl, declare CSS side-effect imports)",
         "audience": "human",
         "aliases": [],
         "tags": [
@@ -14434,8 +14434,8 @@
           "headings": "",
           "path": "changelog.d/317.md",
           "symbols": "",
-          "summary": "ci: adopt the CI standard v3 template (ci-standard.yml, setup-deps, ci-mode, ci-standard scripts and baselines) and call it from release-harness.yml",
-          "body": "ci: adopt the CI standard v3 template (ci-standard.yml, setup-deps, ci-mode, ci-standard scripts and baselines) and call it from release-harness.yml",
+          "summary": "fix: make the UI tsconfig valid under TypeScript 7 (drop baseUrl, declare CSS side-effect imports)",
+          "body": "fix: make the UI tsconfig valid under TypeScript 7 (drop baseUrl, declare CSS side-effect imports)",
           "aliases": "document project"
         },
         "graph": {
@@ -14446,7 +14446,7 @@
           "inbound": [],
           "outbound": []
         },
-        "contentHash": "47c44a452c42ec612f803e7e2933767a0ce5c70b76e612ddf28d1c04317bea46",
+        "contentHash": "1cc81c386f6d7fe34b6bd1d0606ffa54b3ce8fc5d90e3aa71e2770c6f1b4a6e6",
         "provenance": "observed",
         "confidence": "observed"
       },
