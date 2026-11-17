@@ -83,6 +83,69 @@
           "checks": [
             "pnpm test"
           ]
+        },
+        "harness-examples": {
+          "path": "examples",
+          "purpose": "Runnable loop configs and minimum-profile samples.",
+          "agentDoc": "docs/for-agents/packages/harness-examples.md",
+          "humanDoc": "https://harness.agentskit.io/docs",
+          "checks": [
+            "node scripts/verify-harness-examples.mjs"
+          ]
+        },
+        "harness-skills": {
+          "path": "skills",
+          "purpose": "Agent skills shipped with the harness (loop skill).",
+          "agentDoc": "docs/for-agents/packages/harness-skills.md",
+          "humanDoc": "https://harness.agentskit.io/docs",
+          "checks": [
+            "pnpm test:loop"
+          ]
+        },
+        "harness-experimental": {
+          "path": "experimental",
+          "purpose": "Experimental cycle, discovery and pilot code kept outside the stable API.",
+          "agentDoc": "docs/for-agents/packages/harness-experimental.md",
+          "humanDoc": "https://harness.agentskit.io/docs",
+          "checks": [
+            "pnpm typecheck"
+          ]
+        },
+        "harness-evals": {
+          "path": "evals",
+          "purpose": "Eval manifest used to score loop behavior.",
+          "agentDoc": "docs/for-agents/packages/harness-evals.md",
+          "humanDoc": "https://harness.agentskit.io/docs",
+          "checks": [
+            "pnpm test:eval-battery"
+          ]
+        },
+        "harness-benchmarks": {
+          "path": "benchmarks",
+          "purpose": "Recorded benchmark baselines and eval results.",
+          "agentDoc": "docs/for-agents/packages/harness-benchmarks.md",
+          "humanDoc": "https://harness.agentskit.io/docs",
+          "checks": [
+            "pnpm test"
+          ]
+        },
+        "harness-release": {
+          "path": "release",
+          "purpose": "Release manifest, notes and qualification evidence.",
+          "agentDoc": "docs/for-agents/packages/harness-release.md",
+          "humanDoc": "https://harness.agentskit.io/docs",
+          "checks": [
+            "node scripts/verify-release-evidence.mjs"
+          ]
+        },
+        "harness-compatibility": {
+          "path": "compatibility",
+          "purpose": "Compatibility manifest, report and migration/rollback notes.",
+          "agentDoc": "docs/for-agents/packages/harness-compatibility.md",
+          "humanDoc": "https://harness.agentskit.io/docs",
+          "checks": [
+            "pnpm test:compatibility"
+          ]
         }
       },
       "intents": [
