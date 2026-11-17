@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
-  "contentHash": "9455b387733b9a1ebe8e3d06b1397f3e88514006b88d1a97b39e995928f0cbd4",
+  "contentHash": "95aa8e87d33fe3034656c254d5cff85a23ebb4c5e5ba54048e41c8fd41ba7e14",
   "contentHashAlgo": "sha256-semantic-v1",
-  "generatedAt": "2026-11-17T08:57:45.812Z",
+  "generatedAt": "2026-11-17T13:01:47.118Z",
   "project": {
     "name": "AgentsKit Harness",
     "root": "."
@@ -272,26 +272,26 @@
     {
       "id": "document:.claude/rules/ci.md",
       "type": "document",
-      "title": "CI rules",
+      "title": "Regras de CI (padrão de CI, docs/ci-standard.md)",
       "path": ".claude/rules/ci.md",
-      "description": "Before pushing, run only the tests/scripts for changed files (pnpm vitest run <changed tests>), not the full contract. See docs/adr/0048-scoped-verification.md.",
+      "description": "Cada regra diz como é verificada. Se a verificação falhar, corrija o código, não a verificação.",
       "tags": [
         "document",
         "unclassified"
       ],
-      "contentHash": "9ad63d4c85d6670930f9a36598187a949142496cf3878170655e4498227ecb36"
+      "contentHash": "e6650fca0293da0d4e4a3b62e2b506e1ab5f5af475e63831fb2893cb37c3778e"
     },
     {
-      "id": "document:.claude/rules/security.md",
+      "id": "document:.claude/rules/seguranca.md",
       "type": "document",
-      "title": "Security rules",
-      "path": ".claude/rules/security.md",
-      "description": "No secrets, tokens or credentials in logs, errors, fixtures or commit messages.",
+      "title": "Regras de segurança",
+      "path": ".claude/rules/seguranca.md",
+      "description": "Cada regra diz como é verificada.",
       "tags": [
         "document",
-        "project"
+        "unclassified"
       ],
-      "contentHash": "2ba35c3cc95344ff4c804adc65b087d9b52825334704048f3dc3d7472e5e5d8e"
+      "contentHash": "7fb9819aca4a68e8cf1b61557da584d2fba8e765be931cc83120b3df04abe1f1"
     },
     {
       "id": "document:.github/factory-playbook.md",
@@ -412,6 +412,18 @@
         "project"
       ],
       "contentHash": "9c6b7bc2f1b0339be32276eb7230cf99cb3de07609618c76e97f4365aed40b3e"
+    },
+    {
+      "id": "document:changelog.d/319.md",
+      "type": "document",
+      "title": "319.md",
+      "path": "changelog.d/319.md",
+      "description": "fix: install the standard pre-push hook (husky), pin TypeScript 7.0.2 (declarations via native tsc --emitDeclarationOnly, compiler-API scripts on @typescript/typescript6), adopt the standard CI and security rules",
+      "tags": [
+        "document",
+        "project"
+      ],
+      "contentHash": "13c26c170a3b42b241163fd8389024488a688e53dcb8057c3209f20938bd735a"
     },
     {
       "id": "document:changelog.d/321.md",
@@ -1870,6 +1882,18 @@
       "contentHash": "83bddde23ba0d46c7d15b4840232691d4c74ac94d6c8971f91e52a3b5e869cfa"
     },
     {
+      "id": "module:ci-standard/scripts/pre-push.mjs",
+      "type": "module",
+      "title": "pre-push.mjs",
+      "path": "ci-standard/scripts/pre-push.mjs",
+      "tags": [
+        "module",
+        "mjs",
+        "scripts"
+      ],
+      "contentHash": "ea2349c1c8df348020de2a8fc7e776618a45f09c64bb4d3403760e7559ee32a5"
+    },
+    {
       "id": "module:examples/minimum-profile.mjs",
       "type": "module",
       "title": "minimum-profile.mjs",
@@ -1987,7 +2011,7 @@
         "mjs",
         "scripts"
       ],
-      "contentHash": "32ab05cceb913a33ef8c26eba6ceed0a49b48d14b0124394060152403b5f0a38"
+      "contentHash": "471816e53672a221202f5968831c649af1026427cd61114d3019e7fadc417fac"
     },
     {
       "id": "module:scripts/cloudflare-headers.config.mjs",
@@ -2146,7 +2170,7 @@
         "mjs",
         "lib"
       ],
-      "contentHash": "1e444ab875579916d0c53c0392f41de7b0810c56c39e04dbf9edc8f1b14277ef"
+      "contentHash": "976ec41f7135b07ae51f5ca6f800d54b70f29716532e89532df737665820afff"
     },
     {
       "id": "module:scripts/lib/stats.mjs",
@@ -7284,6 +7308,18 @@
       "contentHash": "454e840bc0ccb00f408a68a756fb971bfb76ac850d073eae0a93c5547ef5a590"
     },
     {
+      "id": "module:src/ui/app/src/css.d.ts",
+      "type": "module",
+      "title": "css.d.ts",
+      "path": "src/ui/app/src/css.d.ts",
+      "tags": [
+        "module",
+        "ts",
+        "src"
+      ],
+      "contentHash": "262a5f47f4b50abd662b94a11a73af8452bd0ce10187ca064ec81dbc7e3fffd2"
+    },
+    {
       "id": "module:src/ui/app/src/lib/actions.tsx",
       "type": "module",
       "title": "actions.tsx",
@@ -10140,7 +10176,7 @@
         "module",
         "ts"
       ],
-      "contentHash": "25d52c13329d39e7031a2f9a339f9faf1ee3ca3f67bcbbf17bb5fa3dc52bf89b"
+      "contentHash": "4ce196400f20448f61510b2474650eb4d0187f0633a9bb7f9112d7cd0babb83c"
     },
     {
       "id": "module:vitest.config.ts",
@@ -10744,8 +10780,8 @@
     }
   },
   "inputs": {
-    "hash": "8724ebe670b5305641cad790e5e011df9c4c7da09da8ccb47fcb673b741ada43",
-    "fileCount": 663,
+    "hash": "98fbb024fc6fe99f44629f91aad3562a5084452d57f7c07e645d707806ebe948",
+    "fileCount": 666,
     "projectionVersion": 2
   },
   "retrieval": {
@@ -10767,9 +10803,9 @@
   "projection": {
     "type": "retrieval-index",
     "schemaVersion": 1,
-    "contentHash": "0e446c538572bd4f72f1e82cb7dd5a723a3f683adf789b2f58fe6b396de45073",
+    "contentHash": "ab7b9e3edb35fc7a018f3e3826b612c222c44a7df01ab1573b8137e61d61cfd8",
     "contentHashAlgo": "sha256-semantic-v1",
-    "snapshotHash": "b3be17cdfafeab6ec60481c9a0cf0b6e2f3904c9f54df51978bc6e6d55168c71",
+    "snapshotHash": "8266d92a385669c7c638d280f2e8a96e33ce6d9f4da6f970365610025c73ec89",
     "overlayHash": "f99666ff9119084dd25c2974ae64eb6935ec2aa785ff5ad478fb9d541f7a5e94",
     "configurationHash": "9d991c87366c55866fb598cfa41b6312c6be8636b05097dbf856448e5315df19",
     "lexiconVersion": 1,
@@ -10789,7 +10825,7 @@
     },
     "lexical": {
       "version": 1,
-      "documentCount": 649,
+      "documentCount": 653,
       "fieldNames": [
         "aliases",
         "body",
@@ -10800,13 +10836,13 @@
         "title"
       ],
       "averageFieldLength": {
-        "aliases": 3.100154083204931,
-        "body": 47.6979969183359,
-        "headings": 3.921417565485362,
-        "path": 6.033898305084746,
-        "summary": 3.3066255778120186,
-        "symbols": 12.98151001540832,
-        "title": 4
+        "aliases": 3.0949464012251147,
+        "body": 48.03215926493109,
+        "headings": 3.908116385911179,
+        "path": 6.027565084226646,
+        "summary": 3.30781010719755,
+        "symbols": 12.90199081163859,
+        "title": 4.003062787136294
       }
     },
     "entries": [
@@ -11105,6 +11141,57 @@
           "outbound": []
         },
         "contentHash": "a9222c597da887fdf351994ec2d2b6cafacbf0ff695261b6cf4f4dcb855bf724",
+        "provenance": "observed",
+        "confidence": "observed"
+      },
+      {
+        "id": "area:ci-standard",
+        "kind": "area",
+        "path": "ci-standard",
+        "title": "ci-standard",
+        "aliases": [],
+        "tags": [
+          "area"
+        ],
+        "fields": {
+          "title": "ci-standard",
+          "headings": "",
+          "path": "ci-standard",
+          "symbols": "",
+          "summary": "",
+          "body": "",
+          "aliases": "area"
+        },
+        "graph": {
+          "pagerank": 0,
+          "inboundLinks": 3,
+          "coveredBy": [],
+          "mentionedBy": [
+            "document:.claude/rules/ci.md",
+            "document:.claude/rules/seguranca.md",
+            "document:changelog.d/305.md"
+          ],
+          "packageId": "package:@agentskit/harness",
+          "inbound": [
+            {
+              "kind": "mentions",
+              "id": "document:.claude/rules/ci.md",
+              "confidence": "fuzzy"
+            },
+            {
+              "kind": "mentions",
+              "id": "document:.claude/rules/seguranca.md",
+              "confidence": "fuzzy"
+            },
+            {
+              "kind": "mentions",
+              "id": "document:changelog.d/305.md",
+              "confidence": "fuzzy"
+            }
+          ],
+          "outbound": []
+        },
+        "contentHash": "00840de24ad5b4fd0f4307a906146a8de871c82930a62fdd352f9b543333345b",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -11752,7 +11839,7 @@
           ],
           "outbound": []
         },
-        "contentHash": "7c21fdf59e1bddbf6718549ad0d6032cce95fee559059a66b3d25c3d2d717021",
+        "contentHash": "ee5a38d994de118ab70a4e302907a03c2e80e105a72aa39305394a73a1ccaac9",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -11887,20 +11974,20 @@
         "id": "document:.claude/rules/ci.md",
         "kind": "document",
         "path": ".claude/rules/ci.md",
-        "title": "CI rules",
-        "summary": "Before pushing, run only the tests/scripts for changed files (pnpm vitest run <changed tests>), not the full contract. See docs/adr/0048-scoped-verification.md.",
+        "title": "Regras de CI (padrão de CI, docs/ci-standard.md)",
+        "summary": "Cada regra diz como é verificada. Se a verificação falhar, corrija o código, não a verificação.",
         "aliases": [],
         "tags": [
           "document",
           "unclassified"
         ],
         "fields": {
-          "title": "CI rules",
-          "headings": "CI rules",
+          "title": "Regras de CI (padrão de CI, docs/ci-standard.md)",
+          "headings": "Regras de CI (padrão de CI, docs/ci-standard.md)",
           "path": ".claude/rules/ci.md",
           "symbols": "",
-          "summary": "Before pushing, run only the tests/scripts for changed files (pnpm vitest run <changed tests>), not the full contract. See docs/adr/0048-scoped-verification.md.",
-          "body": "CI rules - Before pushing, run only the tests/scripts for changed files ( pnpm vitest run <changed tests ), not the full contract. See docs/adr/0048-scoped-verification.md . - Tests use no fixed ports (bind to port 0) and no hard-coded dates (inject a clock or use relative times). - Tests never use the real HOME; use temp directories. - Generated artifacts (docs, capability manifest, Doc Bridge index) are regenerated, never hand-edited.",
+          "summary": "Cada regra diz como é verificada. Se a verificação falhar, corrija o código, não a verificação.",
+          "body": "Regras de CI (padrão de CI, docs/ci-standard.md) Cada regra diz como é verificada. Se a verificação falhar, corrija o código, não a verificação. - Pre-push obrigatório e rápido. .husky/pre-push → ci-standard/scripts/pre-push.mjs (oxlint e formato do Biome nos arquivos alterados + tsc do TS 7), abaixo de 10 s. Verifica: job lint ( test -x .husky/pre-push ). Não use --no-verify . - Ferramentas do padrão. bun install sobre o lockfile do repo (nunca um bun.lock novo), oxlint para lint, Biome só para formatar, vitest, TypeScript 7 ( tsc nativo). Verifica: job lint do ci-standard.yml . - Cada minuto conta. Rascunho roda só lint + typecheck; PR pronto roda o afetado (testes e build); mudança só de docs/changelog não sobe job pesado; push na base só semeia o cache; o noturno (só se a base mudou) e a produção rodam tudo. Push novo cancela o run anterior do PR. Todo job tem timeout-minutes . Verifica: ci-standard/test/manifest.test.mjs . - PR roda só o afetado. Arquivo novo fora de toda regra faz o plan falhar: registre-o em ci-standard/affected.config.json ( workspaces , global ou ignore ). Verifica: ci-standard/scripts/affected.mjs , passos de prova no job plan . - Sem job que repita o padrão. Comando só do produto entra em extra-lint-command , extra-test-command ou extra-build-command ; nunca num job checks paralelo. Verifica: revisão do ci.yml contra a tabela \"Sem job duplicado\" do docs/ci-standard.md . - Contrato e e2e sem porta, data, flock ou slot fixos. Porta via freePort() , banco via createTestDatabase() (um por job), data via testNow() / fakeClock() com offsets ( ci-standard/scripts/test-env.mjs ). Verifica: node ci-standard/scripts/no-fixed-ports.mjs (job lint ). - Cache do Actions: só o branch base grava; PR só restaura. Nada de cache: no setup-node ; use .github/actions/setup-deps . Verifica: node ci-standard/scripts/cache-guard.mjs (job lint ). - TypeScript 7 estável. typescript fixado em 7.0.x; nada de @typescript/native-preview nem alias npm do TypeScript antigo. Verifica: passo npx tsc --version do job lint . - Não apague nem pule teste para ganhar tempo. Teste lento ou instável vira ticket; o ganho vem de isolar (porta, banco, data), não de cortar.",
           "aliases": "document unclassified"
         },
         "graph": {
@@ -11920,35 +12007,39 @@
           "outbound": [
             {
               "kind": "mentions",
-              "id": "document:docs/adr/0048-scoped-verification.md",
+              "id": "area:ci-standard",
+              "confidence": "fuzzy"
+            },
+            {
+              "kind": "mentions",
+              "id": "module:ci-standard/scripts/pre-push.mjs",
               "confidence": "observed"
             }
           ]
         },
-        "contentHash": "9ad63d4c85d6670930f9a36598187a949142496cf3878170655e4498227ecb36",
+        "contentHash": "e6650fca0293da0d4e4a3b62e2b506e1ab5f5af475e63831fb2893cb37c3778e",
         "provenance": "observed",
         "confidence": "observed"
       },
       {
-        "id": "document:.claude/rules/security.md",
+        "id": "document:.claude/rules/seguranca.md",
         "kind": "document",
-        "path": ".claude/rules/security.md",
-        "title": "Security rules",
-        "summary": "No secrets, tokens or credentials in logs, errors, fixtures or commit messages.",
-        "audience": "human",
+        "path": ".claude/rules/seguranca.md",
+        "title": "Regras de segurança",
+        "summary": "Cada regra diz como é verificada.",
         "aliases": [],
         "tags": [
           "document",
-          "project"
+          "unclassified"
         ],
         "fields": {
-          "title": "Security rules",
-          "headings": "Security rules",
-          "path": ".claude/rules/security.md",
+          "title": "Regras de segurança",
+          "headings": "Regras de segurança",
+          "path": ".claude/rules/seguranca.md",
           "symbols": "",
-          "summary": "No secrets, tokens or credentials in logs, errors, fixtures or commit messages.",
-          "body": "Security rules - No secrets, tokens or credentials in logs, errors, fixtures or commit messages. - Redact env values before printing; log names, not values. - Never expose broad credentials or approve your own output. - This repo is public: no content from private repositories.",
-          "aliases": "document project"
+          "summary": "Cada regra diz como é verificada.",
+          "body": "Regras de segurança Cada regra diz como é verificada. - Nenhum segredo no repositório. Código, docs, fixtures e exemplos usam valores sintéticos óbvios ou gerados no teste. Verifica: gitleaks ( .gitleaks.toml ) no job security do ci-standard.yml , em todo run, mesmo só de docs. - Segredo nunca em log, PR, issue ou commit. Não imprima variáveis de ambiente, tokens nem URLs com senha; referencie o segredo pelo nome (1Password / GitHub env), nunca pelo valor. Verifica: revisão; o --redact do gitleaks protege o log do próprio scan. - Dependência de produção sem vulnerabilidade alta ou crítica. Verifica: npm audit --omit=dev --audit-level=high (ou pnpm audit --prod --audit-level high ) no job security . - Repo privado não vaza para repo público. Antes de copiar qualquer coisa para outro repo, confira gh api repos/<org /<repo --jq .visibility ; se for public , não copie (ver a seção de confidencialidade do AGENTS.md). Verifica: revisão. - Ações de terceiros fixadas. uses: de ação de terceiros (fora de actions/ e das orgs NoxCodeSolutions/AgentsKit-io) vai fixada por SHA de commit, com a versão em comentário. Binário baixado no CI é conferido por sha256 (ex.: gitleaks). Verifica: revisão do workflow.",
+          "aliases": "document unclassified"
         },
         "graph": {
           "pagerank": 0,
@@ -11956,9 +12047,15 @@
           "coveredBy": [],
           "mentionedBy": [],
           "inbound": [],
-          "outbound": []
+          "outbound": [
+            {
+              "kind": "mentions",
+              "id": "area:ci-standard",
+              "confidence": "fuzzy"
+            }
+          ]
         },
-        "contentHash": "2ba35c3cc95344ff4c804adc65b087d9b52825334704048f3dc3d7472e5e5d8e",
+        "contentHash": "7fb9819aca4a68e8cf1b61557da584d2fba8e765be931cc83120b3df04abe1f1",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -13897,6 +13994,11 @@
           "outbound": [
             {
               "kind": "mentions",
+              "id": "area:ci-standard",
+              "confidence": "fuzzy"
+            },
+            {
+              "kind": "mentions",
               "id": "area:scripts",
               "confidence": "fuzzy"
             }
@@ -13936,6 +14038,39 @@
           "outbound": []
         },
         "contentHash": "9c6b7bc2f1b0339be32276eb7230cf99cb3de07609618c76e97f4365aed40b3e",
+        "provenance": "observed",
+        "confidence": "observed"
+      },
+      {
+        "id": "document:changelog.d/319.md",
+        "kind": "document",
+        "path": "changelog.d/319.md",
+        "title": "319.md",
+        "summary": "fix: install the standard pre-push hook (husky), pin TypeScript 7.0.2 (declarations via native tsc --emitDeclarationOnly, compiler-API scripts on @typescript/typescript6), adopt the standard CI and security rules",
+        "audience": "human",
+        "aliases": [],
+        "tags": [
+          "document",
+          "project"
+        ],
+        "fields": {
+          "title": "319.md",
+          "headings": "",
+          "path": "changelog.d/319.md",
+          "symbols": "",
+          "summary": "fix: install the standard pre-push hook (husky), pin TypeScript 7.0.2 (declarations via native tsc --emitDeclarationOnly, compiler-API scripts on @typescript/typescript6), adopt the standard CI and security rules",
+          "body": "fix: install the standard pre-push hook (husky), pin TypeScript 7.0.2 (declarations via native tsc --emitDeclarationOnly , compiler-API scripts on @typescript/typescript6 ), adopt the standard CI and security rules",
+          "aliases": "document project"
+        },
+        "graph": {
+          "pagerank": 0,
+          "inboundLinks": 0,
+          "coveredBy": [],
+          "mentionedBy": [],
+          "inbound": [],
+          "outbound": []
+        },
+        "contentHash": "13c26c170a3b42b241163fd8389024488a688e53dcb8057c3209f20938bd735a",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -17213,18 +17348,10 @@
         },
         "graph": {
           "pagerank": 0,
-          "inboundLinks": 1,
+          "inboundLinks": 0,
           "coveredBy": [],
-          "mentionedBy": [
-            "document:.claude/rules/ci.md"
-          ],
-          "inbound": [
-            {
-              "kind": "mentions",
-              "id": "document:.claude/rules/ci.md",
-              "confidence": "observed"
-            }
-          ],
+          "mentionedBy": [],
+          "inbound": [],
           "outbound": [
             {
               "kind": "mentions",
@@ -20638,6 +20765,48 @@
         "confidence": "observed"
       },
       {
+        "id": "module:ci-standard/scripts/pre-push.mjs",
+        "kind": "module",
+        "path": "ci-standard/scripts/pre-push.mjs",
+        "title": "pre-push.mjs",
+        "aliases": [],
+        "tags": [
+          "module",
+          "mjs",
+          "scripts"
+        ],
+        "fields": {
+          "title": "pre-push.mjs",
+          "headings": "",
+          "path": "ci-standard/scripts/pre-push.mjs",
+          "symbols": "",
+          "summary": "",
+          "body": "",
+          "aliases": "module mjs scripts"
+        },
+        "graph": {
+          "pagerank": 0,
+          "inboundLinks": 1,
+          "coveredBy": [],
+          "mentionedBy": [
+            "document:.claude/rules/ci.md"
+          ],
+          "areaId": "area:ci-standard",
+          "packageId": "package:@agentskit/harness",
+          "inbound": [
+            {
+              "kind": "mentions",
+              "id": "document:.claude/rules/ci.md",
+              "confidence": "observed"
+            }
+          ],
+          "outbound": []
+        },
+        "contentHash": "ea2349c1c8df348020de2a8fc7e776618a45f09c64bb4d3403760e7559ee32a5",
+        "provenance": "observed",
+        "confidence": "observed"
+      },
+      {
         "id": "module:examples/minimum-profile.mjs",
         "kind": "module",
         "path": "examples/minimum-profile.mjs",
@@ -21091,7 +21260,7 @@
           ],
           "outbound": []
         },
-        "contentHash": "32ab05cceb913a33ef8c26eba6ceed0a49b48d14b0124394060152403b5f0a38",
+        "contentHash": "471816e53672a221202f5968831c649af1026427cd61114d3019e7fadc417fac",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -21613,7 +21782,7 @@
           ],
           "outbound": []
         },
-        "contentHash": "1e444ab875579916d0c53c0392f41de7b0810c56c39e04dbf9edc8f1b14277ef",
+        "contentHash": "976ec41f7135b07ae51f5ca6f800d54b70f29716532e89532df737665820afff",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -44589,6 +44758,40 @@
         "confidence": "observed"
       },
       {
+        "id": "module:src/ui/app/src/css.d.ts",
+        "kind": "module",
+        "path": "src/ui/app/src/css.d.ts",
+        "title": "css.d.ts",
+        "aliases": [],
+        "tags": [
+          "module",
+          "ts",
+          "src"
+        ],
+        "fields": {
+          "title": "css.d.ts",
+          "headings": "",
+          "path": "src/ui/app/src/css.d.ts",
+          "symbols": "",
+          "summary": "",
+          "body": "",
+          "aliases": "module ts src"
+        },
+        "graph": {
+          "pagerank": 0,
+          "inboundLinks": 0,
+          "coveredBy": [],
+          "mentionedBy": [],
+          "areaId": "area:src/ui",
+          "packageId": "package:@agentskit/harness",
+          "inbound": [],
+          "outbound": []
+        },
+        "contentHash": "262a5f47f4b50abd662b94a11a73af8452bd0ce10187ca064ec81dbc7e3fffd2",
+        "provenance": "observed",
+        "confidence": "observed"
+      },
+      {
         "id": "module:src/ui/app/src/lib/actions.tsx",
         "kind": "module",
         "path": "src/ui/app/src/lib/actions.tsx",
@@ -54664,7 +54867,7 @@
           "inbound": [],
           "outbound": []
         },
-        "contentHash": "25d52c13329d39e7031a2f9a339f9faf1ee3ca3f67bcbbf17bb5fa3dc52bf89b",
+        "contentHash": "4ce196400f20448f61510b2474650eb4d0187f0633a9bb7f9112d7cd0babb83c",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -55118,7 +55321,7 @@
           ],
           "outbound": []
         },
-        "contentHash": "d97bc46e5d806bd12f696281238dbc3722a98fd2985b3bf75281b0659bed19d5",
+        "contentHash": "b371fe3024930b7cba01c1b7e9373c351619583cdc867a73534252006200d38c",
         "provenance": "observed",
         "confidence": "observed"
       },
