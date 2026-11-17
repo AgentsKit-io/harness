@@ -3,7 +3,7 @@
 type: package
 package: harness-evals
 editRoot: evals
-checks: [pnpm test]
+checks: [pnpm test:eval-battery]
 ---
 
 # harness-evals
@@ -17,4 +17,4 @@ checks: [pnpm test]
 
 ## Check
 
-`pnpm test`
+`pnpm test:eval-battery`

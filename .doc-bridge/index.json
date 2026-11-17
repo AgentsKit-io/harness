@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
-  "contentHash": "57378a05a47ea308e92d859ad273175efb33fc4187ada7d9208ce7234731b36c",
+  "contentHash": "a6ef999098e2e62aedc424f212a917d8b213d2251af169b3077ce12fb3dc9057",
   "contentHashAlgo": "sha256-semantic-v1",
-  "generatedAt": "2026-11-17T07:47:37.576Z",
+  "generatedAt": "2026-11-17T07:54:47.678Z",
   "project": {
     "name": "AgentsKit Harness",
     "root": "."
@@ -1170,7 +1170,7 @@
         "agent",
         "package"
       ],
-      "contentHash": "5c93caba6323394afd7ed381943bf810e396c9cc195b0d24b2659d178dc633a6"
+      "contentHash": "4b6731baea254faac5e85ba9fa4ab436f893d6a44b9ca9607cb22e363f62b120"
     },
     {
       "id": "document:docs/for-agents/packages/harness-core.md",
@@ -1196,7 +1196,7 @@
         "agent",
         "package"
       ],
-      "contentHash": "92b12b5bb5bd5a877b0babbf67b2287a8faade7b8f31bbccf39b7c09c42d3f46"
+      "contentHash": "ac8a72f5d64cd3540ed3a1e2b6c23a8eea3ad7bfefe35724e98ccd1af632cab9"
     },
     {
       "id": "document:docs/for-agents/packages/harness-examples.md",
@@ -2076,7 +2076,7 @@
         "mjs",
         "scripts"
       ],
-      "contentHash": "70f82b51c38517353c0ed05b3dee49748defe07c8cba128efd76b3571910c11e"
+      "contentHash": "b24956a801cc91ed1d324e5ff6da9de236578473c1fdfde59849fe85d6518866"
     },
     {
       "id": "module:scripts/lib/frontmatter.mjs",
@@ -10194,7 +10194,7 @@
         "compatibility"
       ],
       "checks": [
-        "pnpm test"
+        "pnpm test:compatibility"
       ],
       "humanDoc": "https://harness.agentskit.io/docs",
       "bridge": {
@@ -10251,7 +10251,7 @@
         "evals"
       ],
       "checks": [
-        "pnpm test"
+        "pnpm test:eval-battery"
       ],
       "humanDoc": "https://harness.agentskit.io/docs",
       "bridge": {
@@ -10500,7 +10500,7 @@
         "id": "harness-compatibility",
         "path": "compatibility",
         "checks": [
-          "pnpm test"
+          "pnpm test:compatibility"
         ],
         "checksSource": "ownership",
         "purpose": "Compatibility manifest, report and migration/rollback notes.",
@@ -10523,7 +10523,7 @@
         "id": "harness-evals",
         "path": "evals",
         "checks": [
-          "pnpm test"
+          "pnpm test:eval-battery"
         ],
         "checksSource": "ownership",
         "purpose": "Eval manifest used to score loop behavior.",
@@ -10626,7 +10626,7 @@
     }
   },
   "inputs": {
-    "hash": "af17a7dc39d0a697784bb691ceced3ace93729342ba4949ec4b9d6104500263b",
+    "hash": "5fdebe358fb6e897b0dea2f9daf57d77d74d11bd3a21c9b070893519c12eb31b",
     "fileCount": 660,
     "projectionVersion": 2
   },
@@ -10649,11 +10649,11 @@
   "projection": {
     "type": "retrieval-index",
     "schemaVersion": 1,
-    "contentHash": "d41b7b28fe2e0bc40607ae06d1673f499a7fc76a6dc39b163929406acb172697",
+    "contentHash": "413965d84778c6b203ea78ff21989a4379efa7528ad89bce0e885cec84d837d7",
     "contentHashAlgo": "sha256-semantic-v1",
-    "snapshotHash": "61bc052177609d3f05c71b4b756f31e9242be0d974da6490c5301c466847e11a",
+    "snapshotHash": "8c497504f0d5e9e46782b3177c7fc9887d48b3cc77e96e00c7a50986a33d1379",
     "overlayHash": "f99666ff9119084dd25c2974ae64eb6935ec2aa785ff5ad478fb9d541f7a5e94",
-    "configurationHash": "005b1df117ad9c93a5a095a4dc41f94fc6f16cfa456052184b1829f52a5a1930",
+    "configurationHash": "657abca1972f7894d82c25fa857c492e9a3b92302e0ab457cc7b939542ecfa63",
     "lexiconVersion": 1,
     "graphMetricsVersion": "1.0.0",
     "weights": {
@@ -10683,7 +10683,7 @@
       ],
       "averageFieldLength": {
         "aliases": 3.0543478260869565,
-        "body": 47.92546583850932,
+        "body": 47.93167701863354,
         "headings": 3.9332298136645965,
         "path": 6.051242236024844,
         "summary": 3.2639751552795033,
@@ -17283,7 +17283,7 @@
           "path": "docs/for-agents/packages/harness-compatibility.md",
           "symbols": "",
           "summary": "compatibility — Compatibility manifest, report and migration/rollback notes.",
-          "body": "harness-compatibility compatibility — Compatibility manifest, report and migration/rollback notes. Change rules - Keep changes inside compatibility scoped to the ticket; regenerate any derived artifact in the same change. - Add a changelog.d/<ticket .md fragment instead of editing CHANGELOG.md . Check pnpm test",
+          "body": "harness-compatibility compatibility — Compatibility manifest, report and migration/rollback notes. Change rules - Keep changes inside compatibility scoped to the ticket; regenerate any derived artifact in the same change. - Add a changelog.d/<ticket .md fragment instead of editing CHANGELOG.md . Check pnpm test:compatibility",
           "aliases": "document agent package"
         },
         "graph": {
@@ -17305,7 +17305,7 @@
             }
           ]
         },
-        "contentHash": "5c93caba6323394afd7ed381943bf810e396c9cc195b0d24b2659d178dc633a6",
+        "contentHash": "4b6731baea254faac5e85ba9fa4ab436f893d6a44b9ca9607cb22e363f62b120",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -17458,7 +17458,7 @@
           "path": "docs/for-agents/packages/harness-evals.md",
           "symbols": "",
           "summary": "evals — Eval manifest used to score loop behavior.",
-          "body": "harness-evals evals — Eval manifest used to score loop behavior. Change rules - Keep changes inside evals scoped to the ticket; regenerate any derived artifact in the same change. - Add a changelog.d/<ticket .md fragment instead of editing CHANGELOG.md . Check pnpm test",
+          "body": "harness-evals evals — Eval manifest used to score loop behavior. Change rules - Keep changes inside evals scoped to the ticket; regenerate any derived artifact in the same change. - Add a changelog.d/<ticket .md fragment instead of editing CHANGELOG.md . Check pnpm test:eval-battery",
           "aliases": "document agent package"
         },
         "graph": {
@@ -17480,7 +17480,7 @@
             }
           ]
         },
-        "contentHash": "92b12b5bb5bd5a877b0babbf67b2287a8faade7b8f31bbccf39b7c09c42d3f46",
+        "contentHash": "ac8a72f5d64cd3540ed3a1e2b6c23a8eea3ad7bfefe35724e98ccd1af632cab9",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -21251,7 +21251,7 @@
           ],
           "outbound": []
         },
-        "contentHash": "70f82b51c38517353c0ed05b3dee49748defe07c8cba128efd76b3571910c11e",
+        "contentHash": "b24956a801cc91ed1d324e5ff6da9de236578473c1fdfde59849fe85d6518866",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -54571,7 +54571,7 @@
           "inbound": [],
           "outbound": []
         },
-        "contentHash": "8cb58b03c0c2c8304032694a74d05c712ada1e0b9b9b575c7015d28b982bca30",
+        "contentHash": "35fdb148ae84fbbe608e1fbef3e2f4f2a44e3551009da552b49329e2f7063b8a",
         "provenance": "declared",
         "confidence": "declared",
         "ownershipId": "harness-compatibility"
@@ -54608,7 +54608,7 @@
           "inbound": [],
           "outbound": []
         },
-        "contentHash": "6e3451ec3084f306bffc2536a49499714c02f36662c5f6e0928945eb6359cc4f",
+        "contentHash": "25e3e75ee1324fbbc3ef662f618c1f47d18adb5dd7807185debb2f595a10a30d",
         "provenance": "declared",
         "confidence": "declared",
         "ownershipId": "harness-evals"

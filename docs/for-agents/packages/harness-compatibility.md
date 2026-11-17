@@ -3,7 +3,7 @@
 type: package
 package: harness-compatibility
 editRoot: compatibility
-checks: [pnpm test]
+checks: [pnpm test:compatibility]
 ---
 
 # harness-compatibility
@@ -17,4 +17,4 @@ checks: [pnpm test]
 
 ## Check
 
-`pnpm test`
+`pnpm test:compatibility`

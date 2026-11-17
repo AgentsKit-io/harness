@@ -117,7 +117,7 @@
           "agentDoc": "docs/for-agents/packages/harness-evals.md",
           "humanDoc": "https://harness.agentskit.io/docs",
           "checks": [
-            "pnpm test"
+            "pnpm test:eval-battery"
           ]
         },
         "harness-benchmarks": {
@@ -144,7 +144,7 @@
           "agentDoc": "docs/for-agents/packages/harness-compatibility.md",
           "humanDoc": "https://harness.agentskit.io/docs",
           "checks": [
-            "pnpm test"
+            "pnpm test:compatibility"
           ]
         }
       },
