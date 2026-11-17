@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
-  "contentHash": "b41ab4e429c52ca3858ea63362e56da0e232861129cd2870d37ad27afb9a0297",
+  "contentHash": "cdb2c361558f0f2fe78ce59b4a9ef5ffd7ffddee8451e119df8312563316f7db",
   "contentHashAlgo": "sha256-semantic-v1",
-  "generatedAt": "2026-11-11T03:17:32.312Z",
+  "generatedAt": "2026-11-17T05:04:12.863Z",
   "project": {
     "name": "AgentsKit Harness",
     "root": "."
@@ -400,6 +400,18 @@
         "project"
       ],
       "contentHash": "a095375eb37cce3f119a33d684cb27267d1601d3c065311909e5e6bf9354abaa"
+    },
+    {
+      "id": "document:changelog.d/318.md",
+      "type": "document",
+      "title": "318.md",
+      "path": "changelog.d/318.md",
+      "description": "fix: declare the src edit root in doc-bridge config with a for-agents handoff doc",
+      "tags": [
+        "document",
+        "project"
+      ],
+      "contentHash": "96964a8f97ac6f7d3b4d562b30726fe9e932e8592864e21ee3e2a2f8d5cef211"
     },
     {
       "id": "document:CHANGELOG.md",
@@ -1121,6 +1133,19 @@
         "package"
       ],
       "contentHash": "ab9b2824d111c1f4c7885059fa73d22c35b4d9053317b6f102fb32d51c5c6fc0"
+    },
+    {
+      "id": "document:docs/for-agents/packages/harness-core.md",
+      "type": "document",
+      "title": "Harness core",
+      "path": "docs/for-agents/packages/harness-core.md",
+      "description": "src is the @agentskit/harness package: the CLI, the loop, the verification kernel and its adapters.",
+      "tags": [
+        "document",
+        "agent",
+        "package"
+      ],
+      "contentHash": "b4fae7c0a6bb6a49b54cd45a3f28d102ad152705b686a45b0216ee2ae138b7c1"
     },
     {
       "id": "document:docs/for-agents/packages/harness-site.md",
@@ -1922,7 +1947,7 @@
         "mjs",
         "scripts"
       ],
-      "contentHash": "fc7b6491c45bcf701f81ea90edfd813b8ee8b87792b261233dc62c54c06cc2cb"
+      "contentHash": "66cd89be1c719c50ff58f2161f58edecb424208521206fc24db18a5bdd92ad6e"
     },
     {
       "id": "module:scripts/lib/frontmatter.mjs",
@@ -9994,6 +10019,35 @@
         "Shared product metadata and public ecosystem references."
       ]
     },
+    "harness-core": {
+      "type": "agent-handoff",
+      "schemaVersion": 1,
+      "source": ".doc-bridge/index.json",
+      "target": {
+        "type": "package",
+        "id": "harness-core",
+        "path": "src"
+      },
+      "startHere": "docs/for-agents/packages/harness-core.md",
+      "readBeforeEditing": [
+        "docs/for-agents/packages/harness-core.md",
+        "AGENTS.md"
+      ],
+      "editRoots": [
+        "src"
+      ],
+      "checks": [
+        "pnpm typecheck",
+        "pnpm test"
+      ],
+      "humanDoc": "https://harness.agentskit.io/docs",
+      "bridge": {
+        "humanDoc": "external"
+      },
+      "notes": [
+        "The @agentskit/harness CLI, loop, verification kernel and adapters."
+      ]
+    },
     "harness-site": {
       "type": "agent-handoff",
       "schemaVersion": 1,
@@ -10026,6 +10080,7 @@
   "lookup": {
     "packages": [
       "ecosystem-manifest",
+      "harness-core",
       "harness-site"
     ],
     "ownership": {
@@ -10039,6 +10094,18 @@
         "purpose": "Shared product metadata and public ecosystem references.",
         "humanDoc": "https://harness.agentskit.io/docs",
         "agentDoc": "docs/for-agents/packages/ecosystem-manifest.md"
+      },
+      "harness-core": {
+        "id": "harness-core",
+        "path": "src",
+        "checks": [
+          "pnpm typecheck",
+          "pnpm test"
+        ],
+        "checksSource": "ownership",
+        "purpose": "The @agentskit/harness CLI, loop, verification kernel and adapters.",
+        "humanDoc": "https://harness.agentskit.io/docs",
+        "agentDoc": "docs/for-agents/packages/harness-core.md"
       },
       "harness-site": {
         "id": "harness-site",
@@ -10070,8 +10137,8 @@
     }
   },
   "inputs": {
-    "hash": "a5fde05b66524d84795937964aaf9847d6e272b24770c2ff8b751400050d04cf",
-    "fileCount": 648,
+    "hash": "7ca5c4930f6a0e82d191aa99b77d039dc58c3471e09c7eb94c6d28ef210b759e",
+    "fileCount": 650,
     "projectionVersion": 2
   },
   "retrieval": {
@@ -10093,11 +10160,11 @@
   "projection": {
     "type": "retrieval-index",
     "schemaVersion": 1,
-    "contentHash": "b82087fe91c7efce1b531bd35ea308bfa94d545a86086881fc1a521ec1774c80",
+    "contentHash": "7195e870afb01e6254792678366b6e865e735a6f37370dd8636c4cb21c26625e",
     "contentHashAlgo": "sha256-semantic-v1",
-    "snapshotHash": "71bebe16487ca80a04998375a80b03bee8938fdd183bf46b29b173232a47e61a",
+    "snapshotHash": "7b02c81880bed485d46dfe6bf4b5ea91f2ce8f2f5f7d85241582c99a92413ffa",
     "overlayHash": "f99666ff9119084dd25c2974ae64eb6935ec2aa785ff5ad478fb9d541f7a5e94",
-    "configurationHash": "497822431910cd9fa7d674a48a9f0b96fbbbf779f22a001de0b52252117fe3ab",
+    "configurationHash": "326396a1035f99d01abc85206d5c5b2c6bb41e22b70915e6af9e6aea7c14cfe2",
     "lexiconVersion": 1,
     "graphMetricsVersion": "1.0.0",
     "weights": {
@@ -10115,7 +10182,7 @@
     },
     "lexical": {
       "version": 1,
-      "documentCount": 626,
+      "documentCount": 629,
       "fieldNames": [
         "aliases",
         "body",
@@ -10126,13 +10193,13 @@
         "title"
       ],
       "averageFieldLength": {
-        "aliases": 2.902555910543131,
-        "body": 47.38019169329073,
-        "headings": 3.902555910543131,
-        "path": 6.0910543130990416,
-        "summary": 3.0686900958466454,
-        "symbols": 13.458466453674122,
-        "title": 4.038338658146965
+        "aliases": 2.9046104928457868,
+        "body": 47.65818759936407,
+        "headings": 3.90302066772655,
+        "path": 6.081081081081081,
+        "summary": 3.1033386327503973,
+        "symbols": 13.394276629570747,
+        "title": 4.028616852146264
       }
     },
     "entries": [
@@ -10160,7 +10227,7 @@
           "aliases": "harness-site area ownership"
         },
         "graph": {
-          "pagerank": 0.039241,
+          "pagerank": 0.037004,
           "inboundLinks": 2,
           "coveredBy": [
             "document:docs/for-agents/packages/harness-site.md"
@@ -10556,6 +10623,58 @@
         "confidence": "observed"
       },
       {
+        "id": "area:src",
+        "kind": "area",
+        "path": "src",
+        "title": "Harness core",
+        "summary": "The @agentskit/harness CLI, loop, verification kernel and adapters.",
+        "audience": "agent",
+        "aliases": [
+          "harness-core"
+        ],
+        "tags": [
+          "area",
+          "ownership"
+        ],
+        "fields": {
+          "title": "Harness core",
+          "headings": "Harness core Layout Change rules Check",
+          "path": "src",
+          "symbols": "",
+          "summary": "The @agentskit/harness CLI, loop, verification kernel and adapters.",
+          "body": "Harness core src is the @agentskit/harness package: the CLI, the loop, the verification kernel and its adapters. Layout - src/cli.ts — the ak-harness / ak-verify entrypoint; changing it means regenerating the reference docs. - src/kernel — contract, verification and event vocabulary; no provider or tracker dependency here. - src/loop , src/execution , src/delivery — the issue-to-release loop and its delivery steps. - src/adapters — provider, agent, code-review and doc-bridge adapters. - src/profiles , src/context , src/record.ts , src/mvp.ts , src/ui — profiles, context, run records, the mvp command and the terminal UI. - src/index.ts — the public API; changes need pnpm check:public-api:update . Change rules - Keep files small and per capability (see AGENTS.md ). - New code needs a test under test/ ; coverage floors live in vitest.config.ts . - Add a changelog.d/<ticket .md fragment instead of editing CHANGELOG.md . Check pnpm typecheck and pnpm vitest run test/<file .test.ts ; the full suite is pnpm test:coverage .",
+          "aliases": "harness-core area ownership"
+        },
+        "graph": {
+          "pagerank": 0.037004,
+          "inboundLinks": 1,
+          "coveredBy": [
+            "document:docs/for-agents/packages/harness-core.md"
+          ],
+          "mentionedBy": [
+            "document:docs/for-agents/packages/harness-core.md"
+          ],
+          "packageId": "package:@agentskit/harness",
+          "inbound": [
+            {
+              "kind": "covers",
+              "id": "document:docs/for-agents/packages/harness-core.md",
+              "confidence": "declared"
+            },
+            {
+              "kind": "mentions",
+              "id": "document:docs/for-agents/packages/harness-core.md",
+              "confidence": "observed"
+            }
+          ],
+          "outbound": []
+        },
+        "contentHash": "da8ccfd37484bb4a7ae07bd4229b67e91a2e725bb0d45339211b5b3ec233ae45",
+        "provenance": "observed",
+        "confidence": "observed",
+        "ownershipId": "harness-core"
+      },
+      {
         "id": "area:src/adapters",
         "kind": "area",
         "path": "src/adapters",
@@ -10575,13 +10694,20 @@
         },
         "graph": {
           "pagerank": 0,
-          "inboundLinks": 1,
+          "inboundLinks": 2,
           "coveredBy": [],
           "mentionedBy": [
+            "document:docs/for-agents/packages/harness-core.md",
             "document:docs/MODULE-BOUNDARIES.md"
           ],
+          "areaId": "area:src",
           "packageId": "package:@agentskit/harness",
           "inbound": [
+            {
+              "kind": "mentions",
+              "id": "document:docs/for-agents/packages/harness-core.md",
+              "confidence": "observed"
+            },
             {
               "kind": "mentions",
               "id": "document:docs/MODULE-BOUNDARIES.md",
@@ -10614,17 +10740,24 @@
         },
         "graph": {
           "pagerank": 0,
-          "inboundLinks": 2,
+          "inboundLinks": 3,
           "coveredBy": [],
           "mentionedBy": [
             "document:docs/ADR-0002-profiles-and-context.md",
+            "document:docs/for-agents/packages/harness-core.md",
             "document:docs/MODULE-BOUNDARIES.md"
           ],
+          "areaId": "area:src",
           "packageId": "package:@agentskit/harness",
           "inbound": [
             {
               "kind": "mentions",
               "id": "document:docs/ADR-0002-profiles-and-context.md",
+              "confidence": "observed"
+            },
+            {
+              "kind": "mentions",
+              "id": "document:docs/for-agents/packages/harness-core.md",
               "confidence": "observed"
             },
             {
@@ -10659,13 +10792,20 @@
         },
         "graph": {
           "pagerank": 0,
-          "inboundLinks": 1,
+          "inboundLinks": 2,
           "coveredBy": [],
           "mentionedBy": [
+            "document:docs/for-agents/packages/harness-core.md",
             "document:docs/MODULE-BOUNDARIES.md"
           ],
+          "areaId": "area:src",
           "packageId": "package:@agentskit/harness",
           "inbound": [
+            {
+              "kind": "mentions",
+              "id": "document:docs/for-agents/packages/harness-core.md",
+              "confidence": "observed"
+            },
             {
               "kind": "mentions",
               "id": "document:docs/MODULE-BOUNDARIES.md",
@@ -10698,17 +10838,24 @@
         },
         "graph": {
           "pagerank": 0,
-          "inboundLinks": 2,
+          "inboundLinks": 3,
           "coveredBy": [],
           "mentionedBy": [
             "document:docs/ADR-0004-run-metrics.md",
+            "document:docs/for-agents/packages/harness-core.md",
             "document:docs/MODULE-BOUNDARIES.md"
           ],
+          "areaId": "area:src",
           "packageId": "package:@agentskit/harness",
           "inbound": [
             {
               "kind": "mentions",
               "id": "document:docs/ADR-0004-run-metrics.md",
+              "confidence": "observed"
+            },
+            {
+              "kind": "mentions",
+              "id": "document:docs/for-agents/packages/harness-core.md",
               "confidence": "observed"
             },
             {
@@ -10743,17 +10890,24 @@
         },
         "graph": {
           "pagerank": 0,
-          "inboundLinks": 2,
+          "inboundLinks": 3,
           "coveredBy": [],
           "mentionedBy": [
             "document:docs/ADR-0001-extensible-kernel.md",
+            "document:docs/for-agents/packages/harness-core.md",
             "document:docs/MODULE-BOUNDARIES.md"
           ],
+          "areaId": "area:src",
           "packageId": "package:@agentskit/harness",
           "inbound": [
             {
               "kind": "mentions",
               "id": "document:docs/ADR-0001-extensible-kernel.md",
+              "confidence": "observed"
+            },
+            {
+              "kind": "mentions",
+              "id": "document:docs/for-agents/packages/harness-core.md",
               "confidence": "observed"
             },
             {
@@ -10788,15 +10942,17 @@
         },
         "graph": {
           "pagerank": 0,
-          "inboundLinks": 5,
+          "inboundLinks": 6,
           "coveredBy": [],
           "mentionedBy": [
             "document:CHANGELOG.md",
             "document:docs/ADR-0027-keep-pushing-loop.md",
             "document:docs/ADR-0029-loop-resilience-pinning-intake.md",
+            "document:docs/for-agents/packages/harness-core.md",
             "document:docs/LOOP.md",
             "document:docs/MODULE-BOUNDARIES.md"
           ],
+          "areaId": "area:src",
           "packageId": "package:@agentskit/harness",
           "inbound": [
             {
@@ -10813,6 +10969,11 @@
               "kind": "mentions",
               "id": "document:docs/ADR-0029-loop-resilience-pinning-intake.md",
               "confidence": "fuzzy"
+            },
+            {
+              "kind": "mentions",
+              "id": "document:docs/for-agents/packages/harness-core.md",
+              "confidence": "observed"
             },
             {
               "kind": "mentions",
@@ -10851,17 +11012,24 @@
         },
         "graph": {
           "pagerank": 0,
-          "inboundLinks": 2,
+          "inboundLinks": 3,
           "coveredBy": [],
           "mentionedBy": [
             "document:docs/ADR-0002-profiles-and-context.md",
+            "document:docs/for-agents/packages/harness-core.md",
             "document:docs/MODULE-BOUNDARIES.md"
           ],
+          "areaId": "area:src",
           "packageId": "package:@agentskit/harness",
           "inbound": [
             {
               "kind": "mentions",
               "id": "document:docs/ADR-0002-profiles-and-context.md",
+              "confidence": "observed"
+            },
+            {
+              "kind": "mentions",
+              "id": "document:docs/for-agents/packages/harness-core.md",
               "confidence": "observed"
             },
             {
@@ -10896,23 +11064,18 @@
         },
         "graph": {
           "pagerank": 0,
-          "inboundLinks": 2,
+          "inboundLinks": 1,
           "coveredBy": [],
           "mentionedBy": [
-            "document:CONTRIBUTING.md",
-            "document:docs/INVENTARIO.md"
+            "document:docs/for-agents/packages/harness-core.md"
           ],
+          "areaId": "area:src",
           "packageId": "package:@agentskit/harness",
           "inbound": [
             {
               "kind": "mentions",
-              "id": "document:CONTRIBUTING.md",
-              "confidence": "fuzzy"
-            },
-            {
-              "kind": "mentions",
-              "id": "document:docs/INVENTARIO.md",
-              "confidence": "fuzzy"
+              "id": "document:docs/for-agents/packages/harness-core.md",
+              "confidence": "observed"
             }
           ],
           "outbound": []
@@ -10941,13 +11104,14 @@
         },
         "graph": {
           "pagerank": 0,
-          "inboundLinks": 6,
+          "inboundLinks": 7,
           "coveredBy": [],
           "mentionedBy": [
             "document:AGENTS.md",
             "document:CONTRIBUTING.md",
             "document:docs/ADR-0045-fleet-runner.md",
             "document:docs/ADR-0047-independent-verifier-and-structured-lessons.md",
+            "document:docs/for-agents/packages/harness-core.md",
             "document:docs/INVENTARIO.md",
             "document:docs/LOOP.md"
           ],
@@ -10972,6 +11136,11 @@
               "kind": "mentions",
               "id": "document:docs/ADR-0047-independent-verifier-and-structured-lessons.md",
               "confidence": "observed"
+            },
+            {
+              "kind": "mentions",
+              "id": "document:docs/for-agents/packages/harness-core.md",
+              "confidence": "fuzzy"
             },
             {
               "kind": "mentions",
@@ -11233,14 +11402,15 @@
           "aliases": "document unclassified"
         },
         "graph": {
-          "pagerank": 0.039241,
-          "inboundLinks": 5,
+          "pagerank": 0.037004,
+          "inboundLinks": 6,
           "coveredBy": [],
           "mentionedBy": [
             "document:apps/docs/content/docs/guides/agents.mdx",
             "document:CHANGELOG.md",
             "document:CLAUDE.md",
             "document:docs/adr/0048-scoped-verification.md",
+            "document:docs/for-agents/packages/harness-core.md",
             "document:docs/LOOP.md"
           ],
           "inbound": [
@@ -11267,6 +11437,11 @@
             {
               "kind": "mentions",
               "id": "document:docs/adr/0048-scoped-verification.md",
+              "confidence": "observed"
+            },
+            {
+              "kind": "mentions",
+              "id": "document:docs/for-agents/packages/harness-core.md",
               "confidence": "observed"
             },
             {
@@ -13041,6 +13216,39 @@
         "confidence": "observed"
       },
       {
+        "id": "document:changelog.d/318.md",
+        "kind": "document",
+        "path": "changelog.d/318.md",
+        "title": "318.md",
+        "summary": "fix: declare the src edit root in doc-bridge config with a for-agents handoff doc",
+        "audience": "human",
+        "aliases": [],
+        "tags": [
+          "document",
+          "project"
+        ],
+        "fields": {
+          "title": "318.md",
+          "headings": "",
+          "path": "changelog.d/318.md",
+          "symbols": "",
+          "summary": "fix: declare the src edit root in doc-bridge config with a for-agents handoff doc",
+          "body": "fix: declare the src edit root in doc-bridge config with a for-agents handoff doc",
+          "aliases": "document project"
+        },
+        "graph": {
+          "pagerank": 0,
+          "inboundLinks": 0,
+          "coveredBy": [],
+          "mentionedBy": [],
+          "inbound": [],
+          "outbound": []
+        },
+        "contentHash": "96964a8f97ac6f7d3b4d562b30726fe9e932e8592864e21ee3e2a2f8d5cef211",
+        "provenance": "observed",
+        "confidence": "observed"
+      },
+      {
         "id": "document:CHANGELOG.md",
         "kind": "document",
         "path": "CHANGELOG.md",
@@ -13062,11 +13270,12 @@
           "aliases": "document project"
         },
         "graph": {
-          "pagerank": 0.022599,
-          "inboundLinks": 3,
+          "pagerank": 0.02131,
+          "inboundLinks": 4,
           "coveredBy": [],
           "mentionedBy": [
             "document:.github/factory-playbook.md",
+            "document:docs/for-agents/packages/harness-core.md",
             "document:README.md",
             "document:release/notes.md"
           ],
@@ -13079,6 +13288,11 @@
             {
               "kind": "mentions",
               "id": "document:.github/factory-playbook.md",
+              "confidence": "observed"
+            },
+            {
+              "kind": "mentions",
+              "id": "document:docs/for-agents/packages/harness-core.md",
               "confidence": "observed"
             },
             {
@@ -13375,7 +13589,7 @@
           "aliases": "document unclassified"
         },
         "graph": {
-          "pagerank": 0.021212,
+          "pagerank": 0.020002,
           "inboundLinks": 1,
           "coveredBy": [],
           "mentionedBy": [
@@ -13458,7 +13672,7 @@
           "aliases": "document unclassified"
         },
         "graph": {
-          "pagerank": 0.030227,
+          "pagerank": 0.028503,
           "inboundLinks": 1,
           "coveredBy": [],
           "mentionedBy": [],
@@ -13502,7 +13716,7 @@
           "aliases": "document unclassified"
         },
         "graph": {
-          "pagerank": 0.021212,
+          "pagerank": 0.020002,
           "inboundLinks": 3,
           "coveredBy": [],
           "mentionedBy": [
@@ -13565,7 +13779,7 @@
           "aliases": "document unclassified"
         },
         "graph": {
-          "pagerank": 0.030227,
+          "pagerank": 0.028503,
           "inboundLinks": 1,
           "coveredBy": [],
           "mentionedBy": [],
@@ -13610,7 +13824,7 @@
           "aliases": "document project"
         },
         "graph": {
-          "pagerank": 0.022599,
+          "pagerank": 0.02131,
           "inboundLinks": 2,
           "coveredBy": [],
           "mentionedBy": [
@@ -13643,11 +13857,6 @@
             {
               "kind": "mentions",
               "id": "area:scripts",
-              "confidence": "fuzzy"
-            },
-            {
-              "kind": "mentions",
-              "id": "area:src/ui",
               "confidence": "fuzzy"
             },
             {
@@ -13853,7 +14062,7 @@
           "aliases": "document human"
         },
         "graph": {
-          "pagerank": 0.02895,
+          "pagerank": 0.0273,
           "inboundLinks": 1,
           "coveredBy": [],
           "mentionedBy": [],
@@ -14841,7 +15050,7 @@
           "aliases": "document human"
         },
         "graph": {
-          "pagerank": 0.02895,
+          "pagerank": 0.0273,
           "inboundLinks": 1,
           "coveredBy": [],
           "mentionedBy": [],
@@ -14896,7 +15105,7 @@
           "aliases": "document human"
         },
         "graph": {
-          "pagerank": 0.030337,
+          "pagerank": 0.028608,
           "inboundLinks": 2,
           "coveredBy": [],
           "mentionedBy": [],
@@ -14951,7 +15160,7 @@
           "aliases": "document human"
         },
         "graph": {
-          "pagerank": 0.032971,
+          "pagerank": 0.031091,
           "inboundLinks": 2,
           "coveredBy": [],
           "mentionedBy": [],
@@ -15193,7 +15402,7 @@
           "aliases": "document human"
         },
         "graph": {
-          "pagerank": 0.025343,
+          "pagerank": 0.023898,
           "inboundLinks": 2,
           "coveredBy": [],
           "mentionedBy": [],
@@ -15243,7 +15452,7 @@
           "aliases": "document human"
         },
         "graph": {
-          "pagerank": 0.028758,
+          "pagerank": 0.027119,
           "inboundLinks": 2,
           "coveredBy": [],
           "mentionedBy": [],
@@ -15293,7 +15502,7 @@
           "aliases": "document human"
         },
         "graph": {
-          "pagerank": 0.023956,
+          "pagerank": 0.02259,
           "inboundLinks": 1,
           "coveredBy": [],
           "mentionedBy": [],
@@ -15343,7 +15552,7 @@
           "aliases": "document human"
         },
         "graph": {
-          "pagerank": 0.030145,
+          "pagerank": 0.028426,
           "inboundLinks": 3,
           "coveredBy": [],
           "mentionedBy": [],
@@ -15408,7 +15617,7 @@
           "aliases": "document human"
         },
         "graph": {
-          "pagerank": 0.023956,
+          "pagerank": 0.02259,
           "inboundLinks": 1,
           "coveredBy": [],
           "mentionedBy": [],
@@ -15463,7 +15672,7 @@
           "aliases": "document human"
         },
         "graph": {
-          "pagerank": 0.025343,
+          "pagerank": 0.023898,
           "inboundLinks": 2,
           "coveredBy": [],
           "mentionedBy": [],
@@ -15513,7 +15722,7 @@
           "aliases": "document human"
         },
         "graph": {
-          "pagerank": 0.021212,
+          "pagerank": 0.020002,
           "inboundLinks": 0,
           "coveredBy": [],
           "mentionedBy": [],
@@ -15562,7 +15771,7 @@
           "aliases": "document human"
         },
         "graph": {
-          "pagerank": 0.021212,
+          "pagerank": 0.020002,
           "inboundLinks": 0,
           "coveredBy": [],
           "mentionedBy": [],
@@ -15906,7 +16115,7 @@
           "aliases": "document human"
         },
         "graph": {
-          "pagerank": 0.021212,
+          "pagerank": 0.020002,
           "inboundLinks": 0,
           "coveredBy": [],
           "mentionedBy": [],
@@ -15985,7 +16194,7 @@
           "aliases": "document human"
         },
         "graph": {
-          "pagerank": 0.121286,
+          "pagerank": 0.114372,
           "inboundLinks": 5,
           "coveredBy": [],
           "mentionedBy": [],
@@ -16070,7 +16279,7 @@
           "aliases": "document human"
         },
         "graph": {
-          "pagerank": 0.022599,
+          "pagerank": 0.02131,
           "inboundLinks": 1,
           "coveredBy": [],
           "mentionedBy": [],
@@ -16357,6 +16566,136 @@
         "confidence": "observed"
       },
       {
+        "id": "document:docs/for-agents/packages/harness-core.md",
+        "kind": "document",
+        "path": "docs/for-agents/packages/harness-core.md",
+        "title": "Harness core",
+        "summary": "src is the @agentskit/harness package: the CLI, the loop, the verification kernel and its adapters.",
+        "audience": "agent",
+        "aliases": [],
+        "tags": [
+          "document",
+          "agent",
+          "package"
+        ],
+        "fields": {
+          "title": "Harness core",
+          "headings": "Harness core Layout Change rules Check",
+          "path": "docs/for-agents/packages/harness-core.md",
+          "symbols": "",
+          "summary": "src is the @agentskit/harness package: the CLI, the loop, the verification kernel and its adapters.",
+          "body": "Harness core src is the @agentskit/harness package: the CLI, the loop, the verification kernel and its adapters. Layout - src/cli.ts — the ak-harness / ak-verify entrypoint; changing it means regenerating the reference docs. - src/kernel — contract, verification and event vocabulary; no provider or tracker dependency here. - src/loop , src/execution , src/delivery — the issue-to-release loop and its delivery steps. - src/adapters — provider, agent, code-review and doc-bridge adapters. - src/profiles , src/context , src/record.ts , src/mvp.ts , src/ui — profiles, context, run records, the mvp command and the terminal UI. - src/index.ts — the public API; changes need pnpm check:public-api:update . Change rules - Keep files small and per capability (see AGENTS.md ). - New code needs a test under test/ ; coverage floors live in vitest.config.ts . - Add a changelog.d/<ticket .md fragment instead of editing CHANGELOG.md . Check pnpm typecheck and pnpm vitest run test/<file .test.ts ; the full suite is pnpm test:coverage .",
+          "aliases": "document agent package"
+        },
+        "graph": {
+          "pagerank": 0.020002,
+          "inboundLinks": 0,
+          "coveredBy": [],
+          "mentionedBy": [],
+          "inbound": [],
+          "outbound": [
+            {
+              "kind": "covers",
+              "id": "area:src",
+              "confidence": "declared"
+            },
+            {
+              "kind": "mentions",
+              "id": "area:src",
+              "confidence": "observed"
+            },
+            {
+              "kind": "mentions",
+              "id": "area:src/adapters",
+              "confidence": "observed"
+            },
+            {
+              "kind": "mentions",
+              "id": "area:src/context",
+              "confidence": "observed"
+            },
+            {
+              "kind": "mentions",
+              "id": "area:src/delivery",
+              "confidence": "observed"
+            },
+            {
+              "kind": "mentions",
+              "id": "area:src/execution",
+              "confidence": "observed"
+            },
+            {
+              "kind": "mentions",
+              "id": "area:src/kernel",
+              "confidence": "observed"
+            },
+            {
+              "kind": "mentions",
+              "id": "area:src/loop",
+              "confidence": "observed"
+            },
+            {
+              "kind": "mentions",
+              "id": "area:src/profiles",
+              "confidence": "observed"
+            },
+            {
+              "kind": "mentions",
+              "id": "area:src/ui",
+              "confidence": "observed"
+            },
+            {
+              "kind": "mentions",
+              "id": "area:test",
+              "confidence": "fuzzy"
+            },
+            {
+              "kind": "mentions",
+              "id": "document:AGENTS.md",
+              "confidence": "observed"
+            },
+            {
+              "kind": "mentions",
+              "id": "document:CHANGELOG.md",
+              "confidence": "observed"
+            },
+            {
+              "kind": "mentions",
+              "id": "module:src/cli.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "mentions",
+              "id": "module:src/index.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "mentions",
+              "id": "module:src/mvp.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "mentions",
+              "id": "module:src/record.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "mentions",
+              "id": "module:vitest.config.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "mentions",
+              "id": "package:@agentskit/harness",
+              "confidence": "observed"
+            }
+          ]
+        },
+        "contentHash": "b4fae7c0a6bb6a49b54cd45a3f28d102ad152705b686a45b0216ee2ae138b7c1",
+        "provenance": "observed",
+        "confidence": "observed"
+      },
+      {
         "id": "document:docs/for-agents/packages/harness-site.md",
         "kind": "document",
         "path": "docs/for-agents/packages/harness-site.md",
@@ -16379,7 +16718,7 @@
           "aliases": "document agent package"
         },
         "graph": {
-          "pagerank": 0.021212,
+          "pagerank": 0.020002,
           "inboundLinks": 0,
           "coveredBy": [],
           "mentionedBy": [],
@@ -16483,7 +16822,7 @@
           "aliases": "document human"
         },
         "graph": {
-          "pagerank": 0.022599,
+          "pagerank": 0.02131,
           "inboundLinks": 2,
           "coveredBy": [],
           "mentionedBy": [
@@ -16611,7 +16950,7 @@
           "aliases": "document human"
         },
         "graph": {
-          "pagerank": 0.02895,
+          "pagerank": 0.0273,
           "inboundLinks": 2,
           "coveredBy": [],
           "mentionedBy": [
@@ -16630,11 +16969,6 @@
             }
           ],
           "outbound": [
-            {
-              "kind": "mentions",
-              "id": "area:src/ui",
-              "confidence": "fuzzy"
-            },
             {
               "kind": "mentions",
               "id": "area:test",
@@ -16698,7 +17032,7 @@
           "aliases": "document human"
         },
         "graph": {
-          "pagerank": 0.036416,
+          "pagerank": 0.03434,
           "inboundLinks": 3,
           "coveredBy": [],
           "mentionedBy": [
@@ -16990,7 +17324,7 @@
           "aliases": "document human"
         },
         "graph": {
-          "pagerank": 0.021212,
+          "pagerank": 0.020002,
           "inboundLinks": 2,
           "coveredBy": [],
           "mentionedBy": [
@@ -17410,7 +17744,7 @@
           "aliases": "document human"
         },
         "graph": {
-          "pagerank": 0.04042,
+          "pagerank": 0.038116,
           "inboundLinks": 1,
           "coveredBy": [],
           "mentionedBy": [
@@ -17526,7 +17860,7 @@
           "aliases": "document human"
         },
         "graph": {
-          "pagerank": 0.027401,
+          "pagerank": 0.025839,
           "inboundLinks": 2,
           "coveredBy": [],
           "mentionedBy": [
@@ -17625,7 +17959,7 @@
           "aliases": "document unclassified"
         },
         "graph": {
-          "pagerank": 0.022599,
+          "pagerank": 0.02131,
           "inboundLinks": 1,
           "coveredBy": [],
           "mentionedBy": [
@@ -17671,7 +18005,7 @@
           "aliases": "document project"
         },
         "graph": {
-          "pagerank": 0.021212,
+          "pagerank": 0.020002,
           "inboundLinks": 0,
           "coveredBy": [],
           "mentionedBy": [],
@@ -17809,7 +18143,7 @@
           "aliases": "document unclassified"
         },
         "graph": {
-          "pagerank": 0.022599,
+          "pagerank": 0.02131,
           "inboundLinks": 1,
           "coveredBy": [],
           "mentionedBy": [
@@ -19770,7 +20104,7 @@
           ],
           "outbound": []
         },
-        "contentHash": "fc7b6491c45bcf701f81ea90edfd813b8ee8b87792b261233dc62c54c06cc2cb",
+        "contentHash": "66cd89be1c719c50ff58f2161f58edecb424208521206fc24db18a5bdd92ad6e",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -22547,7 +22881,7 @@
         },
         "graph": {
           "pagerank": 0,
-          "inboundLinks": 9,
+          "inboundLinks": 10,
           "coveredBy": [],
           "mentionedBy": [
             "document:.github/factory-playbook.md",
@@ -22556,10 +22890,12 @@
             "document:docs/ADR-0016-baseline-evidence-digests.md",
             "document:docs/ADR-0021-event-lock-recovery.md",
             "document:docs/ADR-0026-kernel-adapters-boundary.md",
+            "document:docs/for-agents/packages/harness-core.md",
             "document:docs/INVENTARIO.md",
             "document:docs/MODULE-BOUNDARIES.md",
             "document:docs/PRD-0.4.0.md"
           ],
+          "areaId": "area:src",
           "packageId": "package:@agentskit/harness",
           "inbound": [
             {
@@ -22595,6 +22931,11 @@
             {
               "kind": "mentions",
               "id": "document:docs/ADR-0026-kernel-adapters-boundary.md",
+              "confidence": "observed"
+            },
+            {
+              "kind": "mentions",
+              "id": "document:docs/for-agents/packages/harness-core.md",
               "confidence": "observed"
             },
             {
@@ -24553,6 +24894,7 @@
           "inboundLinks": 0,
           "coveredBy": [],
           "mentionedBy": [],
+          "areaId": "area:src",
           "packageId": "package:@agentskit/harness",
           "inbound": [
             {
@@ -38720,11 +39062,13 @@
         },
         "graph": {
           "pagerank": 0,
-          "inboundLinks": 1,
+          "inboundLinks": 2,
           "coveredBy": [],
           "mentionedBy": [
+            "document:docs/for-agents/packages/harness-core.md",
             "document:CHANGELOG.md"
           ],
+          "areaId": "area:src",
           "packageId": "package:@agentskit/harness",
           "inbound": [
             {
@@ -38755,6 +39099,11 @@
             {
               "kind": "imports",
               "id": "module:test/mvp.test.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "mentions",
+              "id": "document:docs/for-agents/packages/harness-core.md",
               "confidence": "observed"
             },
             {
@@ -38866,9 +39215,12 @@
         },
         "graph": {
           "pagerank": 0,
-          "inboundLinks": 0,
+          "inboundLinks": 1,
           "coveredBy": [],
-          "mentionedBy": [],
+          "mentionedBy": [
+            "document:docs/for-agents/packages/harness-core.md"
+          ],
+          "areaId": "area:src",
           "packageId": "package:@agentskit/harness",
           "inbound": [
             {
@@ -39034,6 +39386,11 @@
             {
               "kind": "imports",
               "id": "module:test/record.test.ts",
+              "confidence": "observed"
+            },
+            {
+              "kind": "mentions",
+              "id": "document:docs/for-agents/packages/harness-core.md",
               "confidence": "observed"
             }
           ],
@@ -52911,11 +53268,12 @@
         },
         "graph": {
           "pagerank": 0,
-          "inboundLinks": 2,
+          "inboundLinks": 3,
           "coveredBy": [],
           "mentionedBy": [
             "document:.github/factory-playbook.md",
-            "document:CONTRIBUTING.md"
+            "document:CONTRIBUTING.md",
+            "document:docs/for-agents/packages/harness-core.md"
           ],
           "packageId": "package:@agentskit/harness",
           "inbound": [
@@ -52927,6 +53285,11 @@
             {
               "kind": "mentions",
               "id": "document:CONTRIBUTING.md",
+              "confidence": "observed"
+            },
+            {
+              "kind": "mentions",
+              "id": "document:docs/for-agents/packages/harness-core.md",
               "confidence": "observed"
             }
           ],
@@ -52995,8 +53358,8 @@
           "aliases": "harness @agentskit/harness package"
         },
         "graph": {
-          "pagerank": 0.022599,
-          "inboundLinks": 8,
+          "pagerank": 0.02131,
+          "inboundLinks": 9,
           "coveredBy": [
             "document:README.md"
           ],
@@ -53005,6 +53368,7 @@
             "document:AGENTS.md",
             "document:apps/docs/content/docs/index.mdx",
             "document:CONTRIBUTING.md",
+            "document:docs/for-agents/packages/harness-core.md",
             "document:docs/INVENTARIO.md",
             "document:docs/LOOP.md",
             "document:docs/PRD-0.4.0.md"
@@ -53034,6 +53398,11 @@
             {
               "kind": "mentions",
               "id": "document:CONTRIBUTING.md",
+              "confidence": "observed"
+            },
+            {
+              "kind": "mentions",
+              "id": "document:docs/for-agents/packages/harness-core.md",
               "confidence": "observed"
             },
             {
