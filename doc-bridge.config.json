@@ -146,6 +146,24 @@
           "checks": [
             "pnpm test:compatibility"
           ]
+        },
+        "harness-capabilities": {
+          "path": "capabilities",
+          "purpose": "Generated public-surface capability manifest.",
+          "agentDoc": "docs/for-agents/packages/harness-capabilities.md",
+          "humanDoc": "https://harness.agentskit.io/docs",
+          "checks": [
+            "pnpm test:capabilities"
+          ]
+        },
+        "harness-docs": {
+          "path": "docs",
+          "purpose": "Repository design docs, ADRs, stability records and the agent handoffs.",
+          "agentDoc": "docs/for-agents/packages/harness-docs.md",
+          "humanDoc": "https://harness.agentskit.io/docs",
+          "checks": [
+            "pnpm docs:generate --check"
+          ]
         }
       },
       "intents": [

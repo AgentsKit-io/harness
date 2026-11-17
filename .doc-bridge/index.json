@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
-  "contentHash": "a6ef999098e2e62aedc424f212a917d8b213d2251af169b3077ce12fb3dc9057",
+  "contentHash": "9455b387733b9a1ebe8e3d06b1397f3e88514006b88d1a97b39e995928f0cbd4",
   "contentHashAlgo": "sha256-semantic-v1",
-  "generatedAt": "2026-11-17T07:54:47.678Z",
+  "generatedAt": "2026-11-17T08:57:45.812Z",
   "project": {
     "name": "AgentsKit Harness",
     "root": "."
@@ -424,6 +424,18 @@
         "project"
       ],
       "contentHash": "ef22766917a9f7b14f6075cce06a80676093366754369de11bb87160651d047e"
+    },
+    {
+      "id": "document:changelog.d/323.md",
+      "type": "document",
+      "title": "323.md",
+      "path": "changelog.d/323.md",
+      "description": "fix: cover the capabilities and docs edit roots in the doc-bridge config",
+      "tags": [
+        "document",
+        "project"
+      ],
+      "contentHash": "24d1fbbb9a962672714c22fcc0e0434853b06ac033effd11be343210a21d865c"
     },
     {
       "id": "document:CHANGELOG.md",
@@ -1160,6 +1172,19 @@
       "contentHash": "5a5fcd1fa8ff55c0c5e5e109e8c7bc05d9888b9fc465fbe0742e57957cba0bea"
     },
     {
+      "id": "document:docs/for-agents/packages/harness-capabilities.md",
+      "type": "document",
+      "title": "harness-capabilities",
+      "path": "docs/for-agents/packages/harness-capabilities.md",
+      "description": "capabilities — Generated public-surface capability manifest.",
+      "tags": [
+        "document",
+        "agent",
+        "package"
+      ],
+      "contentHash": "618aa40ac2e1e5ba87ef6ccc80786d0f6a0530a62c04a47cb2f0b56c49a9844f"
+    },
+    {
       "id": "document:docs/for-agents/packages/harness-compatibility.md",
       "type": "document",
       "title": "harness-compatibility",
@@ -1184,6 +1209,19 @@
         "package"
       ],
       "contentHash": "7d882bd5f901ca701e5a03c7149e7ebe739c2dbf0bd0d3c8925d7f56ed40251f"
+    },
+    {
+      "id": "document:docs/for-agents/packages/harness-docs.md",
+      "type": "document",
+      "title": "harness-docs",
+      "path": "docs/for-agents/packages/harness-docs.md",
+      "description": "docs — Repository design docs, ADRs, stability records and the agent handoffs.",
+      "tags": [
+        "document",
+        "agent",
+        "package"
+      ],
+      "contentHash": "adab89fa301a6b4d7cbae46f6bed26b51951d10f72fdec87e9a31cf31320a676"
     },
     {
       "id": "document:docs/for-agents/packages/harness-evals.md",
@@ -2076,7 +2114,7 @@
         "mjs",
         "scripts"
       ],
-      "contentHash": "b24956a801cc91ed1d324e5ff6da9de236578473c1fdfde59849fe85d6518866"
+      "contentHash": "a3f4f9cdc50e36a939e64d19f16d7e1a5280866bdd07a09437a7c1ffae715fdf"
     },
     {
       "id": "module:scripts/lib/frontmatter.mjs",
@@ -10176,6 +10214,34 @@
         "Recorded benchmark baselines and eval results."
       ]
     },
+    "harness-capabilities": {
+      "type": "agent-handoff",
+      "schemaVersion": 1,
+      "source": ".doc-bridge/index.json",
+      "target": {
+        "type": "package",
+        "id": "harness-capabilities",
+        "path": "capabilities"
+      },
+      "startHere": "docs/for-agents/packages/harness-capabilities.md",
+      "readBeforeEditing": [
+        "docs/for-agents/packages/harness-capabilities.md",
+        "AGENTS.md"
+      ],
+      "editRoots": [
+        "capabilities"
+      ],
+      "checks": [
+        "pnpm test:capabilities"
+      ],
+      "humanDoc": "https://harness.agentskit.io/docs",
+      "bridge": {
+        "humanDoc": "external"
+      },
+      "notes": [
+        "Generated public-surface capability manifest."
+      ]
+    },
     "harness-compatibility": {
       "type": "agent-handoff",
       "schemaVersion": 1,
@@ -10231,6 +10297,34 @@
       },
       "notes": [
         "The @agentskit/harness CLI, loop, verification kernel and adapters."
+      ]
+    },
+    "harness-docs": {
+      "type": "agent-handoff",
+      "schemaVersion": 1,
+      "source": ".doc-bridge/index.json",
+      "target": {
+        "type": "package",
+        "id": "harness-docs",
+        "path": "docs"
+      },
+      "startHere": "docs/for-agents/packages/harness-docs.md",
+      "readBeforeEditing": [
+        "docs/for-agents/packages/harness-docs.md",
+        "AGENTS.md"
+      ],
+      "editRoots": [
+        "docs"
+      ],
+      "checks": [
+        "pnpm docs:generate --check"
+      ],
+      "humanDoc": "https://harness.agentskit.io/docs",
+      "bridge": {
+        "humanDoc": "external"
+      },
+      "notes": [
+        "Repository design docs, ADRs, stability records and the agent handoffs."
       ]
     },
     "harness-evals": {
@@ -10462,8 +10556,10 @@
     "packages": [
       "ecosystem-manifest",
       "harness-benchmarks",
+      "harness-capabilities",
       "harness-compatibility",
       "harness-core",
+      "harness-docs",
       "harness-evals",
       "harness-examples",
       "harness-experimental",
@@ -10496,6 +10592,17 @@
         "humanDoc": "https://harness.agentskit.io/docs",
         "agentDoc": "docs/for-agents/packages/harness-benchmarks.md"
       },
+      "harness-capabilities": {
+        "id": "harness-capabilities",
+        "path": "capabilities",
+        "checks": [
+          "pnpm test:capabilities"
+        ],
+        "checksSource": "ownership",
+        "purpose": "Generated public-surface capability manifest.",
+        "humanDoc": "https://harness.agentskit.io/docs",
+        "agentDoc": "docs/for-agents/packages/harness-capabilities.md"
+      },
       "harness-compatibility": {
         "id": "harness-compatibility",
         "path": "compatibility",
@@ -10518,6 +10625,17 @@
         "purpose": "The @agentskit/harness CLI, loop, verification kernel and adapters.",
         "humanDoc": "https://harness.agentskit.io/docs",
         "agentDoc": "docs/for-agents/packages/harness-core.md"
+      },
+      "harness-docs": {
+        "id": "harness-docs",
+        "path": "docs",
+        "checks": [
+          "pnpm docs:generate --check"
+        ],
+        "checksSource": "ownership",
+        "purpose": "Repository design docs, ADRs, stability records and the agent handoffs.",
+        "humanDoc": "https://harness.agentskit.io/docs",
+        "agentDoc": "docs/for-agents/packages/harness-docs.md"
       },
       "harness-evals": {
         "id": "harness-evals",
@@ -10626,8 +10744,8 @@
     }
   },
   "inputs": {
-    "hash": "5fdebe358fb6e897b0dea2f9daf57d77d74d11bd3a21c9b070893519c12eb31b",
-    "fileCount": 660,
+    "hash": "8724ebe670b5305641cad790e5e011df9c4c7da09da8ccb47fcb673b741ada43",
+    "fileCount": 663,
     "projectionVersion": 2
   },
   "retrieval": {
@@ -10649,11 +10767,11 @@
   "projection": {
     "type": "retrieval-index",
     "schemaVersion": 1,
-    "contentHash": "413965d84778c6b203ea78ff21989a4379efa7528ad89bce0e885cec84d837d7",
+    "contentHash": "0e446c538572bd4f72f1e82cb7dd5a723a3f683adf789b2f58fe6b396de45073",
     "contentHashAlgo": "sha256-semantic-v1",
-    "snapshotHash": "8c497504f0d5e9e46782b3177c7fc9887d48b3cc77e96e00c7a50986a33d1379",
+    "snapshotHash": "b3be17cdfafeab6ec60481c9a0cf0b6e2f3904c9f54df51978bc6e6d55168c71",
     "overlayHash": "f99666ff9119084dd25c2974ae64eb6935ec2aa785ff5ad478fb9d541f7a5e94",
-    "configurationHash": "657abca1972f7894d82c25fa857c492e9a3b92302e0ab457cc7b939542ecfa63",
+    "configurationHash": "9d991c87366c55866fb598cfa41b6312c6be8636b05097dbf856448e5315df19",
     "lexiconVersion": 1,
     "graphMetricsVersion": "1.0.0",
     "weights": {
@@ -10671,7 +10789,7 @@
     },
     "lexical": {
       "version": 1,
-      "documentCount": 644,
+      "documentCount": 649,
       "fieldNames": [
         "aliases",
         "body",
@@ -10682,13 +10800,13 @@
         "title"
       ],
       "averageFieldLength": {
-        "aliases": 3.0543478260869565,
-        "body": 47.93167701863354,
-        "headings": 3.9332298136645965,
-        "path": 6.051242236024844,
-        "summary": 3.2639751552795033,
-        "symbols": 13.082298136645962,
-        "title": 4.009316770186335
+        "aliases": 3.100154083204931,
+        "body": 47.6979969183359,
+        "headings": 3.921417565485362,
+        "path": 6.033898305084746,
+        "summary": 3.3066255778120186,
+        "symbols": 12.98151001540832,
+        "title": 4
       }
     },
     "entries": [
@@ -10716,7 +10834,7 @@
           "aliases": "harness-site area ownership"
         },
         "graph": {
-          "pagerank": 0.030133,
+          "pagerank": 0.028797,
           "inboundLinks": 2,
           "coveredBy": [
             "document:docs/for-agents/packages/harness-site.md"
@@ -11014,7 +11132,7 @@
           "aliases": "harness-examples area ownership"
         },
         "graph": {
-          "pagerank": 0.030133,
+          "pagerank": 0.028797,
           "inboundLinks": 2,
           "coveredBy": [
             "document:docs/for-agents/packages/harness-examples.md"
@@ -11072,7 +11190,7 @@
           "aliases": "harness-experimental area ownership"
         },
         "graph": {
-          "pagerank": 0.030133,
+          "pagerank": 0.028797,
           "inboundLinks": 1,
           "coveredBy": [
             "document:docs/for-agents/packages/harness-experimental.md"
@@ -11124,7 +11242,7 @@
           "aliases": "harness-scripts area ownership"
         },
         "graph": {
-          "pagerank": 0.030133,
+          "pagerank": 0.028797,
           "inboundLinks": 4,
           "coveredBy": [
             "document:docs/for-agents/packages/harness-scripts.md"
@@ -11194,7 +11312,7 @@
           "aliases": "harness-core area ownership"
         },
         "graph": {
-          "pagerank": 0.030133,
+          "pagerank": 0.028797,
           "inboundLinks": 2,
           "coveredBy": [
             "document:docs/for-agents/packages/harness-core.md"
@@ -11662,7 +11780,7 @@
           "aliases": "harness-tests area ownership"
         },
         "graph": {
-          "pagerank": 0.030133,
+          "pagerank": 0.028797,
           "inboundLinks": 8,
           "coveredBy": [
             "document:docs/for-agents/packages/harness-tests.md"
@@ -11975,7 +12093,7 @@
           "aliases": "document unclassified"
         },
         "graph": {
-          "pagerank": 0.030133,
+          "pagerank": 0.028797,
           "inboundLinks": 6,
           "coveredBy": [],
           "mentionedBy": [
@@ -13855,6 +13973,39 @@
         "confidence": "observed"
       },
       {
+        "id": "document:changelog.d/323.md",
+        "kind": "document",
+        "path": "changelog.d/323.md",
+        "title": "323.md",
+        "summary": "fix: cover the capabilities and docs edit roots in the doc-bridge config",
+        "audience": "human",
+        "aliases": [],
+        "tags": [
+          "document",
+          "project"
+        ],
+        "fields": {
+          "title": "323.md",
+          "headings": "",
+          "path": "changelog.d/323.md",
+          "symbols": "",
+          "summary": "fix: cover the capabilities and docs edit roots in the doc-bridge config",
+          "body": "fix: cover the capabilities and docs edit roots in the doc-bridge config",
+          "aliases": "document project"
+        },
+        "graph": {
+          "pagerank": 0,
+          "inboundLinks": 0,
+          "coveredBy": [],
+          "mentionedBy": [],
+          "inbound": [],
+          "outbound": []
+        },
+        "contentHash": "24d1fbbb9a962672714c22fcc0e0434853b06ac033effd11be343210a21d865c",
+        "provenance": "observed",
+        "confidence": "observed"
+      },
+      {
         "id": "document:CHANGELOG.md",
         "kind": "document",
         "path": "CHANGELOG.md",
@@ -13876,14 +14027,16 @@
           "aliases": "document project"
         },
         "graph": {
-          "pagerank": 0.017353,
-          "inboundLinks": 12,
+          "pagerank": 0.016583,
+          "inboundLinks": 14,
           "coveredBy": [],
           "mentionedBy": [
             "document:.github/factory-playbook.md",
             "document:docs/for-agents/packages/harness-benchmarks.md",
+            "document:docs/for-agents/packages/harness-capabilities.md",
             "document:docs/for-agents/packages/harness-compatibility.md",
             "document:docs/for-agents/packages/harness-core.md",
+            "document:docs/for-agents/packages/harness-docs.md",
             "document:docs/for-agents/packages/harness-evals.md",
             "document:docs/for-agents/packages/harness-examples.md",
             "document:docs/for-agents/packages/harness-experimental.md",
@@ -13911,12 +14064,22 @@
             },
             {
               "kind": "mentions",
+              "id": "document:docs/for-agents/packages/harness-capabilities.md",
+              "confidence": "observed"
+            },
+            {
+              "kind": "mentions",
               "id": "document:docs/for-agents/packages/harness-compatibility.md",
               "confidence": "observed"
             },
             {
               "kind": "mentions",
               "id": "document:docs/for-agents/packages/harness-core.md",
+              "confidence": "observed"
+            },
+            {
+              "kind": "mentions",
+              "id": "document:docs/for-agents/packages/harness-docs.md",
               "confidence": "observed"
             },
             {
@@ -14243,7 +14406,7 @@
           "aliases": "document unclassified"
         },
         "graph": {
-          "pagerank": 0.016288,
+          "pagerank": 0.015566,
           "inboundLinks": 1,
           "coveredBy": [],
           "mentionedBy": [
@@ -14326,7 +14489,7 @@
           "aliases": "document unclassified"
         },
         "graph": {
-          "pagerank": 0.023211,
+          "pagerank": 0.022181,
           "inboundLinks": 1,
           "coveredBy": [],
           "mentionedBy": [],
@@ -14370,7 +14533,7 @@
           "aliases": "document unclassified"
         },
         "graph": {
-          "pagerank": 0.016288,
+          "pagerank": 0.015566,
           "inboundLinks": 3,
           "coveredBy": [],
           "mentionedBy": [
@@ -14433,7 +14596,7 @@
           "aliases": "document unclassified"
         },
         "graph": {
-          "pagerank": 0.023211,
+          "pagerank": 0.022181,
           "inboundLinks": 1,
           "coveredBy": [],
           "mentionedBy": [],
@@ -14478,7 +14641,7 @@
           "aliases": "document project"
         },
         "graph": {
-          "pagerank": 0.017353,
+          "pagerank": 0.016583,
           "inboundLinks": 2,
           "coveredBy": [],
           "mentionedBy": [
@@ -14716,7 +14879,7 @@
           "aliases": "document human"
         },
         "graph": {
-          "pagerank": 0.02223,
+          "pagerank": 0.021244,
           "inboundLinks": 1,
           "coveredBy": [],
           "mentionedBy": [],
@@ -15704,7 +15867,7 @@
           "aliases": "document human"
         },
         "graph": {
-          "pagerank": 0.02223,
+          "pagerank": 0.021244,
           "inboundLinks": 1,
           "coveredBy": [],
           "mentionedBy": [],
@@ -15759,7 +15922,7 @@
           "aliases": "document human"
         },
         "graph": {
-          "pagerank": 0.023295,
+          "pagerank": 0.022262,
           "inboundLinks": 2,
           "coveredBy": [],
           "mentionedBy": [],
@@ -15814,7 +15977,7 @@
           "aliases": "document human"
         },
         "graph": {
-          "pagerank": 0.025318,
+          "pagerank": 0.024195,
           "inboundLinks": 2,
           "coveredBy": [],
           "mentionedBy": [],
@@ -16056,7 +16219,7 @@
           "aliases": "document human"
         },
         "graph": {
-          "pagerank": 0.01946,
+          "pagerank": 0.018597,
           "inboundLinks": 2,
           "coveredBy": [],
           "mentionedBy": [],
@@ -16106,7 +16269,7 @@
           "aliases": "document human"
         },
         "graph": {
-          "pagerank": 0.022083,
+          "pagerank": 0.021103,
           "inboundLinks": 2,
           "coveredBy": [],
           "mentionedBy": [],
@@ -16156,7 +16319,7 @@
           "aliases": "document human"
         },
         "graph": {
-          "pagerank": 0.018395,
+          "pagerank": 0.017579,
           "inboundLinks": 1,
           "coveredBy": [],
           "mentionedBy": [],
@@ -16206,7 +16369,7 @@
           "aliases": "document human"
         },
         "graph": {
-          "pagerank": 0.023148,
+          "pagerank": 0.022121,
           "inboundLinks": 3,
           "coveredBy": [],
           "mentionedBy": [],
@@ -16271,7 +16434,7 @@
           "aliases": "document human"
         },
         "graph": {
-          "pagerank": 0.018395,
+          "pagerank": 0.017579,
           "inboundLinks": 1,
           "coveredBy": [],
           "mentionedBy": [],
@@ -16326,7 +16489,7 @@
           "aliases": "document human"
         },
         "graph": {
-          "pagerank": 0.01946,
+          "pagerank": 0.018597,
           "inboundLinks": 2,
           "coveredBy": [],
           "mentionedBy": [],
@@ -16376,7 +16539,7 @@
           "aliases": "document human"
         },
         "graph": {
-          "pagerank": 0.016288,
+          "pagerank": 0.015566,
           "inboundLinks": 0,
           "coveredBy": [],
           "mentionedBy": [],
@@ -16425,7 +16588,7 @@
           "aliases": "document human"
         },
         "graph": {
-          "pagerank": 0.016288,
+          "pagerank": 0.015566,
           "inboundLinks": 0,
           "coveredBy": [],
           "mentionedBy": [],
@@ -16769,7 +16932,7 @@
           "aliases": "document human"
         },
         "graph": {
-          "pagerank": 0.016288,
+          "pagerank": 0.015566,
           "inboundLinks": 0,
           "coveredBy": [],
           "mentionedBy": [],
@@ -16848,7 +17011,7 @@
           "aliases": "document human"
         },
         "graph": {
-          "pagerank": 0.093136,
+          "pagerank": 0.089004,
           "inboundLinks": 5,
           "coveredBy": [],
           "mentionedBy": [],
@@ -16933,7 +17096,7 @@
           "aliases": "document human"
         },
         "graph": {
-          "pagerank": 0.017353,
+          "pagerank": 0.016583,
           "inboundLinks": 1,
           "coveredBy": [],
           "mentionedBy": [],
@@ -17265,6 +17428,51 @@
         "confidence": "observed"
       },
       {
+        "id": "document:docs/for-agents/packages/harness-capabilities.md",
+        "kind": "document",
+        "path": "docs/for-agents/packages/harness-capabilities.md",
+        "title": "harness-capabilities",
+        "summary": "capabilities — Generated public-surface capability manifest.",
+        "audience": "agent",
+        "aliases": [],
+        "tags": [
+          "document",
+          "agent",
+          "package"
+        ],
+        "fields": {
+          "title": "harness-capabilities",
+          "headings": "harness-capabilities Change rules Check",
+          "path": "docs/for-agents/packages/harness-capabilities.md",
+          "symbols": "",
+          "summary": "capabilities — Generated public-surface capability manifest.",
+          "body": "harness-capabilities capabilities — Generated public-surface capability manifest. Change rules - Keep changes inside capabilities scoped to the ticket; regenerate any derived artifact in the same change. - Add a changelog.d/<ticket .md fragment instead of editing CHANGELOG.md . Check pnpm test:capabilities",
+          "aliases": "document agent package"
+        },
+        "graph": {
+          "pagerank": 0,
+          "inboundLinks": 0,
+          "coveredBy": [],
+          "mentionedBy": [],
+          "inbound": [],
+          "outbound": [
+            {
+              "kind": "covers",
+              "id": "unresolved:harness-capabilities",
+              "confidence": "declared"
+            },
+            {
+              "kind": "mentions",
+              "id": "document:CHANGELOG.md",
+              "confidence": "observed"
+            }
+          ]
+        },
+        "contentHash": "618aa40ac2e1e5ba87ef6ccc80786d0f6a0530a62c04a47cb2f0b56c49a9844f",
+        "provenance": "observed",
+        "confidence": "observed"
+      },
+      {
         "id": "document:docs/for-agents/packages/harness-compatibility.md",
         "kind": "document",
         "path": "docs/for-agents/packages/harness-compatibility.md",
@@ -17332,7 +17540,7 @@
           "aliases": "document agent package"
         },
         "graph": {
-          "pagerank": 0.016288,
+          "pagerank": 0.015566,
           "inboundLinks": 0,
           "coveredBy": [],
           "mentionedBy": [],
@@ -17440,6 +17648,56 @@
         "confidence": "observed"
       },
       {
+        "id": "document:docs/for-agents/packages/harness-docs.md",
+        "kind": "document",
+        "path": "docs/for-agents/packages/harness-docs.md",
+        "title": "harness-docs",
+        "summary": "docs — Repository design docs, ADRs, stability records and the agent handoffs.",
+        "audience": "agent",
+        "aliases": [],
+        "tags": [
+          "document",
+          "agent",
+          "package"
+        ],
+        "fields": {
+          "title": "harness-docs",
+          "headings": "harness-docs Change rules Check",
+          "path": "docs/for-agents/packages/harness-docs.md",
+          "symbols": "",
+          "summary": "docs — Repository design docs, ADRs, stability records and the agent handoffs.",
+          "body": "harness-docs docs — Repository design docs, ADRs, stability records and the agent handoffs. Change rules - Keep changes inside docs scoped to the ticket; regenerate any derived artifact in the same change. - Add a changelog.d/<ticket .md fragment instead of editing CHANGELOG.md . Check pnpm docs:generate --check",
+          "aliases": "document agent package"
+        },
+        "graph": {
+          "pagerank": 0.015566,
+          "inboundLinks": 0,
+          "coveredBy": [],
+          "mentionedBy": [],
+          "inbound": [],
+          "outbound": [
+            {
+              "kind": "covers",
+              "id": "package:@agentskit/harness-docs",
+              "confidence": "declared"
+            },
+            {
+              "kind": "mentions",
+              "id": "document:CHANGELOG.md",
+              "confidence": "observed"
+            },
+            {
+              "kind": "mentions-symbol",
+              "id": "module:apps/docs/source.config.ts",
+              "confidence": "observed"
+            }
+          ]
+        },
+        "contentHash": "adab89fa301a6b4d7cbae46f6bed26b51951d10f72fdec87e9a31cf31320a676",
+        "provenance": "observed",
+        "confidence": "observed"
+      },
+      {
         "id": "document:docs/for-agents/packages/harness-evals.md",
         "kind": "document",
         "path": "docs/for-agents/packages/harness-evals.md",
@@ -17507,7 +17765,7 @@
           "aliases": "document agent package"
         },
         "graph": {
-          "pagerank": 0.016288,
+          "pagerank": 0.015566,
           "inboundLinks": 0,
           "coveredBy": [],
           "mentionedBy": [],
@@ -17557,7 +17815,7 @@
           "aliases": "document agent package"
         },
         "graph": {
-          "pagerank": 0.016288,
+          "pagerank": 0.015566,
           "inboundLinks": 0,
           "coveredBy": [],
           "mentionedBy": [],
@@ -17652,7 +17910,7 @@
           "aliases": "document agent package"
         },
         "graph": {
-          "pagerank": 0.016288,
+          "pagerank": 0.015566,
           "inboundLinks": 0,
           "coveredBy": [],
           "mentionedBy": [],
@@ -17727,7 +17985,7 @@
           "aliases": "document agent package"
         },
         "graph": {
-          "pagerank": 0.016288,
+          "pagerank": 0.015566,
           "inboundLinks": 0,
           "coveredBy": [],
           "mentionedBy": [],
@@ -17877,7 +18135,7 @@
           "aliases": "document agent package"
         },
         "graph": {
-          "pagerank": 0.016288,
+          "pagerank": 0.015566,
           "inboundLinks": 0,
           "coveredBy": [],
           "mentionedBy": [],
@@ -17941,7 +18199,7 @@
           "aliases": "document human"
         },
         "graph": {
-          "pagerank": 0.017353,
+          "pagerank": 0.016583,
           "inboundLinks": 2,
           "coveredBy": [],
           "mentionedBy": [
@@ -18069,7 +18327,7 @@
           "aliases": "document human"
         },
         "graph": {
-          "pagerank": 0.02223,
+          "pagerank": 0.021244,
           "inboundLinks": 2,
           "coveredBy": [],
           "mentionedBy": [
@@ -18151,7 +18409,7 @@
           "aliases": "document human"
         },
         "graph": {
-          "pagerank": 0.027963,
+          "pagerank": 0.026723,
           "inboundLinks": 3,
           "coveredBy": [],
           "mentionedBy": [
@@ -18443,7 +18701,7 @@
           "aliases": "document human"
         },
         "graph": {
-          "pagerank": 0.016288,
+          "pagerank": 0.015566,
           "inboundLinks": 2,
           "coveredBy": [],
           "mentionedBy": [
@@ -18863,7 +19121,7 @@
           "aliases": "document human"
         },
         "graph": {
-          "pagerank": 0.031039,
+          "pagerank": 0.029662,
           "inboundLinks": 1,
           "coveredBy": [],
           "mentionedBy": [
@@ -18979,7 +19237,7 @@
           "aliases": "document human"
         },
         "graph": {
-          "pagerank": 0.021041,
+          "pagerank": 0.020107,
           "inboundLinks": 2,
           "coveredBy": [],
           "mentionedBy": [
@@ -19078,7 +19336,7 @@
           "aliases": "document unclassified"
         },
         "graph": {
-          "pagerank": 0.017353,
+          "pagerank": 0.016583,
           "inboundLinks": 1,
           "coveredBy": [],
           "mentionedBy": [
@@ -19124,7 +19382,7 @@
           "aliases": "document project"
         },
         "graph": {
-          "pagerank": 0.016288,
+          "pagerank": 0.015566,
           "inboundLinks": 0,
           "coveredBy": [],
           "mentionedBy": [],
@@ -19262,7 +19520,7 @@
           "aliases": "document unclassified"
         },
         "graph": {
-          "pagerank": 0.017353,
+          "pagerank": 0.016583,
           "inboundLinks": 1,
           "coveredBy": [],
           "mentionedBy": [
@@ -20307,11 +20565,12 @@
         },
         "graph": {
           "pagerank": 0,
-          "inboundLinks": 3,
+          "inboundLinks": 4,
           "coveredBy": [],
           "mentionedBy": [
             "document:CHANGELOG.md",
             "document:CONTRIBUTING.md",
+            "document:docs/for-agents/packages/harness-docs.md",
             "document:docs/PRD-0.4.0.md"
           ],
           "areaId": "area:apps/docs",
@@ -20325,6 +20584,11 @@
             {
               "kind": "mentions-symbol",
               "id": "document:CONTRIBUTING.md",
+              "confidence": "observed"
+            },
+            {
+              "kind": "mentions-symbol",
+              "id": "document:docs/for-agents/packages/harness-docs.md",
               "confidence": "observed"
             },
             {
@@ -21251,7 +21515,7 @@
           ],
           "outbound": []
         },
-        "contentHash": "b24956a801cc91ed1d324e5ff6da9de236578473c1fdfde59849fe85d6518866",
+        "contentHash": "a3f4f9cdc50e36a939e64d19f16d7e1a5280866bdd07a09437a7c1ffae715fdf",
         "provenance": "observed",
         "confidence": "observed"
       },
@@ -54540,6 +54804,43 @@
         "ownershipId": "harness-benchmarks"
       },
       {
+        "id": "ownership:harness-capabilities",
+        "kind": "package",
+        "path": "capabilities",
+        "title": "harness-capabilities",
+        "summary": "Generated public-surface capability manifest.",
+        "aliases": [
+          "harness-capabilities",
+          "docs/for-agents/packages/harness-capabilities.md",
+          "https://harness.agentskit.io/docs"
+        ],
+        "tags": [
+          "package",
+          "ownership"
+        ],
+        "fields": {
+          "title": "harness-capabilities",
+          "headings": "",
+          "path": "capabilities",
+          "symbols": "",
+          "summary": "Generated public-surface capability manifest.",
+          "body": "",
+          "aliases": "harness-capabilities docs/for-agents/packages/harness-capabilities.md https://harness.agentskit.io/docs package ownership"
+        },
+        "graph": {
+          "pagerank": 0,
+          "inboundLinks": 0,
+          "coveredBy": [],
+          "mentionedBy": [],
+          "inbound": [],
+          "outbound": []
+        },
+        "contentHash": "e43b3b1d37dbad9051b974663d7da84cc5cc3d133d7797e220721100e853f09e",
+        "provenance": "declared",
+        "confidence": "declared",
+        "ownershipId": "harness-capabilities"
+      },
+      {
         "id": "ownership:harness-compatibility",
         "kind": "package",
         "path": "compatibility",
@@ -54575,6 +54876,43 @@
         "provenance": "declared",
         "confidence": "declared",
         "ownershipId": "harness-compatibility"
+      },
+      {
+        "id": "ownership:harness-docs",
+        "kind": "package",
+        "path": "docs",
+        "title": "harness-docs",
+        "summary": "Repository design docs, ADRs, stability records and the agent handoffs.",
+        "aliases": [
+          "harness-docs",
+          "docs/for-agents/packages/harness-docs.md",
+          "https://harness.agentskit.io/docs"
+        ],
+        "tags": [
+          "package",
+          "ownership"
+        ],
+        "fields": {
+          "title": "harness-docs",
+          "headings": "",
+          "path": "docs",
+          "symbols": "",
+          "summary": "Repository design docs, ADRs, stability records and the agent handoffs.",
+          "body": "",
+          "aliases": "harness-docs docs/for-agents/packages/harness-docs.md https://harness.agentskit.io/docs package ownership"
+        },
+        "graph": {
+          "pagerank": 0,
+          "inboundLinks": 0,
+          "coveredBy": [],
+          "mentionedBy": [],
+          "inbound": [],
+          "outbound": []
+        },
+        "contentHash": "c98cec56a5fe284a6510591ae4772b385f3c0b824792487e9df23d0906d26203",
+        "provenance": "declared",
+        "confidence": "declared",
+        "ownershipId": "harness-docs"
       },
       {
         "id": "ownership:harness-evals",
@@ -54709,7 +55047,7 @@
           "aliases": "harness @agentskit/harness package"
         },
         "graph": {
-          "pagerank": 0.017353,
+          "pagerank": 0.016583,
           "inboundLinks": 10,
           "coveredBy": [
             "document:README.md"
@@ -54806,14 +55144,21 @@
           "aliases": "harness-docs @agentskit/harness-docs package"
         },
         "graph": {
-          "pagerank": 0,
-          "inboundLinks": 1,
-          "coveredBy": [],
+          "pagerank": 0.028797,
+          "inboundLinks": 2,
+          "coveredBy": [
+            "document:docs/for-agents/packages/harness-docs.md"
+          ],
           "mentionedBy": [
             "document:docs/for-agents/packages/harness-site.md"
           ],
           "packageId": "package:@agentskit/harness-docs",
           "inbound": [
+            {
+              "kind": "covers",
+              "id": "document:docs/for-agents/packages/harness-docs.md",
+              "confidence": "declared"
+            },
             {
               "kind": "mentions",
               "id": "document:docs/for-agents/packages/harness-site.md",
