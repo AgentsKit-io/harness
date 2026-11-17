@@ -1,0 +1,2 @@
+# Fast pre-push check: typecheck with TypeScript 7 (native tsc). Do not use --no-verify.
+npx tsc -p tsconfig.json --noEmit && npx tsc -p src/ui/app/tsconfig.json --noEmit
